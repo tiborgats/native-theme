@@ -1,0 +1,74 @@
+## ./os-probe-macos-15-button/button-pass/probe.toml
+184 moves and parks, 184 on the probe's window without an error
+park point [10.0, 160.0] in the content view, view hit ['NSView']
+park point [10.0, 216.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-15-events/button-pass-events/probe.toml
+5 moves and parks, 5 on the probe's window without an error
+park point [280.0, 10.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-15-focus-transition/button-pass-focus-transition/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-15-focus-transition/button-pass-focus-transition-reduce-motion-off/probe.toml
+1 moves and parks, 0 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+focus_transition.cursor.error = unavailable: the window at the target is window 12 (window 12: owner "Finder", layer -2147483603, bounds [0.0, 0.0, 1024.0, 768.0] (Quartz x, y, width, height)), not the probe's 40: the cursor is not moved
+## ./os-probe-macos-15-motion/button-pass-motion/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [260.0, 10.0] in the content view, view hit ['NSView']
+motion.aqua.park_quartz_xy = [460.0, 558.0]
+motion.darkAqua.park_quartz_xy = [460.0, 558.0]
+## ./os-probe-macos-26-button/button-pass/probe.toml
+282 moves and parks, 282 on the probe's window without an error
+park point [10.0, 160.0] in the content view, view hit ['NSView']
+park point [10.0, 216.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-26-events/button-pass-events/probe.toml
+5 moves and parks, 5 on the probe's window without an error
+park point [280.0, 10.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-26-focus-transition/button-pass-focus-transition/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-26-focus-transition/button-pass-focus-transition-reduce-motion-off/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+## ./os-probe-macos-26-motion/button-pass-motion/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [260.0, 10.0] in the content view, view hit ['NSView']
+motion.aqua.park_quartz_xy = [460.0, 558.0]
+motion.darkAqua.park_quartz_xy = [460.0, 558.0]
+## ./run-45476265646/os-probe-macos-15-button/button-pass/probe.toml
+184 moves and parks, 184 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+park point [395.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-15-events/button-pass-events/probe.toml
+5 moves and parks, 5 on the probe's window without an error
+park point [280.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-15-focus-transition/button-pass-focus-transition/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-15-focus-transition/button-pass-focus-transition-reduce-motion-off/probe.toml
+1 moves and parks, 0 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+focus_transition.cursor.error = unavailable: the window at the target is window 16, not the probe's 40: the cursor is not moved
+## ./run-45476265646/os-probe-macos-15-motion/button-pass-motion/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [260.0, 10.0] in the content view, view hit ['NSView']
+motion.aqua.park_quartz_xy = [460.0, 558.0]
+motion.darkAqua.park_quartz_xy = [460.0, 558.0]
+## ./run-45476265646/os-probe-macos-26-button/button-pass/probe.toml
+282 moves and parks, 282 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+park point [395.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-26-events/button-pass-events/probe.toml
+5 moves and parks, 5 on the probe's window without an error
+park point [280.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-26-focus-transition/button-pass-focus-transition/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-26-focus-transition/button-pass-focus-transition-reduce-motion-off/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [300.0, 10.0] in the content view, view hit ['NSView']
+## ./run-45476265646/os-probe-macos-26-motion/button-pass-motion/probe.toml
+1 moves and parks, 1 on the probe's window without an error
+park point [260.0, 10.0] in the content view, view hit ['NSView']
+motion.aqua.park_quartz_xy = [460.0, 558.0]
+motion.darkAqua.park_quartz_xy = [460.0, 558.0]

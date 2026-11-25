@@ -336,7 +336,7 @@ pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped
 
 /// A text style's colour where a rule states it for the queried state, as
 /// [`text_color`] reads it; `None` where none does.
-fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
     state_option(
         state_text_color_of(text),
         text.from_state.contains(TextStated::COLOR),
@@ -750,7 +750,7 @@ pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
 /// else gpui-component's own (spec §10, rule 0). A rule that names no variant
 /// is the flat button's too (spec §2), so a theme that states no flat rule
 /// gives it the push button's stated fills.
-fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
+pub(crate) fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
     let b = &r.button;
     let upstream = upstream_colors(r);
     let flat = ButtonQuery::flat();

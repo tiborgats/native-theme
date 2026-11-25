@@ -42,6 +42,53 @@ struct Difference {
 
 const DIFFERENCES: &[Difference] = &[];
 
+/// A field's frame the 0.8.0 preset outlines in a border of its own: the
+/// function, the preset's key, the field's part and its homes, and why. The
+/// 0.8.0 frame is compared with the 0.7.2 frame whose stroke takes the
+/// width at `width_home` and, unfocused, the colour at `color_home`, as the
+/// 0.8.0 function reads them ([`super::line_width`], [`super::line_color`]);
+/// focused, its colour stays the focused one, which both models state alike.
+struct FrameDifference {
+    name: &'static str,
+    preset: &'static str,
+    field: fn(&native_theme::next::ResolvedTheme) -> native_theme::next::PartStyle,
+    width_home: &'static str,
+    color_home: &'static str,
+    reason: &'static str,
+}
+
+const FRAME_DIFFERENCES: &[FrameDifference] = &[FrameDifference {
+    name: "text_area_frame",
+    preset: "ios-13",
+    field: |r| r.text_area.field(native_theme::next::WidgetState::NONE),
+    width_home: "text_area.field(NONE).stroke.width",
+    color_home: "text_area.field(NONE).stroke.color",
+    reason: "0.7.2's ios-13 outlines the text area in the default line (0.5 px of the \
+             separator, uncited); the 0.8.0 preset states WebKit's `border: 1px solid \
+             -apple-system-secondary-label` (html.css:457-466 at WebKit 31adf9d; \
+             native-theme/tests/next_homes.toml, rows text_area.border.color and \
+             text_area.border.line_width, listed differences)",
+}];
+
+/// `old`, the 0.7.2 frame, with its stroke as [`FrameDifference`] `d`
+/// states it on `new`.
+fn frame_as_stated(
+    d: &FrameDifference,
+    old: Mapped<egui::Frame>,
+    focused: bool,
+    new: &native_theme::next::ResolvedTheme,
+) -> Mapped<egui::Frame> {
+    let mut frame = old?;
+    let field = (d.field)(new);
+    if let Some(width) = super::line_width(&field, d.width_home)? {
+        frame.stroke.width = width;
+    }
+    if !focused {
+        frame.stroke.color = super::line_color(&field, d.color_home)?;
+    }
+    Ok(frame)
+}
+
 /// Both models of `key`, light or dark: the 0.7.2 theme resolved as the
 /// 0.7.2 presets are (the Apple presets at 72 font DPI, the others at 96),
 /// and the 0.8.0 preset resolved for the scheme.
@@ -350,10 +397,23 @@ fn parts(p: &mut Pairs, old: &ResolvedTheme, new: &native_theme::next::ResolvedT
             frames.push((
                 "text_area_frame",
                 ok(crate::text_area_frame(ui, id, old)),
-                super::text_area_frame(ui, id, new),
+                super::text_area_frame(ui, id, new).map(|(frame, _)| frame),
             ));
         });
         for (name, o, n) in frames {
+            let o = match FRAME_DIFFERENCES
+                .iter()
+                .find(|d| d.name == name && d.preset == p.preset)
+            {
+                Some(d) => {
+                    let expected = frame_as_stated(d, o, focused, new);
+                    if format!("{expected:?}") != format!("{o:?}") {
+                        p.seen.push((name, p.preset));
+                    }
+                    expected
+                }
+                None => o,
+            };
             p.pair(name, (focused, o), (focused, n));
         }
     }
@@ -446,6 +506,14 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
     }
     for d in DIFFERENCES {
         if !seen.contains(&(d.name, d.preset)) {
+            failures.push(format!(
+                "{} on {}: listed, but differs nowhere: remove the entry",
+                d.name, d.preset
+            ));
+        }
+    }
+    for d in FRAME_DIFFERENCES {
+        if d.reason.is_empty() || !seen.contains(&(d.name, d.preset)) {
             failures.push(format!(
                 "{} on {}: listed, but differs nowhere: remove the entry",
                 d.name, d.preset

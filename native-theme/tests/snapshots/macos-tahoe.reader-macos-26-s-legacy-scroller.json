@@ -86,8 +86,8 @@
     "text_selection": {
       "background": "#b3d7ff",
       "foreground": "#000000",
-      "unfocused_background": null,
-      "unfocused_foreground": null
+      "unfocused_background": "#dcdcdc",
+      "unfocused_foreground": "#000000"
     },
     "find_highlight": null,
     "scrim": null,
@@ -346,6 +346,30 @@
           }
         },
         {
+          "variant": "flat",
+          "body": {
+            "fill": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "none"
+          }
+        },
+        {
           "states": [
             "checked"
           ],
@@ -378,11 +402,44 @@
         },
         {
           "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "none"
+          }
+        },
+        {
+          "states": [
             "disabled",
             "checked"
           ],
           "body": {
             "fill": "srgb(0, 0.4592941, 0.96, 0.44)"
+          }
+        },
+        {
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
           }
         }
       ]
@@ -416,6 +473,30 @@
           }
         },
         {
+          "variant": "flat",
+          "label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#000000d9"
+          }
+        },
+        {
           "states": [
             "checked"
           ],
@@ -435,6 +516,15 @@
           ],
           "label": {
             "color": "#0000003f"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#00000040"
           }
         },
         {
@@ -473,7 +563,18 @@
         "min_size": [
           "none",
           24.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 4.0,
+            "color": "#0067f47f"
+          },
+          "inner_stroke": "none",
+          "offset": -1.0,
+          "corners": null,
+          "trigger": "always"
+        }
       },
       "rules": [
         {
@@ -481,6 +582,18 @@
             "hover"
           ],
           "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#c8c8c8"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "field": {
+            "fill": "#ffffff",
             "stroke": {
               "width": 0.5,
               "color": "#c8c8c8"
@@ -501,6 +614,22 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "text": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "text": {
+            "color": "#000000"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -544,6 +673,18 @@
               "color": "#c8c8c8"
             }
           }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "field": {
+            "fill": "#ffffff",
+            "stroke": {
+              "width": 0.5,
+              "color": "#c8c8c8"
+            }
+          }
         }
       ]
     },
@@ -559,6 +700,22 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "text": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "text": {
+            "color": "#000000"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -606,6 +763,7 @@
             "hover"
           ],
           "indicator": {
+            "fill": "#00000019",
             "stroke": {
               "width": 0.5,
               "color": "#00000000"
@@ -617,6 +775,7 @@
             "pressed"
           ],
           "indicator": {
+            "fill": "#00000030",
             "stroke": {
               "width": 0.5,
               "color": "#00000000"
@@ -634,13 +793,79 @@
               "color": "#c8c8c8"
             }
           }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#006be1"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0000000d"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0076f470"
+          }
         }
       ]
     },
     "checkmark": {
       "base": {
         "color": "#ffffff"
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "checkmark": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "checkmark": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#fefefe80"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -692,6 +917,7 @@
             "hover"
           ],
           "indicator": {
+            "fill": "#00000019",
             "stroke": {
               "width": 0.5,
               "color": "#00000000"
@@ -703,6 +929,7 @@
             "pressed"
           ],
           "indicator": {
+            "fill": "#00000030",
             "stroke": {
               "width": 0.5,
               "color": "#00000000"
@@ -720,6 +947,46 @@
               "color": "#c8c8c8"
             }
           }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#006be1"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0000000d"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0076f470"
+          }
         }
       ]
     },
@@ -734,7 +1001,17 @@
           5.0,
           5.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#fefefe80"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -762,7 +1039,7 @@
   "switch": {
     "origin": "native",
     "label_side": "leading",
-    "label_gap": null,
+    "label_gap": 8.0,
     "label_gap_stretches": false,
     "show_state_glyphs": null,
     "disabled_opacity": 1.0,
@@ -781,6 +1058,22 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "track": {
+            "fill": "#00000019"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "track": {
+            "fill": "#00000032"
+          }
+        },
         {
           "states": [
             "checked"
@@ -850,7 +1143,50 @@
         "defined_size": {
           "pt": 13.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        }
+      ]
     }
   },
   "slider": {
@@ -897,6 +1233,14 @@
       "rules": [
         {
           "states": [
+            "pressed"
+          ],
+          "active_track": {
+            "fill": "#006be1"
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "active_track": {
@@ -916,7 +1260,31 @@
           16.0,
           16.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "disabled"
+          ],
+          "thumb": {
+            "fill": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled"
+          ],
+          "thumb": {
+            "fill": "#ffffff"
+          }
+        }
+      ]
     },
     "tick": {
       "base": {}
@@ -962,7 +1330,7 @@
     "overlay_mode": false,
     "track": {
       "base": {
-        "fill": "#00000000"
+        "fill": "#0000000c"
       },
       "rules": [
         {
@@ -995,7 +1363,7 @@
     },
     "thumb": {
       "base": {
-        "fill": "#0000007f"
+        "fill": "#00000085"
       },
       "rules": [
         {
@@ -1023,6 +1391,22 @@
               7.0
             ]
           }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "thumb": {
+            "fill": "#00000085"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "thumb": {
+            "fill": "#00000085"
+          }
         }
       ]
     }
@@ -1039,7 +1423,7 @@
     },
     "tab": {
       "base": {
-        "fill": "#f6f6f6",
+        "fill": "#00000013",
         "min_size": [
           64.0,
           24.0
@@ -1048,10 +1432,29 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "tab": {
+            "fill": "#00000013"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
             "selected"
           ],
           "tab": {
-            "fill": "#f6f6f6"
+            "fill": "#0000003f"
+          }
+        },
+        {
+          "states": [
+            "selected"
+          ],
+          "tab": {
+            "fill": "#0077f9"
           }
         }
       ]
@@ -1074,6 +1477,22 @@
           ],
           "label": {
             "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "selected"
+          ],
+          "label": {
+            "color": "#ffffff"
           }
         }
       ]
@@ -1205,10 +1624,35 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "highlight": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "highlight": {
+            "fill": "#0064e1"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "highlight": {
             "fill": "#0064e1"
+          }
+        },
+        {
+          "states": [
+            "unfocused_view",
+            "selected"
+          ],
+          "highlight": {
+            "fill": "#dcdcdc"
           }
         }
       ]
@@ -1231,6 +1675,15 @@
           ],
           "item_label": {
             "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "unfocused_view",
+            "selected"
+          ],
+          "item_label": {
+            "color": "#000000"
           }
         },
         {
@@ -1285,6 +1738,22 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "item": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "item": {
+            "fill": "#0076fb"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "item": {
@@ -1311,6 +1780,14 @@
           ],
           "item_label": {
             "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "item_label": {
+            "color": "#ffffff"
           }
         },
         {
@@ -1344,19 +1821,55 @@
       }
     },
     "button": {
-      "base": {}
+      "base": {},
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "button": {
+            "fill": "#f2f2f2"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "button": {
+            "fill": "#e6e6e6"
+          }
+        }
+      ]
     },
     "button_label": {
       "base": {
         "family": "SF Pro",
-        "color": "#000000",
+        "color": "#4d4d4d",
         "size_px": 13.0,
         "weight": 400,
         "style": "normal",
         "defined_size": {
           "pt": 13.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "button_label": {
+            "color": "#494949"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "button_label": {
+            "color": "#454545"
+          }
+        }
+      ]
     },
     "button_icon": {
       "base": {
@@ -1429,6 +1942,7 @@
             "disabled"
           ],
           "field": {
+            "fill": "#0000002a",
             "stroke": "none"
           }
         }
@@ -1449,6 +1963,14 @@
         {
           "states": [
             "hover"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        },
+        {
+          "states": [
+            "pressed"
           ],
           "label": {
             "color": "#000000d8"
@@ -1490,6 +2012,17 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "fill": "#0000003f"
+          }
+        },
         {
           "states": [
             "hover"
@@ -1544,6 +2077,14 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "label": {
@@ -1574,11 +2115,30 @@
     },
     "header": {
       "base": {
+        "fill": "#00000000",
         "min_size": [
           "none",
           40.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "header": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "header": {
+            "fill": "#00000000"
+          }
+        }
+      ]
     },
     "header_label": {
       "base": {
@@ -1590,7 +2150,25 @@
         "defined_size": {
           "pt": 13.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "header_label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "header_label": {
+            "color": "#000000"
+          }
+        }
+      ]
     },
     "arrow": {
       "base": {
@@ -1602,7 +2180,9 @@
     "origin": "native",
     "container": {
       "base": {
-        "fill": "#ffffff",
+        "fill": "#00000008",
+        "stroke": "none",
+        "corners": 12.0,
         "padding": {
           "top": 5.0,
           "right": 5.0,
@@ -1718,7 +2298,25 @@
     "handle": {
       "base": {
         "fill": "#00000000"
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "handle": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "handle": {
+            "fill": "#00000000"
+          }
+        }
+      ]
     }
   },
   "separator": {

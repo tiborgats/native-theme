@@ -1,0 +1,584 @@
+[["NSAppearanceNameAqua".normal.toggle_off]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameAqua".normal.toggle_on]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameAqua".normal.toggle_off_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameAqua".normal.toggle_on_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_off]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_on]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_off_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_on_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_off]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 759
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_on]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_off_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_on_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_off]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_on]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_off_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_on_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_off]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_on]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 767
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_off_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_on_disabled]]
+bg = "#f6f6f6ff"
+ink = "#262626ff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".normal.toggle_off]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameDarkAqua".normal.toggle_on]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameDarkAqua".normal.toggle_off_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameDarkAqua".normal.toggle_on_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_off]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_on]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_off_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_on_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_off]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 756
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_on]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_off_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_on_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_off]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_on]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_off_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_on_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_off]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 60.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 57.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_on]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 104.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 101.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 768
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_off_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 148.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 145.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_on_disabled]]
+bg = "#282828ff"
+ink = "#dededeff"
+same_as = ['label_field', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+label_view_pt = [20.0, 192.0, 33.0, 16.0]
+layout_gap_host_pt = 8.0
+switch_host_pt = [61.0, 189.0, 38.0, 22.0]
+label_side = "leading (left)"
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+

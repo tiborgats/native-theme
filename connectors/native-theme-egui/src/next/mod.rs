@@ -79,7 +79,7 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 /// alpha, premultiplied as [`crate::convert::to_color32`] premultiplies a
 /// 0.7.2 colour.
 #[must_use]
-pub(crate) fn to_color32(c: native_theme::next::Color) -> Color32 {
+pub fn to_color32(c: native_theme::next::Color) -> Color32 {
     let [r, g, b, a] = c.to_srgb8();
     Color32::from_rgba_unmultiplied_const(r, g, b, a)
 }
@@ -1117,20 +1117,30 @@ pub fn input_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egu
 /// margin ([`text_area_margin`]), its stroke width in every state, its
 /// resting stroke colour, its corner radius and its focused stroke colour
 /// (`text_area.field(FOCUSED)`), each the scope's where the theme states
-/// none.
+/// none. Returns with the frame the notes on values it draws otherwise
+/// than stated, as the atlas's: a [`crate::Note::Unmapped`] at
+/// `text_area.field(NONE).corners` where the field's radii differ corner
+/// by corner or are concentric, which keep the scope's radius
+/// ([`radius_of`]).
 ///
 /// # Errors
 ///
 /// [`Unmapped`] where [`text_area_margin`] is, or the field's stroke is per
 /// side.
-pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egui::Frame> {
+pub fn text_area_frame(
+    ui: &egui::Ui,
+    id: egui::Id,
+    r: &ResolvedTheme,
+) -> Mapped<(egui::Frame, Vec<crate::Note>)> {
     let field = r.text_area.field(WidgetState::NONE);
     let color = if field.stated.contains(PartStated::STROKE) {
         Some(line_color(&field, "text_area.field(NONE).stroke.color")?)
     } else {
         None
     };
-    Ok(crate::accessors::field_frame(
+    let mut notes = Vec::new();
+    build::meet_corners(&field, "text_area.field(NONE).corners", &mut notes);
+    let frame = crate::accessors::field_frame(
         ui,
         id,
         &crate::accessors::FieldFrameSource {
@@ -1145,7 +1155,8 @@ pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped
                 radius: radius_of(&field),
             }),
         },
-    ))
+    );
+    Ok((frame, notes))
 }
 
 /// The arrow's colour [`expander_icon`] paints in,
@@ -1160,6 +1171,69 @@ pub(crate) fn expander_arrow(r: &ResolvedTheme) -> Option<Color32> {
 #[must_use = "hand the closure to CollapsingHeader::icon"]
 pub fn expander_icon(r: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Response) + 'static {
     crate::accessors::expander_icon_from(expander_arrow(r))
+}
+
+/// Lay the mixed check box of `r` over `visuals`, the visuals of a scope
+/// that draws the unchecked box (the atlas's `Role::Checkbox` `Normal`
+/// cell of `scheme`), for a `Checkbox::indeterminate` drawn in it. egui
+/// draws a mixed box as its unchecked one with a dash in the mark's stroke
+/// (egui 0.37.0 `src/widgets/checkbox.rs:135-141`), and the atlas has no
+/// cell for it, so what the theme states for `INDETERMINATE` is laid over
+/// the unchecked box per call: the indicator's fill and outline as the
+/// atlas lays the checked box's over the unchecked one, a translucent
+/// outline drawn over the fill under it, and the mark's colour and width;
+/// a hovered or pressed value the theme states for `HOVER` or `PRESSED`
+/// asked alone is the combined state's, an unstated one egui's own
+/// treatment of the hover or the press in `scheme` (spec §2, `from_state`;
+/// §10, rule 0). Returns the notes on values written otherwise than
+/// stated, as the atlas's.
+#[must_use = "the notes report values written otherwise than stated"]
+pub fn mixed_checkbox(
+    r: &ResolvedTheme,
+    scheme: egui::Theme,
+    visuals: &mut egui::Visuals,
+) -> Vec<crate::Note> {
+    let own = egui::Theme::default_style(scheme);
+    let mut notes = Vec::new();
+    crate::style::variants::mixed_cell(
+        visuals,
+        &build::mixed_box(r, &mut notes),
+        crate::style::states::Unstated::Egui(&own.visuals.widgets),
+        &mut notes,
+    );
+    notes
+}
+
+/// Lay the flat button of `r` over `visuals`, the visuals of the scope a
+/// flat button is drawn in, for a `Button::frame_when_inactive(false)`
+/// drawn in it, which egui draws unframed at rest and framed in its
+/// hovered and `active` entries (egui 0.37.0
+/// `src/theme/default_style.rs:77-87`). The atlas has no cell for the flat
+/// button, so its states are laid over the scope per call: under the
+/// pointer the fill, label colour and outline `button.body(HOVER;
+/// variant=Flat)` and `button.label(HOVER; variant=Flat)` state; pressed or
+/// focused, which egui draws alike (`active`, `Widgets::style`,
+/// `src/style.rs:1383-1394`), `PRESSED`'s fill and label colour and the
+/// outline of `FOCUS_VISIBLE`, else of `PRESSED`. Each value is the one a
+/// rule states for the state (spec §2, `from_state`; a rule that names no
+/// variant is the flat button's too), an unstated one egui's own treatment
+/// of the hover or the press in `scheme` (spec §10, rule 0). Returns the
+/// notes on values written otherwise than stated, as the atlas's.
+#[must_use = "the notes report values written otherwise than stated"]
+pub fn flat_button(
+    r: &ResolvedTheme,
+    scheme: egui::Theme,
+    visuals: &mut egui::Visuals,
+) -> Vec<crate::Note> {
+    let own = egui::Theme::default_style(scheme);
+    let mut notes = Vec::new();
+    crate::style::variants::flat_cell(
+        &mut visuals.widgets,
+        &build::flat_button(r, &mut notes),
+        crate::style::states::Unstated::Egui(&own.visuals.widgets),
+        &mut notes,
+    );
+    notes
 }
 
 /// [`crate::icons::icon_size`]: the icon size for a context, in logical

@@ -54,9 +54,10 @@
 //! step 2): the accent's text and the selection's text are then the
 //! preset's; the palette's other slots stand.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields, which it fills from
-//! the accent), a list's alternate rows (`ListKind::alternate`), the two
+//! the accent) and `ButtonVariant::Flat` (UIKit's plain button), a list's
+//! alternate rows (`ListKind::alternate`), the two
 //! orientations of the scroll bar, no control size, and the contrast level
 //! `Normal` alone. A query for anything else returns the part's base style.
 //! A maximized or full-screen window has no data of its own.
@@ -84,7 +85,10 @@
 //!   checked fill over the hovered and the pressed ones, and the checked and
 //!   pressed fill over it, as UIKit draws a selected toggle, highlighted or
 //!   not, in fills of its own (`docs/facts/ios/button.toml` on `v0.8.0-rc1`
-//!   at `78ee0efd`), under the primary and the disabled fills. Its label: the
+//!   at `78ee0efd`), under the primary and the disabled fills; on the plain
+//!   button no fill over the disabled fill, and its own checked and disabled
+//!   fill over that, as UIKit draws a selected disabled plain button (the
+//!   same facts, ios-host run 42267206298). Its label: the
 //!   checked colour over the pressed one, and the checked and pressed colour
 //!   over it, as UIKit draws a highlighted selected toggle's title in a
 //!   colour of its own (the same facts), the primary text over them, the
@@ -196,7 +200,9 @@ use crate::next::platform::dynamic_type::{
     CATEGORIES, ContentSizeCategory, DEFAULT_CATEGORY, TextRole, dynamic_type,
 };
 use crate::next::preset::{Preset, ResolveInputs};
-use crate::next::presets::helpers::{Motion, dialog_entrance, motion, motion_tokens};
+use crate::next::presets::helpers::{
+    Motion, dialog_entrance, motion, motion_tokens, rest_color_rules,
+};
 use crate::next::query::{ButtonVariant, Contrast, Orientation, Scheme, ThemeContext, WidgetState};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
@@ -254,6 +260,8 @@ struct SchemeColors {
     placeholder: Color,
     /// `opaqueSecondaryFill`.
     secondary_fill: Color,
+    /// `opaqueTertiaryFill`.
+    tertiary_fill: Color,
     control_hover: Color,
     button_pressed: Color,
     /// A checked toggle's fill under the default tint.
@@ -264,9 +272,19 @@ struct SchemeColors {
     button_checked_foreground: Color,
     /// A checked toggle's label while pressed, under the default tint.
     button_checked_pressed_foreground: Color,
+    /// A checked plain button's fill while disabled.
+    plain_checked_disabled: Color,
     disabled_fill: Color,
     disabled_label: Color,
     row_hover: Color,
+    /// A plain list row's highlight while touched.
+    list_pressed: Color,
+    /// A sidebar row's text while touched.
+    sidebar_pressed_label: Color,
+    /// An outline-disclosure header's text while touched.
+    expander_pressed_label: Color,
+    /// An unselected segment's label while touched.
+    segment_pressed_label: Color,
     input_disabled: Color,
     gray: Color,
     scrollbar_hover: Color,
@@ -307,7 +325,7 @@ const LIGHT: SchemeColors = SchemeColors {
     surface: srgb8(0xf2f2_f7ff),
     // `sidebar.background_color`: 0.7.2 ios-13.toml (uncited)
     sidebar: srgb8(0xf2f2_f7ff),
-    // `popover.background_color`, `checkbox.unchecked_background`: 0.7.2 ios-13.toml (uncited)
+    // `popover.background_color`: 0.7.2 ios-13.toml (uncited)
     elevated: srgb8(0xffff_ffff),
     // `defaults.text_color`: label (ios-18 expected.txt:73)
     // `input.font.color`, `popover.font.color`, `sidebar.font.color`: label (ios-18
@@ -353,6 +371,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // (html.css:996-1003; ios-18 expected.txt:181)
     // `combo_box.disabled_text_color`: (WebKit) tertiaryLabel, a disabled select's text
     // (html.css:996-1003; ios-18 expected.txt:181)
+    // (WebKit) tertiaryLabel, a disabled check box's mark and bar and a disabled radio's dot
+    // (RenderThemeIOS.mm:1410-1413, :1541-1542, :1578-1579; ios-18 expected.txt:180-181)
     tertiary_label: srgb8(0x3c3c_434c),
     // `input.placeholder_color`: placeholderText, "The color for placeholder text in controls or
     // text views" (UIKit https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json,
@@ -363,7 +383,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // `combo_box.background_color`: (WebKit) opaqueSecondaryFill, an iOS select's fill
     // (html.css:1106; ios-18 expected.txt:85)
     secondary_fill: srgb8(0xe9e9_eaff),
-    // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
+    // (WebKit) opaqueTertiaryFill, a disabled checked or mixed box's and a disabled checked
+    // radio's fill (RenderThemeIOS.mm:1387-1388, :1502, :1561-1563; tertiarySystemFillColor made
+    // opaque over white, :1046, :1085-1086); rgb(238, 238, 239) (ios-18 expected.txt:90-91)
+    tertiary_fill: srgb8(0xeeee_efff),
+    // `button.hover_background`, `combo_box.hover_background`,
     // `segmented_control.hover_background`: 0.7.2 ios-13.toml (uncited)
     control_hover: srgb8(0xd1d1_d6ff),
     // `button.active_background`: 0.7.2 ios-13.toml (uncited)
@@ -382,6 +406,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // the same, pressed: the default tint at 0xbf (the same run,
     // `cells.light.gray.*.selected_highlighted.label_fill`, the plain style the same)
     button_checked_pressed_foreground: srgb8(0x007a_ffbf),
+    // a checked plain button's fill while disabled (measured, ios-host run 42267206298,
+    // `ios-host-macos-15/render_read_buttons.toml`,
+    // `cells.light.plain__states_disabled_combinations.medium.disabled_selected.fill`;
+    // `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`, rows B-1, B-7, TB-4)
+    plain_checked_disabled: srgb8(0x7878_801f),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0xe5e5_ea80),
@@ -391,6 +420,21 @@ const LIGHT: SchemeColors = SchemeColors {
     // `expander.hover_background`, `list.hover_background`, `sidebar.hover_background`,
     // `tab.hover_background`, `slider.disabled_thumb_color`: 0.7.2 ios-13.toml (uncited)
     row_hover: srgb8(0xe5e5_eaff),
+    // `list.highlight(PRESSED).fill`: a touched `UITableView` row, #d1d1d6, UIKit's background read
+    // the same (measured, ios-host run 45230061151, iOS 18.6, `measure_lists.toml`
+    // `press1."light".table_row.pressed` `fill`, `uikit_background_color`)
+    list_pressed: srgb8(0xd1d1_d6ff),
+    // `sidebar.item_label(PRESSED).color`: a touched `.sidebar` list row's text, black at alpha
+    // 77/255 (the same run, `press1."light".sidebar_row.pressed` `uikit_text_color`, `pressed_ink`)
+    sidebar_pressed_label: srgb8(0x0000_004d),
+    // `expander.header_label(PRESSED).color`: a touched `.sidebar` outline-disclosure header's
+    // text, #3c3c43 at alpha 46/255 (the same run, `press1."light".outline_header.pressed`
+    // `uikit_text_color`)
+    expander_pressed_label: srgb8(0x3c3c_432e),
+    // `segmented_control.label(PRESSED).color`: a touched unselected segment's label, #252528 at
+    // alpha 76/255 (the same run, `changed_parts.toml` `press1."light".segmented_control.pressed`
+    // `pressed_ink`, the solved layer)
+    segment_pressed_label: srgb8(0x2525_284c),
     // `input.disabled_background`: 0.7.2 ios-13.toml (uncited)
     input_disabled: srgb8(0xf2f2_f7ff),
     // `expander.arrow_color`, `scrollbar.thumb_active_color`: 0.7.2 ios-13.toml (uncited)
@@ -461,7 +505,7 @@ const DARK: SchemeColors = SchemeColors {
     surface: srgb8(0x1c1c_1eff),
     // `sidebar.background_color`: 0.7.2 ios-13.toml (uncited)
     sidebar: srgb8(0x1c1c_1eff),
-    // `popover.background_color`, `checkbox.unchecked_background`: 0.7.2 ios-13.toml (uncited)
+    // `popover.background_color`: 0.7.2 ios-13.toml (uncited)
     elevated: srgb8(0x1c1c_1eff),
     // `defaults.text_color`: label (ios-18 expected.txt:75)
     // `input.font.color`, `popover.font.color`, `sidebar.font.color`: label (ios-18
@@ -506,6 +550,8 @@ const DARK: SchemeColors = SchemeColors {
     // (html.css:996-1003; ios-18 expected.txt:183)
     // `combo_box.disabled_text_color`: (WebKit) tertiaryLabel, a disabled select's text
     // (html.css:996-1003; ios-18 expected.txt:183)
+    // (WebKit) tertiaryLabel, a disabled check box's mark and bar and a disabled radio's dot
+    // (RenderThemeIOS.mm:1410-1413, :1541-1542, :1578-1579; ios-18 expected.txt:180, :183)
     tertiary_label: srgb8(0xebeb_f54c),
     // `input.placeholder_color`: placeholderText, "The color for placeholder text in controls or
     // text views" (UIKit https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json,
@@ -516,7 +562,11 @@ const DARK: SchemeColors = SchemeColors {
     // `combo_box.background_color`: (WebKit) opaqueSecondaryFill, an iOS select's fill
     // (html.css:1106; ios-18 expected.txt:87)
     secondary_fill: srgb8(0x2626_29ff),
-    // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
+    // (WebKit) opaqueTertiaryFill, a disabled checked or mixed box's and a disabled checked
+    // radio's fill (RenderThemeIOS.mm:1387-1388, :1502, :1561-1563; tertiarySystemFillColor made
+    // opaque over black, :1046, :1085-1086); rgb(28, 28, 30) (ios-18 expected.txt:90, :93)
+    tertiary_fill: srgb8(0x1c1c_1eff),
+    // `button.hover_background`, `combo_box.hover_background`,
     // `segmented_control.hover_background`: 0.7.2 ios-13.toml (uncited)
     control_hover: srgb8(0x3a3a_3cff),
     // `button.active_background`: 0.7.2 ios-13.toml (uncited)
@@ -535,6 +585,11 @@ const DARK: SchemeColors = SchemeColors {
     // the same, pressed: #2390ff (the same run,
     // `cells.dark.gray.*.selected_highlighted.label_fill`, the plain style the same)
     button_checked_pressed_foreground: srgb8(0x2390_ffff),
+    // a checked plain button's fill while disabled (measured, ios-host run 42267206298,
+    // `ios-host-macos-15/render_read_buttons.toml`,
+    // `cells.dark.plain__states_disabled_combinations.medium.disabled_selected.fill`;
+    // `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`, rows B-1, B-7, TB-4)
+    plain_checked_disabled: srgb8(0x7878_803d),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0x2c2c_2e80),
@@ -544,6 +599,21 @@ const DARK: SchemeColors = SchemeColors {
     // `expander.hover_background`, `list.hover_background`, `sidebar.hover_background`,
     // `tab.hover_background`, `slider.disabled_thumb_color`: 0.7.2 ios-13.toml (uncited)
     row_hover: srgb8(0x2c2c_2eff),
+    // `list.highlight(PRESSED).fill`: a touched `UITableView` row, #3a3a3c, UIKit's background read
+    // the same (measured, ios-host run 45230061151, iOS 18.6, `measure_lists.toml`
+    // `press1."dark".table_row.pressed` `fill`, `uikit_background_color`)
+    list_pressed: srgb8(0x3a3a_3cff),
+    // `sidebar.item_label(PRESSED).color`: a touched `.sidebar` list row's text, white at alpha
+    // 77/255 (the same run, `press1."dark".sidebar_row.pressed` `uikit_text_color`, `pressed_ink`)
+    sidebar_pressed_label: srgb8(0xffff_ff4d),
+    // `expander.header_label(PRESSED).color`: a touched `.sidebar` outline-disclosure header's
+    // text, #ebebf5 at alpha 46/255 (the same run, `press1."dark".outline_header.pressed`
+    // `uikit_text_color`)
+    expander_pressed_label: srgb8(0xebeb_f52e),
+    // `segmented_control.label(PRESSED).color`: a touched unselected segment's label, #dadade at
+    // alpha 139/255 (the same run, `changed_parts.toml` `press1."dark".segmented_control.pressed`
+    // `pressed_ink`, the solved layer)
+    segment_pressed_label: srgb8(0xdada_de8b),
     // `input.disabled_background`: 0.7.2 ios-13.toml (uncited)
     input_disabled: srgb8(0x2c2c_2eff),
     // `expander.arrow_color`, `scrollbar.thumb_active_color`: 0.7.2 ios-13.toml (uncited)
@@ -663,13 +733,23 @@ const BORDER_OPACITY: f32 = 0.22;
 const SHADOW_ENABLED: bool = true;
 // `defaults.disabled_opacity`: 0.7.2 ios-13.toml (uncited)
 const DISABLED_OPACITY: f32 = 0.3;
+// (WebKit) a disabled check box or radio button is drawn at full opacity: the iOS style sheet's
+// `opacity: initial` for them (html.css:1031-1034, :1040-1047 at WebKit 31adf9d) resets the
+// disabled input's `opacity: 0.4` (:962-963); their disabled colours are the theme's own
+const CHECK_DISABLED_OPACITY: f32 = 1.0;
 // (WebKit) pressedStateOpacity, "the opacity applied to UIKit controls" (RenderThemeIOS.mm:830-831),
 // by which a pressed check box's or radio button's fill and mark (:1390-1393, :1416-1417) and a
 // pressed select's background and text (:862-870) are multiplied
 const PRESSED_STATE_OPACITY: f32 = 0.75;
+// (WebKit) checkboxRadioBorderDisabledOpacity, by which a disabled empty check box's or radio
+// button's outline colour is multiplied (RenderThemeIOS.mm:1355, :1361-1362 at WebKit 31adf9d)
+const CHECKBOX_BORDER_DISABLED_OPACITY: f32 = 0.3;
 // `button.border.line_width`: (WebKit) an iOS button's `border: 1px solid
 // -webkit-control-background` (html.css:889)
 const BUTTON_BORDER_WIDTH: f32 = 1.0;
+// `input.border.line_width`, `text_area.border.line_width`: (WebKit) an iOS input's and text
+// area's `border: 1px solid -apple-system-secondary-label` (html.css:457-466)
+const FIELD_BORDER_WIDTH: f32 = 1.0;
 // `defaults.focus_ring_width`: 0.7.2 ios-13.toml (uncited)
 const FOCUS_RING_WIDTH: f32 = 2.0;
 // `defaults.focus_ring_offset`: 0.7.2 ios-13.toml (uncited)
@@ -753,6 +833,11 @@ const DIALOG_BUTTON_ORDER: DialogButtonOrder = DialogButtonOrder::PrimaryRight;
 
 // `expander.header_height`: 0.7.2 ios-13.toml (uncited)
 const EXPANDER_HEADER_HEIGHT: f32 = 44.0;
+
+// `card.container.corners`: the `.insetGrouped` cell's layer, 10 pt (measured, ios-host run
+// 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1` `corner_radius_pt`,
+// `corner_curve` "continuous")
+const CARD_CORNER_RADIUS: f32 = 10.0;
 // `expander.arrow_icon_size`: 0.7.2 ios-13.toml (uncited)
 const EXPANDER_ARROW_SIZE: f32 = 12.0;
 
@@ -973,7 +1058,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(&colors, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, &colors),
+        switch: switch(c, &colors, &typography),
         dialog: dialog(&colors, &typography, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
@@ -1380,7 +1465,10 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// and no padding. The checked colours are the measured ones under UIKit's
 /// default tint, the one tint the measurement drew (`docs/facts/ios/button.toml`
 /// on `v0.8.0-rc1` at `78ee0efd`): they do not follow the accent, and under
-/// another accent a checked button keeps the default tint's blue.
+/// another accent a checked button keeps the default tint's blue. The flat
+/// variant is UIKit's plain button, with no outline in any state and no fill
+/// but when checked, where it draws the toggle's selected fill, and checked
+/// and disabled its own measured fill.
 fn button(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -1390,6 +1478,12 @@ fn button(
     let primary = || {
         RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
             variant: Some(ButtonVariant::Primary),
+            shape: None,
+        })
+    };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
             shape: None,
         })
     };
@@ -1413,6 +1507,24 @@ fn button(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.button_pressed), rest_border],
         )
+        // The flat variant, UIKit's plain button, draws no fill at rest, pressed and disabled
+        // (measured, iOS host run 41020880059, `ios-host-macos-15/analysis.toml`
+        // `cells.<scheme>.plain.<size>.{normal,highlighted,disabled}.fill` absent;
+        // `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`, `button.body.fill`
+        // preset:ios-13 variants [flat], rows B-1, B-6, B-14); hovered as at rest, as no hovered
+        // plain button was measured and the push button's hover fill is 0.7.2's uncited push
+        // button value. Before the checked rules: a checked plain button draws the toggle's
+        // selected fill (the same facts, `button.body.fill` states [checked] variants
+        // [flat, toggle], row B-7); disabled below, after the push button's disabled fill, and
+        // checked and disabled its own measured fill (`plain_checked_disabled`).
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+            ],
+            [PartProp::Fill(Paint::None)],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.button_checked)],
@@ -1425,6 +1537,24 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_fill)],
+        )
+        .rule(flat(WidgetState::DISABLED), [PartProp::Fill(Paint::None)])
+        .rule(
+            flat(WidgetState::DISABLED | WidgetState::CHECKED),
+            [fill(c.plain_checked_disabled)],
+        )
+        // The flat variant, UIKit's plain button, draws no outline, after the push button's rules
+        // so that its own win (measured, iOS host run 41020880059, analysis.toml
+        // `cells.<scheme>.plain.<size>.normal.stroke` absent; `docs/facts/ios/button.toml` on
+        // `v0.8.0-rc1` at `78ee0efd`, `button.body.stroke` preset:ios-13, every variant and
+        // state): stated for each state the push button states one for (spec §2, `from_state`).
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
         )
         .build();
     // `button.active_text_color`: (WebKit) systemBlue, a pressed iOS button keeps its blue text
@@ -1468,10 +1598,11 @@ fn button(
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both, `CHECKBOX_INDICATOR_SIZE` across (0.7.2:
 /// `radio_indicator_width` is `indicator_width` where unstated): its
-/// unchecked fill in WebKit's outline, no shadow; under the pointer its
-/// hover fill; checked, the accent (0.7.2: `checkbox.checked_background` is
-/// `defaults.accent_color` where unstated) with no outline; disabled, its
-/// disabled fill, checked or not.
+/// unchecked fill in WebKit's outline, no shadow; under the pointer its rest
+/// outline and no fill of its own, as WebKit reads no hover state; checked, the accent (0.7.2: `checkbox.checked_background` is
+/// `defaults.accent_color` where unstated) with no outline; disabled, WebKit's
+/// empty box in its outline at [`CHECKBOX_BORDER_DISABLED_OPACITY`], and
+/// checked, WebKit's `opaqueTertiaryFill` with no outline.
 fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, PartProp> {
     let size = [Some(CHECKBOX_INDICATOR_SIZE); 2];
     // (WebKit) checkboxRadioBorderColor: secondaryLabel (ios.rs's `muted`), read for Enabled and
@@ -1485,9 +1616,12 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
         c.muted.mul_alpha(PRESSED_STATE_OPACITY),
     ));
     let no_edge = PartProp::Stroke(Stroke::None);
+    // (WebKit) checkboxRadioBackgroundColor: enabled and empty, -webkit-control-background
+    // (RenderThemeIOS.mm:1391, :1395), systemBackground (:1027), where 0.7.2 took its uncited
+    // `checkbox.unchecked_background`.
     RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.elevated),
+            fill(c.background),
             rest_edge.clone(),
             // `checkbox.border.shadow_enabled`: docs/inheritance-rules.toml ([wrong_safety_nets]):
             // the defaults' shadow is a wrong safety net for this control, and the preset must say
@@ -1496,10 +1630,11 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
             PartProp::MinSize(size),
             PartProp::MaxSize(size),
         ])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [fill(c.control_hover), rest_edge],
-        )
+        // (WebKit) checkboxRadioBackgroundColor reads no hover state (RenderThemeIOS.mm:1370-1395
+        // at WebKit 31adf9d), so HOVER states no fill, where 0.7.2 took its uncited
+        // `checkbox.hover_background`: a connector draws its toolkit's own hovered fill (spec
+        // §10, rule 0); the outline stays the rest one, stated.
+        .rule(RuleSelector::on(WidgetState::HOVER), [rest_edge])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(roles.accent.fill), no_edge.clone()],
@@ -1522,9 +1657,26 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
                 no_edge,
             ],
         )
+        // (WebKit) not enabled and empty: checkboxRadioBackgroundColor is -webkit-control-background
+        // (RenderThemeIOS.mm:1387-1388), systemBackground (:1027), and checkboxRadioBorderColor
+        // secondaryLabel at checkboxRadioBorderDisabledOpacity (:1359-1362), where 0.7.2 took its
+        // uncited `checkbox.disabled_background`.
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.disabled_fill)],
+            [
+                fill(c.background),
+                PartProp::Stroke(Stroke::uniform(
+                    CHECKBOX_OUTLINE_WIDTH,
+                    c.muted.mul_alpha(CHECKBOX_BORDER_DISABLED_OPACITY),
+                )),
+            ],
+        )
+        // (WebKit) checkboxRadioBackgroundColor: not enabled and not empty, opaqueTertiaryFill
+        // (RenderThemeIOS.mm:1372, :1387-1388); a checked box or circle is filled only (:1502,
+        // :1561-1563).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [fill(c.tertiary_fill), PartProp::Stroke(Stroke::None)],
         )
 }
 
@@ -1563,17 +1715,42 @@ fn checkbox(
                 roles.accent.foreground.mul_alpha(PRESSED_STATE_OPACITY),
             )],
         )
+        // Disabled, the mark and the mixed bar in tertiaryLabel (checkboxRadioIndicatorColor,
+        // RenderThemeIOS.mm:1410-1413; the bar :1510-1516, the mark :1517-1542).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.tertiary_label)],
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
         indicator(c, roles)
             .base([corners(layout.corner_radius)])
+            // A mixed box as a checked one: `isEmpty` is false for Indeterminate, so the tint, at
+            // pressedStateOpacity while pressed (RenderThemeIOS.mm:1372, :1390-1393), filled only
+            // (:1483, :1502); the bar in the mark's colour (:1410-1420, :1510-1516).
+            .rule(
+                RuleSelector::on(WidgetState::INDETERMINATE),
+                [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
+            )
+            .rule(
+                RuleSelector::on(WidgetState::PRESSED | WidgetState::INDETERMINATE),
+                [
+                    fill(roles.accent.fill.mul_alpha(PRESSED_STATE_OPACITY)),
+                    PartProp::Stroke(Stroke::None),
+                ],
+            )
+            // A disabled mixed box as a disabled checked one (`isEmpty` false,
+            // RenderThemeIOS.mm:1372, :1387-1388; filled only, :1502).
+            .rule(
+                RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
+                [fill(c.tertiary_fill), PartProp::Stroke(Stroke::None)],
+            )
             .build(),
         checkmark,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
-        // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
-        Some(roles.disabled_opacity),
+        Some(CHECK_DISABLED_OPACITY),
     )
 }
 
@@ -1581,8 +1758,14 @@ fn checkbox(
 /// in the accent's text colour (`checkbox.indicator_color`; 0.7.2 states no
 /// dot size), [`check_label`].
 fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> RadioWidget {
+    // Disabled, the dot in tertiaryLabel (checkboxRadioIndicatorColor, RenderThemeIOS.mm:1410-1413,
+    // :1578-1579 at WebKit 31adf9d).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([fill(roles.accent.foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.tertiary_label)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
@@ -1590,8 +1773,7 @@ fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Radio
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
-        // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
-        Some(roles.disabled_opacity),
+        Some(CHECK_DISABLED_OPACITY),
     )
 }
 
@@ -1623,8 +1805,14 @@ fn list(
     let row = RuleBuilder::new(PartStyle::default())
         .rule(alternate, [fill(c.surface)])
         .build();
+    // Touched, the measured highlight (`list_pressed`), the text as at rest (ios-host run
+    // 45230061151, `press1."<a>".table_row.pressed` `uikit_text_color` #000000 / #ffffff).
     let highlight = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.list_pressed)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
@@ -1633,8 +1821,8 @@ fn list(
     // `list.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for `HOVER`
     // (spec §2, `from_state`), before the rules of the states that replace it.
     let item_label = RuleBuilder::new(label(&typography.body, None))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on),
             [TextProp::Color(typography.body.color)],
         )
         .rule(
@@ -1758,8 +1946,8 @@ fn window(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -
 }
 
 /// The text field (`field`) or the text area: the window's background in
-/// the default border at the default radius, no shadow (the text area
-/// takes the field's border and shadow: 0.7.2's `text_area.border.*` is
+/// WebKit's 1 px `secondaryLabel` border at the default radius, no shadow
+/// (the text area takes the field's shadow: 0.7.2's `text_area.border.*` is
 /// `input.border.*` where unstated), the text field of the HIG's least
 /// height; the hovered and the focused outline the
 /// accent's, disabled its own fill. The text in the window's text,
@@ -1771,9 +1959,11 @@ fn input(
     layout: &LayoutMetrics,
     text_field: bool,
 ) -> InputWidget {
+    // (WebKit) an iOS input's and text area's `border: 1px solid -apple-system-secondary-label`
+    // (html.css:457-466), where 0.7.2 took the uncited default line.
+    let rest_border = PartProp::Stroke(Stroke::uniform(FIELD_BORDER_WIDTH, c.muted));
     let field = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.background)])
-        .base(border(roles, layout))
+        .base([fill(c.background), rest_border.clone()])
         .base([
             corners(layout.corner_radius),
             // `input.border.shadow_enabled`: docs/inheritance-rules.toml ([wrong_safety_nets]): the
@@ -1788,10 +1978,7 @@ fn input(
         // (WebKit) a pressed field keeps its rest border: html.css has no :active rule for it
         // (its border html.css:466) and paintTextFieldDecorations reads no state
         // (RenderThemeIOS.mm:271-292); stated for `PRESSED` (spec §2, `from_state`).
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED),
-            border(roles, layout),
-        )
+        .rule(RuleSelector::on(WidgetState::PRESSED), [rest_border])
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
             [outline(layout, roles.accent.fill)],
@@ -1865,9 +2052,9 @@ fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWi
 /// The slider: the groove `opaqueFill`, of an exact thickness across it,
 /// disabled its own colour; the filled part in the accent (0.7.2:
 /// `slider.fill_color` is `defaults.accent_color` where unstated), disabled
-/// its own colour; the handle in the view's background (0.7.2:
-/// `slider.thumb_color` is `defaults.surface_color` where unstated), of an
-/// exact size, hovered and disabled its own colours.
+/// its own colour; the handle white at rest and touched, as measured (not
+/// 0.7.2's `defaults.surface_color`), of an exact size, hovered and disabled
+/// its own colours.
 fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
     let track = across(
         RuleBuilder::new(PartStyle::default()).base([fill(c.track)]),
@@ -1886,15 +2073,24 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
         )
         .build();
     let thumb_size = [Some(SLIDER_THUMB_DIAMETER); 2];
+    // At rest the thumb is white in both schemes: its 31 pt part reads #ffffff (ios-host run
+    // 45230061151, iOS 18.6, `measure_lists.toml` `press1."<a>".slider.normal` `fill`).
     let thumb = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.surface),
+            fill(c.white),
             PartProp::MinSize(thumb_size),
             PartProp::MaxSize(thumb_size),
         ])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.slider_thumb_hover)],
+        )
+        // Touched, the thumb as at rest: 0 of its pixels change, still #ffffff (ios-host run
+        // 45230061151, `changed_parts.toml` `press1."<a>".slider.pressed` `changed_px` 0;
+        // `measure_lists.toml` `press1."<a>".slider.pressed` `fill`).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+            [fill(c.white)],
         )
         .rule(RuleSelector::on(WidgetState::DISABLED), [fill(c.row_hover)])
         .build();
@@ -2054,16 +2250,26 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             Some(TAB_MIN_HEIGHT),
         ])])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        // Touched, an unselected tab bar item as at rest: no pixel of it changes by more than the
+        // bar material's spread (ios-host run 45230061151, `changed_parts.toml`
+        // `press1."<a>".tab_bar.pressed` `max_level_change` 5 / 3).
+        .rules(
+            roles
+                .window
+                .background
+                .map(|_| RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED)),
+            roles.window.background.map(fill),
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.background)],
         )
         .build();
     // `tab.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for `HOVER`
-    // (spec §2, `from_state`), before the selected rule.
+    // (spec §2, `from_state`), before the selected rule; touched, as at rest (the same read).
     let label = RuleBuilder::new(label(&typography.body, None))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on),
             [TextProp::Color(typography.body.color)],
         )
         .rule(
@@ -2087,7 +2293,8 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 
 /// The toolbar: the window's background (0.7.2: `toolbar.background_color`
 /// is `defaults.background_color` where unstated) in the default border at
-/// the default radius (the default shadow); its text the UI font; its
+/// the default radius (the default shadow); its text the UI font in the
+/// accent, the bar button item's tint; its
 /// buttons' icons at the toolbar's size (0.7.2: `toolbar.icon_size` is
 /// `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -> ToolbarWidget {
@@ -2099,11 +2306,15 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) 
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
+    // The buttons' label: a plain bar button item is drawn in the tint, the accent (UIKit's
+    // `tintColor`), #007aff / #0a84ff with no tint set (measured, iOS host run 41020880059 and
+    // run 42276668803, `forms.<scheme>.bar_plain.normal.label_fill`; `docs/facts/ios/button.toml`
+    // on `v0.8.0-rc1` at `78ee0efd`, rows B-1, TB-4), not the body text.
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
         RuleBuilder::new(PartStyle::default()).build(),
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(label(&typography.body, Some(roles.accent.fill))).build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
         None,
@@ -2151,14 +2362,25 @@ fn sidebar(
         .base([fill(c.sidebar)])
         .base(border(roles, layout))
         .build();
+    // Touched, a `.sidebar` row draws no fill (UIKit's background #00000000 at rest and touched)
+    // and dims its text (`sidebar_pressed_label`) (ios-host run 45230061151,
+    // `press1."<a>".sidebar_row.{normal,pressed}` `fill`, `uikit_background_color`).
     let item = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(Color::TRANSPARENT)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
         .build();
     let item_label = RuleBuilder::new(label(&typography.body, Some(c.label)))
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.sidebar_pressed_label)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -2178,7 +2400,8 @@ fn sidebar(
 /// The popover: its own background, or the popover's role where a palette
 /// states it, in the default border at the large radius (0.7.2:
 /// `popover.border.corner_radius` is `defaults.border.corner_radius_lg`
-/// where unstated; the default shadow); its text the window's.
+/// where unstated; the default shadow) on the continuous curve; its text the
+/// window's.
 fn popover(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -2186,10 +2409,16 @@ fn popover(
     layout: &LayoutMetrics,
 ) -> PopoverWidget {
     let mut panel = PartStyle::default();
+    // The large radius on the continuous curve: the popover's content view in `_UIPopoverView`
+    // reads 13.0 pt, continuous (measured, ios-host run 42269041636, iOS 18.6,
+    // `docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml`
+    // scene `popover`, root `container`, view `0.1.1.1`, `corner_radius_pt`, `corner_curve`).
     for prop in [fill(roles.popover.background.unwrap_or(c.elevated))]
         .into_iter()
         .chain(border(roles, layout))
-        .chain([corners(layout.corner_radius_lg)])
+        .chain([PartProp::Corners(Corners::continuous(
+            layout.corner_radius_lg,
+        ))])
     {
         panel.apply(&prop);
     }
@@ -2207,7 +2436,7 @@ fn popover(
 /// its own; disabled off and disabled on their own fills. The thumb white,
 /// disabled too, of an exact size on or off (0.7.2 states no unchecked
 /// size).
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -2267,18 +2496,37 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         )
         .rule(RuleSelector::on(WidgetState::DISABLED), [fill(c.white)])
         .build();
+    // The label: the list row's `UILabel` beside a `UISwitch`, the system font in the Body text
+    // style, 17 pt, regular, in the label colour #000000 / #ffffff, the same with the switch on,
+    // touched or disabled (measured, ios-host run 45230061151, iOS 18.6, `measure_lists.toml`
+    // `run1."<a>".switch_row.{normal,selected,disabled,disabled_selected}` `label_text_color`,
+    // `label_font`; `press1."<a>".switch_row.pressed` `label_text_color`, `label_ink_box_px`;
+    // SwiftUI's disabled `Toggle` draws the enabled label, `switch_form.*.label_vs_uikit_row`).
+    // Hovered: not measured (no pointer on an iPhone).
+    let rest_label = label(&typography.body, Some(c.label));
+    let (selectors, color) = rest_color_rules(
+        &rest_label,
+        [
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+            WidgetState::DISABLED,
+            WidgetState::CHECKED | WidgetState::DISABLED,
+        ],
+    );
+    let label = RuleBuilder::new(rest_label).rules(selectors, color).build();
     SwitchWidget::new(
         WidgetOrigin::Native,
         track,
         thumb,
-        // The label's colours and font: no source (iOS's switch draws no label; the list row's
-        // text is unpublished, "system default styling").
-        RuleBuilder::new(TextStyle::default()).build(),
+        label,
         // `label_side`, `label_gap_stretches`: "In iOS, iPadOS, watchOS, and tvOS, the label and
         // switch fill as much horizontal space as the toggle's parent offers by aligning the
         // label's leading edge and the switch's trailing edge with the containing view's
         // respective leading and trailing edges" (Apple, SwiftUI `ToggleStyle.switch`,
-        // developer.apple.com, read 2026-11-23). `label_gap`: unmeasured (the iOS host).
+        // developer.apple.com, read 2026-11-23). `label_gap`: none: the label leads at the cell's
+        // leading margin and the switch trails at the trailing one, the space between them what
+        // the row's width leaves (ios-host run 45230061151, `run1."<a>".switch_row.normal`
+        // `label_frame_pt`, `switch_frame_pt`, `gap_text_end_to_switch_pt`).
         Some(LabelSide::Leading),
         None,
         Some(true),
@@ -2290,7 +2538,8 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
 /// The dialog: the window's background, or the dialog's role where a
 /// palette states it (0.7.2: `dialog.background_color` is
 /// `defaults.background_color` where unstated), in the default border at
-/// the large radius (the default shadow), of least and greatest sizes; its
+/// the large radius on the continuous curve (the default shadow), of least
+/// and greatest sizes; its
 /// title and body in the UI font; its icon, its buttons' gap and order. 0.7.2
 /// states no entrance.
 fn dialog(
@@ -2300,6 +2549,11 @@ fn dialog(
     motion: Motion,
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
+    // The large radius on the continuous curve: the alert's group view (`UIAlertController`
+    // `.alert`) reads 13.0 pt, continuous (measured, ios-host run 42269041636, iOS 18.6,
+    // `docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml`
+    // scene `alert`, root `container`, views `0.3.0.0.0` and `0.3.0.0.1`, `corner_radius_pt`,
+    // `corner_curve`).
     for prop in roles
         .dialog
         .background
@@ -2308,7 +2562,7 @@ fn dialog(
         .into_iter()
         .chain(border(roles, layout))
         .chain([
-            corners(layout.corner_radius_lg),
+            PartProp::Corners(Corners::continuous(layout.corner_radius_lg)),
             PartProp::MinSize([Some(DIALOG_MIN_WIDTH), Some(DIALOG_MIN_HEIGHT)]),
             PartProp::MaxSize([Some(DIALOG_MAX_WIDTH), Some(DIALOG_MAX_HEIGHT)]),
         ])
@@ -2437,7 +2691,13 @@ fn segmented_control(
             [fill(roles.accent.fill)],
         )
         .build();
+    // Touched, an unselected segment's label dims (`segment_pressed_label`); its fill and edge
+    // as at rest.
     let label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+            [TextProp::Color(c.segment_pressed_label)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.accent.foreground)],
@@ -2458,8 +2718,17 @@ fn segmented_control(
 /// states it (0.7.2: `card.background_color` is `defaults.surface_color`
 /// where unstated); 0.7.2 leaves its outline and its corners unset.
 fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
+    // No outline and corners of 10 on all four: the `.insetGrouped` section's only cell, border
+    // width 0 on every layer, corner radius 10 pt, `masked_corners` 15 (measured, ios-host run
+    // 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1`; `changed_parts.toml`
+    // `run1."<a>".card.normal.edges`), on the continuous curve the same view reads
+    // (`corner_curve` "continuous").
     let container = RuleBuilder::new(PartStyle::default())
-        .base([fill(roles.card.background.unwrap_or(c.surface))])
+        .base([
+            fill(roles.card.background.unwrap_or(c.surface)),
+            PartProp::Stroke(Stroke::None),
+            PartProp::Corners(Corners::continuous(CARD_CORNER_RADIUS)),
+        ])
         .build();
     CardWidget::new(WidgetOrigin::Native, container)
 }
@@ -2483,9 +2752,17 @@ fn expander(
             PartProp::Shadows(None),
         ])
         .build();
+    // Touched, a `.sidebar` outline-disclosure header draws no fill (UIKit's background #00000000
+    // at rest and touched) and dims its text (`expander_pressed_label`) (ios-host run
+    // 45230061151, `press1."<a>".outline_header.{normal,pressed}` `fill`,
+    // `uikit_background_color`).
     let header = RuleBuilder::new(PartStyle::default())
         .base([PartProp::MinSize([None, Some(EXPANDER_HEADER_HEIGHT)])])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(Color::TRANSPARENT)],
+        )
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(EXPANDER_ARROW_SIZE), IconProp::Color(c.gray)])
@@ -2494,7 +2771,12 @@ fn expander(
         WidgetOrigin::Native,
         container,
         header,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(label(&typography.body, None))
+            .rule(
+                RuleSelector::on(WidgetState::PRESSED),
+                [TextProp::Color(c.expander_pressed_label)],
+            )
+            .build(),
         arrow,
         None,
         None,

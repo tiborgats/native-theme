@@ -375,6 +375,40 @@
           "body": {
             "fill": "#1d1b201f"
           }
+        },
+        {
+          "variant": "flat",
+          "body": {
+            "fill": "#00000000",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0.40392157, 0.3137255, 0.6431373, 0.08)"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0.40392157, 0.3137255, 0.6431373, 0.12)"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0.11372549, 0.105882354, 0.1254902, 0.1)"
+          }
         }
       ]
     },
@@ -426,6 +460,39 @@
           ],
           "label": {
             "color": "#1d1b2061"
+          }
+        },
+        {
+          "variant": "flat",
+          "label": {
+            "color": "#6750a4"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#6750a4"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#6750a4"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "srgb(0.11372549, 0.105882354, 0.1254902, 0.38)"
           }
         }
       ]
@@ -822,12 +889,39 @@
           "indicator": {
             "fill": "#1d1b2061"
           }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 2.0,
+              "color": "#1d1b2061"
+            }
+          }
         }
       ]
     },
     "dot": {
       "base": {
-        "fill": "#ffffff",
+        "fill": "#6750a4",
         "min_size": [
           10.0,
           10.0
@@ -836,7 +930,17 @@
           10.0,
           10.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#1d1b2061"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -1730,6 +1834,14 @@
           "button_label": {
             "color": "#1d1b20"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_label": {
+            "color": "#1d1b2061"
+          }
         }
       ]
     },
@@ -1978,7 +2090,9 @@
       ]
     },
     "separator": {
-      "base": {}
+      "base": {
+        "fill": "#79747e"
+      }
     }
   },
   "expander": {

@@ -4,20 +4,22 @@
 use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 #[cfg(feature = "widgets")]
-use native_theme::next::{FocusTrigger, PartStated, TextStyle};
+use native_theme::next::{FocusTrigger, IconStated, PartStated, TextStated, TextStyle};
 use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{
     CheckboxLook, SliderLook, SwitchLabelFont, SwitchLabelHome, SwitchLook, ThumbOutline,
 };
+#[cfg(feature = "widgets")]
+use native_theme_gpui::widgets::{RingHomes, ring_stroke_color_of};
 
+#[cfg(feature = "widgets")]
+use super::{LINE_AT_THE_MULTIPLIER, next_drawn_font, next_stated, percent_text};
 use super::{
     WidgetInfo, chrome::input_background, claim, edge_claim, px_text, state_stroke_color_of,
     stated_claim, stroke_color_of, stroke_width_of,
 };
-#[cfg(feature = "widgets")]
-use super::{next_stated, percent_text};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
@@ -41,7 +43,21 @@ pub fn input_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo 
             Some(width),
             "showcase",
         ));
+    let info = match super::state_stroke_unmapped(
+        &r.input.field(WidgetState::HOVER),
+        "input.field(HOVER).stroke",
+        "hover",
+        "the field keeps its edge at rest under the pointer (demo::FieldSurface)",
+    ) {
+        Some(text) => info.config("hovered edge", text),
+        None => info,
+    };
     let unstroked = matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None);
+    let info = super::own_ring_not_drawn(
+        info,
+        &r.input.field(WidgetState::FOCUSED),
+        "input.field(FOCUSED).focus",
+    );
     surface(info, width, unstroked, "input")
 }
 
@@ -65,6 +81,15 @@ pub fn text_area_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetI
             Some(width),
             "showcase",
         ));
+    let info = match super::state_stroke_unmapped(
+        &r.text_area.field(WidgetState::HOVER),
+        "text_area.field(HOVER).stroke",
+        "hover",
+        "the field keeps its edge at rest under the pointer (demo::FieldSurface)",
+    ) {
+        Some(text) => info.config("hovered edge", text),
+        None => info,
+    };
     let unstroked = matches!(r.text_area.field(WidgetState::NONE).stroke, Stroke::None);
     surface(info, width, unstroked, "text_area")
 }
@@ -455,6 +480,9 @@ pub fn native_number_input(
     // rest and focus (spec §10, rule 0).
     let drawn = Some(width);
     let focus = state_stroke_color_of(&r.input.field(WidgetState::FOCUSED));
+    // A focused edge a rule states in a form gpui cannot draw is not
+    // mapped, and the frame keeps upstream's ring (demo::state_stroke_unmapped).
+    let focus_unmapped = crate::demo::state_stroke_unmapped(&r.input.field(WidgetState::FOCUSED));
     let info = if width <= 0.0 {
         if matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None) {
             info.config("edge", "none: input.field(NONE).stroke is none")
@@ -473,7 +501,14 @@ pub fn native_number_input(
             .or(edge_claim(
                 "edge, focused: no focused edge stated, so upstream's",
                 "ring",
-                focus.is_none().then_some(t.ring),
+                (focus.is_none() && !focus_unmapped).then_some(t.ring),
+                drawn,
+                "gpui-component/input/number_input.rs:231",
+            ))
+            .or(edge_claim(
+                "edge, focused: the focused edge not mapped, so upstream's",
+                "ring",
+                focus_unmapped.then_some(t.ring),
                 drawn,
                 "gpui-component/input/number_input.rs:231",
             )),
@@ -508,11 +543,45 @@ pub fn native_number_input(
             .or(edge_claim(
                 "focused edge, none stated: upstream's",
                 "ring",
-                focus.is_none().then_some(t.ring),
+                (focus.is_none() && !focus_unmapped).then_some(t.ring),
+                drawn,
+                "gpui-component/input/number_input.rs:231",
+            ))
+            .or(edge_claim(
+                "focused edge, not mapped: upstream's",
+                "ring",
+                focus_unmapped.then_some(t.ring),
                 drawn,
                 "gpui-component/input/number_input.rs:231",
             )),
         )
+    };
+    let (focus_line, hover_line) = if width > 0.0 {
+        (
+            super::state_stroke_unmapped(
+                &r.input.field(WidgetState::FOCUSED),
+                "input.field(FOCUSED).stroke",
+                "focused",
+                "the focused frame is edged in upstream's ring, as gpui-component's NumberInput edges its own (input/number_input.rs, NumberInput::render)",
+            ),
+            super::state_stroke_unmapped(
+                &r.input.field(WidgetState::HOVER),
+                "input.field(HOVER).stroke",
+                "hover",
+                "the frame keeps its edge at rest under the pointer (demo::FieldSurface)",
+            )
+            .filter(|_| !focused),
+        )
+    } else {
+        (None, None)
+    };
+    let info = match focus_line {
+        Some(text) => info.config("focused edge", text),
+        None => info,
+    };
+    let info = match hover_line {
+        Some(text) => info.config("hovered edge", text),
+        None => info,
     };
     // The step buttons take upstream's colours, through the homes its
     // tokens carry under a 0.8.0 theme: secondary_foreground is the button
@@ -1014,27 +1083,6 @@ pub(crate) fn drawn_by_upstream(info: WidgetInfo, control: &str, home: &str) -> 
     )
 }
 
-/// A font of the installed 0.8.0 theme as a theme-drawn widget's label draws
-/// it (native-theme-gpui/widgets/mod.rs, `LabelFont::next`), for its info's
-/// font line: the family as `status::family_label` names what gpui is asked
-/// for, the size the theme's text scale has already scaled, the weight, the
-/// slant where it is not upright, and the line box.
-#[cfg(feature = "widgets")]
-fn next_drawn_font(text: &TextStyle) -> String {
-    let drawn = native_theme_gpui::font_family(&text.family);
-    let style = match text.style {
-        native_theme::next::FontStyle::Italic => ", italic",
-        native_theme::next::FontStyle::Oblique => ", oblique",
-        _ => "",
-    };
-    format!(
-        "{}, {}px, weight {}{style}, at typography.line_height_multiplier",
-        native_theme_showcase_support::status::family_label(&text.family, Some(&drawn)),
-        px_text(text.size_px),
-        text.weight
-    )
-}
-
 /// A length of a connector Look as Widget Info prints one.
 #[cfg(feature = "widgets")]
 fn length_text(length: Pixels) -> String {
@@ -1082,6 +1130,20 @@ pub(crate) fn checkbox_drawn(
     )
 }
 
+/// [`checkbox_drawn`] of a mixed `widgets::Checkbox`, whose look is
+/// `CheckboxLook::next_mixed`'s.
+#[cfg(feature = "widgets")]
+pub(crate) fn mixed_checkbox_drawn(
+    r: &NextTheme,
+    disabled: bool,
+) -> Result<(CheckboxLook, Hsla), &'static str> {
+    drawn_or_upstream(
+        CheckboxLook::next_mixed(r, disabled).map_err(|unstated| unstated.home()),
+        next_ground(r),
+        unstated_label_font(&r.checkbox.label(WidgetState::NONE), "checkbox.label(NONE)"),
+    )
+}
+
 /// [`native_checkbox`], `mixed` or not.
 #[cfg(feature = "widgets")]
 fn drawn_checkbox(
@@ -1093,7 +1155,12 @@ fn drawn_checkbox(
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Checkbox");
     let text = r.checkbox.label(WidgetState::NONE);
-    let (rest, ground) = match checkbox_drawn(r, checked, disabled) {
+    let drawn = if mixed {
+        mixed_checkbox_drawn(r, disabled)
+    } else {
+        checkbox_drawn(r, checked, disabled)
+    };
+    let (rest, ground) = match drawn {
         Ok(drawn) => drawn,
         Err(home) => {
             let info = drawn_by_upstream(info, "Checkbox", home);
@@ -1130,7 +1197,10 @@ fn drawn_checkbox(
         )
         .config(
             "label font",
-            format!("checkbox.label(NONE): {}", next_drawn_font(&text)),
+            format!(
+                "checkbox.label(NONE): {}",
+                next_drawn_font(&text, LINE_AT_THE_MULTIPLIER)
+            ),
         );
     let inside = if look.mark_padded {
         "checkbox.indicator(NONE).padding, and inside its stroke on a side the theme leaves unstated"
@@ -1144,15 +1214,15 @@ fn drawn_checkbox(
             length_text(look.mark_size),
         )),
         (Some(stroke), true) => info.config("mixed mark", format!(
-            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.checkmark(NONE).stroke_width, {}, in a {} square, the box inside {inside}, in the checked mark's colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
+            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.checkmark(NONE).stroke_width, {}, in a {} square, the box inside {inside}, in the mixed look's mark colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
             length_text(stroke),
             length_text(look.mark_size),
         )),
         (None, false) => info.not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke")),
-        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke, in the checked mark's colour")),
+        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke, in the mixed look's mark colour")),
     };
     let info = if mixed {
-        info.not_themeable("mixed look", "the checked state's fill, border and mark colour: the model states no look of its own for the mixed state, so widgets::Checkbox draws it as checked, with the dash in place of the check (native-theme-gpui/widgets/checkbox.rs, Checkbox::indeterminate)")
+        info.config("mixed look", "checkbox.indicator(INDETERMINATE)'s fill and stroke and checkbox.checkmark(INDETERMINATE).color, each read as the checked box reads its own (DISABLED and HOVER with it), where a rule states it for INDETERMINATE; else the checked state's, as gpui-component draws a mixed box as a checked one (gpui-component/checkbox.rs:354-358), with the dash in place of the check (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::next_mixed)")
     } else {
         info
     };
@@ -1170,7 +1240,19 @@ fn drawn_checkbox(
     let info = if disabled {
         info
     } else {
-        next_focus_ring(info, r, "row")
+        let at = if checked || mixed {
+            WidgetState::FOCUSED | WidgetState::CHECKED
+        } else {
+            WidgetState::FOCUSED
+        };
+        next_focus_ring(
+            info,
+            r,
+            "row",
+            &r.checkbox.indicator(at),
+            "indicator",
+            RingHomes::CHECKBOX,
+        )
     };
     checkbox_state(info.instance("label", label), checked, disabled, mixed)
 }
@@ -1227,50 +1309,121 @@ pub fn mixed_checkbox(t: &Theme, label: &'static str) -> WidgetInfo {
 
 /// The focus ring a theme-drawn control draws round its `part` while focused
 /// under the installed 0.8.0 theme, as `FocusRing::next_of` reads it
-/// (native-theme-gpui/widgets/mod.rs): `colors.focus_ring`,
-/// `focus_ring.stroke.width` wide, its outer edge `focus_ring.offset` plus
-/// the width outside the part, drawn for a focus that followed a key press
-/// only where `focus_ring.trigger` says keyboard only; inset at the edge it
-/// is a band inside the part's edge, as none of these parts has a border of
-/// its own.
+/// (native-theme-gpui/widgets/mod.rs): `focus_ring.stroke`'s colour, a band
+/// of its width outward from the base line, the part's edge moved out by
+/// `focus_ring.offset`, its corners `focus_ring.corners` where stated, else
+/// the part's grown by the offset, floored at 0; the second ring
+/// `focus_ring.inner_stroke` states a band inward from the same line; drawn
+/// over the part, inside its edge too, for a focus that followed a key press
+/// only where `focus_ring.trigger` says keyboard only. A ring the controls
+/// cannot draw (`widgets::focus_ring_unmapped`) is named at its home.
+///
+/// Where the theme states a ring of the part's own (`own`, the part at its
+/// focused state, whose fields' homes are `homes`; spec §2,
+/// `FocusIndicator`: `PartStyle.focus`), that ring in its place, round
+/// `own_part` (`widgets::part_focus`), and none where it states the part has
+/// none.
 #[cfg(feature = "widgets")]
-fn next_focus_ring(info: WidgetInfo, r: &NextTheme, part: &str) -> WidgetInfo {
-    let offset = r.focus_ring.offset;
-    let width = native_theme_gpui::next::focus_ring_width(r)
-        .ok()
-        .filter(|width| width.is_finite() && offset.is_finite() && *width > 0.0);
-    let Some(width) = width else {
+fn next_focus_ring(
+    info: WidgetInfo,
+    r: &NextTheme,
+    part: &str,
+    own: &native_theme::next::PartStyle,
+    own_part: &str,
+    homes: RingHomes,
+) -> WidgetInfo {
+    let own_home = homes.kind.strip_suffix(".kind").unwrap_or(homes.kind);
+    let Some((f, homes)) = native_theme_gpui::widgets::part_focus(r, own, homes) else {
         return info.config(
             "focus ring",
-            "none: the theme's focus_ring.stroke.width is not positive, or is stated per side (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+            format!(
+                "none: the theme states {own_home} with no indicator, so the {own_part} has none (native-theme-gpui/widgets/mod.rs, part_focus)"
+            ),
         );
     };
-    let place = if offset == -width {
-        format!(
-            "inset at the {part}'s edge, a band inside it, the {part} having no border of its own to take the colour"
-        )
+    let part = if homes == RingHomes::GLOBAL {
+        part
     } else {
-        format!(
-            "its outer edge {}px outside the {part}'s, focus_ring.offset {}px plus the width, its corners grown as much",
-            px_text(offset + width),
-            px_text(offset)
+        own_part
+    };
+    let at = homes.kind.strip_suffix(".kind").unwrap_or(homes.kind);
+    if let Some(unmapped) = native_theme_gpui::widgets::part_ring_unmapped(r, own, homes) {
+        return info.config(
+            "focus ring",
+            format!(
+                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)",
+                unmapped.home()
+            ),
+        );
+    }
+    let offset = f.offset;
+    let stroke = match &f.stroke {
+        Stroke::Uniform { width, .. }
+            if width.is_finite() && offset.is_finite() && *width > 0.0 =>
+        {
+            Some(*width)
+        }
+        _ => None,
+    };
+    let Some(width) = stroke else {
+        return info.config(
+            "focus ring",
+            format!(
+                "none: the theme states no ring, its {at}.stroke.width not positive, or its {at}.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)"
+            ),
+        );
+    };
+    let corners = match f.corners {
+        Some(_) => format!("{at}.corners, as stated"),
+        None => format!("the {part}'s corners grown by the offset, floored at 0"),
+    };
+    let inner = match &f.inner_stroke {
+        Stroke::Uniform { width, .. } if width.is_finite() && *width > 0.0 => Some(*width),
+        _ => None,
+    };
+    let info = if homes == RingHomes::GLOBAL {
+        info.colors(stated_claim(
+            "focus ring",
+            "focus_ring.stroke.color",
+            ring_stroke_color_of(&r.focus_ring.stroke),
+            "native-theme-gpui/widgets/mod.rs:523",
+        ))
+        .colors(inner.and_then(|_| {
+            stated_claim(
+                "focus ring inner",
+                "focus_ring.inner_stroke.color",
+                ring_stroke_color_of(&r.focus_ring.inner_stroke),
+                "native-theme-gpui/widgets/mod.rs:524",
+            )
+        }))
+    } else {
+        info.config(
+            "focus ring",
+            format!(
+                "the {own_part}'s own ring in place of the global one: {} and, where stated, {}, as stated (native-theme-gpui/widgets/mod.rs, part_focus, FocusRing::next_indicator)",
+                homes.stroke, homes.inner_stroke
+            ),
         )
     };
-    info.color(claim(
-        "focus ring",
-        "colors.focus_ring",
-        next_stated(r.colors.focus_ring),
-        "native-theme-gpui/widgets/mod.rs:363",
-    ))
-    .config(
+    info.config(
         "focus ring",
         format!(
-            "focus_ring.stroke.width {}px wide, {place}, painted over the {part}'s other parts (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
+            "{at}.stroke.width {}px wide outward from the base line, the {part}'s edge moved {}px out by {at}.offset, its corners {corners}{}, painted over the {part}, inside its edge too (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
             px_text(width),
-            if r.focus_ring.trigger == Some(FocusTrigger::KeyboardOnly) {
-                ", for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, ring_shows)"
+            px_text(offset),
+            match inner {
+                Some(inner) => format!(
+                    ", and {at}.inner_stroke {}px wide inward from it",
+                    px_text(inner)
+                ),
+                None => String::new(),
+            },
+            if f.trigger == Some(FocusTrigger::KeyboardOnly) {
+                format!(
+                    ", for a focus that followed a key press only, {at}.trigger (native-theme-gpui/widgets/mod.rs, ThemeSource::ring)"
+                )
             } else {
-                ""
+                String::new()
             }
         ),
     )
@@ -1298,13 +1451,34 @@ fn native_indicator(
             r.checkbox.indicator(state)
         }
     };
-    // A disabled fill a rule states replaces the box and its mark's colour;
-    // with none the box is its enabled self (CheckboxLook::next_of).
+    // A disabled fill a rule states replaces the box's;
+    // with none the fill is gpui-component's own disabled one, a checked
+    // box's and a radio's the enabled fill at half alpha, an unchecked box's
+    // the enabled fill (CheckboxLook::next_of).
     let stated_disabled = disabled
         && indicator(WidgetState::DISABLED)
             .from_state
             .contains(PartStated::FILL);
+    let dimmed = disabled && !stated_disabled && (checked || radio);
     let info = info.color(match (radio, stated_disabled, checked) {
+        (false, false, true) if dimmed => claim(
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "checkbox.indicator(CHECKED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:330",
+        ),
+        (true, false, true) if dimmed => claim(
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "radio.indicator(CHECKED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:331",
+        ),
+        (true, false, false) if dimmed => claim(
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "radio.indicator(NONE).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:324",
+        ),
         (false, true, false) => claim(
             "fill",
             "checkbox.indicator(DISABLED).fill",
@@ -1357,19 +1531,33 @@ fn native_indicator(
     // An unset hover is the box at rest (CheckboxLook::next_of); the swatch
     // is the fill drawn under the pointer, the layer composited over the
     // fill.
+    // Checked, the fill resolved at HOVER|CHECKED, claimed where it is not the
+    // checked fill, the only case the look draws one.
     let hover_stated = state_fill_of(&indicator(WidgetState::HOVER)).is_some();
-    let info = info.colors(match (radio, hover_stated) {
+    let info = info.colors(match (radio, hover_stated || checked) {
+        (false, true) if checked => stated_claim(
+            "hover, checkbox.indicator(HOVER|CHECKED).fill in place of the fill",
+            "checkbox.indicator(HOVER|CHECKED).fill",
+            look.hover_fill,
+            "native-theme-gpui/widgets/checkbox.rs:821",
+        ),
+        (true, true) if checked => stated_claim(
+            "hover, radio.indicator(HOVER|CHECKED).fill in place of the fill",
+            "radio.indicator(HOVER|CHECKED).fill",
+            look.hover_fill,
+            "native-theme-gpui/widgets/checkbox.rs:823",
+        ),
         (false, true) => stated_claim(
             "hover, checkbox.indicator(HOVER).fill over the fill",
             "checkbox.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:338",
+            "native-theme-gpui/widgets/checkbox.rs:820",
         ),
         (true, true) => stated_claim(
             "hover, radio.indicator(HOVER).fill over the fill",
             "radio.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:339",
+            "native-theme-gpui/widgets/checkbox.rs:822",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the fill at rest",
@@ -1415,29 +1603,92 @@ fn native_indicator(
             "native-theme-gpui/widgets/checkbox.rs:291",
         ),
     });
-    let info = info.colors(match (radio, checked) {
-        (false, true) => edge_claim(
+    // Disabled, the stroke a rule states for `DISABLED`; with none
+    // gpui-component's own disabled border, the enabled one at half alpha
+    // (CheckboxLook::next_of).
+    let stroked_disabled = disabled
+        && indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::STROKE);
+    let info = info.colors(match (radio, checked, disabled, stroked_disabled) {
+        (false, false, _, true) => edge_claim(
+            "border",
+            "checkbox.indicator(DISABLED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:422",
+        ),
+        (false, true, _, true) => edge_claim(
+            "border",
+            "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:424",
+        ),
+        (true, false, _, true) => edge_claim(
+            "border",
+            "radio.indicator(DISABLED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:426",
+        ),
+        (true, true, _, true) => edge_claim(
+            "border",
+            "radio.indicator(DISABLED|CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:427",
+        ),
+        (false, true, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "checkbox.indicator(CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:345",
+        ),
+        (true, true, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "radio.indicator(CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:346",
+        ),
+        (false, false, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "checkbox.indicator(NONE).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:352",
+        ),
+        (true, false, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "radio.indicator(NONE).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:353",
+        ),
+        (false, true, false, _) => edge_claim(
             "border",
             "checkbox.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
             "native-theme-gpui/widgets/checkbox.rs:345",
         ),
-        (true, true) => edge_claim(
+        (true, true, false, _) => edge_claim(
             "border",
             "radio.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
             "native-theme-gpui/widgets/checkbox.rs:346",
         ),
-        (false, false) => edge_claim(
+        (false, false, false, _) => edge_claim(
             "border",
             "checkbox.indicator(NONE).stroke.color",
             Some(look.border),
             width,
             "native-theme-gpui/widgets/checkbox.rs:352",
         ),
-        (true, false) => edge_claim(
+        (true, false, false, _) => edge_claim(
             "border",
             "radio.indicator(NONE).stroke.color",
             Some(look.border),
@@ -1445,53 +1696,94 @@ fn native_indicator(
             "native-theme-gpui/widgets/checkbox.rs:353",
         ),
     });
-    // Over a stated disabled fill the mark takes the disabled label's colour.
-    let info = info.colors(match (radio, stated_disabled) {
-        (false, true) => stated_claim(
+    // Disabled, the mark a rule states for `DISABLED`; with none,
+    // gpui-component's own disabled mark, the enabled one at half alpha
+    // (CheckboxLook::next_of).
+    let mark_ruled = disabled
+        && if radio {
+            r.radio
+                .dot(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL)
+        } else {
+            r.checkbox
+                .checkmark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR)
+        };
+    let info = info.colors(match (radio, disabled, mark_ruled) {
+        (false, true, true) => stated_claim(
             "mark",
-            "checkbox.label(DISABLED).color",
+            "checkbox.checkmark(DISABLED|CHECKED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:365",
+            "native-theme-gpui/widgets/checkbox.rs:769",
         ),
-        (true, true) => stated_claim(
+        (true, true, true) => stated_claim(
             "mark",
-            "radio.label(DISABLED).color",
+            "radio.dot(DISABLED|CHECKED).fill",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:366",
+            "native-theme-gpui/widgets/checkbox.rs:403",
         ),
-        (false, false) => stated_claim(
+        (false, true, false) => stated_claim(
+            "mark, disabled, none stated: the enabled mark at half alpha, gpui-component's own",
+            "checkbox.checkmark(CHECKED).color",
+            checked.then_some(look.mark),
+            "native-theme-gpui/widgets/checkbox.rs:305",
+        ),
+        (true, true, false) => stated_claim(
+            "mark, disabled, none stated: the enabled mark at half alpha, gpui-component's own",
+            "radio.dot(CHECKED).fill",
+            checked.then_some(look.mark),
+            "native-theme-gpui/widgets/checkbox.rs:300",
+        ),
+        (false, false, _) => stated_claim(
             "mark",
             "checkbox.checkmark(CHECKED).color",
             checked.then_some(look.mark),
             "native-theme-gpui/widgets/checkbox.rs:305",
         ),
-        (true, false) => stated_claim(
+        (true, false, _) => stated_claim(
             "mark",
             "radio.dot(CHECKED).fill",
             checked.then_some(look.mark),
             "native-theme-gpui/widgets/checkbox.rs:300",
         ),
     });
-    info.color(match (radio, disabled) {
-        (false, true) => claim(
+    // Disabled, the label a rule states for `DISABLED`; with none,
+    // gpui-component's own muted_foreground (CheckboxLook::next_of).
+    let label_ruled = if radio {
+        r.radio.label(WidgetState::DISABLED)
+    } else {
+        r.checkbox.label(WidgetState::DISABLED)
+    }
+    .from_state
+    .contains(TextStated::COLOR);
+    info.color(match (radio, disabled, label_ruled) {
+        (_, true, false) => claim(
+            "label, disabled, none stated: gpui-component's own muted_foreground",
+            "colors.window.foreground_muted",
+            look.label,
+            "native-theme-gpui/widgets/checkbox.rs:800",
+        ),
+        (false, true, true) => claim(
             "label",
             "checkbox.label(DISABLED).color",
             look.label,
             "native-theme-gpui/widgets/checkbox.rs:365",
         ),
-        (true, true) => claim(
+        (true, true, true) => claim(
             "label",
             "radio.label(DISABLED).color",
             look.label,
             "native-theme-gpui/widgets/checkbox.rs:366",
         ),
-        (false, false) => claim(
+        (false, false, _) => claim(
             "label",
             "checkbox.label(NONE).color",
             look.label,
             "native-theme-gpui/widgets/checkbox.rs:360",
         ),
-        (true, false) => claim(
+        (true, false, _) => claim(
             "label",
             "radio.label(NONE).color",
             look.label,
@@ -1559,14 +1851,14 @@ pub fn native_radio_column(
     let info = info.colors(
         if state_fill_of(&r.radio.indicator(WidgetState::HOVER)).is_some() {
             stated_claim(
-                "hover, radio.indicator(HOVER).fill over an unselected fill",
+                "unselected hover, radio.indicator(HOVER).fill over an unselected fill",
                 "radio.indicator(HOVER).fill",
                 unselected.hover_fill,
-                "native-theme-gpui/widgets/checkbox.rs:339",
+                "native-theme-gpui/widgets/checkbox.rs:822",
             )
         } else {
             stated_claim(
-                "hover, none stated: an unselected fill at rest",
+                "unselected hover, none stated: an unselected fill at rest",
                 "radio.indicator(NONE).fill",
                 unselected.hover_fill,
                 "native-theme-gpui/widgets/checkbox.rs:324",
@@ -1594,7 +1886,19 @@ pub fn native_radio_column(
     );
     // The focused radio's row draws the ring, as gpui-component's and the
     // egui connector's do.
-    next_focus_ring(info.instance("selected", chosen), r, "row")
+    let at = if selected.is_some() {
+        WidgetState::FOCUSED | WidgetState::CHECKED
+    } else {
+        WidgetState::FOCUSED
+    };
+    next_focus_ring(
+        info.instance("selected", chosen),
+        r,
+        "row",
+        &r.radio.indicator(at),
+        "indicator",
+        RingHomes::RADIO,
+    )
 }
 
 /// A theme-drawn switch's `info` where the theme states no value gpui can
@@ -1640,27 +1944,45 @@ pub fn native_switch(
     // Each claim names the home SwitchLook::next_of reads in this state and
     // cites the line that spells it (widgets/switch.rs,
     // SwitchLook::next_of); a state no rule states reads as the switch at
-    // rest.
-    let info = info.color(match (checked, disabled) {
-        (false, false) => claim(
+    // rest. A disabled track no rule states is gpui-component's own, the
+    // enabled track at half alpha.
+    let track_ruled = r
+        .switch
+        .track(WidgetState::DISABLED)
+        .from_state
+        .contains(PartStated::FILL);
+    let info = info.color(match (checked, disabled && !track_ruled, disabled) {
+        (false, true, _) => claim(
+            "track, disabled, none stated: the enabled track at half alpha, gpui-component's own",
+            "switch.track(NONE).fill",
+            look.track,
+            "native-theme-gpui/widgets/switch.rs:263",
+        ),
+        (true, true, _) => claim(
+            "track, disabled, none stated: the enabled track at half alpha, gpui-component's own",
+            "switch.track(CHECKED).fill",
+            look.track,
+            "native-theme-gpui/widgets/switch.rs:264",
+        ),
+        (false, false, false) => claim(
             "track",
             "switch.track(NONE).fill",
             look.track,
             "native-theme-gpui/widgets/switch.rs:263",
         ),
-        (true, false) => claim(
+        (true, false, false) => claim(
             "track",
             "switch.track(CHECKED).fill",
             look.track,
             "native-theme-gpui/widgets/switch.rs:264",
         ),
-        (false, true) => claim(
+        (false, false, true) => claim(
             "track",
             "switch.track(DISABLED).fill",
             look.track,
             "native-theme-gpui/widgets/switch.rs:265",
         ),
-        (true, true) => claim(
+        (true, false, true) => claim(
             "track",
             "switch.track(DISABLED|CHECKED).fill",
             look.track,
@@ -1752,7 +2074,19 @@ pub fn native_switch(
     let info = if disabled {
         info
     } else {
-        next_focus_ring(info, r, "track")
+        let at = if checked {
+            WidgetState::FOCUSED | WidgetState::CHECKED
+        } else {
+            WidgetState::FOCUSED
+        };
+        next_focus_ring(
+            info,
+            r,
+            "track",
+            &r.switch.track(at),
+            "track",
+            RingHomes::SWITCH,
+        )
     };
     let info = info.color(match (checked, disabled) {
         (false, false) => claim(
@@ -1813,13 +2147,13 @@ pub fn native_switch(
             "label",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:488",
+            "native-theme-gpui/widgets/switch.rs:487",
         ),
         _ => claim(
             "label",
             "colors.window.foreground",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:484",
+            "native-theme-gpui/widgets/switch.rs:481",
         ),
     });
     let thumb_home = if checked {
@@ -1868,6 +2202,32 @@ pub fn native_switch(
                     length_text(gap)
                 ),
                 None => "none stated at switch.label_gap: gpui-component's own gap_2 (gpui-component/switch.rs, Switch::render)".to_owned(),
+            },
+        )
+        .config(
+            "label side",
+            match r.switch.label_side {
+                Some(native_theme::next::LabelSide::Leading) => "switch.label_side Leading: the label before the track, in the reading direction (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                Some(native_theme::next::LabelSide::Trailing) => "switch.label_side Trailing: the label after the track, in the reading direction (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                None => "none stated at switch.label_side: gpui-component's own, the label after the track (gpui-component/switch.rs, label_side, Side::Right)",
+            },
+        )
+        .config(
+            "label gap stretches",
+            match r.switch.label_gap_stretches {
+                Some(true) => "switch.label_gap_stretches true: a row laid out wider than its content puts the width left over between the label and the track, the two at its ends (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                Some(false) => "switch.label_gap_stretches false: a row laid out wider than its content keeps the label and the track together at the gap, at its start (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                None => "none stated at switch.label_gap_stretches: gpui-component's own, the label and the track together at the gap, at the row's start (gpui-component/switch.rs, Switch::render)",
+            },
+        )
+        .config(
+            "state glyphs",
+            match SwitchLook::next_glyphs_unmapped(r) {
+                Some(unmapped) => format!(
+                    "not mapped: the theme states {} true, the track's on and off glyphs, which gpui-component's switch does not draw and the model gives no glyph of (native-theme-gpui/widgets/switch.rs, SwitchLook::next_glyphs_unmapped; gpui-component/switch.rs, Switch::render)",
+                    unmapped.home()
+                ),
+                None => "none: switch.show_state_glyphs false or unstated, and gpui-component's switch draws none (gpui-component/switch.rs, Switch::render)".to_owned(),
             },
         );
     let info = if disabled {
@@ -1972,7 +2332,17 @@ pub fn native_slider(r: &NextTheme, vertical: bool, range: bool) -> WidgetInfo {
         info
     };
     // The focused end thumb draws the ring.
-    slider_keys(next_focus_ring(info, r, "end thumb"), range)
+    slider_keys(
+        next_focus_ring(
+            info,
+            r,
+            "end thumb",
+            &r.slider.thumb(WidgetState::FOCUSED),
+            "end thumb",
+            RingHomes::SLIDER,
+        ),
+        range,
+    )
 }
 
 /// A theme-drawn slider's thumb outline in `info`, as the widget draws it
@@ -2213,6 +2583,15 @@ pub fn combo_fill(
                     "showcase",
                 ))
                 .next_geometry("combo_box_fill");
+            let info = match super::state_stroke_unmapped(
+                &r.combo_box.field(WidgetState::HOVER),
+                "combo_box.field(HOVER).stroke",
+                "hover",
+                "the trigger keeps combo_box.field(NONE)'s edge under the pointer (demo::ComboLook::hover_edges)",
+            ) {
+                Some(text) => info.config("hovered edge", text),
+                None => info,
+            };
             info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color in place of that edge under the pointer, none where the rule states no stroke, for the same reason: the showcase then draws the edge on an element under the trigger, combo_box.field(NONE)'s at rest, and leaves the trigger's own transparent, so the focused trigger's ring edge stays over it")
         }
         Some((_, Err(home))) => unstated_combo_fill(info, t, combobox, home),

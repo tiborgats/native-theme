@@ -2051,7 +2051,9 @@ pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
 /// model, each named after its 0.7.2 field and `None` where the theme states
 /// none: the toolbar's (`toolbar.button_*`) and the push button's
 /// (`button.checked_text_color`, `button.active_text_color`,
-/// `button.active_background`).
+/// `button.active_background`). The 0.8.0 builder takes no fill of another
+/// state (spec §10, rule 0a): it gives no `button_active_background`, and as
+/// `active_background` gpui-component's own selected ghost's fill.
 pub(crate) struct ToolbarChecked {
     pub(crate) button_checked_background: Option<Hsla>,
     pub(crate) button_active_background: Option<Hsla>,

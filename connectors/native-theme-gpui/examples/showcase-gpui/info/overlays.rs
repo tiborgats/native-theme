@@ -6,12 +6,16 @@ use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_
 
 use super::{
     WidgetInfo, buttons,
-    chrome::{dialog_surface, popup_menu, sheet_surface},
+    chrome::{
+        HoverText, ThemedEntrance, dialog_surface, hovered_menu_edge_unmapped, popup_menu,
+        pressed_menu_edge, sheet_surface,
+    },
     claim, edge_claim, px_text, state_stroke_color_of, stated_claim, stroke_color_of,
     stroke_width_of,
 };
 use crate::demo::{
-    ButtonKind, ButtonState, FrameFrom, MenuRowsLook, Overlay, SAMPLE_MENU, SheetSide,
+    ButtonKind, ButtonState, FrameFrom, MenuRowsLook, MenuRowsParts, Overlay, SAMPLE_MENU,
+    SheetSide,
 };
 use crate::support::SampleIcon;
 
@@ -73,7 +77,7 @@ fn dialog_corners(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
 pub fn dialog(
     t: &Theme,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
     described: bool,
     icon: &SampleIcon,
@@ -149,7 +153,7 @@ pub fn dialog_close(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
 pub fn alert_dialog(
     t: &Theme,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
     icon: &SampleIcon,
 ) -> WidgetInfo {
@@ -446,52 +450,64 @@ pub fn dropdown_menu(t: &Theme) -> WidgetInfo {
 }
 
 /// One of the menu rows the application draws itself, reading `label`,
-/// with `icon` of the chosen icon theme, painted from the installed 0.8.0
-/// theme `native`'s menu as the showcase's menus are
-/// (`demo::MenuRowsLook`) where it states every value that look needs. Its
-/// geometry lines are recorded where `demo::menu_rows` applies the
-/// builders.
+/// with `icon` of the chosen icon theme, painted as `look`
+/// (`demo::MenuRowsLook`) paints it from the menu's `parts` of the
+/// installed 0.8.0 theme `native`: each property the theme states claimed
+/// at its home, each it leaves unstated at the showcase's own token for it
+/// alone (spec §10, rule 0). Its geometry lines are recorded where
+/// `demo::menu_rows` applies the builders.
 pub fn menu_row(
     t: &Theme,
     native: Option<&NextTheme>,
+    parts: &MenuRowsParts,
+    look: &MenuRowsLook,
     label: &'static str,
     icon: &SampleIcon,
 ) -> WidgetInfo {
-    let info = WidgetInfo::new("Menu row").variant(label);
-    let (info, unstated) = match native.map(|r| (r, MenuRowsLook::next_of(r))) {
-        Some((r, Ok(look))) => (menu_row_look(info, r, &look), None),
-        Some((_, Err(home))) => (info, Some(home)),
-        None => (info, None),
-    };
-    let info = match (native, unstated) {
-        (Some(_), None) => info,
-        (_, unstated) => {
-            let info = info
-                .color(claim("bg (the frame's)", "popover", t.popover, "showcase"))
-                .color(claim(
-                    "text",
-                    "popover_foreground",
-                    t.popover_foreground,
-                    "showcase",
-                ))
-                .color(claim("hover", "accent", t.accent, "showcase"))
-                .color(claim(
-                    "hover text",
-                    "accent_foreground",
-                    t.accent_foreground,
-                    "showcase",
-                ));
-            let unthemed = match unstated {
-                Some(home) => format!(
-                    "the theme states no value gpui can take at {home}, which the menu's look needs"
-                ),
-                None => "with no native theme".to_string(),
-            };
-            info.instance(
-                "drawn by",
-                format!("the application: upstream's MenuItemElement is crate-private and PopupMenu builds its own rows (menu/menu_item.rs, MenuItemElement), so these rows are the receiver geometry::menu_item documents. {unthemed}, they take the popover's tokens and hover as a PopupMenu's item does, with accent and accent_foreground"),
-            )
-        }
+    let installed = native.is_some();
+    let info = menu_row_look(
+        WidgetInfo::new("Menu row").variant(label),
+        t,
+        native,
+        parts,
+        look,
+    );
+    let unstated: Vec<&str> = [
+        ("menu.panel(NONE).fill", fill_of(&parts.panel).is_none()),
+        (
+            "menu.item_label(NONE).color",
+            text_color_of(&parts.label).is_none(),
+        ),
+        (
+            "menu.item(HOVER).fill",
+            state_fill_of(&parts.hovered).is_none(),
+        ),
+        (
+            "menu.item_label(HOVER).color",
+            matches!(hover_text_from(parts), HoverText::Accent),
+        ),
+        ("popover.panel.stroke.width", look.frame_width.1.is_none()),
+        ("popover.panel.corners", look.frame_radius.1.is_none()),
+    ]
+    .into_iter()
+    .filter_map(|(home, unstated)| unstated.then_some(home))
+    .collect();
+    let drawn_by = "the application: upstream's MenuItemElement is crate-private and PopupMenu builds its own rows (menu/menu_item.rs, MenuItemElement), so these rows are the receiver geometry::menu_item documents.";
+    let info = if !installed {
+        info.instance(
+            "drawn by",
+            format!("{drawn_by} With no native theme, they take the popover's tokens and hover as a PopupMenu's item does, with accent and accent_foreground, in the showcase's own frame"),
+        )
+    } else if unstated.is_empty() {
+        info.instance(
+            "drawn by",
+            format!("{drawn_by} They are painted as the showcase's own menus are, in menu.panel(NONE).fill, menu.item_label(NONE).color and the menu's hover colours"),
+        )
+    } else {
+        info.instance(
+            "drawn by",
+            format!("{drawn_by} They are painted as the showcase's own menus are, but where the theme states no value gpui can take, at {}, each of those alone takes the showcase's own (popover, popover_foreground, accent, accent_foreground, the showcase's frame)", unstated.join(", ")),
+        )
     };
     info.instance(
         "label",
@@ -500,70 +516,145 @@ pub fn menu_row(
     .instance("icon", icon.note("the row shows its label alone"))
 }
 
-/// What a menu row painted with `look`, the menu rows' look `r` states
-/// (`demo::MenuRowsLook`), claims and says.
-fn menu_row_look(info: WidgetInfo, r: &NextTheme, look: &MenuRowsLook) -> WidgetInfo {
-    let (frame_width, frame_from) = look.frame.width;
+/// Where the menu rows' hovered text is from, for `parts`
+/// (`demo::menu_hover_of`).
+fn hover_text_from(parts: &MenuRowsParts) -> HoverText {
+    match (
+        state_text_color_of(&parts.hovered_label).is_some(),
+        state_fill_of(&parts.hovered).is_some(),
+    ) {
+        (true, _) => HoverText::Stated,
+        (false, true) => HoverText::AtRest,
+        (false, false) => HoverText::Accent,
+    }
+}
+
+/// What a menu row painted with `look`, the menu rows' look the `parts` of
+/// `r` give (`demo::MenuRowsLook`), claims and says, property by property:
+/// a colour `r` states at its home, read there, else the showcase's own
+/// token's.
+fn menu_row_look(
+    info: WidgetInfo,
+    t: &Theme,
+    r: Option<&NextTheme>,
+    parts: &MenuRowsParts,
+    look: &MenuRowsLook,
+) -> WidgetInfo {
+    let (frame_width, frame_from) = (look.frame_width.0.as_f32(), look.frame_width.1);
     let info = info
-        .colors(stated_claim(
-            "bg (the frame's)",
-            "menu.panel(NONE).fill",
-            fill_of(&r.menu.panel(WidgetState::NONE)),
-            "showcase",
-        ))
-        .colors(stated_claim(
-            "text",
-            "menu.item_label(NONE).color",
-            text_color_of(&r.menu.item_label(WidgetState::NONE)),
-            "showcase",
-        ))
-        .colors(stated_claim(
-            "hover",
-            "menu.item(HOVER).fill",
-            fill_of(&r.menu.item(WidgetState::HOVER)),
-            "showcase",
-        ))
-        .colors(stated_claim(
-            "hover text",
-            "menu.item_label(HOVER).color",
-            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
-            "showcase",
-        ))
-        .colors(match frame_from {
-            FrameFrom::Menu => edge_claim(
+        .color(
+            r.and_then(|r| {
+                stated_claim(
+                    "bg (the frame's)",
+                    "menu.panel(NONE).fill",
+                    fill_of(&r.menu.panel(WidgetState::NONE)),
+                    "showcase",
+                )
+            })
+            .unwrap_or_else(|| claim("bg (the frame's)", "popover", t.popover, "showcase")),
+        )
+        .color(
+            r.and_then(|r| {
+                stated_claim(
+                    "text",
+                    "menu.item_label(NONE).color",
+                    text_color_of(&r.menu.item_label(WidgetState::NONE)),
+                    "showcase",
+                )
+            })
+            .unwrap_or_else(|| {
+                claim(
+                    "text",
+                    "popover_foreground",
+                    t.popover_foreground,
+                    "showcase",
+                )
+            }),
+        )
+        .color(
+            r.and_then(|r| {
+                stated_claim(
+                    "hover",
+                    "menu.item(HOVER).fill",
+                    state_fill_of(&r.menu.item(WidgetState::HOVER)),
+                    "showcase",
+                )
+            })
+            .unwrap_or_else(|| claim("hover", "accent", t.accent, "showcase")),
+        )
+        .color(
+            match (r, hover_text_from(parts)) {
+                (Some(r), HoverText::Stated) => stated_claim(
+                    "hover text",
+                    "menu.item_label(HOVER).color",
+                    state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+                    "showcase",
+                ),
+                (Some(r), HoverText::AtRest) => stated_claim(
+                    "hover text",
+                    "menu.item_label(NONE).color",
+                    text_color_of(&r.menu.item_label(WidgetState::NONE)),
+                    "showcase",
+                ),
+                _ => None,
+            }
+            .unwrap_or_else(|| {
+                claim(
+                    "hover text",
+                    "accent_foreground",
+                    t.accent_foreground,
+                    "showcase",
+                )
+            }),
+        )
+        .colors(match (frame_from, r) {
+            (Some(FrameFrom::Menu), Some(r)) => edge_claim(
                 "frame edge",
                 "menu.panel(NONE).stroke.color",
                 stroke_color_of(&r.menu.panel(WidgetState::NONE)),
                 Some(frame_width),
                 "showcase",
             ),
-            FrameFrom::Popover => edge_claim(
+            (Some(FrameFrom::Popover), Some(r)) => edge_claim(
                 "frame edge",
                 "popover.panel.stroke.color",
                 stroke_color_of(&r.popover.panel),
                 Some(frame_width),
                 "showcase",
             ),
+            _ => edge_claim(
+                "frame edge",
+                "border",
+                Some(t.border),
+                Some(frame_width),
+                "showcase",
+            ),
         })
-        .colors(edge_claim(
-            "hovered item edge",
-            "menu.item(HOVER).stroke.color",
-            state_stroke_color_of(&r.menu.item(WidgetState::HOVER)),
-            look.edge.map(|(_, width)| width.as_f32()),
-            "showcase",
-        ))
-        .colors(stated_claim(
-            "pressed item",
-            "menu.item(HOVER|PRESSED).fill",
-            state_fill_of(&r.menu.item(WidgetState::HOVER | WidgetState::PRESSED)),
-            "showcase",
-        ))
-        .colors(stated_claim(
-            "pressed item text",
-            "menu.item_label(HOVER|PRESSED).color",
-            state_text_color_of(&r.menu.item_label(WidgetState::HOVER | WidgetState::PRESSED)),
-            "showcase",
-        ));
+        .colors(r.and_then(|r| {
+            edge_claim(
+                "hovered item edge",
+                "menu.item(HOVER).stroke.color",
+                state_stroke_color_of(&r.menu.item(WidgetState::HOVER)),
+                look.edge.map(|(_, width)| width.as_f32()),
+                "showcase",
+            )
+        }))
+        .colors(r.and_then(|r| {
+            stated_claim(
+                "pressed item",
+                "menu.item(PRESSED).fill",
+                state_fill_of(&r.menu.item(WidgetState::PRESSED)),
+                "showcase",
+            )
+        }))
+        .colors(r.and_then(|r| {
+            stated_claim(
+                "pressed item text",
+                "menu.item_label(PRESSED).color",
+                state_text_color_of(&r.menu.item_label(WidgetState::PRESSED)),
+                "showcase",
+            )
+        }));
     let info = match look.edge {
         Some((_, width)) => info.config(
             "hovered item edge",
@@ -572,38 +663,62 @@ fn menu_row_look(info: WidgetInfo, r: &NextTheme, look: &MenuRowsLook) -> Widget
                 px_text(width.as_f32())
             ),
         ),
-        None if state_stroke_color_of(&r.menu.item(WidgetState::HOVER)).is_some() => info.config(
+        None if state_stroke_color_of(&parts.hovered).is_some() => info.config(
             "hovered item edge",
             "none: the stroke a rule states for menu.item(HOVER) is 0 wide",
         ),
-        None => info,
+        None => hovered_menu_edge_unmapped(info, &parts.hovered),
     };
-    let stroke = match frame_from {
-        FrameFrom::Menu => "menu.panel(NONE).stroke",
-        FrameFrom::Popover => "popover.panel.stroke",
+    let info = info.colors(r.and_then(|r| {
+        edge_claim(
+            "pressed item edge",
+            "menu.item(PRESSED).stroke.color",
+            state_stroke_color_of(&r.menu.item(WidgetState::PRESSED)),
+            look.pressed_edge.map(|(_, width)| width.as_f32()),
+            "showcase",
+        )
+    }));
+    let info = pressed_menu_edge(info, look.pressed_edge, look.edge.is_some(), &parts.pressed);
+    let corners = match look.frame_radius.1 {
+        Some(FrameFrom::Menu) => "menu.panel(NONE).corners",
+        Some(FrameFrom::Popover) => "popover.panel.corners",
+        None => {
+            "the showcase's own radius token: neither menu.panel(NONE) nor popover.panel states corners gpui can take"
+        }
     };
-    let corners = match look.frame.radius.1 {
-        FrameFrom::Menu => "menu.panel(NONE).corners",
-        FrameFrom::Popover => "popover.panel.corners",
-    };
-    let radius = px_text(look.frame.radius.0);
-    let info = if frame_width > 0.0 {
-        info.config(
+    let radius = px_text(look.frame_radius.0.as_f32());
+    let info = match frame_from {
+        Some(from) => {
+            let stroke = match from {
+                FrameFrom::Menu => "menu.panel(NONE).stroke",
+                FrameFrom::Popover => "popover.panel.stroke",
+            };
+            if frame_width > 0.0 {
+                info.config(
+                    "frame edge",
+                    format!(
+                        "{stroke}: {}px, radius {radius}px ({corners}), as the showcase's menus frame their popup: the menu's own panel's where it states one, else popover.panel's, the popup frame a connector draws where the menu states none (docs/v0.8.0-spec.md §5, notes to the table, the menu's popup frame)",
+                        px_text(frame_width)
+                    ),
+                )
+            } else {
+                info.config(
+                    "frame edge",
+                    format!(
+                        "none: {stroke} is stated as none, 0 wide; the frame is still rounded by {corners}, {radius}px"
+                    ),
+                )
+            }
+        }
+        None => info.config(
             "frame edge",
             format!(
-                "{stroke}: {}px, radius {radius}px ({corners}), as the showcase's menus frame their popup: the menu's own panel's where it states one, else popover.panel's, the popup frame a connector draws where the menu states none (docs/v0.8.0-spec.md §5, notes to the table, the menu's popup frame)",
+                "the showcase's own frame, {}px in the border token, radius {radius}px ({corners}): neither menu.panel(NONE) nor popover.panel states a stroke width gpui can take",
                 px_text(frame_width)
             ),
-        )
-    } else {
-        info.config(
-            "frame edge",
-            format!(
-                "none: {stroke} is stated as none, 0 wide; the frame is still rounded by {corners}, {radius}px"
-            ),
-        )
+        ),
     };
-    let info = match look.radius {
+    match look.radius {
         Some(radius) => info.config(
             "highlight",
             format!(
@@ -615,9 +730,5 @@ fn menu_row_look(info: WidgetInfo, r: &NextTheme, look: &MenuRowsLook) -> Widget
             "highlight",
             "square: the theme states no value gpui can take at menu.item(NONE).corners, and the rows are drawn square, as with no native theme",
         ),
-    };
-    info.instance(
-        "drawn by",
-        "the application: upstream's MenuItemElement is crate-private and PopupMenu builds its own rows (menu/menu_item.rs, MenuItemElement), so these rows are the receiver geometry::menu_item documents. They are painted as the showcase's own menus are, in menu.panel(NONE).fill, menu.item_label(NONE).color and the menu's hover colours",
-    )
+    }
 }

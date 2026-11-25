@@ -61,8 +61,9 @@
 //! background; one that replaces a transparent rest fill (a list row, a
 //! sidebar item, a segment) stated as the brush, a layer.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (WinUI's subtle button), a list's alternate
 //! rows (`ListKind::alternate`), the two orientations of the scroll bar and
 //! of the slider's groove, no control size, and the contrast level `Normal`
 //! alone. A query for anything else returns the part's base style. A
@@ -94,9 +95,12 @@
 //!   outline over the hovered fill, as 0.7.2's egui connector draws a checked
 //!   box ("`checkbox.hover_background` is the unchecked box's hover fill, so
 //!   the hovered entry holds the checked fill too":
-//!   `connectors/native-theme-egui/src/style/variants.rs`); the disabled fill
-//!   over both, checked or not (0.7.2's `checkbox.disabled_background`, which
-//!   the table of homes compares at `DISABLED | CHECKED` too);
+//!   `connectors/native-theme-egui/src/style/variants.rs`), and the mixed
+//!   box's over the hovered and the pressed unchecked looks, as the checked
+//!   one's (WinUI states the same brushes for both,
+//!   `CheckBox_themeresources.xaml`); the disabled fill over all of them,
+//!   checked or not (0.7.2's `checkbox.disabled_background`, which the table
+//!   of homes compares at `DISABLED | CHECKED` too);
 //! - the switch's track: the hovered on track (`HOVER | CHECKED`), whose
 //!   colour 0.7.2 states apart (`switch.hover_checked_background`), over the
 //!   hovered and the checked track; the disabled off track over the hovered
@@ -235,6 +239,7 @@ struct SchemeColors {
     accent_fill_disabled: Color,
     selection_foreground: Color,
     focus_ring: Color,
+    focus_ring_inner: Color,
     link: Color,
     link_hover: Color,
     link_disabled: Color,
@@ -258,6 +263,7 @@ struct SchemeColors {
     subtle_fill_pressed: Color,
     alt_fill_quarternary: Color,
     accent_text_secondary: Color,
+    accent_text_disabled: Color,
     tab_pressed: Color,
     checkbox_hover: Color,
     tab_hover: Color,
@@ -419,6 +425,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // `switch.disabled_checked_background`: ToggleSwitchFillOnDisabled = AccentFillColorDisabled
     // #37000000 (ToggleSwitch_themeresources.xaml:146; Common_themeresources_any.xaml:242 at
     // microsoft-ui-xaml 8463f45)
+    // a disabled checked or mixed box's fill and a disabled checked radio's circle, fill and
+    // stroke: CheckBoxCheckBackgroundFillCheckedDisabled, …FillIndeterminateDisabled,
+    // RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled =
+    // AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :240;
+    // RadioButton_themeresources.xaml:149, :145 at microsoft-ui-xaml 8463f45)
     accent_fill_disabled: srgb8(0x0000_0037),
     // `defaults.selection_text_color`: selection_background ← accent_color: platform-facts.md
     // (§2.1.3), a text box's TextControlSelectionHighlightColor =
@@ -429,6 +440,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): SystemControlFocusVisualPrimaryBrush
     // = FocusStrokeColorOuter #E4000000
     focus_ring: srgb8(0x0000_00e4),
+    // platform-facts.md (§2.1.5): focus_ring_color: the 1px inner ring FocusStrokeColorInner
+    // #B3FFFFFF
+    focus_ring_inner: srgb8(0xffff_ffb3),
     // `defaults.link_color`: platform-facts.md: HyperlinkForeground = SystemAccentColorDark2,
     // UISettings AccentDark2 for the accent above (OS probe, Windows 11 25H2)
     link: srgb8(0x003e_92ff),
@@ -513,6 +527,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `switch.disabled_unchecked_track_border_color`: platform-facts.md (§2.21):
     // ToggleSwitchStrokeOffDisabled = ControlStrongStrokeColorDisabled #37000000
     // (ToggleSwitch_themeresources.xaml:142; Common_themeresources_any.xaml:253)
+    // a disabled checked or mixed box's stroke: CheckBoxCheckBackgroundStrokeCheckedDisabled,
+    // …StrokeIndeterminateDisabled = ControlStrongStrokeColorDisabledBrush
+    // (CheckBox_themeresources.xaml:224, :228, set at :465, :578 at microsoft-ui-xaml 8463f45)
     strong_stroke_disabled: srgb8(0x0000_0037),
     // `slider.track_color`: platform-facts.md (§2.9): SliderTrackFill =
     // ControlStrongFillColorDefault #72000000; the outer thumb, SliderOuterThumbBackground =
@@ -555,6 +572,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // TextOnAccentFillColorSecondary #B3FFFFFF (CheckBox_themeresources.xaml:247;
     // Common_themeresources_any.xaml:217)
     accent_text_secondary: srgb8(0xffff_ffb3),
+    // a disabled checked or mixed box's mark, CheckBoxCheckGlyphForegroundCheckedDisabled and
+    // …IndeterminateDisabled = TextOnAccentFillColorDisabledBrush (CheckBox_themeresources.xaml:248,
+    // :252, set at :471, :587 at microsoft-ui-xaml 8463f45): TextOnAccentFillColorDisabled #FFFFFF
+    // (Common_themeresources_any.xaml:218)
+    accent_text_disabled: srgb8(0xffff_ffff),
     // a pressed tab, TabViewItemHeaderBackgroundPressed = LayerOnMicaBaseAltFillColorDefault
     // #B3FFFFFF (TabView_themeresources.xaml:10; TabView.xaml:327;
     // Common_themeresources_any.xaml:268)
@@ -760,6 +782,11 @@ const DARK: SchemeColors = SchemeColors {
     // `switch.disabled_checked_background`: ToggleSwitchFillOnDisabled = AccentFillColorDisabled
     // #28FFFFFF (ToggleSwitch_themeresources.xaml:26; Common_themeresources_any.xaml:38 at
     // microsoft-ui-xaml 8463f45)
+    // a disabled checked or mixed box's fill and a disabled checked radio's circle, fill and
+    // stroke: CheckBoxCheckBackgroundFillCheckedDisabled, …FillIndeterminateDisabled,
+    // RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled =
+    // AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:60, :64;
+    // RadioButton_themeresources.xaml:33, :29 at microsoft-ui-xaml 8463f45)
     accent_fill_disabled: srgb8(0xffff_ff28),
     // `defaults.selection_text_color`: selection_background ← accent_color: platform-facts.md
     // (§2.1.3), a text box's TextControlSelectionHighlightColor =
@@ -770,6 +797,9 @@ const DARK: SchemeColors = SchemeColors {
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): SystemControlFocusVisualPrimaryBrush
     // = FocusStrokeColorOuter #FFFFFF
     focus_ring: srgb8(0xffff_ffff),
+    // platform-facts.md (§2.1.5): focus_ring_color: the 1px inner ring FocusStrokeColorInner
+    // #B3000000
+    focus_ring_inner: srgb8(0x0000_00b3),
     // `defaults.link_color`: platform-facts.md: HyperlinkForeground = SystemAccentColorLight3,
     // UISettings AccentLight3 for the accent above (OS probe, Windows 11 25H2)
     link: srgb8(0x99eb_ffff),
@@ -853,6 +883,9 @@ const DARK: SchemeColors = SchemeColors {
     // `switch.disabled_unchecked_track_border_color`: platform-facts.md (§2.21):
     // ToggleSwitchStrokeOffDisabled = ControlStrongStrokeColorDisabled #28FFFFFF
     // (ToggleSwitch_themeresources.xaml:22; Common_themeresources_any.xaml:49)
+    // a disabled checked or mixed box's stroke: CheckBoxCheckBackgroundStrokeCheckedDisabled,
+    // …StrokeIndeterminateDisabled = ControlStrongStrokeColorDisabledBrush
+    // (CheckBox_themeresources.xaml:48, :52, set at :465, :578 at microsoft-ui-xaml 8463f45)
     strong_stroke_disabled: srgb8(0xffff_ff28),
     // `slider.track_color`: platform-facts.md (§2.9): SliderTrackFill =
     // ControlStrongFillColorDefault #8BFFFFFF; the outer thumb, SliderOuterThumbBackground =
@@ -895,6 +928,11 @@ const DARK: SchemeColors = SchemeColors {
     // TextOnAccentFillColorSecondary #80000000 (CheckBox_themeresources.xaml:71;
     // Common_themeresources_any.xaml:13)
     accent_text_secondary: srgb8(0x0000_0080),
+    // a disabled checked or mixed box's mark, CheckBoxCheckGlyphForegroundCheckedDisabled and
+    // …IndeterminateDisabled = TextOnAccentFillColorDisabledBrush (CheckBox_themeresources.xaml:72,
+    // :76, set at :471, :587 at microsoft-ui-xaml 8463f45): TextOnAccentFillColorDisabled
+    // #87FFFFFF (Common_themeresources_any.xaml:14)
+    accent_text_disabled: srgb8(0xffff_ff87),
     // a pressed tab, TabViewItemHeaderBackgroundPressed = LayerOnMicaBaseAltFillColorDefault
     // #733A3A3A (TabView_themeresources.xaml:88; TabView.xaml:327;
     // Common_themeresources_any.xaml:64)
@@ -968,9 +1006,13 @@ const DARK: SchemeColors = SchemeColors {
     inactive_title: srgb8(0xffff_ff87),
 };
 
-// `scrollbar.track_color`: platform-facts.md (§2.8): ScrollBarBackground = SubtleFillColorTransparent
-// #00FFFFFF
-const SCROLLBAR_TRACK: Color = srgb8(0xffff_ff00);
+// SubtleFillColorTransparent, #00FFFFFF (Common_themeresources_any.xaml:229, :25 at
+// microsoft-ui-xaml 8463f45): `scrollbar.track_color`, platform-facts.md (§2.8):
+// ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF; the subtle (flat) button's fill at
+// rest and disabled, SubtleButtonBackground and SubtleButtonBackgroundDisabled =
+// SubtleFillColorTransparentBrush (Button_themeresources.xaml:17, :20 at microsoft-ui-xaml
+// 8463f45; `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021)
+const SUBTLE_FILL_TRANSPARENT: Color = srgb8(0xffff_ff00);
 // `link.background_color`: 0.7.2 windows-11.toml (uncited)
 // `link.hover_background`: platform-facts.md (§2.28): an inline Hyperlink has no background and
 // changes only its foreground
@@ -1037,8 +1079,21 @@ const DISABLED_OPACITY: f32 = 1.0;
 // in light and SystemAccentColorLight2 in dark (Common_themeresources_any.xaml:330, :329 and :126,
 // :125 at microsoft-ui-xaml 8463f45)
 const ACCENT_FILL_SECONDARY_OPACITY: f32 = 0.9;
-// `defaults.focus_ring_width`: 0.7.2 windows-11.toml (uncited)
+// AccentFillColorTertiaryBrush's opacity over the same colour (Common_themeresources_any.xaml:331,
+// :127 at microsoft-ui-xaml 8463f45)
+const ACCENT_FILL_TERTIARY_OPACITY: f32 = 0.8;
+// `defaults.focus_ring_width`: platform-facts.md (§2.1.5): focus_ring_width: the Fluent focus
+// visual's 2px outer (primary) ring
 const FOCUS_RING_WIDTH: f32 = 2.0;
+// platform-facts.md (§2.1.5): focus_ring_offset: the 1px inner (secondary) ring inside the outer
+// one; ListViewItem's FocusVisualSecondaryThickness 1 (ListViewItem_themeresources.xaml:252 at
+// microsoft-ui-xaml 8463f45)
+const FOCUS_RING_INNER_WIDTH: f32 = 1.0;
+// The list row's ring: ListViewItem's FocusVisualMargin 1 (platform-facts.md (§2.1.5):
+// focus_ring_offset; ListViewItem_themeresources.xaml:248 at microsoft-ui-xaml 8463f45) puts the
+// outer ring's outer edge 1 px inside the row, and its FocusVisualPrimaryThickness 2 (:250) its
+// inner edge 3 px inside
+const LIST_ROW_FOCUS_RING_OFFSET: f32 = -3.0;
 // `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): Button FocusVisualMargin -3 around a
 // 2px outer and a 1px inner ring
 const FOCUS_RING_OFFSET: f32 = 1.0;
@@ -1549,20 +1604,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             },
             motion,
         ),
-        // 0.7.2's `defaults.focus_ring_*`: a ring; its inner ring (platform-facts.md (§2.1.5),
-        // `focus_ring_offset`) has no colour in the TOML.
-        focus_ring: FocusIndicator::new(
-            FocusKind::Ring,
-            Stroke::uniform(FOCUS_RING_WIDTH, colors.focus_ring),
-            Stroke::None,
-            FOCUS_RING_OFFSET,
-            None,
-            Some(if FOCUS_RING_KEYBOARD_ONLY {
-                FocusTrigger::KeyboardOnly
-            } else {
-                FocusTrigger::Always
-            }),
-        ),
+        // 0.7.2's `defaults.focus_ring_*`: a ring, the Button's; 0.7.2 has no colour for its inner
+        // ring (platform-facts.md (§2.1.5), `focus_ring_offset`), 0.8.0 states it.
+        focus_ring: focus_ring(c, &colors, FOCUS_RING_OFFSET),
         caret: CaretSpec {
             width: None,
             blink_on_ms: system
@@ -1576,8 +1620,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         },
         elevations: Arc::from([]),
         button: button(c, &hc, &colors, &typography, &layout),
-        checkbox: checkbox(c, &colors, &typography, &layout),
-        radio: radio(c, &colors, &typography, &layout),
+        checkbox: checkbox(c, &hc, &colors, &typography, &layout),
+        radio: radio(c, &hc, &colors, &typography, &layout),
         scrollbar: scrollbar(
             c,
             &colors,
@@ -1593,7 +1637,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         menu: menu(c, &hc, &colors, &typography, units, fonts.menu),
         menu_bar: menu_bar(&colors),
         sidebar: sidebar(c, &colors, &typography, &layout),
-        toolbar: toolbar(c, &colors, &typography, direction),
+        toolbar: toolbar(c, &hc, &colors, &typography, direction),
         status_bar: status_bar(&colors, &typography, &layout, units, fonts.status_bar),
         tooltip: tooltip(&colors, &typography, units, &layout, fonts.tooltip),
         window: window(
@@ -1645,7 +1689,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &colors, &layout),
         spinner: spinner(c),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, &typography),
+        switch: switch(c, &hc, &typography),
         dialog: dialog(c, &colors, &typography, units, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, direction),
         segmented_control: segmented_control(c, &hc, &typography, &layout),
@@ -1683,8 +1727,12 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// `COLOR_HIGHLIGHT` the selection, the accent and every accent fill, the
 /// list's selected row, the segmented control's outline and selected
 /// segment and the focused text field's outline; `COLOR_HIGHLIGHTTEXT` the
-/// text on them; `COLOR_HOTLIGHT` the link; `COLOR_GRAYTEXT` the disabled
-/// text and the inactive title.
+/// text on them and the hovered unchecked box and circle; `COLOR_HOTLIGHT`
+/// the link; `COLOR_GRAYTEXT` the disabled text, the inactive title and a
+/// disabled checked or mixed box's fill and outline, a disabled checked
+/// circle's outline and its dot; `COLOR_WINDOW` also a disabled checked or
+/// mixed box's mark and a disabled checked circle's fill ([`checkbox`],
+/// [`radio`]).
 #[derive(Clone, Copy, Default)]
 struct HighContrast {
     /// `COLOR_WINDOW`.
@@ -1737,10 +1785,17 @@ impl HighContrast {
     }
 
     /// Lay the colours over each of `c`'s fields whose every key takes the
-    /// same system colour: the view's background and the menu's
-    /// (`COLOR_WINDOW`); the accent, the accent's fill and the segmented
-    /// control's outline (`COLOR_HIGHLIGHT`); the selection's text
-    /// (`COLOR_HIGHLIGHTTEXT`); the focus ring and the informational fill
+    /// same system colour: the view's background, the menu's and the focus
+    /// visual's inner ring (`COLOR_WINDOW`: `FocusStrokeColorInnerBrush` =
+    /// `SystemColorWindowColor`, Common_themeresources_any.xaml:473 at
+    /// microsoft-ui-xaml 8463f45); the accent, the accent's fill and the segmented
+    /// control's outline (`COLOR_HIGHLIGHT`); the selection's text and the
+    /// hovered unchecked box and circle (`COLOR_HIGHLIGHTTEXT`:
+    /// `CheckBoxCheckBackgroundFillUncheckedPointerOver`,
+    /// `RadioButtonOuterEllipseFillPointerOver` =
+    /// `SystemColorHighlightTextColorBrush`, CheckBox_themeresources.xaml:142,
+    /// RadioButton_themeresources.xaml:81 at microsoft-ui-xaml 8463f45); the
+    /// focus ring and the informational fill
     /// (`COLOR_WINDOWTEXT`); the link (`COLOR_HOTLIGHT`); the hovered on
     /// switch (`COLOR_BTNFACE`); the inactive title (`COLOR_GRAYTEXT`). A
     /// field whose keys take different colours, or some none, the widgets
@@ -1753,10 +1808,12 @@ impl HighContrast {
         };
         lay(&mut c.view_background, self.window);
         lay(&mut c.menu_background, self.window);
+        lay(&mut c.focus_ring_inner, self.window);
         lay(&mut c.accent, self.highlight);
         lay(&mut c.accent_fill, self.highlight);
         lay(&mut c.control_stroke, self.highlight);
         lay(&mut c.selection_foreground, self.highlight_text);
+        lay(&mut c.checkbox_hover, self.highlight_text);
         lay(&mut c.focus_ring, self.window_text);
         lay(&mut c.info, self.window_text);
         lay(&mut c.link, self.hotlight);
@@ -2250,7 +2307,17 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// (0.7.2: `primary_text_color` is `defaults.accent_text_color` where
 /// unstated). Its label is the window's text, pressed the muted text, checked
 /// the accent's text, disabled the disabled text. Under high contrast the
-/// fill is the button face and the label the button text ([`HighContrast`]).
+/// fill is the button face and the label and the outline the button text
+/// ([`HighContrast`]), hovered and pressed the highlight text behind the
+/// highlight, the outline hovered the highlight, pressed the highlight text
+/// and disabled the grey text.
+/// The flat variant is WinUI's subtle button, which has no checked form:
+/// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
+/// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
+/// cannot be checked, and `ToggleButton_themeresources.xaml` there defines
+/// `DefaultToggleButtonStyle` alone (:180), no subtle toggle. So no rule
+/// states a checked flat button, which draws the flat look of its other
+/// states.
 fn button(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2264,12 +2331,20 @@ fn button(
             shape: None,
         })
     };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
+            shape: None,
+        })
+    };
+    // Under high contrast the outline is ButtonBorderBrush = SystemControlForegroundTransparentBrush
+    // (Button_themeresources.xaml:86 at microsoft-ui-xaml 8463f45), there SystemColorButtonTextColor
+    // (generic.xaml:2054 at 8463f45), the button text, not the window text the default border is.
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
-            roles
-                .window
-                .border
+            hc.button_text
+                .or(roles.window.border)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
         .base([
@@ -2286,30 +2361,36 @@ fn button(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.accent_fill)],
         )
+        // Hovered and pressed under high contrast, ButtonBackgroundPointerOver / …Pressed =
+        // SystemColorHighlightTextColorBrush (Button_themeresources.xaml:79-80 at
+        // microsoft-ui-xaml 8463f45), behind the highlight label (:83-84).
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.control_fill_hover)],
+            [fill(hc.highlight_text.unwrap_or(c.control_fill_hover))],
         )
         // Pressed, the outline flat ControlStrokeColorDefault: ButtonBorderBrushPressed =
         // ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state
-        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45).
+        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); under
+        // high contrast SystemColorHighlightTextColorBrush (Button_themeresources.xaml:88).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [
-                fill(c.control_fill_pressed),
-                outside_stroke(layout.border_width, c.control_stroke),
+                fill(hc.highlight_text.unwrap_or(c.control_fill_pressed)),
+                outside_stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.control_stroke),
+                ),
             ],
         )
         // Hovered, the outline as at rest: ButtonBorderBrushPointerOver is the rest brush
-        // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45).
+        // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45); under high contrast
+        // SystemColorHighlightColorBrush (:87).
         .rules(
-            roles
-                .window
-                .border
+            hc.highlight
+                .or(roles.window.border)
                 .map(|_| RuleSelector::on(WidgetState::HOVER)),
-            roles
-                .window
-                .border
+            hc.highlight
+                .or(roles.window.border)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
         .rule(
@@ -2318,21 +2399,88 @@ fn button(
                 .into_iter()
                 .chain(border(roles, layout.border_width)),
         )
+        // Disabled, ButtonBackgroundDisabled = ControlFillColorDisabledBrush
+        // (Button_themeresources.xaml:131, :33 at microsoft-ui-xaml 8463f45); under high contrast
+        // ButtonBackgroundDisabled and AccentButtonBackgroundDisabled =
+        // SystemControlBackgroundBaseLowBrush (:81, :57), the button face (generic.xaml:2010).
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.control_fill_disabled)],
+            [fill(hc.button_face.unwrap_or(c.control_fill_disabled))],
+        )
+        // Disabled under high contrast, the outline the grey text: ButtonBorderBrushDisabled and
+        // AccentButtonBorderBrushDisabled = SystemControlDisabledTransparentBrush
+        // (Button_themeresources.xaml:89, :65 at microsoft-ui-xaml 8463f45), there
+        // SystemColorGrayTextColor (generic.xaml:2032 at 8463f45).
+        .rules(
+            hc.gray_text
+                .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+            hc.gray_text
+                .map(|color| outside_stroke(layout.border_width, color)),
+        )
+        // The flat button, WinUI's subtle button (SubtleButtonStyle), after the push button's
+        // rules so that its own win, each from its resources (Button_themeresources.xaml:17-28,
+        // high contrast :66-69 and :74-77 at microsoft-ui-xaml 8463f45; `docs/facts/windows/
+        // button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021). At rest, SubtleFillColor-
+        // Transparent in a transparent outline; under high contrast SystemControlBackground-
+        // BaseLowBrush, the button face (generic.xaml:2010), in SystemControlForeground-
+        // TransparentBrush, which high contrast makes the button text (generic.xaml:2054).
+        .rule(
+            flat(WidgetState::NONE),
+            [
+                fill(hc.button_face.unwrap_or(SUBTLE_FILL_TRANSPARENT)),
+                hc.button_text
+                    .map_or(PartProp::Stroke(Stroke::None), |color| {
+                        outside_stroke(layout.border_width, color)
+                    }),
+            ],
+        )
+        // Hovered, SubtleFillColorSecondary filling it and its outline; under high contrast
+        // SystemColorHighlightTextColor in SystemColorHighlightColor.
+        .rule(
+            flat(WidgetState::HOVER),
+            [
+                fill(hc.highlight_text.unwrap_or(c.subtle_fill)),
+                outside_stroke(layout.border_width, hc.highlight.unwrap_or(c.subtle_fill)),
+            ],
+        )
+        // Pressed, SubtleFillColorTertiary filling it and its outline; under high contrast
+        // SystemColorHighlightTextColor in both.
+        .rule(
+            flat(WidgetState::PRESSED),
+            [
+                fill(hc.highlight_text.unwrap_or(c.subtle_fill_pressed)),
+                outside_stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.subtle_fill_pressed),
+                ),
+            ],
+        )
+        // Disabled, as at rest; under high contrast the button face in
+        // SystemControlDisabledTransparentBrush, which high contrast makes the grey text
+        // (generic.xaml:2032).
+        .rule(
+            flat(WidgetState::DISABLED),
+            [
+                fill(hc.button_face.unwrap_or(SUBTLE_FILL_TRANSPARENT)),
+                hc.gray_text
+                    .map_or(PartProp::Stroke(Stroke::None), |color| {
+                        outside_stroke(layout.border_width, color)
+                    }),
+            ],
         )
         .build();
     // `button.hover_text_color`: ButtonForegroundPointerOver = TextFillColorPrimary
-    // (Button_themeresources.xaml:133 at microsoft-ui-xaml 8463f45), the window's text, which high
-    // contrast does not change; stated for `HOVER` (spec §2, `from_state`).
+    // (Button_themeresources.xaml:133 at microsoft-ui-xaml 8463f45), the window's text, stated for
+    // `HOVER` (spec §2, `from_state`); pressed, ButtonForegroundPressed = TextFillColorSecondary
+    // (:134). Under high contrast both are SystemControlHighlightBaseHighBrush (:83-84),
+    // SystemColorHighlightColor (generic.xaml:2069 at microsoft-ui-xaml 8463f45).
     let label = RuleBuilder::new(label(
         &typography.body,
         Some(hc.button_text.unwrap_or(c.window_foreground)),
     ))
     .rule(
         RuleSelector::on(WidgetState::HOVER),
-        [TextProp::Color(c.window_foreground)],
+        [TextProp::Color(hc.highlight.unwrap_or(c.window_foreground))],
     )
     .rule(
         RuleSelector::on(WidgetState::CHECKED),
@@ -2340,12 +2488,47 @@ fn button(
     )
     .rule(
         RuleSelector::on(WidgetState::PRESSED),
-        [TextProp::Color(c.window_foreground_muted)],
+        [TextProp::Color(
+            hc.highlight.unwrap_or(c.window_foreground_muted),
+        )],
     )
     .rule(primary(), [TextProp::Color(roles.accent.foreground)])
+    // Disabled, ButtonForegroundDisabled = TextFillColorDisabled (Button_themeresources.xaml:135 at
+    // microsoft-ui-xaml 8463f45); under high contrast SystemControlDisabledBaseMediumLowBrush
+    // (:85), SystemColorGrayTextColor (generic.xaml:2026), as AccentButtonForegroundDisabled
+    // (:61) gives the primary button.
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
-        [TextProp::Color(c.disabled_text)],
+        [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
+    )
+    // The flat (subtle) button's label: SubtleButtonForeground… = TextFillColorPrimary at rest and
+    // hovered, TextFillColorSecondary pressed, TextFillColorDisabled disabled, the push button's;
+    // under high contrast SystemColorHighlightColor hovered and pressed
+    // (SystemControlHighlightBaseHighBrush, generic.xaml:2069) and SystemColorGrayTextColor
+    // disabled (SystemControlDisabledBaseMediumLowBrush, generic.xaml:2026)
+    // (Button_themeresources.xaml:21-24, :70-73 at microsoft-ui-xaml 8463f45;
+    // `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021). At rest
+    // SubtleButtonForeground, under high contrast SystemColorButtonTextColor, stated with no state
+    // so that a checked flat button, which WinUI has not (the doc comment above), keeps it.
+    .rule(
+        flat(WidgetState::NONE),
+        [TextProp::Color(
+            hc.button_text.unwrap_or(c.window_foreground),
+        )],
+    )
+    .rule(
+        flat(WidgetState::HOVER),
+        [TextProp::Color(hc.highlight.unwrap_or(c.window_foreground))],
+    )
+    .rule(
+        flat(WidgetState::PRESSED),
+        [TextProp::Color(
+            hc.highlight.unwrap_or(c.window_foreground_muted),
+        )],
+    )
+    .rule(
+        flat(WidgetState::DISABLED),
+        [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
     )
     .build();
     ButtonWidget::new(
@@ -2362,19 +2545,27 @@ fn button(
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both: its unchecked fill in its unchecked outline at
 /// the default border width (0.7.2: `checkbox.border.line_width` is
-/// `defaults.border.line_width` where unstated), no shadow; under the pointer
-/// the hover fill; checked, the accent's fill in the default border colour
-/// (0.7.2's `checkbox.border.color`, `resolve_border_inheritance`);
-/// disabled, the disabled fill, checked or not.
+/// `defaults.border.line_width` where unstated), no shadow, under high
+/// contrast `COLOR_BTNFACE` in `COLOR_BTNTEXT`; under the pointer the hover
+/// fill; checked, filled and outlined in the accent's fill; disabled, the
+/// disabled fill, under high contrast `COLOR_WINDOW`, which a checked check
+/// box and radio ([`checkbox`], [`radio`]) replace with their own.
 fn indicator(
     c: &SchemeColors,
-    roles: &ColorRoles,
+    hc: &HighContrast,
     layout: &LayoutMetrics,
 ) -> RuleBuilder<PartStyle, PartProp> {
     RuleBuilder::new(PartStyle::default())
+        // Under high contrast, CheckBoxCheckBackgroundFillUnchecked = SystemColorButtonFaceColor in
+        // CheckBoxCheckBackgroundStrokeUnchecked = SystemColorButtonTextColor
+        // (CheckBox_themeresources.xaml:141, :129 at microsoft-ui-xaml 8463f45);
+        // RadioButtonOuterEllipseFill and …Stroke the same (RadioButton_themeresources.xaml:80, :76).
         .base([
-            fill(c.control_alt_fill),
-            stroke(layout.border_width, c.strong_stroke),
+            fill(hc.button_face.unwrap_or(c.control_alt_fill)),
+            stroke(
+                layout.border_width,
+                hc.button_text.unwrap_or(c.strong_stroke),
+            ),
             // `checkbox.border.shadow_enabled`: platform-facts.md (§2.5): no shadow
             PartProp::Shadows(None),
             PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
@@ -2384,15 +2575,25 @@ fn indicator(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.checkbox_hover)],
         )
+        // Checked: CheckBoxCheckBackgroundFillChecked and …StrokeChecked = AccentFillColorDefaultBrush
+        // (CheckBox_themeresources.xaml:233, :221; :57, :45 at microsoft-ui-xaml 8463f45), under
+        // high contrast both SystemColorHighlightColor (:145, :133), the accent's fill there
+        // ([`HighContrast::lay_over`]); RadioButtonOuterEllipseCheckedStroke the same, and outside
+        // high contrast …CheckedFill (RadioButton_themeresources.xaml:142, :146; :26, :30), where
+        // 0.7.2 outlined both in the default border colour.
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.accent_fill)]
-                .into_iter()
-                .chain(border(roles, layout.border_width)),
+            [
+                fill(c.accent_fill),
+                stroke(layout.border_width, c.accent_fill),
+            ],
         )
+        // Disabled, under high contrast CheckBoxCheckBackgroundFillUncheckedDisabled =
+        // SystemColorWindowColorBrush (CheckBox_themeresources.xaml:144 at microsoft-ui-xaml
+        // 8463f45); RadioButtonOuterEllipseFillDisabled the same (RadioButton_themeresources.xaml:83).
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.control_fill_disabled)],
+            [fill(hc.window.unwrap_or(c.control_fill_disabled))],
         )
 }
 
@@ -2410,16 +2611,29 @@ fn check_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, 
 /// The check box: [`indicator`] with the default corners (0.7.2's
 /// `checkbox.border.corner_radius`, `resolve_border_inheritance`), a check
 /// mark in the accent's text colour (0.7.2: `checkbox.indicator_color` is
-/// `defaults.accent_text_color` where unstated), [`check_label`].
+/// `defaults.accent_text_color` where unstated), [`check_label`]. Mixed, the
+/// box filled and outlined in the accent's fill. Checked or mixed, hovered
+/// and pressed, the accent's secondary and tertiary fills. Disabled, the box
+/// is outlined in `ControlStrongStrokeColorDisabled`. Under high contrast a
+/// disabled box is outlined in `COLOR_GRAYTEXT`, a disabled checked or mixed
+/// box is `COLOR_GRAYTEXT` with its mark
+/// in `COLOR_WINDOW` ([`HighContrast`]), and the hovered and pressed boxes
+/// and marks take WinUI's high-contrast brushes.
 fn checkbox(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
     // Hovered, the mark as at rest: CheckBoxCheckGlyphForegroundCheckedPointerOver =
     // TextOnAccentFillColorPrimary, the rest brush (CheckBox_themeresources.xaml:246, :245 at
-    // microsoft-ui-xaml 8463f45); pressed, TextOnAccentFillColorSecondary (:247).
+    // microsoft-ui-xaml 8463f45); pressed, TextOnAccentFillColorSecondary (:247). Under high
+    // contrast the checked mark is SystemColorHighlightTextColor at rest (:157, the accent's text
+    // there, [`roles`]), SystemColorButtonFaceColor hovered and SystemColorButtonTextColor pressed
+    // (:158, :159); the mixed bar SystemColorHighlightColor hovered and
+    // SystemColorHighlightTextColor pressed (:162, :163), outside it as the checked mark (:250,
+    // :251).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Color(roles.accent.foreground)])
         .rule(
@@ -2430,26 +2644,137 @@ fn checkbox(
             RuleSelector::on(WidgetState::PRESSED),
             [IconProp::Color(c.accent_text_secondary)],
         )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [IconProp::Color(
+                hc.button_face.unwrap_or(roles.accent.foreground),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [IconProp::Color(
+                hc.button_text.unwrap_or(c.accent_text_secondary),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::INDETERMINATE),
+            [IconProp::Color(
+                hc.highlight.unwrap_or(roles.accent.foreground),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::INDETERMINATE),
+            [IconProp::Color(
+                hc.highlight_text.unwrap_or(c.accent_text_secondary),
+            )],
+        )
+        // Disabled, checked or mixed: TextOnAccentFillColorDisabled (CheckBox_themeresources.xaml:248,
+        // :252, set by the CheckedDisabled and IndeterminateDisabled states, :471, :587); under high
+        // contrast SystemColorWindowColor (:160, :164).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(hc.window.unwrap_or(c.accent_text_disabled))],
+        )
         .build();
+    let disabled_checked = hc.gray_text.unwrap_or(c.accent_fill_disabled);
+    let disabled_edge = hc.gray_text.unwrap_or(c.strong_stroke_disabled);
     // An unchecked box pressed: CheckBoxCheckBackgroundFillUncheckedPressed =
     // ControlAltFillColorQuarternary (CheckBox_themeresources.xaml:231 at microsoft-ui-xaml
     // 8463f45) in CheckBoxCheckBackgroundStrokeUncheckedPressed = ControlStrongStrokeColorDisabled
-    // (:219). A checked box keeps its checked look; a disabled one its own. An unchecked box
-    // hovered keeps its outline: CheckBoxCheckBackgroundStrokeUncheckedPointerOver =
-    // ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest
-    // :217, :41).
-    let indicator = indicator(c, roles, layout)
+    // (:219). A disabled box keeps its own look. An unchecked box hovered keeps its outline:
+    // CheckBoxCheckBackgroundStrokeUncheckedPointerOver = ControlStrongStrokeColorDefault, the rest
+    // brush (CheckBox_themeresources.xaml:218, :42; rest :217, :41). A mixed box at rest:
+    // CheckBoxCheckBackgroundFillIndeterminate and …StrokeIndeterminate =
+    // AccentFillColorDefaultBrush (CheckBox_themeresources.xaml:237, :225; :61, :49), the checked
+    // box's brushes (:233, :221); its mark TextOnAccentFillColorPrimary (:249), the checked mark's
+    // (:245). Checked or mixed, hovered: …FillCheckedPointerOver, …StrokeCheckedPointerOver,
+    // …IndeterminatePointerOver = AccentFillColorSecondaryBrush (:234, :222, :238, :226; :58, :46,
+    // :62, :50), the accent's fill at ACCENT_FILL_SECONDARY_OPACITY; pressed, the …Pressed ones =
+    // AccentFillColorTertiaryBrush (:235, :223, :239, :227), at ACCENT_FILL_TERTIARY_OPACITY. Under
+    // high contrast: checked and hovered SystemColorButtonTextColor (:146, :134), pressed
+    // SystemColorButtonFaceColor (:147, :135); mixed and hovered filled SystemColorHighlightTextColor
+    // in SystemColorHighlightColor (:150, :138), pressed SystemColorHighlightColor (:151, :139);
+    // unchecked, hovered outlined and pressed filled and outlined SystemColorHighlightColor (:130,
+    // :143, :131).
+    let checked_or_mixed = WidgetState::CHECKED | WidgetState::INDETERMINATE;
+    let secondary = c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY);
+    let tertiary = c.accent_fill.mul_alpha(ACCENT_FILL_TERTIARY_OPACITY);
+    let checked_hover = hc.button_text.unwrap_or(secondary);
+    let checked_pressed = hc.button_face.unwrap_or(tertiary);
+    let mixed_pressed = hc.highlight.unwrap_or(tertiary);
+    let indicator = indicator(c, hc, layout)
         .base([corners(layout.corner_radius)])
         .rule(
-            RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
-            [stroke(layout.border_width, c.strong_stroke)],
+            RuleSelector::on(WidgetState::INDETERMINATE),
+            [
+                fill(c.accent_fill),
+                stroke(layout.border_width, c.accent_fill),
+            ],
         )
         .rule(
-            RuleSelector::on(WidgetState::PRESSED)
-                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            RuleSelector::on(WidgetState::HOVER).except(checked_or_mixed),
+            [stroke(
+                layout.border_width,
+                hc.highlight.unwrap_or(c.strong_stroke),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(checked_or_mixed | WidgetState::DISABLED),
             [
-                fill(c.alt_fill_quarternary),
-                stroke(layout.border_width, c.strong_stroke_disabled),
+                fill(hc.highlight.unwrap_or(c.alt_fill_quarternary)),
+                stroke(
+                    layout.border_width,
+                    hc.highlight.unwrap_or(c.strong_stroke_disabled),
+                ),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [
+                fill(checked_hover),
+                stroke(layout.border_width, checked_hover),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [
+                fill(checked_pressed),
+                stroke(layout.border_width, checked_pressed),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::INDETERMINATE),
+            [
+                fill(hc.highlight_text.unwrap_or(secondary)),
+                stroke(layout.border_width, hc.highlight.unwrap_or(secondary)),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::INDETERMINATE),
+            [
+                fill(mixed_pressed),
+                stroke(layout.border_width, mixed_pressed),
+            ],
+        )
+        // Disabled, the box outlined in CheckBoxCheckBackgroundStrokeUncheckedDisabled =
+        // ControlStrongStrokeColorDisabledBrush (CheckBox_themeresources.xaml:220, :44 at
+        // microsoft-ui-xaml 8463f45), under high contrast SystemColorGrayTextColorBrush (:132).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [stroke(layout.border_width, disabled_edge)],
+        )
+        // Disabled and checked or mixed: AccentFillColorDisabled in ControlStrongStrokeColorDisabled
+        // (CheckBoxCheckBackgroundFillCheckedDisabled, …StrokeCheckedDisabled, set at
+        // CheckBox_themeresources.xaml:465-468; …IndeterminateDisabled at :578-581); under high
+        // contrast both SystemColorGrayTextColor (:148, :136; :152, :140).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
+            ],
+            [
+                fill(disabled_checked),
+                stroke(layout.border_width, disabled_edge),
             ],
         )
         .build();
@@ -2466,27 +2791,149 @@ fn checkbox(
 
 /// The radio button: [`indicator`] (0.7.2 states no corners for it), a dot
 /// in the accent's text colour (`checkbox.indicator_color`), [`check_label`].
+/// Unselected, pressed and disabled, the circle as the check box's; selected,
+/// hovered and pressed, the accent's secondary and tertiary fills. Under high
+/// contrast a checked circle is `COLOR_HIGHLIGHTTEXT` in the highlight's
+/// outline, its dot `COLOR_HIGHLIGHT`, and the hovered, pressed and disabled
+/// circles and dots take WinUI's high-contrast brushes.
 fn radio(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> RadioWidget {
+    // Disabled, the dot as the source names it: RadioButtonCheckGlyphFillDisabled =
+    // TextOnAccentFillColorPrimary, the rest's colour (RadioButton_themeresources.xaml:153, :37,
+    // set at :333; the rest's RadioButtonCheckGlyphFill, :150, :34, at microsoft-ui-xaml 8463f45).
+    // The disabled key names the `Color` resource where the property is a `Brush`; what the
+    // runtime draws from it is not measured. Under high contrast SystemColorGrayTextColor (:95);
+    // enabled, RadioButtonCheckGlyphFill = SystemColorHighlightColorBrush (:92).
+    // Hovered and pressed, checked: RadioButtonCheckGlyphFillPointerOver and …Pressed =
+    // TextOnAccentFillColorPrimaryBrush, the rest's (:151, :152; :35, :36), under high contrast
+    // SystemColorButtonTextColorBrush (:93, :94).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(roles.accent.foreground),
+            fill(hc.highlight.unwrap_or(roles.accent.foreground)),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            ],
+            [fill(hc.button_text.unwrap_or(roles.accent.foreground))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(hc.gray_text.unwrap_or(roles.accent.foreground))],
+        )
+        .build();
+    // An unselected circle hovered keeps its outline, RadioButtonOuterEllipseStrokePointerOver =
+    // ControlStrongStrokeColorDefaultBrush, the rest's (RadioButton_themeresources.xaml:135, :19;
+    // rest :134, :18), under high contrast SystemColorHighlightColorBrush (:77); pressed, filled in
+    // RadioButtonOuterEllipseFillPressed = ControlAltFillColorQuarternaryBrush (:140, :24) inside
+    // …StrokePressed = ControlStrongStrokeColorDisabledBrush (:136, :20), under high contrast both
+    // SystemColorHighlightTextColorBrush (:82, :78); disabled, outlined in …StrokeDisabled =
+    // ControlStrongStrokeColorDisabledBrush (:137, :21), under high contrast SystemColorGrayTextColor
+    // (:79). A selected circle hovered and pressed, filled and outlined in
+    // …CheckedFillPointerOver, …CheckedStrokePointerOver = AccentFillColorSecondaryBrush (:147,
+    // :143; :31, :27) and the …Pressed ones = AccentFillColorTertiaryBrush (:148, :144; :32, :28);
+    // under high contrast hovered SystemColorButtonFaceColorBrush in SystemColorButtonTextColorBrush
+    // (:89, :85), pressed SystemColorButtonFaceColorBrush in the same (:90, :86).
+    // Disabled and checked, the circle filled and stroked in AccentFillColorDisabled
+    // (RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled, set at
+    // RadioButton_themeresources.xaml:326-330); under high contrast filled in
+    // SystemColorWindowColor and stroked in SystemColorGrayTextColor (:91, :87). Checked under high
+    // contrast, the circle is filled in RadioButtonOuterEllipseCheckedFill =
+    // SystemColorHighlightTextColorBrush (:88) inside the highlight's outline (:84).
+    let secondary = c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY);
+    let tertiary = c.accent_fill.mul_alpha(ACCENT_FILL_TERTIARY_OPACITY);
+    let unchecked_pressed = hc.highlight_text.unwrap_or(c.alt_fill_quarternary);
+    let checked_pressed = hc.button_face.unwrap_or(tertiary);
+    let indicator = indicator(c, hc, layout)
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [fill(hc.highlight_text.unwrap_or(c.accent_fill))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
+            [stroke(
+                layout.border_width,
+                hc.highlight.unwrap_or(c.strong_stroke),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED)
+                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            [
+                fill(unchecked_pressed),
+                stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.strong_stroke_disabled),
+                ),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [
+                fill(hc.button_face.unwrap_or(secondary)),
+                stroke(layout.border_width, hc.button_text.unwrap_or(secondary)),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [
+                fill(checked_pressed),
+                stroke(layout.border_width, checked_pressed),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [stroke(
+                layout.border_width,
+                hc.gray_text.unwrap_or(c.strong_stroke_disabled),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [
+                fill(hc.window.unwrap_or(c.accent_fill_disabled)),
+                stroke(
+                    layout.border_width,
+                    hc.gray_text.unwrap_or(c.accent_fill_disabled),
+                ),
+            ],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout).build(),
+        indicator,
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
+    )
+}
+
+/// The focus visual at `offset`: the 2px outer ring in the focus ring's
+/// colour around the 1px inner one in `FocusStrokeColorInner`, under high
+/// contrast `COLOR_WINDOWTEXT` around `COLOR_WINDOW` ([`HighContrast`]),
+/// shown on keyboard focus only.
+fn focus_ring(c: &SchemeColors, roles: &ColorRoles, offset: f32) -> FocusIndicator {
+    FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(FOCUS_RING_WIDTH, roles.focus_ring),
+        Stroke::uniform(FOCUS_RING_INNER_WIDTH, c.focus_ring_inner),
+        offset,
+        None,
+        Some(if FOCUS_RING_KEYBOARD_ONLY {
+            FocusTrigger::KeyboardOnly
+        } else {
+            FocusTrigger::Always
+        }),
     )
 }
 
@@ -2501,7 +2948,8 @@ fn radio(
 /// the disabled text's colour on a disabled row; headers in the window's
 /// background; the grid in the default border colour (0.7.2:
 /// `list.grid_color` is `defaults.border.color` where unstated). 0.7.2
-/// states no header height and no header separator.
+/// states no header height and no header separator. A row's focus ring is
+/// `ListViewItem`'s, inside the row ([`focus_ring`]).
 fn list(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2531,6 +2979,15 @@ fn list(
                 direction,
             )),
             PartProp::MinSize([None, Some(LIST_ROW_HEIGHT)]),
+            // ListViewItem's focus visual: FocusVisualPrimaryBrush = FocusStrokeColorOuterBrush,
+            // FocusVisualSecondaryBrush = FocusStrokeColorInnerBrush (ListViewItem_themeresources.xaml:181,
+            // :182; :29, :30 at microsoft-ui-xaml 8463f45), under high contrast
+            // SystemColorWindowTextColor and SystemColorWindowColor (:94, :95), the global ring's.
+            PartProp::Focus(Some(Arc::new(focus_ring(
+                c,
+                roles,
+                LIST_ROW_FOCUS_RING_OFFSET,
+            )))),
         ])
         .rule(alternate, [fill(c.list_alternate_row)])
         .build();
@@ -2622,7 +3079,7 @@ fn scrollbar(
     min_thumb_length: f32,
 ) -> ScrollbarWidget {
     let track = across(
-        RuleBuilder::new(PartStyle::default()).base([fill(SCROLLBAR_TRACK)]),
+        RuleBuilder::new(PartStyle::default()).base([fill(SUBTLE_FILL_TRANSPARENT)]),
         groove_width,
     )
     .build();
@@ -3197,11 +3654,19 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// The toolbar: the window's background (0.7.2: `toolbar.background_color`
 /// is `defaults.background_color` where unstated) with no outline, in the
 /// default border colour, its own corners, no shadow, padded, of a least
-/// height; its buttons' hovered and pressed layers and checked fill; icons at
+/// height; its buttons' hovered and pressed layers (under high contrast
+/// `hc`'s highlight) and checked fill, their labels' hovered (under high
+/// contrast alone), pressed and disabled colours (under high contrast `hc`'s
+/// highlight text, and its grey text for the disabled one); a checked
+/// button's label in the accent's text, pressed and disabled in its pressed
+/// and disabled forms, its fill disabled the accent's disabled fill, and
+/// under high contrast its fill and label hovered, pressed and disabled, as
+/// WinUI's checked toggle pairs them; icons at
 /// the toolbar's size (0.7.2: `toolbar.icon_size` is
 /// `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     direction: Direction,
@@ -3226,30 +3691,105 @@ fn toolbar(
             PartProp::MinSize([None, Some(TOOLBAR_BAR_HEIGHT)]),
         ])
         .build();
+    // Hovered and pressed, AppBarButtonBackgroundPointerOver / …Pressed = SubtleFillColorSecondary /
+    // …Tertiary (AppBarButton_themeresources.xaml:6-7 at microsoft-ui-xaml 8463f45); under high
+    // contrast SystemControlHighlightListLowBrush / …ListMediumBrush (:41-42), both
+    // SystemColorHighlightColor (generic.xaml:2079-2080), behind the highlight-text label.
     let button = RuleBuilder::new(PartStyle::default())
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(hc.highlight.unwrap_or(c.subtle_fill))],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.subtle_fill_pressed)],
+            [fill(hc.highlight.unwrap_or(c.subtle_fill_pressed))],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.accent_fill)],
+        )
+        // Checked under high contrast, AppBarToggleButtonBackgroundChecked =
+        // SystemColorHighlightColorBrush (AppBarToggleButton_themeresources.xaml:74 at
+        // microsoft-ui-xaml 8463f45), the accent's fill above; hovered and pressed
+        // …CheckedPointerOver / …CheckedPressed = SystemColorHighlightTextColorBrush (:75-76),
+        // disabled …CheckedDisabled = SystemColorGrayTextColorBrush (:77), outside high contrast
+        // AccentFillColorDisabledBrush (:12).
+        .rules(
+            hc.highlight_text
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
+            hc.highlight_text.map(fill),
+        )
+        .rules(
+            hc.highlight_text
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED)),
+            hc.highlight_text.map(fill),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED),
+            [fill(hc.gray_text.unwrap_or(c.accent_fill_disabled))],
         )
         .build();
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
     // Hovered, the label as at rest: AppBarButtonForegroundPointerOver = TextFillColorPrimary
-    // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45); pressed,
-    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259).
+    // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45), under high contrast
+    // SystemControlHighlightAltBaseHighBrush (:45), SystemColorHighlightTextColor; pressed,
+    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259), under high
+    // contrast SystemControlHighlightAltBaseHighBrush (:46), SystemColorHighlightTextColor
+    // (generic.xaml:2058 at microsoft-ui-xaml 8463f45); disabled,
+    // AppBarButtonForegroundDisabled = TextFillColorDisabled (:82, :12, set :268-270), under high
+    // contrast SystemControlDisabledBaseMediumLowBrush (:47), SystemColorGrayTextColor
+    // (generic.xaml:2026 at microsoft-ui-xaml 8463f45): the button's disabled opacity,
+    // `DISABLED_OPACITY`, is 1, so no fade draws it.
     let button_label = label(&typography.body, None);
     let (selectors, color) = rest_color_rules(&button_label, [WidgetState::HOVER]);
     let button_label = RuleBuilder::new(button_label)
         .rules(selectors, color)
+        .rules(
+            hc.highlight_text
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            hc.highlight_text.map(TextProp::Color),
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [TextProp::Color(c.window_foreground_muted)],
+            [TextProp::Color(
+                hc.highlight_text.unwrap_or(c.window_foreground_muted),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
+        )
+        // Checked, AppBarToggleButtonForegroundChecked = TextOnAccentFillColorPrimaryBrush
+        // (AppBarToggleButton_themeresources.xaml:22, :152 at microsoft-ui-xaml 8463f45), the
+        // accent's text, hovered the same (:23, :153), pressed TextOnAccentFillColorSecondaryBrush
+        // (:24, :154; light / dark #B3FFFFFF / #80000000, Common_themeresources_any.xaml:217, :13),
+        // disabled TextOnAccentFillColorDisabled (:25, :155; #FFFFFF / #87FFFFFF, :218, :14). Under high
+        // contrast SystemColorHighlightTextColorBrush (AppBarToggleButton_themeresources.xaml:87), on
+        // the highlight; hovered and pressed …CheckedPointerOver / …CheckedPressed =
+        // SystemColorHighlightColorBrush (:88-89), on the highlight text; disabled
+        // …CheckedDisabled = SystemColorWindowColorBrush (:90), on the grey text.
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [TextProp::Color(
+                hc.highlight_text.unwrap_or(roles.accent.foreground),
+            )],
+        )
+        .rules(
+            hc.highlight
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
+            hc.highlight.map(TextProp::Color),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [TextProp::Color(
+                hc.highlight.unwrap_or(c.accent_text_secondary),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED),
+            [TextProp::Color(hc.window.unwrap_or(c.accent_text_disabled))],
         )
         .build();
     ToolbarWidget::new(
@@ -3405,7 +3945,7 @@ fn switch_hover_on(c: &SchemeColors) -> Color {
 /// off in the muted text, on in the accent's text, with no outline (0.7.2
 /// states none for it); its On and Off content [`switch_label`], after the
 /// track at [`SWITCH_LABEL_GAP`], keeping to it.
-fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
+fn switch(c: &SchemeColors, hc: &HighContrast, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -3468,7 +4008,7 @@ fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        switch_label(c, typography),
+        switch_label(c, hc, typography),
         // `label_side`, `label_gap_stretches`: the template's inner grid is
         // `HorizontalAlignment="Left"`, its columns `Auto`, 12, `Auto`, the content after the
         // switch (ToggleSwitch_themeresources.xaml:493-503, :505-506 at microsoft-ui-xaml
@@ -3491,8 +4031,13 @@ fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
 /// style sets none, :190-202); the PointerOver, Pressed and On states animate
 /// no presenter's `Foreground` (:245-324, :461-487), and `Disabled` sets both
 /// to `ToggleSwitchContentForegroundDisabled` = `TextFillColorDisabledBrush`
-/// (:325-336, :128 and :8), on or off.
-fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+/// (:325-336, :128 and :8), on or off; under high contrast
+/// `SystemColorGrayTextColorBrush` (:68), `hc`'s grey text.
+fn switch_label(
+    c: &SchemeColors,
+    hc: &HighContrast,
+    typography: &Typography,
+) -> RuleSet<TextStyle, TextProp> {
     let same = [
         RuleSelector::on(WidgetState::HOVER),
         RuleSelector::on(WidgetState::PRESSED),
@@ -3502,7 +4047,7 @@ fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle,
         .rules(same, [TextProp::Color(typography.body.color)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(c.disabled_text)],
+            [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
         )
         .build()
 }

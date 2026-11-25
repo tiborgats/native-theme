@@ -2,19 +2,19 @@
 //! each `TextEdit` the page builds given `input_frame`; the completion popup and the date picker
 //! in the base style.
 
-use native_theme_egui::{Role, RoleVariant, input_frame, text_area_frame};
+use native_theme_egui::{Role, RoleVariant, next};
 
-use super::{DemoState, caption, input_min_size};
+use super::{DemoState, Framed, caption, field_frame, input_min_size, text_area_frame};
 use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
-    // Each `TextEdit` the page builds at least `input.min_height` tall, a single line's row
-    // centred in the height the minimum adds, as the platform centres a field's text and the
-    // Basic page's fields are.
-    let min = input_min_size(t);
+    // Each `TextEdit` the page builds at least `input.field(NONE).min_size[1]` tall, a single
+    // line's row centred in the height the minimum adds, as the platform centres a field's text
+    // and the Basic page's fields are.
+    let min = input_min_size(r);
 
     caption(reg, ui, "TextEdit with input_frame (Role::Input)");
     let id = ui.make_persistent_id("inputs/single-line");
@@ -25,51 +25,54 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         normal,
         "TextEdit (single line)",
         |ui| {
-            let frame = input_frame(ui, id, t);
+            let frame = field_frame(ui, id, r, next::input_frame);
             ui.add(
                 egui::TextEdit::singleline(&mut state.text)
                     .min_size(min)
                     .align(egui::Align2::LEFT_CENTER)
                     .id(id)
-                    .frame(frame),
+                    .framed(frame),
             )
             .accessible_name("TextEdit (single line)")
         },
     );
     let id = ui.make_persistent_id("inputs/multiline");
+    let mut notes = Vec::new();
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
-        let frame = text_area_frame(ui, id, t);
+        let frame;
+        (frame, notes) = text_area_frame(ui, id, r);
         ui.add(
             egui::TextEdit::multiline(&mut state.multiline)
                 .min_size(min)
                 .id(id)
-                .frame(frame),
+                .framed(frame),
         )
         .accessible_name("TextEdit (multiline)")
     });
+    reg.notes_last("frame", &notes);
     let id = ui.make_persistent_id("inputs/password");
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (password)", |ui| {
-        let frame = input_frame(ui, id, t);
+        let frame = field_frame(ui, id, r, next::input_frame);
         ui.add(
             egui::TextEdit::singleline(&mut state.password)
                 .password(true)
                 .min_size(min)
                 .align(egui::Align2::LEFT_CENTER)
                 .id(id)
-                .frame(frame),
+                .framed(frame),
         )
         .accessible_name("TextEdit (password)")
     });
     let id = ui.make_persistent_id("inputs/hint");
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (hint)", |ui| {
-        let frame = input_frame(ui, id, t);
+        let frame = field_frame(ui, id, r, next::input_frame);
         ui.add(
             egui::TextEdit::singleline(&mut state.hint)
                 .hint_text("A hint")
                 .min_size(min)
                 .align(egui::Align2::LEFT_CENTER)
                 .id(id)
-                .frame(frame),
+                .framed(frame),
         )
     });
     let id = ui.make_persistent_id("inputs/disabled");
@@ -81,14 +84,14 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         RoleVariant::Disabled,
         "TextEdit (disabled)",
         |ui| {
-            let frame = input_frame(ui, id, t);
+            let frame = field_frame(ui, id, r, next::input_frame);
             ui.add_enabled(
                 false,
                 egui::TextEdit::singleline(&mut disabled)
                     .min_size(min)
                     .align(egui::Align2::LEFT_CENTER)
                     .id(id)
-                    .frame(frame),
+                    .framed(frame),
             )
             .accessible_name("TextEdit (disabled)")
         },
@@ -104,7 +107,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
     );
     let id = ui.make_persistent_id("inputs/completion");
     demo::scoped(reg, ui, Role::Input, normal, "CompletionPopup", |ui| {
-        let frame = input_frame(ui, id, t);
+        let frame = field_frame(ui, id, r, next::input_frame);
         egui::CompletionPopup::new(id)
             .show(
                 ui,
@@ -112,7 +115,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
                     .hint_text("A bundled preset's name")
                     .min_size(min)
                     .align(egui::Align2::LEFT_CENTER)
-                    .frame(frame),
+                    .framed(frame),
                 |query| preset_suggestions(query.word),
             )
             .text_edit
@@ -154,16 +157,16 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
     reg.note_last(
         "ui.text_edit_singleline",
         "egui's own height: one row and its margin, at least the scope's interact_size.y \
-         (button.min_height); input.min_height is not applied",
+         (button.body(NONE).min_size[1]); input.field(NONE).min_size[1] is not applied",
     );
     reg.note_last(
         "padding",
         "the input scope's button_padding, one value per axis (egui-0.37.0 \
-         src/theme/default_style.rs:155): each the mean of a pair of input.border.padding's \
-         sides, a stated side with input.border.line_width added, so the mean of the two where \
-         the theme states different ones (windows-11), and an unstated side the button's \
-         padding, egui's own 8 × 2 (src/style.rs:1568) where button.border.padding states \
-         neither side of the pair either; input_frame pads each side as stated",
+         src/theme/default_style.rs:155): each the mean of a pair of input.field(NONE).padding's \
+         sides, a stated side with input.field(NONE).stroke.width added, so the mean of the two \
+         where the theme states different ones (windows-11), and an unstated side the button's \
+         padding, egui's own 8 × 2 (src/style.rs:1568) where button.body(NONE).padding states \
+         neither side of the pair either; next::input_frame pads each side as stated",
     );
     demo::scoped(
         reg,
@@ -178,7 +181,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
     );
     reg.note_last(
         "ui.text_edit_multiline",
-        "egui's own height, at least four rows and its margin; input.min_height is not applied",
+        "egui's own height, at least four rows and its margin; input.field(NONE).min_size[1] is not applied",
     );
     demo::scoped(reg, ui, Role::Input, normal, "ui.code_editor", |ui| {
         ui.code_editor(&mut state.code)
@@ -186,7 +189,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
     });
     reg.note_last(
         "ui.code_editor",
-        "egui's own height, at least four rows and its margin; input.min_height is not applied",
+        "egui's own height, at least four rows and its margin; input.field(NONE).min_size[1] is not applied",
     );
 
     caption(reg, ui, "DragValue (Role::Input)");

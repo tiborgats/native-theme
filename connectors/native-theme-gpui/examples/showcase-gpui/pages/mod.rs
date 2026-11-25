@@ -2,8 +2,7 @@
 
 use gpui::{App, Div, Pixels, Rems, px, rems};
 use gpui_component::v_flex;
-use native_theme::theme::LayoutTheme;
-use native_theme_gpui::{geometry, next};
+use native_theme_gpui::next;
 
 use crate::support::{next_metric, with_gap, with_padding};
 
@@ -74,17 +73,7 @@ pub(crate) const SWATCH_SIZE: Pixels = crate::inspector::SWATCH_SIZE;
 /// §3.1). Each swatch's info says so.
 pub(crate) const SWATCH_LABEL_GAP: Rems = rems(0.5);
 
-/// A page's root, as the Basic page lays out its own: padded by
-/// `layout.window_margin`, its sections `layout.section_gap` apart, and
-/// neither where the theme states none.
-pub(crate) fn page_root(layout: &LayoutTheme) -> Div {
-    with_gap(
-        with_padding(v_flex(), geometry::window_margin(layout)),
-        geometry::section_gap(layout),
-    )
-}
-
-/// [`page_root`] on the 0.8.0 model: padded by the installed 0.8.0 theme's
+/// A page's root, as the Basic page lays out its own: padded by the installed 0.8.0 theme's
 /// `layout.window_margin`, its sections `layout.section_gap` apart, and
 /// neither where the theme states none.
 pub(crate) fn next_page_root(cx: &App) -> Div {

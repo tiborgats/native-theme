@@ -442,8 +442,10 @@ fn a_part_that_states_no_ring_or_one_iced_cannot_draw_draws_none() -> TestResult
 
 /// FR4: a part's own ring stated for a focus that followed a key only (a
 /// rule at `FOCUS_VISIBLE`) is the part's ring read at `FOCUS_VISIBLE`,
-/// while the part read at `FOCUSED` keeps the global ring, so the field
-/// draws each for its focus ([`super::focus_rings_with`]).
+/// while the part read at `FOCUSED` keeps the ring it has without that
+/// rule, the global ring where the preset states the field no ring of its
+/// own, so the field draws each for its focus
+/// ([`super::focus_rings_with`]).
 #[cfg(feature = "widgets")]
 #[test]
 fn a_ring_stated_at_focus_visible_is_the_ring_of_a_focus_that_followed_a_key() -> TestResult {
@@ -456,19 +458,30 @@ fn a_ring_stated_at_focus_visible_is_the_ring_of_a_focus_that_followed_a_key() -
             .states(WidgetState::FOCUS_VISIBLE)
             .field(PartPatch::new().focus(Some(own_ring()))),
     );
-    for (preset, r) in every_preset_with(&patch) {
+    let mut global = 0;
+    for ((preset, r), (_, plain)) in every_preset_with(&patch).into_iter().zip(every_preset()) {
         let look = |state| super::part_ring_look(&r, &r.input.field(state), RingHomes::INPUT, 4.0);
         assert_eq!(
             look(WidgetState::FOCUS_VISIBLE)?.map(|look| look.color),
             Some(super::to_color(OUTER)),
             "{preset:?}: the key focus's ring"
         );
+        let without = super::part_ring_look(
+            &plain,
+            &plain.input.field(WidgetState::FOCUSED),
+            RingHomes::INPUT,
+            4.0,
+        )?;
         assert_eq!(
             look(WidgetState::FOCUSED)?,
-            super::ring_look(&r, 4.0)?,
+            without,
             "{preset:?}: another focus's ring"
         );
+        if without == super::ring_look(&r, 4.0)? {
+            global += 1;
+        }
     }
+    assert!(global > 0, "no preset's field keeps the global ring");
     Ok(())
 }
 

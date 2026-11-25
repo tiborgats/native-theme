@@ -27,6 +27,58 @@ pub(crate) struct FocusRingSource {
     /// The corners of the ring's inner edge, the line the offset places, where the theme
     /// states the ring's own.
     pub corners: Option<RingCorners>,
+    /// The corners' home, which a note names where they are not finite.
+    pub corners_path: &'static str,
+}
+
+/// The ring a role's part states of its own (`PartStyle.focus`, spec §2 `FocusIndicator`),
+/// drawn in place of the scheme's ring round a widget in the role's scope.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) enum PartRing {
+    /// The part states no ring of its own: the scheme's ring.
+    #[default]
+    Global,
+    /// The part's own ring; `None` where it states none, or one egui cannot draw.
+    Own(Option<FocusRing>),
+}
+
+/// A role's [`PartRing`] for a focus that followed no key press, its part asked at `FOCUSED`,
+/// and for one that followed a key press, asked at `FOCUS_VISIBLE`.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct PartRings {
+    pub(crate) pointer: PartRing,
+    pub(crate) keyboard: PartRing,
+}
+
+impl PartRings {
+    /// The ring for a focus that followed a key press (`by_key`) or not.
+    pub(crate) const fn get(self, by_key: bool) -> PartRing {
+        if by_key { self.keyboard } else { self.pointer }
+    }
+}
+
+/// What a role's part states of its own ring, as the 0.8.0 model's reads give it: nothing,
+/// none, or a ring's source.
+#[derive(Default)]
+pub(crate) enum PartRingSource {
+    /// The part states no ring of its own.
+    #[default]
+    Global,
+    /// The part states none, or one egui cannot draw (noted where it is read).
+    None,
+    /// The part's own ring.
+    Ring(FocusRingSource),
+}
+
+impl PartRingSource {
+    /// The ring [`build_focus_ring_from`] builds of the source.
+    pub(crate) fn build(&self, notes: &mut Vec<Note>) -> PartRing {
+        match self {
+            Self::Global => PartRing::Global,
+            Self::None => PartRing::Own(None),
+            Self::Ring(src) => PartRing::Own(build_focus_ring_from(src, notes)),
+        }
+    }
 }
 
 /// The corners of a focus ring's inner edge as the theme states them.
@@ -49,6 +101,7 @@ impl FocusRingSource {
             keyboard_only: d.focus_ring_keyboard_only == Some(true),
             inner: None,
             corners: None,
+            corners_path: "focus_ring.corners",
         }
     }
 }
@@ -105,7 +158,7 @@ pub(crate) fn build_focus_ring_from(
             push_note(
                 notes,
                 Note::ValueSanitised {
-                    path: "focus_ring.corners",
+                    path: src.corners_path,
                 },
             );
             None
@@ -133,10 +186,11 @@ pub(crate) struct FocusEntry {
     pub(crate) viewport: egui::ViewportId,
     /// `Context::cumulative_pass_nr` of the pass the lists belong to.
     pub(crate) pass_nr: u64,
-    /// Each styled `Ui`'s `unique_id` with its style's `widgets.active.corner_radius`: a role's
-    /// cell (`native_scope`, `native_set_style`) or a caller's own style
-    /// (`native_set_style_with_ring`).
-    pub(crate) scopes: Vec<(Id, CornerRadius)>,
+    /// Each styled `Ui`'s `unique_id` with its style's `widgets.active.corner_radius` and the
+    /// rings its role's part states of its own: a role's cell (`native_scope`,
+    /// `native_set_style`) or a caller's own style (`native_set_style_with_ring`, the scheme's
+    /// ring).
+    pub(crate) scopes: Vec<(Id, CornerRadius, PartRings)>,
     /// `register_focus_shape`'s outlines: widget id, rect, radius.
     pub(crate) shapes: Vec<(Id, Rect, CornerRadius)>,
 }
@@ -172,26 +226,32 @@ fn focus_key_of(viewport: egui::ViewportId) -> Id {
     Id::unique(("native-theme-egui/focus", viewport))
 }
 
-/// Record that `ui_id` was styled with a role whose active corner radius is `radius`, for this
-/// pass. With `replace`, a second record for the same `Ui` replaces the first (spec §6.18), at the
-/// cost of a scan of the pass's records; without it the record is pushed, for a `Ui` created in
-/// this pass, whose `unique_id` no earlier record holds (`egui/src/ui.rs:252-260`). The pass
-/// number and the key are read before `data_mut` is entered: no `Context` accessor inside
-/// another (spec §10.3).
-pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, replace: bool) {
+/// Record that `ui_id` was styled with a role whose active corner radius is `radius` and whose
+/// part states `rings` of its own, for this pass. With `replace`, a second record for the same
+/// `Ui` replaces the first (spec §6.18), at the cost of a scan of the pass's records; without it
+/// the record is pushed, for a `Ui` created in this pass, whose `unique_id` no earlier record
+/// holds (`egui/src/ui.rs:252-260`). The pass number and the key are read before `data_mut` is
+/// entered: no `Context` accessor inside another (spec §10.3).
+pub(crate) fn record_scope(
+    ctx: &Context,
+    ui_id: Id,
+    radius: CornerRadius,
+    rings: PartRings,
+    replace: bool,
+) {
     let (pass_nr, viewport) = (ctx.cumulative_pass_nr(), ctx.viewport_id());
     let key = focus_key_of(viewport);
     ctx.data_mut(|data| {
         let entry = data.get_temp_mut_or_insert_with(key, || FocusEntry::of(viewport));
         entry.begin(pass_nr);
         let slot = if replace {
-            entry.scopes.iter_mut().find(|(id, _)| *id == ui_id)
+            entry.scopes.iter_mut().find(|(id, _, _)| *id == ui_id)
         } else {
             None
         };
         match slot {
-            Some(slot) => slot.1 = radius,
-            None => entry.scopes.push((ui_id, radius)),
+            Some(slot) => (slot.1, slot.2) = (radius, rings),
+            None => entry.scopes.push((ui_id, radius, rings)),
         }
     });
 }
@@ -777,29 +837,30 @@ fn grow(radius: CornerRadius, by: f32) -> CornerRadius {
     }
 }
 
-/// The active corner radius of the innermost recorded scope on the widget's layer whose final
-/// rect contains the widget's `interact_rect` (spec §6.18): of the matches, the `Ui` last in the
-/// layer's order (`egui/src/widget_rect.rs:132-134`), since a `Ui` is registered before every
-/// `Ui` it contains (`egui/src/ui.rs:170-183`). The root `Ui`'s entry still holds
-/// `Rect::NOTHING` during `on_end_pass` (`egui/src/ui.rs:171`), so its record never matches.
-fn scope_radius(
+/// The active corner radius and the part's own rings of the innermost recorded scope on the
+/// widget's layer whose final rect contains the widget's `interact_rect` (spec §6.18): of the
+/// matches, the `Ui` last in the layer's order (`egui/src/widget_rect.rs:132-134`), since a `Ui`
+/// is registered before every `Ui` it contains (`egui/src/ui.rs:170-183`). The root `Ui`'s
+/// entry still holds `Rect::NOTHING` during `on_end_pass` (`egui/src/ui.rs:171`), so its record
+/// never matches.
+fn innermost_scope(
     ctx: &Context,
     entry: &FocusEntry,
     widget: &egui::WidgetRect,
-) -> Option<CornerRadius> {
+) -> Option<(CornerRadius, PartRings)> {
     ctx.viewport(|viewport| {
         let widgets = &viewport.this_pass.widgets;
         entry
             .scopes
             .iter()
-            .filter_map(|(ui_id, radius)| {
+            .filter_map(|(ui_id, radius, rings)| {
                 let (layer, order) = widgets.order(*ui_id)?;
                 let rect = widgets.get(*ui_id)?.rect;
                 (layer == widget.layer_id && rect.contains_rect(widget.interact_rect))
-                    .then_some((order, *radius))
+                    .then_some((order, (*radius, *rings)))
             })
             .max_by_key(|(order, _)| *order)
-            .map(|(_, radius)| radius)
+            .map(|(_, scope)| scope)
     })
 }
 
@@ -810,18 +871,17 @@ fn scope_radius(
 /// says keyboard only, only for a focus that followed a key press: the plugin remembers the kind
 /// of the last input across passes (a drag value takes the focus in the pass of the release, not
 /// of the press) and, when the focused widget changes, keeps the answer for that widget.
+///
+/// The ring is the innermost scope's role's part's own where that part states one
+/// ([`PartRing::Own`], none where it states none), else the scheme's; a widget in no scope takes
+/// the base style's look, `button.body`'s (`Role::Button`, `Normal`), and so its ring. Either is
+/// drawn on the same geometry, shown as its own trigger says.
 fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
     let ctx = ui.ctx();
     let Some(atlas) = ThemeAtlas::from_ctx(ctx) else {
         return;
     };
     let theme = ctx.theme();
-    let Some(ring) = atlas.focus_ring(theme) else {
-        return;
-    };
-    if ring.keyboard_only && !by_key {
-        return; // the theme says keyboard only, and this focus did not follow a key (D4)
-    }
     if !ctx.input(|i| i.focused) {
         return; // the window has no OS keyboard focus (`egui/src/input_state/mod.rs:315`)
     }
@@ -839,12 +899,33 @@ fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
         .data(|data| data.get_temp::<FocusEntry>(key))
         .filter(|entry| entry.pass_nr == pass_nr)
         .unwrap_or_default();
+    let scope = innermost_scope(ctx, &entry, &widget);
+    let rings = scope.map_or_else(
+        || {
+            atlas
+                .scheme(theme)
+                .part_rings(crate::Role::Button, crate::RoleVariant::Normal)
+        },
+        |(_, rings)| rings,
+    );
+    let ring = match rings.get(by_key) {
+        PartRing::Own(ring) => ring,
+        PartRing::Global => atlas.focus_ring(theme).copied(),
+    };
+    let Some(ring) = ring else {
+        return;
+    };
+    if ring.keyboard_only && !by_key {
+        return; // the theme says keyboard only, and this focus did not follow a key (D4)
+    }
     let (edge, radius) = match entry.shapes.iter().find(|(shape_id, _, _)| *shape_id == id) {
         Some((_, rect, radius)) => (*rect, *radius),
         None => (
             widget.rect,
-            scope_radius(ctx, &entry, &widget)
-                .unwrap_or(ui.style().visuals.widgets.active.corner_radius),
+            scope.map_or(
+                ui.style().visuals.widgets.active.corner_radius,
+                |(radius, _)| radius,
+            ),
         ),
     };
     let rect = edge.expand(ring.offset);

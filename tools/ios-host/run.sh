@@ -1,0 +1,490 @@
+#!/bin/bash
+# Runs on a macOS runner (os-probe.yml's ios-host job), from the repository's
+# root, with the image's default Xcode: builds tools/ios-host (the IosHost app
+# and its IosHostUITests press pass) for the simulator, creates and boots a
+# simulator of the image's newest iOS runtime of the SDK's major version
+# (macos-15 also carries iOS 26 runtimes, which would run an iOS 18 SDK build
+# in iOS 26's compatibility look) on the newest "iPhone <N> Pro" that runtime
+# supports, runs the app's render pass twice (`simctl launch`) and its press
+# pass twice (the UI test, `xcodebuild test-without-building`), checks that the
+# two runs of each wrote the same measurements (shasum -a 256, then
+# compare.swift for the files that differ; below), and solves the layers
+# captured over black and white (solve.swift). For each page the app draws, the
+# script takes the simulator's screenshot (`simctl io screenshot`) when the app
+# writes sync/ready-<n>-<attempt> and hands it over as
+# sync/screen-<n>-<attempt>.png (tools/ios-host/IosHost/IosHost.swift).
+# IOS_HOST_QUICK=1 runs a few specimens at medium only. IOS_HOST_PASSES (a
+# comma-separated list, default render,press,focus) chooses the passes:
+# render (run<N>), press (press<N>), focus (focus1, on the iPad) and measure
+# (measure<N>, twice, after the press pass: the app's measure mode,
+# tools/ios-host/IosHost/Measure.swift, given IOS_HOST_MEASURE, its own
+# comma-separated list of passes, default roles,fonts,symbols). IOS_HOST_SET
+# (base, the default, campaign, popup: the campaign set's pop-up buttons, or
+# lists: the list set, listSpecimens) is the render pass's specimen set
+# (IosHost.swift, campaignSpecimens); the press pass presses the list set in
+# place of the buttons where it is lists. IOS_HOST_DEVICE (iphone, the default, or
+# ipad) is the simulator every pass but focus runs on: the newest "iPhone <N>
+# Pro", or the last "iPad Pro" the runtime lists. IOS_HOST_SETTINGS (a
+# comma-separated list, default none) is set on that simulator after its boot,
+# before the passes: increase_contrast (`simctl ui increase_contrast`),
+# content_size=<category> (`simctl ui content_size`), bold_text and
+# button_shapes and full_keyboard_access (com.apple.Accessibility's
+# EnhancedTextLegibilityEnabled, ButtonShapesEnabled and
+# FullKeyboardAccessEnabled, written with `simctl spawn defaults`; also on
+# the focus pass's iPad; the app's index
+# records what UIAccessibility then reports, [motion] in run<N>/index.toml,
+# [environment] in measure<N>/index.toml). Writes into $1:
+#   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once), measure<N>/
+#                 the app's draw/ (not measure), screen/ and pages/ PNGs,
+#                 index.toml;
+#                 sync/ (the handshake, outside the comparison): done (ok or
+#                 the app's failures), retakes (screenshots retaken)
+#   solved/run1/, solved/press1/, solved/measure1/  the solved layers;
+#                 solved/run1.toml, solved/press1.toml, solved/measure1.toml
+#                 their summaries
+#   headers/      the UIKit (and AVRoutePickerView) headers and UIKit's Swift
+#                 interfaces of the iphoneos and iphonesimulator SDKs, with
+#                 README.txt: the Xcode, each SDK's path, version and build,
+#                 each file's SHA-256
+#   colors.txt    the UIColor class colours of the SDK's UIColor.h and
+#                 UIInterface.h, which the app resolves
+#   environment.txt (the OS, Xcode and its SDKs, the runtime and device chosen,
+#   the SDK's UIButton.Configuration styles and sizes), build.log,
+#   press<N>-test.log and press<N>.xcresult, run.txt (each step's exit
+#   status), run<N>.sha256 and press<N>.sha256, differ.txt and
+#   press-differ.txt (the files that differ between the runs),
+#   differ-levels.txt and press-differ-levels.txt (by how much),
+#   measure-differ.txt and measure-differ-levels.txt (listed, failing
+#   nothing), sha256.txt
+set -u
+out=$1
+quick=${IOS_HOST_QUICK:-0}
+passes=${IOS_HOST_PASSES:-render,press,focus}
+measure=${IOS_HOST_MEASURE:-roles,fonts,symbols}
+# has <pass>: whether IOS_HOST_PASSES names it.
+has() { case ",$passes," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+mkdir -p "$out"
+out=$(cd "$out" && pwd)
+log="$out/run.txt"
+: >"$log"
+note() { echo "$*" | tee -a "$log"; }
+# manifest <folder> [<excluded path pattern>]
+manifest() { (cd "$1" && find . -type f ! -path './sync/*' ! -path "${2:-./sync/*}" -print | LC_ALL=C sort | xargs shasum -a 256); }
+bundle=io.github.tiborgats.native-theme.ios-host
+build="${RUNNER_TEMP:-/tmp}/ios-host-build"
+note "quick: $quick"
+note "passes: $passes"
+has measure && note "measure passes: $measure"
+specimen_set=${IOS_HOST_SET:-base}
+device=${IOS_HOST_DEVICE:-iphone}
+settings=${IOS_HOST_SETTINGS:-}
+note "specimen set: $specimen_set; device: $device; settings: ${settings:-none}"
+
+sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
+uikit="$sdk/System/Library/Frameworks/UIKit.framework/Headers"
+{
+  sw_vers; echo "sw_vers: exit $?"
+  xcode-select -p; echo "xcode-select -p: exit $?"
+  xcodebuild -version; echo "xcodebuild -version: exit $?"
+  echo "iphonesimulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-version) build $(xcrun --sdk iphonesimulator --show-sdk-build-version)"
+  echo "sysctl hw.model: $(sysctl -n hw.model)"
+  echo "UIButtonConfiguration.h, the styles and sizes:"
+  grep -n -E '\(instancetype\)[A-Za-z]*ButtonConfiguration|UIButtonConfigurationSize[A-Za-z]* *[=,]' "$uikit/UIButtonConfiguration.h"; echo "grep: exit $?"
+  echo "the iOS runtimes:"
+  xcrun simctl list runtimes ios; echo "simctl list runtimes: exit $?"
+} >"$out/environment.txt" 2>&1
+cat "$out/environment.txt"
+
+# The headers a lane quotes, from both SDKs of the default Xcode.
+headers="$out/headers"
+mkdir -p "$headers"
+{
+  echo "xcode-select -p: $(xcode-select -p)"
+  xcodebuild -version
+  for kind in iphoneos iphonesimulator; do
+    path=$(xcrun --sdk "$kind" --show-sdk-path)
+    echo "$kind SDK: $path, version $(xcrun --sdk "$kind" --show-sdk-version), build $(xcrun --sdk "$kind" --show-sdk-build-version)"
+    mkdir -p "$headers/$kind"
+    for name in UIButton.h UIButtonConfiguration.h UIColor.h UIInterface.h UIFont.h UIFontDescriptor.h \
+      UIFontMetrics.h UIImage.h UIImageConfiguration.h UIImageSymbolConfiguration.h UIBackgroundConfiguration.h \
+      UIControl.h UITraitCollection.h UIContentSizeCategory.h UIView.h UIBarButtonItem.h UIBarItem.h \
+      UINavigationItem.h UINavigationBar.h UIToolbar.h UIPasteControl.h UIScrollView.h \
+      UILongPressGestureRecognizer.h UITapGestureRecognizer.h UINavigationController.h UITextInput.h \
+      UIFocus.h UIFocusSystem.h UIAccessibility.h UIActivityIndicatorView.h UIMenu.h; do
+      file="$path/System/Library/Frameworks/UIKit.framework/Headers/$name"
+      if [ -f "$file" ]; then
+        cp "$file" "$headers/$kind/$name"
+        echo "  UIKit.framework/Headers/$name: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+      else
+        echo "  UIKit.framework/Headers/$name: absent"
+      fi
+    done
+    file="$path/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h"
+    if [ -f "$file" ]; then
+      cp "$file" "$headers/$kind/AVRoutePickerView.h"
+      echo "  AVKit.framework/Headers/AVRoutePickerView.h: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+    else
+      echo "  AVKit.framework/Headers/AVRoutePickerView.h: absent"
+    fi
+    # XCTest's UI-testing events (whether a UI test can hover a pointer on
+    # this platform: the iPad pointer-hover pass).
+    platform=$(xcrun --sdk "$kind" --show-sdk-platform-path)
+    for name in XCUIElement.h XCUICoordinate.h; do
+      file="$platform/Developer/Library/Frameworks/XCTest.framework/Headers/$name"
+      if [ -f "$file" ]; then
+        cp "$file" "$headers/$kind/$name"
+        echo "  XCTest.framework/Headers/$name: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+      else
+        echo "  XCTest.framework/Headers/$name: absent"
+      fi
+    done
+    # Xcode 16's XCTest headers only import XCUIAutomation's: every
+    # XCUIElement.h and XCUICoordinate.h under the platform's developer
+    # library, kept as <framework>-<name>.
+    found=0
+    while IFS= read -r file; do
+      found=1
+      framework=$(basename "$(dirname "$(dirname "$file")")" .framework)
+      cp "$file" "$headers/$kind/$framework-$(basename "$file")"
+      echo "  ${file#"$platform"/}: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+    done < <(find "$platform/Developer/Library" \( -name XCUIElement.h -o -name XCUICoordinate.h \) -type f 2>/dev/null | sort)
+    [ $found -eq 1 ] || echo "  XCUIElement.h, XCUICoordinate.h under $platform/Developer/Library: absent"
+    found=0
+    for file in "$path"/System/Library/Frameworks/UIKit.framework/Modules/UIKit.swiftmodule/arm64*.swiftinterface; do
+      [ -f "$file" ] || continue
+      found=1
+      cp "$file" "$headers/$kind/"
+      echo "  UIKit.framework/Modules/UIKit.swiftmodule/$(basename "$file"): sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+    done
+    [ $found -eq 1 ] || echo "  UIKit.framework/Modules/UIKit.swiftmodule/arm64*.swiftinterface: absent"
+  done
+} >"$headers/README.txt" 2>&1
+note "headers: $(find "$headers" -type f | wc -l | tr -d ' ') files"
+# simctl's input and output commands (whether a pointer can be posted to a
+# simulator).
+xcrun simctl help io >"$out/simctl-io-help.txt" 2>&1
+note "simctl help io: exit $?"
+
+colors=$(python3 -I - "$uikit/UIColor.h" "$uikit/UIInterface.h" <<'EOF'
+import re, sys
+names = []
+for path in sys.argv[1:]:
+    text = open(path, encoding="utf-8", errors="replace").read()
+    pattern = r'@property\s*\(([^)]*)\)\s*UIColor\s*\*\s*(?:_Nonnull\s+|_Nullable\s+|nonnull\s+|nullable\s+)?(\w+)'
+    for match in re.finditer(pattern, text):
+        if re.search(r'\bclass\b', match.group(1)) and match.group(2) not in names:
+            names.append(match.group(2))
+print(",".join(names))
+EOF
+)
+status=$?
+echo "$colors" | tr ',' '\n' >"$out/colors.txt"
+note "colour names from UIColor.h and UIInterface.h: exit $status, $(grep -c . "$out/colors.txt")"
+if [ $status -ne 0 ] || [ -z "$colors" ]; then exit 1; fi
+
+xcrun simctl list -j runtimes >"$out/runtimes.json"
+sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
+choice=$(python3 -I - "$out/runtimes.json" "$sdk_version" "$device" <<'EOF'
+import json, re, sys
+major = sys.argv[2].split(".")[0]
+runtimes = [r for r in json.load(open(sys.argv[1]))["runtimes"]
+            if r.get("platform") == "iOS" and r.get("isAvailable") and r["version"].split(".")[0] == major]
+runtime = max(runtimes, key=lambda r: tuple(int(p) for p in r["version"].split(".")))
+pro = [(int(m.group(1)), t) for t in runtime.get("supportedDeviceTypes", [])
+       if (m := re.fullmatch(r"iPhone (\d+) Pro", t["name"]))]
+device = max(pro, key=lambda p: p[0])[1]
+if sys.argv[3] == "ipad":
+    device = [t for t in runtime.get("supportedDeviceTypes", []) if t["name"].startswith("iPad Pro")][-1]
+print("\t".join([runtime["identifier"], runtime["version"], runtime["buildversion"],
+                 device["identifier"], device["name"]]))
+EOF
+)
+status=$?
+note "choose the runtime and device: exit $status"
+if [ $status -ne 0 ] || [ -z "$choice" ]; then exit 1; fi
+IFS=$'\t' read -r runtime runtime_version runtime_build devicetype device_name <<<"$choice"
+note "runtime: $runtime ($runtime_version, $runtime_build)"
+note "device: $device_name ($devicetype)"
+
+# One build for both passes: the app and the UI test, signed to run locally
+# (a UI test runner the simulator launches needs a signature).
+xcodebuild build-for-testing -project tools/ios-host/IosHost.xcodeproj -scheme IosHost -configuration Release \
+  -destination "generic/platform=iOS Simulator" -derivedDataPath "$build" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+  CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO >"$out/build.log" 2>&1
+status=$?
+note "xcodebuild build-for-testing: exit $status"
+if [ $status -ne 0 ]; then grep -E 'error:|warning: .*IosHost' "$out/build.log" | head -n 60; tail -n 40 "$out/build.log"; exit 1; fi
+app="$build/Build/Products/Release-iphonesimulator/IosHost.app"
+xctestrun=$(find "$build/Build/Products" -maxdepth 1 -name '*.xctestrun' | head -n 1)
+note "xctestrun: $xctestrun"
+if [ -z "$xctestrun" ]; then exit 1; fi
+plutil -convert xml1 -o "$out/Info.plist" "$app/Info.plist"
+note "Info.plist DTXcodeBuild: $(plutil -extract DTXcodeBuild raw "$app/Info.plist")"
+
+udid=$(xcrun simctl create ios-host "$devicetype" "$runtime")
+status=$?
+note "simctl create: exit $status, $udid"
+if [ $status -ne 0 ]; then exit 1; fi
+xcrun simctl bootstatus "$udid" -b >"$out/boot.log" 2>&1
+note "simctl bootstatus -b: exit $?"
+xcrun simctl install "$udid" "$app"
+status=$?
+note "simctl install: exit $status"
+if [ $status -ne 0 ]; then xcrun simctl delete "$udid"; exit 1; fi
+# apply_settings <udid>: IOS_HOST_SETTINGS on a booted simulator.
+apply_settings() {
+  local setting
+  for setting in ${settings//,/ }; do
+    case "$setting" in
+      increase_contrast) xcrun simctl ui "$1" increase_contrast enabled ;;
+      content_size=*) xcrun simctl ui "$1" content_size "${setting#content_size=}" ;;
+      bold_text) xcrun simctl spawn "$1" defaults write com.apple.Accessibility EnhancedTextLegibilityEnabled -bool YES ;;
+      button_shapes) xcrun simctl spawn "$1" defaults write com.apple.Accessibility ButtonShapesEnabled -bool YES ;;
+      full_keyboard_access) xcrun simctl spawn "$1" defaults write com.apple.Accessibility FullKeyboardAccessEnabled -bool YES ;;
+      *) false ;;
+    esac
+    note "setting $setting on $1: exit $?"
+  done
+}
+apply_settings "$udid"
+# The first screenshots after a boot can take over a minute (macos-26):
+# one is taken before the runs.
+shot=$(date +%s)
+xcrun simctl io "$udid" screenshot --type=png "$out/warm-up.png" >/dev/null 2>&1
+note "warm-up screenshot: exit $?, $(($(date +%s) - shot)) s"
+
+# serve <label> <documents folder> [<pid>]: takes the screenshots the app asks
+# for until it writes sync/done (or <pid>, the UI test or the app, ends first); sets
+# $container and $sync; 1 where it failed.
+serve() {
+  local label=$1 folder=$2 pid=${3:-}
+  local page=0 attempt=0 taken= start shot status
+  start=$(date +%s)
+  sync=
+  while [ -z "$sync" ]; do
+    container=$(xcrun simctl get_app_container "$udid" "$bundle" data 2>/dev/null)
+    if [ -n "$container" ] && [ -d "$container/Documents/$folder/sync" ]; then
+      sync="$container/Documents/$folder/sync"
+    elif [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+      note "$label: the process (the UI test, or the app) ended before the app wrote $folder/sync"
+      return 1
+    elif [ $(($(date +%s) - start)) -gt 900 ]; then
+      note "$label: no $folder/sync within 900 s"
+      return 1
+    else
+      sleep 1
+    fi
+  done
+  while [ ! -e "$sync/done" ]; do
+    if [ "$taken" != "$page-$attempt" ] && [ -e "$sync/ready-$page-$attempt" ]; then
+      shot=$(date +%s)
+      xcrun simctl io "$udid" screenshot --type=png "$sync/.screen-$page-$attempt.png" >/dev/null 2>&1
+      status=$?
+      if [ $status -ne 0 ]; then note "$label screenshot $page-$attempt: exit $status"; return 1; fi
+      shot=$(($(date +%s) - shot))
+      if [ $shot -gt 10 ]; then note "$label screenshot $page-$attempt: $shot s"; fi
+      mv "$sync/.screen-$page-$attempt.png" "$sync/screen-$page-$attempt.png"
+      taken="$page-$attempt"
+    elif [ "$taken" = "$page-$attempt" ] && [ -e "$sync/ready-$page-$((attempt + 1))" ]; then
+      attempt=$((attempt + 1))
+    elif [ "$taken" = "$page-$attempt" ] && [ -e "$sync/ready-$((page + 1))-0" ]; then
+      page=$((page + 1))
+      attempt=0
+    elif [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+      # The app exits once it has written sync/done.
+      [ -e "$sync/done" ] && return 0
+      note "$label: the process (the UI test, or the app) ended before sync/done"
+      return 1
+    elif [ $(($(date +%s) - start)) -gt 10800 ]; then
+      note "$label: no sync/done within 10800 s"
+      return 1
+    else
+      sleep 0.05
+    fi
+  done
+  return 0
+}
+
+# keep <label> <folder>: copies the app's output of a pass into $out/<folder>.
+keep() {
+  local label=$1 folder=$2
+  note "$label: $(find "$sync/../pages" -name '*.png' 2>/dev/null | wc -l | tr -d ' ') screenshots, done: $(tr '\n' ' ' <"$sync/done" 2>/dev/null)"
+  if [ -s "$sync/retakes" ]; then sed "s/^/$label retake: /" "$sync/retakes" | tee -a "$log"; fi
+  rm -rf "$out/$folder"
+  cp -R "$container/Documents/$folder" "$out/$folder"
+  note "$label: $(find "$out/$folder/draw" -name '*.png' 2>/dev/null | wc -l | tr -d ' ') drawn, $(find "$out/$folder/screen" -name '*.png' 2>/dev/null | wc -l | tr -d ' ') cropped PNGs"
+  [ "$(cat "$sync/done" 2>/dev/null)" = "ok" ]
+}
+
+failed=0
+quick_argument=()
+[ "$quick" = "1" ] && quick_argument=(quick)
+for run in 1 2; do
+  has render || break
+  xcrun simctl launch --terminate-running-process --stdout="$out/run$run-stdout.log" \
+    --stderr="$out/run$run-stderr.log" "$udid" "$bundle" "run$run" "colors=$colors" "set=$specimen_set" \
+    ${quick_argument[@]+"${quick_argument[@]}"}
+  status=$?
+  note "simctl launch run $run: exit $status"
+  if [ $status -ne 0 ]; then failed=1; continue; fi
+  serve "run $run" "run$run" || failed=1
+  xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+  [ -n "$sync" ] && { keep "run $run" "run$run" || failed=1; }
+done
+
+for run in 1 2; do
+  has press || break
+  TEST_RUNNER_IOS_HOST_RUN="press$run" TEST_RUNNER_IOS_HOST_QUICK="$quick" \
+    TEST_RUNNER_IOS_HOST_SET="$specimen_set" xcodebuild test-without-building \
+    -xctestrun "$xctestrun" -destination "id=$udid" -resultBundlePath "$out/press$run.xcresult" \
+    >"$out/press$run-test.log" 2>&1 &
+  pid=$!
+  serve "press $run" "press$run" "$pid" || failed=1
+  wait "$pid"
+  status=$?
+  note "press $run xcodebuild test-without-building: exit $status"
+  if [ $status -ne 0 ]; then failed=1; grep -E 'error|failed|Fail' "$out/press$run-test.log" | head -n 40; fi
+  xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+  [ -n "$sync" ] && { keep "press $run" "press$run" || failed=1; }
+done
+for run in 1 2; do
+  has measure || break
+  # simctl launch prints "<bundle>: <pid>", the app's process on the host:
+  # serve stops waiting once it has ended.
+  launched=$(xcrun simctl launch --terminate-running-process --stdout="$out/measure$run-stdout.log" \
+    --stderr="$out/measure$run-stderr.log" "$udid" "$bundle" "measure$run" "passes=$measure" "colors=$colors")
+  status=$?
+  note "simctl launch measure $run: exit $status, $launched"
+  if [ $status -ne 0 ]; then failed=1; continue; fi
+  serve "measure $run" "measure$run" "${launched##*: }" || { failed=1; note "measure $run: last scene $(cat "$sync/progress" 2>/dev/null)"; }
+  xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+  [ -n "$sync" ] && { keep "measure $run" "measure$run" || failed=1; }
+done
+xcrun simctl shutdown "$udid" >/dev/null 2>&1
+xcrun simctl delete "$udid"
+
+# The focused state, on the last "iPad Pro" the runtime lists among its
+# device types (iOS 18.6 and 26.5: the 12.9-inch 3rd generation; an iPhone has
+# no focus system: the render pass's index records it): the app's focus mode,
+# once.
+ipad=$(python3 -I - "$out/runtimes.json" "$runtime" <<'EOF'
+import json, sys
+runtime = next(r for r in json.load(open(sys.argv[1]))["runtimes"] if r["identifier"] == sys.argv[2])
+pads = [t for t in runtime.get("supportedDeviceTypes", []) if t["name"].startswith("iPad Pro")]
+print("\t".join([pads[-1]["identifier"], pads[-1]["name"]]))
+EOF
+)
+status=$?
+note "choose the iPad: exit $status"
+if ! has focus; then
+  note "focus: not run"
+elif [ $status -ne 0 ] || [ -z "$ipad" ]; then
+  failed=1
+else
+  IFS=$'\t' read -r ipad_type ipad_name <<<"$ipad"
+  note "iPad: $ipad_name ($ipad_type)"
+  udid=$(xcrun simctl create ios-host-ipad "$ipad_type" "$runtime")
+  note "simctl create iPad: exit $?, $udid"
+  xcrun simctl bootstatus "$udid" -b >"$out/boot-ipad.log" 2>&1
+  note "simctl bootstatus -b iPad: exit $?"
+  xcrun simctl install "$udid" "$app"
+  note "simctl install iPad: exit $?"
+  apply_settings "$udid"
+  shot=$(date +%s)
+  xcrun simctl io "$udid" screenshot --type=png "$out/warm-up-ipad.png" >/dev/null 2>&1
+  note "iPad warm-up screenshot: exit $?, $(($(date +%s) - shot)) s"
+  xcrun simctl launch --terminate-running-process --stdout="$out/focus1-stdout.log" \
+    --stderr="$out/focus1-stderr.log" "$udid" "$bundle" focus1 ${quick_argument[@]+"${quick_argument[@]}"}
+  status=$?
+  note "simctl launch focus 1: exit $status"
+  if [ $status -ne 0 ]; then
+    failed=1
+  else
+    serve "focus 1" focus1 || failed=1
+    xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+    [ -n "$sync" ] && { keep "focus 1" focus1 || failed=1; }
+  fi
+  xcrun simctl shutdown "$udid" >/dev/null 2>&1
+  xcrun simctl delete "$udid"
+fi
+
+# The measurement is the screenshot (screen/, pages/, index.toml). Files that
+# differ between the runs are compared pixel by pixel (compare.swift): a
+# measurement file of the render pass differing by more than a level fails the
+# job; iOS 26's Liquid Glass edges vary by one level in a few pixels, and
+# drawHierarchy's copies (draw/) of the glass styles by up to three, which are
+# listed in differ-levels.txt and fail nothing (spike I); on an iOS 26 SDK,
+# Liquid Glass over black, white or the pattern can settle on a different look
+# in each run (compare.swift, --adaptive-glass), listed and failing nothing,
+# both runs' captures kept. The press pass's
+# differences are listed in press-differ-levels.txt and fail nothing: its
+# touches and animations are not frame-exact; its full screenshots (pages/)
+# are left out, a retaken press adding one.
+# compare <first> <second> <differ> <levels> [<option> [<excluded path pattern>]]
+compare() {
+  local first=$1 second=$2 differ=$3 levels=$4 option=${5:-} excluded=${6:-}
+  manifest "$out/$first" "$excluded" >"$out/$first.sha256"
+  manifest "$out/$second" "$excluded" >"$out/$second.sha256"
+  diff "$out/$first.sha256" "$out/$second.sha256" | sed -n 's/^< [0-9a-f]*  //p' >"$out/$differ"
+  if [ ! -s "$out/$first.sha256" ] || [ "$(wc -l <"$out/$first.sha256")" -ne "$(wc -l <"$out/$second.sha256")" ]; then
+    note "$first and $second wrote different file sets"
+    return 1
+  fi
+  if [ -s "$out/$differ" ]; then
+    note "$first and $second differ: $(grep -c . "$out/$differ") of $(wc -l <"$out/$first.sha256" | tr -d ' ') files, $(grep -vc '^\./draw/' "$out/$differ") outside draw/"
+  else
+    note "$first and $second byte-identical ($(wc -l <"$out/$first.sha256" | tr -d ' ') files)"
+  fi
+  xcrun swift tools/ios-host/compare.swift $option "$out/$first" "$out/$second" "$out/$differ" >"$out/$levels" 2>&1
+  local status=$?
+  head -n 60 "$out/$levels" | tee -a "$log"
+  note "compare.swift $first $second: exit $status"
+  return $status
+}
+adaptive=
+[ "${sdk_version%%.*}" -ge 26 ] && adaptive=--adaptive-glass
+if ! has render; then
+  :
+elif [ -d "$out/run1" ] && [ -d "$out/run2" ]; then
+  # The list set's full screenshots (pages/) are left out: in run
+  # 45220318789 they differed only in the home indicator (y 2583-2598 px of
+  # 2622, outside every cell), whose colour had not yet followed the page's
+  # appearance in one run; the crops (screen/) are compared.
+  pages=
+  [ "$specimen_set" = lists ] && pages='./pages/*'
+  compare run1 run2 differ.txt differ-levels.txt "$adaptive" "$pages" || failed=1
+else
+  failed=1
+fi
+if ! has press; then
+  :
+elif [ -d "$out/press1" ] && [ -d "$out/press2" ]; then
+  compare press1 press2 press-differ.txt press-differ-levels.txt --list-only './pages/*' || failed=1
+else
+  failed=1
+fi
+# The measure pass's differences are listed and fail nothing: its scenes
+# hold text views, presentations and lists whose drawing a run can settle
+# differently; the facts read a crop only where both runs agree.
+if ! has measure; then
+  :
+elif [ -d "$out/measure1" ] && [ -d "$out/measure2" ]; then
+  compare measure1 measure2 measure-differ.txt measure-differ-levels.txt --list-only || failed=1
+else
+  failed=1
+fi
+
+mkdir -p "$out/solved"
+for folder in run1 press1 measure1; do
+  [ -d "$out/$folder" ] || continue
+  xcrun swift tools/ios-host/solve.swift "$out/$folder" "$out/solved/$folder" "$out/solved/$folder.toml" 2>&1 | tee -a "$log"
+  status=${PIPESTATUS[0]}
+  note "solve.swift $folder: exit $status"
+  [ "$status" -eq 0 ] || failed=1
+done
+(cd "$out" && find . -name '*.png' ! -path './solved/*' -print | LC_ALL=C sort | xargs shasum -a 256) >"$out/sha256.txt"
+# The app's crash reports, if any (the host keeps the simulator's).
+mkdir -p "$out/crashes"
+find "$HOME/Library/Logs/DiagnosticReports" -name 'IosHost*' -exec cp {} "$out/crashes/" \; 2>/dev/null
+note "crash reports: $(find "$out/crashes" -type f | wc -l | tr -d ' ')"
+exit $failed

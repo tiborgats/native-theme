@@ -2,11 +2,56 @@ name: OS probe
 
 # Runs tools/os-probe (native-theme-os-probe, never published) on each macOS
 # and Windows runner image and uploads what the OS reported: probe.toml and,
-# on macOS, the control renders. Evidence for the platform-fidelity review
-# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3). Dispatched by hand only.
+# on macOS, the control renders; and the iOS host (tools/ios-host) in each
+# macOS image's iOS simulator.
+# Evidence for the platform-fidelity review
+# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
+# jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
+# Dispatched by hand only; `workflow_dispatch` needs this file on `main`, and
+# `gh workflow run os-probe.yml --ref <branch>` runs the branch's version:
+#
+#     gh workflow run os-probe.yml --ref v0.8.0-tools -f jobs=probe -f images='["macos-26"]'
+#
+# `-f passes=symbols` runs the probe job's symbols pass alone (the input lists
+# the pass names). Each pass of each image is a job of its own, uploading the
+# artifact os-probe-<image>-<pass> (os-probe-out as that pass left it, with the
+# environment records every macOS job writes).
 
 on:
   workflow_dispatch:
+    inputs:
+      jobs:
+        description: "The jobs to run, comma-separated without spaces (probe, ios-host, switch-label); empty runs every job"
+        required: false
+        default: ""
+      passes:
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, events, motion, motion-reduce-motion-off, colors, colors-highlight-red, probe-not-key, app-bundle, controls, controls-accent); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
+        required: false
+        default: ""
+      images:
+        description: "The probe and ios-host jobs' runner images, a JSON list (ios-host does nothing on Windows); the default is the 0.8.0 release set's"
+        required: false
+        default: '["macos-15", "macos-26", "windows-11-arm"]'
+      ios_host_passes:
+        description: "The ios-host job's passes (tools/ios-host/run.sh's IOS_HOST_PASSES: render, press, focus, measure), comma-separated"
+        required: false
+        default: "render,press,focus"
+      ios_host_measure:
+        description: "The ios-host job's measure passes (run.sh's IOS_HOST_MEASURE: roles, fonts, symbols), comma-separated"
+        required: false
+        default: "roles,fonts,symbols"
+      ios_host_set:
+        description: "The ios-host job's render specimen set (run.sh's IOS_HOST_SET: base, campaign, popup or lists)"
+        required: false
+        default: "base"
+      ios_host_device:
+        description: "The ios-host job's simulator (run.sh's IOS_HOST_DEVICE: iphone or ipad)"
+        required: false
+        default: "iphone"
+      ios_host_settings:
+        description: "The ios-host job's simulator settings (run.sh's IOS_HOST_SETTINGS: increase_contrast, bold_text, button_shapes, content_size=<category>), comma-separated; empty sets none"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -15,15 +60,60 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # The probe job's matrix: one job per image and pass, so the passes run side
+  # by side and a run lasts as long as its slowest pass. `passes` names them
+  # (every pass where it is empty); a Windows image runs the `probe` pass alone,
+  # as every other pass is macOS's. Each job uploads its own artifact,
+  # os-probe-<image>-<pass>.
+  probe-plan:
+    name: OS probe's passes
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',probe,')
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        env:
+          IMAGES: ${{ inputs.images }}
+          PASSES: ${{ inputs.passes }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          every = ["probe", "button", "symbols", "sdk-headers", "button-focus", "focus-transition",
+                   "button-contrast", "button-accent", "button-not-key", "button-inactive",
+                   "button-key-not-main", "button-main-not-key", "button-inactive-contrast",
+                   "probe-rt-off", "probe-contrast", "probe-tinting-off", "probe-rt-tinting-off",
+                   "probe-accent", "probe-contrast-accent", "button-focus-accent", "reads",
+                   "reads-accent", "reads-rtl", "events", "motion", "motion-reduce-motion-off",
+                   "colors", "colors-highlight-red", "probe-not-key", "app-bundle", "controls",
+                   "controls-accent"]
+          asked = [p for p in os.environ["PASSES"].split(",") if p] or every
+          unknown = [p for p in asked if p not in every]
+          if unknown:
+              raise SystemExit(f"unknown passes: {unknown}; the passes are {every}")
+          include = [{"os": image, "pass": p}
+                     for image in json.loads(os.environ["IMAGES"])
+                     for p in asked
+                     if not image.startswith("windows") or p == "probe"]
+          if not include:
+              raise SystemExit("no image runs any of the passes asked for")
+          print(json.dumps(include, indent=1))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("matrix=" + json.dumps({"include": include}) + "\n")
+          PY
+
   probe:
-    name: OS probe (${{ matrix.os }})
+    name: OS probe (${{ matrix.os }}, ${{ matrix.pass }})
+    needs: probe-plan
     runs-on: ${{ matrix.os }}
     # xcode-27 is the macOS 27 preview image: its failure does not fail the run.
     continue-on-error: ${{ matrix.os == 'xcode-27' }}
     strategy:
       fail-fast: false
-      matrix:
-        os: [macos-14, macos-15, macos-26, xcode-27, windows-2022, windows-2025, windows-11-arm]
+      # The default set is the 0.8.0 release set's (D3): macos-14, xcode-27
+      # (macOS 27, outside the release set, D12), windows-2022 and windows-2025
+      # (Windows Server) left it; each can still be named in `images`.
+      matrix: ${{ fromJSON(needs.probe-plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -33,16 +123,19 @@ jobs:
       # The probe's window section captures its window with `screencapture -l`,
       # which needs kTCCServiceScreenCapture on macOS 14+, and the extra passes
       # below write com.apple.universalaccess, which needs Full Disk Access
-      # (kTCCServiceSystemPolicyAllFiles): both granted to the shells that run
-      # the steps, as screenshots.yml grants the first. Each insert reports its
-      # own failure and the step fails nothing, so a TCC schema an image does
-      # not share leaves the probe to record what it then cannot do.
+      # (kTCCServiceSystemPolicyAllFiles), and the button pass posts mouse
+      # events, which needs Accessibility and PostEvent access: all granted to
+      # the shells that run the steps, as screenshots.yml grants the first.
+      # Each insert reports its own failure and the step fails nothing, so a
+      # TCC schema an image does not share leaves the probe to record what it
+      # then cannot do.
       - name: Grant screen recording and Full Disk Access (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
           set +e
-          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles; do
+          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles \
+                         kTCCServiceAccessibility kTCCServicePostEvent; do
             for client in /bin/bash /bin/zsh; do
               sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
                 "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
@@ -50,22 +143,25 @@ jobs:
                 || echo "::warning::granting $service to $client failed"
             done
           done
-      - name: Run the probe
-        run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
       # The image's own accessibility settings, wallpaper tinting and accent,
       # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
       # pair "does not exist", xcode-27 "Could not find key"), or what the read
-      # said where it failed otherwise (and a pass then restores nothing).
+      # said where it failed otherwise (and a pass then restores nothing);
+      # also into environment/accessibility.txt. This step and the
+      # wallpaper's run before every pass, and whatever failed before them.
       - name: Record the image's accessibility settings (macOS)
-        if: runner.os == 'macOS'
+        if: always() && runner.os == 'macOS'
         continue-on-error: true
         run: |
           set +e
-          mkdir -p "$RUNNER_TEMP/universalaccess"
+          mkdir -p "$RUNNER_TEMP/universalaccess" os-probe-out/environment
           for setting in "com.apple.universalaccess reduceTransparency" \
                          "com.apple.universalaccess increaseContrast" \
+                         "com.apple.universalaccess reduceMotion" \
                          "-g AppleReduceDesktopTinting" \
-                         "-g AppleAccentColor"; do
+                         "-g AppleAccentColor" \
+                         "-g AppleKeyboardUIMode" \
+                         "-g com.apple.swipescrolldirection"; do
             set -- $setting
             value="$(defaults read "$1" "$2" 2>&1)"
             if [ $? -ne 0 ]; then
@@ -75,14 +171,14 @@ jobs:
               esac
             fi
             echo "$value" > "$RUNNER_TEMP/universalaccess/$2"
-            echo "$1 $2: $value"
+            echo "$1 $2: $value" | tee -a os-probe-out/environment/accessibility.txt
           done
       # The desktop picture, which the materials and, with wallpaper tinting on,
       # the window backgrounds show through: as System Events names it (which
       # may need an Automation grant the image lacks, so it is given 20 s) and
       # as the wallpaper store records it, for the README to name.
       - name: Record the wallpaper (macOS)
-        if: runner.os == 'macOS'
+        if: always() && runner.os == 'macOS'
         continue-on-error: true
         run: |
           set +e
@@ -97,6 +193,616 @@ jobs:
             if [ -f "$store" ]; then plutil -p "$store"; echo "plutil: exit $?"; else echo "no $store"; fi
           } > "$out/wallpaper.txt" 2>&1
           cat "$out/wallpaper.txt"
+      - name: Run the probe
+        if: matrix.pass == 'probe'
+        run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
+      # The button pass (spike M of the 0.8.0 plan, extended for the macOS
+      # facts lane), with the image's own settings, into button-pass/: the
+      # buttons of every bezel style, border shape and tint, in a key window,
+      # per state, control size and appearance, each state also over black,
+      # white and grey backdrops (the buttons' own layer solved from them),
+      # with a toolbar, a text view's caret and the buttons' geometry and
+      # fonts; probe.toml's [macos.button_pass] method keys describe it. It
+      # moves the cursor and clicks
+      # with posted CGEvents, so Accessibility and PostEvent access are also
+      # granted to the built probe's path. environment.txt records the OS, the
+      # selected Xcode and its SDK, the SDK the probe was built against
+      # (vtool), the Rust toolchain and the display adapter.
+      - name: Run the button pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass
+          probe="$PWD/target/release/native-theme-os-probe"
+          mkdir -p "$out"
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            echo "xcrun SDK: $(xcrun --show-sdk-version) build $(xcrun --show-sdk-build-version)"
+            vtool -show-build "$probe"; echo "vtool -show-build: exit $?"
+            rustc -V
+            system_profiler SPDisplaysDataType; echo "system_profiler SPDisplaysDataType: exit $?"
+            for service in kTCCServiceAccessibility kTCCServicePostEvent; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$probe', 1, 2, 4, 1);"
+              echo "grant $service to $probe: exit $?"
+            done
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
+      # The controls pass measures macOS's default look, so Reduce
+      # Transparency, which the macOS 15 and 26 images turn on
+      # (`reduceTransparency` 1 in the step above), is turned off for it on
+      # the runner VM (disposable; the probe itself only reads), for the
+      # controls and controls-accent passes:
+      # button-pass-<pass>/settings.txt records the image's value, the
+      # write's exit status and the value read back (read once), and the step
+      # fails where the read-back is not 0. The probe's own read,
+      # accessibilityDisplayShouldReduceTransparency, is in probe.toml's
+      # [macos.environment.accessibility], and the controls step fails where
+      # it is not false.
+      - name: Turn Reduce Transparency off for the controls pass (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'controls' || matrix.pass == 'controls-accent')
+        run: |
+          set +e
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          mkdir -p "$out"
+          defaults write com.apple.universalaccess reduceTransparency -bool false
+          status=$?
+          read_back="$(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+          {
+            echo "image's reduceTransparency: $(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
+            echo "write reduceTransparency false: exit $status"
+            echo "read back: $read_back"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          if [ "$read_back" != "0" ]; then
+            echo "::error::reduceTransparency reads back '$read_back', not 0"
+            exit 1
+          fi
+      # The red accent for the controls-accent pass (AppleAccentColor 0, as
+      # the button-accent pass sets it), before the probe starts, so AppKit
+      # reads it at launch: the image's value, the write's exit status and
+      # the value read back appended to button-pass-controls-accent/settings.txt;
+      # the step fails where the read-back is not 0. The VM is disposable, so
+      # the image's value is not restored.
+      - name: Set the red accent for the controls pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'controls-accent'
+        run: |
+          set +e
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          mkdir -p "$out"
+          defaults write -g AppleAccentColor -int 0
+          status=$?
+          read_back="$(defaults read -g AppleAccentColor 2>&1)"
+          {
+            echo "image's AppleAccentColor: $(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+            echo "write AppleAccentColor 0: exit $status"
+            echo "read back: $read_back"
+          } >> "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          if [ "$read_back" != "0" ]; then
+            echo "::error::AppleAccentColor reads back '$read_back', not 0"
+            exit 1
+          fi
+      # The probe's unit tests on the image (the controls pass's pure
+      # helpers among them, which need no window server), in the release
+      # profile the probe is built in.
+      - name: Test the probe (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'controls'
+        run: cargo test -p native-theme-os-probe --release
+      # The controls pass (M2.FS4 of the 0.8.0 plan): the controls other than
+      # the push buttons in one key window (check boxes, disclosure buttons, a
+      # pop-up, a text field, a segmented control, a switch, a slider, two
+      # scroll views whose scrollers' knobs, legacy and overlay, are the
+      # targets, two tables, a tab view, a split view, a box and a toolbar
+      # button), each hovered by a posted mouse-moved event and pressed by a
+      # real mouse-down captured during the press, every state over the
+      # window's background and the black, white and grey backdrops; then the
+      # toolbar sheet, the toolbar button again in a window whose content
+      # view lies under its transparent title bar; into
+      # button-pass-controls/; probe.toml's [macos.button_pass.controls]
+      # method and its toolbar_sheet's say how. It posts mouse and key
+      # events, so Accessibility and PostEvent access are granted to the
+      # built probe's path as for the button pass. The step fails where the
+      # build fails, where the probe exits non-zero (it does where
+      # [macos.button_pass] or [macos.button_pass.controls] or its
+      # toolbar_sheet is missing or holds an error, or where every target of
+      # either sheet is in error, or where a state of either sheet is in
+      # error or lacks a capture) or wrote no probe.toml, and where its
+      # probe.toml does not read accessibilityDisplayShouldReduceTransparency
+      # false; the upload still runs. The controls-accent pass is the same
+      # pass with the red accent set before it, into
+      # button-pass-controls-accent/; its step fails too where the accent the
+      # probe's process reads ([macos.environment.accent]) is not the red
+      # one: AppleAccentColor 0 (the value the step above writes) and
+      # controlAccentColor #e0383eff under aqua and #ff5257ff under darkAqua,
+      # the red accent's controlAccentColor read the same way on macOS 14, 15
+      # and 26 in run 40348854007 (docs/evidence/os-probe/
+      # 2026-10-26-run-40348854007, accent-red/probe.toml). The keys are the
+      # only ones of those names in the pass's probe.toml.
+      - name: Run the controls pass (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'controls' || matrix.pass == 'controls-accent')
+        run: |
+          set +e
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          probe="$PWD/target/release/native-theme-os-probe"
+          mkdir -p "$out"
+          cargo build -p native-theme-os-probe --release
+          status=$?
+          if [ $status -ne 0 ]; then echo "cargo build: exit $status"; exit $status; fi
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            vtool -show-build "$probe"; echo "vtool -show-build: exit $?"
+            rustc -V
+            system_profiler SPDisplaysDataType; echo "system_profiler SPDisplaysDataType: exit $?"
+            for service in kTCCServiceAccessibility kTCCServicePostEvent; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$probe', 1, 2, 4, 1);"
+              echo "grant $service to $probe: exit $?"
+            done
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          "$probe" --out "$out" --button-pass --controls
+          status=$?
+          echo "probe: exit $status"
+          if [ ! -s "$out/probe.toml" ]; then echo "no $out/probe.toml"; exit 1; fi
+          if ! grep -qx 'accessibilityDisplayShouldReduceTransparency = false' "$out/probe.toml"; then
+            echo "::error::$out/probe.toml does not hold accessibilityDisplayShouldReduceTransparency = false"
+            exit 1
+          fi
+          if [ "${{ matrix.pass }}" = "controls-accent" ]; then
+            for line in 'AppleAccentColor = 0.0' 'controlAccentColor = "#e0383eff"' 'controlAccentColor = "#ff5257ff"'; do
+              if ! grep -qxF "$line" "$out/probe.toml"; then
+                echo "::error::$out/probe.toml does not hold $line: the probe does not see the red accent"
+                grep -A4 -F 'environment.accent' "$out/probe.toml"
+                exit 1
+              fi
+            done
+          fi
+          exit $status
+      # The symbols pass (pass MP-symbols of the 0.8.0 measurement plan; U102,
+      # U324, U613): the SF Symbol configuration and image size AppKit gives
+      # each place (image view, buttons and segmented controls per control
+      # size and state, sidebar and list tables per row size style, toolbars,
+      # a status item, an alert's icon), read where AppKit has a getter and
+      # matched against a reference grid of rendered configurations
+      # elsewhere, into symbols/; probe.toml's [macos.symbols] method says how.
+      - name: Run the symbols pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'symbols'
+        continue-on-error: true
+        run: cargo run -p native-theme-os-probe --release -- --out os-probe-out/symbols --symbols
+      # The SDK headers the Apple facts quote, from the selected Xcode
+      # (xcode-select -p), each framework's whole Headers/ folder (so no
+      # header a fact needs is left behind) into sdk-headers/<framework>/:
+      # AppKit, AVKit (AVRoutePickerView.h, the route button) and QuartzCore
+      # (Core Animation's timing) from the macOS SDK, UIKit from the
+      # iPhoneSimulator SDK (the SDK the iOS facts cite and tools/ios-host
+      # builds against). For the lanes to read and quote exactly, and for the
+      # source cache (they are not committed); xcode.txt records the OS, the
+      # Xcode and each SDK's version and build, each copy's exit status and
+      # size, whether each header the facts and the ledger name is there, and
+      # every copied file's SHA-256 (paths relative to sdk-headers/, so
+      # `shasum -a 256 -c` checks them).
+      - name: Copy the SDK headers (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'sdk-headers'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/sdk-headers
+          mkdir -p "$out"
+          developer="$(xcode-select -p)"
+          macosx="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+          simulator="$developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk"
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            echo "xcode-select -p: $developer"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            echo "xcrun SDK: $(xcrun --sdk macosx --show-sdk-version) build $(xcrun --sdk macosx --show-sdk-build-version) at $(xcrun --sdk macosx --show-sdk-path)"
+            echo "xcrun iphonesimulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-version) build $(xcrun --sdk iphonesimulator --show-sdk-build-version) at $(xcrun --sdk iphonesimulator --show-sdk-path)"
+            ls -l "$developer/Platforms/MacOSX.platform/Developer/SDKs/" "$developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/"
+            for copy in "AppKit $macosx" "AVKit $macosx" "QuartzCore $macosx" "UIKit $simulator"; do
+              framework="${copy%% *}"
+              headers="${copy#* }/System/Library/Frameworks/$framework.framework/Headers"
+              echo "$framework headers: $headers"
+              mkdir -p "$out/$framework"
+              cp -RL "$headers/." "$out/$framework"
+              echo "copy $framework: exit $?"
+              echo "$framework: $(find "$out/$framework" -type f | wc -l | tr -d ' ') files, $(du -sk "$out/$framework" | cut -f1) KB"
+            done
+            for h in AppKit/NSApplication.h AppKit/NSAnimationContext.h AppKit/NSAttributedString.h \
+                     AppKit/NSButton.h AppKit/NSButtonCell.h AppKit/NSCell.h AppKit/NSColor.h \
+                     AppKit/NSComboButton.h AppKit/NSControl.h AppKit/NSCursor.h AppKit/NSEvent.h \
+                     AppKit/NSFont.h AppKit/NSFontDescriptor.h AppKit/NSImage.h AppKit/NSLayoutManager.h \
+                     AppKit/NSMenuItem.h AppKit/NSPopUpButtonCell.h AppKit/NSPressGestureRecognizer.h \
+                     AppKit/NSScrollView.h AppKit/NSShadow.h AppKit/NSTableCellView.h \
+                     AppKit/NSTableRowView.h AppKit/NSTableView.h AppKit/NSText.h AppKit/NSTextField.h \
+                     AppKit/NSTextInsertionIndicator.h AppKit/NSTextView.h AppKit/NSToolbar.h \
+                     AppKit/NSToolbarItem.h AppKit/NSTouch.h AppKit/NSView.h AppKit/NSWindow.h \
+                     AVKit/AVRoutePickerView.h QuartzCore/CAAnimation.h QuartzCore/CAMediaTiming.h \
+                     UIKit/UIBarButtonItem.h UIKit/UIButton.h UIKit/UIButtonConfiguration.h \
+                     UIKit/UIColor.h UIKit/UIFont.h UIKit/UIFontDescriptor.h; do
+              if [ -f "$out/$h" ]; then echo "named $h: present"; else echo "named $h: MISSING"; fi
+            done
+            echo "SHA-256 of every copied file:"
+            (cd "$out" && find AppKit AVKit QuartzCore UIKit -type f -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256)
+            echo "shasum: exit $?"
+          } > "$RUNNER_TEMP/xcode.txt" 2>&1
+          mv "$RUNNER_TEMP/xcode.txt" "$out/xcode.txt"
+          grep -v -E '^[0-9a-f]{64}  ' "$out/xcode.txt"
+          echo "$(grep -c -E '^[0-9a-f]{64}  ' "$out/xcode.txt") SHA-256 lines in xcode.txt"
+      # The button pass in its conditions, each into its own folder, whatever
+      # fails, with the image's settings but the one each sets, which it
+      # restores after: with keyboard navigation on (AppleKeyboardUIMode 2,
+      # System Settings' "Keyboard navigation", which buttons need to become
+      # first responder) each button focused in turn (--focus); with Increase
+      # Contrast on; with the accent set to red (AppleAccentColor 0, the
+      # highlight colour left); and, with no setting changed, with a second
+      # window of the probe key (--not-key) and with another application
+      # active (--inactive). Each folder's settings.txt records the image's
+      # value, the write's exit status, the value read back and the restore.
+      - name: Run the button pass focusing each button (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-focus'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-focus
+          mkdir -p "$out"
+          image="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleKeyboardUIMode: $image"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --focus
+          {
+            case "$image" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($image): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
+      # The focus ring's transition (--focus-transition): with keyboard
+      # navigation on, the push sheet's regular plain and default buttons
+      # focused and unfocused per appearance while `screencapture -v` records
+      # the screen, once with the image's Reduce Motion (on) and once with it
+      # off, each into its own folder, and after the buttons a text view's
+      # caret the same way (transition-caret, U316); then each recording cut by ffmpeg
+      # (installed with brew where the image has none) to the button's
+      # <stem>.crop, frame by frame, into <stem>-frames/ with the frames'
+      # times in <stem>-frames.csv (ffprobe). settings.txt records each
+      # write, read-back and restore, ffmpeg.txt the tool and each cut.
+      - name: Record the focus ring's transition (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'focus-transition'
+        continue-on-error: true
+        run: |
+          set +e
+          restore() {
+            image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write "$1" "$2" -bool true ;;
+              0) defaults write "$1" "$2" -bool false ;;
+              absent) defaults delete "$1" "$2" ;;
+              -[0-9]*|[0-9]*) defaults write "$1" "$2" -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore $2 to the image's ($image): exit $?"
+            echo "read back: $(defaults read "$1" "$2" 2>&1)"
+          }
+          for motion in image off; do
+            if [ "$motion" = image ]; then
+              out=os-probe-out/button-pass-focus-transition
+            else
+              out=os-probe-out/button-pass-focus-transition-reduce-motion-off
+            fi
+            mkdir -p "$out"
+            {
+              echo "image's AppleKeyboardUIMode: $(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+              defaults write -g AppleKeyboardUIMode -int 2
+              echo "write AppleKeyboardUIMode 2: exit $?"
+              echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+              echo "image's reduceMotion: $(cat "$RUNNER_TEMP/universalaccess/reduceMotion" 2>/dev/null || echo 'not recorded')"
+              if [ "$motion" = off ]; then
+                defaults write com.apple.universalaccess reduceMotion -bool false
+                echo "write reduceMotion false: exit $?"
+              fi
+              echo "read back: $(defaults read com.apple.universalaccess reduceMotion 2>&1)"
+            } > "$out/settings.txt" 2>&1
+            cat "$out/settings.txt"
+            cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --focus-transition
+            {
+              restore -g AppleKeyboardUIMode
+              restore com.apple.universalaccess reduceMotion
+            } >> "$out/settings.txt" 2>&1
+            tail -n 4 "$out/settings.txt"
+          done
+          log=os-probe-out/button-pass-focus-transition/ffmpeg.txt
+          {
+            if ! command -v ffmpeg >/dev/null; then
+              HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_COLOR=1 HOMEBREW_NO_EMOJI=1 brew install ffmpeg
+              echo "brew install ffmpeg: exit $?"
+            fi
+            ffmpeg -hide_banner -version | head -n 1
+            for mov in os-probe-out/button-pass-focus-transition*/*/transition-*.mov; do
+              stem="${mov%.mov}"
+              if [ ! -f "$stem.crop" ]; then echo "$mov: no $stem.crop"; continue; fi
+              mkdir -p "$stem-frames"
+              ffmpeg -hide_banner -nostdin -loglevel error -i "$mov" -vf "crop=$(cat "$stem.crop")" \
+                -fps_mode passthrough "$stem-frames/%05d.png"
+              echo "ffmpeg $mov crop=$(cat "$stem.crop"): exit $?, $(ls "$stem-frames" | wc -l) frames"
+              ffprobe -v error -select_streams v:0 -show_entries frame=pts_time -of csv=p=0 "$mov" > "$stem-frames.csv"
+              echo "ffprobe $mov: exit $?"
+            done
+          } > "$log" 2>&1
+          cat "$log"
+      # The motion pass (--button-pass --motion; MP-record of the 0.8.0
+      # measurement plan: U103, U160, U181, U182, U302, U328, U332, U606,
+      # U612): scripted screen recordings of a window of controls per
+      # appearance, presses (and macOS 26's glass button), radio buttons, a
+      # search field's cancel button, interrupted focus rings and carets,
+      # with keyboard navigation on (AppleKeyboardUIMode 2, so a button takes
+      # the focus); `motion` with the image's Reduce Motion, and
+      # `motion-reduce-motion-off` with it off; then each recording cut by
+      # ffmpeg to its <stem>.crop, frame by frame, into <stem>-frames/ with
+      # the frames' times in <stem>-frames.csv (ffprobe). settings.txt
+      # records each write, read-back and restore, ffmpeg.txt the tool and
+      # each cut.
+      - name: Run the motion pass (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'motion' || matrix.pass == 'motion-reduce-motion-off')
+        continue-on-error: true
+        run: |
+          set +e
+          restore() {
+            image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write "$1" "$2" -bool true ;;
+              0) defaults write "$1" "$2" -bool false ;;
+              absent) defaults delete "$1" "$2" ;;
+              -[0-9]*|[0-9]*) defaults write "$1" "$2" -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore $2 to the image's ($image): exit $?"
+            echo "read back: $(defaults read "$1" "$2" 2>&1)"
+          }
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          mkdir -p "$out"
+          {
+            echo "image's AppleKeyboardUIMode: $(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+            echo "image's reduceMotion: $(cat "$RUNNER_TEMP/universalaccess/reduceMotion" 2>/dev/null || echo 'not recorded')"
+            if [ "${{ matrix.pass }}" = motion-reduce-motion-off ]; then
+              defaults write com.apple.universalaccess reduceMotion -bool false
+              echo "write reduceMotion false: exit $?"
+            fi
+            echo "read back: $(defaults read com.apple.universalaccess reduceMotion 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --motion
+          {
+            restore -g AppleKeyboardUIMode
+            restore com.apple.universalaccess reduceMotion
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The events pass (--button-pass --events; MP-events: U320-U322, U329
+      # and their macos-monterey twins U600, U607-U609): posted clicks at
+      # stepped distances and gaps, drags of selected text after stepped
+      # holds and distances, the tool tip's appearance, and per appearance
+      # two recordings, typing with the cursor drawn and a drag over a
+      # table, a text view and a spring-loaded button, with the image's
+      # settings; then the recordings cut as the motion pass's are.
+      - name: Run the events pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'events'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-events
+          mkdir -p "$out"
+          echo "no setting changed" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --events
+      - name: Cut the motion and events recordings into frames (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'motion' || matrix.pass == 'motion-reduce-motion-off' || matrix.pass == 'events')
+        continue-on-error: true
+        run: |
+          set +e
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          log="$out/ffmpeg.txt"
+          {
+            if ! command -v ffmpeg >/dev/null; then
+              HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_COLOR=1 HOMEBREW_NO_EMOJI=1 brew install ffmpeg
+              echo "brew install ffmpeg: exit $?"
+            fi
+            ffmpeg -hide_banner -version | head -n 1
+            for mov in "$out"/*/*.mov; do
+              stem="${mov%.mov}"
+              if [ ! -f "$stem.crop" ]; then echo "$mov: no $stem.crop"; continue; fi
+              mkdir -p "$stem-frames"
+              ffmpeg -hide_banner -nostdin -loglevel error -i "$mov" -vf "crop=$(cat "$stem.crop")" \
+                -fps_mode passthrough "$stem-frames/%05d.png"
+              echo "ffmpeg $mov crop=$(cat "$stem.crop"): exit $?, $(ls "$stem-frames" | wc -l) frames"
+              ffprobe -v error -select_streams v:0 -show_entries frame=pts_time -of csv=p=0 "$mov" > "$stem-frames.csv"
+              echo "ffprobe $mov: exit $?"
+            done
+          } > "$log" 2>&1
+          cat "$log"
+      # The colours pass (--colors; MP-highlight U163 and MP-colorspace
+      # U158): every NSColor per appearance with the highlight and accent
+      # defaults, and Core Animation's colour interpolation captured paused
+      # mid-animation; `colors` with the image's settings, and
+      # `colors-highlight-red` with AppleHighlightColor written as the
+      # string "1.000000 0.733333 0.721569 Red" (red, green and blue
+      # components, then a name), restored after; settings.txt records the
+      # write and the read-back, probe.toml what AppKit then reports.
+      - name: Run the colours pass (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'colors' || matrix.pass == 'colors-highlight-red')
+        continue-on-error: true
+        run: |
+          set +e
+          out="os-probe-out/${{ matrix.pass }}"
+          mkdir -p "$out"
+          highlight="$(defaults read -g AppleHighlightColor 2>&1)"
+          if [ $? -ne 0 ]; then
+            case "$highlight" in
+              *"does not exist"*|*"Could not find key"*) highlight=absent ;;
+              *) highlight="unreadable: $highlight" ;;
+            esac
+          fi
+          {
+            echo "image's AppleHighlightColor: $highlight"
+            if [ "${{ matrix.pass }}" = colors-highlight-red ]; then
+              defaults write -g AppleHighlightColor -string "1.000000 0.733333 0.721569 Red"
+              echo "write AppleHighlightColor \"1.000000 0.733333 0.721569 Red\": exit $?"
+            fi
+            echo "read back: $(defaults read -g AppleHighlightColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --colors
+          if [ "${{ matrix.pass }}" = colors-highlight-red ]; then
+            {
+              case "$highlight" in
+                absent) defaults delete -g AppleHighlightColor ;;
+                unreadable*) false ;;
+                *) defaults write -g AppleHighlightColor -string "$highlight" ;;
+              esac
+              echo "restore AppleHighlightColor to the image's ($highlight): exit $?"
+              echo "read back: $(defaults read -g AppleHighlightColor 2>&1)"
+            } >> "$out/settings.txt" 2>&1
+            tail -n 2 "$out/settings.txt"
+          fi
+      - name: Run the button pass with Increase Contrast on (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-contrast'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-increase-contrast-on
+          mkdir -p "$out"
+          image="$(cat "$RUNNER_TEMP/universalaccess/increaseContrast" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's increaseContrast: $image"
+            defaults write com.apple.universalaccess increaseContrast -bool true
+            echo "write increaseContrast true: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
+          {
+            case "$image" in
+              1) defaults write com.apple.universalaccess increaseContrast -bool true ;;
+              0) defaults write com.apple.universalaccess increaseContrast -bool false ;;
+              absent) defaults delete com.apple.universalaccess increaseContrast ;;
+              *) false ;;
+            esac
+            echo "restore increaseContrast to the image's ($image): exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
+      - name: Run the button pass with a red accent (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-accent'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-accent-red
+          mkdir -p "$out"
+          image="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleAccentColor: $image"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
+          {
+            case "$image" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($image): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
+      - name: Run the button pass with a second window key (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-not-key'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-not-key
+          mkdir -p "$out"
+          echo "no setting changed: the image's" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --not-key
+      - name: Run the button pass with another application active (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-inactive'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-inactive
+          mkdir -p "$out"
+          echo "no setting changed: the image's" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --inactive
+      # The window states of U93 and U133 (MP-windows of the 0.8.0
+      # measurement plan): each sheet a panel, key while another window of
+      # the probe is main (--key-not-main), and each sheet's window main
+      # while a panel of the probe is key (--main-not-key), with the image's
+      # settings; and the inactive pass with Increase Contrast on, restored
+      # after.
+      - name: Run the button pass key but not main (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-key-not-main'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-key-not-main
+          mkdir -p "$out"
+          echo "no setting changed: the image's" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --key-not-main
+      - name: Run the button pass main but not key (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-main-not-key'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-main-not-key
+          mkdir -p "$out"
+          echo "no setting changed: the image's" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --main-not-key
+      - name: Run the button pass with another application active and Increase Contrast on (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-inactive-contrast'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-inactive-increase-contrast-on
+          mkdir -p "$out"
+          contrast="$(cat "$RUNNER_TEMP/universalaccess/increaseContrast" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's increaseContrast: $contrast"
+            defaults write com.apple.universalaccess increaseContrast -bool true
+            echo "write increaseContrast true: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --inactive
+          {
+            case "$contrast" in
+              1) defaults write com.apple.universalaccess increaseContrast -bool true ;;
+              0) defaults write com.apple.universalaccess increaseContrast -bool false ;;
+              absent) defaults delete com.apple.universalaccess increaseContrast ;;
+              *) false ;;
+            esac
+            echo "restore increaseContrast to the image's ($contrast): exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
       # Two more passes, each into its own folder, whatever fails: with Reduce
       # Transparency off, which the runner images turn on (probe.toml's
       # accessibilityDisplayShouldReduceTransparency), so the window section
@@ -106,7 +812,7 @@ jobs:
       # settings.txt records the image's value, the write's exit status and
       # the value read back, and its probe.toml whether the setting took.
       - name: Run the probe with Reduce Transparency off (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.pass == 'probe-rt-off'
         continue-on-error: true
         run: |
           set +e
@@ -121,7 +827,7 @@ jobs:
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
       - name: Run the probe with Increase Contrast on (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.pass == 'probe-contrast'
         continue-on-error: true
         run: |
           set +e
@@ -151,7 +857,7 @@ jobs:
       # restore, the image's tinting value, the write's exit status and the
       # value read back.
       - name: Run the probe with wallpaper tinting off (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.pass == 'probe-tinting-off'
         continue-on-error: true
         run: |
           set +e
@@ -178,6 +884,49 @@ jobs:
           } > "$out/settings.txt" 2>&1
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
+      # A pass with Reduce Transparency off and wallpaper tinting off, Increase
+      # Contrast the image's: the pair of reduce-transparency-off, which keeps
+      # the image's tinting, so the colours that differ between the two are
+      # those wallpaper tinting changes (under the image's Reduce Transparency,
+      # on, tinting changes nothing). After the probe the image's tinting and
+      # Reduce Transparency are restored, so the passes below keep the image's
+      # settings; settings.txt records each restore, write and read-back.
+      - name: Run the probe with Reduce Transparency and wallpaper tinting off (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'probe-rt-tinting-off'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reduce-transparency-off-tinting-off
+          mkdir -p "$out"
+          restore() {
+            image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write "$1" "$2" -bool true ;;
+              0) defaults write "$1" "$2" -bool false ;;
+              absent) defaults delete "$1" "$2" ;;
+              *) false ;;
+            esac
+            echo "restore $2 to the image's ($image): exit $?"
+            echo "read back: $(defaults read "$1" "$2" 2>&1)"
+          }
+          {
+            restore com.apple.universalaccess increaseContrast
+            echo "image's reduceTransparency: $(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
+            defaults write com.apple.universalaccess reduceTransparency -bool false
+            echo "write reduceTransparency false: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+            echo "image's AppleReduceDesktopTinting: $(cat "$RUNNER_TEMP/universalaccess/AppleReduceDesktopTinting" 2>/dev/null || echo 'not recorded')"
+            defaults write -g AppleReduceDesktopTinting -bool true
+            echo "write AppleReduceDesktopTinting true: exit $?"
+            echo "read back: $(defaults read -g AppleReduceDesktopTinting 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
+          {
+            restore -g AppleReduceDesktopTinting
+            restore com.apple.universalaccess reduceTransparency
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
       # A pass with the accent set to red (`AppleAccentColor` 0; the image's
       # is recorded above, `absent` being the default blue), the other settings
       # the image's, to see which colours follow the user's accent: the
@@ -187,7 +936,7 @@ jobs:
       # After the probe the image's accent is restored, so the passes below
       # keep it; settings.txt records each write, restore and read-back.
       - name: Run the probe with a red accent (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.pass == 'probe-accent'
         continue-on-error: true
         run: |
           set +e
@@ -226,11 +975,191 @@ jobs:
             echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
           } >> "$out/settings.txt" 2>&1
           tail -n 2 "$out/settings.txt"
+      # Increase Contrast on under the red accent (U235 of the 0.8.0
+      # measurement plan, MP-accent): the selected row's colours over a
+      # second selection colour, as the main pass's red accent gives the
+      # image's settings. settings.txt records each write and read-back.
+      - name: Run the probe with Increase Contrast on and a red accent (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'probe-contrast-accent'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/increase-contrast-on-accent-red
+          mkdir -p "$out"
+          accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          contrast="$(cat "$RUNNER_TEMP/universalaccess/increaseContrast" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's increaseContrast: $contrast"
+            defaults write com.apple.universalaccess increaseContrast -bool true
+            echo "write increaseContrast true: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+            echo "image's AppleAccentColor: $accent"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
+          {
+            case "$accent" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$accent" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($accent): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          {
+            case "$contrast" in
+              1) defaults write com.apple.universalaccess increaseContrast -bool true ;;
+              0) defaults write com.apple.universalaccess increaseContrast -bool false ;;
+              absent) defaults delete com.apple.universalaccess increaseContrast ;;
+              *) false ;;
+            esac
+            echo "restore increaseContrast to the image's ($contrast): exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The focus pass under the red accent (U104, MP-accent): whether the
+      # buttons' focus ring follows the accent. Keyboard navigation on, as in
+      # the focus pass; both restored after.
+      - name: Run the button pass focusing each button with a red accent (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'button-focus-accent'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-focus-accent-red
+          mkdir -p "$out"
+          accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          keyboard="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleKeyboardUIMode: $keyboard"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+            echo "image's AppleAccentColor: $accent"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --focus
+          {
+            case "$accent" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$accent" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($accent): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          {
+            case "$keyboard" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$keyboard" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($keyboard): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The reads pass (MP-timing U301, MP-route U323, MP-accent U104's plain
+      # view, MP-text U317 and U319; `--reads`): Core Animation's named timing
+      # functions and the animation context's defaults, the output route
+      # button's colours and renders, the ring round a plain focusable view,
+      # the font-smoothing defaults and text renders, and Core Text's
+      # substitute fonts and cascade lists, and the pop-up, pull-down, combo
+      # box, mixed checkbox and checked radio per size (MP-controls); keyboard
+      # navigation on
+      # (AppleKeyboardUIMode 2, as the focus pass sets it), restored after;
+      # once with the
+      # image's settings, once under the red accent.
+      - name: Run the reads pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'reads'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reads
+          mkdir -p "$out"
+          keyboard="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleKeyboardUIMode: $keyboard"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads
+          {
+            case "$keyboard" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$keyboard" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($keyboard): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
+      - name: Run the reads pass with a red accent (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'reads-accent'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reads-accent-red
+          mkdir -p "$out"
+          accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          keyboard="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleKeyboardUIMode: $keyboard"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+            echo "image's AppleAccentColor: $accent"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads
+          {
+            case "$accent" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$accent" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($accent): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          {
+            case "$keyboard" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$keyboard" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($keyboard): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The reads pass under a right-to-left language (MP-text's U318): the
+      # process given -AppleLanguages "(he)" and the right-to-left direction
+      # defaults in its arguments (the argument domain; no setting written:
+      # run 42272240639 showed the language alone leaves an unlocalised
+      # process left to right), so its mirroring section draws the
+      # directional symbols as AppKit lays them out right to left.
+      - name: Run the reads pass under a right-to-left language (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'reads-rtl'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reads-rtl
+          mkdir -p "$out"
+          echo "no setting changed; the probe's arguments: -AppleLanguages (he) -AppleTextDirection YES -NSForceRightToLeftWritingDirection YES" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads -AppleLanguages "(he)" -AppleTextDirection YES -NSForceRightToLeftWritingDirection YES
       # A pass with the image's own settings in which the probe's window is
       # captured while a second window of the probe is key (`--not-key`), for
       # what macOS draws in a window that is not key.
       - name: Run the probe with its window not key (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.pass == 'probe-not-key'
         continue-on-error: true
         run: |
           set +e
@@ -265,7 +1194,7 @@ jobs:
       # status and whether a probe.toml was written; the app's own output is
       # in stdout.txt and stderr.txt.
       - name: Run the probe as an app bundle (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && matrix.pass == 'app-bundle'
         continue-on-error: true
         run: |
           set +e
@@ -311,9 +1240,159 @@ jobs:
             if [ -f "$out/probe.toml" ]; then echo "probe.toml written"; else echo "no probe.toml"; fi
           } > "$out/run.txt" 2>&1
           cat "$out/run.txt"
+      # Every macOS pass but sdk-headers captures with `screencapture` (a
+      # window's PNG, or a .mov recording); a pass where none of them was
+      # written is red, whatever the probe's exit status (run 45208260830's
+      # macOS 26 controls job: 248 captures failed, the job green). A capture
+      # is counted as a PNG that is not an offscreen render (those end in -1x
+      # or -2x) and not a frame cut from a recording, or a .mov; the probe's
+      # own failure messages ("screencapture …") are counted and printed.
+      - name: Check that the captures were written (macOS)
+        if: runner.os == 'macOS' && matrix.pass != 'sdk-headers'
+        run: |
+          captures=$(find os-probe-out \( -name '*.png' ! -name '*-1x.png' ! -name '*-2x.png' ! -path '*-frames/*' \) -o -name '*.mov' | wc -l | tr -d ' ')
+          failures=$(grep -rhoE 'screencapture [^"]*' os-probe-out 2>/dev/null | grep -cE 'exited with|could not|cannot run|timed out|wrote no') || true
+          echo "captures written: $captures; screencapture failures reported: $failures"
+          if [ "$captures" -eq 0 ]; then
+            echo "::error::no capture was written (screencapture failures reported: $failures)"
+            exit 1
+          fi
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: os-probe-${{ matrix.os }}
+          name: os-probe-${{ matrix.os }}-${{ matrix.pass }}
           path: os-probe-out
+
+  # The iOS host (D3, D4, spike I): tools/ios-host, a Swift app and its UI
+  # test built by the image's default Xcode, run in a simulator of the image's
+  # newest iOS runtime (iOS 18 on macos-15, iOS 26 on macos-26): its render
+  # pass and its press pass twice each, compared, the layers over black and
+  # white solved, the SDK's UIKit headers copied (tools/ios-host/run.sh); the
+  # ios_host_passes input chooses the passes (measure: the measurement
+  # campaign's reads and scenes, ios_host_measure naming them). Its
+  # matrix is the probe's images; an image
+  # without a simulator (Windows) runs no step, since an `if:` cannot read the
+  # matrix.
+  ios-host:
+    name: iOS host (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',ios-host,')
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'xcode-27' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/checkout@v6
+        if: runner.os == 'macOS'
+      - name: Build and run
+        if: runner.os == 'macOS'
+        env:
+          IOS_HOST_PASSES: ${{ inputs.ios_host_passes }}
+          IOS_HOST_MEASURE: ${{ inputs.ios_host_measure }}
+          IOS_HOST_SET: ${{ inputs.ios_host_set }}
+          IOS_HOST_DEVICE: ${{ inputs.ios_host_device }}
+          IOS_HOST_SETTINGS: ${{ inputs.ios_host_settings }}
+        run: bash tools/ios-host/run.sh ios-host-out
+      - name: Upload the renders
+        if: always() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-host-${{ matrix.os }}
+          path: ios-host-out
+
+  # The labelled switch on macOS (M2.FS4 of the 0.8.0 plan): SwiftUI's
+  # Toggle with the switch style, which the Rust probe cannot make (SwiftUI has
+  # no Objective-C API), in tools/swiftui-host/SwitchLabel.swift, built with
+  # the image's default Xcode's swiftc and run in a key window at rest, its
+  # switch hovered and pressed by posted mouse events, in aqua and darkAqua
+  # (the file's header says how). Screen recording, Accessibility and
+  # PostEvent access are granted to the shells and the built host as the
+  # probe's button pass grants them. The step fails where the build fails or
+  # the host exits non-zero; the upload still runs.
+  switch-label:
+    name: Switch label (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',switch-label,')
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'xcode-27' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/checkout@v6
+        if: runner.os == 'macOS'
+      # This job's own VM's accessibility settings, appearance and accent, read
+      # as the probe job's record step reads them (a value, `absent` where the
+      # image sets none, or what the read said where it failed), into
+      # settings.txt; the host reads them again in its [accessibility] table.
+      - name: Record the image's accessibility settings (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=switch-label-out
+          mkdir -p "$out"
+          for setting in "com.apple.universalaccess reduceTransparency" \
+                         "com.apple.universalaccess increaseContrast" \
+                         "com.apple.universalaccess reduceMotion" \
+                         "com.apple.universalaccess differentiateWithoutColor" \
+                         "-g AppleReduceDesktopTinting" \
+                         "-g AppleInterfaceStyle" \
+                         "-g AppleAccentColor" \
+                         "-g AppleHighlightColor" \
+                         "-g AppleKeyboardUIMode"; do
+            set -- $setting
+            value="$(defaults read "$1" "$2" 2>&1)"
+            if [ $? -ne 0 ]; then
+              case "$value" in
+                *"does not exist"*|*"Could not find key"*) value=absent ;;
+                *) value="unreadable: $value" ;;
+              esac
+            fi
+            echo "$1 $2: $value"
+          done | tee "$out/settings.txt"
+      - name: Build and run
+        if: runner.os == 'macOS'
+        timeout-minutes: 20
+        run: |
+          set +e
+          out=switch-label-out
+          host="$RUNNER_TEMP/switch-label"
+          mkdir -p "$out"
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            echo "xcrun SDK: $(xcrun --show-sdk-version) build $(xcrun --show-sdk-build-version)"
+            swiftc --version; echo "swiftc --version: exit $?"
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          swiftc -parse-as-library -O tools/swiftui-host/SwitchLabel.swift -o "$host" > "$out/build.log" 2>&1
+          status=$?
+          cat "$out/build.log"
+          echo "swiftc: exit $status" | tee -a "$out/environment.txt"
+          [ $status -eq 0 ] || exit 1
+          for service in kTCCServiceScreenCapture kTCCServiceAccessibility kTCCServicePostEvent; do
+            for client in /bin/bash /bin/zsh "$host"; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$client', 1, 2, 4, 1);"
+              echo "grant $service to $client: exit $?" | tee -a "$out/environment.txt"
+            done
+          done
+          "$host" "$out" 2>&1 | tee "$out/run.log"
+          status=${PIPESTATUS[0]}
+          echo "switch-label: exit $status" | tee -a "$out/environment.txt"
+          [ -f "$out/switch-label.toml" ] || { echo "no switch-label.toml"; exit 1; }
+          captures=$(find "$out" -name '*.png' | wc -l | tr -d ' ')
+          echo "captures written: $captures"
+          if [ "$captures" -eq 0 ]; then echo "::error::no capture was written"; exit 1; fi
+          exit $status
+      - name: Upload the captures
+        if: always() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v7
+        with:
+          name: switch-label-${{ matrix.os }}
+          path: switch-label-out

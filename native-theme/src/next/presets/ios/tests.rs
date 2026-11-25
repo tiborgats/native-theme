@@ -583,3 +583,91 @@ fn a_checked_button_has_the_selected_toggle_s_colours() {
         }
     }
 }
+
+/// The plain button draws no fill and no outline at rest, hovered, pressed
+/// and disabled, each stated for its state; checked, the toggle's selected
+/// fill, and checked and pressed, its pressed one; checked and disabled, its
+/// measured fill, #7878801f light and #7878803d dark (ios-host run
+/// 42267206298, `ios-host-macos-15/render_read_buttons.toml`,
+/// `cells.<scheme>.plain__states_disabled_combinations.medium.disabled_selected.fill`).
+#[test]
+fn a_flat_button_has_no_fill_but_the_checked_one() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes().iter().zip([LIGHT, DARK]) {
+        let flat = |state| theme.button.body(ButtonQuery::flat().state(state));
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+        ] {
+            let body = flat(state);
+            assert_eq!(
+                (&body.fill, &body.stroke),
+                (&Paint::None, &Stroke::None),
+                "{state:?}"
+            );
+            assert!(body.stated.contains(PartStated::FILL), "{state:?}");
+            if state != WidgetState::NONE {
+                assert!(body.from_state.contains(PartStated::FILL), "{state:?}");
+            }
+        }
+        for state in [
+            WidgetState::CHECKED,
+            WidgetState::CHECKED | WidgetState::HOVER,
+        ] {
+            assert_eq!(
+                flat(state).fill,
+                Paint::Solid(c.button_checked),
+                "{state:?}"
+            );
+        }
+        assert_eq!(
+            flat(WidgetState::CHECKED | WidgetState::PRESSED).fill,
+            Paint::Solid(c.button_checked_pressed)
+        );
+        let checked_disabled = flat(WidgetState::DISABLED | WidgetState::CHECKED);
+        assert_eq!(
+            (&checked_disabled.fill, &checked_disabled.stroke),
+            (&Paint::Solid(c.plain_checked_disabled), &Stroke::None)
+        );
+        assert!(checked_disabled.from_state.contains(PartStated::FILL));
+    }
+    assert_eq!(
+        [
+            LIGHT.plain_checked_disabled.to_srgb8(),
+            DARK.plain_checked_disabled.to_srgb8()
+        ],
+        [[0x78, 0x78, 0x80, 0x1f], [0x78, 0x78, 0x80, 0x3d]]
+    );
+}
+
+/// The card's corners are the `.insetGrouped` cell's: 10 pt on the
+/// continuous curve the measured view reads (ios-host run 45230061151,
+/// `run1/index.toml` the card render, view `0.1`).
+#[test]
+fn the_card_s_corners_are_continuous() {
+    for theme in both_schemes() {
+        assert_eq!(
+            theme.card.container(WidgetState::NONE).corners,
+            Corners::continuous(CARD_CORNER_RADIUS)
+        );
+    }
+}
+
+/// The slider's thumb is white at rest and touched in both schemes, as
+/// UISlider draws it (ios-host run 45230061151, `measure_lists.toml`
+/// `press1."<a>".slider.{normal,pressed}` `fill` #ffffff).
+#[test]
+fn the_slider_thumb_is_white_at_rest_and_touched() {
+    for theme in both_schemes() {
+        for state in [WidgetState::NONE, WidgetState::PRESSED] {
+            assert_eq!(
+                theme.slider.thumb(state).fill,
+                Paint::Solid(hex(0xffffff)),
+                "{:?} {state:?}",
+                theme.context.scheme
+            );
+        }
+    }
+}

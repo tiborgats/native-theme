@@ -2749,19 +2749,14 @@ fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &m
 /// inside it to 1 px outside), and told not to, none.
 #[gpui::test]
 fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
-    let r = resolved("kde-breeze", ColorMode::Light);
-    let look = SwitchLook::of(&r, false, false).expect("finite");
     for (focus_ring, drawn) in [(true, true), (false, false)] {
         let cx = window_with(
             cx,
             Some(("kde-breeze", ColorMode::Light)),
-            Box::new(move |window, cx| {
-                Switch::new("s")
-                    .focus_ring(focus_ring)
-                    .track(&look, true, look.thumb_left(false), window, cx)
-                    .into_any_element()
-            }),
+            Box::new(move |_, _| Switch::new("s").focus_ring(focus_ring).into_any_element()),
         );
+        a_key_that_moves_no_focus(cx);
+        focus_next(cx);
         redraw(cx);
         assert_eq!(
             cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
@@ -2958,7 +2953,18 @@ fn ringed_square(
     let mut r = resolved("kde-breeze", ColorMode::Light);
     r.defaults.focus_ring_width = width;
     r.defaults.focus_ring_offset = offset;
-    let ring = FocusRing::of(&r);
+    let cx = ring_drawn(cx, FocusRing::of(&r), bordered, 4.0);
+    (cx, r)
+}
+
+/// `ring` drawn round a 40 px square with `radius` corners and a 1 px
+/// border where `bordered`, and the square as it is where `ring` is `None`.
+fn ring_drawn(
+    cx: &mut TestAppContext,
+    ring: Option<FocusRing>,
+    bordered: bool,
+    radius: f32,
+) -> &mut VisualTestContext {
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
@@ -2968,8 +2974,10 @@ fn ringed_square(
                 .debug_selector(|| "ringed".into())
                 .relative()
                 .size(px(40.))
-                .when(bordered, |square| square.border(px(1.)))
-                .rounded(px(4.));
+                .when(bordered, |square| {
+                    square.border(px(1.)).border_color(SQUARE_BORDER)
+                })
+                .rounded(px(radius));
             match ring {
                 Some(ring) => ring.draw(square, window).into_any_element(),
                 None => square.into_any_element(),
@@ -2977,8 +2985,17 @@ fn ringed_square(
         }),
     );
     redraw(cx);
-    (cx, r)
+    cx
 }
+
+/// The colour of [`ring_drawn`]'s square's border: opaque black, which no
+/// ring of these tests is drawn in.
+const SQUARE_BORDER: gpui::Hsla = gpui::Hsla {
+    h: 0.0,
+    s: 0.0,
+    l: 0.0,
+    a: 1.0,
+};
 
 /// The quads painted over `b` grown by `grow` on every side, scaled.
 fn quads_round(cx: &mut VisualTestContext, b: Bounds<Pixels>, grow: f32) -> Vec<gpui::Quad> {
@@ -3019,19 +3036,28 @@ fn the_focus_ring_is_the_themes(cx: &mut TestAppContext) {
             "width {width}, offset {offset}"
         );
     }
-    // Inset at the edge: the square's own border is the ring.
+    // Inset at the edge of a square with a border of its own: the band inside
+    // the edge, painted after the square's border, which a child draws in its
+    // colour, the square's own made transparent (spec §2, `FocusIndicator`:
+    // the ring is painted over the part).
     let (cx, r) = ringed(cx, 2.0, -2.0);
     let ring = color(r.defaults.focus_ring_color);
     let square = bounds(cx, "ringed");
-    assert!(
-        cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
-        "an inset ring adds no band"
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR).map(|b| b.size),
+        Some(square.size),
+        "an inset ring is a band at the edge"
     );
-    assert!(
-        quads_round(cx, square, 0.0)
+    let at_edge = quads_round(cx, square, 0.0);
+    let painted = |c: gpui::Hsla| {
+        at_edge
             .iter()
-            .any(|q| q.border_color == ring && q.border_widths.top.0 > 0.0),
-        "an inset ring is not the square's border"
+            .position(|q| q.border_color == c && q.border_widths.top.0 > 0.0)
+    };
+    let (border, band) = (painted(SQUARE_BORDER), painted(ring));
+    assert!(
+        matches!((border, band), (Some(border), Some(band)) if border < band),
+        "the border, then the band over it, at the edge: {border:?}, {band:?} in {at_edge:?}"
     );
     // Inset at the edge of an element with no border of its own (adwaita's
     // ring on the checkbox row, the switch track, the slider thumb): the band
@@ -3069,6 +3095,166 @@ fn the_focus_ring_is_the_themes(cx: &mut TestAppContext) {
             "{width}, {offset}: the square's border took the ring's colour"
         );
     }
+}
+
+/// The 0.8.0 ring of FR2's tests: its own stroke, `outer` 2 px wide, the
+/// second ring `inner` 1 px wide, 1 px out from the edge, the base line's
+/// corners `corners`.
+fn next_ring(
+    outer: native_theme::next::Color,
+    inner: native_theme::next::Stroke,
+    corners: Option<native_theme::next::Corners>,
+) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{FocusIndicator, FocusKind, Preset, Stroke, ThemeContext};
+    let mut r =
+        native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    r.focus_ring = FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(2.0, outer),
+        inner,
+        1.0,
+        corners,
+        None,
+    );
+    r
+}
+
+/// Two colours no preset's ring is drawn in.
+const OUTER: native_theme::next::Color = native_theme::next::Color::new(0.1, 0.2, 0.9, 1.0);
+const INNER: native_theme::next::Color = native_theme::next::Color::new(0.9, 0.8, 0.1, 1.0);
+
+/// A 0.8.0 ring is drawn as the spec places it (§2, `FocusIndicator`): in
+/// its own stroke's colour, not `colors.focus_ring`; a band of its width
+/// outward from the base line, the square's edge moved out by the offset,
+/// and the second ring a band of its width inward from it; the base line's
+/// corners the stated `corners`, else the square's grown by the offset,
+/// floored at 0, each band's far edge concentric.
+#[gpui::test]
+fn a_next_ring_draws_its_stroke_inner_stroke_and_corners(cx: &mut TestAppContext) {
+    use native_theme::next::{Corners, Stroke};
+    for (corners, base) in [(Some(Corners::uniform(9.0)), 9.0), (None, 5.0)] {
+        let r = next_ring(OUTER, Stroke::uniform(1.0, INNER), corners);
+        assert_ne!(r.colors.focus_ring, OUTER);
+        let ring = FocusRing::next_of(&r).ok().flatten();
+        let cx = ring_drawn(cx, ring, false, 4.0);
+        let square = bounds(cx, "ringed");
+        let scale = cx.update(|window, _| window.scale_factor());
+        let near = |a: f32, b: f32| (a - b * scale).abs() < 0.01;
+        let outer = quads_round(cx, square, 3.0);
+        assert!(
+            outer
+                .iter()
+                .any(|q| q.border_color == crate::next::hsla(OUTER)
+                    && near(q.border_widths.top.0, 2.0)
+                    && near(q.corner_radii.top_left.0, base + 2.0)),
+            "{corners:?}: no 2 px ring outward from the base line: {outer:?}"
+        );
+        let inner = quads_round(cx, square, 1.0);
+        assert!(
+            inner
+                .iter()
+                .any(|q| q.border_color == crate::next::hsla(INNER)
+                    && near(q.border_widths.top.0, 1.0)
+                    && near(q.corner_radii.top_left.0, base)),
+            "{corners:?}: no 1 px ring inward from the base line: {inner:?}"
+        );
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_INNER_SELECTOR).map(|b| b.size),
+            Some(square.dilate(px(1.0)).size),
+            "{corners:?}"
+        );
+    }
+    let r = next_ring(OUTER, Stroke::None, None);
+    let cx = ring_drawn(cx, FocusRing::next_of(&r).ok().flatten(), false, 4.0);
+    assert!(cx.debug_bounds(FOCUS_RING_SELECTOR).is_some());
+    assert!(
+        cx.debug_bounds(FOCUS_RING_INNER_SELECTOR).is_none(),
+        "a second ring the theme states none of"
+    );
+}
+
+/// A ring whose offset takes the base line past the square's corners rounds
+/// it square, and the band's outer edge by the band's width (spec §2: the
+/// part's radii plus the offset, floored at 0, the far edge concentric):
+/// macOS's ring, 3 px at -1, round square corners is 3 px round outside.
+#[gpui::test]
+fn a_ring_inside_a_square_corner_is_rounded_by_its_width(cx: &mut TestAppContext) {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.defaults.focus_ring_width = 3.0;
+    r.defaults.focus_ring_offset = -1.0;
+    let cx = ring_drawn(cx, FocusRing::of(&r), false, 0.0);
+    let square = bounds(cx, "ringed");
+    let scale = cx.update(|window, _| window.scale_factor());
+    let band = quads_round(cx, square, 2.0);
+    assert!(
+        band.iter()
+            .any(|q| (q.corner_radii.top_left.0 - 3.0 * scale).abs() < 0.01),
+        "no ring 3 px round outside: {band:?}"
+    );
+}
+
+/// A focus indicator no theme-drawn control can draw is [`Unmapped`] at its
+/// home, and no ring is drawn: a fill or an underline, a ring or second
+/// ring stated per side, concentric corners; continuous corners are drawn
+/// circular (spec §10, rule 2), a pill gpui-component's full radius.
+#[test]
+fn a_focus_indicator_gpui_cannot_draw_is_unmapped() {
+    use crate::next::Unmapped;
+    use native_theme::next::{
+        CornerRadius, Corners, FocusKind, Paint, Stroke, StrokeAlign, StrokeSide,
+    };
+    let side = || StrokeSide {
+        width: 1.0,
+        paint: Paint::Solid(INNER),
+    };
+    let sides = || Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
+    let unmapped = |r: &native_theme::next::ResolvedTheme| super::focus_ring_unmapped(r);
+    let mut r = next_ring(OUTER, Stroke::None, None);
+    assert_eq!(unmapped(&r), None);
+    for kind in [FocusKind::Fill, FocusKind::Underline] {
+        r.focus_ring.kind = kind;
+        assert_eq!(unmapped(&r), Some(Unmapped("focus_ring.kind")), "{kind:?}");
+    }
+    let mut r = next_ring(OUTER, sides(), None);
+    assert_eq!(
+        unmapped(&r),
+        Some(Unmapped("focus_ring.inner_stroke.color"))
+    );
+    r.focus_ring.inner_stroke = Stroke::None;
+    r.focus_ring.stroke = sides();
+    assert_eq!(unmapped(&r), Some(Unmapped("focus_ring.stroke.color")));
+    let corners = |radius| {
+        let r = next_ring(
+            OUTER,
+            Stroke::None,
+            Some(Corners {
+                radius,
+                curve: native_theme::next::CornerCurve::Continuous,
+            }),
+        );
+        FocusRing::next_of(&r).map(|ring| ring.and_then(|ring| ring.corners))
+    };
+    assert_eq!(
+        corners(CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        }),
+        Err(Unmapped("focus_ring.corners"))
+    );
+    assert_eq!(corners(CornerRadius::Uniform(4.0)), Ok(Some([4.0; 4])));
+    assert_eq!(
+        corners(CornerRadius::Pill),
+        Ok(Some([crate::next::PILL_RADIUS; 4]))
+    );
+    assert_eq!(
+        corners(CornerRadius::PerCorner {
+            top_left: 1.0,
+            top_right: 2.0,
+            bottom_right: 3.0,
+            bottom_left: 4.0,
+        }),
+        Ok(Some([1.0, 2.0, 3.0, 4.0]))
+    );
 }
 
 #[derive(Clone, Copy)]
@@ -5916,6 +6102,133 @@ fn a_switch_draws_its_stated_label_gap_and_size(cx: &mut TestAppContext) {
     assert_ne!(px(gap), default_gap, "unlike gap_2");
 }
 
+/// The switch's label lies on the side `switch.label_side` states: before
+/// the track where leading, after it where trailing, and after it, as
+/// gpui-component's, where the theme states none; `switch.label_gap` apart.
+#[gpui::test]
+fn a_switch_lays_its_label_on_the_side_the_theme_states(cx: &mut TestAppContext) {
+    use native_theme::next::{LabelSide, Preset, ThemeContext};
+    for side in [Some(LabelSide::Leading), Some(LabelSide::Trailing), None] {
+        let mut r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.switch.label_side = side;
+        let gap = px(r.switch.label_gap.unwrap_or_default());
+        let cx = window_with_next_resolved(
+            cx,
+            &r,
+            Box::new(|_, _| Switch::new("s").label("On").into_any_element()),
+        );
+        let track = bounds(cx, "native-switch-track");
+        let label = bounds(cx, "native-switch-label");
+        if side == Some(LabelSide::Leading) {
+            assert_eq!(
+                track.left() - label.right(),
+                gap,
+                "{side:?}: before the track"
+            );
+        } else {
+            assert_eq!(
+                label.left() - track.right(),
+                gap,
+                "{side:?}: after the track"
+            );
+        }
+    }
+}
+
+/// Right to left, `switch.label_side`'s leading and trailing are the reading
+/// direction's, as gpui-component's switch flips its label side
+/// (gpui-component 0.10.0 switch.rs:254): a leading label lies right of the
+/// track, a trailing one, and one where the theme states none, left of it,
+/// `switch.label_gap` apart.
+#[gpui::test]
+fn right_to_left_a_switch_lays_its_label_on_the_reading_sides(cx: &mut TestAppContext) {
+    use native_theme::next::{LabelSide, Preset, ThemeContext};
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    for side in [Some(LabelSide::Leading), Some(LabelSide::Trailing), None] {
+        let mut r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.switch.label_side = side;
+        let gap = px(r.switch.label_gap.unwrap_or_default());
+        let cx = window_with_next_resolved(
+            cx,
+            &r,
+            Box::new(|_, _| Switch::new("s").label("On").into_any_element()),
+        );
+        let track = bounds(cx, "native-switch-track");
+        let label = bounds(cx, "native-switch-label");
+        if side == Some(LabelSide::Leading) {
+            assert_eq!(
+                label.left() - track.right(),
+                gap,
+                "{side:?}: right of the track"
+            );
+        } else {
+            assert_eq!(
+                track.left() - label.right(),
+                gap,
+                "{side:?}: left of the track"
+            );
+        }
+    }
+}
+
+/// A switch laid out wider than its content puts the width left over between
+/// its label and its track where `switch.label_gap_stretches` is true, the
+/// two at the row's ends; where it is false or unstated, the two stay
+/// together at `switch.label_gap` at the row's start.
+#[gpui::test]
+fn a_wide_switch_stretches_its_gap_only_where_the_theme_says(cx: &mut TestAppContext) {
+    use native_theme::next::{Preset, ThemeContext};
+    for stretches in [Some(true), Some(false), None] {
+        let mut r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.switch.label_gap_stretches = stretches;
+        let gap = px(r.switch.label_gap.unwrap_or_default());
+        let cx = window_with_next_resolved(
+            cx,
+            &r,
+            Box::new(|_, _| Switch::new("s").label("On").w(px(180.)).into_any_element()),
+        );
+        let row = bounds(cx, "native-switch-row");
+        let track = bounds(cx, "native-switch-track");
+        let label = bounds(cx, "native-switch-label");
+        assert_eq!(row.size.width, px(180.), "{stretches:?}: the row's width");
+        assert_eq!(
+            track.left(),
+            row.left(),
+            "{stretches:?}: the track at the start"
+        );
+        if stretches == Some(true) {
+            assert_eq!(label.right(), row.right(), "the label at the row's end");
+            assert!(
+                label.left() - track.right() > gap,
+                "the width left over between"
+            );
+        } else {
+            assert_eq!(label.left() - track.right(), gap, "{stretches:?}: together");
+        }
+    }
+}
+
+/// The on and off glyphs `switch.show_state_glyphs` asks for are not drawn,
+/// and named unmapped at their home; a theme that states none or states that
+/// the track shows none has nothing unmapped.
+#[test]
+fn the_state_glyphs_a_theme_asks_for_are_unmapped() {
+    use native_theme::next::{Preset, ThemeContext};
+    let mut r =
+        native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    for (glyphs, unmapped) in [
+        (Some(true), Some(Unmapped("switch.show_state_glyphs"))),
+        (Some(false), None),
+        (None, None),
+    ] {
+        r.switch.show_state_glyphs = glyphs;
+        assert_eq!(SwitchLook::next_glyphs_unmapped(&r), unmapped, "{glyphs:?}");
+    }
+}
+
 /// Under a 0.8.0 theme installed through `next::apply`, which leaves no 0.7.2
 /// theme for `cx.native()`, every theme-drawn control is drawn from the theme,
 /// not as gpui-component's own: each lays out the part only its theme-drawn
@@ -6032,28 +6345,397 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
     );
 }
 
+/// FR4's ring of a part's own: 2 px of [`OUTER`], 1 px out from the part's
+/// edge, the second ring 1 px of [`INNER`], unlike adwaita's global ring.
+fn own_ring() -> std::sync::Arc<native_theme::next::FocusIndicator> {
+    use native_theme::next::{FocusIndicator, FocusKind, Stroke};
+    std::sync::Arc::new(FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(2.0, OUTER),
+        Stroke::uniform(1.0, INNER),
+        1.0,
+        None,
+        None,
+    ))
+}
+
+/// adwaita, patched to state `focus` on the check box's indicator, the
+/// switch's track and the slider's thumb: `own` for each.
+fn with_own_rings(
+    own: Option<std::sync::Arc<native_theme::next::FocusIndicator>>,
+) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{
+        CheckboxRule, PartPatch, Preset, SliderRule, SwitchRule, Theme as NextTheme, ThemeContext,
+        ThemePatch,
+    };
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let focus = || PartPatch::new().focus(own.clone());
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(CheckboxRule::new().indicator(focus()))
+            .switch(SwitchRule::new().track(focus()))
+            .slider(SliderRule::new().thumb(focus())),
+    );
+    r
+}
+
+/// FR4: where a part states its own focus ring (spec §2, `FocusIndicator`:
+/// `PartStyle.focus`), the focused theme-drawn control draws that ring round
+/// the part, in place of the global one: the check box's round its
+/// indicator, not its row, the switch's round its track, the slider's round
+/// its thumb, each in its own stroke's colour, a band of its width outward
+/// from the part's edge moved out by its offset, and its second ring inward
+/// from that line. A part that states none keeps the global ring: the radio,
+/// unpatched, rings its row in `focus_ring`'s colour.
+#[gpui::test]
+fn a_part_that_states_its_own_ring_draws_it(cx: &mut TestAppContext) {
+    let r = with_own_rings(Some(own_ring()));
+    let global = FocusRing::next_of(&r).ok().flatten();
+    assert!(global.is_some(), "adwaita states a global ring");
+    assert_ne!(
+        global.map(|ring| ring.color),
+        Some(crate::next::hsla(OUTER)),
+        "the global ring is not the parts' own"
+    );
+    let state = d4_slider_state(cx);
+    let parts = [
+        "native-checkbox-indicator",
+        "native-switch-track",
+        "native-slider-thumb",
+    ];
+    for ((name, build), part) in d4_controls(&state).into_iter().zip(parts) {
+        let cx = window_with_next_resolved(cx, &r, build);
+        focus_next(cx);
+        redraw(cx);
+        let edge = bounds(cx, part);
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR),
+            Some(edge.dilate(px(3.0))),
+            "{name}: the ring 1 px out plus its 2 px width round the {part}"
+        );
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_INNER_SELECTOR),
+            Some(edge.dilate(px(1.0))),
+            "{name}: the second ring inward from the base line"
+        );
+        let outer = quads_round(cx, edge, 3.0);
+        assert!(
+            outer
+                .iter()
+                .any(|q| q.border_color == crate::next::hsla(OUTER)),
+            "{name}: the part's own stroke colour: {outer:?}"
+        );
+    }
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| Radio::new("r").label("R").into_any_element()),
+    );
+    focus_next(cx);
+    redraw(cx);
+    let row = cx.debug_bounds("native-checkbox-row");
+    assert!(row.is_some(), "the radio's row");
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR),
+        row.zip(global)
+            .map(|(row, ring)| row.dilate(px(ring.offset + ring.width))),
+        "the radio keeps the global ring round its row"
+    );
+}
+
+/// A mixed check box reads its indicator's focus ring at `INDETERMINATE` where
+/// a rule for `INDETERMINATE` states one: adwaita patched to state the
+/// indicator's own ring for `INDETERMINATE` alone, the focused mixed box draws
+/// it round the indicator, and a focused checked box keeps the global ring
+/// round its row.
+#[gpui::test]
+fn a_mixed_box_draws_the_ring_stated_for_the_indeterminate_state(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        CheckboxRule, PartPatch, Preset, Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    r.apply_patch(
+        &ThemePatch::new().checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::INDETERMINATE)
+                .indicator(PartPatch::new().focus(Some(own_ring()))),
+        ),
+    );
+    let global = FocusRing::next_of(&r).ok().flatten();
+    assert!(global.is_some(), "adwaita states a global ring");
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            Checkbox::new("c")
+                .label("C")
+                .indeterminate(true)
+                .into_any_element()
+        }),
+    );
+    focus_next(cx);
+    redraw(cx);
+    let edge = bounds(cx, "native-checkbox-indicator");
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR),
+        Some(edge.dilate(px(3.0))),
+        "mixed: the ring 1 px out plus its 2 px width round the indicator"
+    );
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            Checkbox::new("c")
+                .label("C")
+                .checked(true)
+                .into_any_element()
+        }),
+    );
+    focus_next(cx);
+    redraw(cx);
+    let row = cx.debug_bounds("native-checkbox-row");
+    assert!(row.is_some(), "the check box's row");
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR),
+        row.zip(global)
+            .map(|(row, ring)| row.dilate(px(ring.offset + ring.width))),
+        "checked: the global ring round the row"
+    );
+}
+
+/// FR4: a part whose rule states `focus` with no indicator draws none where
+/// it has the focus; one stated in a form gpui cannot draw is [`Unmapped`]
+/// at the part's own home, and none is drawn.
+#[gpui::test]
+fn a_part_that_states_no_ring_or_one_gpui_cannot_draw_draws_none(cx: &mut TestAppContext) {
+    use native_theme::next::{FocusKind, WidgetState};
+    let r = with_own_rings(None);
+    let state = d4_slider_state(cx);
+    for (name, build) in d4_controls(&state) {
+        let cx = window_with_next_resolved(cx, &r, build);
+        focus_next(cx);
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{name}: a ring the part states none of"
+        );
+    }
+    let mut fill = (*own_ring()).clone();
+    fill.kind = FocusKind::Fill;
+    let r = with_own_rings(Some(std::sync::Arc::new(fill)));
+    let track = r.switch.track(WidgetState::FOCUSED);
+    assert_eq!(
+        super::part_ring_unmapped(&r, &track, RingHomes::SWITCH),
+        Some(Unmapped("switch.track(FOCUSED).focus.kind"))
+    );
+    let thumb = r.slider.thumb(WidgetState::FOCUSED);
+    assert_eq!(
+        super::part_ring_unmapped(&r, &thumb, RingHomes::SLIDER),
+        Some(Unmapped("slider.thumb(FOCUSED).focus.kind"))
+    );
+    for (name, build) in d4_controls(&state) {
+        let cx = window_with_next_resolved(cx, &r, build);
+        focus_next(cx);
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{name}: a fill gpui cannot draw"
+        );
+    }
+}
+
+/// kde-breeze, patched to state `own` as the tab's own focus ring.
+fn with_own_tab_ring(
+    own: std::sync::Arc<native_theme::next::FocusIndicator>,
+) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{
+        PartPatch, Preset, TabRule, Theme as NextTheme, ThemeContext, ThemePatch,
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    r.apply_patch(&ThemePatch::new().tab(TabRule::new().tab(PartPatch::new().focus(Some(own)))));
+    r
+}
+
+/// The tab bar's ring, an inset shadow, draws a stated second ring as a band
+/// of its width inward from the first, on the tab the keyboard focuses only:
+/// the tab's bounds less the first ring's width, in the second ring's colour.
+#[gpui::test]
+fn a_focused_tab_draws_the_second_ring_inward_from_the_first(cx: &mut TestAppContext) {
+    let r = with_own_tab_ring(own_ring());
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .into_any_element()
+        }),
+    );
+    assert!(
+        cx.debug_bounds(FOCUS_RING_INNER_SELECTOR).is_none(),
+        "no second ring at rest"
+    );
+    focus_next(cx);
+    cx.simulate_keystrokes("right");
+    redraw(cx);
+    let tab = bounds(cx, "tab1");
+    let band = tab.dilate(px(-2.0));
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_INNER_SELECTOR),
+        Some(band),
+        "the second ring inside the first, 2 px in from the tab's edge"
+    );
+    let inner = quads_round(cx, band, 0.0);
+    assert!(
+        inner
+            .iter()
+            .any(|q| q.border_color == crate::next::hsla(INNER)),
+        "in the second ring's colour: {inner:?}"
+    );
+}
+
+/// A tab's ring whose trigger the theme leaves unstated follows the toolkit's
+/// default trigger (spec §2, `FocusIndicator`), gpui-component's own tab's, a
+/// focus that followed a key press only (gpui-component 0.10.0
+/// tab/tab.rs:965, `focus_visible`): the tab the program focuses with no key
+/// draws no ring, and an arrow key's move rings the tab it reaches.
+#[cfg(feature = "gpui-fast")]
+#[gpui::test]
+fn a_tab_ring_with_no_trigger_stated_rings_a_keyboard_focus_only(cx: &mut TestAppContext) {
+    let r = with_own_tab_ring(own_ring());
+    assert_eq!(
+        r.tab
+            .tab(native_theme::next::WidgetState::FOCUSED)
+            .focus
+            .as_deref()
+            .map(|f| f.trigger),
+        Some(None),
+        "the tab's own ring states no trigger"
+    );
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .into_any_element()
+        }),
+    );
+    redraw(cx);
+    let bar = bounds(cx, "native-tab-bar");
+    focus_next(cx);
+    redraw(cx);
+    let painted = shadows_over(cx, bar);
+    assert!(painted.is_empty(), "no ring without a key: {painted:?}");
+    cx.simulate_keystrokes("right");
+    redraw(cx);
+    let scale = cx.update(|window, _| window.scale_factor());
+    let tab = bounds(cx, "tab1").scale(scale);
+    let painted = shadows_over(cx, bar);
+    assert!(
+        painted.len() == 1
+            && painted
+                .first()
+                .is_some_and(|s| s.element_bounds.contains(&tab.center())),
+        "one ring on tab 1 after Right: {painted:?}"
+    );
+}
+
+/// What the tab bar's inset ring cannot place is named at its home: an
+/// offset other than minus the stroke's width and stated corners, of the
+/// tab's own ring where the theme states one, else of the global ring;
+/// nothing where the inset draws the ring as stated.
+#[test]
+fn a_tab_ring_offset_or_corners_the_inset_cannot_place_is_unmapped() {
+    use native_theme::next::{
+        Corners, FocusIndicator, FocusKind, Preset, Stroke, Theme as NextTheme, ThemeContext,
+        WidgetState,
+    };
+    let unmapped = |r: &native_theme::next::ResolvedTheme| {
+        TabLook::next_ring_unmapped(r, &r.tab.tab(WidgetState::FOCUSED))
+    };
+    let r = with_own_tab_ring(own_ring());
+    assert_eq!(
+        unmapped(&r),
+        [Unmapped("tab.tab(FOCUSED).focus.offset")],
+        "1 px out is not the inset's -2"
+    );
+    let against_the_edge = |corners: Option<Corners>| {
+        std::sync::Arc::new(FocusIndicator::new(
+            FocusKind::Ring,
+            Stroke::uniform(2.0, OUTER),
+            Stroke::None,
+            -2.0,
+            corners,
+            None,
+        ))
+    };
+    assert_eq!(unmapped(&with_own_tab_ring(against_the_edge(None))), []);
+    assert_eq!(
+        unmapped(&with_own_tab_ring(against_the_edge(Some(
+            Corners::uniform(4.0)
+        )))),
+        [Unmapped("tab.tab(FOCUSED).focus.corners")]
+    );
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let width = match r.focus_ring.stroke {
+        Stroke::Uniform { width, .. } => width,
+        _ => 0.0,
+    };
+    assert!(width > 0.0, "kde-breeze states a ring of one stroke");
+    r.focus_ring.offset = -width;
+    assert_eq!(unmapped(&r), []);
+    r.focus_ring.offset = 0.0;
+    r.focus_ring.corners = Some(Corners::uniform(3.0));
+    assert_eq!(
+        unmapped(&r),
+        [
+            Unmapped("focus_ring.offset"),
+            Unmapped("focus_ring.corners")
+        ]
+    );
+}
+
 /// A disabled checked box's mark is read at its own home where a rule states
-/// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`), not
-/// in the label's disabled colour; a theme that states none keeps 0.7.2's
-/// reading, the label's disabled colour where a disabled fill is stated.
+/// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`;
+/// kde-breeze: the Disabled View text; macos-tahoe: the measured mark), not in
+/// the label's disabled colour, and a radio button's dot likewise; a theme
+/// that states none (macos-monterey dark, whose mark was not read) gets
+/// gpui-component's own disabled mark, the checked mark at half its opacity
+/// (spec §10, rule 0).
 #[test]
 fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
-    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    use native_theme::next::{IconStated, Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    let disabled = WidgetState::DISABLED | WidgetState::CHECKED;
     for ctx in [ThemeContext::light(), ThemeContext::dark()] {
-        let r = NextTheme::preset(Preset::Material3).resolve(&ctx);
-        let surface = crate::next::hsla(
-            r.checkbox
-                .checkmark(WidgetState::DISABLED | WidgetState::CHECKED)
-                .color,
-        );
-        let look = CheckboxLook::next_of(&r, true, true)?;
-        assert_eq!(look.mark, surface, "{ctx:?}");
-        assert_ne!(look.mark, look.label, "{ctx:?}");
-
+        for preset in [Preset::Material3, Preset::KdeBreeze, Preset::MacosTahoe] {
+            let r = NextTheme::preset(preset).resolve(&ctx);
+            let stated = crate::next::hsla(r.checkbox.checkmark(disabled).color);
+            let look = CheckboxLook::next_of(&r, true, true)?;
+            assert_eq!(look.mark, stated, "{preset:?} {ctx:?}");
+            assert_ne!(look.mark, look.label, "{preset:?} {ctx:?}");
+        }
         let kde = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
-        let look = CheckboxLook::next_of(&kde, true, true)?;
-        assert_eq!(look.mark, look.label, "{ctx:?}");
+        let dot = crate::next::fill(&kde.radio.dot(disabled), "radio.dot(DISABLED|CHECKED).fill")?;
+        assert_eq!(
+            CheckboxLook::next_radio(&kde, true, true)?.mark,
+            dot,
+            "{ctx:?}"
+        );
     }
+    let mac = NextTheme::preset(Preset::MacosMonterey).resolve(&ThemeContext::dark());
+    assert!(
+        !mac.checkbox
+            .checkmark(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+    );
+    let enabled = CheckboxLook::next_of(&mac, true, false)?;
+    let look = CheckboxLook::next_of(&mac, true, true)?;
+    assert_eq!(look.mark, enabled.mark.opacity(0.5));
+    assert_ne!(look.mark, enabled.mark);
     Ok(())
 }
 
@@ -6114,4 +6796,525 @@ fn a_checked_disabled_mark_is_read_only_where_stated() {
         checkbox::checked_disabled_mark(&disabled, &unstated),
         Err(Unmapped("checkbox.checkmark(DISABLED|CHECKED).color"))
     );
+}
+
+/// A disabled check box and radio, checked or not, are edged in the stroke a
+/// rule states for `DISABLED` (spec §2, `from_state`), read at the control's
+/// checked state, and where no rule does in gpui-component's own disabled
+/// border, the enabled one at half alpha (spec §10, rule 0; gpui-component
+/// 0.10.0 checkbox.rs:286-290, radio.rs:198-199): kde-breeze, which states
+/// none, and the same theme patched to state one for each control, a
+/// sentinel colour at the rest stroke's width, so the patch states no value
+/// the theme lacks but the colour under test.
+#[test]
+fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crate::next::Mapped<()>
+{
+    use native_theme::next::{
+        CheckboxRule, Color, PartPatch, Preset, RadioRule, Stroke, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let look = |r: &native_theme::next::ResolvedTheme, radio: bool, checked, disabled| {
+        if radio {
+            CheckboxLook::next_radio(r, checked, disabled)
+        } else {
+            CheckboxLook::next_of(r, checked, disabled)
+        }
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        let enabled = look(&r, radio, checked, false)?.border;
+        assert_eq!(
+            look(&r, radio, checked, true)?.border,
+            gpui::Hsla {
+                a: enabled.a * 0.5,
+                ..enabled
+            },
+            "unpatched, radio {radio}, checked {checked}"
+        );
+        assert!(enabled.a > 0., "radio {radio}, checked {checked}");
+    }
+    let width = crate::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE));
+    let radio_width = crate::next::stroke_width_of(&r.radio.indicator(WidgetState::NONE));
+    let (Some(width), Some(radio_width)) = (width, radio_width) else {
+        return Err(Unmapped("checkbox.indicator(NONE).stroke.width"));
+    };
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(
+                CheckboxRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().stroke(Stroke::uniform(width, sentinel))),
+            )
+            .radio(
+                RadioRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().stroke(Stroke::uniform(radio_width, sentinel))),
+            ),
+    );
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        assert_eq!(
+            look(&r, radio, checked, true)?.border,
+            crate::next::hsla(sentinel),
+            "patched, disabled, radio {radio}, checked {checked}"
+        );
+        assert_ne!(
+            look(&r, radio, checked, false)?.border,
+            crate::next::hsla(sentinel),
+            "patched, enabled, radio {radio}, checked {checked}"
+        );
+    }
+    Ok(())
+}
+
+/// `r` with its check box's and radio's indicator fill, and the check box's
+/// mark colour, stated for no state at `DISABLED`: a rule of no required
+/// state, forbidding every state but `DISABLED` a rest query's look depends
+/// on, restates them at rest, so they stay as `r` gives them and the
+/// `from_state` bits of those queried at `DISABLED` are cleared (spec §2,
+/// `from_state`: a rule without required states clears it). Every bundled
+/// preset states a disabled indicator's fill, adwaita its rest fill and its
+/// mark as enabled (libadwaita fades a disabled check and changes no colour,
+/// _checks.scss:62-64 at libadwaita 1.10.0).
+fn disabled_look_unstated(r: &mut native_theme::next::ResolvedTheme) {
+    use native_theme::next::{
+        CheckboxRule, IconPatch, PartPatch, RadioRule, ThemePatch, WidgetState,
+    };
+    let others = WidgetState::CHECKED
+        | WidgetState::INDETERMINATE
+        | WidgetState::HOVER
+        | WidgetState::PRESSED;
+    let boxed = r.checkbox.indicator(WidgetState::NONE).fill;
+    let mark = r.checkbox.checkmark(WidgetState::NONE).color;
+    let round = r.radio.indicator(WidgetState::NONE).fill;
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(
+                CheckboxRule::new()
+                    .not_states(others)
+                    .indicator(PartPatch::new().fill(boxed))
+                    .checkmark(IconPatch::new().color(mark)),
+            )
+            .radio(
+                RadioRule::new()
+                    .not_states(others)
+                    .indicator(PartPatch::new().fill(round)),
+            ),
+    );
+}
+
+/// A disabled check box and radio, checked or not, are filled with the fill
+/// a rule states for `DISABLED` (spec §2, `from_state`), read at the
+/// control's checked state, and where no rule does with gpui-component's
+/// own disabled fill (spec §10, rule 0): a checked box's and a radio's,
+/// checked or not, the enabled fill at half alpha, an unchecked box's its
+/// enabled fill (gpui-component 0.10.0 checkbox.rs:286-290, :359-362;
+/// radio.rs:193-200). Adwaita, its disabled fill unstated
+/// ([`disabled_look_unstated`]); patched to state a sentinel fill for each
+/// control's `DISABLED`, that fill.
+#[test]
+fn a_disabled_indicator_takes_the_fill_stated_for_the_disabled_state() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        CheckboxRule, Color, Paint, PartPatch, PartStated, Preset, RadioRule, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let look = |r: &native_theme::next::ResolvedTheme, radio: bool, checked, disabled| {
+        if radio {
+            CheckboxLook::next_radio(r, checked, disabled)
+        } else {
+            CheckboxLook::next_of(r, checked, disabled)
+        }
+    };
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    disabled_look_unstated(&mut r);
+    assert!(
+        !r.checkbox
+            .indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::FILL)
+            && !r
+                .radio
+                .indicator(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL),
+        "adwaita light, patched, states a disabled indicator fill, which this test needs \
+         unstated"
+    );
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        let enabled = look(&r, radio, checked, false)?.fill;
+        let expected = if radio || checked {
+            gpui::Hsla {
+                a: enabled.a * 0.5,
+                ..enabled
+            }
+        } else {
+            enabled
+        };
+        assert_eq!(
+            look(&r, radio, checked, true)?.fill,
+            expected,
+            "unpatched, radio {radio}, checked {checked}"
+        );
+        assert!(enabled.a > 0., "radio {radio}, checked {checked}");
+    }
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(
+                CheckboxRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().fill(Paint::Solid(sentinel))),
+            )
+            .radio(
+                RadioRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().fill(Paint::Solid(sentinel))),
+            ),
+    );
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        assert_eq!(
+            look(&r, radio, checked, true)?.fill,
+            crate::next::hsla(sentinel),
+            "patched, disabled, radio {radio}, checked {checked}"
+        );
+        assert_ne!(
+            look(&r, radio, checked, false)?.fill,
+            crate::next::hsla(sentinel),
+            "patched, enabled, radio {radio}, checked {checked}"
+        );
+    }
+    Ok(())
+}
+
+/// Where a 0.8.0 preset states no rule for a state of a property
+/// gpui-component's own control changes in that state, the theme-drawn
+/// control draws gpui-component's own treatment of it (spec §10, rule 0): a
+/// disabled check box's and radio's label in `muted_foreground`
+/// (`colors.window.foreground_muted`), their disabled mark the enabled one at
+/// half its alpha, a disabled switch's track the enabled one at half its
+/// alpha, and a hovered tab's label the selected tab's
+/// (`tab_active_foreground`). At least one case on the seven presets differs
+/// from the value at rest, which the looks drew before.
+#[test]
+fn an_unstated_state_takes_gpui_components_own_treatment() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        PartStated, Preset, TextStated, Theme as NextTheme, ThemeContext, WidgetState,
+    };
+    let half = |c: gpui::Hsla| c.opacity(super::checkbox::DISABLED_INDICATOR_ALPHA);
+    let half_track = |c: gpui::Hsla| c.opacity(super::switch::DISABLED_TRACK_ALPHA);
+    let (mut checked_cases, mut differing) = (0, 0);
+    for preset in Preset::ALL {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(*preset).resolve(&ctx);
+            let name = format!("{preset:?} {:?}", ctx.scheme);
+            for radio in [false, true] {
+                let look = |checked, disabled| {
+                    if radio {
+                        CheckboxLook::next_radio(&r, checked, disabled)
+                    } else {
+                        CheckboxLook::next_of(&r, checked, disabled)
+                    }
+                };
+                let (Ok(enabled), Ok(off)) = (look(true, false), look(true, true)) else {
+                    continue;
+                };
+                let label = if radio {
+                    r.radio.label(WidgetState::DISABLED)
+                } else {
+                    r.checkbox.label(WidgetState::DISABLED)
+                };
+                if !label.from_state.contains(TextStated::COLOR) {
+                    let muted = crate::next::hsla(crate::next::stated(
+                        r.colors.window.foreground_muted,
+                        "colors.window.foreground_muted",
+                    )?);
+                    assert_eq!(off.label, muted, "{name} radio {radio}: disabled label");
+                    checked_cases += 1;
+                    differing += usize::from(enabled.label != muted);
+                }
+                let mark_ruled = if radio {
+                    r.radio
+                        .dot(WidgetState::DISABLED)
+                        .from_state
+                        .contains(PartStated::FILL)
+                } else {
+                    r.checkbox
+                        .checkmark(WidgetState::DISABLED)
+                        .from_state
+                        .contains(native_theme::next::IconStated::COLOR)
+                };
+                if !mark_ruled {
+                    assert_eq!(off.mark, half(enabled.mark), "{name} radio {radio}: mark");
+                    checked_cases += 1;
+                    differing += usize::from(enabled.mark.a > 0.);
+                }
+            }
+            if !r
+                .switch
+                .track(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL)
+            {
+                for checked in [false, true] {
+                    let (Ok(enabled), Ok(off)) = (
+                        SwitchLook::next_of(&r, checked, false),
+                        SwitchLook::next_of(&r, checked, true),
+                    ) else {
+                        continue;
+                    };
+                    assert_eq!(
+                        off.track,
+                        half_track(enabled.track),
+                        "{name} {checked}: track"
+                    );
+                    checked_cases += 1;
+                    differing += usize::from(enabled.track.a > 0.);
+                }
+            }
+            if !r
+                .tab
+                .label(WidgetState::HOVER)
+                .from_state
+                .contains(TextStated::COLOR)
+                && let Ok(tab) = TabLook::next_of(&r)
+            {
+                assert_eq!(tab.hover_text, tab.active_text, "{name}: hovered tab label");
+                checked_cases += 1;
+                differing += usize::from(tab.idle_text != tab.active_text);
+            }
+        }
+    }
+    assert!(
+        checked_cases > 0 && differing > 0,
+        "{checked_cases} cases, {differing} differing from rest"
+    );
+    Ok(())
+}
+
+/// A rule stated for the state is drawn in place of gpui-component's own
+/// treatment: a patched hovered tab label and disabled switch track.
+#[test]
+fn a_stated_state_is_drawn_over_gpui_components_own_treatment() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        Color, Paint, PartPatch, Preset, SwitchRule, TabRule, TextPatch, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    r.apply_patch(
+        &ThemePatch::new()
+            .tab(
+                TabRule::new()
+                    .states(WidgetState::HOVER)
+                    .label(TextPatch::new().color(sentinel)),
+            )
+            .switch(
+                SwitchRule::new()
+                    .states(WidgetState::DISABLED)
+                    .track(PartPatch::new().fill(Paint::Solid(sentinel))),
+            ),
+    );
+    let colour = crate::next::hsla(sentinel);
+    assert_eq!(TabLook::next_of(&r)?.hover_text, colour);
+    for checked in [false, true] {
+        assert_eq!(SwitchLook::next_of(&r, checked, true)?.track, colour);
+        assert_ne!(SwitchLook::next_of(&r, checked, false)?.track, colour);
+    }
+    Ok(())
+}
+
+/// A mixed check box is drawn as a checked one where a 0.8.0 theme states no
+/// rule for `INDETERMINATE`, as gpui-component draws it (gpui-component
+/// 0.10.0 checkbox.rs:354-358; spec §10, rule 0): so on every preset, each
+/// of which that states one states the checked box's look for it. Adwaita
+/// light, its disabled fill and mark unstated ([`disabled_look_unstated`]), which
+/// then states no rule for a disabled indicator's fill or stroke or a
+/// disabled mark, patched to state a fill, a
+/// stroke and a mark colour for `INDETERMINATE`: the mixed box draws those,
+/// a checked one does not, and disabled it draws them at half alpha; patched
+/// further to state others for `DISABLED`, disabled it draws those, read at
+/// `DISABLED|INDETERMINATE`.
+#[test]
+fn a_mixed_box_draws_the_look_stated_for_the_indeterminate_state() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        CheckboxRule, Color, IconPatch, IconStated, Paint, PartPatch, PartStated, Preset, Stroke,
+        Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    for preset in Preset::ALL {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(*preset).resolve(&ctx);
+            for disabled in [false, true] {
+                assert_eq!(
+                    CheckboxLook::next_mixed(&r, disabled),
+                    CheckboxLook::next_of(&r, true, disabled),
+                    "{preset:?} {:?}, disabled {disabled}",
+                    ctx.scheme
+                );
+            }
+        }
+    }
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    disabled_look_unstated(&mut r);
+    let off = r.checkbox.indicator(WidgetState::DISABLED).from_state;
+    assert!(
+        !off.contains(PartStated::FILL)
+            && !off.contains(PartStated::STROKE)
+            && !r
+                .checkbox
+                .checkmark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR),
+        "adwaita light, its disabled look unstated, states a disabled indicator fill, stroke or \
+         mark, which this test needs unstated"
+    );
+    let Some(width) =
+        crate::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE)).filter(|w| *w > 0.)
+    else {
+        return Err(Unmapped("checkbox.indicator(NONE).stroke.width"));
+    };
+    let rule = |states, [fill, stroke, mark]: [Color; 3]| {
+        CheckboxRule::new()
+            .states(states)
+            .indicator(
+                PartPatch::new()
+                    .fill(Paint::Solid(fill))
+                    .stroke(Stroke::uniform(width, stroke)),
+            )
+            .checkmark(IconPatch::new().color(mark))
+    };
+    let mixed = [
+        Color::from_srgb8(0x12, 0x34, 0x56, 0xff),
+        Color::from_srgb8(0x23, 0x45, 0x67, 0xff),
+        Color::from_srgb8(0x34, 0x56, 0x78, 0xff),
+    ];
+    r.apply_patch(&ThemePatch::new().checkbox(rule(WidgetState::INDETERMINATE, mixed)));
+    let drawn = |look: &CheckboxLook| [look.fill, look.border, look.mark];
+    let [fill, stroke, mark] = mixed.map(crate::next::hsla);
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, false)?),
+        [fill, stroke, mark],
+        "patched, enabled"
+    );
+    let checked = drawn(&CheckboxLook::next_of(&r, true, false)?);
+    for (part, colour) in checked.iter().zip([fill, stroke, mark]) {
+        assert_ne!(*part, colour, "patched, the checked box");
+    }
+    let half = |c: gpui::Hsla| c.opacity(super::checkbox::DISABLED_INDICATOR_ALPHA);
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, true)?),
+        [half(fill), half(stroke), half(mark)],
+        "patched, disabled"
+    );
+    let disabled = [
+        Color::from_srgb8(0x45, 0x67, 0x89, 0xff),
+        Color::from_srgb8(0x56, 0x78, 0x9a, 0xff),
+        Color::from_srgb8(0x67, 0x89, 0xab, 0xff),
+    ];
+    r.apply_patch(&ThemePatch::new().checkbox(rule(WidgetState::DISABLED, disabled)));
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, true)?),
+        disabled.map(crate::next::hsla),
+        "patched for DISABLED too, disabled"
+    );
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, false)?),
+        [fill, stroke, mark],
+        "patched for DISABLED too, enabled"
+    );
+    Ok(())
+}
+
+/// A hovered checked check box or radio draws the fill the engine resolves at
+/// `HOVER|CHECKED` (spec §3, rule order), none where that is the checked fill:
+/// on every preset, in both schemes, and there that fill is never the
+/// unchecked control's hover fill, which a `HOVER` rule states on some.
+/// Adwaita light patched to state a fill for `HOVER|CHECKED`: the hovered
+/// checked box draws it, a disabled one none, an unchecked one its own; patched
+/// to state fills for `INDETERMINATE` and `HOVER|INDETERMINATE`, the hovered
+/// mixed box draws the latter.
+#[test]
+fn a_hovered_checked_box_draws_the_fill_resolved_for_its_state() -> crate::next::Mapped<()> {
+    use crate::next::state_fill_of;
+    use native_theme::next::{
+        CheckboxRule, Color, Paint, PartPatch, Preset, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    const HOVERED_ON: WidgetState = WidgetState::HOVER.union(WidgetState::CHECKED);
+    for preset in Preset::ALL {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(*preset).resolve(&ctx);
+            for radio in [false, true] {
+                let name = format!("{preset:?} {:?}, radio {radio}", ctx.scheme);
+                let indicator = |state| {
+                    if radio {
+                        r.radio.indicator(state)
+                    } else {
+                        r.checkbox.indicator(state)
+                    }
+                };
+                let look = if radio {
+                    CheckboxLook::next_radio(&r, true, false)?
+                } else {
+                    CheckboxLook::next_of(&r, true, false)?
+                };
+                let resolved = state_fill_of(&indicator(HOVERED_ON));
+                let on = crate::next::fill(&indicator(WidgetState::CHECKED), "indicator(CHECKED)")?;
+                assert_eq!(
+                    look.hover_fill,
+                    resolved.filter(|hover| *hover != on),
+                    "{name}"
+                );
+                if let Some(unchecked) = state_fill_of(&indicator(WidgetState::HOVER)) {
+                    assert_ne!(
+                        resolved,
+                        Some(unchecked),
+                        "{name}: the hovered checked control resolves to the unchecked hover fill"
+                    );
+                }
+            }
+        }
+    }
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let unchecked = CheckboxLook::next_of(&r, false, false)?.hover_fill;
+    let fill_rule = |states, colour| {
+        CheckboxRule::new()
+            .states(states)
+            .indicator(PartPatch::new().fill(Paint::Solid(colour)))
+    };
+    let hovered = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(&ThemePatch::new().checkbox(fill_rule(HOVERED_ON, hovered)));
+    assert_eq!(
+        CheckboxLook::next_of(&r, true, false)?.hover_fill,
+        Some(crate::next::hsla(hovered)),
+        "patched, enabled"
+    );
+    assert_eq!(
+        CheckboxLook::next_of(&r, true, true)?.hover_fill,
+        None,
+        "patched, disabled"
+    );
+    assert_eq!(
+        CheckboxLook::next_of(&r, false, false)?.hover_fill,
+        unchecked,
+        "patched, unchecked"
+    );
+    let [mixed, hovered_mixed] = [
+        Color::from_srgb8(0x23, 0x45, 0x67, 0xff),
+        Color::from_srgb8(0x34, 0x56, 0x78, 0xff),
+    ];
+    r.apply_patch(&ThemePatch::new().checkbox(fill_rule(WidgetState::INDETERMINATE, mixed)));
+    r.apply_patch(&ThemePatch::new().checkbox(fill_rule(
+        WidgetState::HOVER | WidgetState::INDETERMINATE,
+        hovered_mixed,
+    )));
+    let look = CheckboxLook::next_mixed(&r, false)?;
+    assert_eq!(
+        (look.fill, look.hover_fill),
+        (
+            crate::next::hsla(mixed),
+            Some(crate::next::hsla(hovered_mixed))
+        ),
+        "patched, mixed"
+    );
+    Ok(())
 }

@@ -160,7 +160,11 @@ fn patched_light(
     preset: Preset,
     patch: &str,
 ) -> Result<crate::ThemeAtlas, Box<dyn std::error::Error>> {
-    let theme = Theme::preset(preset).with_patch(ThemePatch::from_toml(patch)?);
+    atlas_of(&Theme::preset(preset).with_patch(ThemePatch::from_toml(patch)?))
+}
+
+/// The atlas `to_theme` builds from `theme`, light and dark.
+fn atlas_of(theme: &Theme) -> Result<crate::ThemeAtlas, Box<dyn std::error::Error>> {
     let [light, light_inactive, dark, dark_inactive] = [
         ThemeContext::light(),
         ThemeContext::light().with_window_active(false),
@@ -170,6 +174,235 @@ fn patched_light(
     .map(|ctx| theme.resolve(&ctx));
     let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
     Ok(atlas)
+}
+
+/// The paths of the `Note::Unmapped` notes of the atlas built from kde-breeze with `body` laid
+/// over the button's body.
+fn unmapped_paths(body: PartPatch) -> Result<Vec<&'static str>, Box<dyn std::error::Error>> {
+    let patch = ThemePatch::new().button(native_theme::next::ButtonRule::new().body(body));
+    let atlas = atlas_of(&Theme::preset(Preset::KdeBreeze).with_patch(patch))?;
+    Ok(atlas
+        .notes()
+        .iter()
+        .filter_map(|note| match note {
+            crate::Note::Unmapped { path } => Some(*path),
+            _ => None,
+        })
+        .collect())
+}
+
+/// Corners whose radii differ corner by corner are noted unmapped at their home, egui
+/// rounding a widget by one radius; equal ones, and the preset's own, are not.
+#[test]
+fn per_corner_radii_that_differ_are_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners};
+
+    let per_corner = |top_left: f32, others: f32| Corners {
+        radius: CornerRadius::PerCorner {
+            top_left,
+            top_right: others,
+            bottom_right: others,
+            bottom_left: others,
+        },
+        curve: CornerCurve::Circular,
+    };
+    assert_eq!(unmapped_paths(PartPatch::new())?, Vec::<&str>::new());
+    assert_eq!(
+        unmapped_paths(PartPatch::new().corners(per_corner(2.0, 6.0)))?,
+        ["button.body(NONE).corners"]
+    );
+    assert_eq!(
+        unmapped_paths(PartPatch::new().corners(per_corner(4.0, 4.0)))?,
+        Vec::<&str>::new()
+    );
+    Ok(())
+}
+
+/// Concentric corners are noted unmapped at their home: egui knows no container radius to
+/// take the inset from.
+#[test]
+fn concentric_corners_are_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners};
+
+    let concentric = Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        curve: CornerCurve::Circular,
+    };
+    assert_eq!(
+        unmapped_paths(PartPatch::new().corners(concentric))?,
+        ["button.body(NONE).corners"]
+    );
+    Ok(())
+}
+
+/// A stroke stated per side is noted unmapped at its width's home, egui outlining a widget by
+/// one stroke.
+#[test]
+fn a_per_side_stroke_is_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    let side = || StrokeSide {
+        width: 1.0,
+        paint: Paint::Solid(STROKE),
+    };
+    let stroke = Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
+    assert_eq!(
+        unmapped_paths(PartPatch::new().stroke(stroke))?,
+        ["button.body(NONE).stroke.width"]
+    );
+    Ok(())
+}
+
+/// Each form of a stated radius as the one-radius read takes it: a continuous curve drawn as
+/// the circular corner of its radius (spec §10, rule 2), a pill as the largest radius egui
+/// holds, which epaint clamps to half the shorter side, per-corner radii where the four are
+/// one; per-corner radii that differ and a concentric radius, which needs the container's,
+/// not. On a patched theme a continuous panel's radius reaches material-3's menu outline.
+#[test]
+fn every_radius_form_is_read_as_egui_rounds_it() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners, PartStated, PartStyle};
+
+    let part = |radius: CornerRadius, curve: CornerCurve| {
+        let mut part = PartStyle::default();
+        part.corners = Corners { radius, curve };
+        part.stated |= PartStated::CORNERS;
+        part
+    };
+    let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+        top_left,
+        top_right,
+        bottom_right,
+        bottom_left,
+    };
+    for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+        let read = |radius| super::radius_of(&part(radius, curve));
+        assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+        assert_eq!(read(CornerRadius::None), Some(0.0));
+        assert_eq!(read(CornerRadius::Pill), Some(255.0));
+        assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+        assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+        assert_eq!(
+            read(CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 1.0,
+            }),
+            None
+        );
+    }
+    assert_eq!(super::radius_of(&PartStyle::default()), None);
+
+    let panel =
+        "[[widgets.menu.rules]]\npanel.corners = { radius = 4.0, curve = \"continuous\" }\n";
+    let r = Theme::preset(Preset::Material3)
+        .with_patch(ThemePatch::from_toml(panel)?)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::build::cell_source(&r, &mut Vec::new())
+            .menu
+            .outline
+            .edge
+            .radius,
+        Some(4.0)
+    );
+    Ok(())
+}
+
+/// The atlas rounds the button by each form of its body's corners egui can draw, and notes
+/// none of them: a pill by the largest radius egui holds (epaint clamps it to half the
+/// shorter side), a continuous curve as the circular corner of its radius, per-corner radii
+/// that are one by that radius.
+#[test]
+fn the_atlas_rounds_a_pill_a_continuous_curve_and_equal_corners()
+-> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{ButtonRule, CornerCurve, CornerRadius, Corners};
+
+    let rounded = |corners: Corners| -> Result<_, Box<dyn std::error::Error>> {
+        let patch =
+            ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().corners(corners)));
+        let atlas = atlas_of(&Theme::preset(Preset::KdeBreeze).with_patch(patch))?;
+        let mut style = egui::Style::default();
+        atlas
+            .role_modifier(
+                egui::Theme::Light,
+                crate::Role::Button,
+                crate::RoleVariant::Normal,
+            )
+            .apply(&mut style);
+        let unmapped = atlas
+            .notes()
+            .iter()
+            .any(|note| matches!(note, crate::Note::Unmapped { .. }));
+        Ok((style.visuals.widgets.inactive.corner_radius, unmapped))
+    };
+    let equal = Corners {
+        radius: CornerRadius::PerCorner {
+            top_left: 3.0,
+            top_right: 3.0,
+            bottom_right: 3.0,
+            bottom_left: 3.0,
+        },
+        curve: CornerCurve::Circular,
+    };
+    for (corners, want) in [
+        (Corners::pill(), u8::MAX),
+        (Corners::continuous(6.0), 6),
+        (equal, 3),
+    ] {
+        assert_eq!(
+            rounded(corners)?,
+            (egui::CornerRadius::same(want), false),
+            "{corners:?}"
+        );
+    }
+    Ok(())
+}
+
+/// `text_area_frame` rounds the field by the corners egui can draw, a pill and per-corner radii
+/// that are one, and returns a `Note::Unmapped` at `text_area.field(NONE).corners` for
+/// per-corner radii that differ, which keep the scope's radius.
+#[test]
+fn the_text_area_frame_notes_the_corners_it_cannot_draw() -> Result<(), Box<dyn std::error::Error>>
+{
+    use native_theme::next::{CornerCurve, CornerRadius, Corners, InputRule};
+
+    let per_corner = |top_left: f32, others: f32| Corners {
+        radius: CornerRadius::PerCorner {
+            top_left,
+            top_right: others,
+            bottom_right: others,
+            bottom_left: others,
+        },
+        curve: CornerCurve::Circular,
+    };
+    let ctx = egui::Context::default();
+    let id = egui::Id::unique("text-area-corners");
+    let mut frames = Vec::new();
+    for corners in [per_corner(4.0, 4.0), Corners::pill(), per_corner(2.0, 6.0)] {
+        let patch =
+            ThemePatch::new().text_area(InputRule::new().field(PartPatch::new().corners(corners)));
+        let r = Theme::preset(Preset::KdeBreeze)
+            .with_patch(patch)
+            .resolve(&ThemeContext::light());
+        let _ = crate::install_tests::pass(&ctx, egui::RawInput::default(), |ui| {
+            frames.push(super::text_area_frame(ui, id, &r));
+        });
+    }
+    let [equal, pill, differ] = <[_; 3]>::try_from(frames).map_err(|_| "three frames")?;
+    let (equal, pill, (_, differ)) = (equal?, pill?, differ?);
+    assert_eq!(
+        (equal.0.corner_radius, equal.1),
+        (egui::CornerRadius::same(4), Vec::new())
+    );
+    assert_eq!(
+        (pill.0.corner_radius, pill.1),
+        (egui::CornerRadius::same(u8::MAX), Vec::new())
+    );
+    assert_eq!(
+        differ,
+        [crate::Note::unmapped("text_area.field(NONE).corners")]
+    );
+    Ok(())
 }
 
 /// The primary button in a disabled scope takes the fill and the label a rule states for the
@@ -245,6 +478,94 @@ fn a_tool_buttons_pressed_outline_is_its_own() -> Result<(), Box<dyn std::error:
         .visuals
         .widgets;
     assert_eq!(w.active.bg_stroke.color, egui::Color32::GREEN);
+    Ok(())
+}
+
+/// The flat button `super::flat_button` lays over the light `Role::Button` `Normal` cell takes
+/// under the pointer the outline a rule for the flat variant states for `HOVER`, pressed or
+/// focused the one it states for `FOCUS_VISIBLE`, and its stated fills, never the push button's
+/// cell's; a flat button stating none of them is egui's own hovered and pressed outline, fill
+/// and label (spec §10, rule 0).
+#[test]
+fn a_flat_buttons_states_are_its_own() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{ButtonRule, ButtonVariant};
+
+    let [magenta, green, blue] = [[0xff, 0, 0xff], [0, 0xff, 0], [0, 0, 0xff]]
+        .map(|[r, g, b]| egui::Color32::from_rgb(r, g, b));
+    let flat = |state: WidgetState, body: PartPatch| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .body(body)
+    };
+    let pen = |width: f32, [r, g, b]: [f32; 3]| Stroke::uniform(width, Color::new(r, g, b, 1.0));
+    let patch = ThemePatch::new()
+        .button(flat(
+            WidgetState::HOVER,
+            PartPatch::new()
+                .stroke(pen(3.0, [1.0, 0.0, 1.0]))
+                .fill(Paint::Solid(Color::new(0.0, 0.0, 1.0, 1.0))),
+        ))
+        .button(flat(
+            WidgetState::FOCUS_VISIBLE,
+            PartPatch::new().stroke(pen(4.0, [0.0, 1.0, 0.0])),
+        ));
+    let own = egui::Theme::Light.default_style().visuals.widgets;
+    for &(key, preset) in PRESETS {
+        let theme = Theme::preset(preset).with_patch(patch.clone());
+        let r = theme.resolve(&ThemeContext::light());
+        let mut visuals = atlas_of(&theme)?
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Button, crate::RoleVariant::Normal)
+            .visuals
+            .clone();
+        let cell = visuals.widgets.clone();
+        let notes = super::flat_button(&r, egui::Theme::Light, &mut visuals);
+        assert!(notes.is_empty(), "{key}: {notes:?}");
+        let w = &visuals.widgets;
+        assert_eq!(
+            w.hovered.bg_stroke,
+            egui::Stroke::new(3.0, magenta),
+            "{key}"
+        );
+        assert_eq!(w.hovered.weak_bg_fill, blue, "{key}");
+        assert_eq!(w.active.bg_stroke, egui::Stroke::new(4.0, green), "{key}");
+        assert_eq!(
+            w.inactive, cell.inactive,
+            "{key}: the resting entry is the scope's"
+        );
+        assert_ne!(
+            cell.hovered.bg_stroke, w.hovered.bg_stroke,
+            "{key}: the push button's cell has the flat outline, so this proves nothing"
+        );
+
+        // Every preset states the flat button's states (a rule that names no variant is the
+        // flat button's too), so the unstated case is a flat button stating none.
+        let mut bare = cell.clone();
+        let mut notes = Vec::new();
+        crate::style::variants::flat_cell(
+            &mut bare,
+            &crate::style::variants::FlatButton {
+                fill: [None; 2],
+                label: [None; 2],
+                state_border: [None; 2],
+                align: crate::style::line::LineAlign::Outside,
+            },
+            crate::style::states::Unstated::Egui(&own),
+            &mut notes,
+        );
+        assert!(notes.is_empty(), "{key}: {notes:?}");
+        for (entry, stock, state) in [
+            (&bare.hovered, &own.hovered, "hovered"),
+            (&bare.active, &own.active, "pressed"),
+        ] {
+            assert_eq!(
+                (entry.bg_stroke, entry.weak_bg_fill, entry.fg_stroke.color),
+                (stock.bg_stroke, stock.weak_bg_fill, stock.fg_stroke.color),
+                "{key}: a flat button stating nothing {state} is egui's own there"
+            );
+        }
+    }
     Ok(())
 }
 
@@ -433,6 +754,413 @@ fn a_checked_boxs_hovered_outline_stated_as_none_is_no_line()
     Ok(())
 }
 
+/// The atlas of `preset` with its check box's indicator fill and stroke stated for no state at
+/// `DISABLED`, in each of the four contexts: a rule of no required state, forbidding every state
+/// but `DISABLED` a rest query's look depends on, restates that context's fill and stroke at
+/// rest, so they stay as the preset gives them and the `from_state` bits of those queried at
+/// `DISABLED` are cleared (spec §2, `from_state`: a rule without required states clears it).
+fn disabled_unstated_atlas(
+    preset: Preset,
+) -> Result<(crate::ThemeAtlas, native_theme::next::ResolvedTheme), Box<dyn std::error::Error>> {
+    use native_theme::next::CheckboxRule;
+    let others = WidgetState::CHECKED
+        | WidgetState::INDETERMINATE
+        | WidgetState::HOVER
+        | WidgetState::PRESSED;
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| {
+        let mut r = Theme::preset(preset).resolve(&ctx);
+        let rest = r.checkbox.indicator(WidgetState::NONE);
+        r.apply_patch(
+            &ThemePatch::new().checkbox(
+                CheckboxRule::new()
+                    .not_states(others)
+                    .indicator(PartPatch::new().fill(rest.fill).stroke(rest.stroke)),
+            ),
+        );
+        r
+    });
+    let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+    Ok((atlas, light))
+}
+
+/// A disabled check box, checked or not, draws the outline a rule states for the disabled
+/// state (`indicator(DISABLED).stroke`), its width and colour; where none does, it keeps its
+/// resting outline, which egui dims by `disabled_alpha` alone (spec §2, `from_state`; §10,
+/// rule 0): on every preset, each patched to state neither the disabled indicator's fill nor
+/// its stroke ([`disabled_unstated_atlas`]), as every bundled preset states one.
+#[test]
+fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::PartStated;
+
+    let rule = "[[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
+                indicator.stroke = { width = 3.0, color = \"#ff00ff\" }\n";
+    let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    for &(key, preset) in PRESETS {
+        let cells = |atlas: &crate::ThemeAtlas| {
+            let styles = atlas.scheme(egui::Theme::Light);
+            [
+                crate::RoleVariant::Normal,
+                crate::RoleVariant::Selected,
+                crate::RoleVariant::Disabled,
+                crate::RoleVariant::SelectedDisabled,
+            ]
+            .map(|variant| {
+                styles
+                    .cell(crate::Role::Checkbox, variant)
+                    .visuals
+                    .widgets
+                    .inactive
+            })
+        };
+        let [_, _, disabled, checked] = cells(&patched_light(preset, rule)?);
+        for (name, entry) in [("unchecked", disabled), ("checked", checked)] {
+            assert_eq!(
+                entry.bg_stroke,
+                egui::Stroke::new(3.0, magenta),
+                "{key}: the {name} disabled box"
+            );
+        }
+        let (atlas, r) = disabled_unstated_atlas(preset)?;
+        let stated = r.checkbox.indicator(WidgetState::DISABLED);
+        assert!(
+            !stated
+                .from_state
+                .intersects(PartStated::STROKE | PartStated::FILL),
+            "{key}: patched, it still states a disabled indicator's stroke or fill"
+        );
+        let [normal, selected, disabled, checked] = cells(&atlas);
+        assert_eq!(disabled.bg_stroke, normal.bg_stroke, "{key}: unchecked");
+        assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
+    }
+    Ok(())
+}
+
+/// The mixed box `super::mixed_checkbox` lays over the light `Role::Checkbox` `Normal` cell of
+/// `preset` with `patch` laid over it, with the 0.8.0 light theme it lays it from.
+fn mixed_over_normal(
+    preset: Preset,
+    patch: &str,
+) -> Result<
+    (
+        egui::Visuals,
+        egui::Visuals,
+        native_theme::next::ResolvedTheme,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let atlas = patched_light(preset, patch)?;
+    let normal = atlas
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Checkbox, crate::RoleVariant::Normal)
+        .visuals
+        .clone();
+    let r = Theme::preset(preset)
+        .with_patch(ThemePatch::from_toml(patch)?)
+        .resolve(&ThemeContext::light());
+    let mut mixed = normal.clone();
+    let notes = super::mixed_checkbox(&r, egui::Theme::Light, &mut mixed);
+    assert!(notes.is_empty(), "{preset:?}: {notes:?}");
+    Ok((normal, mixed, r))
+}
+
+/// The mixed box takes what a rule states for `INDETERMINATE` at rest, and under the pointer and
+/// pressed what a rule states for `HOVER` or `PRESSED` asked alone, the combined state's value;
+/// where none does, egui's own treatment of the hover or the press, as the checked box takes it
+/// (spec §2, `from_state`: the flag asked alone; §10, rule 0): on every preset with the same
+/// fill and outline stated for `CHECKED` and for `INDETERMINATE`, the mixed box's hovered and
+/// pressed fill and outline colour are the checked cell's, and where `indicator(HOVER)` states
+/// no fill, egui's own hovered one where egui's changes between rest and hover, else the mixed
+/// fill. A rule for `HOVER` and one for `HOVER` with `INDETERMINATE` give the latter.
+#[test]
+fn the_mixed_box_under_the_pointer_asks_the_state_alone() -> Result<(), Box<dyn std::error::Error>>
+{
+    use native_theme::next::{IconStated, PartStated};
+
+    let [magenta, green, blue, cyan] =
+        [[0xff, 0, 0xff], [0, 0xff, 0], [0, 0, 0xff], [0, 0xff, 0xff]]
+            .map(|[r, g, b]| egui::Color32::from_rgb(r, g, b));
+    let look = "indicator.fill = \"#ff00ff\"\n\
+                indicator.stroke = { width = 3.0, color = \"#00ff00\" }\n";
+    let rules = format!(
+        "[[widgets.checkbox.rules]]\nstates = [\"indeterminate\"]\n{look}checkmark.color = \"#0000ff\"\n\
+         [[widgets.checkbox.rules]]\nstates = [\"checked\"]\n{look}"
+    );
+    let stock = egui::Theme::Light.default_style().visuals.widgets;
+    let mut unstated_hover = 0;
+    for &(key, preset) in PRESETS {
+        let (_, mixed, r) = mixed_over_normal(preset, &rules)?;
+        let w = &mixed.widgets;
+        assert_eq!(w.inactive.bg_fill, magenta, "{key}: the mixed fill");
+        assert_eq!(
+            w.inactive.bg_stroke,
+            egui::Stroke::new(3.0, green),
+            "{key}: the mixed outline"
+        );
+        assert_eq!(w.inactive.fg_stroke.color, blue, "{key}: the mixed mark");
+        let checked = patched_light(preset, &rules)?;
+        let checked = &checked
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+            .visuals
+            .widgets;
+        for (name, state, m, c) in [
+            ("hovered", WidgetState::HOVER, w.hovered, checked.hovered),
+            ("pressed", WidgetState::PRESSED, w.active, checked.active),
+        ] {
+            let alone = r.checkbox.indicator(state).from_state;
+            if alone.contains(PartStated::FILL) {
+                let combined = r.checkbox.indicator(state | WidgetState::INDETERMINATE);
+                assert_eq!(
+                    Some(m.bg_fill),
+                    super::fill_of(&combined),
+                    "{key}: the {name} fill stated for the state"
+                );
+            } else {
+                assert_eq!(m.bg_fill, c.bg_fill, "{key}: the {name} fill");
+            }
+            if !alone.contains(PartStated::STROKE) {
+                assert_eq!(
+                    m.bg_stroke.color, c.bg_stroke.color,
+                    "{key}: the {name} outline"
+                );
+            }
+        }
+        if !r
+            .checkbox
+            .indicator(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::FILL)
+        {
+            unstated_hover += 1;
+            let own = if stock.hovered.bg_fill == stock.inactive.bg_fill {
+                magenta
+            } else {
+                stock.hovered.bg_fill
+            };
+            assert_eq!(w.hovered.bg_fill, own, "{key}: egui's own hover");
+        }
+        if !r
+            .checkbox
+            .checkmark(WidgetState::HOVER)
+            .from_state
+            .contains(IconStated::COLOR)
+        {
+            let own = if stock.hovered.fg_stroke.color == stock.inactive.fg_stroke.color {
+                blue
+            } else {
+                stock.hovered.fg_stroke.color
+            };
+            assert_eq!(w.hovered.fg_stroke.color, own, "{key}: the hovered mark");
+        }
+
+        let hover = format!(
+            "{rules}[[widgets.checkbox.rules]]\nstates = [\"hover\"]\nindicator.fill = \"#ffff00\"\n\
+             [[widgets.checkbox.rules]]\nstates = [\"hover\", \"indeterminate\"]\n\
+             indicator.fill = \"#00ffff\"\n"
+        );
+        let (_, mixed, _) = mixed_over_normal(preset, &hover)?;
+        assert_eq!(
+            mixed.widgets.hovered.bg_fill, cyan,
+            "{key}: the fill stated for the hover and the mixed state"
+        );
+    }
+    assert!(
+        unstated_hover > 0,
+        "no preset leaves the hovered indicator's fill unstated"
+    );
+    Ok(())
+}
+
+/// A see-through outline stated for the mixed state is drawn over the fill under it, as the
+/// connector's cells draw one ([`crate::style::line::Line::over`]): one inside the box's edge
+/// is composited over the box's fill (egui fills a rect up to the stroke's inner edge, epaint
+/// 0.37.0 `src/tessellator.rs`, `stroke_and_fill_path`), one outside it is handed to egui as
+/// stated. Where a rule states a mark, the label keeps the colour it has at rest.
+#[test]
+fn a_translucent_mixed_outline_is_drawn_over_its_fill() -> Result<(), Box<dyn std::error::Error>> {
+    let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    let half_green = egui::Color32::from_rgba_unmultiplied(0x00, 0xff, 0x00, 0x80);
+    let rule = |align: &str| {
+        format!(
+            "[[widgets.checkbox.rules]]\nstates = [\"indeterminate\"]\n\
+             indicator.fill = \"#ff00ff\"\n\
+             indicator.stroke = {{ width = 2.0, color = \"#00ff0080\", align = \"{align}\" }}\n\
+             checkmark.color = \"#0000ff\"\n"
+        )
+    };
+    for &(key, preset) in PRESETS {
+        let (normal, inside, r) = mixed_over_normal(preset, &rule("inside"))?;
+        assert_eq!(
+            inside.widgets.inactive.bg_stroke.color,
+            magenta.blend(half_green),
+            "{key}: inside"
+        );
+        let (_, outside, _) = mixed_over_normal(preset, &rule("outside"))?;
+        assert_eq!(
+            outside.widgets.inactive.bg_stroke.color, half_green,
+            "{key}: outside"
+        );
+        let label = normal
+            .override_text_color
+            .unwrap_or(normal.widgets.inactive.fg_stroke.color);
+        assert_eq!(inside.override_text_color, Some(label), "{key}: the label");
+        // a scope whose label egui letters in the mark's colour
+        let mut bare = normal.clone();
+        bare.override_text_color = None;
+        let notes = super::mixed_checkbox(&r, egui::Theme::Light, &mut bare);
+        assert!(notes.is_empty(), "{key}: {notes:?}");
+        assert_eq!(
+            bare.override_text_color,
+            Some(normal.widgets.inactive.fg_stroke.color),
+            "{key}: the label held to its resting colour"
+        );
+    }
+    Ok(())
+}
+
+/// The checked box's outline is drawn at the width a rule states for `CHECKED`, not the
+/// unchecked box's, in every entry at rest, and under the pointer where a rule states the
+/// outline for `HOVER` asked alone (the combined state's, the `CHECKED` rule's here).
+#[test]
+fn the_checked_boxs_stated_outline_width_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::PartStated;
+
+    let green = egui::Color32::from_rgb(0, 0xff, 0);
+    let rule = "[[widgets.checkbox.rules]]\nstates = [\"checked\"]\n\
+                indicator.stroke = { width = 3.0, color = \"#00ff00\" }\n";
+    for &(key, preset) in PRESETS {
+        let atlas = patched_light(preset, rule)?;
+        let w = &atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+            .visuals
+            .widgets;
+        for (name, e) in [
+            ("noninteractive", &w.noninteractive),
+            ("inactive", &w.inactive),
+            ("open", &w.open),
+        ] {
+            assert_eq!(e.bg_stroke.width, 3.0, "{key}: the {name} outline's width");
+            assert_eq!(
+                e.bg_stroke.color, green,
+                "{key}: the {name} outline's colour"
+            );
+        }
+        let r = Theme::preset(preset)
+            .with_patch(ThemePatch::from_toml(rule)?)
+            .resolve(&ThemeContext::light());
+        if r.checkbox
+            .indicator(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::STROKE)
+        {
+            assert_eq!(
+                w.hovered.bg_stroke.width, 3.0,
+                "{key}: the hovered outline's width"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The checked box's and the mixed box's mark take the width a rule states for their flag at
+/// rest, and under the pointer the width a rule states for `HOVER` asked alone, the
+/// combined state's (spec §2, `from_state`); with no rule for `HOVER` or `PRESSED`, egui's own
+/// width for the state where egui's changes between rest and that state, else the resting width
+/// (§10, rule 0): egui strokes the mark in the state's `fg_stroke` (egui 0.37.0
+/// `src/theme/default_style.rs`, `StyleProvider<CheckboxStyle>`), and its own entries widen
+/// that stroke under the pointer and on a press (`src/style.rs`, `Widgets::light`).
+#[test]
+fn a_marks_stated_width_is_read_per_state() -> Result<(), Box<dyn std::error::Error>> {
+    let stock = egui::Theme::Light.default_style().visuals.widgets;
+    let own = |e: &egui::style::WidgetVisuals, rest: f32| {
+        if e.fg_stroke.width == stock.inactive.fg_stroke.width {
+            rest
+        } else {
+            e.fg_stroke.width
+        }
+    };
+    for flag in ["checked", "indeterminate"] {
+        let rest = format!(
+            "[[widgets.checkbox.rules]]\nstates = [\"{flag}\"]\ncheckmark.stroke_width = 3.0\n"
+        );
+        let hover = format!(
+            "{rest}[[widgets.checkbox.rules]]\nstates = [\"hover\"]\ncheckmark.stroke_width = 4.0\n\
+             [[widgets.checkbox.rules]]\nstates = [\"hover\", \"{flag}\"]\n\
+             checkmark.stroke_width = 5.0\n"
+        );
+        for &(key, preset) in PRESETS {
+            let marks = |patch: &str| -> Result<egui::style::Widgets, Box<dyn std::error::Error>> {
+                Ok(if flag == "checked" {
+                    patched_light(preset, patch)?
+                        .scheme(egui::Theme::Light)
+                        .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+                        .visuals
+                        .widgets
+                        .clone()
+                } else {
+                    mixed_over_normal(preset, patch)?.1.widgets
+                })
+            };
+            let w = marks(&rest)?;
+            for (name, e) in [
+                ("noninteractive", &w.noninteractive),
+                ("inactive", &w.inactive),
+                ("open", &w.open),
+            ] {
+                assert_eq!(e.fg_stroke.width, 3.0, "{key} {flag}: the {name} mark");
+            }
+            assert_eq!(
+                w.hovered.fg_stroke.width,
+                own(&stock.hovered, 3.0),
+                "{key} {flag}: egui's own hovered mark"
+            );
+            assert_eq!(
+                w.active.fg_stroke.width,
+                own(&stock.active, 3.0),
+                "{key} {flag}: egui's own pressed mark"
+            );
+            let w = marks(&hover)?;
+            assert_eq!(w.inactive.fg_stroke.width, 3.0, "{key} {flag}: at rest");
+            assert_eq!(w.hovered.fg_stroke.width, 5.0, "{key} {flag}: hovered");
+            assert_eq!(
+                w.active.fg_stroke.width,
+                own(&stock.active, 3.0),
+                "{key} {flag}: pressed"
+            );
+        }
+    }
+    // The unchecked box's cell, which the checked one starts from: the width a rule states for
+    // `PRESSED`, and under the pointer egui's own where the preset states one at rest.
+    let press =
+        "[[widgets.checkbox.rules]]\nstates = [\"pressed\"]\ncheckmark.stroke_width = 4.0\n";
+    for &(key, preset) in PRESETS {
+        let atlas = patched_light(preset, press)?;
+        let w = &atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Normal)
+            .visuals
+            .widgets;
+        assert_eq!(w.active.fg_stroke.width, 4.0, "{key}: the pressed mark");
+        let r = Theme::preset(preset).resolve(&ThemeContext::light());
+        if let Some(rest) = r.checkbox.checkmark(WidgetState::NONE).stroke_width {
+            assert_eq!(w.inactive.fg_stroke.width, rest, "{key}: the resting mark");
+            assert_eq!(
+                w.hovered.fg_stroke.width,
+                own(&stock.hovered, rest),
+                "{key}: egui's own hovered mark"
+            );
+        }
+    }
+    Ok(())
+}
+
 /// A tool button's and a menu item's hovered and pressed outline widths are the ones a rule
 /// states for the state.
 #[test]
@@ -528,7 +1256,14 @@ fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn st
         super::to_theme(light, &light_inactive, &dark, &dark_inactive)
             .map(|atlas| atlas.focus_ring(egui::Theme::Light).copied())
     };
-    let plain = ring(&light)?.ok_or("windows-11 states a ring")?;
+    let stated = ring(&light)?.ok_or("windows-11 states a ring")?;
+    assert_eq!(
+        (stated.inner.map(|inner| inner.width), stated.corners),
+        (Some(1.0), None),
+        "windows-11 states the inner ring, FocusStrokeColorInner"
+    );
+    light.focus_ring.inner_stroke = Stroke::None;
+    let plain = ring(&light)?.ok_or("the ring")?;
     assert_eq!((plain.inner, plain.corners), (None, None));
     light.focus_ring.inner_stroke = Stroke::uniform(1.0, Color::new(1.0, 1.0, 1.0, 1.0));
     light.focus_ring.corners = Some(Corners::uniform(4.0));
@@ -819,62 +1554,12 @@ fn the_menu_item_takes_the_panels_corners_on_material_3_alone()
             continue;
         }
         unstated.push(preset);
-        let outline = &super::build::cell_source(&r).menu.outline;
+        let outline = &super::build::cell_source(&r, &mut Vec::new()).menu.outline;
         let want = (preset == Preset::Material3).then_some(7.0);
         assert_eq!(outline.edge.radius, want, "{key}");
     }
     assert!(unstated.contains(&Preset::Material3), "{unstated:?}");
     assert!(unstated.len() > 1, "{unstated:?}");
-    Ok(())
-}
-
-/// Each form of a stated radius as the one-radius read takes it: a continuous curve drawn as
-/// the circular corner of its radius (spec §10, rule 2), a pill as the largest radius egui
-/// holds, which epaint clamps to half the shorter side, per-corner radii where the four are
-/// one; per-corner radii that differ and a concentric radius, which needs the container's,
-/// not. On a patched theme a continuous panel's radius reaches material-3's menu outline.
-#[test]
-fn every_radius_form_is_read_as_egui_rounds_it() -> Result<(), Box<dyn std::error::Error>> {
-    use native_theme::next::{CornerCurve, CornerRadius, Corners, PartStated, PartStyle};
-
-    let part = |radius: CornerRadius, curve: CornerCurve| {
-        let mut part = PartStyle::default();
-        part.corners = Corners { radius, curve };
-        part.stated |= PartStated::CORNERS;
-        part
-    };
-    let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
-        top_left,
-        top_right,
-        bottom_right,
-        bottom_left,
-    };
-    for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
-        let read = |radius| super::radius_of(&part(radius, curve));
-        assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
-        assert_eq!(read(CornerRadius::None), Some(0.0));
-        assert_eq!(read(CornerRadius::Pill), Some(255.0));
-        assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
-        assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
-        assert_eq!(
-            read(CornerRadius::Concentric {
-                inset: 2.0,
-                min_radius: 1.0,
-            }),
-            None
-        );
-    }
-    assert_eq!(super::radius_of(&PartStyle::default()), None);
-
-    let panel =
-        "[[widgets.menu.rules]]\npanel.corners = { radius = 4.0, curve = \"continuous\" }\n";
-    let r = Theme::preset(Preset::Material3)
-        .with_patch(ThemePatch::from_toml(panel)?)
-        .resolve(&ThemeContext::light());
-    assert_eq!(
-        super::build::cell_source(&r).menu.outline.edge.radius,
-        Some(4.0)
-    );
     Ok(())
 }
 
@@ -1029,7 +1714,7 @@ fn a_next_atlas_menu_bar_modifier_is_the_menu_cell_with_its_titles()
 /// The checked box's hovered fill by rule 0 per property (spec §10): where a rule states
 /// `checkbox.indicator(HOVER).fill` alone, the combined state's fill; where none does, egui's
 /// own hovered fill where egui's stock entries change it from rest, else the checked fill. The
-/// pressed fill, which neither theme states, follows the same rule on both.
+/// pressed fill follows the same rule.
 #[test]
 fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error::Error>> {
     let own = egui::Theme::Light.default_style();
@@ -1049,13 +1734,9 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         let unstated = |r: &native_theme::next::ResolvedTheme, s: WidgetState| {
             super::build::state_fill(&r.checkbox.indicator(s)).is_none()
         };
-        if !(unstated(&plain, WidgetState::HOVER) && unstated(&plain, WidgetState::PRESSED)) {
-            continue;
-        }
         let Some(checked) = super::build::fill(&k.indicator(WidgetState::CHECKED)) else {
             continue;
         };
-        tried.push(key);
         let checked = crate::convert::to_color32(checked);
         let cell = |atlas: &crate::ThemeAtlas| {
             atlas
@@ -1067,8 +1748,27 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         };
         let w = cell(&patched_light(preset, "")?);
         assert_eq!(w.inactive.bg_fill, checked, "{key}");
-        assert_eq!(w.hovered.bg_fill, by_rule_0(&own.hovered, checked), "{key}");
-        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+        // Every bundled preset states its pressed box (M2.FS4): where a state's fill is stated,
+        // the combined state's; where it is unstated, rule 0.
+        let expected = |state: WidgetState, own: &egui::style::WidgetVisuals| {
+            if unstated(&plain, state) {
+                Some(by_rule_0(own, checked))
+            } else {
+                super::build::fill(&k.indicator(state | WidgetState::CHECKED))
+                    .map(crate::convert::to_color32)
+            }
+        };
+        assert_eq!(
+            Some(w.hovered.bg_fill),
+            expected(WidgetState::HOVER, &own.hovered),
+            "{key}"
+        );
+        assert_eq!(
+            Some(w.active.bg_fill),
+            expected(WidgetState::PRESSED, &own.active),
+            "{key}"
+        );
+        tried.push(key);
 
         let patched = Theme::preset(preset)
             .with_patch(ThemePatch::from_toml(hover)?)
@@ -1081,12 +1781,13 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         .ok_or("the combined state has a fill")?;
         let w = cell(&patched_light(preset, hover)?);
         assert_eq!(w.hovered.bg_fill, crate::convert::to_color32(both), "{key}");
-        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+        assert_eq!(
+            Some(w.active.bg_fill),
+            expected(WidgetState::PRESSED, &own.active),
+            "{key}"
+        );
     }
-    assert!(
-        !tried.is_empty(),
-        "no preset leaves both state fills unstated"
-    );
+    assert!(!tried.is_empty(), "no preset states a checked fill");
     Ok(())
 }
 

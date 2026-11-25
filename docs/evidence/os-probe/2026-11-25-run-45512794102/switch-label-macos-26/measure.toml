@@ -1,0 +1,1044 @@
+[["NSAppearanceNameAqua".normal.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".normal.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".normal.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".normal.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+delivery = "mouseMoved at [88.0, 107.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_toggle_off.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+delivery = "leftMouseDown at [88.0, 107.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 722
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_toggle_off.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+delivery = "mouseMoved at [88.0, 145.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_toggle_on.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+delivery = "leftMouseDown at [88.0, 145.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 741
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_toggle_on.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_chevron.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_chevron.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_chevron.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_chevron.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_chevron.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_chevron.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_chevron.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_chevron.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_label.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_label.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_label.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".hovered_disclosure_label.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_label.toggle_off]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_label.toggle_on]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_label.toggle_off_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".pressed_disclosure_label.toggle_on_disabled]]
+bg = "#ffffffff"
+label_side = "leading (left)"
+ink = "#272727ff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".normal.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".normal.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".normal.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".normal.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+delivery = "mouseMoved at [88.0, 107.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+delivery = "leftMouseDown at [88.0, 107.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 1204
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+delivery = "mouseMoved at [88.0, 145.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 0
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+delivery = "leftMouseDown at [88.0, 145.0] in window 29, hit PlatformSwitch"
+label_changed_from_rest_px = 0
+switch_changed_from_rest_px = 1204
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_chevron.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_chevron.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_chevron.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_chevron.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_chevron.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_chevron.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_chevron.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_chevron.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_label.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_label.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_label.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_label.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_label.toggle_off]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 95.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_label.toggle_on]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 133.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_label.toggle_off_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = []
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 171.0, 54.0, 24.0]
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_label.toggle_on_disabled]]
+bg = "#1e1e1eff"
+label_side = "leading (left)"
+ink = "#ddddddff"
+same_as = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+ink_box_pt_from_item_left = [1.0, 32.0]
+switch_drawn_left_pt = 61.0
+ink_gap_pt = 9.0
+switch_host_pt = [61.0, 209.0, 54.0, 24.0]
+
+[["NSAppearanceNameAqua".normal.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".hovered_toggle_off.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".pressed_toggle_off.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".hovered_toggle_on.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".pressed_toggle_on.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".hovered_disclosure_chevron.disclosure]]
+delivery = "mouseMoved at [24.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".pressed_disclosure_chevron.disclosure]]
+delivery = "leftMouseDown at [24.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#7f7f7fff"
+chevron_changed_from_rest_px = 27
+chevron_nearest_colour = "secondary_label" # #0000007f over bg: #808080ff, distance 1.7
+
+[["NSAppearanceNameAqua".hovered_disclosure_label.disclosure]]
+delivery = "mouseMoved at [48.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameAqua".pressed_disclosure_label.disclosure]]
+delivery = "leftMouseDown at [48.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#ffffffff"
+label_ink = "#272727ff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#ffffffff"
+chevron_ink = "#bfbfbfff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "disabled_control_text" # #0000003f over bg: #c0c0c0ff, distance 1.7
+
+[["NSAppearanceNameDarkAqua".normal.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_off.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_off.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".hovered_toggle_on.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".pressed_toggle_on.disclosure]]
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_chevron.disclosure]]
+delivery = "mouseMoved at [24.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_chevron.disclosure]]
+delivery = "leftMouseDown at [24.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".hovered_disclosure_label.disclosure]]
+delivery = "mouseMoved at [48.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameDarkAqua".pressed_disclosure_label.disclosure]]
+delivery = "leftMouseDown at [48.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+label_rect_pt = [31.0, 62.0, 35.0, 15.0]
+label_bg = "#1e1e1eff"
+label_ink = "#ddddddff"
+label_changed_from_rest_px = 0
+label_within_3_levels_of = ['label_field', 'label_field_disabled', 'text_primary', 'text_size_13']
+chevron_rect_pt = [20.0, 63.0, 9.0, 13.0]
+chevron_bg = "#1e1e1eff"
+chevron_ink = "#ffffffff"
+chevron_changed_from_rest_px = 0
+chevron_nearest_colour = "label" # #ffffffd8 over bg: #ddddddff, distance 58.9
+
+[["NSAppearanceNameAqua".release.toggle_off]]
+delivery = "not recorded"
+
+[["NSAppearanceNameAqua".release.toggle_on]]
+delivery = "not recorded"
+
+[["NSAppearanceNameAqua".release.disclosure_chevron]]
+delivery = "leftMouseUp at [24.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+
+[["NSAppearanceNameAqua".release.disclosure_label]]
+delivery = "leftMouseUp at [48.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+
+[["NSAppearanceNameDarkAqua".release.toggle_off]]
+delivery = "not recorded"
+
+[["NSAppearanceNameDarkAqua".release.toggle_on]]
+delivery = "not recorded"
+
+[["NSAppearanceNameDarkAqua".release.disclosure_chevron]]
+delivery = "leftMouseUp at [24.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+
+[["NSAppearanceNameDarkAqua".release.disclosure_label]]
+delivery = "leftMouseUp at [48.5, 69.5] in window 29, hit NSHostingView<ModifiedContent<ModifiedContent<DisclosureGroup<Text, Text>, _FixedSizeLayout>, _FlexFrameLayout>>"
+

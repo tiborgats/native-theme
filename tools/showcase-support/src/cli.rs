@@ -448,18 +448,12 @@ pub fn palette_key(name: &str) -> Result<Option<&'static str>, String> {
 /// The `--palette` value for no palette: the theme's own colours.
 pub const NO_PALETTE: &str = "none";
 
-/// Whether the `kind` showcase takes `--palette`: the gpui and iced ones,
-/// which install the 0.8.0 model. The egui showcase is still on the 0.7.2
-/// model, which has no palettes, and refuses it ([`refuse`]) until it moves
-/// to the 0.8.0 one.
+/// Whether the `kind` showcase takes `--palette`: the gpui, iced and egui
+/// ones all install the 0.8.0 model and take it. A showcase on the 0.7.2
+/// model, which has no palettes, would refuse it ([`refuse`]).
 pub fn palette_support(kind: Kind) -> Result<(), String> {
     match kind {
-        Kind::Gpui | Kind::Iced => Ok(()),
-        Kind::Egui => Err(format!(
-            "--palette: the {} showcase is still on the 0.7.2 model, which has no palettes; it \
-             takes --palette once it moves to the 0.8.0 model",
-            kind.name()
-        )),
+        Kind::Gpui | Kind::Iced | Kind::Egui => Ok(()),
     }
 }
 
@@ -1044,20 +1038,13 @@ mod tests {
         );
     }
 
-    /// The gpui and iced showcases take `--palette`; the egui one, on the
-    /// 0.7.2 model, refuses it, saying why.
+    /// The gpui, iced and egui showcases, all on the 0.8.0 model, take
+    /// `--palette`.
     #[test]
     fn the_palette_flag_runs_in_the_08_showcases_alone() {
-        assert_eq!(palette_support(Kind::Gpui), Ok(()));
-        assert_eq!(palette_support(Kind::Iced), Ok(()));
-        assert_eq!(
-            palette_support(Kind::Egui),
-            Err(format!(
-                "--palette: the {} showcase is still on the 0.7.2 model, which has no \
-                 palettes; it takes --palette once it moves to the 0.8.0 model",
-                Kind::Egui.name()
-            ))
-        );
+        for kind in [Kind::Gpui, Kind::Iced, Kind::Egui] {
+            assert_eq!(palette_support(kind), Ok(()));
+        }
     }
 
     /// `--screenshot` runs on macOS and Windows; elsewhere it is refused,

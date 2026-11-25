@@ -73,8 +73,9 @@
 //! hovered and pressed fills); a disabled colour as `on-surface` at the
 //! disabled opacities, with its alpha.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields: the filled button),
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields: the filled button)
+//! and `ButtonVariant::Flat` (M3's text button),
 //! a list's alternate rows (`ListKind::alternate`), the two orientations of
 //! the scroll bar and of the slider's groove, no control size, and the
 //! contrast level `Normal` alone. A query for anything else returns the
@@ -757,7 +758,8 @@ const DISABLED_OPACITY: f32 = 1.0;
 // `defaults.focus_ring_width`: platform-facts.md (§2.1.5): md-focus-ring width 3, outward-offset 2
 // (tokens/_md-comp-focus-ring.scss:50, :52)
 const FOCUS_RING_WIDTH: f32 = 3.0;
-// `defaults.focus_ring_offset`: 0.7.2 material-3.toml (uncited)
+// `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: material-web
+// outward-offset 2 (tokens/_md-comp-focus-ring.scss:50 at material-web cbd34a8)
 const FOCUS_RING_OFFSET: f32 = 2.0;
 // `defaults.focus_ring_keyboard_only`: platform-facts.md (§2.1.5): focus_ring_keyboard_only:
 // Compose shows focus indication in keyboard input mode only (AndroidComposeView.android.kt:3807-3809,
@@ -1080,7 +1082,8 @@ const COMBO_BOX_PADDING_LEFT: f32 = 15.0;
 
 // `segmented_control.segment_height`: 0.7.2 material-3.toml (uncited)
 const SEGMENT_HEIGHT: f32 = 40.0;
-// `segmented_control.separator_width`: 0.7.2 material-3.toml (uncited)
+// `segmented_control.separator_width`: platform-facts.md (§2.25): outline-width 1, the segments'
+// shared outline (v0_192/_md-comp-outlined-segmented-button.scss:66)
 const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
 // `segmented_control.border.corner_radius`: platform-facts.md (§2.25): shape corner-full, a pill:
 // half the 40 container-height (_md-comp-outlined-segmented-button.scss:34, :93)
@@ -1122,6 +1125,11 @@ const PRESSED_STATE_LAYER_OPACITY: f32 = 0.12;
 /// The disabled container's opacity of `on-surface`, 0.12
 /// (`_md-comp-filled-tonal-button.scss:42-46`).
 const DISABLED_CONTAINER_OPACITY: f32 = 0.12;
+
+/// The text button's disabled container's opacity of `on-surface`, 0.1
+/// (`md.comp.button.text.disabled.container.opacity`,
+/// `_md-comp-button-text.scss:21-22, :27-28` at material-web 2.5.0).
+const TEXT_BUTTON_DISABLED_CONTAINER_OPACITY: f32 = 0.1;
 
 /// The disabled content's opacity of `on-surface`, 0.38
 /// (`_md-comp-filled-button.scss:45-46`).
@@ -1746,11 +1754,22 @@ fn weighted(mut label: TextStyle, weight: u16) -> TextStyle {
 /// Its label is the secondary container's text at its own weight, checked the
 /// secondary colour's text, primary the accent's (0.7.2: `primary_text_color`
 /// is `defaults.accent_text_color` where unstated), disabled the disabled
-/// text.
+/// text. The flat variant is M3's text button, which has no checked
+/// (selected) form: its token set states no `selected` token
+/// (`_md-comp-button-text.scss` at material-web 2.5.0, tokens/versions/latest),
+/// where the tonal button's states its selected container
+/// (`_md-comp-button-tonal.scss:78-79`, the same version). So no rule states
+/// a checked flat button, which draws the flat look of its other states.
 fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> ButtonWidget {
     let primary = || {
         RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
             variant: Some(ButtonVariant::Primary),
+            shape: None,
+        })
+    };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
             shape: None,
         })
     };
@@ -1784,6 +1803,32 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_container)],
         )
+        // The flat button, M3's text button, after the push button's rules so that its own win
+        // (`_md-comp-button-text.scss` at material-web 2.5.0; `docs/facts/material/button.toml`
+        // on `v0.8.0-rc1` at `78ee0efd`): no container and no outline (no container colour token,
+        // :21-60; Compose's TextButton, containerColor = Color.Transparent, Button.kt:1412 at
+        // androidx e4d933c9); hovered and pressed the state layer, primary at the hover and the
+        // pressed state layer opacity (:45-48, :57-60); disabled the container on-surface at
+        // TEXT_BUTTON_DISABLED_CONTAINER_OPACITY (:21-22, :27-28).
+        .rule(
+            flat(WidgetState::NONE),
+            [fill(TRANSPARENT), PartProp::Stroke(Stroke::None)],
+        )
+        .rule(
+            flat(WidgetState::HOVER),
+            [fill(c.primary.mul_alpha(HOVER_STATE_LAYER_OPACITY))],
+        )
+        .rule(
+            flat(WidgetState::PRESSED),
+            [fill(c.primary.mul_alpha(PRESSED_STATE_LAYER_OPACITY))],
+        )
+        .rule(
+            flat(WidgetState::DISABLED),
+            [fill(
+                c.on_surface
+                    .mul_alpha(TEXT_BUTTON_DISABLED_CONTAINER_OPACITY),
+            )],
+        )
         .build();
     // `button.hover_text_color`, `active_text_color`: 0.7.2 material-3.toml (uncited), the rest
     // colour, each stated for its state (spec §2, `from_state`), before the rules of the states
@@ -1807,6 +1852,24 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
         [TextProp::Color(roles.disabled_text)],
+    )
+    // The text button's label: primary at rest, hovered and pressed (label-text-color,
+    // hovered-label-text-color, pressed-label-text-color, `_md-comp-button-text.scss:52`, :44,
+    // :56 at material-web 2.5.0), on-surface at the disabled content opacity disabled (:25-26,
+    // :31-32).
+    .rules(
+        [
+            flat(WidgetState::NONE),
+            flat(WidgetState::HOVER),
+            flat(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(c.primary)],
+    )
+    .rule(
+        flat(WidgetState::DISABLED),
+        [TextProp::Color(
+            c.on_surface.mul_alpha(DISABLED_CONTENT_OPACITY),
+        )],
     )
     .build();
     ButtonWidget::new(
@@ -1952,19 +2015,46 @@ fn checkbox(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Ch
 }
 
 /// The radio button: [`indicator`] at the radio's own size (0.7.2 states no
-/// corners for it), a dot in the accent's text colour
-/// (`checkbox.indicator_color`), [`check_label`].
+/// corners for it) with no fill checked or disabled, a dot in the accent's
+/// fill, [`check_label`].
 fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> RadioWidget {
+    // material-web draws the radio as one SVG, a ring and a dot, both in the icon's fill
+    // (radio.ts:108-120, the ring :113-118, the dot :119; _radio.scss:109-113 at material-web
+    // cbd34a8): checked, selected-icon-color = primary (_radio.scss:126-127;
+    // _md-comp-radio-button.scss:45, v0_192); disabled and checked,
+    // disabled-selected-icon-color on-surface at disabled-selected-icon-opacity 0.38
+    // (_radio.scss:180-183; _md-comp-radio-button.scss:28-29), the ring and the dot not
+    // overlapping, so each at alpha 0.38; disabled and unchecked the same,
+    // disabled-unselected-icon-color on-surface at disabled-unselected-icon-opacity 0.38
+    // (_radio.scss:163-166; _md-comp-radio-button.scss:30-33), so the ring takes it on any
+    // disabled radio. Nothing fills the space between them in any state.
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(roles.accent.foreground),
+            fill(roles.accent.fill),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.disabled_content)],
+        )
+        .build();
+    let indicator = indicator(c, roles, RADIO_INDICATOR_SIZE, false)
+        .rules(
+            [
+                RuleSelector::on(WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::DISABLED),
+            ],
+            [fill(TRANSPARENT)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [stroke(CHECKBOX_BORDER_WIDTH, c.disabled_content)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, RADIO_INDICATOR_SIZE, false).build(),
+        indicator,
         dot,
         check_label(typography),
         CHECKBOX_LABEL_GAP,
@@ -2591,7 +2681,9 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, units: FontUnits) -> Too
         .build();
     // The buttons' text hovered and pressed as at rest: an on-surface label keeps its colour under
     // its state layer (text button: hover-label-text-color = pressed-label-text-color =
-    // label-text-color, _md-comp-text-button.scss:42, :67, :46).
+    // label-text-color, _md-comp-text-button.scss:42, :67, :46); disabled, on-surface at 0.38
+    // (disabled-label-text-color, disabled-label-text-opacity, :36-37), the disabled text: the
+    // button's disabled opacity is 1, so no fade draws it.
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
@@ -2607,6 +2699,10 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, units: FontUnits) -> Too
                 RuleSelector::on(WidgetState::PRESSED),
             ],
             [TextProp::Color(typography.body.color)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(roles.disabled_text)],
         )
         .build(),
         button_icon,
@@ -3032,12 +3128,18 @@ fn segmented_control(
             [TextProp::Color(c.on_secondary_container)],
         )
         .build();
+    // The line between segments, their shared outline: outline-color = outline, the track's own
+    // (platform-facts.md (§2.25) `separator_width` and `border.color`;
+    // v0_192/_md-comp-outlined-segmented-button.scss:65-66 at material-web cbd34a8).
+    let separator = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.border.map(fill))
+        .build();
     SegmentedControlWidget::new(
         WidgetOrigin::Native,
         track,
         segment,
         label,
-        RuleBuilder::new(PartStyle::default()).build(),
+        separator,
         SEGMENT_SEPARATOR_WIDTH,
         // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
         // unstated.

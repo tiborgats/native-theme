@@ -154,7 +154,10 @@ pub fn mono_text(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) 
                 "mono font",
                 format!(
                     "typography.monospace: {}",
-                    text_style_font(&r.typography, &r.typography.monospace)
+                    super::next_drawn_font(
+                        &r.typography.monospace,
+                        &line_box_text(&r.typography, &r.typography.monospace)
+                    )
                 ),
             )
             .config(
@@ -175,21 +178,14 @@ pub fn mono_text(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) 
     }
 }
 
-/// A text style of the installed 0.8.0 theme as the showcase letters plain
-/// text in it (`demo::next_text_in`), for its info's font line: the family
-/// as `status::family_label` names what gpui is asked for, the size the
-/// theme's text scale has already scaled, the weight, the slant where it is
-/// not upright, and the line box (`demo::line_box`).
-pub fn text_style_font(
+/// The line box of a text style of the installed 0.8.0 theme as the
+/// showcase letters plain text in it (`demo::next_text_in`,
+/// `demo::line_box`), the `line` of its info's font line
+/// (`super::next_drawn_font`).
+pub fn line_box_text(
     typography: &native_theme::next::Typography,
     style: &native_theme::next::TextStyle,
 ) -> String {
-    let drawn = native_theme_gpui::font_family(&style.family);
-    let slant = match style.style {
-        native_theme::next::FontStyle::Italic => ", italic",
-        native_theme::next::FontStyle::Oblique => ", oblique",
-        _ => "",
-    };
     let line = if style
         .stated
         .contains(native_theme::next::TextStated::LINE_HEIGHT)
@@ -199,29 +195,13 @@ pub fn text_style_font(
         "its size by typography.line_height_multiplier, as it states no line_height (spec §4)"
     };
     format!(
-        "{}, {}px, weight {}{slant}, a line box of {}px, {line}",
-        native_theme_showcase_support::status::family_label(&style.family, Some(&drawn)),
-        px_text(style.size_px),
-        style.weight,
+        "a line box of {}px, {line}",
         px_text(crate::demo::line_box(typography, style))
     )
 }
 
 /// A `Link`, wherever the showcase shows one; the caller adds what it reads
-/// and where it goes. `underline` is the `link.underline_enabled` that
-/// `geometry::link` refined it by, `None` where no native theme is installed
-/// and none refines it.
-pub fn link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
-    let info = link_colours(t, underline);
-    let info = match underline {
-        Some(true) => info.config("underline", "at rest, as upstream draws it: link.underline_enabled is true, so geometry::link leaves the underline gpui-component sets on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link)"),
-        Some(false) => info.config("underline", "none at rest: link.underline_enabled is false, so geometry::link removes the resting underline; hover and press still underline. The refinement sets the underline's thickness to 0, which paints none, over the text_decoration_1 upstream sets on the base style first, and upstream's hover and active styles set it again over the refinement (gpui-component/link.rs, RenderOnce for Link)"),
-        None => info.not_themeable("underline", "always on: gpui-component sets it on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link), and no native theme is installed, so no geometry::link refines it, which removes it at rest where link.underline_enabled is false"),
-    };
-    link_states(info, "link.hover_text_color", "link.active_text_color")
-}
-
-/// [`link`] on the 0.8.0 model: `underline` is whether
+/// and where it goes. `underline` is whether
 /// `link.label(NONE).decoration` underlines the resting Link, as
 /// `next::geometry::link` refined it, `None` where no 0.8.0 theme is
 /// installed or the builder took none of it (its geometry line names the

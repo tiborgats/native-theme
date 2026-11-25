@@ -92,11 +92,6 @@ const SWITCH_LABEL: &str = "the showcase colours the switch's label, the text it
 /// do not already name by a leaf the table of homes places there.
 const UNREAD_HOMES: &[UnreadHome] = &[
     UnreadHome {
-        home: "checkbox.indicator(DISABLED|CHECKED).stroke.color",
-        kind: "ruled",
-        why: TWO_FLAGS,
-    },
-    UnreadHome {
         home: "radio.indicator(DISABLED).fill",
         kind: "no receiver",
         why: NO_DISABLED_RADIO,

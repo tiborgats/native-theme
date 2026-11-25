@@ -1,0 +1,9 @@
+com.apple.universalaccess reduceTransparency: 1
+com.apple.universalaccess increaseContrast: absent
+com.apple.universalaccess reduceMotion: 1
+com.apple.universalaccess differentiateWithoutColor: absent
+-g AppleReduceDesktopTinting: absent
+-g AppleInterfaceStyle: absent
+-g AppleAccentColor: absent
+-g AppleHighlightColor: absent
+-g AppleKeyboardUIMode: absent

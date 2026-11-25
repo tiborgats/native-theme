@@ -792,6 +792,187 @@ fn an_old_value_the_unresolved_theme_states_under_a_state_needs_its_from_state_b
     Ok(())
 }
 
+const LISTED_UNSTATED_UNDER_A_STATE: &str = r#"
+[[row]]
+key = "s.pressed_fill"
+homes = ["checkbox.indicator(PRESSED).fill"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+"#;
+
+const LISTED_UNSTATED_OVER_THE_REST: &str = r#"
+[[row]]
+key = "s.pressed_fill"
+homes = ["button.body(PRESSED).fill"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+[[row]]
+key = "s.hover_fill"
+homes = ["button.body(HOVER).fill"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+[[row]]
+key = "s.rest_fill"
+homes = ["button.body(NONE).fill"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+"#;
+
+#[test]
+fn a_difference_listed_as_unstated_under_a_state_checks_only_that_no_rule_states_it() -> TestResult
+{
+    // The button body's base states its fill, and a `HOVER` rule restates it: no rule for `PRESSED`,
+    // whose value is the rest's, equals "unstated" there; the `HOVER` rule does not; at `NONE`
+    // "unstated" is the `stated` bit clear, which the base's fill is not.
+    let old = json!({ "s": {
+        "pressed_fill": "#fcfcfc",
+        "hover_fill": "#fcfcfc",
+        "rest_fill": "#fcfcfc",
+    } });
+    let extra = Extra {
+        unresolved: Some(&old),
+        with_context: None,
+    };
+    let report = compare_rows_with(
+        &rows(LISTED_UNSTATED_OVER_THE_REST)?,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+        &extra,
+    )?;
+    assert_eq!(
+        report.mismatched_keys(),
+        vec!["s.hover_fill", "s.rest_fill"],
+        "{report}"
+    );
+    let Some(Outcome::Mismatch(homes)) = report.rows.get(1).map(|r| &r.outcome) else {
+        return Err(format!("the second row does not mismatch: {report}").into());
+    };
+    assert_eq!(
+        homes
+            .iter()
+            .map(|m| (m.home.as_str(), m.new.ends_with("`from_state` set")))
+            .collect::<Vec<_>>(),
+        vec![("button.body(HOVER).fill", true)]
+    );
+    Ok(())
+}
+
+const LISTED_CONTINUOUS: &str = r#"
+[[row]]
+key = "x.v"
+homes = ["button.body(NONE).corners"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "continuous 10" }
+"#;
+
+#[test]
+fn a_difference_listed_as_continuous_corners_matches_only_them() -> TestResult {
+    let table = rows(LISTED_CONTINUOUS)?;
+    let old = json!({ "x": { "v": 10.0 } });
+    let compare =
+        |props: Vec<PartProp>, preset| compare_rows(&table, &old, &with_body(props), None, preset);
+    let report = compare(
+        vec![PartProp::Corners(Corners::continuous(10.0))],
+        Preset::KdeBreeze,
+    )?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    // The radius one ULP off, the curve circular, a pill, and corners the base does not state.
+    let off = [
+        vec![PartProp::Corners(Corners::continuous(next_up(10.0)))],
+        vec![PartProp::Corners(Corners::uniform(10.0))],
+        vec![PartProp::Corners(Corners::pill())],
+        vec![],
+    ];
+    for props in off {
+        let shown = format!("{props:?}");
+        let report = compare(props, Preset::KdeBreeze)?;
+        assert_eq!(report.mismatched_keys(), vec!["x.v"], "{shown}: {report}");
+    }
+    // Unlisted, continuous corners against the old radius are a mismatch.
+    let other = compare(
+        vec![PartProp::Corners(Corners::continuous(10.0))],
+        Preset::Adwaita,
+    )?;
+    assert_eq!(other.mismatched_keys(), vec!["x.v"], "{other}");
+    Ok(())
+}
+
+const LISTED_UNSTATED_WITHOUT_A_BIT: &str = r#"
+[[row]]
+key = "s.hover_size"
+homes = ["button.label(HOVER).defined_size"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+"#;
+
+#[test]
+fn a_difference_listed_as_unstated_under_a_state_at_a_property_without_a_bit_is_an_error()
+-> TestResult {
+    // `defined_size` has no `from_state` bit: "unstated" under a state cannot be tested there.
+    let old = json!({ "s": { "hover_size": 13.0 } });
+    let result = compare_rows(
+        &rows(LISTED_UNSTATED_WITHOUT_A_BIT)?,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+    );
+    let Err(e) = result else {
+        return Err(format!("no error: {result:?}").into());
+    };
+    assert!(
+        e.contains("s.hover_size") && e.contains("no `from_state` bit"),
+        "{e}"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_difference_listed_as_unstated_under_a_state_needs_no_from_state_bit() -> TestResult {
+    // The unresolved theme states the key, but the listed difference says 0.8.0 states nothing
+    // there: the home's property unstated, its `from_state` bit clear, equals it.
+    let old = stated_old("#fcfcfc");
+    let extra = Extra {
+        unresolved: Some(&old),
+        with_context: None,
+    };
+    let table = rows(LISTED_UNSTATED_UNDER_A_STATE)?;
+    let report = compare_rows_with(
+        &table,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+        &extra,
+    )?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    // On a preset the difference does not list, the old value against the unstated home mismatches.
+    let other = compare_rows_with(
+        &table,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::Adwaita,
+        &extra,
+    )?;
+    assert_eq!(other.mismatched_keys(), vec!["s.pressed_fill"], "{other}");
+    Ok(())
+}
+
 #[test]
 fn an_old_value_the_unresolved_theme_leaves_unset_under_a_state_is_compared_by_its_value()
 -> TestResult {
@@ -1018,7 +1199,9 @@ fn an_unreadable_home_or_old_value_is_an_error_naming_the_row() -> TestResult {
 
 /// The rows of 0.7.2's `kde-breeze` (light) whose value is stated and equals the theme with nothing stated:
 /// a part's `border.shadow_enabled = true`, which is `SHADOWS` unstated (spec §5, notes to the table), and
-/// `scrollbar.overlay_mode = false`, a `bool` without `Option` holding its type's default.
+/// `scrollbar.overlay_mode = false`, a `bool` without `Option` holding its type's default, and
+/// `segmented_control.separator_width`, whose listed difference on `kde-breeze` (`next_homes.toml`)
+/// states 0, the `f32` without `Option` of the theme with nothing stated.
 const EQUAL_THOUGH_STATED: &[&str] = &[
     "button.border.shadow_enabled",
     "list.border.shadow_enabled",
@@ -1027,6 +1210,7 @@ const EQUAL_THOUGH_STATED: &[&str] = &[
     "window.border.shadow_enabled",
     "popover.border.shadow_enabled",
     "dialog.border.shadow_enabled",
+    "segmented_control.separator_width",
     "card.border.shadow_enabled",
 ];
 

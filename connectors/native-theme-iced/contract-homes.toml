@@ -265,9 +265,9 @@ moves = [
 leaves = ["card.background_color"]
 moves = [
   { row = "styles::aw::card.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
-  { row = "styles::aw::card.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::aw::card.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::container_card.background" },
-  { row = "styles::container_card.border", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::container_card.border", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."card.container(NONE).stroke.color"]
@@ -281,29 +281,31 @@ moves = [
 leaves = ["checkbox.indicator_color"]
 moves = [
   { row = "styles::checkbox.icon_color", statuses = ["Active { is_checked: false }", "Active { is_checked: true }", "Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
-  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["macos-monterey/dark"] },
 ]
 
 [homes."checkbox.indicator(CHECKED).fill"]
 leaves = ["checkbox.checked_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Active { is_checked: true }", "Disabled { is_checked: true }"] },
-  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: true }"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: true }"], except = ["ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }", "Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."checkbox.indicator(CHECKED).stroke.color"]
 leaves = ["checkbox.border.color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }", "Hovered { is_checked: true }"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."checkbox.indicator(DISABLED).fill"]
 leaves = ["checkbox.disabled_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."checkbox.indicator(DISABLED).stroke.color"]
@@ -314,14 +316,14 @@ moves = [
 [homes."checkbox.indicator(DISABLED|CHECKED).fill"]
 leaves = ["checkbox.disabled_background"]
 moves = [
-  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: true }"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."checkbox.indicator(DISABLED|CHECKED).stroke.color"]
-named = "UNREAD_HOMES"
-entry = "checkbox.indicator(DISABLED|CHECKED).stroke.color"
-kind = "ruled"
-why = "read only where a rule for the first flag alone states the property (`flagged`, src/next/borders.rs; spec §2, `from_state`), which no platform preset does; a rule for both flags alone stays unseen by that query, the two-flag gap SQ1 settles"
+moves = [
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
+]
 
 [homes."checkbox.indicator(HOVER).fill"]
 leaves = ["checkbox.hover_background"]
@@ -347,10 +349,7 @@ moves = [
 leaves = ["checkbox.background_color", "checkbox.unchecked_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Active { is_checked: false }"] },
-  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.border", statuses = ["Active { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "material-3/light", "material-3/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."checkbox.indicator(NONE).stroke.color"]
@@ -362,8 +361,8 @@ moves = [
 [homes."checkbox.label(DISABLED).color"]
 leaves = ["checkbox.disabled_text_color"]
 moves = [
-  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
-  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
 ]
 
@@ -377,34 +376,24 @@ moves = [
 leaves = ["defaults.accent_color"]
 moves = [
   { row = "palette.primary" },
-  { row = "styles::aw::selection_list.background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::aw::sidebar.tab_label_background", statuses = ["Focused", "Pressed", "Selected"] },
-  { row = "styles::aw::sidebar.tab_label_background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Focused", "Pressed", "Selected"] },
-  { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::pane_grid.hovered_region.background" },
   { row = "styles::pane_grid.hovered_region.border" },
   { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable(UNFOCUSED_VIEW).horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable(UNFOCUSED_VIEW).horizontal_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable(UNFOCUSED_VIEW).vertical_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable(UNFOCUSED_VIEW).vertical_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::slider.handle.background", statuses = ["Dragged"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::slider.handle.background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::slider.rail.backgrounds.0", statuses = ["Dragged", "Hovered"] },
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::scrollable(UNFOCUSED_VIEW).horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::scrollable(UNFOCUSED_VIEW).vertical_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::slider.rail.backgrounds.0", statuses = ["Dragged"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::slider.rail.backgrounds.0", statuses = ["Hovered"] },
   { row = "styles::text_editor.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::text_input.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::vertical_slider.handle.background", statuses = ["Dragged"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::vertical_slider.handle.background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::vertical_slider.rail.backgrounds.0", statuses = ["Dragged", "Hovered"] },
+  { row = "styles::vertical_slider.rail.backgrounds.0", statuses = ["Dragged"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::vertical_slider.rail.backgrounds.0", statuses = ["Hovered"] },
 ]
 
 [homes."colors.accent.foreground"]
@@ -538,9 +527,9 @@ why = "`text_input::Style.selection` and `text_editor::Style.selection` are the 
 leaves = ["defaults.surface_color"]
 moves = [
   { row = "extended.background.weak.color" },
-  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }"] },
-  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }"], except = ["windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::toggler.foreground", statuses = ["Hovered { is_toggled: false }"] },
 ]
 
@@ -567,13 +556,13 @@ leaves = ["defaults.background_color"]
 moves = [
   { row = "palette.background" },
   { row = "styles::aw::selection_list.background", statuses = ["Focused", "Pressed"] },
-  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"] },
-  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::scrollable(UNFOCUSED_VIEW).auto_scroll.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
   { row = "styles::scrollable.auto_scroll.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
   { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
@@ -582,12 +571,10 @@ moves = [
   { row = "styles::segmented_control.background", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::segmented_control.border", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::segmented_control.text_color", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::slider.handle.background", statuses = ["Dragged"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::slider.rail.backgrounds.0", statuses = ["Dragged"] },
+  { row = "styles::slider.rail.backgrounds.0", statuses = ["Dragged"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
   { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::vertical_slider.handle.background", statuses = ["Dragged"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::vertical_slider.rail.backgrounds.0", statuses = ["Dragged"] },
+  { row = "styles::vertical_slider.rail.backgrounds.0", statuses = ["Dragged"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
 ]
 
 [homes."colors.window.border"]
@@ -768,7 +755,7 @@ moves = [
 leaves = ["input.disabled_background"]
 moves = [
   { row = "styles::text_input.background", statuses = ["Disabled"] },
-  { row = "styles::text_input.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::text_input.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."input.field(FOCUSED).stroke.color"]
@@ -788,9 +775,10 @@ leaves = ["input.background_color"]
 moves = [
   { row = "styles::text_input.background", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
   { row = "styles::text_input.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::text_input.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::text_input.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::text_input.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::text_input.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::text_input.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."input.field(NONE).stroke.color"]
@@ -985,19 +973,19 @@ moves = [
   { row = "styles::aw::menu.path.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
-[homes."menu.item(HOVER|PRESSED).fill"]
-leaves = ["menu.active_background"]
-named = "UNREAD_COLOURS"
-entry = "menu.active_background"
-kind = "no receiver"
-why = "`iced_aw` paints its menus' `path` from one `Style` asked for `Active` alone, with no pressed status (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down menu `Style` has a selected look only (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)"
-
 [homes."menu.item(NONE).stroke.color"]
 leaves = ["menu.border.color"]
 named = "UNREAD_COLOURS"
 entry = "menu.border.color"
 kind = "ruled"
 why = "both menu styles frame their panel in `popover.border`, the popup's frame (`src/styles.rs` and `src/styles/aw.rs`, `menu`), into iced's `menu::Style::border` (`iced_widget-0.14.2/src/overlay/menu.rs:602`) and `iced_aw`'s `menu_border` (`iced_aw-0.14.1/src/style/menu_bar.rs:18`): `MenuTheme`'s border has no kind of its own and states no line (`MenuTheme` in `native-theme/src/model/widgets/mod.rs`), and the facts give a menu's frame to the popover (docs/platform-facts.md §2.6); docs/issues/0004_kde-open-items-rationale.md D3"
+
+[homes."menu.item(PRESSED).fill"]
+leaves = ["menu.active_background"]
+named = "UNREAD_COLOURS"
+entry = "menu.active_background"
+kind = "no receiver"
+why = "`iced_aw` paints its menus' `path` from one `Style` asked for `Active` alone, with no pressed status (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down menu `Style` has a selected look only (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)"
 
 [homes."menu.item_label(DISABLED).color"]
 leaves = ["menu.disabled_text_color"]
@@ -1012,18 +1000,18 @@ moves = [
   { row = "styles::menu.selected_text_color" },
 ]
 
-[homes."menu.item_label(HOVER|PRESSED).color"]
-leaves = ["menu.active_text_color"]
-named = "UNREAD_COLOURS"
-entry = "menu.active_text_color"
-kind = "no receiver"
-why = "`iced_aw` paints its menus' `path` from one `Style` asked for `Active` alone, with no pressed status (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down menu `Style` has a selected look only (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)"
-
 [homes."menu.item_label(NONE).color"]
 leaves = ["menu.font.color"]
 moves = [
   { row = "styles::menu.text_color" },
 ]
+
+[homes."menu.item_label(PRESSED).color"]
+leaves = ["menu.active_text_color"]
+named = "UNREAD_COLOURS"
+entry = "menu.active_text_color"
+kind = "no receiver"
+why = "`iced_aw` paints its menus' `path` from one `Style` asked for `Active` alone, with no pressed status (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down menu `Style` has a selected look only (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)"
 
 [homes."menu.panel(NONE).fill"]
 leaves = ["menu.background_color"]
@@ -1132,9 +1120,9 @@ moves = [
 leaves = ["checkbox.checked_background"]
 moves = [
   { row = "styles::radio.background", statuses = ["Active { is_selected: true }"] },
-  { row = "styles::radio.background", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
-  { row = "styles::radio.border_color", statuses = ["Active { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Active { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."radio.indicator(CHECKED).stroke.color"]
@@ -1174,7 +1162,7 @@ moves = [
 [homes."radio.indicator(HOVER|CHECKED).stroke.color"]
 leaves = ["checkbox.hover_border_color"]
 moves = [
-  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["material-3/light", "material-3/dark"] },
 ]
 
 [homes."radio.indicator(NONE).fill"]
@@ -1188,7 +1176,7 @@ moves = [
 leaves = ["checkbox.unchecked_border_color"]
 moves = [
   { row = "styles::radio.border_color", statuses = ["Active { is_selected: false }"] },
-  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."radio.label(DISABLED).color"]
@@ -1330,7 +1318,7 @@ leaves = ["segmented_control.background_color"]
 moves = [
   { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::segment.text_color", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::segment_separator.background", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::segment_separator.background", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::segmented_control.background", statuses = ["false", "true"] },
   { row = "styles::segmented_control.border", statuses = ["false", "true"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::segmented_control.text_color", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1339,7 +1327,7 @@ moves = [
 [homes."segmented_control.track(NONE).stroke.color"]
 leaves = ["segmented_control.border.color"]
 moves = [
-  { row = "styles::segment_separator.background", statuses = ["false", "true"] },
+  { row = "styles::segment_separator.background", statuses = ["false", "true"], except = ["adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::segmented_control.border", statuses = ["false", "true"] },
 ]
 
@@ -1642,7 +1630,7 @@ moves = [
 [homes."switch.track(DISABLED|CHECKED).fill"]
 leaves = ["switch.disabled_checked_background"]
 moves = [
-  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark"] },
+  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: true }"] },
 ]
 
 [homes."switch.track(DISABLED|CHECKED).stroke.color"]
@@ -1661,15 +1649,13 @@ moves = [
 [homes."switch.track(HOVER|CHECKED).fill"]
 leaves = ["switch.hover_checked_background"]
 moves = [
-  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: true }"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: true }"] },
 ]
 
 [homes."switch.track(NONE).fill"]
 leaves = ["switch.unchecked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Active { is_toggled: false }"] },
-  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::toggler.background_border_color", statuses = ["Active { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
@@ -1750,7 +1736,7 @@ moves = [
 leaves = ["input.disabled_background"]
 moves = [
   { row = "styles::text_editor.background", statuses = ["Disabled"] },
-  { row = "styles::text_editor.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::text_editor.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."text_area.field(FOCUSED).stroke.color"]
@@ -1770,9 +1756,10 @@ leaves = ["input.background_color"]
 moves = [
   { row = "styles::text_editor.background", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
   { row = "styles::text_editor.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::text_editor.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::text_editor.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::text_editor.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::text_editor.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::text_editor.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."text_area.field(NONE).stroke.color"]
@@ -1877,9 +1864,10 @@ moves = [
 leaves = ["toolbar.font.color"]
 moves = [
   { row = "styles::toolbar.text_color" },
-  { row = "styles::toolbar_button.text_color", statuses = ["(false, Active)", "(false, Disabled)", "(true, Disabled)"] },
-  { row = "styles::toolbar_button.text_color", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
-  { row = "styles::toolbar_button.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Active)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button_label(PRESSED).color"]
@@ -2101,7 +2089,7 @@ homes = ["menu.item(HOVER).stroke.color"]
 
 [rows."styles::aw::selection_list.background"]
 cfg = "iced_aw"
-homes = ["colors.accent.fill", "colors.window.background", "list.container(NONE).fill", "list.highlight(HOVER).fill", "list.highlight(SELECTED).fill"]
+homes = ["colors.window.background", "list.container(NONE).fill", "list.highlight(HOVER).fill", "list.highlight(SELECTED).fill"]
 
 [rows."styles::aw::selection_list.border_color"]
 cfg = "iced_aw"
@@ -2228,7 +2216,7 @@ homes = ["button.label(DISABLED).color", "colors.warning.foreground"]
 homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(HOVER).fill", "checkbox.indicator(NONE).fill", "colors.accent.fill", "colors.view.background", "colors.window.background"]
 
 [rows."styles::checkbox.border"]
-homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(DISABLED).stroke.color", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(NONE).fill", "checkbox.indicator(NONE).stroke.color", "colors.accent.fill", "colors.view.background", "colors.window.background"]
+homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED).stroke.color", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(DISABLED|CHECKED).stroke.color", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(NONE).fill", "checkbox.indicator(NONE).stroke.color", "colors.view.background", "colors.window.background"]
 
 [rows."styles::checkbox.icon_color"]
 homes = ["checkbox.checkmark(CHECKED).color", "checkbox.label(DISABLED).color", "colors.window.background"]
@@ -2402,7 +2390,7 @@ homes = ["colors.window.background", "segmented_control.track(NONE).fill", "segm
 homes = ["colors.window.background", "segmented_control.label(NONE).color", "segmented_control.track(NONE).fill"]
 
 [rows."styles::slider.handle.background"]
-homes = ["colors.accent.fill", "colors.window.background", "slider.thumb(HOVER).fill", "slider.thumb(NONE).fill", "slider.thumb(PRESSED).fill"]
+homes = ["slider.thumb(HOVER).fill", "slider.thumb(NONE).fill", "slider.thumb(PRESSED).fill"]
 
 [rows."styles::slider.handle.border_color"]
 homes = ["slider.thumb(HOVER).stroke.color", "slider.thumb(NONE).stroke.color", "slider.thumb(PRESSED).stroke.color"]
@@ -2486,7 +2474,7 @@ homes = ["tooltip.panel.fill", "tooltip.panel.stroke.color"]
 homes = ["tooltip.text.color"]
 
 [rows."styles::vertical_slider.handle.background"]
-homes = ["colors.accent.fill", "colors.window.background", "slider.thumb(HOVER).fill", "slider.thumb(NONE).fill", "slider.thumb(PRESSED).fill"]
+homes = ["slider.thumb(HOVER).fill", "slider.thumb(NONE).fill", "slider.thumb(PRESSED).fill"]
 
 [rows."styles::vertical_slider.handle.border_color"]
 homes = ["slider.thumb(HOVER).stroke.color", "slider.thumb(NONE).stroke.color", "slider.thumb(PRESSED).stroke.color"]

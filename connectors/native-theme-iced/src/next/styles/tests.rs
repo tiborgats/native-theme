@@ -1460,14 +1460,17 @@ fn a_segment_separator_is_the_separator_parts_fill_where_stated() -> TestResult 
     for (preset, r) in every_preset() {
         let style = super::segment_separator(&r, false)?(&to_theme(&r)?);
         let track = r.segmented_control.track(WidgetState::NONE);
+        let separator = r.segmented_control.separator(WidgetState::NONE);
         // a track stated with no stroke gives no line (the test below)
-        let outline =
-            if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None) {
-                None
-            } else {
-                Some(line(&track, "stroke")?.color)
-            };
-        assert_eq!(background_color(style.background), outline, "{preset:?}");
+        let expected = if separator.stated.contains(PartStated::FILL) {
+            Some(fill(&separator, "separator(NONE).fill")?)
+        } else if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None)
+        {
+            None
+        } else {
+            Some(line(&track, "stroke")?.color)
+        };
+        assert_eq!(background_color(style.background), expected, "{preset:?}");
     }
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().separator(PartPatch::new().fill(Paint::Solid(DISTINCT))),
@@ -1491,15 +1494,18 @@ fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestR
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().track(PartPatch::new().stroke(Stroke::None)),
     );
+    let mut tested = 0;
     for (preset, r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
-        assert!(
-            !r.segmented_control
-                .separator(WidgetState::NONE)
-                .stated
-                .contains(PartStated::FILL),
-            "{preset:?}: no separator fill stated"
-        );
+        // a preset that states the separator's fill draws that line (the test above)
+        if r.segmented_control
+            .separator(WidgetState::NONE)
+            .stated
+            .contains(PartStated::FILL)
+        {
+            continue;
+        }
+        tested += 1;
         let separator = super::segment_separator(&r, false)?(&theme);
         assert_eq!(separator.background, None, "{preset:?}");
         assert_eq!(
@@ -1517,6 +1523,7 @@ fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestR
             "{preset:?}"
         );
     }
+    assert!(tested > 0, "no preset leaves the separator's fill unstated");
     Ok(())
 }
 
@@ -1941,9 +1948,36 @@ fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestRe
             ToolbarRule::new()
                 .states(WidgetState::CHECKED)
                 .button(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::PRESSED)
+                .button_label(TextPatch::new().color(LABEL)),
         );
-    let mut covered = 0;
+    let (mut covered, mut toolbars) = (0, 0);
     for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let pressed = r.toolbar.button_label(WidgetState::PRESSED);
+        assert!(pressed.from_state.contains(TextStated::COLOR), "{preset:?}");
+        // the toolbar button is lettered in the toolbar's own labels
+        if !r
+            .toolbar
+            .button_label(WidgetState::CHECKED)
+            .from_state
+            .contains(TextStated::COLOR)
+        {
+            toolbars += 1;
+            let at_rest = text_color(&r.toolbar.button_label(WidgetState::NONE), "label")?;
+            assert_ne!(at_rest, to_color(LABEL), "{preset:?}");
+            let toolbar = super::toolbar_button(&r, true)?;
+            for status in [Status::Active, Status::Hovered, Status::Pressed] {
+                assert_eq!(
+                    toolbar(&theme, status).text_color,
+                    at_rest,
+                    "{preset:?} {status:?}"
+                );
+            }
+        }
         let pressed = r.button.label(WidgetState::PRESSED);
         assert!(pressed.from_state.contains(TextStated::COLOR), "{preset:?}");
         assert_eq!(
@@ -1961,23 +1995,20 @@ fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestRe
         covered += 1;
         let at_rest = text_color(&r.button.label(WidgetState::NONE), "label")?;
         assert_ne!(at_rest, to_color(LABEL), "{preset:?}");
-        let theme = to_theme(&r)?;
         let toggle = super::button_toggle(&r, true)?;
-        let toolbar = super::toolbar_button(&r, true)?;
         for status in [Status::Active, Status::Hovered, Status::Pressed] {
             assert_eq!(
                 toggle(&theme, status).text_color,
                 at_rest,
                 "{preset:?} {status:?}"
             );
-            assert_eq!(
-                toolbar(&theme, status).text_color,
-                at_rest,
-                "{preset:?} {status:?}"
-            );
         }
     }
     assert!(covered > 0, "a theme with no checked label covered");
+    assert!(
+        toolbars > 0,
+        "a theme with no checked toolbar label covered"
+    );
     Ok(())
 }
 

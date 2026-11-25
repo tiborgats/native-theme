@@ -7,17 +7,13 @@
 
 use egui::Button;
 use egui::class::Classes;
-use egui::widget_style::{ButtonStyle, CheckboxStyle, StyleArgs, WidgetState};
-use native_theme::AccessibilityPreferences;
+use egui::widget_style::{ButtonStyle, CheckboxStyle, StyleArgs, TextEditStyle, WidgetState};
 use native_theme::icons::IconRole;
 use native_theme::icons::IconSet;
-use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
-use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, default_button, input_frame,
-    list_header_active_background, list_header_font, list_header_height,
-    list_header_hover_background, selection_inactive_background, selection_inactive_text_color,
-    text_area_frame,
-};
+use native_theme::next::WidgetState as NextState;
+use native_theme::next::{ListKind, ListQuery, ListVariant, PartStated, ResolvedTheme};
+use native_theme_egui::convert::{to_corner_radius, to_margin};
+use native_theme_egui::{Role, RoleVariant, Surface, TextRole, next};
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
 use native_theme_egui_widgets::fade::fade_as_one;
@@ -29,9 +25,11 @@ use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
-use native_theme_showcase_support::rows;
 
-use super::{DemoState, caption};
+use super::data::TableHeader;
+use super::{
+    DemoState, Framed, button_min_size, caption, field_frame, input_min_size, text_area_frame,
+};
 use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
@@ -152,54 +150,112 @@ fn segmented_in_last_column(columns: usize) -> bool {
         .is_some_and(|column| column.contains(&SEGMENTED_GROUP))
 }
 
-/// How many columns the page lays its groups out in, from the theme alone, as the gpui and
-/// iced pages count them: the most, of five down to one, whose width,
+/// What the page's column rule ([`column_count`]) reads of the installed 0.8.0 theme, each
+/// length egui's own where the theme states none (spec §10, rule 0): the space egui itself
+/// puts at that place, and so too without an installed 0.8.0 theme.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct ColumnRule {
+    /// `layout.window_margin`, the content panel's inner margin on each side; where unstated,
+    /// egui's own `Frame::central_panel` margin, which the panel then keeps (egui-0.37.0
+    /// `src/containers/frame.rs:191-193`, `inner_margin(8)`, the same on every side).
+    pub(crate) margin: f32,
+    /// `layout.section_gap`, between the columns; where unstated, the gap egui lays columns
+    /// out apart, `item_spacing.x` (egui-0.37.0 `src/ui.rs:2665`, `Ui::columns`).
+    pub(crate) gap: f32,
+    /// `layout.widget_gap`, the gap between neighbouring widgets of a row; where unstated,
+    /// egui's own `item_spacing.x`, which the connector then leaves (egui-0.37.0
+    /// `src/style.rs:1565`).
+    pub(crate) widget_gap: f32,
+    /// `scrollbar.overlay_mode` where the connector writes the scroll style ([`written_bar`]),
+    /// else egui's own `ScrollStyle::floating`, which the style then keeps.
+    pub(crate) overlay: bool,
+    /// The scroll bar's groove width, `next::scrollbar_groove_width`, where the connector writes
+    /// the scroll style ([`written_bar`]), else egui's own `ScrollStyle::bar_width`.
+    pub(crate) groove: f32,
+    /// The widest fixed-width control the theme states on the page: `combo_box.field(NONE)
+    /// .min_size[0]`, the two tabs at `tab.tab(NONE).min_size[0]` `tab.item_gap` apart (where
+    /// unstated, the page style's `item_spacing.x`, which the tab scope keeps) with room
+    /// for both of the selected tab's flares, `2 * tab.active_outward_corner_radius` where the
+    /// tab bar draws them (`demo::next_outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH`.
+    pub(crate) widest: f32,
+}
+
+impl ColumnRule {
+    /// The rule of the installed 0.8.0 theme `r`, where `own` is the page's egui style, whose
+    /// item spacing, central panel margin and scroll style an unstated length keeps.
+    pub(crate) fn of(r: Option<&native_theme::next::ResolvedTheme>, own: &egui::Style) -> Self {
+        let metric = |read: fn(&native_theme::next::LayoutMetrics) -> Option<f32>, own: f32| {
+            r.and_then(|r| read(&r.layout)).unwrap_or(own)
+        };
+        let panel = egui::Frame::central_panel(own).inner_margin;
+        let rows = own.spacing.item_spacing;
+        let scroll = &own.spacing.scroll;
+        let tab_min = r
+            .and_then(|r| r.tab.tab(NextState::NONE).min_size[0])
+            .unwrap_or_default();
+        // As the tab bar lays its tabs out (`demo::TabLook::next`): the tab scope's
+        // `item_spacing.x`, `tab.item_gap` where stated, else the page style's, which the scope
+        // keeps.
+        let item_gap = r.and_then(|r| r.tab.item_gap).unwrap_or(rows.x);
+        let flare = r.and_then(demo::next_outward_radius).unwrap_or_default();
+        let tabs = tab_min + tab_min + item_gap + flare + flare;
+        let bar = r.and_then(written_bar);
+        Self {
+            margin: metric(|l| l.window_margin, panel.leftf()),
+            gap: metric(|l| l.section_gap, rows.x),
+            widget_gap: metric(|l| l.widget_gap, rows.x),
+            overlay: bar.map_or(scroll.floating, |(overlay, _)| overlay),
+            groove: bar.map_or(scroll.bar_width, |(_, groove)| groove),
+            widest: combo_min_width(r)
+                .unwrap_or_default()
+                .max(tabs)
+                .max(BASIC_WIDE)
+                .max(BASIC_WIDTH),
+        }
+    }
+}
+
+/// `scrollbar.overlay_mode` and the groove width (`next::scrollbar_groove_width`) where the
+/// connector writes them into the egui scroll style: only where the theme states both the
+/// groove's and the thumb's width, `scrollbar.track(NONE; orientation=Vertical).min_size[0]` and
+/// `scrollbar.thumb(NONE; orientation=Vertical).min_size[0]` (the connector's
+/// `style/derived.rs`, `apply_base`); else `None`, and the style keeps egui's own
+/// `ScrollStyle`, its floating and its width both (spec §10, rule 0).
+pub(crate) fn written_bar(r: &ResolvedTheme) -> Option<(bool, f32)> {
+    let vertical = native_theme::next::StyleQuery::<()>::new(NextState::NONE)
+        .orientation(native_theme::next::Orientation::Vertical);
+    let groove = next::scrollbar_groove_width(r).ok()?;
+    r.scrollbar.thumb(vertical).min_size[0]?;
+    Some((r.scrollbar.overlay_mode, groove))
+}
+
+/// How many columns the page lays its groups out in, from the theme alone (`rule`, each length
+/// egui's own where the theme states none), as the gpui and iced pages count them: the most, of five down to one, whose width,
 /// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
-/// states on the page — `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart with room for both of the selected tab's flares, `2 * tab.active_outward_corner_radius`
-/// where `demo::tab_bar` draws them (`demo::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` —
-/// where `page` is `content_width` less `layout.window_margin` on both sides and, where
-/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a scrolling page keeps free.
-/// The column also holds `segmented`, the Segmented control's own width as egui laid it out
-/// (`DemoState::segmented_width`), whose segments stay on one row: the control may reach into the
-/// section gap after its column, but keeps `layout.widget_gap`, the gap the page's rows keep
-/// between neighbouring widgets (Button and Primary), from the next column's left edge (M9-166);
-/// in the last column it may reach into the page's right margin, `layout.window_margin`, keeping
-/// `layout.widget_gap` from the content panel's edge or its scroll bar: where
-/// `scrollbar.overlay_mode` is true the bar floats over that margin, its `scrollbar.groove_width`
-/// taken off the room. One where not even one
-/// does: the page is then wider than its area.
-pub(crate) fn column_count(
-    t: &native_theme_egui::ResolvedTheme,
-    layout: &native_theme::theme::LayoutTheme,
-    content_width: f32,
-    segmented: f32,
-) -> usize {
-    let margin = layout.window_margin.unwrap_or_default();
-    let gap = layout.section_gap.unwrap_or_default();
-    let bar = &t.scrollbar;
-    let gutter = if bar.overlay_mode {
-        0.0
-    } else {
-        bar.groove_width
-    };
+/// states on the page (`ColumnRule::widest`), where `page` is `content_width` less
+/// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode` is false, the groove
+/// width a scrolling page keeps free. The column also holds `segmented`, the Segmented
+/// control's own width as egui laid it out (`DemoState::segmented_width`), whose segments stay
+/// on one row: the control may reach into the section gap after its column, but keeps
+/// `layout.widget_gap`, the gap the page's rows keep between neighbouring widgets (Button and
+/// Primary), from the next column's left edge (M9-166); in the last column it may reach into
+/// the page's right margin, `layout.window_margin`, keeping `layout.widget_gap` from the content
+/// panel's edge or its scroll bar: where `scrollbar.overlay_mode` is true the bar floats over
+/// that margin, its groove width taken off the room. One where not even one does: the page is
+/// then wider than its area.
+pub(crate) fn column_count(rule: &ColumnRule, content_width: f32, segmented: f32) -> usize {
+    let ColumnRule {
+        margin,
+        gap,
+        widget_gap,
+        overlay,
+        groove,
+        widest,
+    } = *rule;
+    let gutter = if overlay { 0.0 } else { groove };
     // a floating bar takes no width of the page, and is drawn over its right margin
-    let overlay = if bar.overlay_mode {
-        bar.groove_width
-    } else {
-        0.0
-    };
+    let overlay = if overlay { groove } else { 0.0 };
     let page = content_width - margin - margin - gutter;
-    let flare = demo::outward_radius(t).unwrap_or_default();
-    let tabs =
-        t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default() + flare + flare;
-    let widest = t
-        .combo_box
-        .min_width
-        .max(tabs)
-        .max(BASIC_WIDE)
-        .max(BASIC_WIDTH);
-    let widget_gap = layout.widget_gap.unwrap_or_default();
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -226,7 +282,6 @@ fn group(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
     match ix {
         0 => buttons(reg, atlas, ui),
         1 => checkboxes(reg, atlas, ui),
@@ -237,30 +292,31 @@ fn group(
         5 => text_area(reg, state, atlas, ui),
         // The companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2).
         6 => slider(reg, state, ui),
-        7 => switches(reg, ui),
+        7 => switches(reg, atlas, ui),
         8 => number_input(reg, state, atlas, ui),
         9 => spinner(reg, ui),
         10 => segmented(reg, state, ui),
         11 => card(reg, atlas, ui),
-        12 => typography(reg, atlas, ui),
+        12 => typography(reg, ui),
         13 => separator(reg, ui),
         14 => progress_bar(reg, ui),
         15 => list_group(reg, state, atlas, ui),
         16 => icons_group(reg, state, atlas, ui, chosen),
-        17 => tabs(reg, state, t, ui),
+        17 => tabs(reg, state, atlas, ui),
         18 => expander(reg, ui),
         _ => table_group(reg, atlas, ui),
     }
 }
 
 /// Columns of equal width, as many as [`column_count`] counts from the content panel's width,
-/// `layout.section_gap` apart, the gap the count takes, and none where the theme states none,
-/// as the gpui and iced pages lay theirs out (`with_gap(.., section_gap)`, `spacing(0)` where
-/// unstated); each a stack of groups top-aligned, `layout.section_gap` apart and none where
-/// unstated too, each group in a top-down `Ui` of its own with its rows the connector's
-/// `item_spacing` apart (`layout.widget_gap`): each column is laid out in a `Ui` of its own at
-/// its place, so a group wider than its column shows as the overflow it is, and the next column
-/// does not move.
+/// `layout.section_gap` apart, the gap the count takes, and where the theme states none egui's
+/// own gap between columns, `item_spacing.x` (`ColumnRule::gap`); each a stack of groups
+/// top-aligned, `layout.section_gap` apart and, where unstated, egui's own gap between the
+/// widgets of a top-down `Ui`, `item_spacing.y` (egui-0.37.0 `src/layout.rs:759`,
+/// `Layout::advance_after_rects`), each group in a top-down `Ui` of its own with its rows the
+/// connector's `item_spacing` apart (`layout.widget_gap`, else egui's own): each column is laid
+/// out in a `Ui` of its own at its place, so a group wider than its column shows as the
+/// overflow it is, and the next column does not move.
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -268,14 +324,11 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let gap = atlas.layout().section_gap.unwrap_or_default();
+    let rule = ColumnRule::of(atlas.next_shown(ui.ctx()), ui.style());
+    let gap = rule.gap;
+    let below = demo::next_metric(ui, |l| l.section_gap).unwrap_or(ui.spacing().item_spacing.y);
     let origin = ui.cursor().min;
-    let count = column_count(
-        atlas.old_resolved(ui.ctx().theme()),
-        atlas.layout(),
-        state.content_width,
-        state.segmented_width,
-    );
+    let count = column_count(&rule, state.content_width, state.segmented_width);
     let columns = count as f32;
     let page_width = ui.available_width();
     let width = ((page_width - gap * (columns - 1.0)) / columns).max(0.0);
@@ -297,14 +350,14 @@ pub(crate) fn show(
                 .max_rect(rect)
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
-        // The groups follow one another `gap` apart and no more: the column adds no
+        // The groups follow one another `below` apart and no more: the column adds no
         // `item_spacing` between them, each group's own `Ui` puts it between its rows, and a
         // group's heading, first in its `Ui`, adds nothing (`caption`).
         let rows = child.spacing().item_spacing;
         child.spacing_mut().item_spacing.y = 0.0;
         for (place, &ix) in members.iter().enumerate() {
             if place > 0 {
-                child.add_space(gap);
+                child.add_space(below);
             }
             let _laid = child.scope_builder(
                 egui::UiBuilder::new()
@@ -465,7 +518,7 @@ fn place_parts(
 }
 
 /// A text-only button in the button role's `variant`, the element `id`, its label placed as
-/// `<id>.label`: `make` builds it from its label `text`, one line box tall (`demo::lined`), at
+/// `<id>.label`: `make` builds it from its label `text`, one line box tall (`demo::next_lined`), at
 /// least `min` large.
 fn text_button(
     reg: &mut Registry,
@@ -482,7 +535,7 @@ fn text_button(
         // would wrap it to the room left (`TextWrapMode::Wrap`), where the row wraps before the
         // button instead (`wrap_before`).
         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-        let text = demo::lined(ui, text, egui::TextStyle::Button);
+        let text = demo::next_lined(ui, text, egui::TextStyle::Button);
         let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
         label = Some(button_label(ui, &r, text));
         r
@@ -533,12 +586,13 @@ fn remember_width(ui: &egui::Ui, key: &str, rect: egui::Rect) {
 /// further line where the column is too narrow for it (`horizontal_wrapped`), as the gpui
 /// (`flex_wrap`) and iced (`Row::wrap`) pages' rows wrap.
 fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
-    // `button.min_width`, which egui's `Button` never reads from the style: it raises only its
-    // height, to `interact_size.y` (`button.min_height` in the button scope), so the width is
-    // the application's, per call (connector spec §5.3, `Button::min_size`).
-    let min = egui::vec2(t.button.min_width, t.button.min_height);
+    // `button.body(NONE).min_size[0]`, which egui's `Button` never reads from the style: it
+    // raises only its height, to `interact_size.y`, the button scope's, so the width is the
+    // application's, per call (connector spec §5.3, `Button::min_size`); egui's own, none, where
+    // the theme states none.
+    let min = button_min_size(r);
     let plain = |text: egui::RichText| Button::new(text);
     let primary = |text: egui::RichText| Button::new(text).selected(true);
 
@@ -573,7 +627,7 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 }
                 tip.show(|ui| {
                     let text = demo::scoped(reg, ui, Role::Tooltip, normal, "tooltip text", |ui| {
-                        ui.label(demo::lined(ui, "A tooltip", egui::TextStyle::Body))
+                        ui.label(demo::next_lined(ui, "A tooltip", egui::TextStyle::Body))
                     });
                     reg.tag("basic.buttons.tooltip.bubble.text", &text);
                 })
@@ -584,25 +638,11 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             reg.tag("basic.buttons.tooltip.bubble", &bubble);
         }
     });
-    // A toggle button: `Off` a button at rest, `On` the same button held on, in
-    // `button.checked_background` and `button.checked_text_color` (docs/platform-facts.md
-    // §2.3) — where the theme states none, the button role's pressed colours,
-    // `button.active_background` (its hover fill where it states none, §6.4) and
-    // `button.active_text_color` — per call: egui's `selected` flag would take the suggested
-    // action's `selection` colours.
-    // Each colour chosen once, with the leaf it is read from where that is not the checked one:
-    // the toggle is drawn in the colour and the note names the leaf, so the two cannot part.
-    let b = &t.button;
-    let (fill_instead, on_fill) = match (b.checked_background, b.active_background) {
-        (Some(fill), _) => (None, fill),
-        (None, Some(fill)) => (Some("button.active_background"), fill),
-        (None, None) => (Some("button.hover_background"), b.hover_background),
-    };
-    let (text_instead, on_text) = match b.checked_text_color {
-        Some(colour) => (None, colour),
-        None => (Some("button.active_text_color"), b.active_text_color),
-    };
-    let (on_fill, on_text) = (to_color32(on_fill), to_color32(on_text));
+    // A toggle button: `Off` a button at rest, `On` the same button held on: egui's own selected
+    // button (`Button::selected`), with the checked colours [`toggle_on`] reads laid over it per
+    // call where the theme states them (spec §10, rule 0).
+    let on = toggle_on(r);
+    let (on_fill, on_text) = (on.fill, on.text);
     // A dialog's default button, the one Enter activates: where the theme gives it a look of its
     // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
     // in the state of its previous response, kept in the page's memory (focus before hover, as
@@ -613,12 +653,24 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         .ctx()
         .data(|d| d.get_temp::<(bool, bool, bool)>(state_key))
         .unwrap_or_default();
-    let look = default_button(t);
+    // `None`, the primary button, also where the theme states the look in a form egui cannot
+    // draw (`next::Unmapped`).
+    let look = r.and_then(|r| next::default_button(r).ok().flatten());
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
-        let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
+        let held = |text: egui::RichText| {
+            let text = match on_text {
+                Some(color) => text.color(color),
+                None => text,
+            };
+            let button = Button::new(text).selected(true);
+            match on_fill {
+                Some(fill) => button.fill(fill),
+                None => button,
+            }
+        };
         text_button(reg, ui, kind, ("On", min), held, true);
         let kind = (
             "basic.buttons.dialog_default",
@@ -655,26 +707,69 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         }
         ui.ctx().data_mut(|d| d.insert_temp(state_key, now));
     });
-    // Where the theme states no checked colour, the leaf the toggle is drawn in instead.
-    if let Some(leaf) = fill_instead {
+    // Where the theme states no checked colour, what the toggle is drawn in instead.
+    if on.fill.is_none() {
         reg.note_element(
             "basic.buttons.toggle_on",
             "fill while on",
-            &format!("not stated by the theme (button.checked_background): {leaf}"),
+            &format!(
+                "not stated by the theme (button.body(CHECKED).fill): {}",
+                ToggleOn::OWN_FILL
+            ),
         );
     }
-    if let Some(leaf) = text_instead {
+    if on.text.is_none() {
         reg.note_element(
             "basic.buttons.toggle_on",
             "text colour while on",
-            &format!("not stated by the theme (button.checked_text_color): {leaf}"),
+            &format!(
+                "not stated by the theme (button.label(CHECKED).color): {}",
+                ToggleOn::OWN_TEXT
+            ),
         );
+    }
+}
+
+/// The Basic page's toggle button while on: the colours a rule of the installed 0.8.0 theme
+/// states for the checked state, each `None` where none does, and so egui's own selected
+/// button's.
+#[derive(Debug, PartialEq)]
+pub(crate) struct ToggleOn {
+    pub(crate) fill: Option<egui::Color32>,
+    pub(crate) text: Option<egui::Color32>,
+}
+
+impl ToggleOn {
+    /// What an unstated checked fill is drawn in.
+    pub(crate) const OWN_FILL: &'static str =
+        "egui's own selected button fill (Button::selected: visuals.selection.bg_fill)";
+    /// What an unstated checked text colour is drawn in.
+    pub(crate) const OWN_TEXT: &'static str =
+        "egui's own selected button text (Button::selected: visuals.selection.stroke)";
+}
+
+/// The toggle button's colours while on, of the installed 0.8.0 theme `r`
+/// (docs/platform-facts.md §2.3), each asked with the checked flag alone: the fill a rule states
+/// for `button.body(CHECKED)`, the text colour a rule states for `button.label(CHECKED)`. Neither
+/// falls back to another state's: what the theme leaves unstated, and both without an installed
+/// 0.8.0 theme, is egui's own way of drawing a button that is on, its selected button
+/// (`Button::selected`, egui-0.37.0 `src/theme/default_style.rs`: `visuals.selection`'s fill
+/// and stroke), as the connector themes it (spec §10, rules 0 and 0a).
+pub(crate) fn toggle_on(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
+    ToggleOn {
+        fill: r.and_then(|r| next::state_fill_of(&r.button.body(NextState::CHECKED))),
+        text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
     }
 }
 
 /// The Checkboxes group.
 fn checkboxes(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    // The page's ground the disabled box fades over: `colors.window.background` of the installed
+    // 0.8.0 theme, egui's own panel fill where it states none or none is installed.
+    let ground = atlas
+        .next_shown(ui.ctx())
+        .and_then(|r| r.colors.window.background)
+        .map_or(ui.visuals().panel_fill, next::to_color32);
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
@@ -711,9 +806,8 @@ fn checkboxes(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
-            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             let r = if !enabled {
-                let ground = to_color32(t.defaults.background_color);
                 ui.scope(|ui| {
                     // The check box faded as one over the page (the companion crate's rule,
                     // which its switch and radio button follow too).
@@ -755,7 +849,7 @@ fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
             normal
         };
         let r = demo::widget(reg, ui, Role::Checkbox, variant, "RadioButton", |ui| {
-            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             ui.add(RadioButton::new(selected, text))
         });
         reg.tag(id, &r);
@@ -771,11 +865,31 @@ fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     }
 }
 
+/// What a switch drawn under the 0.8.0 theme `r` notes under *Not themeable*: the state glyphs
+/// `switch.show_state_glyphs` asks for, which the companion crate's switch does not draw
+/// (`Switch::next_glyphs_unmapped`).
+pub(crate) fn note_switch(reg: &mut Registry, r: Option<&ResolvedTheme>) {
+    if let Some(native_theme_egui::Note::Unmapped { path: home, .. }) =
+        r.and_then(Switch::next_glyphs_unmapped)
+    {
+        reg.note_last(
+            "state glyphs",
+            &format!(
+                "not mapped: the theme states {home} true, the track's on and off glyphs, \
+                 which the switch does not draw: the model states no glyph, nor its size, colour \
+                 or place on the track, and egui's own Checkbox draws none \
+                 (native-theme-egui-widgets, switch::Switch::next_glyphs_unmapped)"
+            ),
+        );
+    }
+}
+
 /// The Switches group: the companion crate's switch (docs/archive/todo_egui-widgets-spec.md §4.1),
-/// `switch.*`'s track and thumb, which no egui widget draws, the label after it;
-/// `.enabled(false)` is the platform's disabled switch. Each is held in its state, as the check
-/// boxes are.
-fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
+/// `switch.*`'s track and thumb, which no egui widget draws, the label beside it on
+/// `switch.label_side`'s side; `.enabled(false)` is the platform's disabled switch. Each is held
+/// in its state, as the check boxes are.
+fn switches(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let theme = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.switches.heading", "Switches");
     for (label, on, enabled, kind, id) in [
@@ -796,9 +910,10 @@ fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
         };
         let mut value = on;
         let r = demo::widget(reg, ui, Role::Switch, variant, kind, |ui| {
-            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             ui.add(Switch::new(&mut value).label(text).enabled(enabled))
         });
+        note_switch(reg, theme);
         reg.tag(id, &r);
         let names = [("track", "track"), ("thumb", "thumb"), ("label", "label")];
         place_parts(reg, ui, id, &r, &names);
@@ -806,36 +921,57 @@ fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
 }
 
 /// A text field of the Basic page, built inside its `Role::Input` scope (`ui` is the scope's), so
-/// its frame is the style it paints in: the disabled field takes the disabled cell's
-/// `input.disabled_background`. `input.min_height` is a per-instance `min_size`, which a
-/// `TextEdit` never reads from the style: it is one row plus its margin tall, at least its
-/// `min_size` (connector spec §5.4); the row is centred in the height the minimum adds, as the
-/// platform centres a field's text.
+/// its frame is the style it paints in: the disabled field takes the disabled cell's fill.
+/// `input.field(NONE).min_size[1]` is a per-instance `min_size`, which a `TextEdit` never reads
+/// from the style: it is one row plus its margin tall, at least its `min_size` (connector spec
+/// §5.4); the row is centred in the height the minimum adds, as the platform centres a field's
+/// text. `frame` is [`field_frame`]'s, egui's own where it is `None`.
 fn field<'a>(
     text: &'a mut String,
     id: egui::Id,
-    ui: &egui::Ui,
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&native_theme::next::ResolvedTheme>,
+    frame: Option<egui::Frame>,
 ) -> egui::TextEdit<'a> {
     egui::TextEdit::singleline(text)
         .desired_width(BASIC_WIDTH)
-        .min_size(egui::vec2(BASIC_WIDTH, t.input.min_height))
+        .min_size(egui::vec2(BASIC_WIDTH, input_min_size(r).y))
         .align(egui::Align2::LEFT_CENTER)
         .id(id)
-        .frame(input_frame(ui, id, t))
+        .framed(frame)
 }
 
 /// A `TextEdit` of `ui` lays each row out `row_height + extra_text_line_spacing` tall
 /// (`egui/src/widgets/text_edit/builder.rs:488-490`, `:512-514`); the connector writes the
-/// spacing only where the line box, the font's size times `defaults.line_height`, is taller
-/// than the font's own row (§6.15). Where the row is taller — a face whose row exceeds the
-/// theme's line box, Noto Sans (fontconfig's substitute for Inter) under catppuccin-mocha's 1.2
-/// — the spacing is the negative difference, written per field, so each row is one line box
-/// tall, as a label's is (`demo::lined`).
-fn line_box_rows(ui: &mut egui::Ui, t: &native_theme_egui::ResolvedTheme) {
+/// spacing only where the line box, the font's size times the installed 0.8.0 theme's line
+/// height (`next::line_height`), is taller than the font's own row (§6.15). Where the row is
+/// taller — a face whose row exceeds the theme's line box — the spacing is the negative
+/// difference, written per field, so each row is one line box tall, as a label's is
+/// (`demo::next_lined`). Without an installed 0.8.0 theme, egui's own spacing.
+fn line_box_rows(ui: &mut egui::Ui) {
+    let Some(line_height) = demo::next_value(ui, next::line_height) else {
+        return;
+    };
     let font = egui::FontSelection::Default.resolve(ui.style());
     let row = ui.fonts_mut(|f| f.row_height(&font));
-    ui.spacing_mut().extra_text_line_spacing = font.size * t.defaults.line_height - row;
+    ui.spacing_mut().extra_text_line_spacing = font.size * line_height - row;
+}
+
+/// The frame a `TextEdit` of `ui` draws in: `frame` where the page hands it one, else egui's own,
+/// the `TextEditStyle` of the scope at rest (`egui/src/widgets/text_edit/builder.rs`, which
+/// takes its `atom_layout.frame` where it is given none).
+fn drawn_frame(ui: &egui::Ui, frame: Option<egui::Frame>) -> egui::Frame {
+    frame.unwrap_or_else(|| {
+        ui.ctx()
+            .get_widget_style::<TextEditStyle>(&StyleArgs {
+                classes: &Classes::default(),
+                state: WidgetState::Inactive,
+                stack: ui.stack(),
+                style: ui.style(),
+                ctx: ui.ctx(),
+            })
+            .atom_layout
+            .frame
+    })
 }
 
 /// Where a `TextEdit` of `ui` laid `text` out: at the start of its frame's content, on the
@@ -852,7 +988,7 @@ fn field_text(
     let inner = inside(field.rect, frame.total_margin());
     let size = text_size(
         ui,
-        demo::lined(ui, text, egui::TextStyle::Body),
+        demo::next_lined(ui, text, egui::TextStyle::Body),
         egui::FontSelection::Default,
     );
     let top = if centred {
@@ -864,28 +1000,26 @@ fn field_text(
 }
 
 /// A single-line field of the Basic page in `variant` of the input role, the element `id`: its
-/// text placed as `<id>.text`, `shown` the text it holds (or its hint).
+/// text placed as `<id>.text`, `shown` the text it holds (or its hint). `add` builds the field
+/// in the frame [`field_frame`] gives in the scope, `next::input_frame` of the installed 0.8.0
+/// theme `r`.
 fn text_field(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     (id, kind, variant): (&str, &'static str, RoleVariant),
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&native_theme::next::ResolvedTheme>,
     shown: &str,
-    add: impl FnOnce(&mut egui::Ui, egui::Id) -> egui::Response,
+    add: impl FnOnce(&mut egui::Ui, egui::Id, Option<egui::Frame>) -> egui::Response,
 ) -> egui::Response {
     let edit_id = ui.make_persistent_id(id);
     let mut text = None;
     let response = demo::scoped(reg, ui, Role::Input, variant, kind, |ui| {
-        line_box_rows(ui, t);
-        let r = add(ui, edit_id).accessible_name(kind);
-        text = Some(field_text(
-            ui,
-            &r,
-            &input_frame(ui, edit_id, t),
-            shown,
-            true,
-        ));
-        r
+        line_box_rows(ui);
+        let frame = field_frame(ui, edit_id, r, next::input_frame);
+        let field = add(ui, edit_id, frame).accessible_name(kind);
+        let frame = drawn_frame(ui, frame);
+        text = Some(field_text(ui, &field, &frame, shown, true));
+        field
     });
     reg.tag(id, &response);
     if let Some(text) = text {
@@ -897,19 +1031,19 @@ fn text_field(
 /// Text inputs (the focused one their fourth row), the text area, the slider.
 /// The Text inputs group.
 fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
 
     heading(reg, ui, "basic.text_inputs.heading", "Text inputs");
     let kind = ("basic.text_inputs.placeholder", "TextEdit (hint)", normal);
-    text_field(reg, ui, kind, t, "Placeholder", |ui, id| {
-        let hint = demo::lined(ui, "Placeholder", egui::TextStyle::Body);
-        ui.add(field(&mut state.basic_hint, id, ui, t).hint_text(hint))
+    text_field(reg, ui, kind, r, "Placeholder", |ui, id, frame| {
+        let hint = demo::next_lined(ui, "Placeholder", egui::TextStyle::Body);
+        ui.add(field(&mut state.basic_hint, id, r, frame).hint_text(hint))
     });
     let kind = ("basic.text_inputs.filled", "TextEdit (single line)", normal);
     let shown = state.basic_text.clone();
-    text_field(reg, ui, kind, t, &shown, |ui, id| {
-        ui.add(field(&mut state.basic_text, id, ui, t))
+    text_field(reg, ui, kind, r, &shown, |ui, id, frame| {
+        ui.add(field(&mut state.basic_text, id, r, frame))
     });
     let kind = (
         "basic.text_inputs.disabled",
@@ -917,14 +1051,14 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: 
         RoleVariant::Disabled,
     );
     let mut disabled = "Disabled".to_string();
-    text_field(reg, ui, kind, t, "Disabled", |ui, id| {
-        ui.add_enabled(false, field(&mut disabled, id, ui, t))
+    text_field(reg, ui, kind, r, "Disabled", |ui, id, frame| {
+        ui.add_enabled(false, field(&mut disabled, id, r, frame))
     });
     // A text field holding the keyboard focus from the start, so its focus border shows.
     let kind = ("basic.text_inputs.focused", "TextEdit (focused)", normal);
     let shown = state.basic_focused.clone();
-    let focused = text_field(reg, ui, kind, t, &shown, |ui, id| {
-        ui.add(field(&mut state.basic_focused, id, ui, t))
+    let focused = text_field(reg, ui, kind, r, &shown, |ui, id, frame| {
+        ui.add(field(&mut state.basic_focused, id, r, frame))
     });
     if !state.basic_focus_given {
         focused.request_focus();
@@ -932,29 +1066,35 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: 
     }
 }
 
-/// The Text area group.
+/// The Text area group: its frame `next::text_area_frame` of the installed 0.8.0 theme
+/// ([`text_area_frame`]), egui's own where the theme states none egui can take, its notes under
+/// *Not themeable*.
 fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
     let mut text = None;
+    let mut notes = Vec::new();
     let kind = "TextEdit (multiline)";
     let area = demo::scoped(reg, ui, Role::Input, normal, kind, |ui| {
-        line_box_rows(ui, t);
-        let frame = text_area_frame(ui, id, t);
-        let r = ui
+        line_box_rows(ui);
+        let frame;
+        (frame, notes) = text_area_frame(ui, id, r);
+        let field = ui
             .add(
                 egui::TextEdit::multiline(&mut state.basic_area)
                     .desired_width(BASIC_WIDE)
                     .desired_rows(AREA_ROWS)
                     .id(id)
-                    .frame(frame),
+                    .framed(frame),
             )
             .accessible_name(kind);
-        text = Some(field_text(ui, &r, &frame, AREA_TEXT, false));
-        r
+        let frame = drawn_frame(ui, frame);
+        text = Some(field_text(ui, &field, &frame, AREA_TEXT, false));
+        field
     });
+    reg.notes_last("frame", &notes);
     reg.tag("basic.text_area.field", &area);
     if let Some(text) = text {
         reg.place(ui, "basic.text_area.field.text", text);
@@ -994,18 +1134,28 @@ fn progress_bar(reg: &mut Registry, ui: &mut egui::Ui) {
     place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
 }
 
+/// `combo_box.field(NONE).min_size[0]` of the installed 0.8.0 theme `r`, the drop-down's least
+/// width; `None` where it states none or none is installed.
+fn combo_min_width(r: Option<&native_theme::next::ResolvedTheme>) -> Option<f32> {
+    r.and_then(|r| {
+        let [width, _] = r.combo_box.field(NextState::NONE).min_size;
+        width
+    })
+}
+
 /// The Drop-down group: the companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6),
 /// egui's own `ComboBox` in the combo-box scope, as tall as its text and padding make it, at
-/// least `combo_box.min_height`, where egui's square arrow box would make it taller.
+/// least `combo_box.field(NONE).min_size[1]`, where egui's square arrow box would make it taller.
 fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.drop_down.heading", "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
-    // `BASIC_WIDTH`, and at least `combo_box.min_width`, which egui's `ComboBox` never reads
-    // from the style: the width is the application's, per call, as the gpui page's select's
-    // refinement and the iced page's pick list take it.
-    let width = BASIC_WIDTH.max(t.combo_box.min_width);
+    // `BASIC_WIDTH`, and at least `combo_box.field(NONE).min_size[0]` of the installed 0.8.0
+    // theme, which egui's `ComboBox` never reads from the style: the width is the application's,
+    // per call, as the gpui page's select's refinement and the iced page's pick list take it;
+    // egui's own least width, none, where the theme states none.
+    let width = BASIC_WIDTH.max(combo_min_width(r).unwrap_or_default());
     let combo = demo::scoped_popup(
         reg,
         ui,
@@ -1014,7 +1164,7 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &m
         "ComboBox",
         |ui, modifier, row, reg| {
             let mut combo = ComboBox::from_id_salt("basic/combo")
-                .selected_text(demo::lined(ui, current, egui::TextStyle::Button))
+                .selected_text(demo::next_lined(ui, current, egui::TextStyle::Button))
                 .width(width);
             if let Some(modifier) = modifier {
                 combo = combo.popup_style(modifier);
@@ -1039,18 +1189,25 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &m
 /// The switches, the number input, the spinner, the segmented control, a card.
 /// The Number input group.
 fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let [_, height] = atlas
+        .next_shown(ui.ctx())
+        .map_or([None, None], |r| r.input.field(NextState::NONE).min_size);
     let normal = RoleVariant::Normal;
 
     // A number input: egui's `DragValue`, the number field egui has, in the input role's
-    // scope, `BASIC_WIDTH` wide and `input.min_height` tall (its `interact_size`, which
-    // `DragValue` sizes its button by, `egui/src/widgets/drag_value.rs`), stepping by 1. egui
-    // draws it as a button whose text a drag or a click edits: no step buttons.
+    // scope, `BASIC_WIDTH` wide and `input.field(NONE).min_size[1]` tall (its `interact_size`,
+    // which `DragValue` sizes its button by, `egui/src/widgets/drag_value.rs`), the scope's own
+    // height where the installed 0.8.0 theme states none, stepping by 1. egui draws it as a
+    // button whose text a drag or a click edits: no step buttons.
     heading(reg, ui, "basic.number_input.heading", "Number input");
     let shown = format!("{}", state.basic_number);
     let mut text = None;
     let number = demo::scoped(reg, ui, Role::Input, normal, "DragValue", |ui| {
-        ui.spacing_mut().interact_size = egui::vec2(BASIC_WIDTH, t.input.min_height);
+        let interact = &mut ui.spacing_mut().interact_size;
+        interact.x = BASIC_WIDTH;
+        if let Some(height) = height {
+            interact.y = height;
+        }
         // The field's frame as a text field's: `DragValue` is a `Button`, which pads by the
         // scope's `button_padding` with its stroke inside (`egui-0.37.0/src/theme/default_style.rs`,
         // `StyleProvider<ButtonStyle>`), as a plain `TextEdit` in the scope does
@@ -1095,7 +1252,7 @@ fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
         normal,
         "segmented control",
         |ui| {
-            let segments = SEGMENTS.map(|s| demo::lined(ui, s, egui::TextStyle::Button));
+            let segments = SEGMENTS.map(|s| demo::next_lined(ui, s, egui::TextStyle::Button));
             ui.add(SegmentedControl::new(&mut state.basic_segment, segments))
         },
     );
@@ -1123,19 +1280,15 @@ fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     }
 }
 
-/// The Tabs group: a tab bar of two tabs, the first selected.
-fn tabs(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    t: &native_theme_egui::ResolvedTheme,
-    ui: &mut egui::Ui,
-) {
+/// The Tabs group: a tab bar of two tabs, the first selected, on the installed 0.8.0 theme
+/// (`demo::TabLook::next`).
+fn tabs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     heading(reg, ui, "basic.tabs.heading", "Tabs");
     let tabs: Vec<(usize, &'static str)> = TABS.into_iter().enumerate().collect();
     let picked = demo::tab_bar(
         reg,
         ui,
-        t,
+        &demo::TabLook::next(atlas.next_shown(ui.ctx())),
         demo::TabBar {
             kind: "TabBar · Basic",
             tab_kind: "Tab · Basic",
@@ -1170,7 +1323,7 @@ fn spinner(reg: &mut Registry, ui: &mut egui::Ui) {
     reg.tag("basic.spinner.indicator", &spinner);
 }
 
-/// One line of the Typography group in `role` (the base style's `Body`, `defaults.font`, for
+/// One line of the Typography group in `role` (the base style's `Body`, `typography.body`, for
 /// `None`), the element `id`.
 fn typography_line(
     reg: &mut Registry,
@@ -1180,20 +1333,20 @@ fn typography_line(
     id: &str,
 ) {
     let line = demo::base(reg, ui, "Label (typography)", |ui| match role {
-        Some(role) => ui.label(demo::role_text(ui, role, text)),
-        None => ui.label(demo::lined(ui, text, egui::TextStyle::Body)),
+        Some(role) => ui.label(demo::next_role_text(ui, role, text)),
+        None => ui.label(demo::next_lined(ui, text, egui::TextStyle::Body)),
     });
     reg.tag(id, &line);
 }
 
 /// The Typography group.
-fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+fn typography(reg: &mut Registry, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
 
     // One line in each of the theme's text roles: the text-scale roles through
-    // `demo::role_text`, the body in the base style's `Body` (`defaults.font`), the link in the
-    // link role, the monospace line in the base style's `Monospace` (`defaults.mono_font`).
+    // `demo::next_role_text`, the body in the base style's `Body` (`typography.body`), the link
+    // in the link role, the monospace line in the base style's `Monospace`
+    // (`typography.monospace`).
     heading(reg, ui, "basic.typography.heading", "Typography");
     typography_line(
         reg,
@@ -1208,7 +1361,7 @@ fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = links::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
+        let link = links::link(ui, demo::next_lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
     });
     reg.tag("basic.typography.link", &link);
@@ -1226,14 +1379,10 @@ fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     ] {
         typography_line(reg, ui, Some(role), text, id);
     }
-    // The line box `defaults.line_height` of the monospace font's size, as a body line's is.
+    // The line box of the monospace font's size at the theme's line height
+    // (`demo::next_lined`), as a body line's is.
     let mono = demo::base(reg, ui, "Label (monospace)", |ui| {
-        let size = egui::TextStyle::Monospace.resolve(ui.style()).size;
-        ui.label(
-            egui::RichText::new("Monospace")
-                .monospace()
-                .line_height(Some(size * t.defaults.line_height)),
-        )
+        ui.label(demo::next_lined(ui, "Monospace", egui::TextStyle::Monospace).monospace())
     });
     reg.tag("basic.typography.monospace", &mono);
 }
@@ -1272,15 +1421,24 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &
     list(reg, state, atlas, ui);
 }
 
+/// The outline a rule of the installed 0.8.0 theme `r` states for a toolbar button in `state`
+/// (`toolbar.button(<state>).stroke`, [`demo::state_pen`]).
+fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
+    demo::state_pen(&r.toolbar.button(state))
+}
+
 /// The Icons group's first row: four icon-only tool buttons, as the toolbar's
 /// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete and Edit at
-/// `toolbar.icon_size`, in the toolbar's scope, Ghost. Edit is an edit-mode switch
-/// (`DemoState::basic_edit`), on at start: while on it is filled with the toolbar's checked
-/// fill (`toolbar_button_checked_background`), lettered in the checked text, or, where the theme
-/// states no checked fill, with the selected flat button's fill, `widgets.active.weak_bg_fill`;
-/// and lined at rest in the checked pen (`toolbar_button_checked_border_color`,
-/// `button.border.line_width` wide) where the theme states it, under the pointer and pressed in
-/// the toolbar's hover outline, or that pen where the theme states no hover outline (E9).
+/// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`demo::tool_icon_size`]; where it
+/// states none, each button's label in place of its icon, which its Widget Info names), in the
+/// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
+/// connector's `layout.widget_gap`, else egui's own), each a tool button
+/// ([`demo::next_tool_button`]). Edit is an edit-mode switch (`DemoState::basic_edit`), on at
+/// start: while on it is egui's selected button (`Button::selected`) in the colours of
+/// [`edit_look`], each one the theme leaves unstated egui's own, which its Widget Info names; and
+/// lined in the pen a rule states for the checked state at rest (`toolbar.button(CHECKED)`),
+/// under the pointer (`CHECKED | HOVER`) and pressed (`CHECKED | PRESSED`), each unstated one the
+/// scope's own ([`tool_pen`]).
 fn icon_buttons(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -1288,9 +1446,22 @@ fn icon_buttons(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
-    let size = t.toolbar.icon_size;
+    let r = atlas.next_shown(ui.ctx());
+    let size = demo::tool_icon_size(r);
+    let padding = demo::tool_padding(r);
     let (set, icon_theme) = chosen;
+    let image_at = |ui: &egui::Ui, role| {
+        size.and_then(|size| demo::role_image(ui, role, *set, icon_theme.as_deref(), size))
+    };
+    let unsized_note = |reg: &mut Registry| {
+        if size.is_none() {
+            reg.note_last(
+                "icon size",
+                "not stated by the theme (toolbar.button_icon(NONE).size): the button's label \
+                 in place of its icon",
+            );
+        }
+    };
     demo::scoped_container(
         reg,
         ui,
@@ -1306,7 +1477,6 @@ fn icon_buttons(
             ui.spacing_mut().interact_size.y = 0.0;
             // Wrapping onto a further line where the column is too narrow for the four.
             ui.horizontal_wrapped(|ui| {
-                demo::toolbar_gap(ui, t, atlas.layout());
                 let spacing = ui.spacing_mut();
                 spacing.item_spacing.y = spacing.item_spacing.x;
                 for (role, label, id) in [
@@ -1314,14 +1484,14 @@ fn icon_buttons(
                     (IconRole::ActionPaste, "Paste", "basic.icons.paste"),
                     (IconRole::ActionDelete, "Delete", "basic.icons.delete"),
                 ] {
-                    let image = demo::role_image(ui, role, *set, icon_theme.as_deref(), size);
+                    let image = image_at(ui, role);
                     let drawn = image.is_some();
                     wrap_before(ui, id);
                     let response = ui
                         .scope(|ui| {
                             // One line, as `text_button`'s label.
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                            demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
+                            demo::next_tool_button(ui, padding);
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
                                     Some(image) => Button::image(image),
@@ -1336,48 +1506,46 @@ fn icon_buttons(
                         })
                         .inner;
                     reg.ghost_last();
+                    unsized_note(reg);
                     reg.tag(id, &response);
                     remember_width(ui, id, response.rect);
-                    if drawn {
+                    if let Some(size) = size.filter(|_| drawn) {
                         crate::chrome::place_icon(reg, ui, id, &response, size);
                     }
                 }
                 // The edit-mode switch: the one toolbar button that is ever checked.
                 let id = "basic.icons.edit";
                 let on = state.basic_edit;
+                let look = edit_look(r);
                 let mut drawn = false;
                 wrap_before(ui, id);
                 let response = ui
                     .scope(|ui| {
                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                        demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
-                        // E9: a checked button's pen at rest; under the pointer and pressed the
-                        // toolbar's hover outline where the theme states one, else the pen (S8).
-                        // `Button::fill` leaves the stroke to the scope; only `Button::stroke`
-                        // overrides it (`egui-0.37.0/src/widgets/button.rs:161`).
-                        if let Some(pen) =
-                            native_theme_egui::toolbar_button_checked_border_color(t).filter(|_| on)
-                        {
-                            let line = egui::Stroke::new(t.button.border.line_width, pen);
+                        demo::next_tool_button(ui, padding);
+                        // E9: while on, the pens a rule states for the checked state at rest,
+                        // under the pointer and pressed. `Button::fill` leaves the stroke to the
+                        // scope; only `Button::stroke` overrides it
+                        // (`egui-0.37.0/src/widgets/button.rs:161`).
+                        if let Some(r) = r.filter(|_| on) {
                             let w = &mut ui.visuals_mut().widgets;
-                            w.inactive.bg_stroke = line;
-                            if demo::toolbar_edge(t).is_none() {
-                                (w.hovered.bg_stroke, w.active.bg_stroke) = (line, line);
+                            for (entry, state) in [
+                                (&mut w.inactive, NextState::CHECKED),
+                                (&mut w.hovered, NextState::CHECKED.union(NextState::HOVER)),
+                                (&mut w.active, NextState::CHECKED.union(NextState::PRESSED)),
+                            ] {
+                                if let Some(pen) = tool_pen(r, state) {
+                                    entry.bg_stroke = pen;
+                                }
                             }
                         }
-                        let (fill, text) = edit_look(t, ui.visuals(), on);
-                        // The checked text, before the icon is loaded in the scope's text
-                        // colour.
-                        if text.is_some() {
-                            ui.visuals_mut().override_text_color = text;
+                        // The text while on, egui's selected button's where unstated, before the
+                        // icon is loaded in the scope's text colour.
+                        if on {
+                            let own = ui.visuals().selection.stroke.color;
+                            ui.visuals_mut().override_text_color = Some(look.text.unwrap_or(own));
                         }
-                        let image = demo::role_image(
-                            ui,
-                            IconRole::ActionEdit,
-                            *set,
-                            icon_theme.as_deref(),
-                            size,
-                        );
+                        let image = image_at(ui, IconRole::ActionEdit);
                         drawn = image.is_some();
                         let kind = if on {
                             "icon button, checked"
@@ -1388,8 +1556,9 @@ fn icon_buttons(
                             let button = match image {
                                 Some(image) => Button::image(image),
                                 None => Button::new("Edit"),
-                            };
-                            let button = match fill {
+                            }
+                            .selected(on);
+                            let button = match look.fill.filter(|_| on) {
                                 Some(fill) => button.fill(fill),
                                 None => button,
                             };
@@ -1408,9 +1577,33 @@ fn icon_buttons(
                 if !on {
                     reg.ghost_last();
                 }
+                unsized_note(reg);
+                if on {
+                    for (what, home, unstated, own) in [
+                        (
+                            "fill while on",
+                            "toolbar.button(CHECKED).fill",
+                            look.fill.is_none(),
+                            ToggleOn::OWN_FILL,
+                        ),
+                        (
+                            "text colour while on",
+                            "button.label(CHECKED).color",
+                            look.text.is_none(),
+                            ToggleOn::OWN_TEXT,
+                        ),
+                    ] {
+                        if unstated {
+                            reg.note_last(
+                                what,
+                                &format!("not stated by the theme ({home}): {own}"),
+                            );
+                        }
+                    }
+                }
                 reg.tag(id, &response);
                 remember_width(ui, id, response.rect);
-                if drawn {
+                if let Some(size) = size.filter(|_| drawn) {
                     crate::chrome::place_icon(reg, ui, id, &response, size);
                 }
             })
@@ -1419,65 +1612,86 @@ fn icon_buttons(
     );
 }
 
-/// The fill handed to the Basic page's edit-mode switch and the text colour its scope takes,
-/// while `on`: the toolbar's checked fill (`toolbar_button_checked_background`) and the checked
-/// text, `button.checked_text_color` (`button.active_text_color` where that is unset), where the
-/// theme states the fill; else the selected flat button's fill, `visuals`'
-/// `widgets.active.weak_bg_fill`, and the scope's own text. Neither while off.
-pub(crate) fn edit_look(
-    t: &native_theme_egui::ResolvedTheme,
-    visuals: &egui::Visuals,
-    on: bool,
-) -> (Option<egui::Color32>, Option<egui::Color32>) {
-    if !on {
-        return (None, None);
-    }
-    match native_theme_egui::toolbar_button_checked_background(t) {
-        Some(fill) => (
-            Some(fill),
-            Some(to_color32(
-                t.button
-                    .checked_text_color
-                    .unwrap_or(t.button.active_text_color),
-            )),
-        ),
-        None => (Some(visuals.widgets.active.weak_bg_fill), None),
+/// The Basic page's edit-mode switch's colours while on, of the installed 0.8.0 theme `r`, each
+/// asked with the checked flag alone and `None` where no rule states it: the fill
+/// `toolbar.button(CHECKED).fill`, the toolbar's checked fill, and the text colour
+/// `button.label(CHECKED).color`, the checked button text (the table of homes'
+/// `toolbar.button_checked_background` and `button.checked_text_color`). Neither falls back to
+/// another state's: what the theme leaves unstated, and both without an installed 0.8.0 theme,
+/// is egui's own selected button's, as the toggle's ([`toggle_on`], spec §10, rules 0 and 0a).
+pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
+    ToggleOn {
+        fill: r.and_then(|r| next::state_fill_of(&r.toolbar.button(NextState::CHECKED))),
+        text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
     }
 }
 
 /// The Icons group's second row: the chosen set's open folder at the theme's three icon sizes,
-/// `defaults.icon_sizes`' small, toolbar and large, never another set's.
+/// `icons.sizes`' small, toolbar and large of the installed 0.8.0 theme `r`, never another set's;
+/// a size the theme states none of is not drawn, and a line names it.
 fn icons(
     reg: &mut Registry,
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&native_theme::next::ResolvedTheme>,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
+    use native_theme_egui::icons::IconContext;
     let (set, icon_theme) = chosen;
-    let sizes = &t.defaults.icon_sizes;
+    let size = |context| r.and_then(|r| next::icon_size(r, context).ok());
+    let sizes = [
+        (size(IconContext::Small), "small", "basic.icons.small"),
+        (size(IconContext::Toolbar), "toolbar", "basic.icons.toolbar"),
+        (size(IconContext::Large), "large", "basic.icons.large"),
+    ];
+    let unstated: Vec<&str> = sizes
+        .iter()
+        .filter(|(size, _, _)| size.is_none())
+        .map(|(_, name, _)| *name)
+        .collect();
     ui.scope(|ui| {
         // One row, as tall as the largest icon, each icon centred on it: `ui.horizontal`
         // centres on the row's `interact_size.y` (`egui/src/ui.rs:2376-2379`).
-        ui.spacing_mut().interact_size.y = sizes.small.max(sizes.toolbar).max(sizes.large);
+        ui.spacing_mut().interact_size.y = sizes
+            .iter()
+            .filter_map(|(size, _, _)| *size)
+            .fold(0.0, f32::max);
         // Wrapping onto a further line where the column is too narrow for the three.
         ui.horizontal_wrapped(|ui| {
-            for (size, id) in [
-                (sizes.small, "basic.icons.small"),
-                (sizes.toolbar, "basic.icons.toolbar"),
-                (sizes.large, "basic.icons.large"),
-            ] {
+            for (size, _, id) in sizes {
+                let Some(size) = size else {
+                    continue;
+                };
                 let Some(image) =
                     demo::role_image(ui, IconRole::FolderOpen, *set, icon_theme.as_deref(), size)
                 else {
                     continue;
                 };
                 wrap_before(ui, id);
-                let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
+                // Drawn in the base style it is recorded with: the row's own height above is
+                // the row's alone, not the icon's.
+                let icon = ui
+                    .scope(|ui| {
+                        *ui.style_mut() = ui.ctx().global_style().as_ref().clone();
+                        demo::base(reg, ui, "Image · icon", |ui| ui.add(image))
+                    })
+                    .inner;
                 reg.tag(id, &icon);
                 remember_width(ui, id, icon.rect);
             }
         });
     });
+    if !unstated.is_empty() {
+        let names = unstated.join(", ");
+        demo::base(reg, ui, "Label · no icon size", |ui| {
+            ui.label(
+                egui::RichText::new(format!(
+                    "The theme states no icons.sizes {names}: those icons are not drawn"
+                ))
+                .small()
+                .weak(),
+            )
+        });
+    }
 }
 
 /// The Icons group: the icon buttons, then the icons at the theme's three sizes.
@@ -1488,10 +1702,9 @@ fn icons_group(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
     heading(reg, ui, "basic.icons.heading", "Icons");
     icon_buttons(reg, state, atlas, ui, chosen);
-    icons(reg, t, ui, chosen);
+    icons(reg, atlas.next_shown(ui.ctx()), ui, chosen);
 }
 
 /// The Expander group.
@@ -1524,11 +1737,11 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
         ] {
             let mut shown = None;
             let header = demo::scoped(reg, ui, Role::Expander, normal, kind, |ui| {
-                let out = Expander::new(demo::lined(ui, title, egui::TextStyle::Button))
+                let out = Expander::new(demo::next_lined(ui, title, egui::TextStyle::Button))
                     .id_salt(("basic/expander", title))
                     .default_open(open)
                     .show(ui, |ui| {
-                        ui.label(demo::lined(ui, body, egui::TextStyle::Body))
+                        ui.label(demo::next_lined(ui, body, egui::TextStyle::Body))
                     });
                 shown = out.body_returned;
                 out.header_response
@@ -1568,27 +1781,34 @@ fn table_group(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     table(reg, atlas, ui);
 }
 
-/// The Card group: the card surface's frame (`card.background_color`, `card.border.*`),
+/// The Card group: the card surface's frame (`card.container(NONE)`),
 /// `BASIC_WIDE` across its border.
 fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.card.heading", "Card");
-    // A side of the card's padding the theme leaves unstated is the container margin, inside
-    // its border (R11, D-card: KDE and macOS state no card padding, the card pads by the
-    // container margin), where the surface's frame would keep egui's own.
-    let margin = atlas.layout().container_margin;
-    let b = &t.card.border;
+    // A side of `card.container(NONE)`'s padding the installed 0.8.0 theme leaves unstated is
+    // `layout.container_margin`, inside its border (R11, D-card: KDE and macOS state no card
+    // padding, the card pads by the container margin), where the surface's frame would keep
+    // egui's own; the border is the stated stroke width, else the frame's own. Without an
+    // installed 0.8.0 theme, or a container margin, the surface's frame as it is.
     let pad_unstated = |frame: &mut egui::Frame| {
-        let Some(margin) = margin else {
+        let Some((margin, card)) = r.and_then(|r| {
+            Some((
+                r.layout.container_margin?,
+                r.card.container(NextState::NONE),
+            ))
+        }) else {
             return;
         };
-        let side = |stated: Option<f32>| stated.is_none().then_some(margin + b.line_width);
+        let width = next::stroke_width_of(&card).unwrap_or(frame.stroke.width);
+        let [top, right, bottom, left] =
+            next::padding_of(&card).map(|stated| stated.is_none().then_some(margin + width));
         let unstated = native_theme::theme::ResolvedPadding {
-            top: side(b.padding.top),
-            right: side(b.padding.right),
-            bottom: side(b.padding.bottom),
-            left: side(b.padding.left),
+            top,
+            right,
+            bottom,
+            left,
         };
         frame.inner_margin = to_margin(frame.inner_margin, &unstated);
     };
@@ -1604,7 +1824,7 @@ fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 // The room inside the frame: `BASIC_WIDE` less its margins and border.
                 ui.set_min_width(ui.available_width());
                 let text = demo::scoped(reg, ui, Role::Card, normal, "card label", |ui| {
-                    ui.label(demo::lined(ui, "Card content", egui::TextStyle::Body))
+                    ui.label(demo::next_lined(ui, "Card content", egui::TextStyle::Body))
                 });
                 reg.tag("basic.card.text", &text);
             },
@@ -1613,34 +1833,50 @@ fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     });
 }
 
-/// The frame the list and the table draw: `list.background_color`, `list.border`'s colour,
-/// width and radius, no padding of its own (a row pads its text).
-fn list_frame(l: &native_theme::theme::ResolvedListTheme) -> egui::Frame {
-    egui::Frame::NONE
-        .fill(to_color32(l.background_color))
-        .stroke(to_stroke(
-            egui::Stroke::NONE,
-            l.border.color,
-            l.border.line_width,
-        ))
-        .corner_radius(to_corner_radius(
-            egui::CornerRadius::default(),
-            l.border.corner_radius,
-        ))
+/// The query of a row of a list of `variant`, the Basic list's `Plain` or the table's `Table`,
+/// in `state`: a row of either is never an alternate one, as neither is striped.
+fn list_query(variant: ListVariant, state: NextState) -> ListQuery {
+    ListQuery::new(state).variant(ListKind {
+        variant,
+        alternate: false,
+    })
 }
 
-/// The radius of `list_frame`'s inside, `list.border.corner_radius` less `list.border.line_width`
-/// (egui lays a frame's content inside its stroke, and the frame has no margin), on the corners
-/// `[nw, ne, sw, se]` marks, square on the others: a fill where a row meets the frame keeps
-/// inside the frame's arcs.
-fn inner_corners(
-    l: &native_theme::theme::ResolvedListTheme,
-    [nw, ne, sw, se]: [bool; 4],
-) -> egui::CornerRadius {
-    let radius = to_corner_radius(
-        egui::CornerRadius::ZERO,
-        (l.border.corner_radius - l.border.line_width).max(0.0),
-    );
+/// The frame a list of `variant` draws, of the installed 0.8.0 theme `r`:
+/// `list.container(NONE)`'s fill, stroke and corners, each where the theme states it, else
+/// egui's own, a frame with none (`Frame::NONE`), and all of them without an installed 0.8.0
+/// theme; no padding of its own (a row pads its text). With it, the radius of its inside, its
+/// corners' radius less its stroke's width (egui lays a frame's content inside its stroke, and
+/// the frame has no margin), none where that is not a positive length; a pill's inside is a
+/// pill, the same largest radius (`next::radius_of`), which epaint clamps to each fill.
+pub(crate) fn list_frame(r: Option<&ResolvedTheme>, variant: ListVariant) -> (egui::Frame, f32) {
+    let mut frame = egui::Frame::NONE;
+    let own = f32::from(frame.corner_radius.nw);
+    let Some(r) = r else {
+        return (frame, own);
+    };
+    let part = r.list.container(list_query(variant, NextState::NONE));
+    if let Some(fill) = next::fill_of(&part) {
+        frame = frame.fill(fill);
+    }
+    let width = next::stroke_width_of(&part);
+    if let (Some(width), Some(colour)) = (width, next::stroke_color_of(&part)) {
+        frame = frame.stroke(egui::Stroke::new(width, colour));
+    }
+    let radius = next::radius_of(&part).unwrap_or(own);
+    frame = frame.corner_radius(to_corner_radius(frame.corner_radius, radius));
+    let pill = part.stated.contains(PartStated::CORNERS)
+        && matches!(part.corners.radius, native_theme::next::CornerRadius::Pill);
+    if pill {
+        return (frame, radius);
+    }
+    (frame, (radius - frame.stroke.width).max(own))
+}
+
+/// `inner`, the radius of [`list_frame`]'s inside, on the corners `[nw, ne, sw, se]` marks,
+/// square on the others: a fill where a row meets the frame keeps inside the frame's arcs.
+fn inner_corners(inner: f32, [nw, ne, sw, se]: [bool; 4]) -> egui::CornerRadius {
+    let radius = to_corner_radius(egui::CornerRadius::ZERO, inner);
     let at = |rounded: bool, r: u8| if rounded { r } else { 0 };
     egui::CornerRadius {
         nw: at(nw, radius.nw),
@@ -1650,53 +1886,273 @@ fn inner_corners(
     }
 }
 
-/// A list or table row's height and its text's inset: `stated` where the theme states the
-/// row's height (`list.row_height`, `list.header_height`), grown above a text scale of 1 to
-/// hold the row's line, its padding and `rule`, the width of a line drawn inside it, as gpui's
-/// table and list rows grow and the iced showcase's (`rows::scaled_height`, over `size`, the
-/// font's stated size, and `prefs`); else as tall as its content — one line of `font`, the
-/// font as drawn, `defaults.line_height` of its size, and `list.border.padding` above and below
-/// it, the platform's "sizes to content" (docs/platform-facts.md §2.15) — its text
-/// `list.border.padding.left` in. A side the theme leaves unstated is `own`'s: for the list what
-/// egui gives a selectable row there, the scope's `button_padding`
-/// (`egui/src/widgets/button.rs:333-337`); for the table nothing, as the three showcases lay
-/// their tables out.
-fn row_metrics(
-    t: &native_theme_egui::ResolvedTheme,
-    prefs: &AccessibilityPreferences,
-    (stated, size): (Option<f32>, f32),
+/// A list or table row's height, its text's inset and its line box, of the installed 0.8.0
+/// theme `r`, for a body row or, `header`, the table's header, of a list of `variant`: the
+/// stated height, `list.row(NONE).min_size[1]` (the header's `list.header(NONE).min_size[1]`,
+/// else the row's, as a header the theme gives no height is a row), grown above a text scale of
+/// 1 to hold the row's line, its padding and `rule`, the width of a line drawn inside it
+/// (`demo::next_grown`, as gpui's table and list rows grow); else as tall as its content, the
+/// platform's "sizes to content" (docs/platform-facts.md §2.15): one line box of `font`, the
+/// font as drawn, in `list.item_label(NONE)` (`list.header_label(NONE)`), `demo::next_line_box`,
+/// and the part's padding above and below it, its text the part's left padding in. A side the
+/// theme leaves unstated is `own`'s: for the list what egui gives a selectable row there, the
+/// scope's `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table egui_extras'
+/// own cell inset ([`table_cell_inset`]). Without an installed 0.8.0 theme, egui's own line,
+/// the font's row height, padded by `own`.
+pub(crate) fn row_metrics(
+    ui: &egui::Ui,
+    r: Option<&ResolvedTheme>,
+    (variant, header): (ListVariant, bool),
     font: &egui::FontId,
     own: egui::Vec2,
     rule: f32,
 ) -> (f32, f32, f32) {
-    let padding = &t.list.border.padding;
-    let line_height = t.defaults.line_height;
-    let line = font.size * line_height;
-    let padding_y = padding.top.unwrap_or(own.y) + padding.bottom.unwrap_or(own.y);
-    let height = stated.map_or(line + padding_y, |h| {
-        rows::scaled_height(h, prefs, size, line_height, padding_y, rule)
-    });
+    let (height, inset, line) = match r {
+        None => {
+            let line = ui.ctx().fonts_mut(|f| f.row_height(font));
+            (line + own.y + own.y, own.x, line)
+        }
+        Some(r) => {
+            let l = &r.list;
+            let q = list_query(variant, NextState::NONE);
+            let [_, row_height] = l.row(q).min_size;
+            let (part, label, stated) = if header {
+                let part = l.header(q);
+                let stated = part.min_size[1].or(row_height);
+                (part, l.header_label(q), stated)
+            } else {
+                (l.row(q), l.item_label(q), row_height)
+            };
+            let [top, _, bottom, left] = next::padding_of(&part);
+            let padding_y = top.unwrap_or(own.y) + bottom.unwrap_or(own.y);
+            let line = demo::next_line_box(r, &label, font.size);
+            let height = match stated {
+                Some(h) => {
+                    let at_size = demo::next_line_box(r, &label, label.size_px);
+                    demo::next_grown(r, h, at_size, padding_y, rule)
+                }
+                None => line + padding_y,
+            };
+            (height, left.unwrap_or(own.x), line)
+        }
+    };
     // On egui's layout grid (`emath::GUI_ROUNDING`), as `allocate_exact_size` lays each row out,
     // so `n` rows are `n` row heights tall.
-    (
-        egui::emath::GuiRounding::round_ui(height),
-        padding.left.unwrap_or(own.x),
-        line,
-    )
+    (egui::emath::GuiRounding::round_ui(height), inset, line)
+}
+
+/// egui's own selectable row in `ui`, the list's scope, as `Button::selectable` draws one: the
+/// widget visuals of the row's interaction, `response`'s (`Widgets::style`; a painted row
+/// without one, the table's, at rest), with `selection.bg_fill` and `selection.stroke` while
+/// `selected` (egui-0.37.0 `src/style.rs`, `Style::interact_selectable`, as
+/// `src/theme/default_style.rs` lays them on a selected button); its frame, the fill and
+/// stroke, hidden at rest while not selected (`Button::frame_when_inactive(selected)`,
+/// `src/widgets/button.rs`). Its fill, stroke (none where egui paints nothing of it) and text
+/// colour.
+fn own_row(
+    ui: &egui::Ui,
+    selected: bool,
+    response: Option<&egui::Response>,
+) -> (Option<egui::Color32>, egui::Stroke, egui::Color32) {
+    let visuals = &ui.style().visuals;
+    let widgets = &visuals.widgets;
+    let at = response.map_or(&widgets.inactive, |response| widgets.style(response));
+    let mut v = *at;
+    if selected {
+        v.weak_bg_fill = visuals.selection.bg_fill;
+        v.fg_stroke = visuals.selection.stroke;
+    }
+    if !selected && std::ptr::eq(at, &widgets.inactive) {
+        (None, egui::Stroke::NONE, v.text_color())
+    } else {
+        // a line egui paints nothing of (no width, or transparent) is no line
+        let line = if v.bg_stroke.width > 0.0 && v.bg_stroke.color.a() > 0 {
+            v.bg_stroke
+        } else {
+            egui::Stroke::NONE
+        };
+        (Some(v.weak_bg_fill), line, v.text_color())
+    }
+}
+
+/// One property of a row in a state: `stated`, what a rule states for the state, where one
+/// does; else egui's own row's value in the state (`own.1`) where it differs from egui's own
+/// row at rest (`own.0`), and `rest`, the row's value at rest, where egui makes no change
+/// (spec §10, rule 0).
+fn in_state<T: PartialEq>(stated: Option<T>, rest: T, own: (T, T)) -> T {
+    match stated {
+        Some(value) => value,
+        None if own.1 == own.0 => rest,
+        None => own.1,
+    }
+}
+
+/// What a list or table row draws, of the installed 0.8.0 theme: the row's own fill under its
+/// highlight, `list.row(<state>).fill` where the theme states it (`None` for none, egui's own
+/// selectable row filling nothing under its frame); its highlight's fill (`None` for none) and
+/// stroke, its text colour, the highlight's margin, top, right, bottom and left, each where
+/// stated, and its corners' radius where stated; and the properties egui's own selectable row
+/// gives it, for its Widget Info.
+pub(crate) struct RowLook {
+    pub(crate) row: Option<egui::Color32>,
+    pub(crate) fill: Option<egui::Color32>,
+    pub(crate) stroke: egui::Stroke,
+    pub(crate) text: egui::Color32,
+    pub(crate) margin: [Option<f32>; 4],
+    pub(crate) corners: Option<f32>,
+    pub(crate) own: Vec<&'static str>,
+}
+
+/// What a row's *Not themeable* line names, where egui's own row gives it a property.
+pub(crate) const OWN_ROW: &str = "highlight where unstated";
+
+impl RowLook {
+    /// The look of a row of a list of `variant` in `ui`, its `Role::List` scope, of the
+    /// installed 0.8.0 theme `r` (spec §5, the list's `row` and `highlight`): in every state the
+    /// row's fill `list.row(<state>).fill` where the theme states it, under the highlight; not
+    /// selected and not under
+    /// the pointer, no highlight, its text `list.item_label(<view>).color`, else egui's own;
+    /// selected or under the pointer, `list.highlight(<state>)`'s fill and stroke and
+    /// `list.item_label(<state>).color` where a rule states them for the state (spec §2,
+    /// `from_state`; the state `SELECTED` while `selected`, `HOVER` too while `response` is
+    /// hovered, `UNFOCUSED_VIEW` too while the window is not active, egui's
+    /// `InputState::focused`, as every view of an inactive window lacks the keyboard focus),
+    /// each one left unstated egui's own selectable row's ([`own_row`]) where egui changes it
+    /// from its row at rest, else the row's at rest ([`in_state`]); the margin and corners of
+    /// the highlight in that state. Without an installed 0.8.0 theme, egui's own row.
+    pub(crate) fn of(
+        ui: &egui::Ui,
+        r: Option<&ResolvedTheme>,
+        variant: ListVariant,
+        selected: bool,
+        response: Option<&egui::Response>,
+    ) -> Self {
+        let rest = own_row(ui, false, None);
+        let own = own_row(ui, selected, response);
+        let Some(r) = r else {
+            return Self {
+                row: None,
+                fill: own.0,
+                stroke: own.1,
+                text: own.2,
+                margin: [None; 4],
+                corners: None,
+                own: vec!["fill", "stroke", "text colour"],
+            };
+        };
+        let l = &r.list;
+        let view = if ui.ctx().input(|input| input.focused) {
+            NextState::NONE
+        } else {
+            NextState::UNFOCUSED_VIEW
+        };
+        let label = next::text_color_of(&l.item_label(list_query(variant, view)));
+        let hovered = response.is_some_and(egui::Response::hovered);
+        let mut state = view;
+        if selected {
+            state = state.union(NextState::SELECTED);
+        }
+        if hovered {
+            state = state.union(NextState::HOVER);
+        }
+        let q = list_query(variant, state);
+        let row = next::fill_of(&l.row(q));
+        let part = l.highlight(q);
+        let margin = {
+            let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
+            let m = &part.margin;
+            [
+                side(PartStated::MARGIN_TOP, m.top),
+                side(PartStated::MARGIN_RIGHT, m.right),
+                side(PartStated::MARGIN_BOTTOM, m.bottom),
+                side(PartStated::MARGIN_LEFT, m.left),
+            ]
+        };
+        let corners = next::radius_of(&part);
+        if !selected && !hovered {
+            return Self {
+                row,
+                fill: None,
+                stroke: egui::Stroke::NONE,
+                text: label.unwrap_or(rest.2),
+                margin,
+                corners,
+                own: if label.is_some() {
+                    Vec::new()
+                } else {
+                    vec!["text colour"]
+                },
+            };
+        }
+        let fill = next::state_fill_of(&part);
+        let stroke = demo::state_pen(&part);
+        let text = next::state_text_color_of(&l.item_label(q));
+        let mut taken = Vec::new();
+        for (name, unstated, changed) in [
+            ("fill", fill.is_none(), rest.0 != own.0),
+            ("stroke", stroke.is_none(), rest.1 != own.1),
+            ("text colour", text.is_none(), rest.2 != own.2),
+        ] {
+            if unstated && changed {
+                taken.push(name);
+            }
+        }
+        Self {
+            row,
+            fill: in_state(fill.map(Some), None, (rest.0, own.0)),
+            stroke: in_state(stroke, egui::Stroke::NONE, (rest.1, own.1)),
+            text: in_state(text, label.unwrap_or(rest.2), (rest.2, own.2)),
+            margin,
+            corners,
+            own: taken,
+        }
+    }
+
+    /// `row`, a row's rectangle, inset by the highlight's margin on each side the theme
+    /// states it, as wide and as tall as `row` on a side it leaves unstated, as egui's own
+    /// selectable row fills its whole rectangle; no less than empty.
+    pub(crate) fn highlight_box(&self, row: egui::Rect) -> egui::Rect {
+        let [top, right, bottom, left] = self.margin;
+        let mut inset = row;
+        if let Some(top) = top {
+            inset.min.y += top;
+        }
+        if let Some(right) = right {
+            inset.max.x -= right;
+        }
+        if let Some(bottom) = bottom {
+            inset.max.y -= bottom;
+        }
+        if let Some(left) = left {
+            inset.min.x += left;
+        }
+        inset.max = inset.max.max(inset.min);
+        inset
+    }
+
+    /// The *Not themeable* line naming what egui's own row gives this one; `None` where the
+    /// theme states all of it.
+    fn own_note(&self) -> Option<String> {
+        (!self.own.is_empty()).then(|| {
+            format!(
+                "{}: egui's own selectable row's, Style::interact_selectable \
+                 (egui-0.37.0 src/style.rs), where egui changes it from the row at rest",
+                self.own.join(", ")
+            )
+        })
+    }
 }
 
 /// The list: `LIST_ROWS` selectable rows in a `ScrollArea` `LIST_VISIBLE` rows tall, framed by
-/// `list_frame`, in one `Role::List` scope (its selection colours and item font). egui has no
-/// list widget, and the leaves egui never reads from the style are per call (connector spec
-/// §5.4, T18(a)): each row is painted here, `row_metrics` tall and inset, filled with
-/// `list.selection_background` in `list.selection_text_color` while selected (the unfocused
-/// pair while the window is not active, `selection_pair`) and with `list.hover_background` in
-/// `list.hover_text_color` while hovered, outlined there in `list.hover_border_color` at
-/// `defaults.border.line_width` where the theme states it, the fill rounded where it meets the
-/// frame (`inner_corners`).
+/// `list_frame`, in one `Role::List` scope (its selection colours and item font), of the
+/// installed 0.8.0 theme. egui has no list widget, and the leaves egui never reads from the
+/// style are per call (connector spec §5.4, T18(a)): each row is painted here, `row_metrics`
+/// tall and inset, in its `RowLook` (spec §5, the list's `row` and `highlight`: the row's fill
+/// where stated, then its highlight inset by its margin), a property the theme leaves unstated
+/// egui's own selectable
+/// row's, which the row's Widget Info names.
 fn list(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
-    let l = &t.list;
+    let r = atlas.next_shown(ui.ctx());
     let mut rows_drawn: Vec<egui::Response> = Vec::new();
     let mut labels_drawn: Vec<egui::Rect> = Vec::new();
     let mut bar = None;
@@ -1709,14 +2165,14 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut eg
         |ui, rows, reg| {
             let font = egui::TextStyle::Body.resolve(ui.style());
             let (row_height, inset, line) = row_metrics(
-                t,
-                atlas.accessibility(),
-                (l.row_height, l.item_font.size),
+                ui,
+                r,
+                (ListVariant::Plain, false),
                 &font,
                 ui.spacing().button_padding,
                 0.0,
             );
-            let frame = list_frame(l);
+            let (frame, inner_radius) = list_frame(r, ListVariant::Plain);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             let visible = row_height * LIST_VISIBLE as f32;
             frame
@@ -1731,35 +2187,43 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut eg
                     let room = ui.max_rect();
                     // The frame's inside: the scroll area fills it, `visible` tall.
                     let edges = egui::Rect::from_min_size(room.min, egui::vec2(inner, visible));
-                    let area = egui::ScrollArea::vertical()
-                        .id_salt("basic/list")
-                        .auto_shrink([false, false])
-                        .min_scrolled_height(visible)
-                        .max_height(visible)
-                        .show(ui, |ui| {
-                            ui.spacing_mut().item_spacing.y = 0.0;
-                            for i in 0..LIST_ROWS {
-                                let text = format!("Item {}", i.saturating_add(1));
-                                let selected = state.basic_list == i;
-                                let r = rows.add(reg, ui, "List row", |ui| {
-                                    let (row, label) = list_row(
-                                        ui,
-                                        t,
-                                        edges,
-                                        &text,
-                                        selected,
-                                        (row_height, inset, line),
-                                        &font,
-                                    );
-                                    labels_drawn.push(label);
-                                    row
-                                });
-                                if r.clicked() {
-                                    state.basic_list = i;
+                    // nested in the page's, which a row scrolled to brings the list into view of
+                    let area = demo::nested_scroll(ui, |ui| {
+                        egui::ScrollArea::vertical()
+                            .id_salt("basic/list")
+                            .auto_shrink([false, false])
+                            .min_scrolled_height(visible)
+                            .max_height(visible)
+                            .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.y = 0.0;
+                                for i in 0..LIST_ROWS {
+                                    let text = format!("Item {}", i.saturating_add(1));
+                                    let selected = state.basic_list == i;
+                                    let mut note = None;
+                                    let row = rows.add(reg, ui, "List row", |ui| {
+                                        let (row, label, own) = list_row(
+                                            ui,
+                                            r,
+                                            (edges, inner_radius),
+                                            &text,
+                                            selected,
+                                            (row_height, inset, line),
+                                            &font,
+                                        );
+                                        labels_drawn.push(label);
+                                        note = own;
+                                        row
+                                    });
+                                    if let Some(note) = note {
+                                        reg.note_last(OWN_ROW, &note);
+                                    }
+                                    if row.clicked() {
+                                        state.basic_list = i;
+                                    }
+                                    rows_drawn.push(row);
                                 }
-                                rows_drawn.push(r);
-                            }
-                        });
+                            })
+                    });
                     bar = scroll_bar(ui, &area, room);
                 })
                 .response
@@ -1819,122 +2283,127 @@ fn scroll_bar(
     Some((groove, thumb))
 }
 
+/// What the list's view, `ui`'s clip, shows of `b`, a box across a row, rounded by `inner`, the
+/// frame's inner radius, at each corner where it meets a corner of `edges`, the frame's inside,
+/// square elsewhere; `None` where the view shows none of it.
+fn in_view(
+    ui: &egui::Ui,
+    b: egui::Rect,
+    (edges, inner): (egui::Rect, f32),
+) -> Option<(egui::Rect, egui::CornerRadius)> {
+    let view = ui.clip_rect();
+    let shown = egui::Rect::from_x_y_ranges(
+        b.x_range(),
+        b.top().max(view.top())..=b.bottom().min(view.bottom()),
+    );
+    if !shown.is_positive() {
+        return None;
+    }
+    // The scroll area lays the rows out on whole pixels and then on egui's layout grid
+    // (`egui/src/containers/scroll_area.rs:797-803`; `emath/src/gui_rounding.rs:58-70`), which
+    // moves each edge by at most half a pixel and half a grid step from the frame's inside: half
+    // a point under a 0.5 pt line at one pixel per point. A row is far taller, and a solid bar's
+    // groove far wider, than that.
+    let off = 0.5 / ui.pixels_per_point() + 0.5 * egui::emath::GUI_ROUNDING;
+    let meets = |a: f32, b: f32| (a - b).abs() <= off;
+    let top = meets(shown.top(), edges.top());
+    let bottom = meets(shown.bottom(), edges.bottom());
+    let left = meets(shown.left(), edges.left());
+    let right = meets(shown.right(), edges.right());
+    let corners = inner_corners(
+        inner,
+        [top && left, top && right, bottom && left, bottom && right],
+    );
+    Some((shown, corners))
+}
+
 /// One list row across the list, `height` tall, its text `inset` in, one `line` tall and
-/// centred vertically. Its fill covers what the list's view shows of it, rounded at a corner
-/// where that meets a corner of `edges`, the frame's inside. Its response, and its text's
-/// rectangle. A selected row takes [`selection_pair`] in the window's state.
+/// centred vertically, in its [`RowLook`]: first the row's own fill where the theme states one,
+/// across the row as the view shows it ([`in_view`]); then its highlight, the row inset by the
+/// highlight's margin ([`RowLook::highlight_box`]); where the highlight's corners are stated,
+/// the whole box is filled and outlined, rounded by them, and the scroll area's clip, the view,
+/// cuts it, as Breeze clips a row to the view; elsewhere what the view shows of the box is
+/// ([`in_view`]). Its response, its text's rectangle, and its *Not themeable* line where egui's
+/// own row gives it a property.
 fn list_row(
     ui: &mut egui::Ui,
-    t: &native_theme_egui::ResolvedTheme,
-    edges: egui::Rect,
+    r: Option<&ResolvedTheme>,
+    (edges, inner): (egui::Rect, f32),
     text: &str,
     selected: bool,
     (height, inset, line): (f32, f32, f32),
     font: &egui::FontId,
-) -> (egui::Response, egui::Rect) {
-    let l = &t.list;
+) -> (egui::Response, egui::Rect, Option<String>) {
     let size = egui::vec2(ui.available_width(), height);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
     response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, text));
-    let (fill, colour) = if selected {
-        let (fill, colour) = selection_pair(t, ui.ctx().input(|input| input.focused));
-        (Some(fill), colour)
-    } else if response.hovered() {
-        (
-            Some(to_color32(l.hover_background)),
-            to_color32(l.hover_text_color),
-        )
-    } else {
-        (None, to_color32(l.item_font.color))
-    };
-    if let Some(fill) = fill {
-        let view = ui.clip_rect();
-        let shown = egui::Rect::from_x_y_ranges(
-            rect.x_range(),
-            rect.top().max(view.top())..=rect.bottom().min(view.bottom()),
-        );
-        if shown.is_positive() {
-            // The scroll area lays the rows out on whole pixels and then on egui's layout grid
-            // (`egui/src/containers/scroll_area.rs:797-803`; `emath/src/gui_rounding.rs:58-70`),
-            // which moves each edge by at most half a pixel and half a grid step from the frame's
-            // inside: half a point under a 0.5 pt line at one pixel per point. A row is far
-            // taller, and a solid bar's groove far wider, than that.
-            let off = 0.5 / ui.pixels_per_point() + 0.5 * egui::emath::GUI_ROUNDING;
-            let meets = |a: f32, b: f32| (a - b).abs() <= off;
-            let top = meets(shown.top(), edges.top());
-            let bottom = meets(shown.bottom(), edges.bottom());
-            let left = meets(shown.left(), edges.left());
-            let right = meets(shown.right(), edges.right());
-            let corners = inner_corners(
-                l,
-                [top && left, top && right, bottom && left, bottom && right],
-            );
+    let look = RowLook::of(ui, r, ListVariant::Plain, selected, Some(&response));
+    // The row first, square across its whole rectangle as Breeze paints it, then its highlight.
+    if let Some(fill) = look.row
+        && let Some((shown, corners)) = in_view(ui, rect, (edges, inner))
+    {
+        ui.painter().rect_filled(shown, corners, fill);
+    }
+    let lit = look.highlight_box(rect);
+    let drawn = look.fill.is_some() || look.stroke.width > 0.0;
+    if drawn && let Some(radius) = look.corners {
+        let corners = to_corner_radius(egui::CornerRadius::ZERO, radius);
+        if let Some(fill) = look.fill {
+            ui.painter().rect_filled(lit, corners, fill);
+        }
+        if look.stroke.width > 0.0 {
+            ui.painter()
+                .rect_stroke(lit, corners, look.stroke, egui::StrokeKind::Inside);
+        }
+    } else if drawn && let Some((shown, corners)) = in_view(ui, lit, (edges, inner)) {
+        if let Some(fill) = look.fill {
             ui.painter().rect_filled(shown, corners, fill);
-            // A hovered, unselected row's outline on the row's shape, inside it, as Breeze's
-            // line is (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`),
-            // clipped to the view as the fill is: Breeze clips the row to the view, so a row
-            // partly scrolled out draws no line along the view's edge. The line is on the fill's
-            // shape, its arcs on the fill's; on a side the view cuts the clip stops one line
-            // width short of the fill, so the line along that edge is not drawn.
-            if let Some(edge) = l
-                .hover_border_color
-                .filter(|_| !selected && response.hovered())
-            {
-                let stroke = to_stroke(egui::Stroke::NONE, edge, t.defaults.border.line_width);
-                let short = |cut: bool| if cut { stroke.width } else { 0.0 };
-                let clip = egui::Rect::from_x_y_ranges(
-                    shown.x_range(),
-                    shown.top() + short(rect.top() < shown.top())
-                        ..=shown.bottom() - short(rect.bottom() > shown.bottom()),
-                );
-                ui.painter().with_clip_rect(clip).rect_stroke(
-                    shown,
-                    corners,
-                    stroke,
-                    egui::StrokeKind::Inside,
-                );
-            }
+        }
+        // The row's outline on the fill's shape, inside it, as Breeze's line is
+        // (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`), clipped
+        // to the view as the fill is: a row partly scrolled out draws no line along the view's
+        // edge. The line is on the fill's shape, its arcs on the fill's; on a side the view cuts
+        // the clip stops one line width short of the fill, so the line along that edge is not
+        // drawn.
+        let stroke = look.stroke;
+        if stroke.width > 0.0 {
+            let short = |cut: bool| if cut { stroke.width } else { 0.0 };
+            let clip = egui::Rect::from_x_y_ranges(
+                shown.x_range(),
+                shown.top() + short(lit.top() < shown.top())
+                    ..=shown.bottom() - short(lit.bottom() > shown.bottom()),
+            );
+            ui.painter().with_clip_rect(clip).rect_stroke(
+                shown,
+                corners,
+                stroke,
+                egui::StrokeKind::Inside,
+            );
         }
     }
-    let label = paint_cell_text(ui, text, font, colour, (rect, inset, line));
-    (response, label)
-}
-
-/// A selected list or table row's fill and text colour: `defaults.selection_inactive_background`
-/// lettered `defaults.selection_inactive_text_color` while the window is not active
-/// (`window_active` false, egui's `InputState::focused`) where the theme's inactive fill
-/// differs from `defaults.selection_background`; `list.selection_background` and
-/// `list.selection_text_color` otherwise.
-pub(crate) fn selection_pair(
-    t: &native_theme_egui::ResolvedTheme,
-    window_active: bool,
-) -> (egui::Color32, egui::Color32) {
-    let d = &t.defaults;
-    if !window_active && d.selection_inactive_background != d.selection_background {
-        (
-            selection_inactive_background(t),
-            selection_inactive_text_color(t),
-        )
-    } else {
-        (
-            to_color32(t.list.selection_background),
-            to_color32(t.list.selection_text_color),
-        )
-    }
+    let label = paint_cell_text(ui, text, font, look.text, (rect, inset, line), None);
+    (response, label, look.own_note())
 }
 
 /// `text` painted in `font` and `colour`, one `line` tall, `inset` in from `rect`'s left and
-/// centred on its height; its rectangle.
+/// centred on its height; where `room` is given, a text wider than it cut short with egui's
+/// ellipsis, as egui lays a label under `TextWrapMode::Truncate` (egui-0.37.0
+/// `src/widget_text.rs`, `WidgetText::into_galley`; epaint-0.37.0
+/// `src/text/text_layout_types.rs`, `TextWrapping::truncate_at_width`); its rectangle.
 fn paint_cell_text(
     ui: &egui::Ui,
     text: &str,
     font: &egui::FontId,
     colour: egui::Color32,
     (rect, inset, line): (egui::Rect, f32, f32),
+    room: Option<f32>,
 ) -> egui::Rect {
     let mut job = egui::text::LayoutJob::simple_singleline(text.to_string(), font.clone(), colour);
     if let Some(section) = job.sections.first_mut() {
         section.format.line_height = Some(line);
+    }
+    if let Some(room) = room {
+        job.wrap = egui::text::TextWrapping::truncate_at_width(room.max(0.0));
     }
     let galley = ui.fonts_mut(|f| f.layout_job(job));
     let at = egui::pos2(rect.left() + inset, rect.center().y - 0.5 * line);
@@ -1943,45 +2412,172 @@ fn paint_cell_text(
     cell
 }
 
-/// A table header section's fill: pressed in `list.header_active_background`, else in the
-/// hovered fill; hovered in `list.header_hover_background`; `None` at rest and where the theme
-/// states neither fill.
+/// egui_extras' own space between a table cell's painted background and its content, in `ui`,
+/// the table's scope (spec §10, rule 0, for a side of the cell padding the theme leaves
+/// unstated): half its `item_spacing` on each side, as egui_extras lays its cells
+/// `item_spacing.x` apart and its rows `item_spacing.y` apart (egui_extras-0.37.0
+/// `src/layout.rs:98-104`, `StripLayout::set_pos`; `src/table.rs:1033-1034`, `TableBody::rows`)
+/// and paints a cell's stripe and selection across the cell grown by half that spacing each
+/// way, so no gap shows between neighbouring cells (`src/layout.rs:125-127`, `gapless_rect`).
+pub(crate) fn table_cell_inset(ui: &egui::Ui) -> egui::Vec2 {
+    let spacing = ui.spacing().item_spacing;
+    egui::vec2(0.5 * spacing.x, 0.5 * spacing.y)
+}
+
+/// A table cell's sides across, the Basic, Data and Theme Map tables' alike, of the installed
+/// 0.8.0 theme `r`, in `ui`, the table's scope: the header's and a body row's left and right
+/// padding, `list.header(NONE)` and `list.row(NONE)` of the table (`ListVariant::Table`), each
+/// side where the theme states it (spec §10, rule 0), else egui_extras' own, half the scope's
+/// `item_spacing.x` ([`table_cell_inset`]). egui_extras pads both sides of every cell by that
+/// half alike, as it lays its cells `item_spacing.x` apart (egui_extras-0.37.0
+/// `src/layout.rs:98-104`, `StripLayout::set_pos`; `src/table.rs:806-807`, a column's line half
+/// of it past its cells), so where the theme states a side of either part an egui_extras
+/// table is laid out with the scope's `item_spacing.x` 0 ([`Self::lay_out`]) and each cell's
+/// content between its own two sides, a cell's inner margin ([`Self::cell`]); where it states
+/// none, and without an installed 0.8.0 theme, egui_extras' own spacing stays and a cell's
+/// content is laid out as egui_extras lays it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct CellSides {
+    /// The header's left and right side.
+    header: [f32; 2],
+    /// A body row's left and right side.
+    body: [f32; 2],
+    /// The scope's `item_spacing.x`, egui's own between the widgets of one cell, kept inside it.
+    spacing: f32,
+    /// Whether the theme states a side of either part.
+    stated: bool,
+}
+
+impl CellSides {
+    pub(crate) fn of(ui: &egui::Ui, r: Option<&ResolvedTheme>) -> Self {
+        let own = table_cell_inset(ui).x;
+        let spacing = ui.spacing().item_spacing.x;
+        let Some(r) = r else {
+            return Self {
+                header: [own, own],
+                body: [own, own],
+                spacing,
+                stated: false,
+            };
+        };
+        let q = list_query(ListVariant::Table, NextState::NONE);
+        let across = |part: &native_theme::next::PartStyle| {
+            let [_, right, _, left] = next::padding_of(part);
+            (left, right)
+        };
+        let (header, body) = (across(&r.list.header(q)), across(&r.list.row(q)));
+        let stated = [header.0, header.1, body.0, body.1]
+            .iter()
+            .any(Option::is_some);
+        let sides =
+            |(left, right): (Option<f32>, Option<f32>)| [left.unwrap_or(own), right.unwrap_or(own)];
+        Self {
+            header: sides(header),
+            body: sides(body),
+            spacing,
+            stated,
+        }
+    }
+
+    /// The left and right side of the header (`header`) or a body row.
+    pub(crate) fn sides(&self, header: bool) -> [f32; 2] {
+        if header { self.header } else { self.body }
+    }
+
+    /// The width the sides of a header (`header`) or body cell take inside an egui_extras
+    /// column: both where the theme states a side ([`Self::cell`]); else none, egui_extras'
+    /// own half spacing lying outside the column's width.
+    pub(crate) fn inside(&self, header: bool) -> f32 {
+        if self.stated {
+            self.sides(header).iter().sum()
+        } else {
+            0.0
+        }
+    }
+
+    /// `ui`, the scope an egui_extras table is about to be laid out in, with its cells
+    /// `item_spacing.x` 0 apart where the theme states a side; else left as it is.
+    pub(crate) fn lay_out(&self, ui: &mut egui::Ui) {
+        if self.stated {
+            ui.spacing_mut().item_spacing.x = 0.0;
+        }
+    }
+
+    /// An egui_extras cell's content, `add`, in `ui`, the cell of the header (`header`) or a
+    /// body row: where the theme states a side, the left side, then the content in the room
+    /// the cell has less the right side, at the scope's own `item_spacing.x`, then the right
+    /// side, so an auto-sized column takes both sides with its widest content (egui_extras
+    /// `table.rs:836-846`) and a clipped one cuts its text short the right side in; else the
+    /// content as egui_extras lays it.
+    pub(crate) fn cell<R>(
+        &self,
+        ui: &mut egui::Ui,
+        header: bool,
+        add: impl FnOnce(&mut egui::Ui) -> R,
+    ) -> R {
+        if !self.stated {
+            return add(ui);
+        }
+        let [left, right] = self.sides(header);
+        ui.add_space(left);
+        let mut room = ui.available_rect_before_wrap();
+        room.max.x = (room.max.x - right).max(room.min.x);
+        let spacing = self.spacing;
+        let inner = ui.scope_builder(
+            egui::UiBuilder::new().max_rect(room).layout(*ui.layout()),
+            |ui| {
+                ui.spacing_mut().item_spacing.x = spacing;
+                add(ui)
+            },
+        );
+        ui.add_space(right);
+        inner.inner
+    }
+}
+
+/// A table header section's fill, of the installed 0.8.0 theme `r`: pressed, which needs the
+/// pointer on it, `list.header(HOVER | PRESSED).fill`, hovered `list.header(HOVER).fill`, each
+/// where a rule states it for the state (spec §2, `from_state`), of the table
+/// (`ListVariant::Table`); `None` at rest, where no rule states it, and without an installed
+/// 0.8.0 theme: egui's own header has no hover (`egui_extras/src/table.rs:490-506`).
 pub(crate) fn header_section_fill(
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&ResolvedTheme>,
     hovered: bool,
     pressed: bool,
 ) -> Option<egui::Color32> {
-    if pressed {
-        list_header_active_background(t).or(list_header_hover_background(t))
+    let state = if pressed {
+        NextState::HOVER.union(NextState::PRESSED)
     } else if hovered {
-        list_header_hover_background(t)
+        NextState::HOVER
     } else {
-        None
-    }
+        return None;
+    };
+    next::state_fill_of(&r?.list.header(list_query(ListVariant::Table, state)))
 }
 
 /// The table: a header and two rows, the second selected, `BASIC_WIDE` across the list's
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
-/// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
-/// stripes), so it is painted here as the list's rows are: the header in
-/// `list.header_background` and `list.header_font` at its weight and scaled size
-/// (`list_header_font`), `list_header_height` tall where the theme states it, else a row
-/// (`row_metrics`, of the header font), the rows `row_metrics` tall in
-/// `list.item_font`, the selected one in `list.selection_background` and
-/// `list.selection_text_color` (the unfocused pair while the window is not active,
-/// `selection_pair`), the header's fill rounded at the top and the last row's at the bottom,
-/// where they meet the frame (`inner_corners`); each header section hovered in
-/// `list.header_hover_background` and pressed in `list.header_active_background`, else the
-/// hovered fill, where the theme states them (`header_section_fill`), rounded where the section
-/// meets the frame's top corner; a vertical
-/// `list.grid_color` line between the columns through the header and the rows and a horizontal
-/// one under the header, each `separator.line_width` wide, inside the cell it closes, the
-/// header's share of them in `list.header_separator_color` where the theme states it (E7).
+/// scope, of the installed 0.8.0 theme, a table's (`ListVariant::Table`). egui has no table the
+/// theme reaches (egui_extras' `TableBuilder` paints only its stripes), so it is painted here as
+/// the list's rows are: the header in `list.header(NONE).fill` where stated, its titles in
+/// `list.header_label(NONE)` (the Data page's `TableHeader`), `row_metrics` tall, the rows
+/// `row_metrics` tall, each cell's text between its sides ([`CellSides`]: in by its left, cut
+/// short its right in from the column's edge), each row in its `RowLook` (the row's own fill
+/// where stated, then over it
+/// the selected one's highlight inset by its margin and, where stated, rounded by its corners),
+/// the header's fill rounded at the top and
+/// the last row's highlight at the bottom where they meet the frame and the highlight states no
+/// corners (`inner_corners`); each header section hovered and pressed in its fill where a rule
+/// states it (`header_section_fill`), rounded where the section meets the frame's top corner; a
+/// vertical `list.grid_color` line between the columns through the header and the rows and a
+/// horizontal one under the header, each `separator.thickness` wide, inside the cell it closes,
+/// the header's share of them in `list.header_separator(NONE).fill` where the theme states it
+/// (E7). Without an installed 0.8.0 theme, egui's own: no fills and no grid.
 fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
-    let prefs = atlas.accessibility();
-    let l = &t.list;
+    let r = atlas.next_shown(ui.ctx());
+    let table = ListVariant::Table;
     let mut places: Vec<(String, egui::Rect)> = Vec::new();
+    let mut own_notes: Vec<String> = Vec::new();
     let frame_response = demo::scoped_container(
         reg,
         ui,
@@ -1990,31 +2586,26 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         "Table",
         |ui, _rows, _reg| {
             let item_font = egui::TextStyle::Body.resolve(ui.style());
-            let header_font = egui::FontId::new(
-                list_header_font(t, prefs).size,
-                demo::weighted_family(ui, l.header_font.weight, t.defaults.font.weight),
-            );
-            let grid = to_color32(l.grid_color);
-            let grid_width = t.separator.line_width;
-            let (row_height, inset, line) = row_metrics(
-                t,
-                prefs,
-                (l.row_height, l.item_font.size),
-                &item_font,
-                egui::Vec2::ZERO,
-                0.0,
-            );
-            // `list.header_height` where the theme states it, else the header is a row; the
-            // grid's line under it lies inside it
-            let (header_height, _, header_line) = row_metrics(
-                t,
-                prefs,
-                (list_header_height(t).or(l.row_height), l.header_font.size),
-                &header_font,
-                egui::Vec2::ZERO,
-                grid_width,
-            );
-            let frame = list_frame(l);
+            let head = TableHeader::of(ui, r);
+            let rest = list_query(table, NextState::NONE);
+            let grid = r.map(|r| {
+                egui::Stroke::new(r.separator.thickness, next::to_color32(r.list.grid_color))
+            });
+            let grid_width = grid.map_or(egui::Stroke::NONE.width, |s| s.width);
+            let header_fill = r.and_then(|r| next::fill_of(&r.list.header(rest)));
+            let header_line_colour = r.and_then(|r| next::fill_of(&r.list.header_separator(rest)));
+            let own = table_cell_inset(ui);
+            let sides = CellSides::of(ui, r);
+            let (row_height, _, line) = row_metrics(ui, r, (table, false), &item_font, own, 0.0);
+            // the grid's line under the header lies inside it
+            let (header_height, _, header_line) =
+                row_metrics(ui, r, (table, true), &head.font, own, grid_width);
+            // a cell's text between its two sides
+            let between = |cell: egui::Rect, header: bool| {
+                let [left, right] = sides.sides(header);
+                (left, cell.width() - left - right)
+            };
+            let (frame, inner_radius) = list_frame(r, table);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             frame
                 .show(ui, |ui| {
@@ -2027,11 +2618,13 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                     let painter = ui.painter();
                     let header =
                         egui::Rect::from_min_size(rect.min, egui::vec2(inner, header_height));
-                    painter.rect_filled(
-                        header,
-                        inner_corners(l, [true, true, false, false]),
-                        to_color32(l.header_background),
-                    );
+                    if let Some(fill) = header_fill {
+                        painter.rect_filled(
+                            header,
+                            inner_corners(inner_radius, [true, true, false, false]),
+                            fill,
+                        );
+                    }
                     places.push(("basic.table.header".to_string(), header));
                     for (i, (text, id)) in TABLE_HEADER
                         .into_iter()
@@ -2052,23 +2645,25 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                             egui::Sense::CLICK,
                         );
                         let fill = header_section_fill(
-                            t,
+                            r,
                             response.hovered(),
                             response.is_pointer_button_down_on(),
                         );
                         if let Some(fill) = fill {
                             painter.rect_filled(
                                 cell,
-                                inner_corners(l, [i == 0, i == 1, false, false]),
+                                inner_corners(inner_radius, [i == 0, i == 1, false, false]),
                                 fill,
                             );
                         }
+                        let (inset, room) = between(cell, true);
                         paint_cell_text(
                             ui,
                             text,
-                            &header_font,
-                            to_color32(l.header_font.color),
+                            &head.font,
+                            head.color,
                             (cell, inset, header_line),
+                            Some(room),
                         );
                         places.push((id.to_string(), cell));
                     }
@@ -2078,19 +2673,35 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                             egui::pos2(rect.left(), top),
                             egui::vec2(inner, row_height),
                         );
-                        let (fill, colour) = if i == TABLE_SELECTED {
-                            let window_active = ui.ctx().input(|input| input.focused);
-                            let (fill, colour) = selection_pair(t, window_active);
-                            (Some(fill), colour)
-                        } else {
-                            (None, to_color32(l.item_font.color))
-                        };
-                        if let Some(fill) = fill {
-                            let last = i.saturating_add(1) == TABLE_ROWS.len();
+                        let look = RowLook::of(ui, r, table, i == TABLE_SELECTED, None);
+                        if let Some(note) = look.own_note()
+                            && !own_notes.contains(&note)
+                        {
+                            own_notes.push(note);
+                        }
+                        let last = i.saturating_add(1) == TABLE_ROWS.len();
+                        // the row first, across the whole of it, then its highlight
+                        if let Some(fill) = look.row {
                             painter.rect_filled(
                                 row,
-                                inner_corners(l, [false, false, last, last]),
+                                inner_corners(inner_radius, [false, false, last, last]),
                                 fill,
+                            );
+                        }
+                        let lit = look.highlight_box(row);
+                        let corners = look.corners.map_or_else(
+                            || inner_corners(inner_radius, [false, false, last, last]),
+                            |radius| to_corner_radius(egui::CornerRadius::ZERO, radius),
+                        );
+                        if let Some(fill) = look.fill {
+                            painter.rect_filled(lit, corners, fill);
+                        }
+                        if look.stroke.width > 0.0 {
+                            painter.rect_stroke(
+                                lit,
+                                corners,
+                                look.stroke,
+                                egui::StrokeKind::Inside,
                             );
                         }
                         for (j, text) in cells.iter().enumerate() {
@@ -2099,20 +2710,30 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                             } else {
                                 egui::Rect::from_x_y_ranges(mid..=row.right(), row.y_range())
                             };
-                            paint_cell_text(ui, text, &item_font, colour, (cell, inset, line));
+                            let (inset, room) = between(cell, false);
+                            paint_cell_text(
+                                ui,
+                                text,
+                                &item_font,
+                                look.text,
+                                (cell, inset, line),
+                                Some(room),
+                            );
                         }
                         places.push((format!("basic.table.row_{}", i.saturating_add(1)), row));
                     }
                     // The grid: under the header, and between the columns from top to bottom,
                     // each inside the cell it closes. Over the header, in
-                    // `list.header_separator_color` where the theme states it (E7), Breeze's
+                    // `list.header_separator(NONE).fill` where the theme states it (E7), Breeze's
                     // translucent section line laid over the header's fill: the column line is
                     // split at the line under the header, so no pixel takes that colour twice.
-                    let stroke = egui::Stroke::new(grid_width, grid);
+                    let Some(stroke) = grid else {
+                        return;
+                    };
                     let x = mid - 0.5 * grid_width;
-                    match l.header_separator_color {
+                    match header_line_colour {
                         Some(c) => {
-                            let head = egui::Stroke::new(grid_width, to_color32(c));
+                            let head = egui::Stroke::new(grid_width, c);
                             painter.hline(
                                 header.x_range(),
                                 header.bottom() - 0.5 * grid_width,
@@ -2134,6 +2755,11 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 .response
         },
     );
+    // The rows are painted, not recorded: the table's record names what egui's own row gives
+    // them, as each list row's does.
+    for note in &own_notes {
+        reg.note_last(OWN_ROW, note);
+    }
     reg.tag("basic.table.frame", &frame_response);
     for (id, rect) in places {
         reg.place(ui, &id, rect);

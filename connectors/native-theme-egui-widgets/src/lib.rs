@@ -39,8 +39,11 @@
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
-//! in the colour scheme egui is drawing. It contains no colour, no radius and
-//! no metric of its own: a size the theme leaves unstated is the value egui
+//! in the colour scheme egui is drawing. Under an atlas of the 0.8.0 model
+//! ([`next::to_theme`](native_theme_egui::next::to_theme)) every widget reads the 0.8.0
+//! theme, each value where the theme states it and egui's own where it does not (the README's
+//! section "Under an atlas of the 0.8.0 model" lists what each reads). It contains no colour,
+//! no radius and no metric of its own: a size the theme leaves unstated is the value egui
 //! itself uses there. **With no atlas installed, every widget renders as
 //! egui's own counterpart** — [`switch::Switch`] as `egui::Checkbox`,
 //! [`slider::Slider`] as `egui::Slider`, [`spinner::Spinner`] as
@@ -136,6 +139,7 @@ pub mod slider;
 pub mod spinner;
 pub mod switch;
 
+mod next;
 mod scope;
 
 pub use native_theme_egui as connector;

@@ -350,9 +350,10 @@ impl FactsPlatform {
 }
 
 /// A cell of the Icon Sizes section: the chrome's icon `drawn`, of `set`,
-/// at the size `context` names, `size` px where a native theme gives one,
-/// under the theme installed as `preset`. Its geometry line is recorded
-/// where `demo::icon_size_cell` applies the builder.
+/// at the size `context` names, `size` px where the installed 0.8.0 theme
+/// states one at the context's home, under the theme installed as `preset`.
+/// Its geometry line is recorded where `demo::icon_size_cell` applies the
+/// builder.
 pub fn icon_size(
     t: &Theme,
     context: IconSizeContext,
@@ -361,13 +362,7 @@ pub fn icon_size(
     size: Option<f32>,
     preset: &str,
 ) -> WidgetInfo {
-    let field = match context {
-        IconSizeContext::Toolbar => "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
-        IconSizeContext::Small => "defaults.icon_sizes.small",
-        IconSizeContext::Large => "defaults.icon_sizes.large",
-        IconSizeContext::Dialog => "defaults.icon_sizes.dialog",
-        IconSizeContext::Panel => "defaults.icon_sizes.panel",
-    };
+    let field = context.home();
     let name = context.name();
     // A number for a context the installed native preset's platform
     // documents none for is the preset's, and its size line says so.
@@ -393,7 +388,7 @@ pub fn icon_size(
                 "size",
                 match size {
                     Some(size) => format!("{}px, {field}{unsourced}", px_text(size)),
-                    None => "upstream's own, the inherited text size: no native theme is installed, so no builder applies (icon.rs, Icon::into_svg)".to_string(),
+                    None => format!("upstream's own, the inherited text size: no native theme is installed, or it states no {field}, so no builder applies (icon.rs, Icon::into_svg)"),
                 },
             ),
         // An image keeps its own colours (`chrome_icon_note`), and is drawn
@@ -402,7 +397,7 @@ pub fn icon_size(
             "size",
             match size {
                 Some(size) => format!("{}px, {field}{unsourced}", px_text(size)),
-                None => "the inherited text size, as an Icon given no size is drawn (icon.rs, Icon::into_svg): no native theme is installed, so no builder applies".to_string(),
+                None => format!("the inherited text size, as an Icon given no size is drawn (icon.rs, Icon::into_svg): no native theme is installed, or it states no {field}, so no builder applies"),
             },
         ),
         ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => info.instance(
@@ -412,7 +407,7 @@ pub fn icon_size(
                     "{}px, {field}, which no icon shows{unsourced}",
                     px_text(size)
                 ),
-                None => "none: no native theme is installed, and no icon shows".to_string(),
+                None => format!("none: no native theme is installed, or it states no {field}, and no icon shows"),
             },
         ),
     };

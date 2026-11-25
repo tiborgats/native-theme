@@ -1,0 +1,136 @@
+accessibility {'accessibilityDisplayShouldIncreaseContrast': False, 'accessibilityDisplayShouldReduceTransparency': False, 'accessibilityDisplayShouldReduceMotion': True, 'accessibilityDisplayShouldDifferentiateWithoutColor': False}
+== controls
+  target checkbox_off: over_backdrop=True covered_by=None error=None
+  target checkbox_on: over_backdrop=True covered_by=None error=None
+  target disclosure: over_backdrop=True covered_by=None error=None
+  target push_disclosure: over_backdrop=True covered_by=None error=None
+  target push: over_backdrop=True covered_by=None error=None
+  target popup: over_backdrop=True covered_by=None error=None
+  target text_field: over_backdrop=True covered_by=None error=None
+  target segment: over_backdrop=True covered_by=None error=None
+  target switch_off: over_backdrop=True covered_by=None error=None
+  target slider_knob: over_backdrop=True covered_by=None error=None
+  target radio_off: over_backdrop=True covered_by=None error=None
+  target radio_on: over_backdrop=True covered_by=None error=None
+  target checkbox_disabled_off: over_backdrop=True covered_by=None error=None
+  target checkbox_disabled_on: over_backdrop=True covered_by=None error=None
+  target radio_disabled_off: over_backdrop=True covered_by=None error=None
+  target radio_disabled_on: over_backdrop=True covered_by=None error=None
+  target scroller_knob_legacy: over_backdrop=False covered_by=['NSScroller (legacy knob slot)'] error=None
+  target scroller_knob_overlay: over_backdrop=True covered_by=None error=None
+  target table_row: over_backdrop=False covered_by=['NSTableView (backgroundColor)', 'NSClipView', 'NSScrollView', 'NSVisualEffectView'] error=None
+  target source_list_row: over_backdrop=False covered_by=['NSTableView (backgroundColor)', 'NSVisualEffectView'] error=None
+  target tab: over_backdrop=True covered_by=None error=None
+  target split_divider: over_backdrop=True covered_by=None error=None
+  target box: over_backdrop=True covered_by=None error=None
+  target toolbar_button: over_backdrop=False covered_by=None error=None
+  aqua backdrop_shows: {'checkbox_off': (28, 196, ''), 'checkbox_on': (28, 196, ''), 'disclosure': (1128, 1131, ''), 'push_disclosure': (368, 728, ''), 'push': (1220, 2400, ''), 'popup': (720, 2700, ''), 'text_field': (106, 714, ''), 'segment': (1536, 1536, ''), 'switch_off': (774, 1050, ''), 'slider_knob': (388, 672, ''), 'radio_off': (76, 196, ''), 'radio_on': (75, 196, ''), 'checkbox_disabled_off': (196, 196, ''), 'checkbox_disabled_on': (196, 196, ''), 'radio_disabled_off': (196, 196, ''), 'radio_disabled_on': (196, 196, ''), 'scroller_knob_legacy': (0, 570, ''), 'scroller_knob_overlay': (468, 468, ''), 'table_row': (0, 4800, ''), 'source_list_row': (0, 4800, ''), 'tab': (1128, 1128, ''), 'split_divider': (1080, 1080, ''), 'box': (11200, 11200, ''), 'toolbar_button': (0, 1425, '')}
+   aqua.hovered.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.hovered.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.hovered.scroller_knob_legacy knob_drawn={'knob_in_window_from_top_left_xywh': [205.0, 361.0, 15.0, 38.0], 'background_in_window_from_top_left_xy': [112.5, 380.0], 'background_raw': '#eaeaeaff', 'part_px_xywh': [205, 361, 15, 38], 'differing_pixels': 570}
+   aqua.hovered.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.hovered.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.hovered.scroller_knob_overlay knob_drawn={'knob_in_window_from_top_left_xywh': [428.0, 360.0, 12.0, 39.0], 'background_in_window_from_top_left_xy': [340.0, 380.0], 'background_raw': '#eaeaeaff', 'part_px_xywh': [428, 360, 12, 39], 'differing_pixels': 468}
+   aqua.pressed.checkbox_off: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.checkbox_on: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.disclosure: wait_steps=1 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.push_disclosure: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.push: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.popup: wait_steps=10 up=HID event tap up_ours=True esc=HID event tap err=None
+   aqua.pressed.text_field: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.segment: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.switch_off: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.slider_knob: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.radio_off: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.radio_on: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.pressed.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.pressed.scroller_knob_legacy: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.scroller_knob_legacy knob_drawn={'knob_in_window_from_top_left_xywh': [205.0, 361.0, 15.0, 38.0], 'background_in_window_from_top_left_xy': [112.5, 380.0], 'background_raw': '#eaeaeaff', 'part_px_xywh': [205, 361, 15, 38], 'differing_pixels': 570}
+   aqua.pressed.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.pressed.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   aqua.pressed.scroller_knob_overlay: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.scroller_knob_overlay knob_drawn={'knob_in_window_from_top_left_xywh': [428.0, 360.0, 12.0, 39.0], 'background_in_window_from_top_left_xy': [340.0, 380.0], 'background_raw': '#eaeaeaff', 'part_px_xywh': [428, 360, 12, 39], 'differing_pixels': 468}
+   aqua.pressed.table_row: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.source_list_row: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.tab: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.split_divider: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   aqua.pressed.toolbar_button: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+  darkAqua backdrop_shows: {'checkbox_off': (196, 196, ''), 'checkbox_on': (28, 196, ''), 'disclosure': (1128, 1131, ''), 'push_disclosure': (728, 728, ''), 'push': (2400, 2400, ''), 'popup': (2476, 2700, ''), 'text_field': (714, 714, ''), 'segment': (1536, 1536, ''), 'switch_off': (1050, 1050, ''), 'slider_knob': (664, 672, ''), 'radio_off': (196, 196, ''), 'radio_on': (75, 196, ''), 'checkbox_disabled_off': (196, 196, ''), 'checkbox_disabled_on': (196, 196, ''), 'radio_disabled_off': (196, 196, ''), 'radio_disabled_on': (196, 196, ''), 'scroller_knob_legacy': (570, 570, ''), 'scroller_knob_overlay': (468, 468, ''), 'table_row': (0, 4800, ''), 'source_list_row': (0, 4800, ''), 'tab': (1128, 1128, ''), 'split_divider': (1080, 1080, ''), 'box': (11200, 11200, ''), 'toolbar_button': (0, 1425, '')}
+   darkAqua.hovered.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.hovered.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.hovered.scroller_knob_legacy knob_drawn={'knob_in_window_from_top_left_xywh': [205.0, 361.0, 15.0, 38.0], 'background_in_window_from_top_left_xy': [112.5, 380.0], 'background_raw': '#242424ff', 'part_px_xywh': [205, 361, 15, 38], 'differing_pixels': 570}
+   darkAqua.hovered.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.hovered.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.hovered.scroller_knob_overlay knob_drawn={'knob_in_window_from_top_left_xywh': [428.0, 360.0, 12.0, 39.0], 'background_in_window_from_top_left_xy': [340.0, 380.0], 'background_raw': '#242424ff', 'part_px_xywh': [428, 360, 12, 39], 'differing_pixels': 468}
+   darkAqua.pressed.checkbox_off: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.checkbox_on: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.disclosure: wait_steps=1 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.push_disclosure: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.push: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.popup: wait_steps=9 up=HID event tap up_ours=True esc=HID event tap err=None
+   darkAqua.pressed.text_field: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.segment: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.switch_off: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.slider_knob: wait_steps=3 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.radio_off: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.radio_on: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.pressed.scroller_knob_legacy reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.pressed.scroller_knob_legacy: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.scroller_knob_legacy knob_drawn={'knob_in_window_from_top_left_xywh': [205.0, 361.0, 15.0, 38.0], 'background_in_window_from_top_left_xy': [112.5, 380.0], 'background_raw': '#242424ff', 'part_px_xywh': [205, 361, 15, 38], 'differing_pixels': 570}
+   darkAqua.pressed.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.pressed.scroller_knob_overlay reveal before=0.5 scrolls=[(1, 0.45833333333333337), (-1, 0.5)]
+   darkAqua.pressed.scroller_knob_overlay: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.scroller_knob_overlay knob_drawn={'knob_in_window_from_top_left_xywh': [428.0, 360.0, 12.0, 39.0], 'background_in_window_from_top_left_xy': [340.0, 380.0], 'background_raw': '#242424ff', 'part_px_xywh': [428, 360, 12, 39], 'differing_pixels': 468}
+   darkAqua.pressed.table_row: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.source_list_row: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.tab: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.split_divider: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+   darkAqua.pressed.toolbar_button: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+== toolbar_sheet
+  target toolbar_button: over_backdrop=True covered_by=None error=None
+  aqua backdrop_shows: {'toolbar_button': (1425, 1425, '')}
+   aqua.pressed.toolbar_button: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+  darkAqua backdrop_shows: {'toolbar_button': (1425, 1425, '')}
+   darkAqua.pressed.toolbar_button: wait_steps=2 up=HID event tap up_ours=True esc=None err=None
+== behind table_row
+    NSTableView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false backgroundColor "#ffffffff" usesAlternatingRowBackgroundColors false style 0 effectiveStyle 2
+    NSClipView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false drawsBackground true
+    NSScrollView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque true drawsBackground true
+    _NSScrollViewContentBackgroundView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false
+    NSVisualEffectView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false material 18 blendingMode withinWindow state followsWindowActiveState
+    NSView frame_in_window_from_top_left [0, 52, 900, 568] (x, y, width, height) isOpaque false (the content view; its subviews under the target's that overlap the part, the backdrop box left out: none)
+   tree -: NSScrollView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque true
+   tree 0: _NSScrollViewContentBackgroundView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 0.0: NSVisualEffectView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 1: NSClipView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0: NSTableView frame_in_window_from_top_left [20, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.0: NSTableRowView frame_in_window_from_top_left [20, 490, 200, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.0.0: NSTableCellView frame_in_window_from_top_left [36, 490, 165, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.0.0.0: NSTextField frame_in_window_from_top_left [36, 498, 30, 16] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.1: NSTableRowView frame_in_window_from_top_left [20, 514, 200, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.1.0: NSTableCellView frame_in_window_from_top_left [36, 514, 165, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.1.0.0: NSTextField frame_in_window_from_top_left [36, 522, 30, 16] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.2: NSTableRowView frame_in_window_from_top_left [20, 538, 200, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.2.0: NSTableCellView frame_in_window_from_top_left [36, 538, 165, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.2.0.0: NSTextField frame_in_window_from_top_left [36, 546, 30, 16] (x, y, width, height) isOpaque false isHidden false
+== behind source_list_row
+    NSTableView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false backgroundColor "#f6f6f6cc" usesAlternatingRowBackgroundColors false style 3 effectiveStyle 3
+    NSClipView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false drawsBackground false
+    NSScrollView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false drawsBackground false
+    NSVisualEffectView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false material 7 blendingMode behindWindow state followsWindowActiveState
+    NSView frame_in_window_from_top_left [0, 52, 900, 568] (x, y, width, height) isOpaque false (the content view; its subviews under the target's that overlap the part, the backdrop box left out: none)
+   tree -: NSScrollView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false
+   tree 0: NSVisualEffectView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 1: NSClipView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0: NSTableView frame_in_window_from_top_left [240, 480, 200, 120] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.0: NSTableRowView frame_in_window_from_top_left [240, 490, 200, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.0.0: NSTableCellView frame_in_window_from_top_left [256, 490, 165, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.0.0.0: NSTextField frame_in_window_from_top_left [256, 498, 30, 16] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.1: NSTableRowView frame_in_window_from_top_left [240, 514, 200, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.1.0: NSTableCellView frame_in_window_from_top_left [256, 514, 165, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.1.0.0: NSTextField frame_in_window_from_top_left [256, 522, 30, 16] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.2: NSTableRowView frame_in_window_from_top_left [240, 538, 200, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.2.0: NSTableCellView frame_in_window_from_top_left [256, 538, 165, 24] (x, y, width, height) isOpaque false isHidden false
+   tree 1.0.2.0.0: NSTextField frame_in_window_from_top_left [256, 546, 30, 16] (x, y, width, height) isOpaque false isHidden false

@@ -114,7 +114,9 @@ pub(crate) const DUMP_SETTLE_S: f64 = 1.0;
 
 /// Each flag takes exactly what its picker offers; a value the showcase cannot honour is
 /// reported on stderr and ignored (§10.4), by the shared crate's validators (`cli`), whose error
-/// texts the three showcases share.
+/// texts the three showcases share: `--theme` `default` or a platform preset of this platform
+/// (`cli::next_theme_key`), `--palette` `none` or a bundled palette laid over the theme
+/// (`cli::palette_key`), `--variant`, `--icon-set` and `--tab`.
 pub(crate) fn apply_cli_args(settings: &mut Settings, cli: &CliArgs) {
     if let Some(mode) = cli
         .variant
@@ -126,9 +128,16 @@ pub(crate) fn apply_cli_args(settings: &mut Settings, cli: &CliArgs) {
     if let Some(theme) = cli
         .theme
         .as_deref()
-        .and_then(|v| cli::reported(cli::theme_key(v)))
+        .and_then(|v| cli::reported(cli::next_theme_key(v)))
     {
         settings.theme = theme;
+    }
+    if let Some(palette) = cli
+        .palette
+        .as_deref()
+        .and_then(|v| cli::reported(cli::palette_key(v)))
+    {
+        settings.palette = palette;
     }
     let installed = &settings.installed_themes;
     match cli
@@ -169,7 +178,8 @@ fn main() -> eframe::Result {
     {
         cli::refuse(&error);
     }
-    // `--palette` waits for this showcase's move to the 0.8.0 model.
+    // `--palette` runs where the showcase takes it (`cli::palette_support`, which this
+    // showcase, on the 0.8.0 model, passes).
     if cli.palette.is_some()
         && let Err(error) = cli::palette_support(Kind::Egui)
     {

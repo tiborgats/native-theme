@@ -1,0 +1,16 @@
+aqua.highlighted.toolbar_button
+    common: [['#373737c4', 1246], ['#373737c3', 74], ['#00000004', 72], ['#e6e6e6f7', 52]] -> [['#9b9b9b45', 1214], ['#a0a0a043', 134], ['#00000005', 64], ['#dfdfdfff', 52]]
+    edge_bottom: ['#545454ba', '#373737c3'] -> ['#b5b5b556', '#a0a0a043']
+    edge_left: ['#535353b2', '#373737c3'] -> ['#b4b4b452', '#a0a0a043']
+    edge_right: ['#555555b2', '#373737c3'] -> ['#b5b5b553', '#a0a0a043']
+    edge_top: ['#545454ba', '#373737c3'] -> ['#b5b5b556', '#a0a0a043']
+    fill: #373737c4 -> #9b9b9b45
+    fill_share: 0.763 -> 0.717
+    ink: #e6e6e6f7 -> #dfdfdfff
+    ink_pixels: 618 -> 601
+    label: #fbfbfbdc -> #cbcbcbff
+    label_pixels: 52 -> 142
+aqua.hovered.toolbar_button
+    diff_from_normal: {'differing_pixels': 1828, 'max_byte_delta': 12} -> {'differing_pixels': 1826, 'max_byte_delta': 12}
+darkAqua.hovered.toolbar_button
+    diff_from_normal: {'differing_pixels': 1826, 'max_byte_delta': 11} -> {'differing_pixels': 1828, 'max_byte_delta': 11}
