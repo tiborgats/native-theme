@@ -513,15 +513,74 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
     )
 }
 
-/// The notes naming the checked colours `r` states for the side-panel toggle while on, `[fill,
-/// text]`, each `None` where no rule states it for the state: at the flat button's own homes,
-/// with the theme's values, which the Widget Info rows, at the push button's homes, do not show,
-/// as the gpui showcase names them (`info::buttons::native_ghost_checked`).
+/// The side-panel toggle's outline while on, egui's inactive, hovered and active entries: the
+/// pen `button.body(CHECKED; variant=Flat).stroke` where a rule states it for `CHECKED`, and
+/// then under the pointer `(CHECKED | HOVER)`'s and, egui's `active` being press and keyboard
+/// focus alike, `(CHECKED | FOCUS_VISIBLE)`'s where a rule states the flat button's
+/// `FOCUS_VISIBLE` stroke, else `(CHECKED | PRESSED)`'s, as `next::flat_button` lines the flat
+/// button, each the theme's answer for that state (spec §10, rule 0), on the button egui fills
+/// in `fill`, a translucent pen laid inside composited over it ([`demo::pen_over`]); all `None`
+/// where no rule states it for `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
+pub(crate) fn toggle_checked_pens(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    fill: egui::Color32,
+) -> [Option<egui::Stroke>; 3] {
+    let Some(r) = r else {
+        return [None; 3];
+    };
+    let at = |state| {
+        r.button
+            .body(native_theme::next::ButtonQuery::flat().with_state(state))
+    };
+    let pen = |state| {
+        let part = at(state);
+        demo::state_pen(&part).map(|pen| demo::pen_over(&part, pen, fill))
+    };
+    let Some(rest) = pen(WidgetState::CHECKED) else {
+        return [None; 3];
+    };
+    let active = if demo::state_pen(&at(WidgetState::FOCUS_VISIBLE)).is_some() {
+        WidgetState::FOCUS_VISIBLE
+    } else {
+        WidgetState::PRESSED
+    };
+    [
+        Some(rest),
+        pen(WidgetState::CHECKED | WidgetState::HOVER),
+        pen(WidgetState::CHECKED | active),
+    ]
+}
+
+/// The side-panel toggle's icon colour, `button.icon(<state>; variant=Flat).color` in the state
+/// it is in, `CHECKED` while on, where the theme states it: egui draws a button's image alike
+/// in every state, so a colour stated at rest holds while on (spec §10, rule 0). `None` where it
+/// states none, and the icon keeps the colour it loads in, never the label's.
+pub(crate) fn toggle_icon_colour(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    open: bool,
+) -> Option<egui::Color32> {
+    let state = if open {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
+    let icon = r?
+        .button
+        .icon(native_theme::next::ButtonQuery::flat().with_state(state));
+    icon.stated
+        .contains(native_theme::next::IconStated::COLOR)
+        .then(|| next::to_color32(icon.color))
+}
+
+/// The notes naming the checked colours and outline `r` states for the side-panel toggle while
+/// on, `[fill, text, outline]`, each `None` where no rule states it for the state: at the flat
+/// button's own homes, with the theme's values, which the Widget Info rows, at the push button's
+/// homes, do not show, as the gpui showcase names them (`info::buttons::native_ghost_checked`).
 fn toggle_stated_notes(
     r: Option<&native_theme::next::ResolvedTheme>,
-) -> [Option<(&'static str, String)>; 2] {
+) -> [Option<(&'static str, String)>; 3] {
     let Some(r) = r else {
-        return [None, None];
+        return [None, None, None];
     };
     let at = native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED);
     let on = toggle_checked(Some(r));
@@ -547,7 +606,25 @@ fn toggle_stated_notes(
             ),
         )
     });
-    [fill, text]
+    let body = r.button.body(at);
+    let outline = demo::state_pen(&body).map(|_| {
+        let value = match &body.stroke {
+            native_theme::next::Stroke::Uniform { width, color, .. } => {
+                format!(" {width} px {color}")
+            }
+            _ => " none".to_owned(),
+        };
+        (
+            "outline while on",
+            format!(
+                "button.body(CHECKED; variant=Flat).stroke{value}, at rest; under the pointer \
+                 (CHECKED|HOVER)'s and pressed or focused (CHECKED|FOCUS_VISIBLE)'s, else \
+                 (CHECKED|PRESSED)'s, where a rule states each, laid over the scope's entries \
+                 (chrome::toggle_checked_pens)"
+            ),
+        )
+    });
+    [fill, text, outline]
 }
 
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
@@ -600,12 +677,15 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
 /// (`toolbar.item_gap`, else the connector's `layout.widget_gap`, else [`TOOLBAR_GAP`]), the
 /// row as tall as the scope's `interact_size.y` — `toolbar.bar(NONE).min_size[1]` less the
 /// bar's padding where the theme states a bar height (connector spec §6.10), less `shrink`, the
-/// room the panel's margin grew by in [`chrome_bar`]. Each is a tool button
-/// (`demo::next_tool_button`): Ghost, transparent at rest, padded by
-/// `button.body(NONE).padding`, and hovered and pressed in the scope's own fills and outlines.
+/// room the panel's margin grew by in [`chrome_bar`]. Each is a toolbar button
+/// (`demo::next_toolbar_button`): filled at rest in `toolbar.button(NONE).fill` where the theme
+/// states it, else Ghost, transparent at rest, padded by `button.body(NONE).padding`, and
+/// hovered and pressed in the scope's own fills and outlines.
 /// The icons are gpui's: `SquareTerminal` and `RotateCw` by their names in the chosen set,
 /// Settings by its role, loaded as the Icons page loads them — a freedesktop icon from the
-/// chosen theme in the text colour, a bundled key tinted it (§9.2, §10.4).
+/// chosen theme in the text colour, a bundled key tinted it (§9.2, §10.4), or in the colour
+/// `toolbar.button_icon(<state>).color` states for the state of the button's previous response
+/// (`demo::tool_icon_color`).
 fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
     let chosen = app.chosen_icons();
     let App {
@@ -647,15 +727,25 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     "chrome.toolbar.preferences",
                 ),
             ] {
-                let image = icon_size
-                    .and_then(|size| chrome_button_image(icon_cache, ui, icon, &chosen, size));
-                let kind = ghost_kind(image.is_some(), false);
-                let drawn = image.is_some().then_some(icon_size).flatten();
+                let key = egui::Id::unique(("chrome state", id));
+                let was = demo::previous_state(ui, key);
+                let (mut drawn, mut filled) = (None, false);
                 let response = ui
                     .scope(|ui| {
-                        demo::next_tool_button(ui, padding);
+                        filled = demo::next_toolbar_button(ui, padding, r);
+                        let tint = demo::tool_icon_color(r, was, false);
+                        let image = demo::loaded_in(ui, tint, |ui| {
+                            icon_size.and_then(|size| {
+                                chrome_button_image(icon_cache, ui, icon, &chosen, size)
+                            })
+                        });
+                        let kind = ghost_kind(image.is_some(), false);
+                        drawn = image.is_some().then_some(icon_size).flatten();
                         bar.add(registry, ui, kind, |ui| {
-                            let r = ui.add(ghost_button(image, label, None));
+                            // framed at rest where the theme fills it at rest
+                            let button =
+                                ghost_button(image, label, None).frame_when_inactive(filled);
+                            let r = ui.add(button);
                             r.widget_info(|| {
                                 egui::WidgetInfo::labeled(egui::Role::Button, true, label)
                             });
@@ -663,7 +753,8 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                         })
                     })
                     .inner;
-                registry.ghost_last();
+                demo::remember_state(ui, key, was, &response);
+                registry.tool_rest_last(filled);
                 if icon_size.is_none() {
                     registry.note_last(
                         "icon size",
@@ -800,7 +891,14 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             // `interact_size.y` tall and centres what it holds on that height
             // (`egui/src/ui.rs:2376-2379`), so the row is set to the taller of the two.
             // The toggle's icon, where the theme states its size and the set has it; without
-            // one the toggle is its label, whose button egui sizes itself.
+            // one the toggle is its label, whose button egui sizes itself. It loads in the
+            // colour the theme states for it ([`toggle_icon_colour`]), else in the bar's text.
+            let shown = ui.visuals().override_text_color;
+            if let Some(colour) =
+                toggle_icon_colour(app.atlas.next_shown(ui.ctx()), app.side_panel_visible)
+            {
+                ui.visuals_mut().override_text_color = Some(colour);
+            }
             let image = icon_size.and_then(|size| {
                 chrome_button_image(
                     &mut app.icon_cache,
@@ -810,6 +908,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     size,
                 )
             });
+            ui.visuals_mut().override_text_color = shown;
             let line = ui.text_style_height(&egui::TextStyle::Body);
             let [top, ..] = padding;
             let toggle = icon_size
@@ -821,6 +920,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 let open = app.side_panel_visible;
                 let checked = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
                 let stated = open.then(|| toggle_stated_notes(app.atlas.next_shown(ui.ctx())));
+                let theme = app.atlas.next_shown(ui.ctx()).filter(|_| open);
                 let App {
                     registry,
                     side_panel_visible,
@@ -838,6 +938,23 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     |ui| {
                         demo::next_tool_button(ui, padding);
                         flat = demo::flat(ui);
+                        // While on, the outline the theme states for the checked state, over
+                        // the fill egui paints the button in: the checked fill where stated,
+                        // else egui's selected button's in every state; the selected button
+                        // takes its pen from the entry of its state.
+                        let fill = checked
+                            .and_then(|on| on.fill)
+                            .unwrap_or(ui.visuals().selection.bg_fill);
+                        let pens = toggle_checked_pens(theme, fill);
+                        let w = &mut ui.visuals_mut().widgets;
+                        for (entry, pen) in [&mut w.inactive, &mut w.hovered, &mut w.active]
+                            .into_iter()
+                            .zip(pens)
+                        {
+                            if let Some(pen) = pen {
+                                entry.bg_stroke = pen;
+                            }
+                        }
                         let r = ui.add(ghost_button(image, label, checked));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
@@ -860,7 +977,8 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     registry.note_last(what, &note);
                 }
                 // Where it states them, the checked colours drawn, at their own homes.
-                let stated = stated.map(|[fill, text]| [fill, text.filter(|_| drawn.is_none())]);
+                let stated = stated
+                    .map(|[fill, text, outline]| [fill, text.filter(|_| drawn.is_none()), outline]);
                 for (what, note) in stated.into_iter().flatten().flatten() {
                     registry.note_last(what, &note);
                 }
@@ -1261,7 +1379,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Theme",
-            element: Some("chrome.side_panel.settings.theme"),
+            element: "chrome.side_panel.settings.theme",
             kind: "ComboBox · Theme",
             row_kind: "Theme row",
             rows: &theme_rows,
@@ -1276,7 +1394,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Palette",
-            element: Some("chrome.side_panel.settings.palette"),
+            element: "chrome.side_panel.settings.palette",
             kind: "ComboBox · Palette",
             row_kind: "Palette row",
             rows: &palette_rows,
@@ -1291,7 +1409,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Mode",
-            element: Some("chrome.side_panel.settings.mode"),
+            element: "chrome.side_panel.settings.mode",
             kind: "ComboBox · Mode",
             row_kind: "Mode row",
             current_text: Action::SetMode(current_mode).label().to_string(),
@@ -1306,7 +1424,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Icon theme",
-            element: Some("chrome.side_panel.settings.icon_theme"),
+            element: "chrome.side_panel.settings.icon_theme",
             kind: "ComboBox · Icon theme",
             row_kind: "Icon theme row",
             current_text: current_icon.to_string(),
@@ -1342,8 +1460,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
 struct Setting<'a, T> {
     label: &'static str,
     /// The drop-down's element in `docs/showcase-elements.toml`; its label's is `<element>_label`.
-    /// `None` for a row the list has no element of.
-    element: Option<&'static str>,
+    element: &'static str,
     kind: &'static str,
     row_kind: &'static str,
     rows: &'a [(T, String)],
@@ -1364,12 +1481,10 @@ fn setting<T: Clone + PartialEq>(
     setting: Setting<'_, T>,
 ) -> Option<T> {
     let label = setting_label(registry, ui, body, setting.label);
-    if let Some(element) = setting.element {
-        registry.tag(&format!("{element}_label"), &label);
-    }
+    let element = setting.element;
+    registry.tag(&format!("{element}_label"), &label);
     let label = label.id;
     let mut picked = None;
-    let element = setting.element;
     let combo = demo::scoped_popup(
         registry,
         ui,
@@ -1418,9 +1533,7 @@ fn setting<T: Clone + PartialEq>(
             }
         },
     );
-    if let Some(element) = element {
-        registry.tag(element, &combo);
-    }
+    registry.tag(element, &combo);
     picked
 }
 

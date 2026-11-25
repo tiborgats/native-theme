@@ -467,8 +467,28 @@ enum Route {
     Lost(String),
 }
 
+/// The `visuals.widgets` entry egui draws a home's state in, where its state names one: an open
+/// state the `open` entry, a press the `active` one, a hover the `hovered` one, in that order
+/// (an open combo box under the pointer is drawn open); `None` for a home of no such state.
+fn widget_entry(home: &str) -> Option<&'static str> {
+    let (_, query) = home.split_once('(')?;
+    let state = query.split([')', ';']).next()?;
+    let flags: Vec<&str> = state.split('|').collect();
+    [
+        ("OPEN", "open"),
+        ("PRESSED", "active"),
+        ("HOVER", "hovered"),
+    ]
+    .into_iter()
+    .find(|(flag, _)| flags.contains(flag))
+    .map(|(_, entry)| entry)
+}
+
 impl Route {
-    fn of(row: &Row, seams: &[Seam]) -> Self {
+    /// How egui applies `row` to `home`, one of its homes, on an instance drawn with `seams`.
+    /// Where the row's homes are drawn in different `visuals.widgets` entries
+    /// ([`widget_entry`]), only the sinks of `home`'s entry are its route.
+    fn of(row: &Row, home: &str, seams: &[Seam]) -> Self {
         if row.verdict == Verdict::Unmappable {
             let upstream = row.upstream.as_deref().unwrap_or_default();
             if let Some(widget) = upstream.strip_prefix("native-theme-egui-widgets: ") {
@@ -489,21 +509,41 @@ impl Route {
         if let Some(check) = &row.checked_by {
             return Route::PerCall(check.clone());
         }
+        let mut entries: Vec<&str> = row.homes.iter().filter_map(|h| widget_entry(h)).collect();
+        entries.sort_unstable();
+        entries.dedup();
+        let sinks: Vec<&Sink> = match widget_entry(home) {
+            Some(entry) if entries.len() > 1 => {
+                let infix = format!(".widgets.{entry}.");
+                let own: Vec<&Sink> = row
+                    .sinks
+                    .iter()
+                    .filter(|s| s.path.contains(&infix))
+                    .collect();
+                if own.is_empty() {
+                    row.sinks.iter().collect()
+                } else {
+                    own
+                }
+            }
+            _ => row.sinks.iter().collect(),
+        };
         // The instance's own cells and frames first; a role's cell carries what the role does
         // not write from the base style (§3.4).
         let mut on: Vec<(&Seam, &Sink)> = seams
             .iter()
             .flat_map(|seam| {
-                row.sinks
+                sinks
                     .iter()
+                    .copied()
                     .filter(move |s| sink_on(s, seam))
                     .map(move |s| (seam, s))
             })
             .collect();
         if on.is_empty() {
-            on = row
-                .sinks
+            on = sinks
                 .iter()
+                .copied()
                 .filter(|s| sink_on(s, &Seam::Base))
                 .map(|s| (&Seam::Base, s))
                 .collect();
@@ -518,7 +558,7 @@ impl Route {
                 };
                 Route::Sink(format!("{}, {}{more}", seam_place(seam), sink.path))
             }
-            None => match row.sinks.first() {
+            None => match sinks.first() {
                 Some(sink) => Route::Sink(sink_text(sink)),
                 None => Route::PerCall("no test named".to_string()),
             },
@@ -567,7 +607,7 @@ fn how_line_with(
         return "egui: the showcase loads its icons from it (demo::role_image)".to_string();
     }
     if let Some(row) = manifest.rows.iter().find(|r| r.holds(home)) {
-        return Route::of(row, seams).line();
+        return Route::of(row, home, seams).line();
     }
     let part = |name: &'static str| {
         let field = format!("{home}.{name}");
@@ -576,7 +616,7 @@ fn how_line_with(
             return Some((name, format!("egui: {short}"), short));
         }
         manifest.rows.iter().find(|r| r.holds(&field)).map(|row| {
-            let route = Route::of(row, seams);
+            let route = Route::of(row, &field, seams);
             (name, route.line(), route.short())
         })
     };
@@ -622,10 +662,26 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      the window is not focused, list.item_label's query with UNFOCUSED_VIEW where a rule states \
      it for that state (pages::basic::RowLook::of)";
 
-/// The route of a home of the primary button's own variant: egui reads none of them.
-const PRIMARY_VARIANT_UNREAD: &str = "not drawn: the primary button is drawn as egui's selected \
-     Button in the button scope (pages::basic, primary), outlined and rounded as the push \
-     button, by button.body(NONE) and its hovered and pressed states";
+/// The route of the primary button's own outline, which the Basic page hands its button per call.
+const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline, \
+     button.body(<state>; variant=Primary).stroke, its width and colour, at rest where stated, \
+     hovered and pressed where a rule states it for the state, a translucent one laid inside \
+     composited over the button's fill; else the button scope's own entry for the state; \
+     focused, the scope's own (pages::basic, primary_pen)";
+/// The route of the dialog's default button's outline: its own look where the theme gives it
+/// one, else the primary button's outline, both per call.
+const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the state of the \
+     button's previous response: where a rule states button.body(DEFAULT).fill, the default \
+     button's own frame (native-theme-egui next::default_button: button.body(DEFAULT).stroke, \
+     hovered and pressed button.body(HOVER).stroke, focused button.body(FOCUS_VISIBLE).stroke \
+     where a rule states each, else egui's own); else it is the primary button, filled as it is and outlined in \
+     button.body(<state>; variant=Primary).stroke at rest where stated, hovered and pressed \
+     where a rule states it for the state, else in the button scope's own entry for the state, \
+     which this home gives; focused, the scope's own (pages::basic, primary_pen)";
+/// The route of the primary button's own corners: egui reads them nowhere.
+const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
+     the button scope (pages::basic, primary), rounded as the push button, by \
+     button.body(NONE).corners";
 
 /// The route of the scroll bar thumb's corners, which the atlas writes as the scroll bar scope's
 /// radius, which no `mapping.toml` row holds.
@@ -638,15 +694,15 @@ const UNFOCUSED_THUMB_CORNERS: &str = "not reachable: egui rounds the thumb alik
      thumb_radius)";
 
 /// The route of the segmented control's separator colour on a divider: the companion crate's
-/// control draws its dividers in its outline's colour.
-const SEGMENT_DIVIDER_UNREAD: &str = "not drawn: native-theme-egui-widgets SegmentedControl \
-     (docs/archive/todo_egui-widgets-spec.md §4.4) paints its dividers in its outline's colour, \
-     the scope's segmented_control.track(NONE).stroke.color (native-theme-egui-widgets \
-     segmented_control.rs, Outline::paint_lines)";
+/// control paints its dividers in it.
+const SEGMENT_DIVIDER: &str = "egui: native-theme-egui-widgets SegmentedControl paints its \
+     dividers in it where stated, else in its outline's colour, the scope's \
+     segmented_control.track(NONE).stroke.color (native-theme-egui-widgets segmented_control.rs, \
+     Look::next_of, Outline::paint_lines)";
 
-/// The route of a flat button's hovered outline (the side-panel toggle, the Pages menu button,
-/// the Copy box), which `next::flat_button` lays over the scope's hovered entry per call, not
-/// the atlas's push button row.
+/// The route of a flat button's hovered outline (the Pages menu button, the Copy box, the
+/// side-panel toggle while closed), which `next::flat_button` lays over the scope's hovered
+/// entry per call, not the atlas's push button row.
 const FLAT_HOVER_EDGE: &str = "egui: per call, the flat button's outline under the pointer, \
      button.body(HOVER; variant=Flat).stroke.color where a rule states it for HOVER, else egui's \
      own treatment of the hover (native-theme-egui next::flat_button; demo::flat)";
@@ -656,6 +712,26 @@ const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline press
      egui's one active entry: button.body(FOCUS_VISIBLE; variant=Flat).stroke.color, else \
      button.body(PRESSED; variant=Flat).stroke.color, where a rule states it for the state, else \
      egui's own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+/// The route of the side-panel toggle's hovered outline: the flat button's while the panel is
+/// closed ([`FLAT_HOVER_EDGE`]), the checked state's while it is open.
+const TOGGLE_HOVER_EDGE: &str = "egui: per call, the toggle's outline under the pointer: \
+     closed, the flat button's, button.body(HOVER; variant=Flat).stroke.color where a rule \
+     states it for HOVER, else egui's own treatment of the hover (native-theme-egui \
+     next::flat_button; demo::flat); open, where a rule states \
+     button.body(CHECKED; variant=Flat).stroke, its pen at rest and under the pointer \
+     button.body(CHECKED|HOVER; variant=Flat).stroke where a rule states it, else the closed \
+     one's (chrome::toggle_checked_pens)";
+/// The route of the side-panel toggle's pressed outline, as [`TOGGLE_HOVER_EDGE`]: egui draws
+/// pressed and focused alike, in its one `active` entry.
+const TOGGLE_PRESSED_EDGE: &str = "egui: per call, the toggle's outline pressed or focused, \
+     egui's one active entry: closed, the flat button's, button.body(FOCUS_VISIBLE; \
+     variant=Flat).stroke.color, else button.body(PRESSED; variant=Flat).stroke.color, where a \
+     rule states it for the state, else egui's own treatment of the press (native-theme-egui \
+     next::flat_button; demo::flat); open, where a rule states \
+     button.body(CHECKED; variant=Flat).stroke, button.body(CHECKED|FOCUS_VISIBLE; \
+     variant=Flat).stroke where a rule states the flat button's FOCUS_VISIBLE stroke, else \
+     button.body(CHECKED|PRESSED; variant=Flat).stroke, where a rule states it, else the \
+     closed one's (chrome::toggle_checked_pens)";
 
 /// The homes a page applies per call where `mapping.toml`'s row names a style field the
 /// connector writes, or none, by element id (a prefix, for the rows) and home: the List's and
@@ -664,10 +740,13 @@ const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline press
 /// look and a hovered list row's outline, which `pages::basic::RowLook::of` takes, the hover
 /// outline the Basic table's rows never take, the menu bar's fill, which
 /// `chrome::menu_panel` paints, the side-panel toggle's checked look, which `chrome::ghost_button`
-/// lays over egui's selected button, the flat buttons' hovered and pressed outlines, which
+/// lays over egui's selected button, the Basic page's edit switch's checked fill and label, which
+/// `pages::basic::edit_look_at` hands it per state, the flat buttons' hovered and pressed outlines, which
 /// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
-/// primary button's own variant and the segmented control's separator colour, which egui reads
-/// none of, and
+/// primary button's own outline and the dialog's default button's, which `pages::basic` hands
+/// each button, the segmented control's
+/// separator colour, which the companion crate's control paints its dividers in, the primary
+/// button's own corners, which egui reads none of, and
 /// the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
@@ -776,27 +855,27 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.buttons.primary",
         "button.body(NONE; variant=Primary).stroke.color",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "basic.buttons.primary",
         "button.body(HOVER; variant=Primary).stroke.color",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "basic.buttons.primary",
         "button.body(PRESSED; variant=Primary).stroke.color",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "basic.buttons.primary",
         "button.body(NONE; variant=Primary).corners",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_CORNERS_UNREAD,
     ),
     (
         "basic.buttons.primary",
         "button.body(NONE; variant=Primary).stroke.width",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "chrome.status_bar.toggle",
@@ -815,14 +894,55 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          place keeps the colour it loads in (chrome::ghost_button, chrome::toggle_checked)",
     ),
     (
+        "basic.icons.edit",
+        "toolbar.button(CHECKED).fill",
+        "egui: per call, Button::fill, the edit switch's fill while on, in the state of its \
+         previous response: where a rule states it for CHECKED, at rest this, under the pointer \
+         toolbar.button(HOVER|CHECKED).fill and pressed toolbar.button(PRESSED|CHECKED).fill; \
+         else egui's own selected button's in every state, visuals.selection.bg_fill \
+         (pages::basic::edit_look_at, native-theme-egui next::toolbar_button_checked)",
+    ),
+    (
+        "basic.icons.edit",
+        "button.label(CHECKED).color",
+        "egui: per call, the edit switch's label colour while on, where no rule states \
+         toolbar.button_label(CHECKED).color, in every state; where one does, that one at rest, \
+         toolbar.button_label(HOVER|CHECKED).color under the pointer and \
+         toolbar.button_label(PRESSED|CHECKED).color pressed; else egui's own selected button's, \
+         visuals.selection.stroke. Its icon loads in it where no rule states \
+         toolbar.button_icon(CHECKED).color for CHECKED; where one does, in \
+         toolbar.button_icon(<state>|CHECKED).color (pages::basic::edit_look_at, \
+         demo::tool_icon_color)",
+    ),
+    (
         "chrome.status_bar.toggle",
         "button.body(HOVER).stroke.color",
-        FLAT_HOVER_EDGE,
+        TOGGLE_HOVER_EDGE,
     ),
     (
         "chrome.status_bar.toggle",
         "button.body(PRESSED).stroke.color",
-        FLAT_PRESSED_EDGE,
+        TOGGLE_PRESSED_EDGE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(NONE).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(NONE).stroke.width",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(HOVER).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(PRESSED).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
     ),
     (
         "chrome.page_tabs.menu",
@@ -867,12 +987,12 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.segmented.divider_1",
         "segmented_control.separator(NONE).fill",
-        SEGMENT_DIVIDER_UNREAD,
+        SEGMENT_DIVIDER,
     ),
     (
         "basic.segmented.divider_2",
         "segmented_control.separator(NONE).fill",
-        SEGMENT_DIVIDER_UNREAD,
+        SEGMENT_DIVIDER,
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -1031,7 +1151,6 @@ pub(crate) fn manifest_rows(
     family: &dyn Fn(&str, &StatedFont) -> String,
     seams: &[Seam],
 ) -> Vec<InfoRow<Color>> {
-    let how = Route::of(row, seams).line();
     row.homes_on(preset)
         .iter()
         .map(|home| {
@@ -1040,7 +1159,7 @@ pub(crate) fn manifest_rows(
                 leaf: home.clone(),
                 value,
                 colour,
-                how: how.clone(),
+                how: Route::of(row, home, seams).line(),
             }
         })
         .collect()
@@ -1607,10 +1726,12 @@ pub(crate) fn theme_tab(
     section(ui, "Notes");
     // The companion crate's widgets and the showcase's own drawing sites report a fill they
     // draw egui's own in place of on the atlas's channel
-    // (`native_theme_egui_widgets::next_fills_unmapped`, `demo::drawn_fills_unmapped`).
+    // (`native_theme_egui_widgets::next_fills_unmapped`, `demo::drawn_fills_unmapped`); one
+    // the atlas holds too, a fill its own styles take, is listed once.
     let widget_notes = r.map(|r| {
         let mut notes = native_theme_egui_widgets::next_fills_unmapped(r);
         notes.extend(crate::demo::drawn_fills_unmapped(r));
+        notes.retain(|n| !atlas.notes().contains(n));
         notes
     });
     let widget_notes = widget_notes.as_deref().unwrap_or_default();

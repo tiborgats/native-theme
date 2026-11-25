@@ -967,6 +967,16 @@ fn toolbar(
     // D7: a flat tool button's hovered and pressed states, each field where stated and as
     // stated, not composited; the rest is the button's own
     let w = &mut s.visuals.widgets;
+    // a tool button at rest, where stated: egui fills a resting `Button` from `inactive`'s
+    // `weak_bg_fill` and rounds it by the state's entry's `corner_radius` (egui 0.37.0
+    // `src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`), one radius in every state
+    set_color(&mut w.inactive.weak_bg_fill, tb.rest.fill.map(|(c, _)| c));
+    if let Some((r, path)) = tb.rest.radius {
+        let corner_radius = radius(path, w.inactive.corner_radius, r, notes);
+        for entry in [&mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
+            entry.corner_radius = corner_radius;
+        }
+    }
     let [hover, active] = tb.button_fill;
     set_color(&mut w.hovered.weak_bg_fill, hover);
     set_color(&mut w.active.weak_bg_fill, active);

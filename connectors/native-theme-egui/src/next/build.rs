@@ -16,8 +16,8 @@ use crate::convert::Rgba;
 use crate::plugin::FocusRingSource;
 use crate::style::base::{BaseSource, ButtonStates, DropShadow, Read, Sides};
 use crate::style::cells::{
-    ButtonCell, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell, InputCell,
-    ListCell, MenuCell, Outline, PanelCell, PanelEdge, ProgressBarCell, ScrollbarCell,
+    ButtonCell, Capsule, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell,
+    InputCell, ListCell, MenuCell, Outline, PanelCell, PanelEdge, ProgressBarCell, ScrollbarCell,
     SegmentedControlCell, SeparatorCell, SidebarCell, SliderCell, SpinnerCell, SplitterCell,
     SwitchCell, TabCell, Text, ToolbarCell,
 };
@@ -36,24 +36,38 @@ pub(crate) fn rgba(c: Color) -> Rgba {
     Rgba { r, g, b, a }
 }
 
-/// A part's fill, where stated ([`reads::fill`]).
-pub(crate) fn fill(part: &PartStyle) -> Option<Rgba> {
-    reads::fill(part).map(rgba)
+/// A part's fill, where stated ([`reads::fill`]); `None` and a [`Note::Unmapped`] at `home`
+/// where it is stated as layers that are all gradients, which have no single colour for egui
+/// to paint (spec §10, rule 4): the builder leaves egui's own there.
+pub(crate) fn fill(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Option<Rgba> {
+    let fill = reads::fill(part);
+    if fill.is_none() && part.stated.contains(PartStated::FILL) {
+        push_note(notes, Note::Unmapped { path: home });
+    }
+    fill.map(rgba)
 }
 
-/// [`fill`] where a rule states it for the queried state ([`reads::state_fill`]).
-pub(crate) fn state_fill(part: &PartStyle) -> Option<Rgba> {
-    reads::state_fill(part).map(rgba)
+/// [`fill`] where a rule states it for the queried state (its `from_state` bit; the rule is for
+/// some flag of the query, not a given one: spec §2, `from_state`).
+pub(crate) fn state_fill(
+    part: &PartStyle,
+    home: &'static str,
+    notes: &mut Vec<Note>,
+) -> Option<Rgba> {
+    part.from_state
+        .contains(PartStated::FILL)
+        .then(|| fill(part, home, notes))
+        .flatten()
 }
 
 /// [`fill`] with the home a note names it by.
-fn fill_at(part: &PartStyle, home: &'static str) -> Read<Rgba> {
-    fill(part).map(|c| (c, home))
+fn fill_at(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Read<Rgba> {
+    fill(part, home, notes).map(|c| (c, home))
 }
 
 /// [`state_fill`] with the home a note names it by.
-fn state_fill_at(part: &PartStyle, home: &'static str) -> Read<Rgba> {
-    state_fill(part).map(|c| (c, home))
+fn state_fill_at(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Read<Rgba> {
+    state_fill(part, home, notes).map(|c| (c, home))
 }
 
 /// A [`Note::Unmapped`] at `home` where `part` states corners egui cannot draw as the one
@@ -269,13 +283,23 @@ pub(crate) fn base_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> BaseSourc
         border_paths: ["layout.corner_radius", "layout.border_width"],
         radius_lg: Some((r.layout.corner_radius_lg, "layout.corner_radius_lg")),
         disabled_opacity: Some((c.disabled_opacity, "colors.disabled_opacity")),
-        menu_fill: fill(&r.menu.panel(WidgetState::NONE)),
+        menu_fill: fill(&menu_panel, "menu.panel(NONE).fill", notes),
         overlay_scrollbar: sb.overlay_mode,
-        track: fill(&sb.track(WidgetState::NONE)),
-        input_fill: fill(&r.input.field(WidgetState::NONE)),
+        track: fill(
+            &sb.track(WidgetState::NONE),
+            "scrollbar.track(NONE).fill",
+            notes,
+        ),
+        input_fill: fill(
+            &r.input.field(WidgetState::NONE),
+            "input.field(NONE).fill",
+            notes,
+        ),
         alternate_row: fill(
             &r.list
                 .row(ListQuery::new(WidgetState::NONE).alternate(true)),
+            "list.row(NONE; alternate=true).fill",
+            notes,
         ),
         caret: Some(rgba(c.caret)),
         blink_on_ms: r.caret.blink_on_ms,
@@ -316,8 +340,12 @@ pub(crate) fn base_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> BaseSourc
             .tooltip_show_ms
             .map(|ms| (f64::from(ms) / 1000.0) as f32),
         button: button_states(r, notes),
-        thumb: thumb(r),
-        title_bar_fill: fill(&r.window.title_bar(WindowState::default())),
+        thumb: thumb(r, notes),
+        title_bar_fill: fill(
+            &r.window.title_bar(WindowState::default()),
+            "window.title_bar(normal).fill",
+            notes,
+        ),
         line_height: Some((
             t.line_height_multiplier,
             "typography.line_height_multiplier",
@@ -352,9 +380,9 @@ fn button_states(r: &ResolvedTheme, notes: &mut Vec<Note>) -> ButtonStates {
     let (border, align) = edge_at(&rest, border_paths, notes);
     ButtonStates {
         fill: [
-            fill_at(&rest, "button.body(NONE).fill"),
-            state_fill_at(&hover, "button.body(HOVER).fill"),
-            state_fill_at(&pressed, "button.body(PRESSED).fill"),
+            fill_at(&rest, "button.body(NONE).fill", notes),
+            state_fill_at(&hover, "button.body(HOVER).fill", notes),
+            state_fill_at(&pressed, "button.body(PRESSED).fill", notes),
         ],
         label: [
             text_color(&b.label(WidgetState::NONE)),
@@ -392,8 +420,8 @@ pub(crate) fn flat_button(r: &ResolvedTheme, notes: &mut Vec<Note>) -> FlatButto
     );
     FlatButton {
         fill: [
-            state_fill_at(&hover, "button.body(HOVER; variant=Flat).fill"),
-            state_fill_at(&pressed, "button.body(PRESSED; variant=Flat).fill"),
+            state_fill_at(&hover, "button.body(HOVER; variant=Flat).fill", notes),
+            state_fill_at(&pressed, "button.body(PRESSED; variant=Flat).fill", notes),
         ],
         label: [
             state_text_color(&b.label(at(WidgetState::HOVER))),
@@ -423,17 +451,23 @@ pub(crate) fn flat_button(r: &ResolvedTheme, notes: &mut Vec<Note>) -> FlatButto
 }
 
 /// The scroll bar's thumb at rest (see [`base_source`]), hovered and pressed.
-fn thumb(r: &ResolvedTheme) -> [Read<Rgba>; 3] {
+fn thumb(r: &ResolvedTheme, notes: &mut Vec<Note>) -> [Read<Rgba>; 3] {
     let sb = &r.scrollbar;
     [
         fill_at(
             &sb.thumb(WidgetState::UNFOCUSED_VIEW),
             "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+            notes,
         ),
-        state_fill_at(&sb.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill"),
+        state_fill_at(
+            &sb.thumb(WidgetState::HOVER),
+            "scrollbar.thumb(HOVER).fill",
+            notes,
+        ),
         state_fill_at(
             &sb.thumb(WidgetState::PRESSED),
             "scrollbar.thumb(PRESSED).fill",
+            notes,
         ),
     ]
 }
@@ -570,7 +604,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         button: ButtonCell {
             states: button_states(r, notes),
             pressed_label: state_text_color(&b.label(S::PRESSED)),
-            primary_fill: fill(&b.body(primary)),
+            primary_fill: fill(
+                &b.body(primary),
+                "button.body(NONE; variant=Primary).fill",
+                notes,
+            ),
             primary_text: text_color(&b.label(primary)),
             min_height: rest.min_size[1].map(|v| (v, "button.body(NONE).min_size[1]")),
             icon_gap: Some((b.icon_text_gap, "button.icon_text_gap")),
@@ -587,7 +625,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             size: size(&b.label(S::NONE), "button.label(NONE).size_px"),
         },
         menu: MenuCell {
-            hover_fill: state_fill_at(&m.item(S::HOVER), "menu.item(HOVER).fill"),
+            hover_fill: state_fill_at(&m.item(S::HOVER), "menu.item(HOVER).fill", notes),
             text: [
                 text_color(&m.item_label(S::NONE)),
                 state_text_color(&m.item_label(S::HOVER)),
@@ -599,14 +637,18 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
                 bar_top.map(|v| (v, "menu_bar.item(NONE).padding.top")),
             ],
             bar_fill: [
-                state_fill(&r.menu_bar.item(S::HOVER)),
-                state_fill(&r.menu_bar.item(S::OPEN)),
+                state_fill(
+                    &r.menu_bar.item(S::HOVER),
+                    "menu_bar.item(HOVER).fill",
+                    notes,
+                ),
+                state_fill(&r.menu_bar.item(S::OPEN), "menu_bar.item(OPEN).fill", notes),
             ],
             bar_text: [
                 state_text_color(&r.menu_bar.item_label(S::HOVER)),
                 state_text_color(&r.menu_bar.item_label(S::OPEN)),
             ],
-            separator: fill(&m.separator(S::NONE)),
+            separator: fill(&m.separator(S::NONE), "menu.separator(NONE).fill", notes),
             padding: sides(
                 &item,
                 [
@@ -669,9 +711,17 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         },
         checkbox: CheckboxCell {
             fill: [
-                fill_at(&indicator, "checkbox.indicator(NONE).fill"),
-                state_fill_at(&k.indicator(S::HOVER), "checkbox.indicator(HOVER).fill"),
-                state_fill_at(&k.indicator(S::PRESSED), "checkbox.indicator(PRESSED).fill"),
+                fill_at(&indicator, "checkbox.indicator(NONE).fill", notes),
+                state_fill_at(
+                    &k.indicator(S::HOVER),
+                    "checkbox.indicator(HOVER).fill",
+                    notes,
+                ),
+                state_fill_at(
+                    &k.indicator(S::PRESSED),
+                    "checkbox.indicator(PRESSED).fill",
+                    notes,
+                ),
             ],
             mark: [
                 icon_color(&k.checkmark(S::CHECKED)),
@@ -733,35 +783,39 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             button_gap: Some((r.dialog.button_gap, "dialog.button_gap")),
         },
         scrollbar: ScrollbarCell {
-            track: fill(&sb.track(S::NONE)),
-            thumb: thumb(r),
+            track: fill(&sb.track(S::NONE), "scrollbar.track(NONE).fill", notes),
+            thumb: thumb(r, notes),
             min_thumb: Some((sb.min_thumb_length, "scrollbar.min_thumb_length")),
             radius: thumb_radius(&sb.thumb(S::NONE), notes),
         },
         slider: SliderCell {
-            fill: fill(&sl.active_track(S::NONE)),
-            track: fill_at(&sl.track(S::NONE), "slider.track(NONE).fill"),
+            fill: fill(
+                &sl.active_track(S::NONE),
+                "slider.active_track(NONE).fill",
+                notes,
+            ),
+            track: fill_at(&sl.track(S::NONE), "slider.track(NONE).fill", notes),
             disabled_opacity: opacity_at(sl.disabled_opacity, "slider.disabled_opacity"),
             thumb_diameter: sl.thumb(S::NONE).min_size[0]
                 .map(|v| (v, "slider.thumb(NONE).min_size[0]")),
             thumb: [
-                fill_at(&sl.thumb(S::NONE), "slider.thumb(NONE).fill"),
-                state_fill_at(&sl.thumb(S::HOVER), "slider.thumb(HOVER).fill"),
-                state_fill_at(&sl.thumb(S::PRESSED), "slider.thumb(PRESSED).fill"),
+                fill_at(&sl.thumb(S::NONE), "slider.thumb(NONE).fill", notes),
+                state_fill_at(&sl.thumb(S::HOVER), "slider.thumb(HOVER).fill", notes),
+                state_fill_at(&sl.thumb(S::PRESSED), "slider.thumb(PRESSED).fill", notes),
             ],
             radius: Some(r.layout.corner_radius),
         },
         progress_bar: ProgressBarCell {
-            fill: fill(&p.fill(S::NONE)),
-            track: fill(&track),
+            fill: fill(&p.fill(S::NONE), "progress_bar.fill(NONE).fill", notes),
+            track: fill(&track, "progress_bar.track(NONE).fill", notes),
             height: track.min_size[1].map(|v| (v, "progress_bar.track(NONE).min_size[1]")),
             gap: track_left.map(|v| (v, "progress_bar.track(NONE).padding.left")),
         },
         tab: TabCell {
             fill: [
-                fill_at(&tab, "tab.tab(NONE).fill"),
-                state_fill_at(&tb.tab(S::HOVER), "tab.tab(HOVER).fill"),
-                state_fill_at(&tb.tab(S::PRESSED), "tab.tab(PRESSED).fill"),
+                fill_at(&tab, "tab.tab(NONE).fill", notes),
+                state_fill_at(&tb.tab(S::HOVER), "tab.tab(HOVER).fill", notes),
+                state_fill_at(&tb.tab(S::PRESSED), "tab.tab(PRESSED).fill", notes),
             ],
             text: [
                 text_color(&tb.label(S::NONE)),
@@ -781,9 +835,9 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
                 state_line(&tb.tab(S::HOVER), "tab.tab(HOVER).stroke.width", notes),
                 state_line(&tb.tab(S::PRESSED), "tab.tab(PRESSED).stroke.width", notes),
             ],
-            selected_fill: state_fill(&tb.tab(S::SELECTED)),
+            selected_fill: state_fill(&tb.tab(S::SELECTED), "tab.tab(SELECTED).fill", notes),
             selected_text: state_text_color(&tb.label(S::SELECTED)),
-            bar_fill: fill(&tb.bar(S::NONE)),
+            bar_fill: fill(&tb.bar(S::NONE), "tab.bar(NONE).fill", notes),
             min_height: tab.min_size[1].map(|v| (v, "tab.tab(NONE).min_size[1]")),
             item_gap: tb.item_gap.map(|v| (v, "tab.item_gap")),
             padding: sides(
@@ -799,24 +853,28 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         },
         sidebar: SidebarCell {
             panel: PanelCell {
-                fill: fill(&side_box),
+                fill: fill(&side_box, "sidebar.container(NONE).fill", notes),
                 text: text(
                     &side.item_label(S::NONE),
                     "sidebar.item_label(NONE).size_px",
                 ),
                 edge: panel_edge(&side_box, "sidebar.container(NONE).stroke.width", notes),
             },
-            selection: state_fill(&side.item(S::SELECTED)),
+            selection: state_fill(
+                &side.item(S::SELECTED),
+                "sidebar.item(SELECTED).fill",
+                notes,
+            ),
             selection_text: state_text_color(&side.item_label(S::SELECTED)),
             item_fill: [
-                state_fill_at(&side.item(S::HOVER), "sidebar.item(HOVER).fill"),
-                state_fill_at(&side.item(S::PRESSED), "sidebar.item(PRESSED).fill"),
+                state_fill_at(&side.item(S::HOVER), "sidebar.item(HOVER).fill", notes),
+                state_fill_at(&side.item(S::PRESSED), "sidebar.item(PRESSED).fill", notes),
             ],
             item_text: hover_press_text(|s| side.item_label(s)),
         },
         toolbar: ToolbarCell {
             panel: PanelCell {
-                fill: fill(&bar),
+                fill: fill(&bar, "toolbar.bar(NONE).fill", notes),
                 text: text(
                     &tool.button_label(S::NONE),
                     "toolbar.button_label(NONE).size_px",
@@ -825,9 +883,17 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             },
             bar_height: bar.min_size[1].map(|v| (v, "toolbar.bar(NONE).min_size[1]")),
             item_gap: tool.item_gap.map(|v| (v, "toolbar.item_gap")),
+            rest: Capsule {
+                fill: fill_at(&tool.button(S::NONE), "toolbar.button(NONE).fill", notes),
+                radius: radius_at(&tool.button(S::NONE), "toolbar.button(NONE).corners", notes),
+            },
             button_fill: [
-                state_fill(&tool.button(S::HOVER)),
-                state_fill(&tool.button(S::PRESSED)),
+                state_fill(&tool.button(S::HOVER), "toolbar.button(HOVER).fill", notes),
+                state_fill(
+                    &tool.button(S::PRESSED),
+                    "toolbar.button(PRESSED).fill",
+                    notes,
+                ),
             ],
             button_border: [
                 state_line(
@@ -853,12 +919,16 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             ),
         },
         status_bar: PanelCell {
-            fill: fill(&r.status_bar.bar),
+            fill: fill(&r.status_bar.bar, "status_bar.bar.fill", notes),
             text: text(&r.status_bar.label, "status_bar.label.size_px"),
             edge: panel_edge(&r.status_bar.bar, "status_bar.bar.stroke.width", notes),
         },
         list: ListCell {
-            selection: state_fill(&l.highlight(S::SELECTED)),
+            selection: state_fill(
+                &l.highlight(S::SELECTED),
+                "list.highlight(SELECTED).fill",
+                notes,
+            ),
             selection_text: state_text_color(&l.item_label(S::SELECTED)),
             grid: Some(rgba(l.grid_color)),
             width: {
@@ -869,8 +939,12 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             radius: radius_at(&list_box, "list.container(NONE).corners", notes),
             row_height: l.row(S::NONE).min_size[1].map(|v| (v, "list.row(NONE).min_size[1]")),
             highlight: [
-                state_fill_at(&l.highlight(S::HOVER), "list.highlight(HOVER).fill"),
-                state_fill_at(&l.highlight(S::PRESSED), "list.highlight(PRESSED).fill"),
+                state_fill_at(&l.highlight(S::HOVER), "list.highlight(HOVER).fill", notes),
+                state_fill_at(
+                    &l.highlight(S::PRESSED),
+                    "list.highlight(PRESSED).fill",
+                    notes,
+                ),
             ],
             item: text(&l.item_label(S::NONE), "list.item_label(NONE).size_px"),
             header_text: text_color(&l.header_label(S::NONE)),
@@ -880,11 +954,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             width: Some((r.separator.thickness, "separator.thickness")),
         },
         switch: SwitchCell {
-            checked: state_fill(&sw.track(S::CHECKED)),
+            checked: state_fill(&sw.track(S::CHECKED), "switch.track(CHECKED).fill", notes),
             fill: [
-                fill_at(&sw_track, "switch.track(NONE).fill"),
-                state_fill_at(&sw.track(S::HOVER), "switch.track(HOVER).fill"),
-                state_fill_at(&sw.track(S::PRESSED), "switch.track(PRESSED).fill"),
+                fill_at(&sw_track, "switch.track(NONE).fill", notes),
+                state_fill_at(&sw.track(S::HOVER), "switch.track(HOVER).fill", notes),
+                state_fill_at(&sw.track(S::PRESSED), "switch.track(PRESSED).fill", notes),
             ],
             radius: radius_at(&sw_track, "switch.track(NONE).corners", notes),
             height: sw_track.min_size[1].map(|v| (v, "switch.track(NONE).min_size[1]")),
@@ -897,9 +971,13 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         },
         combo_box: ComboBoxCell {
             fill: [
-                fill_at(&cb_field, "combo_box.field(NONE).fill"),
-                state_fill_at(&cb.field(S::HOVER), "combo_box.field(HOVER).fill"),
-                state_fill_at(&cb.field(S::PRESSED), "combo_box.field(PRESSED).fill"),
+                fill_at(&cb_field, "combo_box.field(NONE).fill", notes),
+                state_fill_at(&cb.field(S::HOVER), "combo_box.field(HOVER).fill", notes),
+                state_fill_at(
+                    &cb.field(S::PRESSED),
+                    "combo_box.field(PRESSED).fill",
+                    notes,
+                ),
             ],
             text: text(&cb.label(S::NONE), "combo_box.label(NONE).size_px"),
             text_states: hover_press_text(|s| cb.label(s)),
@@ -923,7 +1001,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
                     notes,
                 ),
             ],
-            open_fill: state_fill(&cb.field(S::OPEN)),
+            open_fill: state_fill(&cb.field(S::OPEN), "combo_box.field(OPEN).fill", notes),
             open_border: state_line_color(
                 &cb.field(S::OPEN),
                 "combo_box.field(OPEN).stroke.color",
@@ -947,14 +1025,16 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         },
         segmented_control: SegmentedControlCell {
             fill: [
-                fill_at(&sc_track, "segmented_control.track(NONE).fill"),
+                fill_at(&sc_track, "segmented_control.track(NONE).fill", notes),
                 state_fill_at(
                     &sc.segment(S::HOVER),
                     "segmented_control.segment(HOVER).fill",
+                    notes,
                 ),
                 state_fill_at(
                     &sc.segment(S::PRESSED),
                     "segmented_control.segment(PRESSED).fill",
+                    notes,
                 ),
             ],
             text: text(&sc.label(S::NONE), "segmented_control.label(NONE).size_px"),
@@ -979,7 +1059,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
                     notes,
                 ),
             ],
-            selected_fill: state_fill(&sc.segment(S::SELECTED)),
+            selected_fill: state_fill(
+                &sc.segment(S::SELECTED),
+                "segmented_control.segment(SELECTED).fill",
+                notes,
+            ),
             selected_text: state_text_color(&sc.label(S::SELECTED)),
             height: segment.min_size[1].map(|v| (v, "segmented_control.segment(NONE).min_size[1]")),
             separator: Some((sc.separator_width, "segmented_control.separator_width")),
@@ -996,8 +1080,12 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         },
         expander: ExpanderCell {
             fill: [
-                state_fill_at(&x.header(S::HOVER), "expander.header(HOVER).fill"),
-                state_fill_at(&x.header(S::PRESSED), "expander.header(PRESSED).fill"),
+                state_fill_at(&x.header(S::HOVER), "expander.header(HOVER).fill", notes),
+                state_fill_at(
+                    &x.header(S::PRESSED),
+                    "expander.header(PRESSED).fill",
+                    notes,
+                ),
             ],
             text: text(
                 &x.header_label(S::NONE),
@@ -1027,9 +1115,21 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
         },
         link: text(&r.link.label(S::NONE), "link.label(NONE).size_px"),
         splitter: SplitterCell {
-            color: fill(&r.splitter.handle(S::NONE)),
-            hover: state_fill(&r.splitter.handle(S::HOVER)),
-            pressed: state_fill(&r.splitter.handle(S::PRESSED)),
+            color: fill(
+                &r.splitter.handle(S::NONE),
+                "splitter.handle(NONE).fill",
+                notes,
+            ),
+            hover: state_fill(
+                &r.splitter.handle(S::HOVER),
+                "splitter.handle(HOVER).fill",
+                notes,
+            ),
+            pressed: state_fill(
+                &r.splitter.handle(S::PRESSED),
+                "splitter.handle(PRESSED).fill",
+                notes,
+            ),
             width: Some((r.splitter.divider_width, "splitter.divider_width")),
         },
         scaled_up: r.context.text_scale > 1.0,
@@ -1038,11 +1138,17 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
 
 /// A role's disabled look: the label's and the fill's values a rule states for the disabled
 /// state, and the role's resting outline that fill is drawn under.
-fn disabled(label: &TextStyle, part: &PartStyle, home: &'static str, rest: &PartStyle) -> Disabled {
+fn disabled(
+    label: &TextStyle,
+    part: &PartStyle,
+    home: &'static str,
+    rest: &PartStyle,
+    notes: &mut Vec<Note>,
+) -> Disabled {
     let (outline, align) = edge(rest);
     Disabled {
         text: state_text_color(label),
-        fill: state_fill_at(part, home),
+        fill: state_fill_at(part, home, notes),
         outline: outline.color,
         align,
         border: None,
@@ -1084,8 +1190,12 @@ fn marked_box(
 ) -> MarkedBox {
     use WidgetState as S;
     let part = k.indicator(flag);
-    let stated_fill = |state: WidgetState, home: &'static str| {
-        state_fill(&k.indicator(state)).and_then(|_| fill_at(&k.indicator(state | flag), home))
+    let stated_fill = |state: WidgetState, home: &'static str, notes: &mut Vec<Note>| {
+        k.indicator(state)
+            .from_state
+            .contains(PartStated::FILL)
+            .then(|| fill_at(&k.indicator(state | flag), home, notes))
+            .flatten()
     };
     let stated_line = |state: WidgetState, home: &'static str, notes: &mut Vec<Note>| {
         k.indicator(state)
@@ -1106,13 +1216,13 @@ fn marked_box(
     let [hover_width, press_width] = homes.state_width;
     let [mark_rest, mark_hover, mark_press] = homes.mark_width;
     MarkedBox {
-        fill: state_fill_at(&part, homes.fill),
+        fill: state_fill_at(&part, homes.fill, notes),
         width: state_line(&part, homes.width, notes).and_then(|line| line.width),
         outline: line_of(&part, homes.width, notes).color,
         align: edge(&part).1,
         state_fill: [
-            stated_fill(S::HOVER, hover_fill),
-            stated_fill(S::PRESSED, press_fill),
+            stated_fill(S::HOVER, hover_fill, notes),
+            stated_fill(S::PRESSED, press_fill, notes),
         ],
         state_border: [
             stated_line(S::HOVER, hover_width, notes),
@@ -1186,9 +1296,14 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
             &b.body(S::DISABLED),
             "button.body(DISABLED).fill",
             &b.body(S::NONE),
+            notes,
         ),
         primary: PrimaryDisabled {
-            fill: state_fill(&b.body(primary_disabled)),
+            fill: state_fill(
+                &b.body(primary_disabled),
+                "button.body(DISABLED; variant=Primary).fill",
+                notes,
+            ),
             text: state_text_color(&b.label(primary_disabled)),
         },
         combo_box: disabled(
@@ -1196,6 +1311,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
             &cb.field(S::DISABLED),
             "combo_box.field(DISABLED).fill",
             &cb.field(S::NONE),
+            notes,
         ),
         checkbox: Disabled {
             border: state_edge(
@@ -1208,6 +1324,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                 &k.indicator(S::DISABLED),
                 "checkbox.indicator(DISABLED).fill",
                 &k.indicator(S::NONE),
+                notes,
             )
         },
         checked: CheckedBox {
@@ -1233,12 +1350,18 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                 },
                 notes,
             ),
-            disabled_fill: state_fill(&k.indicator(S::DISABLED)).and_then(|_| {
-                fill_at(
-                    &k.indicator(S::DISABLED | S::CHECKED),
-                    "checkbox.indicator(DISABLED|CHECKED).fill",
-                )
-            }),
+            disabled_fill: k
+                .indicator(S::DISABLED)
+                .from_state
+                .contains(PartStated::FILL)
+                .then(|| {
+                    fill_at(
+                        &k.indicator(S::DISABLED | S::CHECKED),
+                        "checkbox.indicator(DISABLED|CHECKED).fill",
+                        notes,
+                    )
+                })
+                .flatten(),
             disabled_mark: state_icon_color(&k.checkmark(S::DISABLED))
                 .and_then(|_| icon_color(&k.checkmark(S::DISABLED | S::CHECKED))),
             disabled_border: k
@@ -1259,30 +1382,57 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
         },
         input: Disabled {
             text: state_text_color(&i.text(S::DISABLED)),
-            fill: state_fill_at(&i.field(S::DISABLED), "input.field(DISABLED).fill"),
+            fill: state_fill_at(&i.field(S::DISABLED), "input.field(DISABLED).fill", notes),
             outline: None,
             align: LineAlign::Outside,
             border: None,
         },
-        slider_track: state_fill_at(&r.slider.track(S::DISABLED), "slider.track(DISABLED).fill"),
-        slider_fill: state_fill(&r.slider.active_track(S::DISABLED)),
+        slider_track: state_fill_at(
+            &r.slider.track(S::DISABLED),
+            "slider.track(DISABLED).fill",
+            notes,
+        ),
+        slider_fill: state_fill(
+            &r.slider.active_track(S::DISABLED),
+            "slider.active_track(DISABLED).fill",
+            notes,
+        ),
         switch: [
-            state_fill(&r.switch.track(S::DISABLED)),
-            state_fill(&r.switch.track(S::DISABLED | S::CHECKED)),
+            state_fill(
+                &r.switch.track(S::DISABLED),
+                "switch.track(DISABLED).fill",
+                notes,
+            ),
+            state_fill(
+                &r.switch.track(S::DISABLED | S::CHECKED),
+                "switch.track(DISABLED|CHECKED).fill",
+                notes,
+            ),
         ],
         menu: state_text_color(&r.menu.item_label(S::DISABLED)),
         list: state_text_color(&r.list.item_label(S::DISABLED)),
         link: state_text_color(&r.link.label(S::DISABLED)),
+        toolbar: {
+            let part = r.toolbar.button(S::DISABLED);
+            Capsule {
+                fill: state_fill_at(&part, "toolbar.button(DISABLED).fill", notes),
+                radius: if part.from_state.contains(PartStated::CORNERS) {
+                    radius_at(&part, "toolbar.button(DISABLED).corners", notes)
+                } else {
+                    None
+                },
+            }
+        },
     }
 }
 
-/// A surface's frame reads from its part, each with its home: `<home>.stroke.width`,
-/// `<home>.corners` and `<home>.padding.<side>`.
-fn surface(part: &PartStyle, homes: [&'static str; 7], notes: &mut Vec<Note>) -> SurfaceSource {
-    let [width, corners, top, right, bottom, left, shadows] = homes;
+/// A surface's frame reads from its part, each with its home: `<home>.fill`,
+/// `<home>.stroke.width`, `<home>.corners`, `<home>.padding.<side>` and `<home>.shadows`.
+fn surface(part: &PartStyle, homes: [&'static str; 8], notes: &mut Vec<Note>) -> SurfaceSource {
+    let [fill_home, width, corners, top, right, bottom, left, shadows] = homes;
     let (edge, align) = edge_at(part, [corners, width], notes);
     SurfaceSource {
-        fill: fill(part),
+        fill: fill(part, fill_home, notes),
         stroke: edge.color,
         width: edge.width.map(|v| (v, width)),
         align,
@@ -1293,10 +1443,11 @@ fn surface(part: &PartStyle, homes: [&'static str; 7], notes: &mut Vec<Note>) ->
     }
 }
 
-/// The seven homes [`surface`] names, of the part whose path is `$p`.
+/// The eight homes [`surface`] names, of the part whose path is `$p`.
 macro_rules! homes {
     ($p:literal) => {
         [
+            concat!($p, ".fill"),
             concat!($p, ".stroke.width"),
             concat!($p, ".corners"),
             concat!($p, ".padding.top"),
@@ -1325,7 +1476,11 @@ pub(crate) fn frame_source(
             homes!("window.frame(normal)"),
             notes,
         ),
-        title_bar: fill(&inactive.window.title_bar(window)),
+        title_bar: fill(
+            &inactive.window.title_bar(window),
+            "window.title_bar(normal).fill",
+            notes,
+        ),
         dialog: surface(&r.dialog.panel, homes!("dialog.panel"), notes),
         popover: surface(&r.popover.panel, homes!("popover.panel"), notes),
         tooltip: surface(&r.tooltip.panel, homes!("tooltip.panel"), notes),

@@ -30,12 +30,14 @@ fn the_public_part_reads_are_the_mappings_own() {
                 let at = format!("{key} {state:?}");
                 assert_eq!(
                     super::fill_of(&part, "h"),
-                    Ok(super::build::fill(&part).map(crate::convert::to_color32)),
+                    Ok(super::build::fill(&part, "h", &mut Vec::new())
+                        .map(crate::convert::to_color32)),
                     "{at}"
                 );
                 assert_eq!(
                     super::state_fill_of(&part, "h"),
-                    Ok(super::build::state_fill(&part).map(crate::convert::to_color32)),
+                    Ok(super::build::state_fill(&part, "h", &mut Vec::new())
+                        .map(crate::convert::to_color32)),
                     "{at}"
                 );
                 assert_eq!(
@@ -81,6 +83,64 @@ fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() {
             );
         }
     }
+}
+
+/// A checked toolbar button on either macOS preset takes, at rest, under the pointer and
+/// pressed, the fills and labels the preset states for `toolbar.button(CHECKED)`,
+/// `(HOVER|CHECKED)` and `(PRESSED|CHECKED)` and their labels, the toolbar-bezel button's as an
+/// on toggle (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// `*.{normal,hovered,pressed}.toolbar_toggle_on` `fill`, `label`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_checked_off_accent`,
+/// `toolbar_checked_on_accent`, `toolbar_checked_label`), picked by the previous response's
+/// state; ios-13, which states neither for `CHECKED`, none, and egui's own selected look stays.
+#[test]
+fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
+-> Result<(), super::Unmapped> {
+    let rgb = |[r, g, b]: [u8; 3]| egui::Color32::from_rgb(r, g, b);
+    let white = [0xff; 3];
+    for (preset, ctx, fill, text) in [
+        (
+            Preset::MacosMonterey,
+            ThemeContext::light(),
+            [[0xdf; 3], [0xc6; 3], [0xb9; 3]],
+            [[0x42; 3], [0x34; 3], [0x34; 3]],
+        ),
+        (
+            Preset::MacosMonterey,
+            ThemeContext::dark(),
+            [[0x41; 3], [0x5a; 3], [0x67; 3]],
+            [[0xec; 3], [0xef; 3], [0xf0; 3]],
+        ),
+        (
+            Preset::MacosTahoe,
+            ThemeContext::light(),
+            [[0x00, 0x7a, 0xff], [0x00, 0x6d, 0xf2], [0x00, 0x61, 0xe6]],
+            [white; 3],
+        ),
+        (
+            Preset::MacosTahoe,
+            ThemeContext::dark(),
+            [[0x00, 0x7a, 0xff], [0x14, 0x8e, 0xff], [0x23, 0x9d, 0xff]],
+            [white; 3],
+        ),
+    ] {
+        let at = format!("{preset:?} {:?}", ctx.scheme);
+        let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx))?;
+        assert_eq!(look.fill, Some(fill.map(rgb)), "{at}");
+        assert_eq!(look.text, Some(text.map(rgb)), "{at}");
+        let [rest, hover, press] =
+            [0, 1, 2].map(|i| (fill.get(i).copied().map(rgb), text.get(i).copied().map(rgb)));
+        assert_eq!(look.at(false, false), rest, "{at} at rest");
+        assert_eq!(look.at(true, false), hover, "{at} hovered");
+        assert_eq!(look.at(true, true), press, "{at} pressed");
+        assert_eq!(look.at(false, true), press, "{at} pressed off the pointer");
+    }
+    let ios = super::toolbar_button_checked(
+        &Theme::preset(Preset::Ios13).resolve(&ThemeContext::light()),
+    )?;
+    assert_eq!((ios.fill, ios.text), (None, None), "ios-13");
+    assert_eq!(ios.at(true, true), (None, None), "ios-13 pressed");
+    Ok(())
 }
 
 /// A stated uniform stroke gives its colour and width in every alignment; a
@@ -129,6 +189,60 @@ fn a_stroke_is_read_as_stated_and_a_per_side_one_not_at_all() {
     assert_eq!(super::stroke_width_of(&part), None);
 }
 
+/// A stroke read is handed to egui over the fill under it by its alignment: windows-11's primary
+/// button outline, `#0000000f` laid `Inside`, composited over the primary fill; the same colour
+/// laid `Outside`, or over no fill, as stated.
+#[test]
+fn a_translucent_inside_stroke_is_handed_over_the_fill() -> Result<(), String> {
+    let r = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    let part = r
+        .button
+        .body(native_theme::next::ButtonQuery::primary().with_state(WidgetState::NONE));
+    let (Some(color), Some(fill)) = (super::stroke_color_of(&part), super::fill_color(&part))
+    else {
+        return Err(format!(
+            "windows-11 states no primary button outline and fill: {part:?}"
+        ));
+    };
+    assert!(
+        matches!(
+            part.stroke,
+            Stroke::Uniform {
+                align: StrokeAlign::Inside,
+                ..
+            }
+        ) && color.a() < u8::MAX,
+        "{part:?}"
+    );
+    assert_eq!(
+        super::stroke_color_over(&part, color, Some(fill)),
+        fill.blend(color)
+    );
+    assert_ne!(fill.blend(color), color);
+    assert_eq!(super::stroke_color_over(&part, color, None), color);
+    let patch = ThemePatch::new().button(
+        native_theme::next::ButtonRule::new()
+            .variant(native_theme::next::ButtonVariant::Primary)
+            .body(PartPatch::new().stroke(Stroke::uniform_aligned(
+                1.0,
+                STROKE,
+                StrokeAlign::Outside,
+            ))),
+    );
+    let r = Theme::preset(Preset::Windows11)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let part = r
+        .button
+        .body(native_theme::next::ButtonQuery::primary().with_state(WidgetState::NONE));
+    let outside = super::to_color32(STROKE);
+    assert_eq!(
+        super::stroke_color_over(&part, outside, Some(fill)),
+        outside
+    );
+    Ok(())
+}
+
 /// Layers that are all gradients have no single colour: the fill reads
 /// report them `Unmapped` at the home they are given (spec §10, rule 4),
 /// never `None`, egui's own fill, in their place.
@@ -166,6 +280,40 @@ fn an_all_gradient_fill_is_unmapped_at_its_home() {
     );
 }
 
+/// A fill the atlas builds from, stated as layers that are all gradients, is a
+/// `Note::Unmapped` at its home in the atlas's notes (spec §10, rule 4), at rest, for a
+/// state, and for a checked box's hovered fill a rule states for `HOVER` alone; the preset's
+/// own fills give no such note.
+#[test]
+fn the_atlas_notes_an_all_gradient_fill_at_its_home() -> Result<(), Box<dyn std::error::Error>> {
+    let unmapped = |patch: &str| -> Result<Vec<&'static str>, Box<dyn std::error::Error>> {
+        Ok(patched_light(Preset::KdeBreeze, patch)?
+            .notes()
+            .iter()
+            .filter_map(|note| match note {
+                crate::Note::Unmapped { path } => Some(*path),
+                _ => None,
+            })
+            .collect())
+    };
+    assert_eq!(unmapped("")?, Vec::<&str>::new());
+    let gradient = "{ kind = \"linear_gradient\", angle_deg = 0.0, stops = [{ offset = 0.0, color = \"#ff0000\" }, { offset = 1.0, color = \"#0000ff\" }] }";
+    let notes = unmapped(&format!(
+        "[[widgets.menu.rules]]\nstates = []\npanel.fill = {gradient}\n\
+         [[widgets.toolbar.rules]]\nstates = [\"hover\"]\nbutton.fill = {gradient}\n\
+         [[widgets.checkbox.rules]]\nstates = [\"hover\"]\nindicator.fill = {gradient}\n"
+    ))?;
+    for home in [
+        "menu.panel(NONE).fill",
+        "toolbar.button(HOVER).fill",
+        "checkbox.indicator(HOVER).fill",
+        "checkbox.indicator(HOVER|CHECKED).fill",
+    ] {
+        assert!(notes.contains(&home), "{home}: {notes:?}");
+    }
+    Ok(())
+}
+
 /// `to_theme` builds each scheme from its own theme, which the atlas then holds
 /// (`next_resolved_for`; `resolved_for` is `None`): the scheme's focus ring is
 /// the one its theme's ring source builds, and its title bar frame fills from
@@ -198,9 +346,11 @@ fn to_theme_builds_each_scheme_from_its_own_theme() -> Result<(), super::Unmappe
                 &mut Vec::new(),
             );
             assert_eq!(atlas.scheme(scheme).focus_ring, ring, "{at}");
-            if let Some(fill) =
-                super::build::fill(&inactive.window.title_bar(WindowState::default()))
-            {
+            if let Some(fill) = super::build::fill(
+                &inactive.window.title_bar(WindowState::default()),
+                "window.title_bar(normal).fill",
+                &mut Vec::new(),
+            ) {
                 assert_eq!(
                     atlas
                         .surface_frame(scheme, crate::Surface::WindowTitleBar)
@@ -1258,6 +1408,75 @@ fn a_tool_button_and_a_menu_item_draw_their_stated_widths() -> Result<(), Box<dy
     Ok(())
 }
 
+/// A tool button at rest is filled and rounded as `toolbar.button(NONE)` states, in the
+/// toolbar's `Normal` cell, and disabled filled as a rule states `toolbar.button(DISABLED)`'s
+/// fill, in its `Disabled` cell: macos-tahoe's rest capsule, #ffffff light and #252525 dark, a
+/// pill, disabled unchanged; macos-monterey's disabled button none, transparent, its rest fill
+/// unstated and so the base style's (spec §10, rule 0). Measured, os-probe run 45634379188,
+/// toolbar states sheet, `*.normal.toolbar_button` and `*.normal.toolbar_button_disabled`
+/// `fill`, `*.normal.toolbar_toggle_on` `box` (native-theme/src/next/presets/macos.rs,
+/// `toolbar_button_rest`, `toolbar_button_corners`).
+#[test]
+fn a_tool_buttons_rest_and_disabled_capsule_is_drawn_as_stated()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{Role, RoleVariant};
+    let tahoe = atlas_of(&Theme::preset(Preset::MacosTahoe))?;
+    for (scheme, fill) in [
+        (egui::Theme::Light, egui::Color32::WHITE),
+        (egui::Theme::Dark, egui::Color32::from_rgb(0x25, 0x25, 0x25)),
+    ] {
+        let styles = tahoe.scheme(scheme);
+        let w = &styles
+            .cell(Role::Toolbar, RoleVariant::Normal)
+            .visuals
+            .widgets;
+        assert_eq!(
+            w.inactive.weak_bg_fill, fill,
+            "macos-tahoe {scheme:?} at rest"
+        );
+        for e in [&w.inactive, &w.hovered, &w.active, &w.open] {
+            assert_eq!(
+                e.corner_radius,
+                egui::CornerRadius::same(u8::MAX),
+                "macos-tahoe {scheme:?}"
+            );
+        }
+        let d = &styles
+            .cell(Role::Toolbar, RoleVariant::Disabled)
+            .visuals
+            .widgets;
+        assert_eq!(
+            d.inactive.weak_bg_fill, fill,
+            "macos-tahoe {scheme:?} disabled"
+        );
+    }
+    let monterey = atlas_of(&Theme::preset(Preset::MacosMonterey))?;
+    for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+        let styles = monterey.scheme(scheme);
+        assert_eq!(
+            styles
+                .cell(Role::Toolbar, RoleVariant::Normal)
+                .visuals
+                .widgets
+                .inactive
+                .weak_bg_fill,
+            styles.base.visuals.widgets.inactive.weak_bg_fill,
+            "macos-monterey {scheme:?} at rest: the base style's"
+        );
+        assert_eq!(
+            styles
+                .cell(Role::Toolbar, RoleVariant::Disabled)
+                .visuals
+                .widgets
+                .inactive
+                .weak_bg_fill,
+            egui::Color32::TRANSPARENT,
+            "macos-monterey {scheme:?} disabled"
+        );
+    }
+    Ok(())
+}
+
 /// A popup's stated shadow is drawn as stated, its first outset layer's offset, blur, spread
 /// and colour (spec §10, rule 2), on the popover's frame and, the menu's panel stating none,
 /// on egui's popups; an inset layer alone casts no shadow.
@@ -1760,7 +1979,7 @@ fn a_next_atlas_menu_bar_modifier_is_the_menu_cell_with_its_titles()
         for (scheme, r) in [(egui::Theme::Light, &light), (egui::Theme::Dark, &dark)] {
             let mb = &r.menu_bar;
             let stated = [WidgetState::HOVER, WidgetState::OPEN].iter().any(|&s| {
-                super::build::state_fill(&mb.item(s)).is_some()
+                super::build::state_fill(&mb.item(s), "menu_bar.item", &mut Vec::new()).is_some()
                     || super::state_text_color_of(&mb.item_label(s)).is_some()
             });
             if stated {
@@ -1800,9 +2019,14 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         let plain = Theme::preset(preset).resolve(&ThemeContext::light());
         let k = &plain.checkbox;
         let unstated = |r: &native_theme::next::ResolvedTheme, s: WidgetState| {
-            super::build::state_fill(&r.checkbox.indicator(s)).is_none()
+            super::build::state_fill(&r.checkbox.indicator(s), "indicator", &mut Vec::new())
+                .is_none()
         };
-        let Some(checked) = super::build::fill(&k.indicator(WidgetState::CHECKED)) else {
+        let Some(checked) = super::build::fill(
+            &k.indicator(WidgetState::CHECKED),
+            "checkbox.indicator(CHECKED).fill",
+            &mut Vec::new(),
+        ) else {
             continue;
         };
         let checked = crate::convert::to_color32(checked);
@@ -1822,8 +2046,12 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
             if unstated(&plain, state) {
                 Some(by_rule_0(own, checked))
             } else {
-                super::build::fill(&k.indicator(state | WidgetState::CHECKED))
-                    .map(crate::convert::to_color32)
+                super::build::fill(
+                    &k.indicator(state | WidgetState::CHECKED),
+                    "indicator",
+                    &mut Vec::new(),
+                )
+                .map(crate::convert::to_color32)
             }
         };
         assert_eq!(
@@ -1845,6 +2073,8 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
             &patched
                 .checkbox
                 .indicator(WidgetState::HOVER | WidgetState::CHECKED),
+            "checkbox.indicator(HOVER|CHECKED).fill",
+            &mut Vec::new(),
         )
         .ok_or("the combined state has a fill")?;
         let w = cell(&patched_light(preset, hover)?);
@@ -1962,8 +2192,12 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::
             (egui::Theme::Dark, ThemeContext::dark()),
         ] {
             let r = Theme::preset(preset).resolve(&ctx);
-            let body = |s| super::build::state_fill(&r.button.body(s));
-            let rest = super::build::fill(&r.button.body(WidgetState::NONE));
+            let body = |s| super::build::state_fill(&r.button.body(s), "body", &mut Vec::new());
+            let rest = super::build::fill(
+                &r.button.body(WidgetState::NONE),
+                "button.body(NONE).fill",
+                &mut Vec::new(),
+            );
             let Some(rest_fill) = rest else { continue };
             if body(WidgetState::HOVER).is_none() || body(WidgetState::HOVER) != rest {
                 continue;

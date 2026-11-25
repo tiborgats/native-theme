@@ -667,7 +667,7 @@ macro_rules! home {
                 let s = $(WidgetState::$s)|+;
                 let part = r.$w.$p(s);
                 part_stated(&part, PartStated::FILL, s)
-                    .then(|| build::fill(&part))
+                    .then(|| super::reads::fill(&part).map(build::rgba))
                     .flatten()
                     .map(HomeValue::Color)
             }
@@ -792,6 +792,27 @@ const fn r0(
 const STATED: &str = "the 0.8.0 preset states the value at the home, from the source its \
      comment there cites (M2.FS4); 0.7.2's resolver gave the resting value, another state's, or \
      a layer laid over the resting fill";
+
+const TOOL_REST_FILL: &str = "the toolbar cell fills a resting tool button with the rest capsule \
+     macos-tahoe states for the toolbar-bezel button, #ffffff light, #252525 dark (measured, \
+     os-probe run 45634379188, macOS 26, toolbar states sheet, `*.normal.toolbar_button` `fill`; \
+     native-theme/src/next/presets/macos.rs, `toolbar_button_rest`); 0.7.2 states no tool button \
+     at rest, and its cell kept the base style's resting fill";
+
+const TOOL_CORNERS: &str = "the toolbar cell rounds a tool button by the corners macos-tahoe states \
+     for the toolbar-bezel button, a capsule, egui's largest radius (measured, os-probe run \
+     45634379188, macOS 26, `toolbar_bezel_fitted-toolbar_states_sheet.toml`, \
+     `*.normal.toolbar_toggle_on` `box`, `corner_*`; native-theme/src/next/presets/macos.rs, \
+     `toolbar_button_corners`); 0.7.2 rounded it by button.border.corner_radius";
+
+const TOOL_DISABLED_FILL: &str = "the toolbar's Disabled cell fills a disabled tool button with the \
+     fill the macOS preset states for it: on macos-monterey none, the title bar inside the rest \
+     ring (measured, os-probe run 45634379188, macOS 15, toolbar states sheet, \
+     `*.normal.toolbar_button_disabled` `fill`, `edge_*`), on macos-tahoe the rest capsule, \
+     unchanged (the same run, macOS 26) (native-theme/src/next/presets/macos.rs, \
+     `toolbar_button_rest`, the `toolbar` builder's DISABLED rule); 0.7.2's Disabled toolbar \
+     cell is a copy of its Normal cell, the 0.7.2 model stating no disabled tool button, and a \
+     disabled tool button takes the Normal cell's resting fill";
 
 const THUMB_CORNERS: &str = "the scroll bar's thumb and trough are rounded by the corners the \
      0.8.0 preset states for the thumb, a pill, egui's largest radius, which epaint clamps to \
@@ -1685,6 +1706,27 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         &[M, T],
         ".visuals.widgets.active.weak_bg_fill",
         home!(toolbar.button(PRESSED).fill),
+    ),
+    d(
+        "Toolbar",
+        &[T],
+        ".visuals.widgets.inactive.weak_bg_fill",
+        Cause::Stated(home!(toolbar.button(NONE).fill)),
+        TOOL_REST_FILL,
+    ),
+    d(
+        "Toolbar",
+        &[T],
+        ".visuals.widgets.{inactive,hovered,active,open}.corner_radius.*",
+        Cause::Stated(home!(toolbar.button(NONE).corners)),
+        TOOL_CORNERS,
+    ),
+    d(
+        "Toolbar/Disabled",
+        &[M, T],
+        ".visuals.widgets.inactive.weak_bg_fill",
+        Cause::Stated(home!(toolbar.button(DISABLED).fill)),
+        TOOL_DISABLED_FILL,
     ),
     s(
         "Tab",

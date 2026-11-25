@@ -15,7 +15,8 @@
 
 use egui::style::WidgetVisuals;
 
-use super::base::{Read, length, stroke};
+use super::base::{Read, length, radius, stroke};
+use super::cells::Capsule;
 use super::line::{Line, LineAlign};
 use super::roles::CellInput;
 use super::states::{
@@ -87,6 +88,8 @@ pub(crate) struct VariantSource {
     pub menu: Option<Rgba>,
     pub list: Option<Rgba>,
     pub link: Option<Rgba>,
+    /// The disabled tool button's capsule, each value where a rule states it for the state.
+    pub toolbar: Capsule,
 }
 
 impl VariantSource {
@@ -177,6 +180,8 @@ impl VariantSource {
             menu: Some(t.menu.disabled_text_color),
             list: Some(t.list.disabled_text_color),
             link: Some(t.link.disabled_text_color),
+            // the 0.7.2 model states no disabled tool button
+            toolbar: Capsule::default(),
         }
     }
 }
@@ -658,6 +663,20 @@ pub(crate) fn disabled_cell(
                 v.hyperlink_color = to_color32(text);
             }
         }
+        // A disabled tool button is a `Button` in `WidgetState::Inactive`, filled from
+        // `weak_bg_fill` and rounded by `corner_radius` (egui 0.37.0
+        // `src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`): the capsule a rule states
+        // for the disabled state.
+        Role::Toolbar => {
+            let Capsule { fill, radius: r } = src.toolbar;
+            let entry = &mut v.widgets.inactive;
+            if let Some((fill, _)) = fill {
+                entry.weak_bg_fill = to_color32(fill);
+            }
+            if let Some((r, path)) = r {
+                entry.corner_radius = radius(path, entry.corner_radius, r, notes);
+            }
+        }
         _ => return None,
     }
     // `disabled_alpha` stays the role's own, its `disabled_opacity` (or, for a role with none,
@@ -705,12 +724,15 @@ mod tests {
     }
 
     /// §6.2, §6.3: only Checkbox has a `Selected` cell of its own; only the nine roles §6.3
-    /// lists have a `Disabled` cell of their own. Every other slot is the `Normal` `Arc`.
+    /// lists and the toolbar, whose disabled tool button has a capsule of its own, have a
+    /// `Disabled` cell of their own: on the 0.7.2 model, which states no disabled tool button,
+    /// the toolbar's is a copy of its `Normal` cell, an `Arc` of its own. Every other slot is the
+    /// `Normal` `Arc`.
     #[test]
     fn cells_without_variant_data_share_the_normal_arc() {
         let t = resolved("kde-breeze", ColorMode::Light);
         let (s, _) = build(&t);
-        const DISABLED: [Role; 9] = [
+        const DISABLED: [Role; 10] = [
             Role::Button,
             Role::ComboBox,
             Role::Checkbox,
@@ -720,6 +742,7 @@ mod tests {
             Role::Menu,
             Role::List,
             Role::Link,
+            Role::Toolbar,
         ];
         for role in Role::all() {
             let normal = s.cell(*role, RoleVariant::Normal);

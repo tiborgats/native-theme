@@ -163,10 +163,20 @@ pub(crate) struct SidebarCell {
     pub item_text: [Option<Rgba>; 2],
 }
 
+/// A tool button's capsule in one state: its fill and its corner radius, each with the place a
+/// note names it by, `None` where the theme states none.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct Capsule {
+    pub fill: Read<Rgba>,
+    pub radius: Read<f32>,
+}
+
 pub(crate) struct ToolbarCell {
     pub panel: PanelCell,
     pub bar_height: Read<f32>,
     pub item_gap: Read<f32>,
+    /// A tool button at rest: its fill and its corner radius.
+    pub rest: Capsule,
     /// A tool button's hovered and pressed fill.
     pub button_fill: [Option<Rgba>; 2],
     /// A tool button's hovered and pressed outline.
@@ -587,6 +597,8 @@ impl CellSource {
                 },
                 bar_height: t.toolbar.bar_height.map(|v| (v, "toolbar.bar_height")),
                 item_gap: t.toolbar.item_gap.map(|v| (v, "toolbar.item_gap")),
+                // the 0.7.2 model states no tool button at rest
+                rest: Capsule::default(),
                 button_fill: [
                     t.toolbar.button_hover_background,
                     t.toolbar.button_active_background,

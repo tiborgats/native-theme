@@ -313,9 +313,12 @@ column-header section where the theme states them (`None` otherwise), for a
 header the application paints, since egui_extras' header row has no hover. A
 leaf that needs no conversion is read from the `ResolvedTheme` itself
 (`ThemeAtlas::resolved_for`). A button in the toolbar
-role is a flat tool button: the role colours its hover and press and leaves its rest
-to the button. Make it flat with `Button::frame_when_inactive(false)`, or in a scope
-whose resting fill and border colour are transparent; both keep its size.
+role is a flat tool button: the role colours its hover and press, and at rest fills and
+rounds it as `toolbar.button(NONE)` states (macos-tahoe's capsule), leaving the rest to the
+button where the theme states none; its `RoleVariant::Disabled` cell fills a disabled one as
+a rule states `toolbar.button(DISABLED)`'s fill. Make it flat with
+`Button::frame_when_inactive(false)`, or in a scope whose resting fill and border colour are
+transparent; both keep its size, and both hide a stated rest fill.
 
 ## Fonts
 
@@ -807,9 +810,10 @@ listed here, and a value the theme leaves unstated is egui's own
   none, layers that are all gradients. The fill readers `next::fill_of` and
   `next::state_fill_of` take the fill's home and return those layers as
   `Unmapped` at it (rule 4), not as the `None` of a fill the theme leaves
-  unstated; the companion crate `native-theme-egui-widgets` reports each
-  such fill its widgets read as a `Note::Unmapped` (`next_fills_unmapped`),
-  its widgets drawing egui's own there.
+  unstated; the atlas reports each such fill its styles take as a
+  `Note::Unmapped` at its home in its notes, and the companion crate
+  `native-theme-egui-widgets` each one its widgets read
+  (`next_fills_unmapped`), egui's own drawn there.
 - **Where a translucent stroke lies.** egui ends a rect's fill at the
   stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
   `stroke_and_fill_path`), so a stroke the theme lays `Outside` the part is
@@ -818,7 +822,32 @@ listed here, and a value the theme leaves unstated is egui's own
   `Center`ed on the edge is composited over that fill at half its alpha, so
   the whole band is drawn in the band's mean colour where the platform shows
   the fill under its inner half only (src/style/line.rs). An opaque stroke
-  is drawn exactly in every alignment.
+  is drawn exactly in every alignment. An application that hands a stroke
+  per call (`Button::stroke`) composites it the same way with
+  `next::stroke_color_over`.
+- **A checked toolbar button hovered or pressed.** egui fills and letters
+  a selected `Button` from `visuals.selection` in every state
+  (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`),
+  so no cell gives a checked tool button the hovered and pressed fills and
+  labels a theme states (`toolbar.button(HOVER|CHECKED)`,
+  `(PRESSED|CHECKED)`, macOS). `next::toolbar_button_checked` returns them
+  with the resting ones where a rule states `toolbar.button(CHECKED)`'s
+  fill (its label `toolbar.button_label(CHECKED)`'s), for the application
+  to hand `Button::fill` and `RichText::color`, which override every
+  on-hover effect, in the state of the button's previous response
+  (`CheckedToolButton::at`); where none does, egui's own selected look
+  stays.
+- **A tool button's icon colour.** egui's only per-state tint of a
+  button's image is the label's text colour
+  (`Button::image_tint_follows_text_color`, `egui-0.37.0`
+  `src/widgets/button.rs`; `src/theme/default_style.rs`, the `image_tint`
+  branch), and the theme states the icon's colour apart from the label's
+  (macos-monterey light: the label #606060, the icon #676767 at rest), so
+  no cell carries both. The application loads the icon in
+  `toolbar.button_icon(<state>).color` (`IconKey::tint`) where the theme
+  states it, in the state of the button's previous response, and checked
+  only where a rule states it for `CHECKED`; where it states none, the icon
+  keeps the colour it is loaded in.
 - **A flat button's narrower hovered or pressed outline.** egui lays a
   button out at the inner margin `button_padding + expansion −
   bg_stroke.width` of its state (`egui-0.37.0/src/theme/default_style.rs`,

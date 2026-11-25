@@ -33,8 +33,9 @@ use crate::parts::Parts;
 /// colour wherever no segment covers the inside -- a divider in each `separator_width` gap
 /// between two segments of one row, and, wrapped, the gap between the rows and the room a
 /// shorter row leaves, as the frame filled with that colour showed there -- the one thing it
-/// paints itself: the model states the dividers' width and no colour of
-/// their own, so they are the one line colour the control states. A segment lays only its own
+/// paints itself: in the dividers' own colour, `segmented_control.separator(NONE).fill`, where
+/// a 0.8.0 theme states it; else, and in the 0.7.2 model, which states the dividers' width and
+/// no colour of their own, the one line colour the control states. A segment lays only its own
 /// fill over the group: none at rest, `hover_background` as given under the pointer and
 /// pressed, `active_background` while selected, so a translucent group fill, as windows-11
 /// states, shows once, over what lies under the control, as gpui's showcase draws it. The
@@ -133,6 +134,9 @@ pub(crate) struct Look {
     /// Whether `segmented_control.border.padding` states its top or its bottom side: where it
     /// states neither, the segments are fitted to their text.
     pub(crate) padded: bool,
+    /// The dividers' colour, `segmented_control.separator(NONE).fill` of a 0.8.0 theme; `None`,
+    /// and in the 0.7.2 model, which states the dividers no colour of their own, the outline's.
+    pub(crate) separator: Option<egui::Color32>,
 }
 
 impl Look {
@@ -142,19 +146,22 @@ impl Look {
             background: Some(to_color32(t.defaults.background_color)),
             hover: t.segmented_control.hover_background.map(to_color32),
             padded: padding.top.is_some() || padding.bottom.is_some(),
+            separator: None,
         }
     }
 
     /// The look of a segmented control of a 0.8.0 theme: the window's background
     /// (`colors.window.background`), the hover layer `segmented_control.segment(HOVER)`'s
-    /// fill where a rule for `HOVER` states it (spec §2, `from_state`), and whether
-    /// `segmented_control.segment(NONE)` states its top or bottom padding.
+    /// fill where a rule for `HOVER` states it (spec §2, `from_state`), whether
+    /// `segmented_control.segment(NONE)` states its top or bottom padding, and the dividers'
+    /// colour, `segmented_control.separator(NONE)`'s fill where stated.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
         Self::next_noted(r, &mut Vec::new())
     }
 
-    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at the hover fill's home where
-    /// the theme states it as layers that are all gradients, read as unstated ([`next::fill`]).
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at the hover fill's and the
+    /// dividers' homes where the theme states one as layers that are all gradients, read as
+    /// unstated ([`next::fill`]).
     pub(crate) fn next_noted(r: &NextResolvedTheme, unmapped: &mut Vec<Note>) -> Self {
         let sc = &r.segmented_control;
         let hover = sc.segment(WidgetState::HOVER);
@@ -168,6 +175,11 @@ impl Look {
                 unmapped,
             ),
             padded: top.is_some() || bottom.is_some(),
+            separator: next::fill(
+                &sc.separator(WidgetState::NONE),
+                "segmented_control.separator(NONE).fill",
+                unmapped,
+            ),
         }
     }
 }
@@ -189,6 +201,7 @@ impl egui::Widget for SegmentedControl<'_> {
         if let Some(look) = read {
             let unstated = !look.padded;
             let hover = look.hover;
+            let separator = look.separator;
             // A disabled calling `Ui`: the opacity its painter had before egui faded it by that
             // `Ui`'s `disabled_alpha`, which the control takes back to fade itself as one by its
             // own `disabled_opacity`, over the backdrop; where neither a backdrop nor the
@@ -206,6 +219,9 @@ impl egui::Widget for SegmentedControl<'_> {
                     fit_height(ui, &segments);
                 }
                 let mut outline = Outline::of(ui);
+                if let Some(separator) = separator {
+                    outline.lines = separator;
+                }
                 lay_over_group(ui.visuals_mut(), hover);
                 keep_resting_margin(ui.visuals_mut());
                 if let Some((ground, before)) = disabled {
@@ -310,8 +326,8 @@ fn dividers(segments: &[egui::Rect]) -> Vec<(usize, egui::Rect)> {
 
 /// The joined control, from the segmented control scope's own resting cell: its group fill,
 /// `segmented_control.background_color`, its outline's colour and width, the colour of its
-/// dividers and of whatever of the frame's inside no segment covers (the outline's, at rest),
-/// and its corner radius.
+/// dividers and of whatever of the frame's inside no segment covers (the outline's, at rest,
+/// where the theme states the dividers no colour of their own), and its corner radius.
 struct Outline {
     group: egui::Color32,
     stroke: egui::Stroke,
@@ -350,11 +366,11 @@ impl Outline {
             .corner_radius(self.radius)
     }
 
-    /// The lines, over the group fill: the border's colour wherever no segment covers the
-    /// frame's inside, `inside` ([`uncovered`]): the `separator_width` gap between two
-    /// neighbouring segments of one row (`rects`), the gap between two wrapped rows, the room a
-    /// shorter row or segment leaves; the line colour the outline is, as the model states no
-    /// colour of its own for the dividers. The one thing the control paints itself: egui's
+    /// The lines, over the group fill, wherever no segment covers the frame's inside, `inside`
+    /// ([`uncovered`]): the `separator_width` gap between two neighbouring segments of one row
+    /// (`rects`), the gap between two wrapped rows, the room a shorter row or segment leaves; in
+    /// the dividers' colour where the theme states one ([`Look::separator`]), else the line
+    /// colour the outline is. The one thing the control paints itself: egui's
     /// `Button` has no stroke on one side.
     fn paint_lines(&self, painter: &egui::Painter, inside: egui::Rect, rects: &[egui::Rect]) {
         let inner = self.corners(Shared {

@@ -525,7 +525,7 @@ fn text_button(
     ui: &mut egui::Ui,
     (id, kind, variant): (&str, &'static str, RoleVariant),
     (text, min): (&str, egui::Vec2),
-    make: impl FnOnce(egui::RichText) -> Button<'static>,
+    make: impl FnOnce(&egui::Ui, egui::RichText) -> Button<'static>,
     enabled: bool,
 ) -> egui::Response {
     wrap_before(ui, id);
@@ -536,7 +536,8 @@ fn text_button(
         // button instead (`wrap_before`).
         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
         let text = demo::next_lined(ui, text, egui::TextStyle::Button);
-        let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
+        let button = make(ui, text.clone()).min_size(min);
+        let r = ui.add_enabled(enabled, button);
         label = Some(button_label(ui, &r, text));
         r
     });
@@ -593,15 +594,45 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     // application's, per call (connector spec §5.3, `Button::min_size`); egui's own, none, where
     // the theme states none.
     let min = button_min_size(r);
-    let plain = |text: egui::RichText| Button::new(text);
-    let primary = |text: egui::RichText| Button::new(text).selected(true);
+    let plain = |_: &egui::Ui, text: egui::RichText| Button::new(text);
+    // The primary button: egui's selected button, outlined per call (`Button::stroke`, which
+    // overrides egui's on-hover effects) in the state of its previous response, kept in the
+    // page's memory as the dialog's default button's below, in the pen [`primary_pen`] reads
+    // over the fill egui paints it in; focused, and where the theme states no pen for the
+    // state, the button scope's own.
+    let primary_key = egui::Id::unique(("basic state", "basic.buttons.primary"));
+    let primary_was = demo::previous_state(ui, primary_key);
+    let primary_at = |(hovered, pressed, focused): (bool, bool, bool)| {
+        let state = if pressed {
+            NextState::PRESSED
+        } else if hovered {
+            NextState::HOVER
+        } else {
+            NextState::NONE
+        };
+        move |ui: &egui::Ui, text: egui::RichText| {
+            // egui's selected button is filled in the scope's selection fill in every state
+            // (`egui-0.37.0/src/theme/default_style.rs`, `CLASS_SELECTED`).
+            let fill = ui.visuals().selection.bg_fill;
+            let pen = r
+                .filter(|_| !focused)
+                .and_then(|r| primary_pen(r, state, fill));
+            let button = Button::new(text).selected(true);
+            match pen {
+                Some(pen) => button.stroke(pen),
+                None => button,
+            }
+        }
+    };
 
     heading(reg, ui, "basic.buttons.heading", "Buttons");
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.default", "button (enabled)", normal);
         text_button(reg, ui, kind, ("Button", min), plain, true);
         let kind = ("basic.buttons.primary", "button (suggested action)", normal);
-        text_button(reg, ui, kind, ("Primary", min), primary, true);
+        let primary = primary_at(primary_was);
+        let response = text_button(reg, ui, kind, ("Primary", min), primary, true);
+        demo::remember_state(ui, primary_key, primary_was, &response);
     });
     ui.horizontal_wrapped(|ui| {
         let kind = (
@@ -649,10 +680,8 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     // egui's `Widgets::style` tests them); pressed, no fill and no label colour, so the button
     // role's pressed pair shows. Where the theme gives it none, the primary button.
     let state_key = egui::Id::unique(("basic state", "basic.buttons.dialog_default"));
-    let (hovered, pressed, focused) = ui
-        .ctx()
-        .data(|d| d.get_temp::<(bool, bool, bool)>(state_key))
-        .unwrap_or_default();
+    let was = demo::previous_state(ui, state_key);
+    let (hovered, pressed, focused) = was;
     // `None`, the primary button, also where the theme states the look in a form egui cannot
     // draw (`next::Unmapped`).
     let look = r.and_then(|r| next::default_button(r).ok().flatten());
@@ -660,7 +689,7 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
-        let held = |text: egui::RichText| {
+        let held = |_: &egui::Ui, text: egui::RichText| {
             let text = match on_text {
                 Some(color) => text.color(color),
                 None => text,
@@ -679,7 +708,7 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         );
         let response = match look {
             Some(d) => {
-                let own = move |text: egui::RichText| {
+                let own = move |_: &egui::Ui, text: egui::RichText| {
                     if pressed {
                         return Button::new(text).stroke(d.hover_stroke);
                     }
@@ -694,18 +723,12 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 };
                 text_button(reg, ui, kind, ("OK", min), own, true)
             }
-            None => text_button(reg, ui, kind, ("OK", min), primary, true),
+            None => {
+                let primary = primary_at(was);
+                text_button(reg, ui, kind, ("OK", min), primary, true)
+            }
         };
-        let now = (
-            response.hovered(),
-            response.is_pointer_button_down_on(),
-            response.has_focus(),
-        );
-        if now != (hovered, pressed, focused) {
-            // drawn from the previous response: one more pass shows the state it is in now
-            ui.ctx().request_repaint();
-        }
-        ui.ctx().data_mut(|d| d.insert_temp(state_key, now));
+        demo::remember_state(ui, state_key, was, &response);
     });
     // Where the theme states no checked colour, what the toggle is drawn in instead.
     let unstated = [
@@ -1434,6 +1457,27 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &
     list(reg, state, atlas, ui);
 }
 
+/// The primary button's outline in `state` (`NONE`, `HOVER` or `PRESSED`) of the installed
+/// 0.8.0 theme `r`, on the button egui fills in `fill`: `button.body(<state>;
+/// variant=Primary).stroke`, its width and colour, at rest where stated and hovered or pressed
+/// where a rule states it for the state (spec §2, `from_state`), one stroke of one colour, a
+/// translucent one laid inside composited over `fill` ([`demo::pen_over`]); none where its
+/// width is not positive. `None` where the theme states none for the state, or in no form egui
+/// can draw, and the button scope's own stays: egui changes the outline between rest, hover and
+/// press (`egui-0.37.0/src/style.rs`, `Widgets::light`), so an unstated state keeps egui's
+/// treatment of it, not the rest pen (spec §10, rule 0).
+fn primary_pen(r: &ResolvedTheme, state: NextState, fill: egui::Color32) -> Option<egui::Stroke> {
+    let part = r
+        .button
+        .body(native_theme::next::ButtonQuery::primary().with_state(state));
+    let pen = if state == NextState::NONE {
+        demo::stated_pen(&part)
+    } else {
+        demo::state_pen(&part)
+    }?;
+    Some(demo::pen_over(&part, pen, fill))
+}
+
 /// The outline a rule of the installed 0.8.0 theme `r` states for a toolbar button in `state`
 /// (`toolbar.button(<state>).stroke`, [`demo::state_pen`]).
 fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
@@ -1445,10 +1489,13 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
 /// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`demo::tool_icon_size`]; where it
 /// states none, each button's label in place of its icon, which its Widget Info names), in the
 /// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
-/// connector's `layout.widget_gap`, else egui's own), each a tool button
-/// ([`demo::next_tool_button`]). Edit is an edit-mode switch (`DemoState::basic_edit`), on at
-/// start: while on it is egui's selected button (`Button::selected`) in the colours of
-/// [`edit_look`], each one the theme leaves unstated egui's own, which its Widget Info names; and
+/// connector's `layout.widget_gap`, else egui's own), each a toolbar button
+/// ([`demo::next_toolbar_button`]: filled at rest where `toolbar.button(NONE).fill` is stated),
+/// its icon loaded in `toolbar.button_icon(<state>).color` where stated, in the state of its
+/// previous response ([`demo::tool_icon_color`]). Edit is an edit-mode switch
+/// (`DemoState::basic_edit`), on at start: while on it is egui's selected button
+/// (`Button::selected`) in the colours of [`edit_look_at`] for the state of its previous
+/// response, each one the theme leaves unstated egui's own, which its Widget Info names; and
 /// lined in the pen a rule states for the checked state at rest (`toolbar.button(CHECKED)`),
 /// under the pointer (`CHECKED | HOVER`) and pressed (`CHECKED | PRESSED`), each unstated one the
 /// scope's own ([`tool_pen`]).
@@ -1497,14 +1544,18 @@ fn icon_buttons(
                     (IconRole::ActionPaste, "Paste", "basic.icons.paste"),
                     (IconRole::ActionDelete, "Delete", "basic.icons.delete"),
                 ] {
-                    let image = image_at(ui, role);
-                    let drawn = image.is_some();
+                    let key = egui::Id::unique(("basic state", id));
+                    let was = demo::previous_state(ui, key);
+                    let (mut drawn, mut filled) = (false, false);
                     wrap_before(ui, id);
                     let response = ui
                         .scope(|ui| {
                             // One line, as `text_button`'s label.
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                            demo::next_tool_button(ui, padding);
+                            filled = demo::next_toolbar_button(ui, padding, r);
+                            let tint = demo::tool_icon_color(r, was, false);
+                            let image = demo::loaded_in(ui, tint, |ui| image_at(ui, role));
+                            drawn = image.is_some();
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
                                     Some(image) => Button::image(image),
@@ -1518,7 +1569,8 @@ fn icon_buttons(
                             })
                         })
                         .inner;
-                    reg.ghost_last();
+                    demo::remember_state(ui, key, was, &response);
+                    reg.tool_rest_last(filled);
                     unsized_note(reg);
                     reg.tag(id, &response);
                     remember_width(ui, id, response.rect);
@@ -1529,13 +1581,15 @@ fn icon_buttons(
                 // The edit-mode switch: the one toolbar button that is ever checked.
                 let id = "basic.icons.edit";
                 let on = state.basic_edit;
-                let look = edit_look(r);
-                let mut drawn = false;
+                let key = egui::Id::unique(("basic state", id));
+                let was = demo::previous_state(ui, key);
+                let (fill, text) = edit_look_at(r, was);
+                let (mut drawn, mut filled) = (false, false);
                 wrap_before(ui, id);
                 let response = ui
                     .scope(|ui| {
                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                        demo::next_tool_button(ui, padding);
+                        filled = demo::next_toolbar_button(ui, padding, r);
                         // E9: while on, the pens a rule states for the checked state at rest,
                         // under the pointer and pressed. `Button::fill` leaves the stroke to the
                         // scope; only `Button::stroke` overrides it
@@ -1553,12 +1607,15 @@ fn icon_buttons(
                             }
                         }
                         // The text while on, egui's selected button's where unstated, before the
-                        // icon is loaded in the scope's text colour.
+                        // icon is loaded in the scope's text colour, or in the icon colour the
+                        // theme states for the state.
                         if on {
                             let own = ui.visuals().selection.stroke.color;
-                            ui.visuals_mut().override_text_color = Some(look.text.unwrap_or(own));
+                            ui.visuals_mut().override_text_color = Some(text.unwrap_or(own));
                         }
-                        let image = image_at(ui, IconRole::ActionEdit);
+                        let tint = demo::tool_icon_color(r, was, on);
+                        let image =
+                            demo::loaded_in(ui, tint, |ui| image_at(ui, IconRole::ActionEdit));
                         drawn = image.is_some();
                         let kind = if on {
                             "icon button, checked"
@@ -1571,7 +1628,7 @@ fn icon_buttons(
                                 None => Button::new("Edit"),
                             }
                             .selected(on);
-                            let button = match look.fill.filter(|_| on) {
+                            let button = match fill.filter(|_| on) {
                                 Some(fill) => button.fill(fill),
                                 None => button,
                             };
@@ -1583,15 +1640,17 @@ fn icon_buttons(
                         })
                     })
                     .inner;
+                demo::remember_state(ui, key, was, &response);
                 if response.clicked() {
                     state.basic_edit = !on;
                 }
                 // Not at rest transparent while it is on.
                 if !on {
-                    reg.ghost_last();
+                    reg.tool_rest_last(filled);
                 }
                 unsized_note(reg);
                 if on {
+                    let look = edit_look(r);
                     let unstated = [
                         look.fill_note("toolbar.button(CHECKED).fill"),
                         look.text_note(
@@ -1630,6 +1689,28 @@ pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
             next::state_text_color_of(&r.toolbar.button_label(NextState::CHECKED))
                 .or_else(|| next::state_text_color_of(&r.button.label(NextState::CHECKED)))
         }),
+    }
+}
+
+/// The Basic page's edit-mode switch's fill and text colour while on, in the state `(hovered,
+/// pressed)` of its previous response, of the installed 0.8.0 theme `r`: where a rule states
+/// `toolbar.button(CHECKED)`'s fill, `(HOVER|CHECKED)`'s under the pointer and
+/// `(PRESSED|CHECKED)`'s pressed, and the labels likewise from `toolbar.button_label`
+/// (`next::toolbar_button_checked`), as egui's selected button takes neither state of its own
+/// (spec §10, rule 0); each unstated one [`edit_look`]'s, the same in every state, as egui's own
+/// selected look is, and both [`edit_look`]'s where `next::toolbar_button_checked` reports a fill
+/// stated in a form egui cannot paint (`Unmapped`, which the Theme tab lists).
+pub(crate) fn edit_look_at(
+    r: Option<&ResolvedTheme>,
+    (hovered, pressed): (bool, bool),
+) -> (Option<egui::Color32>, Option<egui::Color32>) {
+    let look = edit_look(r);
+    match r.and_then(|r| next::toolbar_button_checked(r).ok()) {
+        Some(checked) => {
+            let (fill, text) = checked.at(hovered, pressed);
+            (fill.or(look.fill), text.or(look.text))
+        }
+        None => (look.fill, look.text),
     }
 }
 

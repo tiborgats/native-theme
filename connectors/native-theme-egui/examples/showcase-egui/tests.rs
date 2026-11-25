@@ -1034,6 +1034,56 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
     Ok(())
 }
 
+/// A `mapping.toml` row whose homes egui draws in different `visuals.widgets` entries routes
+/// each home to its own entry's sink: `button.hover_border_color`'s pressed home to the
+/// `active` stroke, its hovered one to the `hovered` stroke, in Widget Info's listed rows as in
+/// its route line.
+#[test]
+fn a_rows_route_is_the_sink_of_the_home_asked() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let row = manifest
+        .rows
+        .iter()
+        .find(|r| r.leaf == "button.hover_border_color")
+        .ok_or("mapping.toml has no button.hover_border_color row")?;
+    for (home, sink) in [
+        (
+            "button.body(HOVER).stroke.color",
+            "visuals.widgets.hovered.bg_stroke.color",
+        ),
+        (
+            "button.body(PRESSED).stroke.color",
+            "visuals.widgets.active.bg_stroke.color",
+        ),
+    ] {
+        let how = crate::info::how_line(&manifest, home, &seams);
+        assert!(how.contains(sink), "{home}: {how}");
+        let listed = crate::info::manifest_rows(
+            row,
+            (
+                &crate::info::InfoTheme::new(
+                    native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+                        .resolve(&native_theme::next::ThemeContext::light()),
+                )?,
+                "kde-breeze",
+            ),
+            &crate::info::as_stated,
+            &seams,
+        );
+        let line = listed
+            .iter()
+            .find(|r| r.leaf == home)
+            .map(|r| r.how.clone())
+            .ok_or_else(|| format!("{home} is not listed"))?;
+        assert!(line.contains(sink), "{home}: {line}");
+    }
+    Ok(())
+}
+
 /// The fills of the frames painted on the side-panel toggle's rect.
 fn toggle_frame_fills(harness: &Harness<'_, App>) -> Result<Vec<egui::Color32>, String> {
     let rect = harness
@@ -1053,6 +1103,137 @@ fn toggle_frame_fills(harness: &Harness<'_, App>) -> Result<Vec<egui::Color32>, 
             _ => None,
         })
         .collect())
+}
+
+/// The open side panel's toggle under kde-breeze light, which states the flat button's checked
+/// outline (`button.body(CHECKED; variant=Flat).stroke`, ButtonText's frame pen), is outlined
+/// in it, not left unframed as the flat button at rest.
+#[test]
+fn the_open_toggle_is_outlined_in_the_checked_flat_pen() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    harness.run_steps(SETTLE);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?;
+    let pen = crate::demo::state_pen(
+        &r.button
+            .body(ButtonQuery::flat().with_state(WidgetState::CHECKED)),
+    )
+    .ok_or("kde-breeze states no checked flat outline")?;
+    assert!(pen.width > 0.0 && pen.color.a() > 0, "{pen:?}");
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some("chrome.status_bar.toggle"))
+        .map(|record| record.rect)
+        .ok_or("the toggle records nothing")?;
+    let strokes: Vec<egui::Stroke> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) if shape.rect == rect => Some(shape.stroke),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(strokes, [pen], "the toggle's frame at {rect:?}");
+    Ok(())
+}
+
+/// The Basic page's primary button is outlined at rest in the pen the theme states for the
+/// primary variant, `button.body(NONE; variant=Primary).stroke`, not in the push button's, and
+/// its Widget Info routes that home to the call that draws it.
+#[test]
+fn the_primary_button_is_outlined_in_its_own_pen() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState,
+    };
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let patch = |_: &native_theme::next::ResolvedTheme| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Primary)
+                    .states(WidgetState::NONE)
+                    .body(PartPatch::new().stroke(Stroke::uniform(1.0, magenta))),
+            ),
+        )
+    };
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", patch)?;
+    harness.run_steps(SETTLE);
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some("basic.buttons.primary"))
+        .map(|record| record.rect)
+        .ok_or("the primary button records nothing")?;
+    let pen = egui::Stroke::new(1.0, native_theme_egui::next::to_color32(magenta));
+    let strokes: Vec<egui::Stroke> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) if shape.rect == rect => Some(shape.stroke),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(strokes, [pen], "the primary button's frame at {rect:?}");
+    let manifest = Manifest::parse(MANIFEST)?;
+    let how = crate::info::listed_how(
+        &manifest,
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).stroke.color",
+        &[],
+    );
+    assert!(how.contains("primary_pen"), "{how}");
+    Ok(())
+}
+
+/// The side-panel toggle's icon takes the colour the theme states for the flat button's icon
+/// in the state it is in, `button.icon(CHECKED; variant=Flat).color` while on and
+/// `button.icon(NONE; variant=Flat).color` while off; kde-breeze states none, and the icon is
+/// not lettered in the checked label's colour.
+#[test]
+fn the_toggles_icon_takes_the_stated_flat_icon_colour() {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, Preset, Theme, ThemeContext, ThemePatch,
+        WidgetState,
+    };
+    let stock = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    assert_eq!(crate::chrome::toggle_icon_colour(Some(&stock), true), None);
+    assert_eq!(crate::chrome::toggle_icon_colour(Some(&stock), false), None);
+    assert_eq!(crate::chrome::toggle_icon_colour(None, true), None);
+    let [on, off] = [
+        Color::new(1.0, 0.0, 1.0, 1.0),
+        Color::new(0.0, 1.0, 0.0, 1.0),
+    ];
+    let rule = |state: WidgetState, colour: Color| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .icon(IconPatch::new().color(colour))
+    };
+    let patch = ThemePatch::new()
+        .button(rule(WidgetState::NONE, off))
+        .button(rule(WidgetState::CHECKED, on));
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        crate::chrome::toggle_icon_colour(Some(&r), true),
+        Some(native_theme_egui::next::to_color32(on))
+    );
+    assert_eq!(
+        crate::chrome::toggle_icon_colour(Some(&r), false),
+        Some(native_theme_egui::next::to_color32(off))
+    );
 }
 
 /// The side-panel toggle while the panel is open, under a theme that states no checked flat
@@ -13474,6 +13655,252 @@ fn the_basic_edit_button_is_lettered_in_the_toolbars_checked_label() -> Result<(
     Ok(())
 }
 
+/// Whether a rectangle filled in `fill`, with no texture, is painted inside the place `id`.
+fn filled_in(harness: &Harness<'_, App>, id: &str, fill: egui::Color32) -> bool {
+    let Some(place) = harness.state().registry.places().get(id).copied() else {
+        return false;
+    };
+    harness
+        .output()
+        .shapes
+        .iter()
+        .any(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) => {
+                r.fill == fill && r.brush.is_none() && place.contains_rect(r.rect)
+            }
+            _ => false,
+        })
+}
+
+/// The Basic page's edit-mode switch while on, under the pointer and pressed, takes the fill and
+/// the label macos-monterey light states for the checked toolbar button in that state, in the
+/// state of its previous response (`pages::basic::edit_look_at`, `next::toolbar_button_checked`):
+/// at rest `toolbar.button(CHECKED)`'s #dfdfdf and label #424242, hovered `(HOVER|CHECKED)`'s
+/// #c6c6c6 and #343434, pressed `(PRESSED|CHECKED)`'s #b9b9b9 and #343434, the toolbar-bezel
+/// button as an on toggle (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// `aqua.{normal,hovered,pressed}.toolbar_toggle_on` `fill`, `label`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_checked_off_accent`,
+/// `toolbar_checked_label`), not egui's selected fill in every state.
+#[test]
+fn the_basic_edit_button_takes_the_checked_toolbar_buttons_hovered_and_pressed_looks()
+-> Result<(), String> {
+    let grey = |v: u8| egui::Color32::from_rgb(v, v, v);
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().demo_state.basic_edit,
+        "Edit is not on at start"
+    );
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let id = "basic.icons.edit";
+    let look = |harness: &Harness<'_, App>, fill: u8, text: u8, what: &str| {
+        assert!(
+            filled_in(harness, id, grey(fill)),
+            "Edit while on, {what}, is not filled in #{fill:02x}{fill:02x}{fill:02x}"
+        );
+        assert_eq!(
+            painted_label_colour(harness, "Edit", id),
+            Some(grey(text)),
+            "Edit while on, {what}: its label"
+        );
+    };
+    look(&harness, 0xdf, 0x42, "at rest");
+    let at = harness
+        .state()
+        .registry
+        .places()
+        .get(id)
+        .copied()
+        .ok_or("basic.icons.edit is not placed")?
+        .center();
+    harness.hover_at(at);
+    harness.run_steps(3);
+    look(&harness, 0xc6, 0x34, "hovered");
+    harness.drag_at(at);
+    harness.run_steps(3);
+    look(&harness, 0xb9, 0x34, "pressed");
+    Ok(())
+}
+
+/// A toolbar button at rest is filled and rounded as `toolbar.button(NONE)` states, on the
+/// Basic page's icon row and in the chrome's toolbar: macos-tahoe light's rest capsule, #ffffff,
+/// a pill, egui's largest radius (os-probe run 45634379188, macOS 26, toolbar states sheet,
+/// `aqua.normal.toolbar_button` `fill`, `*.normal.toolbar_image` `box`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_button_rest`, `toolbar_button_corners`),
+/// not the Ghost's transparent one; kde-breeze, which states no rest fill, keeps the Ghost.
+#[test]
+fn a_toolbar_button_at_rest_is_the_stated_capsule() -> Result<(), String> {
+    let capsule = |harness: &Harness<'_, App>, id: &str| {
+        let Some(place) = harness.state().registry.places().get(id).copied() else {
+            return false;
+        };
+        harness
+            .output()
+            .shapes
+            .iter()
+            .any(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) => {
+                    r.fill == egui::Color32::WHITE
+                        && r.corner_radius == egui::CornerRadius::same(u8::MAX)
+                        && place.contains_rect(r.rect)
+                }
+                _ => false,
+            })
+    };
+    let ids = ["basic.icons.copy", "chrome.toolbar.command_palette"];
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    for id in ids {
+        assert!(
+            capsule(&harness, id),
+            "macos-tahoe light: {id} at rest is not the white capsule"
+        );
+        assert!(
+            every_record_notes(&harness, id, &[crate::demo::TOOL_REST_NOTE.0]),
+            "macos-tahoe light: {id}'s record does not note its rest"
+        );
+    }
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    for id in ids {
+        assert!(
+            !capsule(&harness, id),
+            "kde-breeze light: {id} at rest is filled, though the theme states no rest fill"
+        );
+        assert!(
+            every_record_notes(&harness, id, &[crate::demo::GHOST_NOTE.0]),
+            "kde-breeze light: {id}'s record does not note it Ghost"
+        );
+    }
+    Ok(())
+}
+
+/// A toolbar button's icon is loaded in `toolbar.button_icon(<state>).color` where the theme
+/// states it, in the state of its previous response: macos-monterey light's #676767 at rest and
+/// #666666 hovered (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// `aqua.{normal,hovered}.toolbar_image` `ink`; native-theme/src/next/presets/macos.rs,
+/// `toolbar_icon`). Checked, in no stated colour where no rule states one for `CHECKED`, as
+/// neither macOS preset does: the resting colour is not the checked state's (spec §2,
+/// `from_state`), so macos-tahoe's checked icon is never loaded in its resting #4d4d4d, in any
+/// state. kde-breeze states none, and the icon keeps the colour it is loaded in. So the Basic
+/// page's Copy, a bundled Material icon, is painted from another texture under the pointer than
+/// at rest.
+#[test]
+fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
+    use crate::demo::tool_icon_color;
+    use native_theme::next::{Preset, Theme, ThemeContext};
+    let grey = |v: u8| Some(egui::Color32::from_rgb(v, v, v));
+    let monterey = Theme::preset(Preset::MacosMonterey).resolve(&ThemeContext::light());
+    let r = Some(&monterey);
+    assert_eq!(tool_icon_color(r, (false, false), false), grey(0x67));
+    assert_eq!(tool_icon_color(r, (true, false), false), grey(0x66));
+    assert_eq!(tool_icon_color(r, (false, false), true), None);
+    let tahoe = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
+    assert_eq!(
+        tool_icon_color(Some(&tahoe), (false, false), false),
+        grey(0x4d)
+    );
+    for was in [(false, false), (true, false), (false, true)] {
+        assert_eq!(tool_icon_color(Some(&tahoe), was, true), None, "{was:?}");
+    }
+    let breeze = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    assert_eq!(tool_icon_color(Some(&breeze), (true, false), false), None);
+    assert_eq!(tool_icon_color(None, (false, false), false), None);
+
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.state_mut().settings.icon = IconSetChoice::Material;
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let id = "basic.icons.copy";
+    let place = harness
+        .state()
+        .registry
+        .places()
+        .get(id)
+        .copied()
+        .ok_or("basic.icons.copy is not placed")?;
+    let textures = |harness: &Harness<'_, App>| -> Vec<egui::TextureId> {
+        harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| b.fill_texture_id)
+                }
+                _ => None,
+            })
+            .collect()
+    };
+    let rest = textures(&harness);
+    harness.hover_at(place.center());
+    harness.run_steps(3);
+    let hovered = textures(&harness);
+    assert!(
+        rest.len() == 1 && hovered.len() == 1,
+        "Copy's icon is not painted once: at rest {rest:?}, hovered {hovered:?}"
+    );
+    assert_ne!(
+        rest, hovered,
+        "Copy's icon is painted from one texture at rest and hovered, though the theme states \
+         another icon colour hovered"
+    );
+    Ok(())
+}
+
+/// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
+/// icon is not the texture it is painted from unchecked at rest, loaded in the resting
+/// `toolbar.button_icon(NONE).color` #4d4d4d, since no rule states a colour for `CHECKED`.
+#[test]
+fn the_checked_edit_icon_is_not_loaded_in_the_resting_icon_colour() -> Result<(), String> {
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
+    harness.state_mut().settings.icon = IconSetChoice::Material;
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let textures = |harness: &Harness<'_, App>| -> Result<Vec<egui::TextureId>, String> {
+        let place = harness
+            .state()
+            .registry
+            .places()
+            .get("basic.icons.edit")
+            .copied()
+            .ok_or("basic.icons.edit is not placed")?;
+        Ok(harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| b.fill_texture_id)
+                }
+                _ => None,
+            })
+            .collect())
+    };
+    assert!(harness.state().demo_state.basic_edit, "Edit starts checked");
+    let checked = textures(&harness)?;
+    harness.state_mut().demo_state.basic_edit = false;
+    harness.run_steps(3);
+    let rest = textures(&harness)?;
+    assert!(
+        checked.len() == 1 && rest.len() == 1,
+        "Edit's icon is not painted once: checked {checked:?}, at rest {rest:?}"
+    );
+    assert_ne!(
+        checked, rest,
+        "the checked Edit icon is loaded in the resting icon colour"
+    );
+    Ok(())
+}
+
 /// The Basic page's icon buttons on the 0.8.0 model, under every bundled preset in light: Copy,
 /// Paste and Delete stand the toolbar scope's item gap apart, `toolbar.item_gap` where the theme
 /// states it, else `layout.widget_gap`, which the connector's base style carries, and so no
@@ -15065,6 +15492,48 @@ fn no_bundled_preset_leaves_a_drawn_fill_unmapped() {
     assert!(unmapped.is_empty(), "{unmapped:#?}");
 }
 
+/// The side-panel toggle's checked fill, `button.body(CHECKED; variant=Flat).fill`
+/// (`chrome::toggle_checked`), stated as layers that are all gradients for the flat button
+/// alone, is a drawn fill `demo::drawn_fills_unmapped` reports at its home.
+#[test]
+fn the_toggles_checked_flat_fill_is_a_drawn_fill() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, GradientStop, Paint, PaintLayer, PartPatch, Preset,
+        Theme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let patch = ThemePatch::new().button(
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(WidgetState::CHECKED)
+            .body(PartPatch::new().fill(gradient)),
+    );
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let notes = crate::demo::drawn_fills_unmapped(&r);
+    assert_eq!(
+        notes,
+        vec![native_theme_egui::Note::unmapped(
+            "button.body(CHECKED; variant=Flat).fill"
+        )],
+    );
+    Ok(())
+}
+
 /// A fill the theme states as layers that are all gradients, at a home a showcase drawing site
 /// reads (`tab.indicator(SELECTED).fill`, the selected tab's line) and at one a companion
 /// widget reads (`switch.track(CHECKED).fill`, the switch), is listed under the Theme tab's
@@ -15133,4 +15602,396 @@ fn the_theme_tab_lists_an_all_gradient_fill_at_its_home() -> Result<(), String> 
         );
     }
     Ok(())
+}
+
+/// The showcase on the Basic page under `preset` light, with `patch` over its 0.8.0 themes where
+/// given (`OldAtlas::patched`), and the pointer held at `point`, pressed or not, for sixteen
+/// passes.
+fn held_at(
+    preset: &str,
+    patch: Option<&native_theme::next::ThemePatch>,
+    point: egui::Pos2,
+    press: bool,
+) -> Result<Harness<'static, App>, String> {
+    let mut args = cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]);
+    args.pointer = Some((point.x as u16, point.y as u16));
+    args.press = press;
+    let mut harness = open(egui::Theme::Light, args);
+    install_under(&mut harness, egui::Theme::Light, preset);
+    if let Some(patch) = patch {
+        let patched = harness.state().atlas.patched(patch)?;
+        let ctx = harness.ctx.clone();
+        harness.state_mut().adopt_pair(&ctx, patched);
+    }
+    for step in 0..16u32 {
+        let ctx = harness.ctx.clone();
+        let mut input = std::mem::take(harness.input_mut());
+        input.time = Some(f64::from(step) * 0.5);
+        eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+        *harness.input_mut() = input;
+        harness.step();
+    }
+    Ok(harness)
+}
+
+/// The rect the element `id` records.
+fn element_rect(harness: &Harness<'_, App>, id: &str) -> Result<egui::Rect, String> {
+    harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some(id))
+        .map(|record| record.rect)
+        .ok_or_else(|| format!("{id} records nothing"))
+}
+
+/// The fills and outlines of the filled frames egui painted over the centre of `rect` and
+/// within a few points of it: a button's frame, whose edge a pen of another width than the
+/// scope's moves (`egui-0.37.0/src/containers/frame.rs`,
+/// `apply_stroke_and_expansion_without_layout_shift`).
+fn frames_at(harness: &Harness<'_, App>, rect: egui::Rect) -> Vec<(egui::Color32, egui::Stroke)> {
+    harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape)
+                if shape.fill != egui::Color32::TRANSPARENT
+                    && shape.brush.is_none()
+                    && rect.expand(4.0).contains_rect(shape.rect)
+                    && shape.rect.contains_rect(rect.shrink(4.0)) =>
+            {
+                Some((shape.fill, shape.stroke))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// Under windows-11 light, which states the primary button's outline at rest
+/// (`button.body(NONE; variant=Primary).stroke`, `#0000000f` laid inside) and no rule for its
+/// hovered or pressed state, the primary button is outlined at rest in that pen composited over
+/// its fill, as egui ends the fill at the stroke's inner edge, and hovered and pressed in the
+/// button scope's own hovered and active entries, egui's treatment of those states, never the
+/// resting pen (spec §10, rule 0).
+#[test]
+fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, PartStated, WidgetState};
+    const ID: &str = "basic.buttons.primary";
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
+    probe.run_steps(SETTLE);
+    let rect = element_rect(&probe, ID)?;
+    let widgets = scope_widgets(&probe, native_theme_egui::Role::Button)?;
+    let r = probe
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("windows-11: no 0.8.0 theme installed")?;
+    let at = |state| r.button.body(ButtonQuery::primary().with_state(state));
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert!(
+            !at(state).from_state.contains(PartStated::STROKE),
+            "windows-11 states the primary's {state:?} outline, so the test proves nothing"
+        );
+    }
+    let rest = at(WidgetState::NONE);
+    let pen = crate::demo::stated_pen(&rest).ok_or("windows-11 states no primary outline")?;
+    let [(fill, drawn)] = frames_at(&probe, rect)[..] else {
+        return Err(format!(
+            "the primary's frame: {:?}",
+            frames_at(&probe, rect)
+        ));
+    };
+    assert!(pen.color.a() < u8::MAX, "{pen:?} is opaque");
+    let over = egui::Stroke::new(pen.width, fill.blend(pen.color));
+    assert_ne!(over, pen, "the pen composites to itself");
+    assert_eq!(drawn, over, "at rest: the stated pen over the fill");
+    for (press, own, what) in [
+        (false, widgets.hovered.bg_stroke, "hovered"),
+        (true, widgets.active.bg_stroke, "pressed"),
+    ] {
+        assert_ne!(own, over, "{what}: the scope's entry is the resting pen");
+        let held = held_at("windows-11", None, rect.center(), press)?;
+        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
+        assert_eq!(strokes, [own], "{what}: the scope's own entry");
+    }
+    Ok(())
+}
+
+/// Under kde-breeze light with the primary button's hovered and pressed outlines patched in
+/// (`button.body(HOVER; variant=Primary).stroke` 3 px magenta, `(PRESSED; variant=Primary)`
+/// 2 px green), the hovered primary is drawn in the first and the pressed in the second, each
+/// state's whole pen, its width too, not the resting one's; focused, in the button scope's own
+/// active entry.
+#[test]
+fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::next;
+    const ID: &str = "basic.buttons.primary";
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let rule = |state, width, colour| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Primary)
+            .states(state)
+            .body(PartPatch::new().stroke(Stroke::uniform(width, colour)))
+    };
+    let patch = ThemePatch::new()
+        .button(rule(WidgetState::HOVER, 3.0, magenta))
+        .button(rule(WidgetState::PRESSED, 2.0, green));
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    probe.run_steps(SETTLE);
+    let rect = element_rect(&probe, ID)?;
+    for (press, want, what) in [
+        (
+            false,
+            egui::Stroke::new(3.0, next::to_color32(magenta)),
+            "hovered",
+        ),
+        (
+            true,
+            egui::Stroke::new(2.0, next::to_color32(green)),
+            "pressed",
+        ),
+    ] {
+        let held = held_at("kde-breeze", Some(&patch), rect.center(), press)?;
+        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
+        assert_eq!(strokes, [want], "{what}");
+    }
+
+    let patch_for = patch.clone();
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(patch_for)
+    })?;
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let own = scope_widgets(&harness, native_theme_egui::Role::Button)?
+        .active
+        .bg_stroke;
+    harness
+        .query_all_by_label("Primary")
+        .next()
+        .ok_or("no node labelled Primary")?
+        .focus();
+    harness.run_steps(4);
+    let rect = element_rect(&harness, ID)?;
+    let strokes: Vec<egui::Stroke> = frames_at(&harness, rect).iter().map(|f| f.1).collect();
+    assert_eq!(strokes, [own], "focused: the scope's own active entry");
+    Ok(())
+}
+
+/// The open side-panel toggle's pens (`chrome::toggle_checked_pens`): under kde-breeze light,
+/// which states the flat button's `FOCUS_VISIBLE` outline, the active entry, press and focus
+/// alike, takes `(CHECKED | FOCUS_VISIBLE)`'s pen, never a patched `(CHECKED | PRESSED)` one;
+/// under macos-monterey light, which states none for `FOCUS_VISIBLE`, with a checked and a
+/// checked-pressed outline patched in, it takes `(CHECKED | PRESSED)`'s, and the hovered entry
+/// `(CHECKED | HOVER)`'s. A translucent checked pen laid inside is composited over the fill.
+#[test]
+fn the_open_toggles_pens_follow_the_stated_states() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, Color, PartPatch, Preset, Stroke, StrokeAlign,
+        Theme, ThemeContext, ThemePatch, WidgetState as S,
+    };
+    use native_theme_egui::next;
+    let fill = egui::Color32::from_rgb(200, 100, 50);
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let flat = |state: S, stroke: Stroke| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .body(PartPatch::new().stroke(stroke))
+    };
+    let pen = |r: &native_theme::next::ResolvedTheme, state| {
+        crate::demo::state_pen(&r.button.body(ButtonQuery::flat().with_state(state)))
+    };
+    let pressed =
+        ThemePatch::new().button(flat(S::CHECKED | S::PRESSED, Stroke::uniform(3.0, magenta)));
+    let breeze = Theme::preset(Preset::KdeBreeze)
+        .with_patch(pressed)
+        .resolve(&ThemeContext::light());
+    let [rest, hovered, active] = crate::chrome::toggle_checked_pens(Some(&breeze), fill);
+    let magenta_pen = egui::Stroke::new(3.0, next::to_color32(magenta));
+    assert_eq!(rest, pen(&breeze, S::CHECKED));
+    assert_eq!(hovered, pen(&breeze, S::CHECKED | S::HOVER));
+    assert_eq!(active, pen(&breeze, S::CHECKED | S::FOCUS_VISIBLE));
+    assert!(
+        active.is_some() && active != Some(magenta_pen),
+        "{active:?}"
+    );
+
+    let monterey = Theme::preset(Preset::MacosMonterey)
+        .with_patch(
+            // a later rule is laid over an earlier one: the checked state's first
+            ThemePatch::new()
+                .button(flat(S::CHECKED, Stroke::uniform(2.0, green)))
+                .button(flat(S::CHECKED | S::HOVER, Stroke::uniform(4.0, green)))
+                .button(flat(S::CHECKED | S::PRESSED, Stroke::uniform(3.0, magenta))),
+        )
+        .resolve(&ThemeContext::light());
+    assert_eq!(pen(&monterey, S::FOCUS_VISIBLE), None);
+    let [rest, hovered, active] = crate::chrome::toggle_checked_pens(Some(&monterey), fill);
+    let green = next::to_color32(green);
+    assert_eq!(rest, Some(egui::Stroke::new(2.0, green)));
+    assert_eq!(hovered, Some(egui::Stroke::new(4.0, green)));
+    assert_eq!(active, Some(magenta_pen));
+
+    let half = Color::new(0.0, 0.0, 0.0, 0.5);
+    let inside = Theme::preset(Preset::KdeBreeze)
+        .with_patch(ThemePatch::new().button(flat(
+            S::CHECKED,
+            Stroke::uniform_aligned(1.0, half, StrokeAlign::Inside),
+        )))
+        .resolve(&ThemeContext::light());
+    let [rest, ..] = crate::chrome::toggle_checked_pens(Some(&inside), fill);
+    assert_eq!(
+        rest,
+        Some(egui::Stroke::new(1.0, fill.blend(next::to_color32(half))))
+    );
+    assert_eq!(crate::chrome::toggle_checked_pens(None, fill), [None; 3]);
+    Ok(())
+}
+
+/// The open side-panel toggle under kde-breeze light with `(CHECKED | HOVER; variant=Flat)`'s
+/// outline patched to 3 px magenta and `(CHECKED | FOCUS_VISIBLE; variant=Flat)`'s to 2 px
+/// green: hovered it is drawn in the first and pressed in the second, the pens
+/// `chrome::toggle_checked_pens` lays over egui's hovered and active entries.
+#[test]
+fn the_open_toggle_is_outlined_in_its_hovered_and_active_pens() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState as S,
+    };
+    use native_theme_egui::next;
+    const ID: &str = "chrome.status_bar.toggle";
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let flat = |state: S, width, colour| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .body(PartPatch::new().stroke(Stroke::uniform(width, colour)))
+    };
+    let patch = ThemePatch::new()
+        .button(flat(S::CHECKED | S::HOVER, 3.0, magenta))
+        .button(flat(S::CHECKED | S::FOCUS_VISIBLE, 2.0, green));
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    probe.run_steps(SETTLE);
+    assert!(
+        probe.state().side_panel_visible,
+        "the side panel starts open"
+    );
+    let rect = element_rect(&probe, ID)?;
+    for (press, want, what) in [
+        (
+            false,
+            egui::Stroke::new(3.0, next::to_color32(magenta)),
+            "hovered",
+        ),
+        (
+            true,
+            egui::Stroke::new(2.0, next::to_color32(green)),
+            "pressed",
+        ),
+    ] {
+        let held = held_at("kde-breeze", Some(&patch), rect.center(), press)?;
+        assert!(
+            held.state().side_panel_visible,
+            "{what}: the panel stays open"
+        );
+        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
+        assert_eq!(strokes, [want], "{what}");
+    }
+    Ok(())
+}
+
+/// N6's wiring: the status bar loads the side-panel toggle's freedesktop icon in the colour the
+/// theme states for the flat button's icon in the state it is in (`button.icon(CHECKED;
+/// variant=Flat).color` while open, `(NONE; variant=Flat)` while closed, patched in), its icon
+/// cache key tinted in it. The icon theme is a fixture in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour() -> Result<(), String> {
+    use crate::demo::IconLoad;
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::next;
+    const NAME: &str = "tests::the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour";
+    if native_theme_test_fixtures::in_child() {
+        let [on, off] = [
+            Color::new(1.0, 0.0, 1.0, 1.0),
+            Color::new(0.0, 1.0, 0.0, 1.0),
+        ];
+        let rule = |state: WidgetState, colour: Color| {
+            ButtonRule::new()
+                .variant(ButtonVariant::Flat)
+                .states(state)
+                .icon(IconPatch::new().color(colour))
+        };
+        let patch = ThemePatch::new()
+            .button(rule(WidgetState::NONE, off))
+            .button(rule(WidgetState::CHECKED, on));
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[
+                ("--theme", TEST_PRESET),
+                ("--variant", "light"),
+                ("--icon-set", "named"),
+            ]),
+        );
+        let patched = harness.state().atlas.patched(&patch)?;
+        let ctx = harness.ctx.clone();
+        harness.state_mut().adopt_pair(&ctx, patched);
+        // The toggle's icon keys loaded since `from`, the last one.
+        let last_toggle = |harness: &Harness<'_, App>, from: usize| {
+            icon_loads_since(harness, from)
+                .into_iter()
+                .filter_map(|load| match load {
+                    IconLoad::Named(key) if format!("{key:?}").contains("panel-left") => Some(key),
+                    _ => None,
+                })
+                .next_back()
+        };
+        let from = harness.state().icon_cache.loads.len();
+        harness.run_steps(4);
+        assert!(
+            harness.state().side_panel_visible,
+            "the side panel starts open"
+        );
+        let open_key = last_toggle(&harness, from).ok_or("the open toggle loads no icon")?;
+        let on = next::to_color32(on);
+        assert_eq!(open_key.clone().tint(on), open_key, "open: tinted {on:?}");
+        let from = harness.state().icon_cache.loads.len();
+        harness.state_mut().side_panel_visible = false;
+        harness.run_steps(4);
+        let closed_key = last_toggle(&harness, from).ok_or("the closed toggle loads no icon")?;
+        let off = next::to_color32(off);
+        assert_eq!(
+            closed_key.clone().tint(off),
+            closed_key,
+            "closed: tinted {off:?}"
+        );
+        return Ok(());
+    }
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    let child = native_theme_test_fixtures::Child {
+        desktop: "sway",
+        icon_theme: None,
+    };
+    native_theme_test_fixtures::run(NAME, child, |icons| {
+        native_theme_test_fixtures::write_scalable_theme(
+            icons,
+            "named",
+            &[
+                ("utilities-terminal", SVG),
+                ("object-rotate-right", SVG),
+                ("sidebar-show", SVG),
+            ],
+        )
+    })
+    .map_err(|e| e.to_string())
 }
