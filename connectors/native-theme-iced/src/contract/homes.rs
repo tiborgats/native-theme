@@ -11,7 +11,8 @@
 //! slot of [`ROWS`], `styles::<fn>.<field>` for a field of
 //! `crate::next::styles::<fn>`'s output, `crate::<fn>` for the colour
 //! accessor `crate::next::<fn>`. The export is written by the 0.7.2 walk's
-//! renderers ([`render_moves`], [`render_named`], [`render_rows`]).
+//! renderers ([`render_moves`], [`render_named`], [`render_rows`]), the
+//! reasons of its `except` lists by [`render_excepted`].
 
 use super::*;
 
@@ -146,6 +147,29 @@ const UNREAD_HOMES: &[UnreadHome] = &[
              `application`)",
     },
 ];
+
+/// A preset whose combinations a home's `except` list names for a row it
+/// moves elsewhere, and why: the home, the row, the preset and the reason.
+struct ExceptedHome {
+    home: &'static str,
+    row: &'static str,
+    preset: &'static str,
+    why: &'static str,
+}
+
+/// The `except` entries of the export that a reason explains, each held to
+/// the walk by `every_colour_home_moves_a_row_or_is_named`.
+const EXCEPTED_HOMES: &[ExceptedHome] = &[ExceptedHome {
+    home: "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    row: "styles::checkbox.border",
+    preset: "kde-breeze",
+    why: "kde-breeze states a disabled checked box's frame for DISABLED|CHECKED, Breeze's \
+         Disabled Highlight (`indicator` in native-theme/src/next/presets/kde.rs, \
+         switch_disabled_on_frame), and no stroke for DISABLED alone, so the border reads it \
+         only where a rule for DISABLED alone states the stroke (`flagged`, \
+         src/next/borders.rs; spec §2, `from_state`): a colour stated at the home does not \
+         move it on kde-breeze, the two-flag gap, the spec question SQ1, not a connector fix",
+}];
 
 /// Two opaque colours and a translucent one stated at a home in turn: a row
 /// that reads the home tells them apart, one composited under an opaque
@@ -1293,6 +1317,9 @@ fn render_contract_homes(reach: &HomeReach) -> String {
 #               absent for a row that takes no status;
 #     except    the combinations (`<preset>/<scheme>`) in which it does not move the row
 #               under those statuses; absent where it moves it in all {}.
+#   excepted: where EXCEPTED_HOMES (src/contract/homes.rs) explains a preset an except list
+#             names, per entry {{ row, preset, why }}: the row, the preset and the reason;
+#             absent where it explains none.
 #   A home that moves no row in any combination, or that no patch states a colour at, has
 #   instead the entry that names it:
 #     named     UNREAD_HOMES (src/contract/homes.rs), or UNREAD_COLOURS or UNREACHABLE
@@ -1322,7 +1349,10 @@ combinations = {}
             );
         }
         match reach.moves.get(home) {
-            Some(rows) => render_moves(&mut out, rows, &reach.labels),
+            Some(rows) => {
+                render_moves(&mut out, rows, &reach.labels);
+                render_excepted(&mut out, home);
+            }
             None => {
                 if let Some((named, entry, kind, why)) = home_naming(home, keys) {
                     render_named(&mut out, named, &entry, &kind, why);
@@ -1332,6 +1362,46 @@ combinations = {}
     }
     render_rows(&mut out, &reach.moves, "homes");
     out
+}
+
+/// The `excepted` array the export gives `home` where [`EXCEPTED_HOMES`]
+/// explains a preset of its `except` lists; nothing where it explains none.
+fn render_excepted(out: &mut String, home: &str) {
+    use std::fmt::Write as _;
+
+    let mut entries = EXCEPTED_HOMES.iter().filter(|e| e.home == home).peekable();
+    if entries.peek().is_none() {
+        return;
+    }
+    out.push_str("excepted = [\n");
+    for e in entries {
+        let _ = writeln!(
+            out,
+            "  {{ row = {}, preset = {}, why = {} }},",
+            toml_string(e.row),
+            toml_string(e.preset),
+            toml_string(e.why)
+        );
+    }
+    out.push_str("]\n");
+}
+
+/// Whether `home` leaves `row` unmoved, under some status, in a combination
+/// of `preset` that it moves it in elsewhere: the case an [`EXCEPTED_HOMES`]
+/// entry explains.
+fn excepts(reach: &HomeReach, home: &str, row: &str, preset: &str) -> bool {
+    let prefix = format!("{preset}/");
+    reach.moves.get(home).is_some_and(|rows| {
+        rows.iter()
+            .filter(|(key, _)| key.row == row)
+            .any(|(_, bases)| {
+                reach
+                    .labels
+                    .iter()
+                    .enumerate()
+                    .any(|(i, label)| label.starts_with(&prefix) && !bases.contains(&i))
+            })
+    })
 }
 
 /// Rewrites `contract-homes.toml` from the walk; run on purpose, with every
@@ -1354,7 +1424,9 @@ fn regenerate_contract_homes() -> Result<(), String> {
 /// entry for a leaf it holds, and so must every home no patch reaches, by
 /// the 0.7.2 tables or an [`UNREAD_HOMES`] entry of the kind "no patch". An
 /// [`UNREAD_HOMES`] entry that names a home a row reads, or "no patch" for a
-/// home a patch reaches, is stale, and so is one that names no colour home.
+/// home a patch reaches, is stale, and so is one that names no colour home,
+/// and an [`EXCEPTED_HOMES`] entry whose preset no `except` list of its
+/// home's row names.
 ///
 /// And `contract-homes.toml`, the walk's export, must be what the walk
 /// finds: a file that differs fails, naming the command that rewrites it.
@@ -1416,6 +1488,14 @@ fn every_colour_home_moves_a_row_or_is_named() -> Result<(), String> {
             failures.push(format!(
                 "UNREAD_HOMES names {}, which is no colour home",
                 entry.home
+            ));
+        }
+    }
+    for entry in EXCEPTED_HOMES {
+        if !excepts(&reach, entry.home, entry.row, entry.preset) {
+            failures.push(format!(
+                "EXCEPTED_HOMES explains {} under {} on {}, which no except list names",
+                entry.row, entry.home, entry.preset
             ));
         }
     }

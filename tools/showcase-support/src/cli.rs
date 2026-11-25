@@ -8,8 +8,6 @@
 //! - a bad `--pointer` exits 1 before the window opens;
 //! - `--screenshot` exits 1 before the window opens where the showcase cannot
 //!   capture its frame ([`screenshot_support`]);
-//! - `--palette` exits 1 before the window opens in a showcase still on the
-//!   0.7.2 model, which has no palettes ([`palette_support`]);
 //! - a value a picker does not offer is reported and ignored ([`reported`]),
 //!   `--open-menu` included;
 //! - a run that writes files (`--dump-layout`, `--screenshot`) quits once
@@ -72,8 +70,7 @@ pub struct CliArgs {
     /// show it open with its rows ([`open_menu`]).
     pub open_menu: Option<String>,
     /// `--palette <name>`: `none` or a bundled palette laid over the theme
-    /// ([`palette_key`]), in a showcase on the 0.8.0 model
-    /// ([`palette_support`]).
+    /// ([`palette_key`]).
     pub palette: Option<String>,
 }
 
@@ -447,15 +444,6 @@ pub fn palette_key(name: &str) -> Result<Option<&'static str>, String> {
 
 /// The `--palette` value for no palette: the theme's own colours.
 pub const NO_PALETTE: &str = "none";
-
-/// Whether the `kind` showcase takes `--palette`: the gpui, iced and egui
-/// ones all install the 0.8.0 model and take it. A showcase on the 0.7.2
-/// model, which has no palettes, would refuse it ([`refuse`]).
-pub fn palette_support(kind: Kind) -> Result<(), String> {
-    match kind {
-        Kind::Gpui | Kind::Iced | Kind::Egui => Ok(()),
-    }
-}
 
 /// The icon-theme picker's row `--icon-set` names.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1036,15 +1024,6 @@ mod tests {
                 "--palette Nord: no such palette; the palettes are: {names}"
             ))
         );
-    }
-
-    /// The gpui, iced and egui showcases, all on the 0.8.0 model, take
-    /// `--palette`.
-    #[test]
-    fn the_palette_flag_runs_in_the_08_showcases_alone() {
-        for kind in [Kind::Gpui, Kind::Iced, Kind::Egui] {
-            assert_eq!(palette_support(kind), Ok(()));
-        }
     }
 
     /// `--screenshot` runs on macOS and Windows; elsewhere it is refused,

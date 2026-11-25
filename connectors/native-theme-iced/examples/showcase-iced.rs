@@ -23484,10 +23484,8 @@ fn main() -> iced::Result {
 }
 
 /// Why the command line `cli` is refused before the window opens: a
-/// `--pointer` value that is not `X,Y`, `--palette` where the showcase
-/// does not take it (`cli::palette_support`, which this showcase, on the
-/// 0.8.0 model, passes), or `--screenshot`
-/// where the window cannot be captured with its frame
+/// `--pointer` value that is not `X,Y`, or `--screenshot` where the window
+/// cannot be captured with its frame
 /// (`cli::screenshot_support`: Linux, where iced's own capture is its
 /// content alone).
 fn refusal(cli: &CliArgs) -> Option<String> {
@@ -23495,11 +23493,6 @@ fn refusal(cli: &CliArgs) -> Option<String> {
         return Some(format!(
             "--pointer {value:?}: not X,Y in whole logical pixels"
         ));
-    }
-    if cli.palette.is_some()
-        && let Err(error) = cli::palette_support(Kind::Iced)
-    {
-        return Some(error);
     }
     cli.screenshot
         .as_ref()
@@ -32326,11 +32319,12 @@ mod tests {
         // A theme with no disabled rule: the enabled colour, or iced's own,
         // faded by the switch's opacity; a patch stating the colour wins.
         // Every bundled preset states the disabled label, so each is read
-        // with a rule that requires no state and is kept off the checked
-        // switch stating the label at rest for the unchecked ones, which
-        // clears the disabled colour's `from_state` bit (spec §2,
-        // `from_state`); iced's own colour, which no preset leaves, is read
-        // on the stated input directly.
+        // with a rule that requires no state stating the label at rest,
+        // which clears the disabled colour's `from_state` bit, checked or
+        // not (spec §2, `from_state`), and leaves the checked label as the
+        // preset states it, its rest colour on every bundled preset; iced's
+        // own colour, which no preset leaves, is read on the stated input
+        // directly.
         let patch = native_theme::next::ThemePatch::from_toml(
             "[[widgets.switch.rules]]\nstates = [\"disabled\"]\nlabel.color = \"#13579b\"\n",
         )
@@ -32339,21 +32333,25 @@ mod tests {
             use native_theme::next::{SwitchRule, TextPatch, ThemePatch};
             let rest = r.switch.label(WidgetState::NONE).color;
             r.apply_patch(
-                &ThemePatch::new().switch(
-                    SwitchRule::new()
-                        .not_states(WidgetState::CHECKED)
-                        .label(TextPatch::new().color(rest)),
-                ),
+                &ThemePatch::new().switch(SwitchRule::new().label(TextPatch::new().color(rest))),
             );
         };
         let ruled = |r: &native_theme::next::ResolvedTheme| {
-            r.switch
-                .label(WidgetState::DISABLED)
-                .from_state
-                .contains(TextStated::COLOR)
+            [WidgetState::DISABLED, disabled]
+                .iter()
+                .any(|&state| r.switch.label(state).from_state.contains(TextStated::COLOR))
         };
         let (mut stated, mut own) = (0, 0);
         for (label, mut r) in next_combinations() {
+            let (on, off) = (
+                r.switch.label(WidgetState::CHECKED).color,
+                r.switch.label(WidgetState::NONE).color,
+            );
+            if on != off {
+                faults.push(format!(
+                    "{label}: the checked label {on:?}, not the rest colour {off:?}"
+                ));
+            }
             if ruled(&r) {
                 unruled(&mut r);
                 if ruled(&r) {

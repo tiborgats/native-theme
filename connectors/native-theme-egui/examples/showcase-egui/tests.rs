@@ -11888,9 +11888,24 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
 
 /// The Basic switches' label homes, which no `mapping.toml` row holds, are routed to the
 /// companion crate's switch that reads them ([`crate::info::SWITCH_LABEL_ROUTES`]), not shown
-/// as unreachable: every `switch.label` home the three switches and their labels list.
+/// as unreachable: every `switch.label` home the three switches and their labels list, each
+/// with its claim, painted by the switch, or not read by it with its reason.
 #[test]
 fn the_switch_label_routes_name_the_switch_that_draws_them() -> Result<(), String> {
+    const READ: &str = "egui: native-theme-egui-widgets Switch";
+    const CLAIMS: [(&str, Option<&str>); 4] = [
+        ("switch.label(NONE)", None),
+        ("switch.label(NONE).color", None),
+        (
+            "switch.label(CHECKED).color",
+            Some(
+                "egui: not read by native-theme-egui-widgets Switch \
+                 (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as \
+                 the off one",
+            ),
+        ),
+        ("switch.label(DISABLED|CHECKED).color", None),
+    ];
     let manifest = Manifest::parse(MANIFEST)?;
     let seams = [crate::demo::Seam::Role(
         native_theme_egui::Role::Switch,
@@ -11909,7 +11924,14 @@ fn the_switch_label_routes_name_the_switch_that_draws_them() -> Result<(), Strin
         {
             checked += 1;
             let how = crate::info::listed_how(&manifest, &element.id, home, &seams);
-            if !how.contains("native-theme-egui-widgets Switch") || how.contains("not reachable") {
+            let claimed = match CLAIMS.iter().find(|(h, _)| *h == home.as_str()) {
+                Some((_, None)) => {
+                    how.starts_with(READ) && how.contains(" paints it") && !how.contains("not read")
+                }
+                Some((_, Some(unread))) => how.starts_with(unread),
+                None => false,
+            };
+            if !claimed || how.contains("not reachable") {
                 wrong.push(format!("{} {home}: {how:?}", element.id));
             }
         }

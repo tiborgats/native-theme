@@ -135,6 +135,21 @@ const DISABLED_STROKE: &str = "the theme states no stroke for the disabled check
      is iced's own for the status, its width the theme's at rest, which iced does not change \
      (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
 
+/// kde-breeze's disabled check box: no stroke for DISABLED alone, a
+/// checked box's frame stated for `DISABLED | CHECKED`, which the query
+/// with DISABLED alone does not reach.
+const KDE_DISABLED_STROKE: &str = "kde-breeze's rule for DISABLED states checkbox.indicator's \
+     fill and no stroke (the from_state bit clear when queried with DISABLED alone), so a \
+     disabled box's border colour is iced's own for the status (iced_widget 0.14.2 \
+     src/checkbox.rs, fn primary), its width the theme's at rest, where 0.7.2's connector drew \
+     it in its outline at rest, checked or not. kde-breeze does state a disabled checked box's \
+     frame, for DISABLED|CHECKED: Breeze's Disabled Highlight #e3e5e7 / #1f2124 (`indicator` \
+     in native-theme/src/next/presets/kde.rs, switch_disabled_on_frame), which the connector \
+     does not reach: by spec §2's from_state contract a connector keeping its own treatment of \
+     DISABLED asks the query with that flag alone, and a rule for DISABLED|CHECKED does not set \
+     its bit there; the two-flag gap, the spec question SQ1, not a connector fix \
+     (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
 /// A `Style` field the 0.8.0 preset states at a home where 0.7.2's
 /// resolver gave another value: in the statuses of state `at` (the
 /// widget's status, with the checked or selected flag of a style function
@@ -1587,12 +1602,10 @@ fn disabled_outline(t: &native_theme::next::ResolvedTheme, state: WidgetState) -
     .ok()?;
     let disabled = gate.from_state.contains(PartStated::FILL);
     let fill = if disabled {
-        super::fill_of(
-            &c.indicator(WidgetState::DISABLED.union(state)),
-            "checkbox.indicator(DISABLED).fill",
-        )
+        let at = WidgetState::DISABLED.union(state);
+        super::fill_of(&c.indicator(at), indicator_fill_home(at))
     } else {
-        super::fill_of(&c.indicator(state), "checkbox.indicator(NONE).fill")
+        super::fill_of(&c.indicator(state), indicator_fill_home(state))
     }
     .ok()
     .flatten()?;
@@ -1602,6 +1615,20 @@ fn disabled_outline(t: &native_theme::next::ResolvedTheme, state: WidgetState) -
         ground: super::to_color(t.colors.window.background?),
         opacity: c.disabled_opacity,
     })
+}
+
+/// The home of `checkbox.indicator(state)`'s fill, `state` a disabled or a
+/// checked box's or both.
+fn indicator_fill_home(state: WidgetState) -> &'static str {
+    match (
+        state.contains(WidgetState::DISABLED),
+        state.contains(WidgetState::CHECKED),
+    ) {
+        (false, false) => "checkbox.indicator(NONE).fill",
+        (false, true) => "checkbox.indicator(CHECKED).fill",
+        (true, false) => "checkbox.indicator(DISABLED).fill",
+        (true, true) => "checkbox.indicator(DISABLED|CHECKED).fill",
+    }
 }
 
 /// The style functions, which alone read [`disabled_outline`], are
@@ -1630,12 +1657,9 @@ const CHECKED_DISABLED_OUTLINE: Home = Home {
 /// over the window by `checkbox.disabled_opacity`.
 fn disabled_fill(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
     Some(Value::Faded {
-        color: super::fill_of(
-            &t.checkbox.indicator(state),
-            "checkbox.indicator(DISABLED).fill",
-        )
-        .ok()
-        .flatten()?,
+        color: super::fill_of(&t.checkbox.indicator(state), indicator_fill_home(state))
+            .ok()
+            .flatten()?,
         under: None,
         ground: super::to_color(t.colors.window.background?),
         opacity: t.checkbox.disabled_opacity,
@@ -2506,7 +2530,7 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         &[&[CHECKED_DISABLED[0], CHECKED_DISABLED[2]]],
     )
-    .disabled_stroke(&[STATED, DISABLED_STROKE]),
+    .disabled_stroke(&[STATED, KDE_DISABLED_STROKE]),
     stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK])
         .disabled_stroke(&[STATED, DISABLED_STROKE]),
     stated_fields(

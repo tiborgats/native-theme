@@ -2464,7 +2464,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["switch.label(DISABLED|CHECKED).color"],
-        "gpui: switch.label(DISABLED).color (DISABLED|CHECKED on), a disabled switch's label where a rule states it for DISABLED; else gpui-component's own muted_foreground, colors.window.foreground_muted (SwitchLook::next_of)",
+        "gpui: switch.label(DISABLED|CHECKED).color, a disabled switch's label when on (SwitchLabelHome::DisabledChecked), where a rule for DISABLED states the colour, asked with DISABLED alone; else gpui-component's own muted_foreground, colors.window.foreground_muted (SwitchLook::next_of)",
     ),
     (
         "",

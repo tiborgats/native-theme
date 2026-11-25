@@ -24,6 +24,9 @@
 #               absent for a row that takes no status;
 #     except    the combinations (`<preset>/<scheme>`) in which it does not move the row
 #               under those statuses; absent where it moves it in all 14.
+#   excepted: where EXCEPTED_HOMES (src/contract/homes.rs) explains a preset an except list
+#             names, per entry { row, preset, why }: the row, the preset and the reason;
+#             absent where it explains none.
 #   A home that moves no row in any combination, or that no patch states a colour at, has
 #   instead the entry that names it:
 #     named     UNREAD_HOMES (src/contract/homes.rs), or UNREAD_COLOURS or UNREACHABLE
@@ -323,6 +326,9 @@ moves = [
 [homes."checkbox.indicator(DISABLED|CHECKED).stroke.color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
+]
+excepted = [
+  { row = "styles::checkbox.border", preset = "kde-breeze", why = "kde-breeze states a disabled checked box's frame for DISABLED|CHECKED, Breeze's Disabled Highlight (`indicator` in native-theme/src/next/presets/kde.rs, switch_disabled_on_frame), and no stroke for DISABLED alone, so the border reads it only where a rule for DISABLED alone states the stroke (`flagged`, src/next/borders.rs; spec §2, `from_state`): a colour stated at the home does not move it on kde-breeze, the two-flag gap, the spec question SQ1, not a connector fix" },
 ]
 
 [homes."checkbox.indicator(HOVER).fill"]
