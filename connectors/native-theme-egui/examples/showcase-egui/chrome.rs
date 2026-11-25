@@ -513,6 +513,43 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
     )
 }
 
+/// The notes naming the checked colours `r` states for the side-panel toggle while on, `[fill,
+/// text]`, each `None` where no rule states it for the state: at the flat button's own homes,
+/// with the theme's values, which the Widget Info rows, at the push button's homes, do not show,
+/// as the gpui showcase names them (`info::buttons::native_ghost_checked`).
+fn toggle_stated_notes(
+    r: Option<&native_theme::next::ResolvedTheme>,
+) -> [Option<(&'static str, String)>; 2] {
+    let Some(r) = r else {
+        return [None, None];
+    };
+    let at = native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED);
+    let on = toggle_checked(Some(r));
+    let fill = on.fill.map(|_| {
+        let value = match &r.button.body(at).fill {
+            native_theme::next::Paint::Solid(colour) => format!(" {colour}"),
+            _ => ", its layers as egui paints them".to_owned(),
+        };
+        (
+            "fill while on",
+            format!(
+                "button.body(CHECKED; variant=Flat).fill{value}, laid over egui's selected \
+                 button (chrome::ghost_button)"
+            ),
+        )
+    });
+    let text = on.text.map(|_| r.button.label(at).color).map(|colour| {
+        (
+            "text colour while on",
+            format!(
+                "button.label(CHECKED; variant=Flat).color {colour}, the label's colour \
+                 (chrome::ghost_button)"
+            ),
+        )
+    });
+    [fill, text]
+}
+
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
 /// for a `Ui` made Ghost with `demo::ghost`: unframed at rest (`frame_when_inactive(false)`) and
 /// filled on hover. A toggle that is on (`checked`) is egui's selected button, framed in every
@@ -783,6 +820,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 let label = "Toggle Side Panel";
                 let open = app.side_panel_visible;
                 let checked = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
+                let stated = open.then(|| toggle_stated_notes(app.atlas.next_shown(ui.ctx())));
                 let App {
                     registry,
                     side_panel_visible,
@@ -819,6 +857,11 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     ]
                 });
                 for (what, note) in unstated.into_iter().flatten().flatten() {
+                    registry.note_last(what, &note);
+                }
+                // Where it states them, the checked colours drawn, at their own homes.
+                let stated = stated.map(|[fill, text]| [fill, text.filter(|_| drawn.is_none())]);
+                for (what, note) in stated.into_iter().flatten().flatten() {
                     registry.note_last(what, &note);
                 }
                 if icon_size.is_none() {

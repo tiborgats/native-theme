@@ -957,6 +957,83 @@ fn the_open_side_panels_toggle_is_painted_checked() -> Result<(), String> {
     Ok(())
 }
 
+/// The open side panel's toggle names the checked fill it is drawn in at its own home: under
+/// kde-breeze light its Widget Info row `button.body(CHECKED).fill` shows the push button's
+/// checked fill, which differs from the flat button's it is painted in, so a line names
+/// `button.body(CHECKED; variant=Flat).fill` with the theme's value, as the gpui showcase's does.
+#[test]
+fn the_open_toggle_names_the_checked_fill_it_is_drawn_in() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, Paint, WidgetState};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().side_panel_visible,
+        "the side panel opens shown"
+    );
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?
+        .clone();
+    let flat = r
+        .button
+        .body(ButtonQuery::flat().with_state(WidgetState::CHECKED))
+        .fill;
+    let push = r.button.body(WidgetState::CHECKED).fill;
+    let Paint::Solid(colour) = flat else {
+        return Err(format!(
+            "kde-breeze states no solid checked flat fill: {flat:?}"
+        ));
+    };
+    assert_ne!(
+        push, flat,
+        "the push and the flat checked fills are one, so this proves nothing"
+    );
+    let named = format!("button.body(CHECKED; variant=Flat).fill {colour}");
+    assert!(
+        every_record_notes(&harness, "chrome.status_bar.toggle", &[&named]),
+        "no line of the toggle's info names {named:?}: {:?}",
+        element_notes(&harness, "chrome.status_bar.toggle")
+    );
+    Ok(())
+}
+
+/// The flat buttons' hovered and pressed outlines (the side-panel toggle, the Pages menu button,
+/// Widget Info's Copy) route to the flat button's homes `next::flat_button` lays over their
+/// scope per call, not to the push button's row of `mapping.toml`.
+#[test]
+fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    for element in [
+        "chrome.status_bar.toggle",
+        "chrome.page_tabs.menu",
+        "chrome.info.copy",
+    ] {
+        for (home, drawn) in [
+            (
+                "button.body(HOVER).stroke.color",
+                "button.body(HOVER; variant=Flat).stroke.color",
+            ),
+            (
+                "button.body(PRESSED).stroke.color",
+                "button.body(PRESSED; variant=Flat).stroke.color",
+            ),
+        ] {
+            let how = crate::info::listed_how(&manifest, element, home, &seams);
+            assert!(
+                how.contains(drawn) && how.contains("next::flat_button"),
+                "{element} {home}: {how}"
+            );
+        }
+    }
+    Ok(())
+}
+
 /// The fills of the frames painted on the side-panel toggle's rect.
 fn toggle_frame_fills(harness: &Harness<'_, App>) -> Result<Vec<egui::Color32>, String> {
     let rect = harness

@@ -644,6 +644,19 @@ const SEGMENT_DIVIDER_UNREAD: &str = "not drawn: native-theme-egui-widgets Segme
      the scope's segmented_control.track(NONE).stroke.color (native-theme-egui-widgets \
      segmented_control.rs, Outline::paint_lines)";
 
+/// The route of a flat button's hovered outline (the side-panel toggle, the Pages menu button,
+/// the Copy box), which `next::flat_button` lays over the scope's hovered entry per call, not
+/// the atlas's push button row.
+const FLAT_HOVER_EDGE: &str = "egui: per call, the flat button's outline under the pointer, \
+     button.body(HOVER; variant=Flat).stroke.color where a rule states it for HOVER, else egui's \
+     own treatment of the hover (native-theme-egui next::flat_button; demo::flat)";
+/// The route of a flat button's pressed outline, as [`FLAT_HOVER_EDGE`]: egui draws pressed and
+/// focused alike, in its one `active` entry.
+const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline pressed or focused, \
+     egui's one active entry: button.body(FOCUS_VISIBLE; variant=Flat).stroke.color, else \
+     button.body(PRESSED; variant=Flat).stroke.color, where a rule states it for the state, else \
+     egui's own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+
 /// The homes a page applies per call where `mapping.toml`'s row names a style field the
 /// connector writes, or none, by element id (a prefix, for the rows) and home: the List's and
 /// the table's frames, which `pages::basic::list_frame` paints, the rows whose fills
@@ -651,7 +664,8 @@ const SEGMENT_DIVIDER_UNREAD: &str = "not drawn: native-theme-egui-widgets Segme
 /// look and a hovered list row's outline, which `pages::basic::RowLook::of` takes, the hover
 /// outline the Basic table's rows never take, the menu bar's fill, which
 /// `chrome::menu_panel` paints, the side-panel toggle's checked look, which `chrome::ghost_button`
-/// lays over egui's selected button, the scroll bar thumb's corners, which the atlas writes, the
+/// lays over egui's selected button, the flat buttons' hovered and pressed outlines, which
+/// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
 /// primary button's own variant and the segmented control's separator colour, which egui reads
 /// none of, and
 /// the text selection the Theme row's `ComboBox` has none of.
@@ -799,6 +813,36 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED, else \
          egui's own selected button's, visuals.selection.stroke; an icon shown in the label's \
          place keeps the colour it loads in (chrome::ghost_button, chrome::toggle_checked)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(HOVER).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PRESSED_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(HOVER).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PRESSED_EDGE,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(HOVER).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PRESSED_EDGE,
     ),
     (
         "basic.list.scrollbar",
