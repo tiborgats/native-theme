@@ -78,7 +78,7 @@ use native_theme::next::{
     PartStyle, Preset, Scheme, Stroke, StrokeAlign, StyleQuery, TextStated, TextStyle,
     ThemeContext, Typography, WidgetState,
 };
-use native_theme::theme::{FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTheme};
+use native_theme::theme::{FontStyle, LayoutTheme, ResolvedTheme};
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
 use native_theme_iced::palette::to_color;
@@ -91,7 +91,7 @@ use native_theme_showcase_support::cli::{
     self, CliArgs, IconPick, Output, Outputs, ThemeKey, reported,
 };
 use native_theme_showcase_support::elements::{self, ShowcaseElement};
-use native_theme_showcase_support::info::{InfoRow, ListedInfo};
+use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::next::info as next_info;
 use native_theme_showcase_support::next::status as next_status;
 use native_theme_showcase_support::next::values::{StatedFont, Styled, ruled_style};
@@ -8592,7 +8592,7 @@ fn swatch_frame(r: &native_theme::next::ResolvedTheme) -> iced::Border {
 
 /// Widget Info's two text colours: its text, the side panel's label,
 /// `sidebar.item_label(NONE).color`, and its muted lines (the hint, how a
-/// leaf is applied), `colors.window.foreground_muted`; each `None` where the
+/// home is applied), `colors.window.foreground_muted`; each `None` where the
 /// theme leaves it unstated, which leaves the text the colour around it.
 fn info_inks(r: &native_theme::next::ResolvedTheme) -> (Option<Color>, Option<Color>) {
     (
@@ -8668,16 +8668,12 @@ fn shown_info(state: &State, hovered: Hovered) -> Option<ShownInfo> {
 }
 
 /// Widget Info of one element of the list, in the three showcases' form
-/// (`info::ListedInfo`): its title, a row per key of the element
-/// ([`route_keys`]) in the list's order with its value and how iced applies
+/// (`info::ListedInfo`): its title, a row per home of the element in the
+/// list's order with its value read from the installed 0.8.0 theme
+/// ([`State::next_shown`], `next::info::listed_info`), each text style's
+/// family by what iced draws ([`next_listed_family`]), and how iced applies
 /// it ([`iced_route`]), then what iced draws for it that the theme states
-/// nothing for ([`iced_not_themeable`]). An element on its 0.8.0 rows
-/// ([`home_keyed`]) has a row per home, its value read from the installed
-/// 0.8.0 theme ([`State::next_shown`], `next::info::listed_info`), each text
-/// style's family by what iced draws ([`next_listed_family`]); another a
-/// row per 0.7.2 leaf, the layout distances, the icon set and the icon
-/// theme read where the showcase keeps them, each font's family by what
-/// iced draws ([`listed_family`]).
+/// nothing for ([`iced_not_themeable`]).
 fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_theme::next::Color> {
     #[cfg(test)]
     LISTED_INFO_BUILDS.with(|builds| builds.set(builds.get() + 1));
@@ -8685,77 +8681,15 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_t
         .into_iter()
         .map(Cow::into_owned)
         .collect();
-    if home_keyed(&element.id) {
-        let r = state.next_shown();
-        return next_info::listed_info(
-            element,
-            r,
-            state.next_json(),
-            |path, font| next_listed_family(r, path, font),
-            |home| iced_route(state, element, home),
-            not_themeable,
-        );
-    }
-    let listed = ListedInfo::new(
+    let r = state.next_shown();
+    next_info::listed_info(
         element,
-        &state.theme_json,
-        &state.layout,
-        Some(state.current_icon_set),
-        state.current_icon_theme.as_deref(),
-        listed_family,
-        |leaf| iced_route(state, element, leaf),
+        r,
+        state.next_json(),
+        |path, font| next_listed_family(r, path, font),
+        |home| iced_route(state, element, home),
         not_themeable,
-    );
-    ListedInfo {
-        title: listed.title,
-        rows: listed
-            .rows
-            .into_iter()
-            .map(|row| InfoRow {
-                colour: row.colour.map(|c| {
-                    let c = to_color(c);
-                    native_theme::next::Color::new(c.r, c.g, c.b, c.a)
-                }),
-                leaf: row.leaf,
-                value: row.value,
-                how: row.how,
-            })
-            .collect(),
-        not_themeable: listed.not_themeable,
-    }
-}
-
-/// Whether Widget Info lists the element of id `id` by its 0.8.0 homes, a
-/// row per home routed by [`home_route`], rather than by its 0.7.2 leaves:
-/// the Basic list's, the Basic table's and the Basic page's tabs' elements,
-/// the page tabs' and the inspector's tab rows and tabs, the window menus'
-/// elements, the single-line fields' ([`single_line_field`]), and the flat
-/// and tool buttons' and the Basic page's icons' ([`button_element`]), and
-/// the Basic page's and its columns' ([`page_element`]).
-fn home_keyed(id: &str) -> bool {
-    id.starts_with("basic.list.")
-        || id.starts_with("basic.table.")
-        || id.starts_with("basic.tabs.")
-        || tab_element(id)
-        || id.starts_with("chrome.menu")
-        || single_line_field(id)
-        || button_element(id)
-        || page_element(id)
-        || push_button_element(id)
-        || id.starts_with("basic.checkboxes.")
-        || id.starts_with("basic.radios.")
-        || id.starts_with("basic.switches.")
-        || id.starts_with("basic.drop_down.")
-        || id.starts_with("basic.text_area.")
-        || id.starts_with("basic.slider.")
-        || id.starts_with("basic.progress_bar.")
-        || id.starts_with("basic.spinner.")
-        || id.starts_with("basic.segmented.")
-        || id.starts_with("basic.expander.")
-        || separator_element(id)
-        || id.starts_with("basic.card.")
-        || id.starts_with("basic.typography.")
-        || chrome_element(id)
+    )
 }
 
 /// Whether the list's id `id` names a separator line: the Basic page's, the
@@ -8775,17 +8709,6 @@ fn page_element(id: &str) -> bool {
 /// single-line fields, the text inputs' and the number input's groups.
 fn single_line_field(id: &str) -> bool {
     id.starts_with("basic.text_inputs.") || id.starts_with("basic.number_input.")
-}
-
-/// The keys of `element`'s Widget Info rows, which [`iced_route`] routes:
-/// its homes where it is [`home_keyed`], else its 0.7.2 leaves.
-#[cfg(test)]
-fn route_keys(element: &ShowcaseElement) -> &[String] {
-    if home_keyed(&element.id) {
-        &element.homes
-    } else {
-        &element.leaves
-    }
 }
 
 /// The text style of the installed 0.8.0 theme `r` at `path`, a text style's
@@ -8864,9 +8787,9 @@ fn info_gap(stated: Option<f32>) -> f32 {
 
 /// Widget Info of a listed element, `info`, which Copy copies as `copied`:
 /// the title (`name · state`) flush left and Copy flush right;
-/// `layout.section_gap` below them the "Theme" section, a row per leaf
+/// `layout.section_gap` below them the "Theme" section, a row per home
 /// `layout.widget_gap` apart -- a swatch of a colour
-/// one line tall, then `<leaf> <value>` over the muted line that says how
+/// one line tall, then `<home> <value>` over the muted line that says how
 /// iced applies it -- and, where iced draws something the theme states
 /// nothing for, the "Not themeable" section. Every line in the side panel's
 /// label, `sidebar.item_label(NONE)` ([`info_text`]), the swatch its line box
@@ -9025,37 +8948,8 @@ struct ContractHomes {
     /// the contract's names (`<preset>/<mode>`), which an `except` list uses.
     combinations: Vec<String>,
     homes: BTreeMap<String, HomeReach>,
-    /// Per home, the 0.7.2 colour leaves the table of homes places there:
-    /// the bridge from a Widget Info row's leaf to the element's homes.
-    leaves: BTreeMap<String, Vec<String>>,
     /// Every row a home moves.
     rows: BTreeMap<String, ExportRow>,
-}
-
-impl ContractHomes {
-    /// The homes of `element` the export places the 0.7.2 colour leaf `leaf`
-    /// at, in the element's order; none for a leaf that is no colour.
-    fn homes_of<'a>(&self, element: &'a ShowcaseElement, leaf: &str) -> Vec<&'a str> {
-        element
-            .homes
-            .iter()
-            .filter(|home| {
-                self.leaves
-                    .get(home.as_str())
-                    .is_some_and(|leaves| leaves.iter().any(|l| l == leaf))
-            })
-            .map(String::as_str)
-            .collect()
-    }
-
-    /// Whether the export places the 0.7.2 leaf `leaf` at a home: whether it
-    /// is a colour leaf.
-    #[cfg(test)]
-    fn has_leaf(&self, leaf: &str) -> bool {
-        self.leaves
-            .values()
-            .any(|leaves| leaves.iter().any(|l| l == leaf))
-    }
 }
 
 /// What the export records for one row.
@@ -9080,8 +8974,8 @@ fn toml_strings(value: Option<&toml::Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// Reads `text` in the export's format: the `[homes]` tables, each home's
-/// 0.7.2 leaves, and each row's list of the homes that move it.
+/// Reads `text` in the export's format: the `[homes]` tables, and each
+/// row's list of the homes that move it.
 fn parse_contract_homes(text: &str) -> Result<ContractHomes, String> {
     let table: toml::Table = text.parse().map_err(|e| format!("{e}"))?;
     let section = |name: &str| {
@@ -9091,12 +8985,10 @@ fn parse_contract_homes(text: &str) -> Result<ContractHomes, String> {
             .ok_or_else(|| format!("no [{name}] table"))
     };
     let mut homes = BTreeMap::new();
-    let mut leaves = BTreeMap::new();
     for (home, entry) in section("homes")? {
         let entry = entry
             .as_table()
             .ok_or_else(|| format!("homes.{home} is no table"))?;
-        leaves.insert(home.clone(), toml_strings(entry.get("leaves")));
         let reach = match entry.get("moves").and_then(toml::Value::as_array) {
             Some(moves) => HomeReach::Moves(
                 moves
@@ -9141,7 +9033,6 @@ fn parse_contract_homes(text: &str) -> Result<ContractHomes, String> {
     Ok(ContractHomes {
         combinations: toml_strings(table.get("combinations")),
         homes,
-        leaves,
         rows,
     })
 }
@@ -9150,14 +9041,13 @@ fn parse_contract_homes(text: &str) -> Result<ContractHomes, String> {
 /// (connectors/native-theme-iced/contract-homes.toml): per colour home of
 /// the 0.8.0 model, the rows of `native_theme_iced::next` it moves under
 /// which statuses and the platform combinations in which it does not, or
-/// why no row reads it, and the 0.7.2 colour leaves it holds (the file's
-/// header). Widget Info's colour routes and a style row's colour line are
-/// read from it, so a colour claim names a row the contract proves and the
-/// homes that move it.
+/// why no row reads it (the file's header). Widget Info's colour routes and
+/// a style row's colour line are read from it, so a colour claim names a
+/// row the contract proves and the homes that move it.
 const CONTRACT_HOMES: &str = include_str!("../contract-homes.toml");
 
 /// The export, read once; `None` if it does not parse, which
-/// `the_home_export_parses_and_places_the_listed_colour_leaves` rules out.
+/// `the_home_export_parses_and_holds_the_listed_colour_homes` rules out.
 fn contract_homes() -> Option<&'static ContractHomes> {
     static EXPORT: OnceLock<Result<ContractHomes, String>> = OnceLock::new();
     EXPORT
@@ -9323,11 +9213,11 @@ fn tool_button(id: &str) -> bool {
     )
 }
 
-/// What draws a colour leaf of `element` as `shown`: the connector, through
+/// What draws a colour home of `element` as `shown`: the connector, through
 /// the rows of a [`Drawing`], or the showcase itself (`None`), whose route
 /// [`iced_route`] writes by hand. The class is chosen by the element's id,
 /// as the page builds it.
-fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Drawing> {
+fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Drawing> {
     let resolved = shown.resolved;
     let id = element.id.as_str();
     let under = |prefix: &str| id == prefix || id.starts_with(&format!("{prefix}."));
@@ -9351,7 +9241,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // rows do not cover.
         _ if under("basic.buttons.dialog_default")
             && drawn_state_fill(&resolved.button.body(WidgetState::DEFAULT)).is_some()
-            && (leaf == "button.body(PRESSED).fill" || leaf == "button.label(PRESSED).color") =>
+            && (home == "button.body(PRESSED).fill" || home == "button.label(PRESSED).color") =>
         {
             Drawing::only(BUTTON, &["Pressed"], &[])
         }
@@ -9364,7 +9254,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // `styles::checkbox`'s colour.
         _ if under("basic.checkboxes")
             && next_check_stroke(resolved).is_some()
-            && (id.ends_with(".mark") || leaf == "checkbox.checkmark(CHECKED).color") =>
+            && (id.ends_with(".mark") || home == "checkbox.checkmark(CHECKED).color") =>
         {
             return None;
         }
@@ -9387,8 +9277,8 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if (under("basic.switches.off")
             || under("basic.switches.on")
             || under("basic.switches.disabled"))
-            && leaf.starts_with("switch.label(")
-            && leaf.ends_with(").color") =>
+            && home.starts_with("switch.label(")
+            && home.ends_with(").color") =>
         {
             return None;
         }
@@ -9437,7 +9327,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if under("basic.tabs") => Drawing::of(AW_TAB_BAR),
         // The page's and the inspector's tabs are the showcase's
         // ([`tab_style`]); their line is the connector's.
-        _ if leaf == "tab.indicator(SELECTED).fill" => Drawing::of(&["crate::tab_indicator_line"]),
+        _ if home == "tab.indicator(SELECTED).fill" => Drawing::of(&["crate::tab_indicator_line"]),
         _ if under("basic.segmented.week") => {
             Drawing::only(SEGMENT, &[], &["(false, ", "Disabled"])
         }
@@ -9486,7 +9376,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
     })
 }
 
-/// A sentence for a row whose colour a leaf does not give alone, keyed by
+/// A sentence for a row whose colour a home does not give alone, keyed by
 /// the export's row name, after the row in a colour route: where the
 /// connector derives a status or draws the row only under a condition.
 /// `every_derivation_sentence_names_an_exported_row` holds each key to the
@@ -9529,7 +9419,7 @@ fn status_name(status: &str) -> &str {
         .map_or(status, |(variant, _)| variant)
 }
 
-/// The rows of `moves` a [`colour_route`] names: those of `drawing` this
+/// The rows of `moves` a [`colour_home_route`] names: those of `drawing` this
 /// build has, moved on `installed` (every platform combination where `None`),
 /// each with the statuses the page draws it in, by variant name; a row with
 /// statuses none of which is drawn is left out.
@@ -9574,7 +9464,7 @@ fn shown_rows<'a>(
     rows
 }
 
-/// The rows a [`colour_route`] names, each with the statuses it names and
+/// The rows a [`colour_home_route`] names, each with the statuses it names and
 /// the homes that move it there.
 type RouteRow<'a> = (&'a str, Vec<&'a str>, Vec<&'a str>);
 
@@ -9618,35 +9508,9 @@ fn home_rows<'a>(
     (rows, named.filter(|_| !moving))
 }
 
-/// How the connector draws `leaf` on `element` as `shown`, read from the
-/// contract's export: the rows of its [`Drawing`] the element's homes of the
-/// leaf ([`ContractHomes::homes_of`]) move, under the statuses the page
-/// draws, on `installed`, the platform combination shown (`<preset>/<mode>`),
-/// or in any platform one where the theme is not one the export names
-/// (`None`), each with the homes that move it; or why no row reads them.
-/// `None` where the showcase draws the leaf itself, or no home of the
-/// element holds the leaf.
-fn colour_route(
-    element: &ShowcaseElement,
-    leaf: &str,
-    shown: Shown<'_>,
-    installed: Option<&str>,
-) -> Option<String> {
-    let export = contract_homes()?;
-    // A combination the export does not name is no platform one: its routes
-    // are those of any platform theme.
-    let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
-    let homes = export.homes_of(element, leaf);
-    if homes.is_empty() {
-        return None;
-    }
-    let drawing = drawing(element, leaf, shown)?;
-    Some(drawing_route(export, &homes, &drawing, installed))
-}
-
-/// [`colour_route`]'s route of the colour homes `homes` drawn as `drawing`
-/// on `installed`, a combination the export names, or any platform one
-/// (`None`).
+/// [`colour_home_route`]'s route of the colour homes `homes` drawn as
+/// `drawing` on `installed`, a combination the export names, or any
+/// platform one (`None`).
 fn drawing_route(
     export: &ContractHomes,
     homes: &[&str],
@@ -10047,18 +9911,17 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     Some(route.to_owned())
 }
 
-/// The route of `leaf` where a fill it decides on is stated in a form iced
-/// cannot paint, layers that are all gradients (the connector's fill
-/// readers' `Unmapped`, spec §10 rule 4): not drawn, naming the home, with
-/// iced's own drawn there ([`drawn_fill`]). `fills` pairs each leaf with
-/// the fill it decides on, read at its home; `None` where every fill of
-/// `leaf` is mapped.
+/// The route of `home` where its fill is stated in a form iced cannot
+/// paint, layers that are all gradients (the connector's fill readers'
+/// `Unmapped`, spec §10 rule 4): not drawn, naming the home, with iced's
+/// own drawn there ([`drawn_fill`]). `fills` pairs each home with the fill
+/// read there; `None` where the fill of `home` is mapped.
 fn unmapped_fill_route(
-    leaf: &str,
+    home: &str,
     fills: &[(&str, iced_next::Mapped<Option<Color>>)],
 ) -> Option<String> {
     fills.iter().find_map(|(at, fill)| match fill {
-        Err(unmapped) if *at == leaf => {
+        Err(unmapped) if *at == home => {
             Some(format!("not drawn: {unmapped}; iced's own is drawn there"))
         }
         _ => None,
@@ -11223,7 +11086,7 @@ fn basic_indicator(state: &State) -> bool {
         .is_some_and(native_theme_iced::Spinner::is_indicator)
 }
 
-/// The Widget Info line of a Basic spinner leaf where the page draws no
+/// The Widget Info line of a Basic spinner home where the page draws no
 /// spinner ([`State::basic_spinner`]).
 const SPINNER_NOT_DRAWN: &str = "not drawn: native_theme_iced::next::spinner draws no spinner \
                                  where colors.window.foreground is unstated or \
@@ -12422,10 +12285,13 @@ fn page_home_route(r: &native_theme::next::ResolvedTheme, home: &str) -> Option<
     Some(route.to_owned())
 }
 
-/// [`colour_route`] of the colour home `home` of `element`: the rows of its
-/// [`Drawing`] the home moves, or why none reads it; `None` where the
-/// showcase draws it itself, the element lists no such home, or the export
-/// holds none.
+/// How the connector draws the colour home `home` of `element` as `shown`,
+/// read from the contract's export: the rows of its [`Drawing`] the home
+/// moves, under the statuses the page draws, on `installed`, the platform
+/// combination shown (`<preset>/<mode>`), or in any platform one where the
+/// theme is not one the export names (`None`); or why no row reads it.
+/// `None` where the showcase draws it itself, the element lists no such
+/// home, or the export holds none.
 fn colour_home_route(
     element: &ShowcaseElement,
     home: &str,
@@ -12433,6 +12299,8 @@ fn colour_home_route(
     installed: Option<&str>,
 ) -> Option<String> {
     let export = contract_homes()?;
+    // A combination the export does not name is no platform one: its routes
+    // are those of any platform theme.
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
     let home = element
         .homes
@@ -12442,9 +12310,8 @@ fn colour_home_route(
     Some(drawing_route(export, &[home.as_str()], &drawing, installed))
 }
 
-/// How iced applies the 0.8.0 home `home` to `element`, an element Widget
-/// Info lists by its homes ([`home_keyed`]), as `state` draws it on the
-/// installed 0.8.0 theme ([`State::next_shown`]): the connector's style
+/// How iced applies the 0.8.0 home `home` to `element`, as `state` draws it
+/// on the installed 0.8.0 theme ([`State::next_shown`]): the connector's style
 /// function or the showcase's helper and the field or setter the home
 /// reaches, or why it cannot. A colour home the connector draws is routed
 /// from the contract's export ([`colour_home_route`]); the Basic list's
@@ -12459,7 +12326,7 @@ fn colour_home_route(
 /// icon shows in the label's place, [`tool_icon_route`]'s, before the
 /// export, and a flat or tool button's other homes [`button_home_route`]'s.
 /// One muted line of Widget Info.
-fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
+fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     let id = element.id.as_str();
     let r = state.next_shown();
     if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, home, open)) {
@@ -12630,266 +12497,6 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
                 .into()
         }
         (None, _) => Cow::Owned(format!("{home}: no route recorded")),
-    };
-    if line.starts_with("not reachable") || line.starts_with("not drawn") {
-        line.into_owned()
-    } else {
-        format!("iced: {line}")
-    }
-}
-
-/// How iced applies `leaf` to `element` as `state` draws it: the
-/// connector's style function or helper and the field or setter it reaches,
-/// or why it cannot. One muted line of Widget Info.
-///
-/// A colour leaf the connector draws is routed from the contract's export
-/// ([`colour_route`]), on the bundled combination installed (none under the
-/// OS theme). The lines below are the leaves the export does not cover: the
-/// lengths, flags and fonts, and the colours the showcase draws itself, each
-/// naming the function that draws it, which
-/// `every_hand_colour_route_names_a_function_that_reads_it` splices. A line
-/// names a widget only where the state draws it
-/// (`a_route_names_a_widget_only_where_the_state_draws_it`): the check mark
-/// where the theme states its line, the arc where the icon set has no
-/// indicator, a flat button's label colours where it shows its label.
-fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
-    if home_keyed(&element.id) {
-        return home_route(state, element, leaf);
-    }
-    let id = element.id.as_str();
-    let theme_row = id == "chrome.side_panel.settings.theme";
-    let installed = state.installed_combination();
-    if let Some(line) = colour_route(element, leaf, Shown::of(state), installed.as_deref()) {
-        return if theme_row && line.starts_with("iced: ") {
-            format!("{line}; the field's text_input::Style (theme_picker_style)")
-        } else {
-            line
-        };
-    }
-    let under = |prefix: &str| id.starts_with(prefix);
-    let (table, field) = leaf.split_once('.').unwrap_or((leaf, ""));
-    let side = |field: &str| {
-        ["top", "right", "bottom", "left"]
-            .into_iter()
-            .find(|s| field == format!("border.padding_{s}_px"))
-    };
-    let line: Cow<'static, str> = match (table, field) {
-        ("combo_box", "border.shadow_enabled") => {
-            "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
-        }
-        // ---- combo box (drop-down) ----
-        // The side panel's Theme row is a `combo_box` (`theme_picker`).
-        ("combo_box", "font") if theme_row => "ComboBox size and font (theme_font)".into(),
-        ("combo_box", "min_height_px") if theme_row => {
-            "control_line_height: ComboBox::line_height, the line box that fills it inside \
-             combo_box_padding"
-                .into()
-        }
-        ("combo_box", "min_width_px") if theme_row => {
-            "not reachable: ComboBox takes a width, not a minimum; the side panel's width".into()
-        }
-        ("combo_box", "arrow_icon_size_px") if theme_row => {
-            "theme_picker: the field's text_input::Icon, pick_list_handle's chevron at its size"
-                .into()
-        }
-        ("combo_box", "border.corner_radius_px") if theme_row => {
-            "theme_picker_style: styles::pick_list's border.radius, the field's".into()
-        }
-        ("combo_box", "border.line_width_px") if theme_row => {
-            "theme_picker_style: styles::pick_list's border.width, the field's".into()
-        }
-        ("combo_box", f) if side(f).is_some() && theme_row => {
-            "combo_box_padding: ComboBox::padding, the side plus the line width".into()
-        }
-        ("combo_box", "font") => "PickList text_size and font (theme_font)".into(),
-        ("combo_box", "min_height_px") => {
-            "control_line_height: the line box that fills it inside combo_box_padding".into()
-        }
-        ("combo_box", "min_width_px") => {
-            "not reachable: PickList takes a width, not a minimum; the page's own width".into()
-        }
-        ("combo_box", "arrow_icon_size_px") => "pick_list_handle: the chevron glyph's size".into(),
-        ("combo_box", "arrow_area_width_px") => {
-            "combo_box_padding: the right padding holds half the column the arrow leaves".into()
-        }
-        ("combo_box", "border.corner_radius_px") => {
-            "styles::pick_list: pick_list::Style::border.radius".into()
-        }
-        ("combo_box", "border.line_width_px") => {
-            "styles::pick_list: pick_list::Style::border.width".into()
-        }
-        ("combo_box", f) if side(f).is_some() => {
-            "combo_box_padding: PickList::padding, the side plus the line width".into()
-        }
-        // ---- toolbar ----
-        ("toolbar", "bar_height_px") => {
-            "ToolbarLayout: toolbar.bar(NONE).min_size[1] (next::toolbar_bar_height), the bar \
-             container's least height, less the rule's, where stated: a space that tall beside \
-             the items, less the padding; none where unstated"
-                .into()
-        }
-        ("toolbar", "item_gap_px") => format!(
-            "ToolbarLayout: toolbar.item_gap (next::toolbar_item_gap), the buttons' \
-             Row::spacing; layout.widget_gap where unstated, and TOOLBAR_GAP, {TOOLBAR_GAP}px, \
-             gpui's showcase constant, where that is unstated too"
-        )
-        .into(),
-        ("toolbar", "border.line_width_px") => {
-            "ToolbarLayout: toolbar.bar(NONE).stroke.width, the bottom rule's height, under \
-             the bar's padding; iced's own border width, no line, where unstated or stated \
-             none; a stroke stated per side is not drawn, iced's rule being one line"
-                .into()
-        }
-        ("toolbar", f) if side(f).is_some() => format!(
-            "ToolbarLayout: the side of toolbar.bar(NONE).padding (next::toolbar_padding), the \
-             bar container's padding; layout.container_margin where unstated, and \
-             TOOLBAR_PADDING, {TOOLBAR_PADDING}px, gpui's showcase constant, where that is \
-             unstated too"
-        )
-        .into(),
-        // ---- side panel, status bar, splitter, separator ----
-        ("sidebar", "background_color") => {
-            "surface: the panel container's background, sidebar.container(NONE).fill".into()
-        }
-        ("sidebar", f) if side(f).is_some() => {
-            "pads the side panel where any side is stated, a side it leaves unstated by \
-             layout.container_margin (none where that is unstated); where no side is stated, \
-             layout.container_margin pads the settings, the inspector's tab row and its \
-             content (none where that is unstated) (side_panel)"
-                .into()
-        }
-        ("sidebar", "font") => "the text's size and theme_font".into(),
-        ("sidebar", "font.color") if under("chrome.info.") => {
-            "info_inks: the text's colour, sidebar.item_label(NONE).color".into()
-        }
-        ("sidebar", "font.color") => "surface: the side panel's text_color, which the text \
-                                      takes, sidebar.item_label(NONE).color"
-            .into(),
-        ("status_bar", "background_color") => {
-            "surface: the bar container's background, status_bar.bar.fill".into()
-        }
-        ("status_bar", "border.color") => {
-            "line_style: the top edge's colour, status_bar.bar.stroke.color".into()
-        }
-        ("status_bar", "border.line_width_px")
-            if iced_next::stroke_width_of(&state.next_shown().status_bar.bar).is_none() =>
-        {
-            "not drawn: status_bar.bar.stroke.width is unstated; the top edge rule is iced's \
-             own border width, none, high (status_line_width)"
-                .into()
-        }
-        ("status_bar", "border.line_width_px") => {
-            "status_line_width: the top edge rule's height, status_bar.bar.stroke.width, above \
-             the bar's padding"
-                .into()
-        }
-        ("status_bar", f) if side(f).is_some() => {
-            let upstream = match side(f) {
-                Some("top" | "bottom") => "py_1, a quarter",
-                _ => "px_2, a half",
-            };
-            format!(
-                "the bar container's padding, the side of status_bar.bar.padding; where \
-                 unstated gpui-component's StatusBar padding, which gpui's status bar keeps: \
-                 {upstream} of typography.body.size_px (status_bar_padding; gpui-component \
-                 status_bar.rs:89-90); each side rounded to whole device pixels as gpui rounds \
-                 a padding, a half toward zero (gpui_rounded)"
-            )
-            .into()
-        }
-        ("status_bar", "font") if id == "chrome.status_bar.toggle" => {
-            "the button's text, where the icon set has no icon, in \
-             status_bar.label (Typeset::next_text)"
-                .into()
-        }
-        ("status_bar", "font") => "the text in status_bar.label (Typeset::next_text)".into(),
-        ("status_bar", "font.color") => {
-            "surface: the bar's text_color, status_bar.label.color".into()
-        }
-        ("splitter", "divider_width_px") => "the line container's width".into(),
-        ("splitter", "divider_color") => {
-            "splitter: the line container's background, splitter.handle(NONE).fill".into()
-        }
-        ("splitter", "hover_color") => "splitter: the line's background under the pointer and \
-                                        while dragged, splitter.handle(HOVER).fill"
-            .into(),
-        // ---- window, layout ----
-        ("window", "background_color") if id == "chrome.window" => {
-            "surface: the window container's background, window.frame(normal).fill".into()
-        }
-        ("window", "background_color") => "surface: the window container's background, which \
-                                           shows through, window.frame(normal).fill"
-            .into(),
-        ("layout", "widget_gap_px") if id == "chrome.side_panel.settings" => format!(
-            "Column::spacing between the rows and between each label and its control; \
-             THEME_SETTINGS_GAP, {THEME_SETTINGS_GAP}px, gpui's showcase constant, where \
-             unstated (settings_gap)"
-        )
-        .into(),
-        ("layout", "container_margin_px") if id == "chrome.side_panel" => {
-            "pads a side of the side panel sidebar.border.padding leaves unstated, where it \
-             states any; where it states none, the settings, the inspector's tab row and its \
-             content (none where that is unstated) (side_panel)"
-                .into()
-        }
-        ("layout", "container_margin_px")
-            if id == "chrome.side_panel.settings" || id == "chrome.side_panel.inspector" =>
-        {
-            "the padding where sidebar.border.padding states no side (none where that is \
-             unstated); where it states any, the side panel's padding pads it \
-             (side_panel_content_margin)"
-                .into()
-        }
-        ("layout", "container_margin_px") if id == "chrome.status_bar" => {
-            "not drawn: a side status_bar.bar.padding leaves unstated takes \
-             gpui-component's StatusBar padding (status_bar_padding)"
-                .into()
-        }
-        ("layout", "widget_gap_px") if id == "chrome.status_bar" => {
-            "Row::spacing between the items, layout.widget_gap; a row's own, none, where \
-             unstated"
-                .into()
-        }
-        ("layout", "container_margin_px") => "the container's padding".into(),
-        ("layout", f @ ("widget_gap_px" | "window_margin_px" | "section_gap_px")) => {
-            layout_gap_route(&format!("layout.{}", f.trim_end_matches("_px"))).map_or_else(
-                || Cow::Owned(format!("{leaf}: no route recorded")),
-                Cow::Borrowed,
-            )
-        }
-        // ---- defaults, text scale, icons ----
-        ("defaults", "line_height") if under("chrome.status_bar") => {
-            "status_line_box: the text's LineHeight, status_bar.label's line box \
-             (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
-             (gpui-pre style.rs:553-556)"
-                .into()
-        }
-        ("defaults", "line_height") => {
-            "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
-        }
-        ("defaults", "font") => "the text's size and theme_font".into(),
-        ("defaults", "font.family") => "theme_font: the role's family".into(),
-        ("defaults", "mono_font") => "theme_mono_font: the text's size and family".into(),
-        ("defaults", "muted_color") => {
-            "info_inks: the muted text's colour, colors.window.foreground_muted".into()
-        }
-        ("defaults", "border.color") => {
-            "swatch_frame: the swatch container's border.color, colors.window.border".into()
-        }
-        ("defaults", "border.corner_radius_px") => {
-            "the swatch container's border.radius, layout.corner_radius".into()
-        }
-        ("defaults", "border.line_width_px") => {
-            "the swatch container's border.width, layout.border_width".into()
-        }
-        ("defaults", "icon_theme") => {
-            "the icon loaders' theme: native_theme's FreedesktopLoader".into()
-        }
-        ("theme_variant", "icon_set") => {
-            "the icon loader of the set: IconSetChoice::effective_icon_set".into()
-        }
-        ("text_scale", _) => "Typeset::role: the text's size, line height and weight".into(),
-        _ => Cow::Owned(format!("{leaf}: no route recorded")),
     };
     if line.starts_with("not reachable") || line.starts_with("not drawn") {
         line.into_owned()
@@ -23097,17 +22704,6 @@ fn family_label(stated: &str, drawn: &Drawn) -> String {
     drawn_family(drawn).label(stated)
 }
 
-/// The family of `font`, the theme font at the registry path `path`, as
-/// Widget Info's listed rows show it (`values::leaf_value`'s lookup): the
-/// [`family_label`] of how iced draws it ([`font_from_database`]), in its
-/// monospace family for `defaults.mono_font`, as text otherwise.
-fn listed_family(path: &str, font: &ResolvedFontSpec) -> String {
-    family_label(
-        &font.family,
-        &font_from_database(font, path == "defaults.mono_font"),
-    )
-}
-
 /// What a theme font's family is drawn in, as the shared crate's label
 /// takes it: the stated family where iced draws a face of it, under
 /// whatever name the font database files it (`.SF NS` for "SF Pro" on
@@ -23325,33 +22921,12 @@ fn style_key(style: FontStyle) -> u8 {
     }
 }
 
-/// How iced draws a theme font: [`drawable_font`] of the font
-/// [`native_theme_iced::font`] builds for it — the family the font database
-/// holds for the stated one, or for the platform's substitute where the
-/// system has none, its weight and its style — over the database iced draws
-/// text from and the platform fallback list cosmic-text walks, after
-/// [`register_weight`] has filed the weight a variable face of the drawing
-/// family covers. Worked out once per font ([`FONTS`]).
-fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
-    let key = (
-        spec.family.clone(),
-        spec.weight,
-        style_key(spec.style),
-        mono,
-        None,
-    );
-    drawn_from_database(
-        key,
-        || native_theme_iced::font(spec),
-        || native_theme::fonts::system_face(&spec.family, spec.weight, spec.style).is_some(),
-        mono,
-    )
-}
-
-/// [`font_from_database`] on the 0.8.0 model: how iced draws `style`, a
-/// text style of the 0.8.0 theme, from the font
+/// How iced draws `style`, a text style of the 0.8.0 theme, from the font
 /// [`native_theme_iced::next::font`] builds for it (its family, weight and
-/// slant, at its width class where it states one). `None` where the style
+/// slant, at its width class where it states one), over the database iced
+/// draws text from and the platform fallback list cosmic-text walks, after
+/// [`register_weight`] has filed the weight a variable face of the drawing
+/// family covers. Worked out once per font ([`FONTS`]). `None` where the style
 /// gives no font iced can draw (`next::font`'s `Unmapped`): the text then
 /// keeps iced's own font (spec §10, rule 0).
 fn next_font_from_database(style: &TextStyle, mono: bool) -> Option<Drawn> {
@@ -29468,18 +29043,14 @@ mod tests {
     /// states apart among the presets.
     #[test]
     fn the_unfocused_pairs_routes_say_where_it_is_not_drawn() {
-        // The 0.7.2 leaves, and the homes of an element Widget Info lists by
-        // its homes (`route_keys`).
-        let leaves = [
-            "defaults.selection_inactive_background",
-            "defaults.selection_inactive_text_color",
+        let homes = [
             "colors.selection.unfocused_background",
             "colors.selection.unfocused_foreground",
         ];
         let mut list_swapped = BTreeSet::new();
         let elements: Vec<_> = elements::elements()
             .iter()
-            .filter(|e| route_keys(e).iter().any(|l| leaves.contains(&l.as_str())))
+            .filter(|e| e.homes.iter().any(|h| homes.contains(&h.as_str())))
             .collect();
         assert!(
             elements.iter().any(|e| e.id.starts_with("basic.table."))
@@ -29508,28 +29079,25 @@ mod tests {
                     next_selection_pair(state.next_shown(), true),
                     next_selection_pair(state.next_shown(), false),
                 );
-                let list_swaps = |leaf: &str| {
-                    if leaf.ends_with("_background") {
+                let list_swaps = |home: &str| {
+                    if home.ends_with("_background") {
                         inactive.0 != active.0
                     } else {
                         inactive.1 != active.1
                     }
                 };
-                let list_fill_swaps = list_swaps("defaults.selection_inactive_background");
+                let list_fill_swaps = list_swaps("colors.selection.unfocused_background");
                 seen.insert(list_fill_swaps);
                 if list_fill_swaps {
                     list_swapped.insert(format!("{}/{mode:?}", preset.key));
                 }
                 for element in &elements {
-                    for leaf in route_keys(element)
-                        .iter()
-                        .filter(|l| leaves.contains(&l.as_str()))
-                    {
-                        let swaps = list_swaps(leaf);
-                        let route = iced_route(&state, element, leaf);
+                    for home in element.homes.iter().filter(|h| homes.contains(&h.as_str())) {
+                        let swaps = list_swaps(home);
+                        let route = iced_route(&state, element, home);
                         if route.starts_with("not drawn: ") == swaps {
                             faults.push(format!(
-                                "{} ({mode:?}) {} {leaf}, swaps: {swaps}: \"{route}\"",
+                                "{} ({mode:?}) {} {home}, swaps: {swaps}: \"{route}\"",
                                 preset.key, element.id
                             ));
                         }
@@ -34138,10 +33706,10 @@ mod tests {
     }
 
     /// docs/showcase-elements.toml parses, and Widget Info has a route for
-    /// every leaf the list names, in each of [`route_states`]: a line saying
+    /// every home the list names, in each of [`route_states`]: a line saying
     /// how iced applies it, or why it cannot.
     #[test]
-    fn the_element_list_parses_and_every_leaf_has_a_route() {
+    fn the_element_list_parses_and_every_home_has_a_route() {
         let list = match elements::showcase_elements() {
             Ok(list) => list,
             Err(error) => panic!("docs/showcase-elements.toml: {error}"),
@@ -34150,15 +33718,15 @@ mod tests {
         let mut unrouted = BTreeSet::new();
         for state in &route_states() {
             for element in &list {
-                for leaf in route_keys(element) {
-                    let route = iced_route(state, element, leaf);
+                for home in &element.homes {
+                    let route = iced_route(state, element, home);
                     if route.contains("no route recorded") {
-                        unrouted.insert(format!("{}: {leaf}", element.id));
+                        unrouted.insert(format!("{}: {home}", element.id));
                     }
                 }
             }
         }
-        assert!(unrouted.is_empty(), "leaves with no route: {unrouted:#?}");
+        assert!(unrouted.is_empty(), "homes with no route: {unrouted:#?}");
     }
 
     /// The Basic table's header and last row and the list's rows round their
@@ -34211,30 +33779,21 @@ mod tests {
         );
     }
 
-    /// The elements Widget Info lists by their 0.8.0 homes (`home_keyed`):
-    /// a row per home in the list's order, each value read from the
-    /// installed 0.8.0 theme (`next::values::home_value`), the Basic list's
-    /// row label's family by what iced draws it in (`next_listed_family`); a
-    /// list row's padding and its fill's inset, one 0.7.2 leaf, are routed
-    /// apart, each naming what reads its home, a table row's inset, which
-    /// `basic_table` does not draw, is said not drawn, and the open tab's
-    /// line's greatest thickness, which iced cannot draw apart from its
-    /// least, not reachable.
+    /// Widget Info lists every element by its 0.8.0 homes: a row per home in
+    /// the list's order, each value read from the installed 0.8.0 theme
+    /// (`next::values::home_value`), the Basic list's row label's family by
+    /// what iced draws it in (`next_listed_family`); a list row's padding
+    /// and its fill's inset are routed apart, each naming what reads its
+    /// home, a table row's inset, which `basic_table` does not draw, is said
+    /// not drawn, and the open tab's line's greatest thickness, which iced
+    /// cannot draw apart from its least, not reachable.
     #[test]
-    fn the_home_keyed_elements_are_listed_by_their_homes() -> Result<(), String> {
+    fn every_element_is_listed_by_its_homes() -> Result<(), String> {
         let state = route_states().swap_remove(0);
         let r = state.next_shown();
         let json = next_theme_json(r);
         let family = |path: &str, font: &StatedFont| next_listed_family(r, path, font);
-        let by_homes: Vec<_> = elements::elements()
-            .iter()
-            .filter(|e| home_keyed(&e.id))
-            .collect();
-        assert!(
-            by_homes.iter().any(|e| e.id.starts_with("basic.table.")),
-            "the table is listed by its homes"
-        );
-        for element in by_homes {
+        for element in elements::elements() {
             let info = element_info(&state, element);
             let keys: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
             let homes: Vec<&str> = element.homes.iter().map(String::as_str).collect();
@@ -34283,8 +33842,7 @@ mod tests {
             inset.starts_with("not drawn: basic_table") && !inset.contains("padding"),
             "{inset}"
         );
-        // The open tab's line, one 0.7.2 leaf, two homes: iced draws the
-        // line at one thickness.
+        // The open tab's line: iced draws it at one thickness.
         let element =
             elements::element("chrome.page_tabs.basic").ok_or("chrome.page_tabs.basic")?;
         let most = iced_route(&state, element, "tab.indicator(SELECTED).max_size[1]");
@@ -34487,17 +34045,17 @@ mod tests {
         Ok(())
     }
 
-    /// The listed colour leaves the connector draws only where the theme
+    /// The listed colour homes the connector draws only where the theme
     /// leaves another value unstated, in a state no bundled preset has, not
     /// in the state the element opens in, or, under the presets whose drawing
     /// of the element names other rows, in none of those rows, each with the
-    /// reason: the element's homes of the leaf move no row of their drawing
-    /// in any platform combination of the home export, so their routes say
-    /// they are not drawn there.
+    /// reason: the home moves no row of the element's drawing in any
+    /// platform combination of the home export, so its route says it is not
+    /// drawn there.
     const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[
         (
             "basic.text_inputs.focused",
-            "defaults.focus_ring_color",
+            "focus_ring.stroke.color",
             "on the 0.8.0 model no style row draws the ring: iced_next::styles::text_input \
              draws no focus ring, an inset one included, and its focused border is \
              input.field(FOCUSED).stroke.color or iced's own (next/styles.rs, \
@@ -34506,7 +34064,7 @@ mod tests {
         ),
         (
             "basic.icons.edit",
-            "toolbar.button_hover_background",
+            "toolbar.button(HOVER).fill",
             "Edit opens checked, and native_theme_iced::next::styles::toolbar_button keeps a \
              checked button's checked fill under the pointer (src/next/styles.rs, \
              `toolbar_button`): toolbar.button(HOVER).fill is drawn once a click has turned \
@@ -34514,212 +34072,229 @@ mod tests {
         ),
         (
             "basic.icons.edit",
-            "toolbar.button_active_background",
+            "toolbar.button(PRESSED).fill",
             "Edit opens checked, and toolbar.button(PRESSED).fill moves only an unchecked \
              tool button's pressed fill, `(false, Pressed)`: a checked one keeps its checked \
              fill pressed",
         ),
         (
             "basic.icons.edit",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.edit",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.edit",
-            "button.checked_text_color",
+            "button.label(CHECKED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.copy",
-            "button.font.color",
+            "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.copy",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.copy",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.paste",
-            "button.font.color",
+            "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.paste",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.paste",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.delete",
-            "button.font.color",
+            "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.delete",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.delete",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.command_palette",
-            "button.font.color",
+            "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.command_palette",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.command_palette",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.reload_theme",
-            "button.font.color",
+            "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.reload_theme",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.reload_theme",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.preferences",
-            "button.font.color",
+            "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.preferences",
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "chrome.toolbar.preferences",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.buttons.toggle_on",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOGGLE_ON_PRESSED,
         ),
         (
             "basic.buttons.toggle_on",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOGGLE_ON_PRESSED,
         ),
         (
             "basic.buttons.toggle_on.label",
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             TOGGLE_ON_PRESSED,
         ),
         (
             "basic.icons.copy",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.copy",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.paste",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.paste",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.delete",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.delete",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.edit",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.icons.edit",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "chrome.toolbar.command_palette",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "chrome.toolbar.command_palette",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "chrome.toolbar.reload_theme",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "chrome.toolbar.reload_theme",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "chrome.toolbar.preferences",
-            "button.active_background",
+            "button.body(PRESSED).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "chrome.toolbar.preferences",
-            "button.hover_background",
+            "button.body(HOVER).fill",
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
             "basic.checkboxes.disabled",
-            "checkbox.border.color",
+            "checkbox.indicator(CHECKED).stroke.color",
             DISABLED_CHECKBOX_OUTLINE,
         ),
         (
             "basic.checkboxes.disabled.indicator",
-            "checkbox.border.color",
+            "checkbox.indicator(CHECKED).stroke.color",
             DISABLED_CHECKBOX_OUTLINE,
         ),
+        (
+            "basic.list.scrollbar",
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+            UNFOCUSED_LIST_BAR,
+        ),
+        (
+            "basic.list.scrollbar.thumb",
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+            UNFOCUSED_LIST_BAR,
+        ),
     ];
+
+    /// Why the list's scroll bar draws no unfocused view's thumb as the
+    /// showcase opens.
+    const UNFOCUSED_LIST_BAR: &str = "\
+         list_bar_style draws the bar in iced_next::styles::scrollable at view_focus of the \
+         window's focus: the UNFOCUSED_VIEW rows only while the window is inactive, and the \
+         showcase opens active, its bar in styles::scrollable's own rows";
 
     /// Why the On toggle's pressed colours move no row it draws: its homes,
     /// `button.body(PRESSED).fill` and `button.label(PRESSED).color`, move
@@ -34747,62 +34322,50 @@ mod tests {
     /// Why the disabled check box's listed outline home moves no row it
     /// draws.
     const DISABLED_CHECKBOX_OUTLINE: &str = "\
-         the element's home of checkbox.border.color, checkbox.indicator(CHECKED).stroke.color, \
-         moves the enabled checked statuses alone; the disabled box is drawn at \
+         the element's home checkbox.indicator(CHECKED).stroke.color moves the enabled \
+         checked statuses alone; the disabled box is drawn at \
          `Disabled { is_checked: true }`";
 
-    /// The contract's home export parses, and places every colour leaf the
-    /// element list gives an element at one of the element's homes: a leaf
-    /// whose value is a colour in a bundled resolved theme is one whose homes
-    /// the walk stated colours at. A connector-drawn leaf's route names a row
-    /// its drawing moves in a platform theme, or why no row reads it, save the
-    /// leaves `DRAWN_IN_NO_BUNDLED_THEME` lists.
+    /// The contract's home export parses, and holds every colour home the
+    /// element list gives an element: a home whose value is a colour in a
+    /// bundled 0.8.0 theme (`next::values::home_value`) is one the walk
+    /// stated colours at. A connector-drawn home's route names a row its
+    /// drawing moves in a platform theme, or why no row reads it, save the
+    /// homes `DRAWN_IN_NO_BUNDLED_THEME` lists.
     #[test]
-    fn the_home_export_parses_and_places_the_listed_colour_leaves() {
+    fn the_home_export_parses_and_holds_the_listed_colour_homes() {
         let export = match parse_contract_homes(CONTRACT_HOMES) {
             Ok(export) => export,
             Err(error) => panic!("contract-homes.toml: {error}"),
         };
         assert!(contract_homes().is_some(), "the export is read");
-        let bundled = bundled_combinations();
         let next = next_combinations();
-        let jsons: Vec<serde_json::Value> = bundled
-            .iter()
-            .map(|(label, r)| match serde_json::to_value(r) {
-                Ok(json) => json,
-                Err(error) => panic!("{label}: {error}"),
-            })
-            .collect();
+        let jsons: Vec<serde_json::Value> = next.iter().map(|(_, r)| next_theme_json(r)).collect();
+        let family = |_: &str, font: &StatedFont| font.family.clone();
         let mut failures = Vec::new();
         for element in elements::elements() {
-            for leaf in &element.leaves {
-                let pointer = format!("/{}", leaf.replace('.', "/"));
+            for home in &element.homes {
                 // A colour in any bundled combination.
-                let colour = jsons.iter().any(|json| {
-                    json.pointer(&pointer).is_some_and(|v| {
-                        v.as_str()
-                            .is_some_and(|s| s.parse::<native_theme::color::Rgba>().is_ok())
-                    })
+                let colour = next.iter().zip(&jsons).any(|((_, r), json)| {
+                    native_theme_showcase_support::next::values::home_value(home, r, json, &family)
+                        .is_ok_and(|value| value.colour.is_some())
                 });
-                let placed = !export.homes_of(element, leaf).is_empty();
+                let placed = export.homes.contains_key(home.as_str());
                 if colour && !placed {
-                    failures.push(format!(
-                        "{}: the export places {leaf} at none of its homes",
-                        element.id
-                    ));
+                    failures.push(format!("{}: the export holds no {home}", element.id));
                 }
                 let excepted = DRAWN_IN_NO_BUNDLED_THEME
                     .iter()
-                    .any(|(id, l, _)| *id == element.id && l == leaf);
+                    .any(|(id, h, _)| *id == element.id && h == home);
                 let undrawn = placed
                     && next.iter().any(|(_, r)| {
-                        drawing(element, leaf, Shown::opening(r)).is_some()
-                            && colour_route(element, leaf, Shown::opening(r), None)
+                        drawing(element, home, Shown::opening(r)).is_some()
+                            && colour_home_route(element, home, Shown::opening(r), None)
                                 .is_some_and(|route| route.starts_with("not drawn here"))
                     });
                 if undrawn != excepted {
                     failures.push(format!(
-                        "{}: {leaf} moves {} row its drawing names in a bundled theme, \
+                        "{}: {home} moves {} row its drawing names in a bundled theme, \
                          which DRAWN_IN_NO_BUNDLED_THEME {}",
                         element.id,
                         if undrawn { "no" } else { "a" },
@@ -34855,13 +34418,13 @@ mod tests {
         );
     }
 
-    /// D1: on a platform preset a colour route names only the rows the
-    /// element's homes of the leaf move there -- a row their `except` lists
-    /// for that preset is left out, every other row of the element's drawing
-    /// they move in a drawn state is named, with each home that moves it --
-    /// and no "(in a platform theme)"; on another theme it names every row
-    /// they move in any platform one, and says so. Over every listed colour
-    /// leaf the connector draws and every bundled combination.
+    /// D1: on a platform preset a colour route names only the rows the home
+    /// moves there -- a row its `except` lists for that preset is left out,
+    /// every other row of the element's drawing it moves in a drawn state is
+    /// named, with the home -- and no "(in a platform theme)"; on another
+    /// theme it names every row it moves in any platform one, and says so.
+    /// Over every listed colour home the connector draws and every bundled
+    /// combination.
     #[test]
     fn a_colour_route_names_the_rows_moved_on_the_installed_preset() {
         let Some(export) = contract_homes() else {
@@ -34870,22 +34433,15 @@ mod tests {
         let bundled = next_combinations();
         let mut failures = Vec::new();
         for element in elements::elements() {
-            for leaf in &element.leaves {
-                let moving: Vec<(&str, &[RowMove])> = export
-                    .homes_of(element, leaf)
-                    .into_iter()
-                    .filter_map(|home| match export.homes.get(home) {
-                        Some(HomeReach::Moves(moves)) => Some((home, moves.as_slice())),
-                        _ => None,
-                    })
-                    .collect();
-                if moving.is_empty() {
+            for home in &element.homes {
+                let Some(HomeReach::Moves(moves)) = export.homes.get(home.as_str()) else {
                     continue;
-                }
+                };
+                let moving = [(home.as_str(), moves.as_slice())];
                 // The element as each bundled combination draws it, installed
                 // (a platform one) and as any other theme.
                 for (combination, r) in &bundled {
-                    let Some(drawing) = drawing(element, leaf, Shown::opening(r)) else {
+                    let Some(drawing) = drawing(element, home, Shown::opening(r)) else {
                         continue;
                     };
                     // A move the element draws: its row is the drawing's and
@@ -34919,11 +34475,11 @@ mod tests {
                             .collect();
                         if shown != want {
                             failures.push(format!(
-                                "{} {leaf} on {label:?}: names {shown:?}, moves {want:?}",
+                                "{} {home} on {label:?}: names {shown:?}, moves {want:?}",
                                 element.id
                             ));
                         }
-                        let route = colour_route(element, leaf, Shown::opening(r), label)
+                        let route = colour_home_route(element, home, Shown::opening(r), label)
                             .unwrap_or_default();
                         let holds = match (label, want.is_empty()) {
                             (Some(l), true) => {
@@ -34945,7 +34501,7 @@ mod tests {
                                 .any(|(row, home)| !route.contains(row) || !route.contains(home))
                         {
                             failures.push(format!(
-                                "{} {leaf} on {label:?}: \"{route}\" for {want:?}",
+                                "{} {home} on {label:?}: \"{route}\" for {want:?}",
                                 element.id
                             ));
                         }
@@ -34968,9 +34524,9 @@ mod tests {
         else {
             panic!("no bundled combination is a platform one");
         };
-        let pressed = colour_route(
+        let pressed = colour_home_route(
             element,
-            "button.active_background",
+            "button.body(PRESSED).fill",
             Shown::opening(r),
             Some(label),
         )
@@ -34979,9 +34535,9 @@ mod tests {
             pressed.starts_with("not drawn here: "),
             "{label}: the On toggle's pressed fill: {pressed}"
         );
-        let checked = colour_route(
+        let checked = colour_home_route(
             element,
-            "button.checked_background",
+            "button.body(CHECKED).fill",
             Shown::opening(r),
             Some(label),
         )
@@ -36425,10 +35981,10 @@ mod tests {
                                         ));
                                     }
                                 }
-                                for leaf in route_keys(element) {
-                                    let route = iced_route(&state, element, leaf);
+                                for home in &element.homes {
+                                    let route = iced_route(&state, element, home);
                                     failures.extend(
-                                        route_faults(&state, &laid, open, element, leaf, &route)
+                                        route_faults(&state, &laid, open, element, home, &route)
                                             .into_iter()
                                             .map(|f| {
                                                 format!(
@@ -36503,7 +36059,7 @@ mod tests {
         let r = state.next_shown().clone();
         let mut failures = Vec::new();
         let mut overridden = 0;
-        for leaf in route_keys(element).iter().filter(|l| {
+        for leaf in element.homes.iter().filter(|l| {
             l.starts_with("popover.panel.padding.")
                 || l.starts_with("menu.panel(NONE).padding.")
                 || *l == "popover.panel.shadows"
@@ -37696,14 +37252,8 @@ mod tests {
     /// drawing's rows under iced_aw.
     #[test]
     fn the_outward_corner_routes_name_what_draws_them() {
-        // The element's key of the radius (`route_keys`).
-        let key = |id: &str| {
-            if home_keyed(id) {
-                "tab.active_outward_corner_radius"
-            } else {
-                "tab.active_outward_corner_radius_px"
-            }
-        };
+        // The elements' home of the radius.
+        let key = "tab.active_outward_corner_radius";
         // The line Widget Info shows, without its toolkit's name.
         let route = |state: &State, id: &str, leaf: &str| match elements::element(id) {
             Some(element) => {
@@ -37752,7 +37302,7 @@ mod tests {
             ),
             ("basic.page", "room for both flares in basic_column_count"),
         ] {
-            assert_eq!(route(&state, id, key(id)), want, "{id}");
+            assert_eq!(route(&state, id, key), want, "{id}");
         }
         for id in [
             "chrome.page_tabs.basic",
@@ -37773,16 +37323,15 @@ mod tests {
         );
         state.basic_tab = 1;
         assert!(
-            route(&state, "basic.tabs.one", key("basic.tabs.one"))
-                .starts_with("not drawn: only the open tab"),
+            route(&state, "basic.tabs.one", key).starts_with("not drawn: only the open tab"),
             "a closed tab"
         );
         let state = curving_out(None);
         for id in ["chrome.page_tabs.basic", "chrome.page_tabs", "basic.page"] {
             assert!(
-                route(&state, id, key(id)).starts_with("not drawn: unstated"),
+                route(&state, id, key).starts_with("not drawn: unstated"),
                 "{id}: {}",
-                route(&state, id, key(id))
+                route(&state, id, key)
             );
         }
     }
@@ -40656,7 +40205,7 @@ mod tests {
         ] {
             let state = loaded(preset, false);
             for home in homes {
-                if !route_keys(element).iter().any(|h| h == home) {
+                if !element.homes.iter().any(|h| h == home) {
                     return Err(format!("{home} is not listed"));
                 }
                 let route = iced_route(&state, element, home);
@@ -40880,27 +40429,6 @@ mod tests {
                 }
             }
         }
-    }
-
-    /// Every bundled preset in both modes, resolved as the contract resolves
-    /// them, with its `<preset>/<mode>` label.
-    fn bundled_combinations() -> Vec<(String, ResolvedTheme)> {
-        let mut out = Vec::new();
-        for info in native_theme::theme::Theme::list_presets() {
-            for (mode, name) in [
-                (native_theme::ColorMode::Light, "light"),
-                (native_theme::ColorMode::Dark, "dark"),
-            ] {
-                let resolved = native_theme::theme::Theme::preset(info.key)
-                    .and_then(|t| t.into_variant(mode))
-                    .and_then(|v| v.into_resolved(&native_theme::ResolutionContext::for_tests()));
-                match resolved {
-                    Ok(r) => out.push((format!("{}/{name}", info.key), r)),
-                    Err(error) => panic!("{} {name}: {error}", info.key),
-                }
-            }
-        }
-        out
     }
 
     /// Decision 12 of issue #4's step 1
@@ -42045,19 +41573,12 @@ mod tests {
         let states = route_states();
         let routes = states.iter().flat_map(|state| {
             elements::elements().iter().flat_map(move |element| {
-                route_keys(element)
-                    .iter()
-                    .map(move |leaf| (state, element, leaf))
+                element.homes.iter().map(move |leaf| (state, element, leaf))
             })
         });
         for (state, element, leaf) in routes {
-            // A colour row: a colour home of the export where the element
-            // is listed by its homes, else a 0.7.2 colour leaf.
-            let colour = if home_keyed(&element.id) {
-                export.homes.contains_key(leaf.as_str())
-            } else {
-                export.has_leaf(leaf)
-            };
+            // A colour row: a colour home of the export.
+            let colour = export.homes.contains_key(leaf.as_str());
             if !colour || drawing(element, leaf, Shown::of(state)).is_some() {
                 continue;
             }
@@ -42422,8 +41943,7 @@ mod tests {
                 assert_eq!(info.title, title);
                 assert_eq!(shown_title(&state).as_deref(), Some(title));
                 let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
-                let listed_leaves: Vec<&str> =
-                    route_keys(element).iter().map(String::as_str).collect();
+                let listed_leaves: Vec<&str> = element.homes.iter().map(String::as_str).collect();
                 assert_eq!(leaves, listed_leaves, "{id}: rows out of the list's order");
                 assert!(
                     info.rows.iter().all(|row| !row.value.is_empty()),
@@ -42752,108 +42272,6 @@ mod tests {
             shown(&state),
             closed,
             "{tab}: open and closed show one info"
-        );
-    }
-
-    /// A leaf's value reads as the resolved theme holds it, in the
-    /// registry's spelling: a padding side in px, a font as the family iced
-    /// draws, the size its source stated and its weight, a colour as its hex, a layout
-    /// gap from the theme's layout, and what the theme leaves unset as not
-    /// stated.
-    #[test]
-    fn leaf_values_read_the_resolved_theme() {
-        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        let layout = match native_theme::theme::Theme::preset("kde-breeze") {
-            Ok(preset) => preset.layout,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        let r = resolved.clone();
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            layout: layout.clone(),
-            ..State::default()
-        };
-        let value = |leaf: &str| {
-            let shown = listed_value(&state, leaf);
-            (shown.text, shown.colour.map(to_color))
-        };
-        let side = r.button.border.padding.top.map(|v| format!("{v} px"));
-        assert_eq!(Some(value("button.border.padding_top_px").0), side);
-        let (colour, swatch) = value("button.background_color");
-        assert_eq!(colour, r.button.background_color.to_string());
-        assert_eq!(swatch, Some(to_color(r.button.background_color)));
-        let font = &r.button.font;
-        let size = match font.defined_size {
-            Some(native_theme::theme::FontSize::Pt(v)) => format!("{v} pt"),
-            Some(native_theme::theme::FontSize::Px(v)) => format!("{v} px"),
-            None => format!("{} px", font.size),
-        };
-        assert_eq!(
-            value("button.font").0,
-            format!(
-                "{} {size} {}",
-                family_label(&font.family, &font_from_database(font, false)),
-                font.weight
-            )
-        );
-        assert_eq!(
-            value("layout.widget_gap_px").0,
-            layout
-                .widget_gap
-                .map_or(values::NOT_STATED.to_string(), |v| format!("{v} px"))
-        );
-        let heading = &r.text_scale.section_heading;
-        assert_eq!(
-            value("text_scale.section_heading").0,
-            format!("{} px {}", heading.size, heading.weight)
-        );
-        assert_eq!(
-            value("defaults.line_height").0,
-            format!("{}", r.defaults.line_height)
-        );
-    }
-
-    /// The value Widget Info shows for `leaf` (`values::leaf_value`), read as
-    /// [`element_info`] reads it: from the resolved theme's JSON, and the
-    /// layout, icon set and icon theme `state` keeps, a font's family as
-    /// [`listed_family`] names it.
-    fn listed_value(state: &State, leaf: &str) -> values::LeafValue {
-        let json = match values::theme_json(&state.current_resolved) {
-            Ok(json) => json,
-            Err(error) => panic!("{error}"),
-        };
-        values::leaf_value(
-            leaf,
-            &json,
-            &state.layout,
-            Some(state.current_icon_set),
-            state.current_icon_theme.as_deref(),
-            &listed_family,
-        )
-    }
-
-    /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is
-    /// the resolved theme's `tooltip.show_delay`, with ` ms`.
-    #[test]
-    fn a_ms_leaf_reads_its_value() {
-        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        let delay = resolved.tooltip.show_delay;
-        assert!(delay.is_some(), "kde-breeze states a tooltip delay");
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            ..State::default()
-        };
-        assert_eq!(
-            Some(listed_value(&state, "tooltip.show_delay_ms").text),
-            delay.map(|ms| format!("{ms} ms"))
         );
     }
 
@@ -44217,7 +43635,7 @@ mod tests {
     /// its last word is hex-like without the `#`; a listed element's colour
     /// row has its colour, a word that is no colour none.
     #[test]
-    fn a_swatch_needs_the_hash_of_a_colour() {
+    fn a_swatch_needs_the_hash_of_a_colour() -> Result<(), String> {
         for colour in [
             Color::from_rgb8(0x3d, 0xae, 0xe9),
             Color::from_rgba8(0x3d, 0xae, 0xe9, 0.5),
@@ -44243,11 +43661,24 @@ mod tests {
         ] {
             assert_eq!(hex_color(bare), None, "{bare}: a swatch without a #");
         }
-        let state = State::default();
-        let r = &state.current_resolved;
-        let shown = listed_value(&state, "button.background_color");
-        assert_eq!(shown.colour, Some(r.button.background_color));
-        assert_eq!(listed_value(&state, "theme_variant.icon_set").colour, None);
+        let state = loaded("kde-breeze", false);
+        let element = elements::element("basic.buttons.default")
+            .ok_or("basic.buttons.default is not listed")?;
+        let rows = element_info(&state, element).rows;
+        let row = |home: &str| {
+            rows.iter()
+                .find(|row| row.leaf == home)
+                .ok_or(format!("basic.buttons.default lists no {home}"))
+        };
+        let fill = row("button.body(NONE).fill")?;
+        assert!(
+            fill.colour.is_some() && fill.value.starts_with('#'),
+            "the fill's row: {:?} {:?}",
+            fill.value,
+            fill.colour
+        );
+        assert_eq!(row("button.body(NONE).corners")?.colour, None);
+        Ok(())
     }
 
     /// Qt's rounding of a font's pixel size, which a theme stating
