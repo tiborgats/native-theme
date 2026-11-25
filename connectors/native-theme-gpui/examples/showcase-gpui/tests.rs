@@ -24379,6 +24379,149 @@ fn the_open_side_panels_toggle_is_painted_checked(cx: &mut TestAppContext) {
     );
 }
 
+/// The text colour the open side panel's toggle letters its icon in, the one
+/// in force where the icon records its bounds (`elements::record`).
+fn toggle_icon_colour(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<gpui::Hsla> {
+    let ui = read(cx, showcase, |this, _| this.info_ui.clone());
+    cx.update(|_window, cx| {
+        ui.read(cx)
+            .text_colours
+            .get("chrome.status_bar.toggle.icon")
+            .copied()
+    })
+}
+
+/// The open side panel's toggle under a theme that states no checked flat
+/// fill or label (macos-monterey light states none) is drawn in
+/// gpui-component's own selected ghost's colours, `secondary_active` and
+/// `secondary_foreground` (spec §10, rule 0a), never in a pressed colour of
+/// the theme's. `apply` installs `secondary_active` from the flat button's
+/// pressed fill, so the two tokens are set here, after it, to the installed
+/// Theme's `accent` and `accent_foreground`, apart from the theme's flat
+/// pressed fill and label: the toggle and its info follow the tokens.
+#[gpui::test]
+fn an_unstated_checked_toggle_is_the_selected_ghost_not_the_pressed_one(cx: &mut TestAppContext) {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    use native_theme_gpui::next::{state_text_color_of, text_color_of};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "macos-monterey");
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "macos-monterey: no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let flat = |state| ButtonQuery::flat().state(state);
+    let checked = flat(WidgetState::CHECKED);
+    assert!(
+        drawn_state_fill(&r.button.body(checked)).is_none()
+            && state_text_color_of(&r.button.label(checked)).is_none(),
+        "macos-monterey light states a checked flat fill or label, so this test proves nothing"
+    );
+    let pressed = drawn_state_fill(&r.button.body(flat(WidgetState::PRESSED)));
+    let pressed_text = text_color_of(&r.button.label(flat(WidgetState::PRESSED)));
+    let (fill, text) = cx.update(|window, cx| {
+        let theme = Theme::global_mut(cx);
+        theme.secondary_active = theme.accent;
+        theme.secondary_foreground = theme.accent_foreground;
+        let tokens = (theme.secondary_active, theme.secondary_foreground);
+        window.refresh();
+        tokens
+    });
+    assert!(
+        pressed.is_some_and(|p| p != fill) && pressed_text.is_some_and(|p| p != text),
+        "macos-monterey light's flat pressed fill or label is its accent pair, so this test could \
+         not tell the two apart"
+    );
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "the side panel is not open at start"
+    );
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
+        Some(fill),
+        "the open side panel's toggle is not filled with secondary_active"
+    );
+    assert_eq!(
+        toggle_icon_colour(&mut cx, &showcase),
+        Some(text),
+        "the open side panel's toggle does not letter its icon in secondary_foreground"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE);
+    for (field, value) in [("secondary_active", fill), ("secondary_foreground", text)] {
+        assert_eq!(
+            info.as_ref().and_then(|i| claim_of(i, field)),
+            Some(value),
+            "the toggle's info does not claim {field}, which is drawn: {info:?}"
+        );
+    }
+    for what in ["selected bg", "text"] {
+        let note = shown_note(info.as_ref(), what).unwrap_or_default();
+        assert!(
+            !note.contains("CHECKED") && !note.contains("PRESSED"),
+            "the toggle's info claims a colour of the theme's that is not drawn, {what}: {note}"
+        );
+    }
+}
+
+/// The open side panel's toggle letters its icon in
+/// `button.label(CHECKED; variant=Flat).color` where a rule states it (spec
+/// §10, rule 0a), and its info names it: under kde-breeze light with that
+/// label patched to the theme's `colors.window.border`, apart from
+/// gpui-component's own selected ghost's `secondary_foreground`.
+#[gpui::test]
+fn the_open_toggle_letters_its_icon_in_the_checked_label(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, TextPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::next::state_text_color_of;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+        r.colors.window.border.map(|border| {
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Flat)
+                    .states(WidgetState::CHECKED)
+                    .label(TextPatch::new().color(border)),
+            )
+        })
+    });
+    let Some(r) = r else { return };
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    let label = state_text_color_of(
+        &r.button
+            .label(ButtonQuery::flat().state(WidgetState::CHECKED)),
+    );
+    let own = cx.update(|_window, cx| Theme::global(cx).secondary_foreground);
+    assert!(
+        label.is_some_and(|label| label != own),
+        "the patched checked flat label {label:?} is secondary_foreground, so this test could \
+         not tell the two apart"
+    );
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "the side panel is not open at start"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        toggle_icon_colour(&mut cx, &showcase),
+        label,
+        "the open side panel's toggle does not letter its icon in button.label(CHECKED; variant=Flat).color"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE);
+    let note = shown_note(info.as_ref(), "text").unwrap_or_default();
+    assert!(
+        label.is_some_and(|label| note.contains(&format!(
+            "button.label(CHECKED; variant=Flat).color {}",
+            crate::info::as_rgba(label)
+        ))),
+        "the toggle's info does not name the checked label it is lettered in: {note:?}"
+    );
+}
+
 /// The open side panel's toggle claims the colours it is drawn in: under
 /// kde-breeze light with the flat button's hovered outline patched to
 /// per-side strokes, which gpui cannot take, `next::variants::ghost_button`
