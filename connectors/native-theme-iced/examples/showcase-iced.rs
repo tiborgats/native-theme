@@ -26194,6 +26194,23 @@ mod tests {
         assert!(own(&app).contains(&format!("About {APP_NAME}")));
     }
 
+    /// The size and the colour the Icons page draws its indicator in under
+    /// `state`'s installed 0.8.0 theme ([`Indicator::load`]): the theme's
+    /// `icons.sizes.large`, its `spinner.diameter` where that is unstated,
+    /// and its `colors.window.foreground`; the error where that is unstated,
+    /// as the page then draws no indicator.
+    fn indicator_size_and_colour(
+        state: &State,
+    ) -> Result<(f32, native_theme::next::Color), String> {
+        let r = &state.next_resolved;
+        let size = r.icons.sizes.large.unwrap_or(r.spinner.diameter);
+        r.colors
+            .window
+            .foreground
+            .map(|colour| (size, colour))
+            .ok_or_else(|| "the installed theme states no colors.window.foreground".to_string())
+    }
+
     /// A freedesktop icon theme's spinner is that theme's own, and a theme
     /// that has none shows none: never the system theme's.
     #[test]
@@ -26211,8 +26228,10 @@ mod tests {
                 &mut state,
                 Message::IconSetSelected(IconSetChoice::Freedesktop(name.clone())),
             );
-            let size = state.current_resolved.defaults.icon_sizes.large;
-            let text = to_color(state.current_resolved.defaults.text_color);
+            let sized = indicator_size_and_colour(&state);
+            assert!(sized.is_ok(), "{name}: {sized:?}");
+            let Ok((size, text)) = sized else { continue };
+            let text = next_colour(text);
             let expected = FreedesktopLoader::load_indicator(Some(&name))
                 .and_then(|anim| first_frame_drawn(IconSet::Freedesktop, &anim, text, size));
             let page = state.indicator_at(state.animation_start, true);
@@ -26496,8 +26515,10 @@ mod tests {
             state.accessibility.reduce_motion = false;
             assert!(!state.motion_reduced(), "{set:?}: motion is reduced");
             state.reload_icons();
-            let size = state.current_resolved.defaults.icon_sizes.large;
-            let text = to_color(state.current_resolved.defaults.text_color);
+            let sized = indicator_size_and_colour(&state);
+            assert!(sized.is_ok(), "{set:?}: {sized:?}");
+            let Ok((size, text)) = sized else { continue };
+            let text = next_colour(text);
             let Some(anim) = load_icon_indicator(set, None) else {
                 panic!("{set:?} has no indicator");
             };
@@ -26643,12 +26664,19 @@ mod tests {
             ..State::default()
         };
         state.reload_icons();
-        let resolved = &state.current_resolved;
-        let size = resolved.defaults.icon_sizes.large;
-        let mut drawn = resolved.clone();
+        let sized = indicator_size_and_colour(&state);
+        assert!(sized.is_ok(), "{set:?} {theme:?}: {sized:?}");
+        let Ok((size, text)) = sized else { return };
+        let mut drawn = state.next_resolved.clone();
         drawn.spinner.diameter = size;
-        drawn.spinner.fill_color = resolved.defaults.text_color;
-        let spinner = native_theme_iced::Spinner::new(&drawn, set, theme);
+        drawn.spinner.color = text;
+        let spinner = iced_next::spinner(&drawn, set, theme);
+        assert!(
+            spinner.is_ok(),
+            "{set:?} {theme:?}: the connector builds no spinner: {:?}",
+            spinner.as_ref().err()
+        );
+        let Ok(spinner) = spinner else { return };
         let mut times = vec![0, 41, 42, 500, 1_000, 86_400_007];
         match state.indicator.as_ref().map(|indicator| indicator.playback) {
             Some(Playback::Frames { count, frame_ms }) => {
@@ -28196,16 +28224,9 @@ mod tests {
     fn the_basic_tooltip_waits_the_themes_show_delay() {
         recording(|| {
             for (delay, opens) in [(None, true), (Some(1_u32), true), (Some(60_000), false)] {
-                let (theme, resolved) =
-                    match native_theme_iced::from_preset("catppuccin-mocha", false) {
-                        Ok(installed) => installed,
-                        Err(error) => panic!("catppuccin-mocha: {error}"),
-                    };
                 let mut state = State {
-                    current_theme: theme,
-                    current_resolved: resolved,
                     active_tab: Tab::Basic,
-                    ..State::default()
+                    ..loaded("catppuccin-mocha", false)
                 };
                 splice_next(&mut state, |r| r.timings.tooltip_show_ms = delay);
                 let theme = super::theme(&state);
@@ -28256,17 +28277,10 @@ mod tests {
     /// [`the_basic_tooltip_waits_the_themes_show_delay`] rests it.
     fn hovered_frame(delay: Option<u32>, rest: Rest) -> iced_test::simulator::Snapshot {
         recording(|| {
-            let (theme, resolved) = match native_theme_iced::from_preset("catppuccin-mocha", false)
-            {
-                Ok(installed) => installed,
-                Err(error) => panic!("catppuccin-mocha: {error}"),
-            };
             let mut state = State {
-                current_theme: theme,
-                current_resolved: resolved,
                 active_tab: Tab::Display,
                 side_panel_visible: false,
-                ..State::default()
+                ..loaded("catppuccin-mocha", false)
             };
             splice_next(&mut state, |r| r.timings.tooltip_show_ms = delay);
             let theme = super::theme(&state);
@@ -28569,15 +28583,13 @@ mod tests {
         }
     }
 
-    /// The Display page drawn under `preset` light on both models, as
-    /// `splice` leaves its 0.7.2 resolved theme (the tips' text) and
-    /// `splice_tip` its installed 0.8.0 one (the bubble), its tooltips
-    /// opening at once, the side panel hidden: per tooltip, Top, Bottom, Left
-    /// and Right, the button's bounds and, with the pointer resting on the
-    /// button past three frames, the tip's as drawn.
+    /// The Display page drawn under `preset` light, as `splice_tip` leaves
+    /// its installed 0.8.0 theme (the bubble and the tips' text), its
+    /// tooltips opening at once, the side panel hidden: per tooltip, Top,
+    /// Bottom, Left and Right, the button's bounds and, with the pointer
+    /// resting on the button past three frames, the tip's as drawn.
     fn display_tips(
         preset: &str,
-        splice: impl Fn(&mut ResolvedTheme),
         splice_tip: impl Fn(&mut native_theme::next::ResolvedTheme),
     ) -> Result<Vec<(Rectangle, Rectangle)>, String> {
         recording(|| {
@@ -28586,7 +28598,6 @@ mod tests {
                 side_panel_visible: false,
                 ..loaded(preset, false)
             };
-            splice(&mut state.current_resolved);
             splice_next(&mut state, |r| {
                 r.timings.tooltip_show_ms = None;
                 splice_tip(r);
@@ -28632,7 +28643,7 @@ mod tests {
     #[test]
     fn the_display_tooltips_take_the_tooltip_theme() -> Result<(), String> {
         const WIDER: f32 = 10.0;
-        let base = display_tips("kde-breeze", |_| {}, |_| {})?;
+        let base = display_tips("kde-breeze", |_| {})?;
         let kde_next = loaded("kde-breeze", false).next_shown().clone();
         let stated = next_tooltip_padding(&kde_next)
             .ok_or("kde-breeze states no uniform tooltip padding on the 0.8.0 model")?;
@@ -28647,7 +28658,7 @@ mod tests {
         let mut spliced = kde_next.clone();
         wider(&mut spliced);
         assert_eq!(next_tooltip_padding(&spliced), Some(stated + WIDER));
-        let padded = display_tips("kde-breeze", |_| {}, wider)?;
+        let padded = display_tips("kde-breeze", wider)?;
         for (side, ((_, before), (_, after))) in ["top", "bottom", "left", "right"]
             .into_iter()
             .zip(base.iter().zip(&padded))
@@ -28670,11 +28681,9 @@ mod tests {
             .map(|(_, tip)| tip.width)
             .fold(f32::INFINITY, f32::min);
         let max_width = (narrowest / 2.0).floor();
-        let wrapped = display_tips(
-            "kde-breeze",
-            |_| {},
-            |r| r.tooltip.panel.max_size[0] = Some(max_width),
-        )?;
+        let wrapped = display_tips("kde-breeze", |r| {
+            r.tooltip.panel.max_size[0] = Some(max_width);
+        })?;
         for (side, ((_, before), (_, after))) in ["top", "bottom", "left", "right"]
             .into_iter()
             .zip(base.iter().zip(&wrapped))
@@ -28690,15 +28699,11 @@ mod tests {
 
         let line = next_line_box(&kde_next.typography, &kde_next.tooltip.text);
         let taller_line = line + 7.0;
-        let taller = display_tips(
-            "kde-breeze",
-            |_| {},
-            |r| {
-                let text = &mut r.tooltip.text;
-                text.line_height = taller_line;
-                text.stated = text.stated.union(TextStated::LINE_HEIGHT);
-            },
-        )?;
+        let taller = display_tips("kde-breeze", |r| {
+            let text = &mut r.tooltip.text;
+            text.line_height = taller_line;
+            text.stated = text.stated.union(TextStated::LINE_HEIGHT);
+        })?;
         for (want, tips) in [(line, &base), (taller_line, &taller)] {
             for (side, (_, tip)) in ["top", "bottom", "left", "right"].into_iter().zip(tips) {
                 if (tip.height - want).abs() > 0.01 {
@@ -28770,7 +28775,7 @@ mod tests {
                 drop(ui);
 
                 let want = gap + padding;
-                let tips = match display_tips(preset, |_| {}, |_| {}) {
+                let tips = match display_tips(preset, |_| {}) {
                     Ok(tips) => tips,
                     Err(error) => {
                         failures.push(error);
@@ -30227,13 +30232,7 @@ mod tests {
             {
                 let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
                 accessibility.text_scaling_factor = factor;
-                let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("{preset}: {error}"),
-                };
                 let mut state = State {
-                    current_theme: theme,
-                    current_resolved: resolved,
                     accessibility: accessibility.clone(),
                     active_tab: Tab::Basic,
                     held_menu: theme_menu,
