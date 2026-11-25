@@ -103,8 +103,6 @@ builders! {
     dialog_max_width -> Option<Pixels>;
     input_height -> StyleRefinement;
     button_disabled -> StyleRefinement;
-    button_checked -> StyleRefinement;
-    toolbar_button_rest -> StyleRefinement;
     toolbar_button_checked -> StyleRefinement;
     default_button_rest -> Option<StyleRefinement>;
     list_item_selected -> StyleRefinement;
@@ -121,6 +119,35 @@ builders! {
 /// window's fill of `r`.
 pub fn title_bar_inactive(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::title_bar_inactive(r, inactive)
+}
+
+/// [`crate::geometry::button_checked`], from the 0.8.0 model: a Button that
+/// is on (`selected(true)`) filled with `button.body(CHECKED).fill` and
+/// lettered in `button.label(CHECKED).color`, each where a rule states it
+/// for `CHECKED`, else unset, so gpui-component's own selected fill and
+/// label stand (gpui-component 0.10.0 `button/button.rs`,
+/// `ButtonVariant::selected`). Where 0.7.2's builder stands in for an
+/// unstated checked pair with the pressed one, this takes no other state's
+/// value: which state looks like which is the theme's to state (spec §10,
+/// rule 0a). Upstream replays the refinement over its selected style.
+pub fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::button_checked(r)
+}
+
+/// [`crate::geometry::toolbar_button_rest`], from the 0.8.0 model: where a
+/// rule states the toolbar's hovered outline,
+/// `toolbar.button(HOVER).stroke.color`, a transparent fill and a
+/// transparent border of `button.body(NONE).stroke.width`, each stated side
+/// of `button.body(NONE)`'s padding less that width, floored at 0; then the
+/// toolbar button's capsule at rest, `toolbar.button(NONE)`'s fill and
+/// corners, each where stated (spec §10, rule 0), the fill over the
+/// outline's transparent one. Upstream replays the refinement over the
+/// selected and disabled styles, and its hover and press styles lie over it
+/// (gpui-component 0.10.0 `button/button.rs`, `RenderOnce for Button`).
+/// Apply it after the tool box, before [`toolbar_button_checked`] and
+/// [`toolbar_button_disabled`].
+pub fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::toolbar_button_rest(r)
 }
 
 /// [`crate::geometry::input_fill`], from the 0.8.0 model.
@@ -561,6 +588,8 @@ mod tests {
                 title_bar_inactive(&r, &inactive),
                 builders::title_bar_inactive(&r, &inactive)
             );
+            assert_eq!(button_checked(&r), builders::button_checked(&r));
+            assert_eq!(toolbar_button_rest(&r), builders::toolbar_button_rest(&r));
             assert_eq!(ghost_button_rest(&r), builders::ghost_button_rest(&r));
             assert_eq!(
                 ghost_button_rest_own_padding(&r),
@@ -575,7 +604,13 @@ mod tests {
             }
             names = compared;
         }
-        names.extend(["title_bar_inactive", "input_fill", "combo_box_fill"]);
+        names.extend([
+            "title_bar_inactive",
+            "input_fill",
+            "combo_box_fill",
+            "button_checked",
+            "toolbar_button_rest",
+        ]);
         let old: Vec<&str> = include_str!("../geometry.rs")
             .lines()
             .filter_map(|line| line.strip_prefix("pub fn "))

@@ -966,7 +966,7 @@ fn toolbar_capsule(r: &ResolvedTheme, style: StyleRefinement) -> Mapped<StyleRef
 /// [`toolbar_button_rest`]: `toolbar.button(DISABLED)`'s fill and corners,
 /// each where a rule states it for `DISABLED` (module doc of `next`), else
 /// unset, so the rest refinement upstream replays over the disabled style
-/// (gpui-component 0.10.0 `button/button.rs:846-850`) stands, the theme's
+/// (gpui-component 0.10.0 `button/button.rs:843-850`) stands, the theme's
 /// value at rest (spec §10, rule 0). A disabled Button only: upstream
 /// replays the refinement at rest too.
 pub(crate) fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
@@ -988,8 +988,10 @@ pub(crate) fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefineme
 /// `toolbar.button_icon(NONE).color` at rest where stated; in another state
 /// `toolbar.button_icon(state).color` where a rule states it for the state
 /// (module doc of `next`); else `None`, and the icon keeps the colour it is
-/// drawn in, the Button's text colour, which gpui-component changes for the
-/// selected and disabled styles (spec §10, rule 0). An `Icon` takes one
+/// drawn in: an untinted `Icon` takes the Button's text colour
+/// (gpui-component 0.10.0 `src/icon.rs`, `into_svg`), so a checked Button's
+/// icon follows its checked label, the toolkit's own treatment (spec §10,
+/// rule 0). An `Icon` takes one
 /// colour (gpui-component 0.10.0 `src/icon.rs`, `Styled for Icon`), so the
 /// tint of the state a Button is built in stays under the pointer and
 /// pressed.

@@ -5042,6 +5042,106 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     }
 }
 
+/// The Copy box of a listed element's info, the panel's own box, draws its
+/// listed outline: under kde-breeze light, which states the hovered push
+/// button's stroke and pads that button on every side by more than 3 px, it
+/// is edged in `button.body(HOVER).stroke.color` under the pointer and in no
+/// colour at rest, and the border lies inside the stated padding: with that
+/// stroke patched to a width of 3 px the box is the same size at rest and
+/// under the pointer as before (spec §10, rule 0).
+#[gpui::test]
+fn the_listed_copy_box_draws_the_hovered_outline_inside_its_padding(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        ButtonRule, PartPatch, ResolvedTheme, Stroke, ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::next::{padding_of, state_stroke_color_of, stroke_width_of};
+    const PATCHED_WIDTH: f32 = 3.0;
+    let outline = |r: &ResolvedTheme| {
+        let hovered = r.button.body(WidgetState::HOVER);
+        state_stroke_color_of(&hovered).zip(stroke_width_of(&hovered))
+    };
+    // The box at rest and hovered, with the colours it is edged in hovered.
+    let measure = |cx: &mut VisualTestContext, showcase: &Entity<Showcase>| {
+        let info = settle_on(cx, showcase, Page::Charts.tab());
+        assert!(
+            info.as_ref().is_some_and(|info| info.listed.is_some()),
+            "the page tab's info is not an element of the list, so no listed Copy box is drawn: \
+             {info:?}"
+        );
+        let rest_edges = edged_quads(cx, INSPECTOR_COPY);
+        let rest = bounds_of(cx, INSPECTOR_COPY).size;
+        let at = bounds_of(cx, INSPECTOR_COPY).center();
+        hover(cx, at);
+        draw(cx);
+        let hovered = bounds_of(cx, INSPECTOR_COPY).size;
+        (rest_edges, rest, hovered, edged_quads(cx, INSPECTOR_COPY))
+    };
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Charts);
+    let r = next_theme(&mut cx, &showcase);
+    let stated = r.as_ref().and_then(outline);
+    let padded = r.as_ref().is_some_and(|r| {
+        padding_of(&r.button.body(WidgetState::NONE))
+            .iter()
+            .all(|side| side.is_some_and(|v| v > PATCHED_WIDTH))
+    });
+    assert!(
+        stated.is_some_and(|(c, w)| !c.is_transparent() && w > 0. && w != PATCHED_WIDTH) && padded,
+        "kde-breeze light states no hovered push button stroke apart from {PATCHED_WIDTH} px, or \
+         pads that button on some side by no more, so this test proves nothing: {stated:?}"
+    );
+    let Some((colour, _)) = stated else {
+        return;
+    };
+    let (rest_edges, rest, hovered, edges) = measure(&mut cx, &showcase);
+    assert!(
+        rest_edges.is_empty(),
+        "the Copy box at rest is edged in {rest_edges:?}"
+    );
+    assert!(
+        edges.iter().any(|(c, _)| *c == colour),
+        "the hovered Copy box is edged in {edges:?}, not button.body(HOVER).stroke.color \
+         {colour:?}"
+    );
+    assert_eq!(
+        rest, hovered,
+        "the Copy box changes its size under the pointer"
+    );
+    let patched = install_patched_breeze(&mut cx, &showcase, Page::Charts, |r| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new().states(WidgetState::HOVER).body(
+                    PartPatch::new()
+                        .stroke(Stroke::uniform(PATCHED_WIDTH, r.colors.window.foreground?)),
+                ),
+            ),
+        )
+    });
+    let patched = patched.as_ref().and_then(outline);
+    assert!(
+        patched.is_some_and(|(c, w)| c != colour && w == PATCHED_WIDTH),
+        "the patch does not state a hovered stroke {PATCHED_WIDTH} px wide in another colour: \
+         {patched:?}"
+    );
+    let Some((patched_colour, _)) = patched else {
+        return;
+    };
+    let (patched_rest_edges, patched_rest, patched_hovered, patched_edges) =
+        measure(&mut cx, &showcase);
+    assert!(
+        patched_rest_edges.is_empty() && patched_edges.iter().any(|(c, _)| *c == patched_colour),
+        "patched, the Copy box is edged in {patched_rest_edges:?} at rest and {patched_edges:?} \
+         hovered, not {patched_colour:?}"
+    );
+    assert!(
+        patched_rest == rest && patched_hovered == rest,
+        "with the hovered stroke {PATCHED_WIDTH} px wide the Copy box is {patched_rest:?} at \
+         rest and {patched_hovered:?} hovered, not {rest:?}: the border does not lie inside the \
+         stated padding"
+    );
+}
+
 /// A toolbar button's Widget Info names the installed theme's icon theme
 /// under `icons.theme`: under kde-breeze the installed 0.8.0 theme's, as the
 /// iced and egui panels name it.
@@ -20805,7 +20905,7 @@ fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppCon
                 let fill = if drawn_state_fill(&b.body(WidgetState::CHECKED)).is_some() {
                     "filled with button.body(CHECKED).fill and"
                 } else {
-                    "filled with gpui-component's own button_active token:"
+                    "filled with ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, gpui-component's own selected fill:"
                 };
                 let text = if state_text_color_of(&b.label(WidgetState::CHECKED)).is_some() {
                     "lettered in button.label(CHECKED).color"
@@ -20846,18 +20946,19 @@ fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppCon
     }
 }
 
-/// The toggle button's state line names gpui-component's own `button_active`
-/// fill and `button_foreground` label where the theme states no checked fill
-/// or label, as a user theme may, never a pressed one; and each stated fill
-/// and label where one is.
+/// The toggle button's state line names gpui-component's own selected fill,
+/// `button_active`, which `next::apply` sets from `button.body(PRESSED).fill`,
+/// and its own `button_foreground` label, not the pressed label, where the
+/// theme states no checked fill or label, as a user theme may; and each
+/// stated fill and label where one is.
 #[test]
 fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
     use crate::demo::toggle_state_line;
     let none = toggle_state_line(false, false);
     assert!(
-        none.starts_with("selected: on, filled with gpui-component's own button_active token:")
+        none.starts_with("selected: on, filled with ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, gpui-component's own selected fill:")
             && none.ends_with("lettered in gpui-component's own button_foreground: no rule states button.label(CHECKED).color, so geometry::button_checked sets no text colour, not the pressed label")
-            && !none.contains("button.body(PRESSED)"),
+            && !none.contains("not the pressed fill"),
         "{none}"
     );
     let checked = toggle_state_line(true, true);
@@ -25269,7 +25370,9 @@ fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestA
 /// and with no native theme: upstream's height where no top or bottom
 /// padding side of `button.body(NONE)` is stated, its side padding where a
 /// left or right one is not, `button.body(NONE).corners` (or the Theme's
-/// radius where it states none gpui can draw) and the stated sides named
+/// radius where it states none gpui can draw; on the buttons
+/// `next::geometry::toolbar_button_rest` refines, `toolbar.button(NONE).corners`
+/// where stated, which it sets after the box) and the stated sides named
 /// wherever a native theme is installed (M9-035) -- for the toolbar's
 /// buttons, the status bar's toggle, the Buttons page's toolbar items and
 /// the Basic page's icon buttons, which `demo::tool_box_of` sizes alike.
@@ -25345,12 +25448,25 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                 left.is_none() || right.is_none(),
                 "{name}: the {which}'s info names {across} against {p:?}:\n{text}"
             );
-            let corners = match radius_of(&body) {
-                Some(radius) => format!(
+            // The toolbar's own corners, which `toolbar_button_rest` sets
+            // after the box, on every button it refines: all but the toggle.
+            let capsule = (which != "panel toggle")
+                .then(|| {
+                    native_theme_gpui::next::geometry::toolbar_button_rest(r)
+                        .ok()
+                        .and_then(|_| radius_of(&r.toolbar.button(WidgetState::NONE)))
+                })
+                .flatten();
+            let corners = match (capsule, radius_of(&body)) {
+                (Some(radius), _) => format!(
+                    "toolbar.button(NONE).corners, {}px",
+                    crate::info::px_text(radius.max(0.))
+                ),
+                (None, Some(radius)) => format!(
                     "button.body(NONE).corners, {}px",
                     crate::info::px_text(radius.max(0.))
                 ),
-                None => "the Theme's radius upstream rounds a Button by".to_string(),
+                (None, None) => "the Theme's radius upstream rounds a Button by".to_string(),
             };
             assert!(
                 text.contains(&corners),
@@ -25382,6 +25498,53 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
             "with no native theme the {which}'s size note is not upstream's {height} with {across}: {note:?}"
         );
     }
+}
+
+/// A tool button's fill note names the toolbar button's rest capsule,
+/// `toolbar.button(NONE).fill`, at rest wherever a preset states it and
+/// `next::geometry::toolbar_button_rest`, which lays it over the variant's
+/// own, applies (macos-tahoe states it), and nowhere else.
+#[test]
+fn a_tool_buttons_fill_note_names_the_stated_rest_capsule() {
+    use crate::info::buttons::ToolVariant;
+    use native_theme::next::WidgetState;
+    let icon = ChromeIcon::Builtin("Search".into());
+    let mut named = 0usize;
+    for (name, r, t) in &every_next_variant() {
+        let stated = native_theme_gpui::next::geometry::toolbar_button_rest(r).is_ok()
+            && drawn_fill(&r.toolbar.button(WidgetState::NONE)).is_some();
+        for (which, info) in [
+            (
+                "toolbar button",
+                crate::info::toolbar_button(
+                    t,
+                    "a",
+                    &icon,
+                    "set",
+                    false,
+                    None,
+                    Some(r),
+                    ToolVariant::Toolbar,
+                ),
+            ),
+            (
+                "toolbar item",
+                crate::info::buttons::toolbar_item(t, &icon, "set", Some(r), ToolVariant::Toolbar),
+            ),
+        ] {
+            let note = shown_note(Some(&info), "fill").unwrap_or_default();
+            assert_eq!(
+                note.starts_with("toolbar.button(NONE).fill at rest"),
+                stated,
+                "{name}: the {which}'s fill note against a rest capsule fill stated {stated}: {note:?}"
+            );
+        }
+        named += usize::from(stated);
+    }
+    assert!(
+        named > 0,
+        "no preset states toolbar.button(NONE).fill, so this test proves nothing"
+    );
 }
 
 /// A TabBar built from gpui-component's -- the chrome tab rows of a build
@@ -25702,7 +25865,9 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
     let Some((name, r, _)) = variants.first() else {
         return;
     };
-    let radius = ToolBox::of(r).radius;
+    let ToolBox {
+        radius, capsule, ..
+    } = ToolBox::of(r);
     // One spliced padding, [top, right, bottom, left], and the words the
     // size note holds, those the info does not hold, and what the radius
     // and padding line says.
@@ -25769,7 +25934,11 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
             WidgetInfo::new("Button"),
             ToolSize::Medium,
             true,
-            Some(ToolBox { sides, radius }),
+            Some(ToolBox {
+                sides,
+                radius,
+                capsule,
+            }),
             None,
         );
         let note = shown_note(Some(&info), "size");

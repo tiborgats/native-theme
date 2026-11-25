@@ -28,7 +28,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.buttons.toggle_on",
         &["button.body(PRESSED).fill"],
-        "not drawn: where button.body(CHECKED).fill is unstated next::geometry::button_checked sets no fill and gpui-component's own selected fill, button_active, stands, not the pressed fill (spec §10, rule 0a; button/button.rs, ButtonVariant::selected; demo::toggle_button)",
+        "gpui: where no rule states button.body(CHECKED).fill, ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill: gpui-component's own selected fill, themed, since next::geometry::button_checked then sets no fill (spec §10, rule 0a; button/button.rs, ButtonVariant::selected; demo::toggle_button); where one does, that checked fill over it",
     ),
     (
         "basic.buttons.toggle_on",
@@ -163,11 +163,13 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.info.copy",
-        &[
-            "button.body(HOVER).stroke.color",
-            "button.body(PRESSED).stroke.color",
-        ],
-        "not drawn: a listed element's Copy box is the panel's own box, not a Button, which takes the hovered and pressed fill and text colours but lays out no border, so it is edged in none under the pointer or pressed (inspector.rs, listed_info)",
+        &["button.body(HOVER).stroke.color"],
+        "gpui: the Copy box's border under the pointer, where a rule states it for the state, button.body(HOVER).stroke.width wide and transparent at rest, the width taken off each stated padding side so the box keeps its size (inspector.rs, listed_info)",
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(PRESSED).stroke.color"],
+        "gpui: the Copy box's border while pressed, where a rule states it for the state, at the hovered stroke's width; where none does, the box's own treatment, the hover style gpui keeps under the press (inspector.rs, listed_info)",
     ),
     (
         "chrome.info.copy",
@@ -177,22 +179,22 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.top"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.right"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.bottom"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.left"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     // --- button: the pages menu, variants::ghost_button --------------------------
     (
@@ -279,7 +281,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.icons.edit",
         &["toolbar.button(CHECKED).fill"],
-        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button; where that refinement cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names), it is not applied and the selected Button keeps next::geometry::toolbar_button_rest's transparent fill where that applies, else its variant's selected fill (button/button.rs, ButtonVariant::selected)",
+        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button; where that refinement cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names), it is not applied and the selected Button keeps next::geometry::toolbar_button_rest's fill where that applies, toolbar.button(NONE).fill where stated, else its transparent one where the toolbar's outline is stated, and otherwise its variant's selected fill (button/button.rs, ButtonVariant::selected); its corners are toolbar.button(NONE).corners where stated, which that rest refinement sets",
     ),
     (
         "basic.icons.edit",

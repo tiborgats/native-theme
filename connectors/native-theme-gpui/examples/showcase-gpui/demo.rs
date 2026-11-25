@@ -1680,12 +1680,7 @@ pub(crate) fn toolbar_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        tool_icon_tinted(
-            cx,
-            glyph_at(icon, size),
-            WidgetState::NONE,
-            &mut button_info,
-        )
+        tool_icon_tinted(cx, glyph_at(icon, size), false, &mut button_info)
     });
     let dispatched = action.boxed_clone();
     let button = next_native_info(
@@ -1799,12 +1794,7 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
             "icon_size_toolbar",
             &mut button_info,
         );
-        tool_icon_tinted(
-            cx,
-            glyph_at(icon, size),
-            WidgetState::NONE,
-            &mut button_info,
-        )
+        tool_icon_tinted(cx, glyph_at(icon, size), false, &mut button_info)
     });
     let button = next_native_info(
         refined(
@@ -11200,7 +11190,7 @@ fn tool_button_box(cx: &App) -> Option<StyleRefinement> {
 
 /// [`tool_button_box`] under the 0.8.0 theme `r`.
 fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
-    let info::buttons::ToolBox { sides, radius } = info::buttons::ToolBox::of(r);
+    let info::buttons::ToolBox { sides, radius, .. } = info::buttons::ToolBox::of(r);
     let style = match radius {
         Some(radius) => StyleRefinement::default().rounded(px(radius.max(0.))),
         None => StyleRefinement::default(),
@@ -11214,23 +11204,24 @@ fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
     next_padded(style, sides, None::<Pixels>, None)
 }
 
-/// A tool button's icon `glyph`, built in `state`, in the colour
-/// `next::geometry::toolbar_button_icon_color` gives the installed 0.8.0
-/// theme for it, `toolbar.button_icon`'s; as it is where that gives none, or
-/// before `next::apply` ran: the Button's text colour then, and an image its
-/// own. Its info says so in an "icon colour" line.
-fn tool_icon_tinted(
-    cx: &App,
-    glyph: Glyph,
-    state: WidgetState,
-    button_info: &mut WidgetInfo,
-) -> Glyph {
+/// A tool button's icon `glyph`, built at rest or, `checked`, in
+/// `CHECKED`, in the colour `next::geometry::toolbar_button_icon_color`
+/// gives the installed 0.8.0 theme for that state, `toolbar.button_icon`'s;
+/// as it is where that gives none, or before `next::apply` ran: the Button's
+/// text colour then, and an image its own. Its info says so in an "icon
+/// colour" line.
+fn tool_icon_tinted(cx: &App, glyph: Glyph, checked: bool, button_info: &mut WidgetInfo) -> Glyph {
+    let state = if checked {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
     match next_value(cx, |r| next::geometry::toolbar_button_icon_color(r, state)).flatten() {
         Some(colour) if !matches!(glyph, Glyph::Raster(..)) => {
-            let home = if state == WidgetState::NONE {
-                "toolbar.button_icon(NONE).color"
+            let home = if checked {
+                "toolbar.button_icon(CHECKED).color, a rule stating it for the state"
             } else {
-                "toolbar.button_icon(state).color, a rule stating it for the state"
+                "toolbar.button_icon(NONE).color"
             };
             *button_info = button_info.clone().instance(
                 "icon colour",
@@ -11305,7 +11296,7 @@ pub(crate) fn toggle_state_line(checked_fill: bool, checked_label: bool) -> Stri
     let fill = if checked_fill {
         "button.body(CHECKED).fill"
     } else {
-        "gpui-component's own button_active token: no rule states button.body(CHECKED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands, not the pressed fill (button/button.rs, ButtonVariant::selected; spec §10, rule 0a)"
+        "ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, gpui-component's own selected fill: no rule states button.body(CHECKED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected; spec §10, rule 0a)"
     };
     let text = if checked_label {
         "button.label(CHECKED).color"
@@ -11447,12 +11438,7 @@ pub(crate) fn icon_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        let state = if selected {
-            WidgetState::CHECKED
-        } else {
-            WidgetState::NONE
-        };
-        tool_icon_tinted(cx, glyph_at(icon, size), state, &mut button_info)
+        tool_icon_tinted(cx, glyph_at(icon, size), selected, &mut button_info)
     });
     let button = next_native_info(
         refined(

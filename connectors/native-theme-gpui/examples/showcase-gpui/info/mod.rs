@@ -466,7 +466,7 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "button_checked",
-        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, each where a rule states it for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where a rule states neither, the refinement sets none and upstream's selected fill or label stands, never the theme's pressed one (spec §10, rule 0a)",
+        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, each where a rule states it for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where a rule states neither, the refinement sets none and upstream's selected fill or label stands: its fill ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, the toolkit's own selected fill themed, and its label button_foreground, not the pressed label (spec §10, rule 0a)",
     ),
     (
         "default_button_rest",

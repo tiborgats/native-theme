@@ -469,6 +469,41 @@ InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
 # }
 ```
 
+Under a theme from the 0.8.0 model, `next::variants::ghost_button(r, cx)` is
+that flat button edged in its hovered outline,
+`button.body(HOVER; variant=Flat).stroke.color`, where a rule states it.
+gpui-component draws a custom variant's colour as the border in every state
+and lays out no border width for it, so a Button built on it is refined at
+rest as well: `next::geometry::ghost_button_rest` hides the edge at rest and
+lays it out inside the push button's padding, for a Button
+`next::geometry::button` pads; `next::geometry::ghost_button_rest_own_padding`
+does the same and sets no padding, for a Button that keeps the toolkit's own
+(a small Button, a button an input group sizes), the edge then lying around
+that padding:
+
+```rust,no_run
+use gpui_kit::component::IconName;
+use gpui_kit::component::StyledExt as _;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::input::InputGroupButton;
+use native_theme_gpui::{ActiveNativeTheme as _, next};
+
+# fn f(cx: &gpui_kit::App) -> next::Mapped<()> {
+if let Some(r) = cx.native_theme().and_then(|theme| theme.next_resolved(cx)) {
+    Button::new("close")
+        .icon(IconName::Close)
+        .custom(next::variants::ghost_button(r, cx)?)
+        .refine_style(&next::geometry::button(r)?)
+        .refine_style(&next::geometry::ghost_button_rest(r)?);
+    InputGroupButton::new("copy")
+        .label("Copy")
+        .custom(next::variants::ghost_button(r, cx)?)
+        .refine_style(&next::geometry::ghost_button_rest_own_padding(r)?);
+}
+# Ok(())
+# }
+```
+
 Build it in `render`: it reads the installed theme, so it follows a light/dark
 switch. Buttons gpui-component creates internally (a dialog's close button,
 calendar navigation, the tab bar) cannot be reached this way.

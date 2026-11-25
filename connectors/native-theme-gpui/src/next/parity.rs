@@ -779,7 +779,9 @@ const DIFFERENCES: &[Difference] = &[
                  rest label; 0.8.0's takes no other state's fill or label for an unstated \
                  CHECKED (docs/v0.8.0-spec.md §10, rule 0a) and sets neither, so \
                  gpui-component's own selected fill and label stand (gpui-component 0.10.0 \
-                 button/button.rs, ButtonVariant::selected): the refinement is empty",
+                 button/button.rs, ButtonVariant::selected): button_active, which crate::next \
+                 installs from the push button's pressed fill, button.body(PRESSED).fill, and \
+                 button_foreground, not the pressed label; the refinement is empty",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",

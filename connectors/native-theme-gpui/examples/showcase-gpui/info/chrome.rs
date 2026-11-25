@@ -947,7 +947,14 @@ pub fn panel_toggle(
     } else {
         info
     };
-    let info = super::buttons::tool_button_size(info, ToolSize::Small, drawn, native, None);
+    // Open, `next::geometry::ghost_button_checked` edges it in the checked
+    // flat pen and takes that width off each stated padding side.
+    let edge = if open {
+        super::buttons::Edge::ghost_checked(native)
+    } else {
+        None
+    };
+    let info = super::buttons::tool_button_size(info, ToolSize::Small, drawn, native, edge);
     info.instance(
         "icon",
         chrome_icon_note(
@@ -1567,22 +1574,16 @@ pub fn toolbar_button(
     } else {
         info
     };
-    super::buttons::tool_button_size(
-        info,
-        ToolSize::Medium,
-        drawn,
-        native,
-        super::buttons::rest_border(native),
-    )
-    .instance(
-        "icon",
-        chrome_icon_note(
-            icon,
-            set,
-            "the button shows the tooltip's text as its label instead",
-        ),
-    )
-    .instance("action", action)
+    super::buttons::toolbar_button_size(info, ToolSize::Medium, drawn, native)
+        .instance(
+            "icon",
+            chrome_icon_note(
+                icon,
+                set,
+                "the button shows the tooltip's text as its label instead",
+            ),
+        )
+        .instance("action", action)
 }
 
 /// What a chrome Button's tooltip paints: built by the application on the

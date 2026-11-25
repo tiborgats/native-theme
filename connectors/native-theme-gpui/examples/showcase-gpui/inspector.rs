@@ -677,6 +677,9 @@ pub(crate) struct PanelLook {
     copy_hover: (gpui::Hsla, gpui::Hsla),
     /// The Copy box's fill and text colour while pressed.
     copy_active: (gpui::Hsla, gpui::Hsla),
+    /// The Copy box's outline, where a rule states the hovered button's
+    /// stroke ([`CopyEdge::of`]).
+    copy_edge: Option<CopyEdge>,
     /// The installed 0.8.0 resolved theme.
     theme: native_theme::next::ResolvedTheme,
     /// `theme`'s serialised form ([`theme_json`]).
@@ -718,7 +721,15 @@ impl PanelLook {
             &native_theme::next::ResolvedTheme,
         ) -> next::Mapped<Option<gpui::Pixels>>| { metric(r).ok().flatten() };
         let body = r.button.body(WidgetState::NONE);
-        let [top, right, bottom, left] = next::padding_of(&body).map(|side| side.map(gpui::px));
+        let copy_edge = CopyEdge::of(r);
+        // Each stated side less the outline's width, floored at 0, so the
+        // border lies inside the padding the theme states.
+        let inside = |side: f32| match copy_edge {
+            Some(edge) => (side - edge.width.as_f32()).max(0.),
+            None => side,
+        };
+        let [top, right, bottom, left] =
+            next::padding_of(&body).map(|side| side.map(|side| gpui::px(inside(side))));
         let upstream_side = COPY_PADDING_X.to_pixels(theme.font_size);
         let colour = |text: &native_theme::next::TextStyle| next::text_color_of(text);
         Some(Self {
@@ -767,6 +778,7 @@ impl PanelLook {
                     .unwrap_or(theme.button_active),
                 colour(&r.button.label(WidgetState::PRESSED)).unwrap_or(theme.button_foreground),
             ),
+            copy_edge,
             theme: r.clone(),
             json,
             families,
@@ -801,7 +813,8 @@ impl PanelLook {
             parts.iter().flatten().map(|part| laid(part.as_f32())).sum()
         };
         let line = self.line.as_f32();
-        let title_row = laid((line + added(&[top, bottom])).max(line));
+        let edge = self.copy_edge.map(|edge| edge.width);
+        let title_row = laid((line + added(&[top, bottom, edge, edge])).max(line));
         gpui::px(added(&[margin, self.section_gap, self.row_gap]) + title_row + laid(line) * 3.)
     }
 
@@ -814,6 +827,35 @@ impl PanelLook {
             .font_weight(self.weight)
             .text_color(self.text)
             .whitespace_nowrap()
+    }
+}
+
+/// The outline of Widget Info's Copy box, the push button's: a transparent
+/// border `width` wide at rest, `hovered` under the pointer and `pressed`
+/// while pressed.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct CopyEdge {
+    /// `button.body(HOVER).stroke.width`.
+    width: gpui::Pixels,
+    /// `button.body(HOVER).stroke.color`.
+    hovered: gpui::Hsla,
+    /// `button.body(PRESSED).stroke.color` where a rule states it for the
+    /// state; `None` where none does, and the box keeps its own treatment, the
+    /// hover style gpui lays under the press.
+    pressed: Option<gpui::Hsla>,
+}
+
+impl CopyEdge {
+    /// The outline `r` states: `None` where no rule states the hovered
+    /// button's stroke colour, or its width is not one gpui can draw.
+    fn of(r: &native_theme::next::ResolvedTheme) -> Option<Self> {
+        use native_theme::next::WidgetState;
+        let hovered = r.button.body(WidgetState::HOVER);
+        Some(Self {
+            width: gpui::px(next::stroke_width_of(&hovered)?),
+            hovered: next::state_stroke_color_of(&hovered)?,
+            pressed: next::state_stroke_color_of(&r.button.body(WidgetState::PRESSED)),
+        })
     }
 }
 
@@ -963,8 +1005,11 @@ fn listed_info(
     let [top, right, bottom, left] = look.copy_padding;
     let ((hover_fill, hover_text), (active_fill, active_text)) =
         (look.copy_hover, look.copy_active);
+    let edge = look.copy_edge;
     // The label is the box's own text, so the box's hover and pressed text
-    // colours letter it; a child setting its own colour would keep it.
+    // colours letter it; a child setting its own colour would keep it. The
+    // outline is laid out at rest in no colour, inside the stated padding
+    // (`PanelLook::of`), so the box keeps its size under the pointer.
     let copy = look
         .text(div())
         .id("inspector-copy")
@@ -974,9 +1019,25 @@ fn listed_info(
         .when_some(right, |copy, side| copy.pr(side))
         .when_some(bottom, |copy, side| copy.pb(side))
         .when_some(left, |copy, side| copy.pl(side))
+        .when_some(edge, |copy, edge| {
+            copy.border(edge.width)
+                .border_color(gpui::Hsla::transparent_black())
+        })
         .rounded(look.copy_radius)
-        .hover(move |style| style.bg(hover_fill).text_color(hover_text))
-        .active(move |style| style.bg(active_fill).text_color(active_text))
+        .hover(move |style| {
+            let style = style.bg(hover_fill).text_color(hover_text);
+            match edge {
+                Some(edge) => style.border_color(edge.hovered),
+                None => style,
+            }
+        })
+        .active(move |style| {
+            let style = style.bg(active_fill).text_color(active_text);
+            match edge.and_then(|edge| edge.pressed) {
+                Some(pressed) => style.border_color(pressed),
+                None => style,
+            }
+        })
         .child("Copy")
         .child(elements::record(ui, "chrome.info.copy"))
         .on_click(move |_, _, cx| {
