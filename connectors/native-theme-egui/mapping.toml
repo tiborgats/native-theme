@@ -29,12 +29,14 @@
 
 ["defaults.font.family"]
 verdict   = "derived"
-homes = ["typography.body.family"]
+homes = ["typography.body.family", "switch.label(NONE).family"]
+homes_by_preset = { "ios-13" = ["typography.body.family"] }
 tested_by = "T6(d)"
 
 ["defaults.font.size"]
 verdict = "direct"
-homes = ["typography.body.size_px"]
+homes = ["typography.body.size_px", "switch.label(NONE).size_px"]
+homes_by_preset = { "ios-13" = ["typography.body.size_px"] }
 sinks   = [
   { path = "text_styles[Body].size" },
   { path = "spacing.extra_text_line_spacing", when = "the theme's line box is taller than epaint's row, §6.15" },
@@ -47,25 +49,29 @@ sinks   = [
 
 ["defaults.font.defined_size"]
 verdict  = "unmappable"
-homes = ["typography.body.defined_size"]
+homes = ["typography.body.defined_size", "switch.label(NONE).defined_size"]
+homes_by_preset = { "ios-13" = ["typography.body.defined_size"] }
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["defaults.font.weight"]
 verdict   = "derived"
-homes = ["typography.body.weight"]
+homes = ["typography.body.weight", "switch.label(NONE).weight"]
+homes_by_preset = { "ios-13" = ["typography.body.weight"] }
 tested_by = "T6(d)"
 probe     = 700
 
 ["defaults.font.style"]
 verdict   = "derived"
-homes = ["typography.body.style"]
+homes = ["typography.body.style", "switch.label(NONE).style"]
+homes_by_preset = { "ios-13" = ["typography.body.style"] }
 tested_by = "T6(d)"
 probe     = "italic"
 
 ["defaults.font.color"]
 verdict  = "unmappable"
-homes = ["typography.body.color"]
+homes = ["typography.body.color", "switch.label(NONE).color", "switch.label(CHECKED).color"]
+homes_by_preset = { "adwaita" = ["typography.body.color"], "ios-13" = ["typography.body.color"] }
 sub_tag  = "egui-limited"
 upstream = "egui: a text colour per role (§14 item 40)"
 
@@ -208,7 +214,8 @@ upstream = "egui: a text-selection pair apart from Visuals::selection"
 
 ["defaults.disabled_text_color"]
 verdict  = "unmappable"
-homes = ["colors.disabled_text"]
+homes = ["colors.disabled_text", "switch.label(DISABLED).color", "switch.label(DISABLED|CHECKED).color"]
+homes_by_preset = { "adwaita" = ["colors.disabled_text"], "ios-13" = ["colors.disabled_text"], "kde-breeze" = ["colors.disabled_text"], "macos-monterey" = ["colors.disabled_text"], "macos-tahoe" = ["colors.disabled_text"], "material-3" = ["colors.disabled_text"], "windows-11" = ["colors.disabled_text"] }
 sub_tag  = "egui-limited"
 upstream = "egui: a sixth Widgets entry, or a WidgetState::Disabled (§14 item 6)"
 
@@ -1569,7 +1576,8 @@ sinks   = [
 
 ["switch.thumb_background"]
 verdict  = "unmappable"
-homes = ["switch.thumb(CHECKED).fill"]
+homes = ["switch.thumb(CHECKED).fill", "switch.thumb(NONE).fill"]
+homes_by_preset = { "adwaita" = ["switch.thumb(CHECKED).fill"], "material-3" = ["switch.thumb(CHECKED).fill"], "windows-11" = ["switch.thumb(CHECKED).fill"] }
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
