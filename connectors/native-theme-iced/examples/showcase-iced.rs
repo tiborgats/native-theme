@@ -1471,13 +1471,15 @@ fn next_context(
 /// resolves it again ([`State::apply_preferences`]); it resolved in the
 /// context of the mode shown and the preferences ([`next_context`]), and for
 /// an inactive window; the iced theme built from it
-/// (`native_theme_iced::next::to_theme`); and why its contrast is lower than
-/// asked, where it is.
+/// (`native_theme_iced::next::to_theme`); both resolves serialised as a
+/// listed element's rows read their values ([`next_theme_json`]); and why
+/// its contrast is lower than asked, where it is.
 struct NextInstall {
     theme: native_theme::next::Theme,
     resolved: native_theme::next::ResolvedTheme,
     inactive: native_theme::next::ResolvedTheme,
     iced: Theme,
+    json: (serde_json::Value, serde_json::Value),
     contrast_held: Option<ContrastHeld>,
 }
 
@@ -1485,7 +1487,8 @@ impl NextInstall {
     /// `theme` resolved in `ctx`, and the iced theme built from it; `alone`,
     /// the same theme without the palette, where a palette is laid over it,
     /// tells whether the palette holds `High` back. The error to report
-    /// where the connector cannot build an iced theme from it.
+    /// where the connector cannot build an iced theme from it, or where a
+    /// resolve does not serialise for Widget Info.
     fn new(
         theme: native_theme::next::Theme,
         alone: Option<&native_theme::next::Theme>,
@@ -1502,6 +1505,7 @@ impl NextInstall {
                 e.home()
             )
         })?;
+        let json = (next_theme_json(&resolved)?, next_theme_json(&inactive)?);
         let (asked, used) = (ctx.contrast, resolved.context.contrast);
         let contrast_held = (used != asked).then(|| ContrastHeld {
             asked,
@@ -1518,6 +1522,7 @@ impl NextInstall {
             resolved,
             inactive,
             iced,
+            json,
             contrast_held,
         })
     }
@@ -2314,10 +2319,7 @@ impl State {
             is_dark,
             theme_palette: None,
             next_theme: start_next.theme,
-            next_json: (
-                next_theme_json(&start_next.resolved),
-                next_theme_json(&start_next.inactive),
-            ),
+            next_json: start_next.json,
             next_resolved: start_next.resolved,
             next_inactive: start_next.inactive,
             contrast_held: start_next.contrast_held,
@@ -2773,10 +2775,7 @@ impl State {
     /// preferences built, and install its iced theme.
     fn keep_next(&mut self, next: NextInstall) {
         self.next_theme = next.theme;
-        self.next_json = (
-            next_theme_json(&next.resolved),
-            next_theme_json(&next.inactive),
-        );
+        self.next_json = next.json;
         self.next_resolved = next.resolved;
         self.next_inactive = next.inactive;
         self.contrast_held = next.contrast_held;
@@ -8672,10 +8671,15 @@ fn theme_json(resolved: &ResolvedTheme) -> serde_json::Value {
 }
 
 /// The installed 0.8.0 theme `r` as a listed element's 0.8.0 rows read the
-/// values of its global homes (`next::values::theme_json`); `Null`, every
-/// such value then not stated, where it does not serialise.
-fn next_theme_json(r: &native_theme::next::ResolvedTheme) -> serde_json::Value {
-    native_theme_showcase_support::next::values::theme_json(r).unwrap_or_default()
+/// values of its global homes (`next::values::theme_json`); the error to
+/// report where it does not serialise.
+fn next_theme_json(r: &native_theme::next::ResolvedTheme) -> Result<serde_json::Value, String> {
+    native_theme_showcase_support::next::values::theme_json(r).map_err(|e| {
+        format!(
+            "Theme '{}' cannot be shown in Widget Info: it does not serialise: {e}",
+            r.name
+        )
+    })
 }
 
 /// What Widget Info shows, as [`State::rebuild_info`] built it: a listed
@@ -9172,13 +9176,16 @@ const AW_TAB_BAR: &[&str] = &[
 
 /// What the drawing of a listed element depends on in the state shown: the
 /// installed 0.8.0 theme ([`State::next_shown`]), whether the Basic page's
-/// edit-mode switch is on, and, where iced_aw's `TabBar` draws the Basic
-/// page's tabs, which of them is open.
+/// edit-mode switch is on, whether the window is active, and, where
+/// iced_aw's `TabBar` draws the Basic page's tabs, which of them is open.
 #[derive(Clone, Copy)]
 struct Shown<'a> {
     resolved: &'a native_theme::next::ResolvedTheme,
     /// [`State::basic_edit`]: whether the edit-mode switch is checked.
     basic_edit: bool,
+    /// [`State::window_active`]: whether the window has the focus, which
+    /// the list's scroll bar is drawn by ([`list_bar_style`]).
+    window_active: bool,
     /// [`State::basic_tab`]: the index of the open tab in [`BASIC_TABS`].
     #[cfg(feature = "iced_aw")]
     basic_tab: usize,
@@ -9189,18 +9196,20 @@ impl<'a> Shown<'a> {
         Self {
             resolved: state.next_shown(),
             basic_edit: state.basic_edit,
+            window_active: state.window_active,
             #[cfg(feature = "iced_aw")]
             basic_tab: state.basic_tab,
         }
     }
 
-    /// `resolved` as the showcase opens: the edit-mode switch on, the first
-    /// tab open.
+    /// `resolved` as the showcase opens: the edit-mode switch on, the
+    /// window active, the first tab open.
     #[cfg(test)]
     fn opening(resolved: &'a native_theme::next::ResolvedTheme) -> Self {
         Self {
             resolved,
             basic_edit: true,
+            window_active: true,
             #[cfg(feature = "iced_aw")]
             basic_tab: 0,
         }
@@ -9371,9 +9380,15 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
             Drawing::only(SEGMENT, &[], &["(true, ", "Disabled"])
         }
         _ if under("basic.segmented") => Drawing::enabled(SEGMENT),
-        // The list's scroll bar is vertical, and its rows overflow it.
+        // The list's scroll bar is vertical, and its rows overflow it; it
+        // is drawn as an unfocused view's while the window is inactive
+        // ([`list_bar_style`]).
         _ if under("basic.list.scrollbar") => Drawing::only(
-            &["styles::scrollable.vertical_rail."],
+            if shown.window_active {
+                &["styles::scrollable.vertical_rail."]
+            } else {
+                &["styles::scrollable(UNFOCUSED_VIEW).vertical_rail."]
+            },
             &["is_vertical_scrollbar_disabled: false"],
             &[],
         ),
@@ -9500,60 +9515,35 @@ fn shown_rows<'a>(
     rows
 }
 
-/// The rows a [`colour_home_route`] names, each with the statuses it names and
-/// the homes that move it there.
-type RouteRow<'a> = (&'a str, Vec<&'a str>, Vec<&'a str>);
+/// A row a [`colour_home_route`] names, with the statuses it names.
+type RouteRow<'a> = (&'a str, Vec<&'a str>);
 
-/// The rows of `drawing` the colour homes `homes` move, as [`shown_rows`]
-/// names them on `installed`, each with the homes that move it; and, where
-/// none of them moves a row in any platform combination, the reason the
-/// first of them is named by.
+/// The rows of `drawing` the colour home `home` moves, as [`shown_rows`]
+/// names them on `installed`, each with the statuses it names; and, where
+/// the export names why it moves no row, that reason.
 fn home_rows<'a>(
     export: &'a ContractHomes,
-    homes: &[&'a str],
+    home: &str,
     drawing: &Drawing,
     installed: Option<&str>,
 ) -> (Vec<RouteRow<'a>>, Option<(&'a str, &'a str)>) {
-    let mut rows: Vec<RouteRow<'a>> = Vec::new();
-    let mut named = None;
-    let mut moving = false;
-    for &home in homes {
-        match export.homes.get(home) {
-            Some(HomeReach::Moves(moves)) => {
-                moving = true;
-                for (row, statuses) in shown_rows(export, moves, drawing, installed) {
-                    match rows.iter_mut().find(|(r, _, _)| *r == row) {
-                        Some((_, seen, by)) => {
-                            for s in statuses {
-                                if !seen.contains(&s) {
-                                    seen.push(s);
-                                }
-                            }
-                            by.push(home);
-                        }
-                        None => rows.push((row, statuses, vec![home])),
-                    }
-                }
-            }
-            Some(HomeReach::Named { kind, why }) => {
-                named.get_or_insert((kind.as_str(), why.as_str()));
-            }
-            None => {}
-        }
+    match export.homes.get(home) {
+        Some(HomeReach::Moves(moves)) => (shown_rows(export, moves, drawing, installed), None),
+        Some(HomeReach::Named { kind, why }) => (Vec::new(), Some((kind.as_str(), why.as_str()))),
+        None => (Vec::new(), None),
     }
-    (rows, named.filter(|_| !moving))
 }
 
-/// [`colour_home_route`]'s route of the colour homes `homes` drawn as
+/// [`colour_home_route`]'s route of the colour home `home` drawn as
 /// `drawing` on `installed`, a combination the export names, or any
 /// platform one (`None`).
 fn drawing_route(
     export: &ContractHomes,
-    homes: &[&str],
+    home: &str,
     drawing: &Drawing,
     installed: Option<&str>,
 ) -> String {
-    let (rows, named) = home_rows(export, homes, drawing, installed);
+    let (rows, named) = home_rows(export, home, drawing, installed);
     if let Some((kind, why)) = named {
         return match kind {
             "inherited" | "ruled" | "not read" | "read at another query" => {
@@ -9587,12 +9577,12 @@ fn drawing_route(
     }
     let line = rows
         .iter()
-        .map(|(row, statuses, by)| {
+        .map(|(row, statuses)| {
             let mut text = (*row).to_owned();
             if !statuses.is_empty() {
                 text.push_str(&format!(" ({})", statuses.join(", ")));
             }
-            text.push_str(&format!(" moved by {}", by.join(", ")));
+            text.push_str(&format!(" moved by {home}"));
             if let Some((_, sentence)) = DERIVED_ROWS.iter().find(|(key, _)| key == row) {
                 text.push_str(&format!(", {sentence}"));
             }
@@ -9634,13 +9624,7 @@ fn tool_icon_route(
     }
     let export = contract_homes()?;
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
-    let homes: Vec<&str> = element
-        .homes
-        .iter()
-        .map(String::as_str)
-        .filter(|listed| *listed == home && export.homes.contains_key(home))
-        .collect();
-    if homes.is_empty() {
+    if !element.homes.iter().any(|listed| listed == home) || !export.homes.contains_key(home) {
         return None;
     }
     let at_rest = Drawing::only(
@@ -9652,7 +9636,7 @@ fn tool_icon_route(
         },
         &[],
     );
-    let route = drawing_route(export, &homes, &at_rest, installed);
+    let route = drawing_route(export, home, &at_rest, installed);
     Some(match route.strip_prefix("iced: ") {
         Some(rows) => {
             format!("icon_button: the icon's colour, set as it loads (tool_icon_colour): {rows}")
@@ -12405,7 +12389,7 @@ fn colour_home_route(
         .iter()
         .find(|listed| *listed == home && export.homes.contains_key(home))?;
     let drawing = drawing(element, home, shown)?;
-    Some(drawing_route(export, &[home.as_str()], &drawing, installed))
+    Some(drawing_route(export, home, &drawing, installed))
 }
 
 /// How iced applies the 0.8.0 home `home` to `element`, as `state` draws it
@@ -33927,7 +33911,7 @@ mod tests {
     fn every_element_is_listed_by_its_homes() -> Result<(), String> {
         let state = route_states().swap_remove(0);
         let r = state.next_shown();
-        let json = next_theme_json(r);
+        let json = next_theme_json(r)?;
         let family = |path: &str, font: &StatedFont| next_listed_family(r, path, font);
         for element in elements::elements() {
             let info = element_info(&state, element);
@@ -34476,9 +34460,15 @@ mod tests {
         };
         assert!(contract_homes().is_some(), "the export is read");
         let next = next_combinations();
-        let jsons: Vec<serde_json::Value> = next.iter().map(|(_, r)| next_theme_json(r)).collect();
         let family = |_: &str, font: &StatedFont| font.family.clone();
         let mut failures = Vec::new();
+        let mut jsons = Vec::new();
+        for (label, r) in &next {
+            match next_theme_json(r) {
+                Ok(json) => jsons.push(json),
+                Err(error) => failures.push(format!("{label}: {error}")),
+            }
+        }
         for element in elements::elements() {
             for home in &element.homes {
                 // A colour in any bundled combination.
@@ -34685,6 +34675,52 @@ mod tests {
             ),
             "{label}: the On toggle's checked fill: {checked}"
         );
+    }
+
+    /// The list's scroll bar is routed by the window's focus, as
+    /// [`list_bar_style`] draws it: while the window is active by
+    /// `styles::scrollable`'s own rows, the unfocused view's thumb not drawn
+    /// there; while it is inactive by the `UNFOCUSED_VIEW` rows, which the
+    /// unfocused view's thumb moves in a platform theme, and no focused-view
+    /// row.
+    #[test]
+    fn the_list_bar_is_routed_by_the_windows_focus() -> Result<(), String> {
+        let element = elements::element("basic.list.scrollbar.thumb")
+            .ok_or("basic.list.scrollbar.thumb is not listed")?;
+        let (_, r) = next_combinations()
+            .into_iter()
+            .next()
+            .ok_or("no 0.8.0 combination")?;
+        let route = |home: &str, window_active: bool| {
+            let shown = Shown {
+                window_active,
+                ..Shown::opening(&r)
+            };
+            colour_home_route(element, home, shown, None)
+                .ok_or(format!("{home}: no route (window active {window_active})"))
+        };
+        let (focused, unfocused) = (
+            "styles::scrollable.vertical_rail.",
+            "styles::scrollable(UNFOCUSED_VIEW).vertical_rail.",
+        );
+        let mut failures = Vec::new();
+        let active = route("scrollbar.thumb(UNFOCUSED_VIEW).fill", true)?;
+        if active.contains(unfocused) || !active.starts_with("not drawn") {
+            failures.push(format!("active, the unfocused thumb: {active}"));
+        }
+        let inactive = route("scrollbar.thumb(UNFOCUSED_VIEW).fill", false)?;
+        if !inactive.contains(unfocused) || inactive.contains(focused) {
+            failures.push(format!("inactive, the unfocused thumb: {inactive}"));
+        }
+        let rest = route("scrollbar.thumb(NONE).fill", false)?;
+        if rest.contains(focused) {
+            failures.push(format!("inactive, the thumb at rest: {rest}"));
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("\n"))
+        }
     }
 
     /// Every key of the derivation sentences is a row the export records.
@@ -42866,7 +42902,7 @@ mod tests {
                     .find(|(l, _)| *l == label)
                     .map(|(_, r)| r)
                     .ok_or(format!("{label} is no 0.8.0 combination"))?;
-                let json = next_theme_json(r);
+                let json = next_theme_json(r)?;
                 let mut installed = State {
                     accessibility: native_theme_iced::AccessibilityPreferences::default(),
                     ..State::default()
