@@ -1165,40 +1165,44 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
+/// What the status bar's side-panel toggle is drawn with while it is on,
+/// `demo::checked_toggle`'s outcome, which its colour claims follow.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum GhostChecked {
+    /// `demo::ghost_checked_variant`: `next::variants::ghost_button` with
+    /// `fill`, `button.body(CHECKED; variant=Flat).fill`, as its active
+    /// colour and `text`, `button.label(CHECKED; variant=Flat).color`, as
+    /// its foreground, each `None` where no rule states it for the state.
+    Checked {
+        fill: Option<Hsla>,
+        text: Option<Hsla>,
+    },
+    /// gpui-component's own selected ghost, `ButtonKind::Ghost`: no 0.8.0
+    /// theme is installed (`None`), or it states a home the checked variant
+    /// needs in a form gpui cannot take.
+    Ghost(Option<Unmapped>),
+}
+
 /// `info` with what the status bar's side-panel toggle paints while it is
-/// on, a selected Button of `demo::ghost_checked_variant` under the
-/// installed 0.8.0 theme `native` (`demo::panel_toggle`): its fill and text
+/// on, a selected Button drawn as `drawn` says (`demo::panel_toggle`): with
+/// the checked variant, its fill and text
 /// `button.body(CHECKED; variant=Flat).fill` and
 /// `button.label(CHECKED; variant=Flat).color` where a rule states each for
 /// the state, each named in a note, else claimed as
 /// [`native_ghost_selected`] claims it, gpui-component's own selected
-/// ghost's (spec §10, rule 0a).
-pub(super) fn native_ghost_checked(
-    info: WidgetInfo,
-    t: &Theme,
-    native: Option<&NextTheme>,
-) -> WidgetInfo {
-    let checked = ButtonQuery::flat().state(WidgetState::CHECKED);
-    let fill = native.and_then(|r| {
-        state_fill_of(
-            &r.button.body(checked),
-            "button.body(CHECKED; variant=Flat).fill",
-        )
-        .ok()
-        .flatten()
-    });
-    // A checked fill gpui cannot take leaves the whole toggle the plain
-    // ghost (`demo::panel_toggle`).
-    let unmapped = native.is_some_and(|r| {
-        state_fill_of(
-            &r.button.body(checked),
-            "button.body(CHECKED; variant=Flat).fill",
-        )
-        .is_err()
-    });
-    let text = native
-        .filter(|_| !unmapped)
-        .and_then(|r| state_text_color_of(&r.button.label(checked)));
+/// ghost's (spec §10, rule 0a); without it, both claimed so, and the home
+/// it lacked named.
+pub(super) fn native_ghost_checked(info: WidgetInfo, t: &Theme, drawn: GhostChecked) -> WidgetInfo {
+    let (fill, text) = match drawn {
+        GhostChecked::Checked { fill, text } => (fill, text),
+        GhostChecked::Ghost(None) => return native_ghost_selected(info, t),
+        GhostChecked::Ghost(Some(unmapped)) => {
+            return native_ghost_selected(info, t).instance(
+                "checked colours",
+                format!("{unmapped}: gpui-component's own selected ghost is drawn"),
+            );
+        }
+    };
     // The claim gate reads no home with an axis value, so a stated checked
     // colour is named in a note, which the Widget Info rows' homes repeat.
     let info = match fill {

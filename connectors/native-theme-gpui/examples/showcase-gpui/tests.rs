@@ -24379,6 +24379,91 @@ fn the_open_side_panels_toggle_is_painted_checked(cx: &mut TestAppContext) {
     );
 }
 
+/// The open side panel's toggle claims the colours it is drawn in: under
+/// kde-breeze light with the flat button's hovered outline patched to
+/// per-side strokes, which gpui cannot take, `next::variants::ghost_button`
+/// fails and with it `demo::ghost_checked_variant`, though the theme still
+/// states the flat button's checked fill. The toggle is then
+/// gpui-component's own selected ghost, and its info claims
+/// `secondary_active` and `secondary_foreground`, names the home the
+/// checked variant lacked, and claims no checked colour.
+#[gpui::test]
+fn the_open_toggle_claims_the_selected_ghost_where_its_checked_variant_fails(
+    cx: &mut TestAppContext,
+) {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, PartPatch, Stroke, StrokeAlign, StrokeSide,
+        ThemePatch, WidgetState,
+    };
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Flat)
+                    .states(WidgetState::HOVER)
+                    .body(PartPatch::new().stroke(Stroke::sides(
+                        StrokeSide::default(),
+                        StrokeSide::default(),
+                        StrokeSide::default(),
+                        StrokeSide::default(),
+                        StrokeAlign::default(),
+                    ))),
+            ),
+        )
+    });
+    let Some(r) = r else { return };
+    let checked = drawn_state_fill(
+        &r.button
+            .body(ButtonQuery::flat().state(WidgetState::CHECKED)),
+    );
+    let (fails, active, foreground) = cx.update(|_window, cx| {
+        (
+            native_theme_gpui::next::variants::ghost_button(&r, cx).is_err(),
+            Theme::global(cx).secondary_active,
+            Theme::global(cx).secondary_foreground,
+        )
+    });
+    assert!(
+        fails && checked.is_some_and(|fill| fill != active),
+        "the patched kde-breeze light leaves next::variants::ghost_button building, or states no \
+         checked flat fill apart from secondary_active, so this test proves nothing"
+    );
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "the side panel is not open at start"
+    );
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
+        Some(active),
+        "the open side panel's toggle is not gpui-component's own selected ghost"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE);
+    for (field, value) in [
+        ("secondary_active", active),
+        ("secondary_foreground", foreground),
+    ] {
+        assert_eq!(
+            info.as_ref().and_then(|i| claim_of(i, field)),
+            Some(value),
+            "the toggle's info does not claim {field}, which is drawn: {info:?}"
+        );
+    }
+    for what in ["selected bg", "text"] {
+        let note = shown_note(info.as_ref(), what).unwrap_or_default();
+        assert!(
+            !note.contains("CHECKED"),
+            "the toggle's info claims a checked colour that is not drawn, {what}: {note}"
+        );
+    }
+    let lacked = shown_note(info.as_ref(), "checked colours").unwrap_or_default();
+    assert!(
+        lacked.contains("button.body(HOVER; variant=Flat).stroke.color")
+            && lacked.contains("gpui-component's own selected ghost is drawn"),
+        "the toggle's info does not name the home its checked variant lacked: {lacked:?}"
+    );
+}
+
 /// The note `what` of the info shown, from any of its note lists.
 fn shown_note(info: Option<&WidgetInfo>, what: &str) -> Option<String> {
     info.and_then(|info| {
@@ -24858,6 +24943,7 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                     false,
                     None,
                     native,
+                    Some(crate::info::buttons::GhostChecked::Ghost(None)),
                 ),
             ),
             (

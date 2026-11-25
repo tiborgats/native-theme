@@ -908,13 +908,15 @@ pub fn toolbar(
 /// applies the builder; `tooltip_delay` is the delay its tooltip is given,
 /// the theme's `timings.tooltip_show_ms`; it is sized as
 /// `buttons::tool_button_size` says under the installed 0.8.0 theme
-/// `native`.
+/// `native`. `checked` is what it is drawn with while it is on
+/// (`demo::checked_toggle`), `None` while it is off.
 pub fn panel_toggle(
     t: &Theme,
     spec: &PanelToggle<'_>,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
     native: Option<&NextTheme>,
+    checked: Option<super::buttons::GhostChecked>,
 ) -> WidgetInfo {
     let (icon, set, open) = (&spec.drawn, spec.set, spec.open);
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
@@ -924,10 +926,14 @@ pub fn panel_toggle(
         (false, true) => "Ghost, labelled, selected",
         (false, false) => "Ghost, labelled",
     });
-    let info = if open {
-        super::buttons::native_ghost_checked(info, t, native).not_themeable(
+    let info = if let Some(checked) = checked {
+        let variant = match checked {
+            super::buttons::GhostChecked::Checked { .. } => "checked",
+            super::buttons::GhostChecked::Ghost(_) => "ghost",
+        };
+        super::buttons::native_ghost_checked(info, t, checked).not_themeable(
             "fill",
-            "the checked variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style, and its hover style, which it registers on every Button, only on one that is neither disabled, loading nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
+            format!("the {variant} variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style, and its hover style, which it registers on every Button, only on one that is neither disabled, loading nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)"),
         )
     } else {
         super::buttons::native_ghost(info, t, native).not_themeable(
