@@ -807,9 +807,10 @@ listed here, and a value the theme leaves unstated is egui's own
   none, layers that are all gradients. The fill readers `next::fill_of` and
   `next::state_fill_of` take the fill's home and return those layers as
   `Unmapped` at it (rule 4), not as the `None` of a fill the theme leaves
-  unstated; the companion crate `native-theme-egui-widgets` reports each
-  such fill its widgets read as a `Note::Unmapped` (`next_fills_unmapped`),
-  its widgets drawing egui's own there.
+  unstated; the atlas reports each such fill its styles take as a
+  `Note::Unmapped` at its home in its notes, and the companion crate
+  `native-theme-egui-widgets` each one its widgets read
+  (`next_fills_unmapped`), egui's own drawn there.
 - **Where a translucent stroke lies.** egui ends a rect's fill at the
   stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
   `stroke_and_fill_path`), so a stroke the theme lays `Outside` the part is
