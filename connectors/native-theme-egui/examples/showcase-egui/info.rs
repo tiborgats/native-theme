@@ -627,8 +627,8 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
 /// the table's frames, which `pages::basic::list_frame` paints, the rows whose fills
 /// `pages::basic::inner_corners` rounds where they meet a frame, the selected rows' unfocused
 /// look and a hovered list row's outline, which `pages::basic::RowLook::of` takes, the hover
-/// outline the Basic table's rows never take, and the menu bar's fill, which
-/// `chrome::menu_panel` paints.
+/// outline the Basic table's rows never take, the menu bar's fill, which
+/// `chrome::menu_panel` paints, and the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.list.frame",
@@ -732,6 +732,12 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "chrome.menu_bar",
         "menu_bar.bar(NONE).fill",
         "egui: per call, the menu bar panel's fill (chrome::menu_panel)",
+    ),
+    (
+        "chrome.side_panel.settings.theme",
+        "colors.text_selection.background",
+        "not reachable: the Theme row is a ComboBox, which has no text field to select text in \
+         (chrome::settings_rows)",
     ),
 ];
 

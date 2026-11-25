@@ -720,7 +720,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "checkbox.indicator(NONE).min_size[1]",
             "checkbox.indicator(NONE).max_size[1]",
         ],
-        "gpui: checkbox.indicator(NONE).min_size[0] (radio.indicator(NONE).min_size[0]), the box's side, the circle's diameter (CheckboxLook::next_of)",
+        "gpui: checkbox.indicator(NONE).min_size[0], the box's side; a radio's circle is radio.indicator(NONE).min_size[0] (CheckboxLook::next_of)",
     ),
     (
         "",
@@ -765,6 +765,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "chrome.side_panel.settings.theme",
         &["combo_box.label(NONE).color"],
         "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1035-1042, refine_style)",
+    ),
+    (
+        "chrome.side_panel.settings.theme",
+        &["colors.text_selection.background"],
+        "not reachable: the closed Combobox shows its choice, no text field; only its open popup's search field selects typed text (gpui-component 0.10.0 combobox.rs:1078-1108, render_popup_shell)",
     ),
     // --- combo_box: the Basic page's Select, on the 0.8.0 builder --------------
     (

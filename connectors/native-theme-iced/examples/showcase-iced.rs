@@ -9194,11 +9194,14 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
             Drawing::enabled(TEXT_INPUT)
         }
         _ if under("basic.text_area") => Drawing::enabled(&["styles::text_editor."]),
-        // The Theme row is a field in the drop-down's look, never drawn open
+        // The Theme row is a field in the drop-down's look, never drawn open,
+        // which selects typed text in the text field's selection
         // ([`theme_picker_style`]).
-        _ if id == "chrome.side_panel.settings.theme" => {
-            Drawing::only(&["styles::pick_list."], &[], &["Opened"])
-        }
+        _ if id == "chrome.side_panel.settings.theme" => Drawing::only(
+            &["styles::pick_list.", "styles::text_input.selection"],
+            &[],
+            &["Opened"],
+        ),
         _ if under("basic.drop_down")
             || ["mode", "icon_theme"]
                 .iter()
@@ -11410,9 +11413,9 @@ fn check_box_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) 
 
 /// The route of the home `home` of an element of the Basic page's radios:
 /// the label, the gap, the circle's outline width, and the circle's and
-/// the dot's sizes `next_radio` lays out (`iced_next::radio`), the check
-/// box's sizes the element lists not read. `None` for a home none of them
-/// reads, the colours the export routes ([`colour_home_route`]) among them.
+/// the dot's sizes `next_radio` lays out (`iced_next::radio`). `None` for a
+/// home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
 fn radio_route(home: &str) -> Option<String> {
     let route = match home {
         "radio.label(NONE)" => {
@@ -11432,13 +11435,6 @@ fn radio_route(home: &str) -> Option<String> {
         | "radio.indicator(NONE).max_size[1]" => {
             "not reachable: iced's radio is a circle Radio::size across, which \
              radio.indicator(NONE).min_size[0] sets"
-        }
-        "checkbox.indicator(NONE).min_size[0]"
-        | "checkbox.indicator(NONE).min_size[1]"
-        | "checkbox.indicator(NONE).max_size[0]"
-        | "checkbox.indicator(NONE).max_size[1]" => {
-            "not drawn: a radio's circle is sized by radio.indicator(NONE).min_size[0] \
-             (iced_next::radio), not by the check box's"
         }
         "radio.dot(NONE).min_size[0]" => {
             "next_radio: iced_next::radio's dot, radio.dot(NONE).min_size[0], over iced's own \
@@ -24741,7 +24737,9 @@ mod tests {
 
     /// The Theme row's Widget Info names the combo box that draws it, and
     /// the Mode row's the drop-down: its font, its padding, its arrow and its
-    /// colours, these through the field's style.
+    /// colours, these through the field's style; and the typed text's
+    /// selection through the text field's style, which the Mode row's
+    /// drop-down has none of.
     #[test]
     fn the_theme_rows_routes_name_its_combo_box() {
         let state = loaded("kde-breeze", false);
@@ -24751,6 +24749,10 @@ mod tests {
             ("combo_box.field(NONE).padding.left", "ComboBox::padding"),
             ("combo_box.chevron(NONE).size", "text_input::Icon"),
             ("combo_box.field(NONE).fill", "theme_picker_style"),
+            (
+                "colors.text_selection.background",
+                "styles::text_input.selection",
+            ),
         ] {
             let theme = route_of(&state, "chrome.side_panel.settings.theme", leaf);
             assert!(theme.contains(named), "the Theme row's {leaf}: {theme}");

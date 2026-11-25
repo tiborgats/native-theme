@@ -507,8 +507,10 @@ sample = { text = "glyph" }
 id = "chrome.side_panel.settings.theme"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.theme_label"
-leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
-homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "typography.line_height_multiplier"]
+leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "input.selection_background", "defaults.line_height"]
+# homes: input.selection_background: the selection of a Theme row its toolkit lets one type in
+#          (iced's ComboBox).
+homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "colors.text_selection.background", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -1222,20 +1224,20 @@ sample = { text = "glyph" }
 id = "basic.radios.option_a"
 name = "Radio button"
 parent = "basic.radios.heading"
-leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Selected).
-homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.dot(CHECKED).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]", "radio.label_gap", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
+homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.dot(CHECKED).fill", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]", "radio.label_gap", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Selected"]
 
 [[element]]
 id = "basic.radios.option_a.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Selected).
-homes = ["checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width"]
+homes = ["radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1266,20 +1268,20 @@ sample = { text = "glyph" }
 id = "basic.radios.option_b"
 name = "Radio button"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Normal).
-homes = ["radio.indicator(NONE).fill", "radio.label(NONE)", "radio.label(NONE).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.label_gap", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
+homes = ["radio.indicator(NONE).fill", "radio.label(NONE)", "radio.label(NONE).color", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.label_gap", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Normal"]
 
 [[element]]
 id = "basic.radios.option_b.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_b"
-leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.background_color", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Normal).
-homes = ["radio.indicator(NONE).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width"]
+homes = ["radio.indicator(NONE).fill", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }
