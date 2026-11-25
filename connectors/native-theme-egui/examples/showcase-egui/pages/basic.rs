@@ -1835,7 +1835,7 @@ fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
 
 /// The query of a row of a list of `variant`, the Basic list's `Plain` or the table's `Table`,
 /// in `state`: a row of either is never an alternate one, as neither is striped.
-fn list_query(variant: ListVariant, state: NextState) -> ListQuery {
+pub(crate) fn list_query(variant: ListVariant, state: NextState) -> ListQuery {
     ListQuery::new(state).variant(ListKind {
         variant,
         alternate: false,

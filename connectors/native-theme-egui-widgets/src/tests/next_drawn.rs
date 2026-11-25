@@ -1721,13 +1721,16 @@ fn a_switch_stating_state_glyphs_reports_them_unmapped() -> TestResult {
 /// A fill a widget reads that the theme states as layers that are all gradients has no single
 /// colour for egui to paint: the widget draws egui's own there, as for a fill the theme leaves
 /// unstated, and [`crate::next_fills_unmapped`] reports it at its home (spec §10, rule 4); a
-/// switch whose checked track fill is one is egui's own `Checkbox`.
+/// switch whose checked track fill is one is egui's own `Checkbox`. The radio's homes are each
+/// of its indicator's and dot's at rest, hovered and pressed, checked or not, and disabled, a
+/// rule for each state laying the gradients there; the links' are the container's at rest and
+/// hovered, the segmented control's its hovered segment's.
 #[test]
 fn a_widgets_all_gradient_fill_is_reported_at_its_home() -> TestResult {
     use native_theme_egui::Note;
     use native_theme_egui::native_theme::next::{
-        Color, GradientStop, Paint, PaintLayer, PartPatch, SliderRule, SwitchRule, ThemePatch,
-        WidgetState,
+        Color, GradientStop, LinkRule, Paint, PaintLayer, PartPatch, RadioRule,
+        SegmentedControlRule, SliderRule, SwitchRule, ThemePatch, WidgetState,
     };
     let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
         angle_deg: 90.0,
@@ -1744,13 +1747,31 @@ fn a_widgets_all_gradient_fill_is_reported_at_its_home() -> TestResult {
         blend: Default::default(),
     }]);
     let fill = PartPatch::new().fill(gradient);
-    let patch = ThemePatch::new()
-        .switch(
-            SwitchRule::new()
-                .states(WidgetState::CHECKED)
-                .track(fill.clone()),
+    let (hover, press, on, off) = (
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::CHECKED,
+        WidgetState::DISABLED,
+    );
+    let mut patch = ThemePatch::new()
+        .switch(SwitchRule::new().states(on).track(fill.clone()))
+        .slider(SliderRule::new().thumb(fill.clone()))
+        .link(LinkRule::new().container(fill.clone()))
+        .link(LinkRule::new().states(hover).container(fill.clone()))
+        .segmented_control(
+            SegmentedControlRule::new()
+                .states(hover)
+                .segment(fill.clone()),
         )
-        .slider(SliderRule::new().thumb(fill));
+        .radio(RadioRule::new().indicator(fill.clone()).dot(fill.clone()));
+    for state in [hover, press, on, hover | on, press | on, off, off | on] {
+        patch = patch.radio(
+            RadioRule::new()
+                .states(state)
+                .indicator(fill.clone())
+                .dot(fill.clone()),
+        );
+    }
     let stock = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
     let r = NextTheme::preset(Preset::KdeBreeze)
         .with_patch(patch)
@@ -1761,7 +1782,25 @@ fn a_widgets_all_gradient_fill_is_reported_at_its_home() -> TestResult {
     assert_eq!(crate::slider::Look::next_of(&r).thumb_color, None);
     assert_eq!(crate::next_fills_unmapped(&stock), Vec::new());
     let notes = crate::next_fills_unmapped(&r);
-    for home in ["switch.track(CHECKED).fill", "slider.thumb(NONE).fill"] {
+    for home in [
+        "switch.track(CHECKED).fill",
+        "slider.thumb(NONE).fill",
+        "link.container(NONE).fill",
+        "link.container(HOVER).fill",
+        "segmented_control.segment(HOVER).fill",
+        "radio.indicator(NONE).fill",
+        "radio.indicator(HOVER).fill",
+        "radio.indicator(PRESSED).fill",
+        "radio.indicator(CHECKED).fill",
+        "radio.indicator(HOVER|CHECKED).fill",
+        "radio.indicator(PRESSED|CHECKED).fill",
+        "radio.indicator(DISABLED).fill",
+        "radio.indicator(DISABLED|CHECKED).fill",
+        "radio.dot(CHECKED).fill",
+        "radio.dot(HOVER|CHECKED).fill",
+        "radio.dot(PRESSED|CHECKED).fill",
+        "radio.dot(DISABLED|CHECKED).fill",
+    ] {
         assert!(notes.contains(&Note::unmapped(home)), "{home}: {notes:?}");
     }
     Ok(())

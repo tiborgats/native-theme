@@ -1764,6 +1764,152 @@ pub(crate) fn drawn_state_fill(part: &native_theme::next::PartStyle) -> Option<e
         .flatten()
 }
 
+/// A fill a drawing site reads: its home, whether the site reads it where a rule states it for
+/// the state ([`drawn_state_fill`]) or wherever stated ([`drawn_fill`]), and the part.
+type DrawnPart = (
+    &'static str,
+    bool,
+    fn(&native_theme::next::ResolvedTheme) -> native_theme::next::PartStyle,
+);
+
+/// Every fill the showcase's own drawing sites read ([`DrawnPart`]): the menu bar
+/// (`chrome::menu_panel`), the selected tab's line (`next_indicator_line`), the Icons page's
+/// skeleton, the toggle's and the edit switch's checked fills (`pages::basic::toggle_on`,
+/// `edit_look`), the Basic list's and the table's frames (`list_frame`), their rows and
+/// highlights in each state the page draws them in (`RowLook::of`: the window focused or not,
+/// selected or not, and the list's hovered or not; the table's rows are never hovered), and the
+/// table's header, its hovered and pressed sections (`header_section_fill`) and its line.
+const DRAWN_FILLS: &[DrawnPart] = {
+    use native_theme::next::ListVariant::{Plain, Table};
+    use native_theme::next::WidgetState as S;
+
+    use crate::pages::basic::list_query as q;
+    const H: S = S::HOVER;
+    const P: S = S::PRESSED;
+    const SEL: S = S::SELECTED;
+    const U: S = S::UNFOCUSED_VIEW;
+    &[
+        ("menu_bar.bar(NONE).fill", false, |r| {
+            r.menu_bar.bar(S::NONE)
+        }),
+        ("tab.indicator(SELECTED).fill", false, |r| {
+            r.tab.indicator(SEL)
+        }),
+        ("button.body(NONE).fill", false, |r| r.button.body(S::NONE)),
+        ("button.body(CHECKED).fill", true, |r| {
+            r.button.body(S::CHECKED)
+        }),
+        ("toolbar.button(CHECKED).fill", true, |r| {
+            r.toolbar.button(S::CHECKED)
+        }),
+        ("list.container(NONE).fill", false, |r| {
+            r.list.container(q(Plain, S::NONE))
+        }),
+        ("list.row(NONE).fill", false, |r| {
+            r.list.row(q(Plain, S::NONE))
+        }),
+        ("list.row(SELECTED).fill", false, |r| {
+            r.list.row(q(Plain, SEL))
+        }),
+        ("list.row(HOVER).fill", false, |r| r.list.row(q(Plain, H))),
+        ("list.row(HOVER|SELECTED).fill", false, |r| {
+            r.list.row(q(Plain, H | SEL))
+        }),
+        ("list.row(UNFOCUSED_VIEW).fill", false, |r| {
+            r.list.row(q(Plain, U))
+        }),
+        ("list.row(SELECTED|UNFOCUSED_VIEW).fill", false, |r| {
+            r.list.row(q(Plain, SEL | U))
+        }),
+        ("list.row(HOVER|UNFOCUSED_VIEW).fill", false, |r| {
+            r.list.row(q(Plain, H | U))
+        }),
+        ("list.row(HOVER|SELECTED|UNFOCUSED_VIEW).fill", false, |r| {
+            r.list.row(q(Plain, H | SEL | U))
+        }),
+        ("list.highlight(SELECTED).fill", true, |r| {
+            r.list.highlight(q(Plain, SEL))
+        }),
+        ("list.highlight(HOVER).fill", true, |r| {
+            r.list.highlight(q(Plain, H))
+        }),
+        ("list.highlight(HOVER|SELECTED).fill", true, |r| {
+            r.list.highlight(q(Plain, H | SEL))
+        }),
+        ("list.highlight(SELECTED|UNFOCUSED_VIEW).fill", true, |r| {
+            r.list.highlight(q(Plain, SEL | U))
+        }),
+        ("list.highlight(HOVER|UNFOCUSED_VIEW).fill", true, |r| {
+            r.list.highlight(q(Plain, H | U))
+        }),
+        (
+            "list.highlight(HOVER|SELECTED|UNFOCUSED_VIEW).fill",
+            true,
+            |r| r.list.highlight(q(Plain, H | SEL | U)),
+        ),
+        ("list.container(NONE; variant=Table).fill", false, |r| {
+            r.list.container(q(Table, S::NONE))
+        }),
+        ("list.row(NONE; variant=Table).fill", false, |r| {
+            r.list.row(q(Table, S::NONE))
+        }),
+        ("list.row(SELECTED; variant=Table).fill", false, |r| {
+            r.list.row(q(Table, SEL))
+        }),
+        ("list.row(UNFOCUSED_VIEW; variant=Table).fill", false, |r| {
+            r.list.row(q(Table, U))
+        }),
+        (
+            "list.row(SELECTED|UNFOCUSED_VIEW; variant=Table).fill",
+            false,
+            |r| r.list.row(q(Table, SEL | U)),
+        ),
+        ("list.highlight(SELECTED; variant=Table).fill", true, |r| {
+            r.list.highlight(q(Table, SEL))
+        }),
+        (
+            "list.highlight(SELECTED|UNFOCUSED_VIEW; variant=Table).fill",
+            true,
+            |r| r.list.highlight(q(Table, SEL | U)),
+        ),
+        ("list.header(NONE; variant=Table).fill", false, |r| {
+            r.list.header(q(Table, S::NONE))
+        }),
+        ("list.header(HOVER; variant=Table).fill", true, |r| {
+            r.list.header(q(Table, H))
+        }),
+        (
+            "list.header(HOVER|PRESSED; variant=Table).fill",
+            true,
+            |r| r.list.header(q(Table, H | P)),
+        ),
+        (
+            "list.header_separator(NONE; variant=Table).fill",
+            false,
+            |r| r.list.header_separator(q(Table, S::NONE)),
+        ),
+    ]
+};
+
+/// The fills of [`DRAWN_FILLS`] the theme `r` states in a form egui cannot paint, layers that
+/// are all gradients, each a [`Note::Unmapped`] at its home, which the Theme tab lists beside
+/// the atlas's notes: the drawing site draws egui's own there ([`drawn_fill`],
+/// [`drawn_state_fill`]; spec §10, rule 4).
+pub(crate) fn drawn_fills_unmapped(r: &native_theme::next::ResolvedTheme) -> Vec<Note> {
+    DRAWN_FILLS
+        .iter()
+        .filter_map(|&(home, ruled, part)| {
+            let part = part(r);
+            let read = if ruled {
+                native_theme_egui::next::state_fill_of(&part, home)
+            } else {
+                native_theme_egui::next::fill_of(&part, home)
+            };
+            read.err().map(|e| Note::unmapped(e.home()))
+        })
+        .collect()
+}
+
 /// The value `build` gives for the installed 0.8.0 theme the window shows
 /// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while it is not
 /// focused), as the gpui showcase's `support::next_value`; `None` without an installed 0.8.0

@@ -317,9 +317,10 @@ impl Look {
     /// `switch.label(PRESSED)` where a rule for that state states it, else egui's own hovered
     /// and pressed label colours ([`Self::hover_text`], [`Self::pressed_text`]), a
     /// disabled one's at `switch.label(DISABLED)` where a rule states it, else
-    /// `colors.disabled_text`; the window's background as the ground. `None`
-    /// where the theme states no track fill or checked thumb fill, which sends the switch to
-    /// egui's own counterpart.
+    /// `colors.disabled_text`; the window's background as the ground. A fill stated as layers
+    /// that are all gradients is read as unstated ([`next::fill`]). `None` where the theme
+    /// states no fill, or one as such layers, at `switch.track(NONE)`, `switch.track(CHECKED)`
+    /// or `switch.thumb(CHECKED)`, which sends the switch to egui's own counterpart.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
         Self::next_noted(r, &mut Vec::new())
     }

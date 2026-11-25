@@ -14702,26 +14702,11 @@ fn the_tables_draw_a_stated_horizontal_cell_padding() -> Result<(), String> {
 /// No bundled preset, light or dark, in an active or an inactive window, states a fill the
 /// showcase's own drawing sites read (`demo::drawn_fill`, `demo::drawn_state_fill`) in a form
 /// egui cannot paint, layers that are all gradients: where one did, the site would draw egui's
-/// own with no line naming the home. Each part is asked at rest and in a state a rule states,
-/// the lists' in every variant and in every state the pages draw a row or a header in.
+/// own with only the Theme tab's note naming the home (`demo::drawn_fills_unmapped`, which
+/// holds the list of the parts the sites read).
 #[test]
 fn no_bundled_preset_leaves_a_drawn_fill_unmapped() {
-    use native_theme::next::{
-        ListKind, ListQuery, ListVariant, PartStyle, Preset, Theme, ThemeContext, WidgetState,
-    };
-    use native_theme_egui::next::{fill_of, state_fill_of};
-    let variants = [
-        ListVariant::Plain,
-        ListVariant::InsetGrouped,
-        ListVariant::Sidebar,
-        ListVariant::Table,
-    ];
-    let flags = [
-        WidgetState::SELECTED,
-        WidgetState::HOVER,
-        WidgetState::PRESSED,
-        WidgetState::UNFOCUSED_VIEW,
-    ];
+    use native_theme::next::{Preset, Theme, ThemeContext};
     let mut unmapped = Vec::new();
     for preset in Preset::ALL {
         for (scheme, ctx) in [
@@ -14730,56 +14715,81 @@ fn no_bundled_preset_leaves_a_drawn_fill_unmapped() {
         ] {
             for active in [true, false] {
                 let r = Theme::preset(*preset).resolve(&ctx.clone().with_window_active(active));
-                let mut parts: Vec<(String, PartStyle)> = vec![
-                    (
-                        "menu_bar.bar(NONE)".into(),
-                        r.menu_bar.bar(WidgetState::NONE),
-                    ),
-                    (
-                        "tab.indicator(SELECTED)".into(),
-                        r.tab.indicator(WidgetState::SELECTED),
-                    ),
-                    ("button.body(NONE)".into(), r.button.body(WidgetState::NONE)),
-                    (
-                        "button.body(CHECKED)".into(),
-                        r.button.body(WidgetState::CHECKED),
-                    ),
-                    (
-                        "toolbar.button(CHECKED)".into(),
-                        r.toolbar.button(WidgetState::CHECKED),
-                    ),
-                ];
-                for variant in variants {
-                    for bits in 0..(1_usize << flags.len()) {
-                        let state = flags
-                            .iter()
-                            .enumerate()
-                            .filter(|(i, _)| bits & (1 << i) != 0)
-                            .fold(WidgetState::NONE, |s, (_, f)| s.union(*f));
-                        let q = ListQuery::new(state).variant(ListKind {
-                            variant,
-                            alternate: false,
-                        });
-                        let l = &r.list;
-                        parts.extend([
-                            (format!("list.container({q:?})"), l.container(q)),
-                            (format!("list.row({q:?})"), l.row(q)),
-                            (format!("list.highlight({q:?})"), l.highlight(q)),
-                            (format!("list.header({q:?})"), l.header(q)),
-                            (
-                                format!("list.header_separator({q:?})"),
-                                l.header_separator(q),
-                            ),
-                        ]);
-                    }
-                }
-                for (name, part) in &parts {
-                    if fill_of(part, "at rest").is_err() || state_fill_of(part, "ruled").is_err() {
-                        unmapped.push(format!("{preset:?} {scheme}, active {active}: {name}"));
-                    }
+                for note in crate::demo::drawn_fills_unmapped(&r) {
+                    unmapped.push(format!("{preset:?} {scheme}, active {active}: {note:?}"));
                 }
             }
         }
     }
     assert!(unmapped.is_empty(), "{unmapped:#?}");
+}
+
+/// A fill the theme states as layers that are all gradients, at a home a showcase drawing site
+/// reads (`tab.indicator(SELECTED).fill`, the selected tab's line) and at one a companion
+/// widget reads (`switch.track(CHECKED).fill`, the switch), is listed under the Theme tab's
+/// Notes as `Unmapped` at its home (`demo::drawn_fills_unmapped`,
+/// `native_theme_egui_widgets::next_fills_unmapped`); the unpatched preset lists neither.
+#[test]
+fn the_theme_tab_lists_an_all_gradient_fill_at_its_home() -> Result<(), String> {
+    use native_theme::next::{
+        Color, GradientStop, Paint, PaintLayer, PartPatch, SwitchRule, TabRule, ThemePatch,
+        WidgetState,
+    };
+    let homes = ["tab.indicator(SELECTED).fill", "switch.track(CHECKED).fill"];
+    let noted = |harness: &Harness<'static, App>, home: &str| {
+        let line = format!("{home}: stated in a form egui cannot draw");
+        harness
+            .query_all(By::new().predicate(|n| {
+                n.value()
+                    .is_some_and(|v| v.starts_with("Unmapped\n") && v.contains(&line))
+            }))
+            .count()
+    };
+    let mut stock = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    stock.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    stock.run_steps(2);
+    for home in homes {
+        assert_eq!(noted(&stock, home), 0, "kde-breeze notes {home}");
+    }
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let fill = PartPatch::new().fill(gradient);
+    let patch = |_: &native_theme::next::ResolvedTheme| {
+        Some(
+            ThemePatch::new()
+                .tab(
+                    TabRule::new()
+                        .states(WidgetState::SELECTED)
+                        .indicator(fill.clone()),
+                )
+                .switch(
+                    SwitchRule::new()
+                        .states(WidgetState::CHECKED)
+                        .track(fill.clone()),
+                ),
+        )
+    };
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", patch)?;
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    for home in homes {
+        assert_eq!(
+            noted(&harness, home),
+            1,
+            "the Theme tab's Notes list {home} once"
+        );
+    }
+    Ok(())
 }

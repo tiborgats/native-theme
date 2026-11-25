@@ -151,7 +151,8 @@ pub use native_theme_egui as connector;
 /// (docs/v0.8.0-spec.md §10, rule 4). The [`switch::Switch`], [`radio_button::RadioButton`],
 /// [`slider::Slider`], [`segmented_control::SegmentedControl`] and the links ([`links::link`],
 /// [`links::hyperlink`]) draw egui's own there, as where the theme states no fill (rule 0); a
-/// switch whose track or checked thumb fill is one is egui's own `Checkbox`. Empty where every
+/// switch whose fill at `switch.track(NONE)`, `switch.track(CHECKED)` or
+/// `switch.thumb(CHECKED)` is one is egui's own `Checkbox`. Empty where every
 /// fill they read is mapped. The switch's state glyphs are
 /// [`switch::Switch::next_glyphs_unmapped`]'s.
 #[must_use]
