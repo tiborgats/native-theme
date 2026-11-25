@@ -1883,14 +1883,6 @@ pub(crate) struct PanelToggle<'a> {
     pub state: &'static str,
 }
 
-/// A small Ghost `Button` for the status bar -- built with
-/// `next::variants::ghost_button` ([`ghost_variant`]) and, while not
-/// selected, refined by `next::geometry::ghost_button_rest` after its box,
-/// not the toolbar's variant -- dispatching its action,
-/// selected while its panel is open, its icon of the chosen icon theme at
-/// `geometry::icon_size_small` and its tooltip showing the action's key
-/// binding. Where the icon theme has no icon for it, it shows its tooltip's
-/// text instead, never another icon theme's icon. The icon is the Button's
 /// The flat buttons' variant for a toggle that is on, checked (spec §10,
 /// rule 0a), under the installed 0.8.0 theme `r`:
 /// `next::variants::ghost_button`, its `active` colour
