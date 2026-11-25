@@ -24556,6 +24556,48 @@ mod tests {
             "colour mode: the installed theme did not follow the mode"
         );
 
+        // Typing filters the presets: `material` leaves the Material preset
+        // alone on offer, and Enter installs the row highlighted. ArrowDown
+        // moves the highlight to the next row offered, back to the first
+        // after the last (`combo_box.rs:706-730`), so Enter after it picks
+        // the first row again only where that row is the one offered. It
+        // runs before the preset step below, from the default row: where
+        // adwaita is the default (CI's runner, no desktop) material-3 is the
+        // only preset offered with another background, so the preset step
+        // would install it and leave this step nothing to change.
+        let material = ThemeChoice::Preset("material-3".to_string());
+        assert_ne!(
+            state.current_choice, material,
+            "the theme picker shows Material already"
+        );
+        let expected = Preset::from_name("material-3")
+            .map(|preset| {
+                native_theme::next::Theme::preset(preset)
+                    .resolve_current()
+                    .name
+                    .to_string()
+            })
+            .ok_or_else(|| "the 0.8.0 model has no preset material-3".to_string());
+        let messages = drive(state, |ui| {
+            click_probe(ui, probes::THEME);
+            let _ = ui.typewrite("material");
+            let _ = ui.tap_key(iced::keyboard::key::Named::ArrowDown);
+            let _ = ui.tap_key(iced::keyboard::key::Named::Enter);
+        });
+        assert!(
+            matches!(messages.as_slice(), [Message::ThemeSelected(choice)] if *choice == material),
+            "typing material: {messages:?}"
+        );
+        assert_eq!(
+            state.current_choice, material,
+            "typing material: the choice did not reach the state"
+        );
+        assert_eq!(
+            Ok(theme(state).to_string()),
+            expected,
+            "typing material: another theme is installed"
+        );
+
         // Theme preset. The entry is the first preset this platform offers
         // that would put a different background on screen, so the assertion
         // is about the installed theme moving and not about which desktop
@@ -24610,44 +24652,6 @@ mod tests {
             theme(state).extended_palette().background.base.color,
             expected.extended_palette().background.base.color,
             "theme preset: the installed theme did not follow the choice"
-        );
-
-        // Typing filters the presets: `material` leaves the Material preset
-        // alone on offer, and Enter installs the row highlighted. ArrowDown
-        // moves the highlight to the next row offered, back to the first
-        // after the last (`combo_box.rs:706-730`), so Enter after it picks
-        // the first row again only where that row is the one offered.
-        let nord = ThemeChoice::Preset("material-3".to_string());
-        assert_ne!(
-            state.current_choice, nord,
-            "the theme picker shows Material already"
-        );
-        let expected = Preset::from_name("material-3")
-            .map(|preset| {
-                native_theme::next::Theme::preset(preset)
-                    .resolve_current()
-                    .name
-                    .to_string()
-            })
-            .ok_or_else(|| "the 0.8.0 model has no preset material-3".to_string());
-        let messages = drive(state, |ui| {
-            click_probe(ui, probes::THEME);
-            let _ = ui.typewrite("material");
-            let _ = ui.tap_key(iced::keyboard::key::Named::ArrowDown);
-            let _ = ui.tap_key(iced::keyboard::key::Named::Enter);
-        });
-        assert!(
-            matches!(messages.as_slice(), [Message::ThemeSelected(choice)] if *choice == nord),
-            "typing material: {messages:?}"
-        );
-        assert_eq!(
-            state.current_choice, nord,
-            "typing material: the choice did not reach the state"
-        );
-        assert_eq!(
-            Ok(theme(state).to_string()),
-            expected,
-            "typing material: another theme is installed"
         );
     }
 
