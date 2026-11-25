@@ -23638,8 +23638,12 @@ fn a_tool_buttons_icon_takes_the_stated_icon_colour(cx: &mut TestAppContext) {
                 .map(|n| n.text.clone())
         })
     };
+    // The built-in icons, which every environment has, so the buttons draw
+    // an icon to tint.
+    const BUILT_IN: &str = "gpui-component built-in (Lucide)";
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
+    choose_icon_theme(&mut cx, &showcase, BUILT_IN);
     show(&mut cx, &showcase, Page::Basic);
     let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
     assert_eq!(
@@ -23651,6 +23655,7 @@ fn a_tool_buttons_icon_takes_the_stated_icon_colour(cx: &mut TestAppContext) {
     install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
         Some(ThemePatch::new().toolbar(ToolbarRule::new().button_icon(IconPatch::new().color(red))))
     });
+    choose_icon_theme(&mut cx, &showcase, BUILT_IN);
     let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
     let copy = line(&info);
     assert!(
