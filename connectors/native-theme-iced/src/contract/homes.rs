@@ -19,6 +19,7 @@ use crate::next::Mapped;
 use crate::next::styles as next_styles;
 use crate::styles::SegmentPosition;
 use native_theme::next::{Stroke, TextStated, ThemeContext, ThemePatch, WidgetState};
+use native_theme_showcase_support::next::patch::home_patch_toml;
 
 /// The table of homes, whose rows name the homes of the 0.7.2 colour leaves.
 const HOMES_TABLE: &str = include_str!("../../../../native-theme/tests/next_homes.toml");
@@ -155,105 +156,6 @@ const UNREAD_HOMES: &[UnreadHome] = &[
 /// that reads the home tells them apart, one composited under an opaque
 /// layer by the translucent one.
 const COLOURS: [&str; 3] = ["#13579b", "#2468ac", "#2468ac80"];
-
-/// Every state flag of the 0.8.0 model by its name in a theme file
-/// (`WidgetState`'s serde form, `native-theme/src/next/serial.rs`).
-const STATE_NAMES: [&str; 19] = [
-    "hover",
-    "pressed",
-    "focused",
-    "focus_within",
-    "focus_visible",
-    "unfocused_view",
-    "disabled",
-    "checked",
-    "selected",
-    "indeterminate",
-    "open",
-    "default",
-    "invalid",
-    "read_only",
-    "visited",
-    "dragged",
-    "drop_target",
-    "scrolled",
-    "hover_within",
-];
-
-/// The colours a ruled widget holds outside its parts, `<widget>.<field>`,
-/// which a patch states in the widget's table (`native-theme/src/next/patch.rs`,
-/// the widget's `set` fields).
-const WIDGET_COLOURS: &[&str] = &["list.grid_color"];
-
-/// The TOML of a patch that states `colour` at `home`, as the iced
-/// showcase's `home_patch_toml` writes it: a colour role, a widget's own
-/// colour, a static widget's part, or a rule of the home's states appended
-/// to a ruled widget's (for `NONE`, a rule that forbids every state, so it
-/// answers the query at rest alone; spec §9, step 3, `not_states`), of the
-/// variant or the rows `;variant=` or `;alternate=` names. A stroke is
-/// stated 1 px wide in the colour, so a home whose stroke the theme leaves
-/// unstated draws it. `None` for any other home.
-fn home_patch_toml(home: &str, colour: &str) -> Option<String> {
-    if let Some(role) = home.strip_prefix("colors.") {
-        return Some(match role.split_once('.') {
-            Some((surface, slot)) => format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"),
-            None => format!("[colors]\n{role} = \"{colour}\"\n"),
-        });
-    }
-    if WIDGET_COLOURS.contains(&home) {
-        let (widget, field) = home.split_once('.')?;
-        return Some(format!("[widgets.{widget}]\n{field} = \"{colour}\"\n"));
-    }
-    let (widget, rest) = home.split_once('.')?;
-    let (part, states, property) = match rest.split_once('(') {
-        Some((part, rest)) => {
-            let (states, property) = rest.split_once(").")?;
-            (part, Some(states), property)
-        }
-        None => match rest.split_once('.') {
-            Some((part, property)) => (part, None, property),
-            None => return Some(format!("[widgets.{widget}]\n{rest} = \"{colour}\"\n")),
-        },
-    };
-    let value = match property {
-        "fill" | "color" => format!("{part}.{property} = \"{colour}\""),
-        "stroke.color" => format!("{part}.stroke = {{ width = 1.0, color = \"{colour}\" }}"),
-        _ => return None,
-    };
-    Some(match states {
-        None => format!("[widgets.{widget}]\n{value}\n"),
-        Some(query) => {
-            let (states, matcher) = match query.split_once(';') {
-                Some((states, matcher)) => match matcher.trim().split_once('=')? {
-                    ("variant", variant) => (
-                        states,
-                        format!("variant = \"{}\"\n", variant.to_lowercase()),
-                    ),
-                    ("alternate", alternate @ ("true" | "false")) => {
-                        (states, format!("alternate = {alternate}\n"))
-                    }
-                    _ => return None,
-                },
-                None => (query, String::new()),
-            };
-            let names: Vec<String> = states
-                .split('|')
-                .filter(|state| *state != "NONE")
-                .map(|state| format!("\"{}\"", state.to_lowercase()))
-                .collect();
-            let states = if names.is_empty() {
-                let every: Vec<String> = STATE_NAMES
-                    .iter()
-                    .map(|name| format!("\"{name}\""))
-                    .collect();
-                format!("not_states = [{}]\n", every.join(", "))
-            } else {
-                format!("states = [{}]\n", names.join(", "))
-            };
-            format!("[[widgets.{widget}.rules]]\n{matcher}{states}{value}\n")
-        }
-    })
-}
 
 /// `r` with `colour` stated at `home`: by a patch ([`home_patch_toml`]), or,
 /// for the globals no patch states (`ThemePatch` holds no focus ring and no
