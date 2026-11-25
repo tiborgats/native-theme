@@ -230,6 +230,7 @@
 # `every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row`.
 
 model_only_homes = [
+  { home = "switch.label_gap", reason = "the space between a switch's track and its label (docs/v0.8.0-spec.md §5, `switch`); 0.7.2's switch has no label, so no field of it places one (§5: the switch's label has no 0.7.2 field)" },
 ]
 
 # =============================================================================================
@@ -1315,7 +1316,7 @@ parent = "basic.switches.heading"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.unchecked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 # homes: switch.thumb_border_color, switch.thumb_background: NONE, not CHECKED: shown unchecked
 #          (Off).
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width", "switch.label_gap"]
 states = ["Off"]
 
 [[element]]
@@ -1347,7 +1348,7 @@ parent = "basic.switches.off.track"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
 # homes: defaults.font, defaults.font.color: switch.label(NONE),
 #        the label's text part, which the switch's label is drawn in (v0.8.0-spec.md §5, switch).
-homes = ["switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier"]
+homes = ["switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier", "switch.label_gap"]
 states = ["Off"]
 part = true
 sample = { text = "glyph" }
@@ -1359,7 +1360,7 @@ parent = "basic.switches.off"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 # homes: switch.thumb_border_color: CHECKED, not NONE: shown checked (On).
 #        defaults.font: switch.label(NONE), not CHECKED: no rule for CHECKED states the label's font.
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.track(HOVER|CHECKED).fill", "switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier", "switch.track(CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.track(HOVER|CHECKED).fill", "switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier", "switch.track(CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width", "switch.label_gap"]
 states = ["On"]
 
 [[element]]
@@ -1391,7 +1392,7 @@ leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
 # homes: defaults.font: switch.label(NONE), not CHECKED: no rule for CHECKED states the label's
 #        font; defaults.font.color: switch.label(CHECKED), the label's text part, which the
 #        switch's label is drawn in (v0.8.0-spec.md §5, switch).
-homes = ["switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier"]
+homes = ["switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier", "switch.label_gap"]
 states = ["On"]
 part = true
 sample = { text = "glyph" }
@@ -1405,7 +1406,7 @@ leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diame
 #        switch.thumb_border_color: CHECKED, not NONE: shown checked (On, disabled).
 #        defaults.font: switch.label(NONE), not DISABLED|CHECKED: no rule for either flag states the
 #        label's font.
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.disabled_opacity", "switch.track(DISABLED|CHECKED).fill", "switch.thumb(DISABLED|CHECKED).fill", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color", "switch.track(CHECKED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.disabled_opacity", "switch.track(DISABLED|CHECKED).fill", "switch.thumb(DISABLED|CHECKED).fill", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color", "switch.track(CHECKED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width", "switch.label_gap"]
 states = ["On, disabled"]
 
 [[element]]
@@ -1438,7 +1439,7 @@ leaves = ["switch.disabled_opacity", "defaults.font", "defaults.line_height", "d
 # homes: defaults.font: switch.label(NONE), not DISABLED|CHECKED: no rule for either flag states
 #        the label's font; defaults.disabled_text_color: switch.label(DISABLED|CHECKED), the label's
 #        text part, which the switch's label is drawn in (v0.8.0-spec.md §5, switch).
-homes = ["switch.disabled_opacity", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color"]
+homes = ["switch.disabled_opacity", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color", "switch.label_gap"]
 states = ["On, disabled"]
 part = true
 sample = { text = "glyph" }

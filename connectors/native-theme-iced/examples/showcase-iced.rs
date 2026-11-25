@@ -11475,6 +11475,11 @@ fn switch_route(home: &str) -> Option<String> {
              its size by typography.line_height_multiplier where it states a size \
              (next_line_box), else iced's own"
         }
+        "switch.label_gap" => {
+            "next_switch_row: the space between the track and the label, switch.label_gap; \
+             iced's own toggler gap (TOGGLER_LABEL_GAP) where unstated, the two at the ends of \
+             BASIC_WIDTH where switch.label_gap_stretches is true"
+        }
         "switch.label(NONE).color" => {
             "switch_label_colour: the label's colour, switch.label(NONE).color"
         }
@@ -24758,6 +24763,29 @@ mod tests {
             assert!(theme.contains(named), "the Theme row's {leaf}: {theme}");
             let mode = route_of(&state, "chrome.side_panel.settings.mode", leaf);
             assert!(!mode.contains(named), "the Mode row's {leaf}: {mode}");
+        }
+    }
+
+    /// Each Basic switch's Widget Info shows the gap between its track and
+    /// its label, `switch.label_gap`, which kde-breeze states (4 px), with
+    /// the route that lays it out.
+    #[test]
+    fn the_switches_widget_info_shows_the_label_gap() {
+        let state = loaded("kde-breeze", false);
+        for id in [
+            "basic.switches.off",
+            "basic.switches.on",
+            "basic.switches.disabled",
+        ] {
+            let Some(element) = elements::element(id) else {
+                panic!("{id} is not listed");
+            };
+            let info = element_info(&state, element);
+            let Some(row) = info.rows.iter().find(|row| row.leaf == "switch.label_gap") else {
+                panic!("{id}: no switch.label_gap row: {:#?}", info.rows);
+            };
+            assert_eq!(row.value, "4 px", "{id}");
+            assert!(row.how.contains("next_switch_row"), "{id}: {}", row.how);
         }
     }
 

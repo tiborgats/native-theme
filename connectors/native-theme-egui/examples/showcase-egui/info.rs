@@ -799,10 +799,17 @@ pub(crate) const TAB_LABEL_PER_CALL: [(&str, &str); 1] = [(
      body's (demo::next_tab_label)",
 )];
 
-/// The homes of a switch's label the companion crate's switch reads from the installed 0.8.0
-/// theme at its home (`pages::basic::switches`), which no `mapping.toml` row holds, each with
-/// its route.
-pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 4] = [
+/// The homes of a switch's label and of its place the companion crate's switch reads from the
+/// installed 0.8.0 theme at its home (`pages::basic::switches`), which no `mapping.toml` row
+/// holds, each with its route.
+pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
+    (
+        "switch.label_gap",
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it: the space between the track and the label where stated, else egui's own \
+         spacing.icon_spacing; the two at the row's ends where switch.label_gap_stretches is \
+         true (native-theme-egui-widgets switch.rs, Geometry::next_of, switch_ui)",
+    ),
     (
         "switch.label(NONE)",
         "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \

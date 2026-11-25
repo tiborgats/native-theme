@@ -1051,6 +1051,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: widgets::Switch's label, one line of its font's size by it",
     ),
     (
+        "basic.switches",
+        &["switch.label_gap"],
+        "gpui: widgets::Switch's gap between the track and the label where stated, gpui-component's own gap_2 (widgets/switch.rs, LABEL_GAP) where not; the two at the row's ends where switch.label_gap_stretches is true (SwitchLook::next_of)",
+    ),
+    (
         "basic.text_inputs",
         &["typography.line_height_multiplier"],
         "gpui: next::geometry::input's line height (control-height rule)",
