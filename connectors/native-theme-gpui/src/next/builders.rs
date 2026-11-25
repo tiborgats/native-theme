@@ -895,7 +895,7 @@ pub(crate) fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ghost_rest_within(r, padding_of(&r.button.body(WidgetState::NONE)))
 }
 
-/// [`super::geometry::ghost_button_rest_own_padding`]: where
+/// The builder of [`super::geometry::ghost_button_rest_own_padding`]: where
 /// [`ghost_hover_border`] states the outline, a transparent fill and a
 /// transparent border of the hovered flat body's stroke width, and no
 /// padding side, so the Button's own stands; nothing where it states none.
