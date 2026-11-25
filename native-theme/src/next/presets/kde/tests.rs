@@ -493,6 +493,28 @@ fn a_checked_toolbar_button_keeps_its_fill_and_takes_the_hover_outline() {
     }
 }
 
+/// A toolbar button is rounded as Breeze rounds a tool button's frame, the
+/// push button's (5), in every state.
+#[test]
+fn a_toolbar_button_is_rounded_as_the_push_button_s_frame() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                theme.toolbar.button(state).corners,
+                Corners::uniform(5.0),
+                "{scheme:?} {state:?}"
+            );
+        }
+    }
+}
+
 #[test]
 fn a_hovered_selected_sidebar_item_is_the_selected_item() {
     for theme in both_schemes() {

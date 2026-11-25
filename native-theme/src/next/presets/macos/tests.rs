@@ -126,33 +126,65 @@ fn a_flat_button_has_no_fill_and_no_outline() {
     }
 }
 
-/// The borderless button's label on macos-tahoe is the measured one, at
-/// rest and hovered, pressed and disabled, each stated for its state.
+/// The borderless button's label is the measured one, at rest and hovered
+/// and pressed, and on macos-tahoe disabled, each stated for its state; on
+/// macos-monterey, where the facts state no disabled label of its own, it is
+/// the push button's disabled label.
 #[test]
-fn tahoe_s_flat_button_takes_its_measured_labels() {
+fn the_flat_button_takes_its_measured_labels() {
     use crate::next::style::TextStated;
-    for (scheme, [rest, pressed, disabled]) in [
-        (Scheme::Light, [0x0000_0080_u32, 0x0000_00d9, 0x0000_0040]),
-        (Scheme::Dark, [0xffff_ff8c, 0xffff_ffd9, 0xffff_ff40]),
+    for (preset, scheme, [rest, pressed], disabled) in [
+        (
+            Preset::MacosTahoe,
+            Scheme::Light,
+            [0x0000_0080_u32, 0x0000_00d9],
+            Some(0x0000_0040_u32),
+        ),
+        (
+            Preset::MacosTahoe,
+            Scheme::Dark,
+            [0xffff_ff8c, 0xffff_ffd9],
+            Some(0xffff_ff40),
+        ),
+        (
+            Preset::MacosMonterey,
+            Scheme::Light,
+            [0x0000_0080, 0x0000_00d9],
+            None,
+        ),
+        (
+            Preset::MacosMonterey,
+            Scheme::Dark,
+            [0xffff_ff8c, 0xffff_ffd9],
+            None,
+        ),
     ] {
         let ctx = ThemeContext::default().with_scheme(scheme);
-        let theme = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+        let theme = Theme::preset(preset).resolve(&ctx);
+        let push_disabled = theme
+            .button
+            .label(ButtonQuery::new(WidgetState::DISABLED))
+            .color
+            .to_srgb8();
         for (state, want) in [
-            (WidgetState::NONE, rest),
-            (WidgetState::HOVER, rest),
-            (WidgetState::PRESSED, pressed),
-            (WidgetState::DISABLED, disabled),
+            (WidgetState::NONE, rest.to_be_bytes()),
+            (WidgetState::HOVER, rest.to_be_bytes()),
+            (WidgetState::PRESSED, pressed.to_be_bytes()),
+            (
+                WidgetState::DISABLED,
+                disabled.map_or(push_disabled, u32::to_be_bytes),
+            ),
         ] {
             let label = theme.button.label(ButtonQuery::flat().state(state));
             assert_eq!(
                 label.color.to_srgb8(),
-                want.to_be_bytes(),
-                "{scheme:?} {state:?}"
+                want,
+                "{preset:?} {scheme:?} {state:?}"
             );
             if state != WidgetState::NONE {
                 assert!(
                     label.from_state.contains(TextStated::COLOR),
-                    "{scheme:?} {state:?}"
+                    "{preset:?} {scheme:?} {state:?}"
                 );
             }
         }

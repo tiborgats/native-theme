@@ -1774,6 +1774,17 @@ const TOOLBAR_PADDING_HORIZONTAL: f32 = 6.0;
 // `toolbar.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
 const TOOLBAR_PADDING_VERTICAL: f32 = 6.0;
 
+/// The radius of a toolbar button's corners.
+// `toolbar.button` corners: Breeze draws a tool button's frame through the push button's
+// renderButtonFrame with no round button (drawPanelButtonToolPrimitive,
+// breezestyle.cpp:4572-4612), the frame's pen at frameRadius(PenWidth::Frame), Frame_FrameRadius 5
+// − 0.5 × int(PenWidth::Frame) = 4.5, on the rect inset by half the 1.001 pen, so its outer edge
+// at 5 (breezehelper.cpp:670-671, :737-739, :1747-1757; breezehelper.h:345-348;
+// breezemetrics.h:25, :42 at breeze f0b1d75); `docs/facts/kde/button.toml` on `v0.8.0-rc1` at
+// `78ee0efd`,
+// `button.body.corners.*` 5px in every variant but `circular`
+const TOOLBAR_BUTTON_CORNER_RADIUS: f32 = 5.0;
+
 /// A hovered toolbar button's fill.
 // `toolbar.button_hover_background`: platform-facts.md (§2.13): a hovered flat button's fill is
 // alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691 at breeze f0b1d75); its hover
@@ -4573,7 +4584,8 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// at its own width, the default radius (0.7.2: `toolbar.border`'s radius is
 /// `defaults.border.corner_radius` where unstated), no shadow and
 /// ToolBar_ItemMargin's padding; its items edge to edge. Its buttons are
-/// flat: nothing at rest; hovered, a transparent fill outlined in Highlight;
+/// flat, rounded as the push button's frame
+/// ([`TOOLBAR_BUTTON_CORNER_RADIUS`]): nothing at rest; hovered, a transparent fill outlined in Highlight;
 /// pressed, Highlight at the blend alpha, outlined so; checked, ButtonText at
 /// 0.125 in the plain button pen, outlined in Highlight under the pointer and
 /// pressed (0.7.2's `button_checked_border_color`); each outline at the
@@ -4605,6 +4617,9 @@ fn toolbar(
         .build();
     let hover_outline = outline(layout, c.selection_background);
     let button = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::Corners(Corners::uniform(
+            TOOLBAR_BUTTON_CORNER_RADIUS,
+        ))])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(TOOLBAR_BUTTON_HOVER_BACKGROUND), hover_outline.clone()],

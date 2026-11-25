@@ -455,6 +455,30 @@
           }
         },
         {
+          "variant": "flat",
+          "label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#000000d9"
+          }
+        },
+        {
           "variant": "primary",
           "label": {
             "color": "#ffffff"

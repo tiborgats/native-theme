@@ -2448,7 +2448,9 @@
       }
     },
     "button": {
-      "base": {},
+      "base": {
+        "corners": 5.0
+      },
       "rules": [
         {
           "states": [

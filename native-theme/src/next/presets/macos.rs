@@ -116,10 +116,11 @@
 //!   and 42272240639, `layers-key-styles_b.toml` and
 //!   `layers-key-image_b.toml` `*-flat.fill`, `*-flat.stroke` absent), and on
 //!   `macos-tahoe` the checked fills over its absent fill, as no checked
-//!   borderless button was measured; on `macos-tahoe` the borderless
-//!   button's measured labels over the push button's, at rest, hovered,
-//!   pressed and disabled (`layers-key-styles_b.toml` `*-flat.label`), the
-//!   checked labels over them as over its fill;
+//!   borderless button was measured; the borderless button's measured
+//!   labels over the push button's, at rest, hovered and pressed, and on
+//!   `macos-tahoe` disabled (`layers-key-styles_b.toml` `*-flat.label`; on
+//!   `macos-monterey` the facts state no disabled label of its own, so the
+//!   push button's holds), the checked labels over them as over its fill;
 //! - the check box's and the radio button's indicator: the checked fill and
 //!   outline over the hovered fill, as 0.7.2's egui widgets draw a checked
 //!   box or circle in its checked look whatever the pointer does (the
@@ -295,8 +296,9 @@ struct SchemeColors {
     /// none.
     button_checked_disabled_foreground: Option<Color>,
     /// The borderless button's labels at rest (and hovered), pressed and
-    /// disabled; `None` where it takes the push button's.
-    button_flat_foreground: Option<(Color, Color, Color)>,
+    /// disabled; `None` where it takes the push button's, the disabled one
+    /// `None` where only that is the push button's.
+    button_flat_foreground: Option<(Color, Color, Option<Color>)>,
     checkbox_unchecked: Color,
     checkbox_unchecked_border: Color,
     /// The unchecked box's edge pressed; `None` where it is the rest one.
@@ -507,7 +509,13 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     button_checked_mix_with: None,
     button_checked_foreground: None,
     button_checked_disabled_foreground: None,
-    button_flat_foreground: None,
+    // the borderless button's labels: #00000080 at rest, #000000d9 pressed (measured, os-probe run
+    // 41006842699, `os-probe-macos-15/layers-key-styles_b.toml`,
+    // `key.styles_b.aqua.{normal,pressed}.*-flat.label`; `docs/facts/macos/button.toml` on
+    // `v0.8.0-rc1` at `78ee0efd`, `button.label.text.fill` preset:macos-monterey variants [flat],
+    // row MAC-B01); disabled, the push button's: the facts state no disabled label of its own,
+    // the push button's (`states = ["disabled"]`, read on the push bezel) holding for it
+    button_flat_foreground: Some((srgb8(0x0000_0080), srgb8(0x0000_00d9), None)),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, the unchecked
     // box measured white on macOS 14 and 15 (os-probe run 40348854007,
     // renders/aqua/checkbox-regular-off@2x.png; the radio's the same)
@@ -817,7 +825,12 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     button_checked_mix_with: None,
     button_checked_foreground: None,
     button_checked_disabled_foreground: None,
-    button_flat_foreground: None,
+    // the borderless button's labels: #ffffff8c at rest, #ffffffd9 pressed (measured, os-probe run
+    // 41006842699, `os-probe-macos-15/layers-key-styles_b.toml`,
+    // `key.styles_b.darkAqua.{normal,pressed}.*-flat.label`; `docs/facts/macos/button.toml` on
+    // `v0.8.0-rc1` at `78ee0efd`, `button.label.text.fill` preset:macos-monterey scheme:dark
+    // variants [flat], row MAC-B01); disabled, the push button's, as in the light scheme
+    button_flat_foreground: Some((srgb8(0xffff_ff8c), srgb8(0xffff_ffd9), None)),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, white at alpha
     // 55/255 at the box's centre, a gradient from 40/255 at its top to 71/255 at its bottom, not
     // controlBackgroundColor (measured, os-probe run 40348854007,
@@ -1142,7 +1155,11 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `key.styles_b.aqua.{normal,pressed,disabled}.*-flat.label`; `docs/facts/macos/button.toml`
     // on `v0.8.0-rc1` at `78ee0efd`, `button.label.text.fill` preset:macos-tahoe scheme:light
     // variants [flat], row MAC-B01)
-    button_flat_foreground: Some((srgb8(0x0000_0080), srgb8(0x0000_00d9), srgb8(0x0000_0040))),
+    button_flat_foreground: Some((
+        srgb8(0x0000_0080),
+        srgb8(0x0000_00d9),
+        Some(srgb8(0x0000_0040)),
+    )),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #00000019 (measured, renders/aqua/checkbox-regular-off@2x.png;
     // probe); the probe's window is never ordered front, so this is the box of a window that is not
@@ -1451,7 +1468,11 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `key.styles_b.darkAqua.{normal,pressed,disabled}.*-flat.label`;
     // `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`, `button.label.text.fill`
     // preset:macos-tahoe scheme:dark variants [flat], row MAC-B01)
-    button_flat_foreground: Some((srgb8(0xffff_ff8c), srgb8(0xffff_ffd9), srgb8(0xffff_ff40))),
+    button_flat_foreground: Some((
+        srgb8(0xffff_ff8c),
+        srgb8(0xffff_ffd9),
+        Some(srgb8(0xffff_ff40)),
+    )),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #ffffff19 (measured,
     // renders/darkAqua/checkbox-regular-off@2x.png; probe); the probe's window is never ordered
@@ -3369,9 +3390,11 @@ fn button(
         )
         .rules(
             c.button_flat_foreground
+                .and_then(|(_, _, disabled)| disabled)
                 .map(|_| flat(WidgetState::DISABLED)),
             c.button_flat_foreground
-                .map(|(_, _, disabled)| TextProp::Color(disabled)),
+                .and_then(|(_, _, disabled)| disabled)
+                .map(TextProp::Color),
         )
         .rules(
             c.button_checked_disabled_foreground
