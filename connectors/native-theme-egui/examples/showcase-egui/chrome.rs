@@ -1261,7 +1261,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Theme",
-            element: Some("chrome.side_panel.settings.theme"),
+            element: "chrome.side_panel.settings.theme",
             kind: "ComboBox · Theme",
             row_kind: "Theme row",
             rows: &theme_rows,
@@ -1276,7 +1276,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Palette",
-            element: Some("chrome.side_panel.settings.palette"),
+            element: "chrome.side_panel.settings.palette",
             kind: "ComboBox · Palette",
             row_kind: "Palette row",
             rows: &palette_rows,
@@ -1291,7 +1291,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Mode",
-            element: Some("chrome.side_panel.settings.mode"),
+            element: "chrome.side_panel.settings.mode",
             kind: "ComboBox · Mode",
             row_kind: "Mode row",
             current_text: Action::SetMode(current_mode).label().to_string(),
@@ -1306,7 +1306,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Icon theme",
-            element: Some("chrome.side_panel.settings.icon_theme"),
+            element: "chrome.side_panel.settings.icon_theme",
             kind: "ComboBox · Icon theme",
             row_kind: "Icon theme row",
             current_text: current_icon.to_string(),
@@ -1342,8 +1342,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
 struct Setting<'a, T> {
     label: &'static str,
     /// The drop-down's element in `docs/showcase-elements.toml`; its label's is `<element>_label`.
-    /// `None` for a row the list has no element of.
-    element: Option<&'static str>,
+    element: &'static str,
     kind: &'static str,
     row_kind: &'static str,
     rows: &'a [(T, String)],
@@ -1364,12 +1363,10 @@ fn setting<T: Clone + PartialEq>(
     setting: Setting<'_, T>,
 ) -> Option<T> {
     let label = setting_label(registry, ui, body, setting.label);
-    if let Some(element) = setting.element {
-        registry.tag(&format!("{element}_label"), &label);
-    }
+    let element = setting.element;
+    registry.tag(&format!("{element}_label"), &label);
     let label = label.id;
     let mut picked = None;
-    let element = setting.element;
     let combo = demo::scoped_popup(
         registry,
         ui,
@@ -1418,9 +1415,7 @@ fn setting<T: Clone + PartialEq>(
             }
         },
     );
-    if let Some(element) = element {
-        registry.tag(element, &combo);
-    }
+    registry.tag(element, &combo);
     picked
 }
 
