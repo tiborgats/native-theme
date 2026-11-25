@@ -7,7 +7,9 @@ use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::native_theme::theme::ResolvedSliderTheme;
-use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::{
+    NativeThemeUiExt as _, Note, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
+};
 
 use crate::parts::Parts;
 use crate::{next, scope};
@@ -191,18 +193,54 @@ impl Look {
     /// a rule states it; the window's background as the ground. Each `None` where the theme
     /// states none, which keeps egui's own (spec §10, rule 0).
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self::next_noted(r, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at each fill's home the
+    /// theme states as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(r: &NextResolvedTheme, unmapped: &mut Vec<Note>) -> Self {
         let sl = &r.slider;
         let off = WidgetState::DISABLED;
         let rest = sl.thumb(WidgetState::NONE);
         let (hover, focus) = (sl.thumb(WidgetState::HOVER), sl.thumb(WidgetState::FOCUSED));
+        let (track_off, active_off, thumb_off) =
+            (sl.track(off), sl.active_track(off), sl.thumb(off));
         Self {
-            track_color: next::fill_of(&sl.track(WidgetState::NONE)),
-            fill_color: next::fill_of(&sl.active_track(WidgetState::NONE)),
-            thumb_color: next::fill_of(&rest),
-            thumb_hover_color: next::ruled_fill(&hover, &hover),
-            disabled_track_color: next::ruled_fill(&sl.track(off), &sl.track(off)),
-            disabled_fill_color: next::ruled_fill(&sl.active_track(off), &sl.active_track(off)),
-            disabled_thumb_color: next::ruled_fill(&sl.thumb(off), &sl.thumb(off)),
+            track_color: next::fill(
+                &sl.track(WidgetState::NONE),
+                "slider.track(NONE).fill",
+                unmapped,
+            ),
+            fill_color: next::fill(
+                &sl.active_track(WidgetState::NONE),
+                "slider.active_track(NONE).fill",
+                unmapped,
+            ),
+            thumb_color: next::fill(&rest, "slider.thumb(NONE).fill", unmapped),
+            thumb_hover_color: next::ruled_fill(
+                &hover,
+                &hover,
+                "slider.thumb(HOVER).fill",
+                unmapped,
+            ),
+            disabled_track_color: next::ruled_fill(
+                &track_off,
+                &track_off,
+                "slider.track(DISABLED).fill",
+                unmapped,
+            ),
+            disabled_fill_color: next::ruled_fill(
+                &active_off,
+                &active_off,
+                "slider.active_track(DISABLED).fill",
+                unmapped,
+            ),
+            disabled_thumb_color: next::ruled_fill(
+                &thumb_off,
+                &thumb_off,
+                "slider.thumb(DISABLED).fill",
+                unmapped,
+            ),
             thumb_border_color: next::stroke_color_of(&rest),
             thumb_hover_border_color: next::ruled_stroke(&hover, &hover),
             thumb_focus_border_color: next::ruled_stroke(&focus, &focus),

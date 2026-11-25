@@ -35,7 +35,9 @@ use native_theme_egui::egui;
 use native_theme_egui::native_theme::next::{
     DecorationKind, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
 };
-use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::{
+    NativeThemeUiExt as _, Note, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
+};
 
 use crate::next;
 
@@ -92,14 +94,29 @@ impl Look {
     /// rule for `HOVER` states it (spec §2, `from_state`), and the underline at rest, whether
     /// `link.label(NONE)`'s stated decoration is an underline.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self::next_noted(r, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at each fill's home the
+    /// theme states as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(r: &NextResolvedTheme, unmapped: &mut Vec<Note>) -> Self {
         let l = &r.link;
         let label = |s: WidgetState| next::text_color_of(&l.label(s));
         let rest = l.label(WidgetState::NONE);
         let hover = l.container(WidgetState::HOVER);
         Self {
             text_color: next::text_color_of(&rest),
-            background_color: next::fill_of(&l.container(WidgetState::NONE)),
-            hover_background: next::ruled_fill(&hover, &hover),
+            background_color: next::fill(
+                &l.container(WidgetState::NONE),
+                "link.container(NONE).fill",
+                unmapped,
+            ),
+            hover_background: next::ruled_fill(
+                &hover,
+                &hover,
+                "link.container(HOVER).fill",
+                unmapped,
+            ),
             hover_text_color: label(WidgetState::HOVER),
             active_text_color: label(WidgetState::PRESSED),
             visited_text_color: label(WidgetState::VISITED),

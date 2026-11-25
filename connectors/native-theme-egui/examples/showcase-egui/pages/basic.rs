@@ -757,7 +757,7 @@ impl ToggleOn {
 /// and stroke), as the connector themes it (spec §10, rules 0 and 0a).
 pub(crate) fn toggle_on(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
     ToggleOn {
-        fill: r.and_then(|r| next::state_fill_of(&r.button.body(NextState::CHECKED))),
+        fill: r.and_then(|r| demo::drawn_state_fill(&r.button.body(NextState::CHECKED))),
         text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
     }
 }
@@ -1621,7 +1621,7 @@ fn icon_buttons(
 /// is egui's own selected button's, as the toggle's ([`toggle_on`], spec §10, rules 0 and 0a).
 pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
     ToggleOn {
-        fill: r.and_then(|r| next::state_fill_of(&r.toolbar.button(NextState::CHECKED))),
+        fill: r.and_then(|r| demo::drawn_state_fill(&r.toolbar.button(NextState::CHECKED))),
         text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
     }
 }
@@ -1835,7 +1835,7 @@ fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
 
 /// The query of a row of a list of `variant`, the Basic list's `Plain` or the table's `Table`,
 /// in `state`: a row of either is never an alternate one, as neither is striped.
-fn list_query(variant: ListVariant, state: NextState) -> ListQuery {
+pub(crate) fn list_query(variant: ListVariant, state: NextState) -> ListQuery {
     ListQuery::new(state).variant(ListKind {
         variant,
         alternate: false,
@@ -1856,7 +1856,7 @@ pub(crate) fn list_frame(r: Option<&ResolvedTheme>, variant: ListVariant) -> (eg
         return (frame, own);
     };
     let part = r.list.container(list_query(variant, NextState::NONE));
-    if let Some(fill) = next::fill_of(&part) {
+    if let Some(fill) = demo::drawn_fill(&part) {
         frame = frame.fill(fill);
     }
     let width = next::stroke_width_of(&part);
@@ -2056,7 +2056,7 @@ impl RowLook {
             state = state.union(NextState::HOVER);
         }
         let q = list_query(variant, state);
-        let row = next::fill_of(&l.row(q));
+        let row = demo::drawn_fill(&l.row(q));
         let part = l.highlight(q);
         let margin = {
             let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
@@ -2084,7 +2084,7 @@ impl RowLook {
                 },
             };
         }
-        let fill = next::state_fill_of(&part);
+        let fill = demo::drawn_state_fill(&part);
         let stroke = demo::state_pen(&part);
         let text = next::state_text_color_of(&l.item_label(q));
         let mut taken = Vec::new();
@@ -2552,7 +2552,7 @@ pub(crate) fn header_section_fill(
     } else {
         return None;
     };
-    next::state_fill_of(&r?.list.header(list_query(ListVariant::Table, state)))
+    demo::drawn_state_fill(&r?.list.header(list_query(ListVariant::Table, state)))
 }
 
 /// The table: a header and two rows, the second selected, `BASIC_WIDE` across the list's
@@ -2592,8 +2592,9 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 egui::Stroke::new(r.separator.thickness, next::to_color32(r.list.grid_color))
             });
             let grid_width = grid.map_or(egui::Stroke::NONE.width, |s| s.width);
-            let header_fill = r.and_then(|r| next::fill_of(&r.list.header(rest)));
-            let header_line_colour = r.and_then(|r| next::fill_of(&r.list.header_separator(rest)));
+            let header_fill = r.and_then(|r| demo::drawn_fill(&r.list.header(rest)));
+            let header_line_colour =
+                r.and_then(|r| demo::drawn_fill(&r.list.header_separator(rest)));
             let own = table_cell_inset(ui);
             let sides = CellSides::of(ui, r);
             let (row_height, _, line) = row_metrics(ui, r, (table, false), &item_font, own, 0.0);

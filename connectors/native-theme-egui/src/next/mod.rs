@@ -19,7 +19,9 @@
 //!
 //! The part reads ([`fill_of`], [`stroke_color_of`], ...) give a part's
 //! stated values as egui takes them, `None` where the theme states none,
-//! for a reader that shows egui's own there.
+//! for a reader that shows egui's own there; the fill reads ([`fill_of`],
+//! [`state_fill_of`]) report a fill stated as layers that are all
+//! gradients as [`Unmapped`] at the home the reader names.
 
 pub(crate) mod build;
 #[cfg(test)]
@@ -174,37 +176,47 @@ pub(crate) mod reads {
 /// the colour a toolkit that paints one colour renders in its place
 /// (spec §10, rule 2).
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Color32> {
-    stated(fill_of(part), home)
+    stated(fill_color(part), home)
 }
 
-/// A part's fill as `fill` reads it, `None` where it is not stated, or
-/// stated as a layered paint with no fallback colour: for a reader that
-/// shows egui's own there (spec §10, rule 0). A fill stated as none is
-/// transparent, and a layered paint gives its fallback colour (spec §10,
-/// rule 2).
-#[must_use]
-pub fn fill_of(part: &PartStyle) -> Option<Color32> {
+/// A part's fill as [`fill`] reads it, `None` where it is not stated or
+/// has no single colour.
+pub(crate) fn fill_color(part: &PartStyle) -> Option<Color32> {
     reads::fill(part).map(to_color32)
 }
 
-/// A part's fill where a rule states it for the queried state (its
-/// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
-/// option's unset value.
-pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Color32>> {
-    if part.from_state.contains(PartStated::FILL) {
+/// A part's fill as egui takes it, `None` where it is not stated: egui's
+/// own there (spec §10, rule 0). A fill stated as none is transparent, and
+/// a layered paint gives its fallback colour (spec §10, rule 2).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients, which have no single colour for egui to paint (spec §10,
+/// rule 4), never egui's own in their place.
+pub fn fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Color32>> {
+    if part.stated.contains(PartStated::FILL) {
         fill(part, home).map(Some)
     } else {
         Ok(None)
     }
 }
 
-/// A part's fill as `state_fill` reads it, `None` where no rule states it
-/// for the queried state, or it is stated as a layered paint with no
-/// fallback colour. The rule is for some flag of the query, not a given one
-/// (spec §2, `from_state`).
-#[must_use]
-pub fn state_fill_of(part: &PartStyle) -> Option<Color32> {
-    reads::state_fill(part).map(to_color32)
+/// A part's fill as [`fill_of`] reads it, where a rule states it for the
+/// queried state (its `from_state` bit); `None` where none does, a soft
+/// option's unset value. The rule is for some flag of the query, not a
+/// given one (spec §2, `from_state`).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients (spec §10, rule 4).
+pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Color32>> {
+    if part.from_state.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// A part's stroke colour as stated, where stated as one stroke of one
@@ -448,7 +460,7 @@ pub fn selection_inactive_text_color(r: &ResolvedTheme) -> Mapped<Color32> {
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn toolbar_button_checked_background(r: &ResolvedTheme) -> Mapped<Option<Color32>> {
-    state_fill(
+    state_fill_of(
         &r.toolbar.button(WidgetState::CHECKED),
         "toolbar.button(CHECKED).fill",
     )
@@ -831,7 +843,7 @@ pub fn list_header_height(r: &ResolvedTheme) -> Option<f32> {
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color32>> {
-    state_fill(
+    state_fill_of(
         &r.list.header(WidgetState::HOVER),
         "list.header(HOVER).fill",
     )
@@ -846,7 +858,7 @@ pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color32>
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<Color32>> {
-    state_fill(
+    state_fill_of(
         &r.list.header(WidgetState::PRESSED),
         "list.header(PRESSED).fill",
     )
@@ -980,7 +992,7 @@ fn padded(part: &PartStyle, width_home: &'static str) -> Mapped<crate::accessors
 pub fn default_button(r: &ResolvedTheme) -> Mapped<Option<crate::DefaultButton>> {
     let b = &r.button;
     let body = b.body(WidgetState::DEFAULT);
-    let Some(fill) = state_fill(&body, "button.body(DEFAULT).fill")? else {
+    let Some(fill) = state_fill_of(&body, "button.body(DEFAULT).fill")? else {
         return Ok(None);
     };
     let frame = if body.stated.contains(PartStated::STROKE) {

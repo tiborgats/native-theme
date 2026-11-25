@@ -3742,7 +3742,11 @@ const WIDGET_READS: &[(&str, &[Read])] = &[
 /// The reads of [`WIDGET_READS`] no splice in a platform preset reaches, each with the test of
 /// the crate's that proves the widget reads it: a home the widget falls back on where the theme
 /// states its own value of the leaf not, which every platform preset states. The widget, the
-/// 0.7.2 field, the home, and the test, by its name in the crate's sources.
+/// 0.7.2 field, the home, and the test, by its name in the crate's sources. The proof stops at
+/// the helper that picks the fallback: the switch's entries' test calls `Look::label_colors`
+/// with the colours given, so `Look::next_of`'s wiring of `typography.body.color` and
+/// `colors.disabled_text` into it is not tested, as no theme can leave `switch.label` unstated
+/// today; a test of that wiring waits for one that can.
 const PROVED_BY_TEST: &[(&str, &str, &str, &str)] = &[
     (
         "Switch",

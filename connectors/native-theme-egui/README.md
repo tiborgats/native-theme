@@ -804,7 +804,12 @@ listed here, and a value the theme leaves unstated is egui's own
   theme states as layers (`Paint::Complex`, a gradient among them) is drawn
   in the one colour the model gives in its place, its fallback colour
   (docs/v0.8.0-spec.md §10, rule 2), and as egui's own fill where it gives
-  none.
+  none, layers that are all gradients. The fill readers `next::fill_of` and
+  `next::state_fill_of` take the fill's home and return those layers as
+  `Unmapped` at it (rule 4), not as the `None` of a fill the theme leaves
+  unstated; the companion crate `native-theme-egui-widgets` reports each
+  such fill its widgets read as a `Note::Unmapped` (`next_fills_unmapped`),
+  its widgets drawing egui's own there.
 - **Where a translucent stroke lies.** egui ends a rect's fill at the
   stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
   `stroke_and_fill_path`), so a stroke the theme lays `Outside` the part is
@@ -814,6 +819,18 @@ listed here, and a value the theme leaves unstated is egui's own
   the whole band is drawn in the band's mean colour where the platform shows
   the fill under its inner half only (src/style/line.rs). An opaque stroke
   is drawn exactly in every alignment.
+- **A flat button's narrower hovered or pressed outline.** egui lays a
+  button out at the inner margin `button_padding + expansion −
+  bg_stroke.width` of its state (`egui-0.37.0/src/theme/default_style.rs`,
+  `src/containers/frame.rs`), with one `button_padding` for every state,
+  and `expansion` grows the painted rect too, so egui has no per-state room
+  to keep a button's box when a state's outline is narrower than the
+  resting one. A flat button's hovered or pressed outline stated as no
+  width is drawn as a transparent one of the resting width, which keeps the
+  box; one stated between none and the resting width is drawn at its
+  stated width, and the button grows by the difference in that state
+  (src/style/variants.rs, `flat_cell`; docs/v0.8.0-spec.md §10, rule 4).
+  No bundled preset states such a width.
 
 ## Semver
 

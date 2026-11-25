@@ -426,11 +426,15 @@ pub(crate) struct FlatButton {
 /// hovered and `active` fill, label colour and border, each unstated one what `unstated`
 /// gives. The resting entry is left as it stands: egui draws a
 /// `Button::frame_when_inactive(false)` unframed at rest (egui 0.37.0
-/// `src/theme/default_style.rs:77-87`). A hovered or pressed outline of no width is a
-/// transparent one of the resting entry's width: egui lays a button out at the inner margin
+/// `src/theme/default_style.rs:77-87`). egui lays a button out at the inner margin
 /// `button_padding + expansion − bg_stroke.width` of its state (`src/theme/default_style.rs:54-71`,
-/// `src/containers/frame.rs:313-323`), so a state's outline narrower than the resting one would
-/// grow the button by the difference, and either pen paints nothing.
+/// `src/containers/frame.rs:313-323`), so a state's outline narrower than the resting one grows
+/// the button by the difference. A hovered or pressed outline of no width is therefore a
+/// transparent one of the resting entry's width, which keeps the box, and either pen paints
+/// nothing. One of a width between none and the resting one is drawn at its stated width and
+/// the button grows: egui has no per-state room to keep the box by (one `button_padding` for
+/// every state, and `expansion` grows the painted rect too), an egui limit the README records
+/// (spec §10, rule 4); no bundled preset states such a width.
 pub(crate) fn flat_cell(
     w: &mut egui::style::Widgets,
     f: &FlatButton,
@@ -1127,5 +1131,53 @@ mod tests {
                 "{role:?}"
             );
         }
+    }
+
+    /// A flat button's hovered outline stated narrower than the resting one, but wider than
+    /// none, is drawn at its stated width, the button then growing by the difference (the
+    /// README's limits); a pressed outline stated as no width is a transparent one of the
+    /// resting width.
+    #[test]
+    fn a_flat_buttons_narrower_state_outline_is_drawn_at_its_width() {
+        use super::{FlatButton, flat_cell};
+        use crate::style::line::LineAlign;
+        use crate::style::states::{StateLine, Unstated};
+
+        let mut w = Theme::Light.default_style().visuals.widgets;
+        w.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::BLACK);
+        let own = w.clone();
+        let colour = Rgba {
+            r: 255,
+            g: 0,
+            b: 255,
+            a: 255,
+        };
+        let line = |width: f32, path| {
+            Some(StateLine {
+                color: Some(colour),
+                width: Some((width, path)),
+            })
+        };
+        let mut notes = Vec::new();
+        flat_cell(
+            &mut w,
+            &FlatButton {
+                fill: [None; 2],
+                label: [None; 2],
+                state_border: [line(0.5, "hovered"), line(0.0, "pressed")],
+                align: LineAlign::Outside,
+            },
+            Unstated::Egui(&own),
+            &mut notes,
+        );
+        assert!(notes.is_empty(), "{notes:?}");
+        assert_eq!(
+            w.hovered.bg_stroke,
+            egui::Stroke::new(0.5, to_color32(colour))
+        );
+        assert_eq!(
+            w.active.bg_stroke,
+            egui::Stroke::new(1.0, egui::Color32::TRANSPARENT)
+        );
     }
 }

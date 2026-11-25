@@ -4,7 +4,9 @@ use native_theme_egui::convert::{to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::next::padding_of;
-use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::{
+    NativeThemeUiExt as _, Note, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
+};
 
 use crate::next;
 use crate::parts::Parts;
@@ -148,12 +150,23 @@ impl Look {
     /// fill where a rule for `HOVER` states it (spec §2, `from_state`), and whether
     /// `segmented_control.segment(NONE)` states its top or bottom padding.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self::next_noted(r, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at the hover fill's home where
+    /// the theme states it as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(r: &NextResolvedTheme, unmapped: &mut Vec<Note>) -> Self {
         let sc = &r.segmented_control;
         let hover = sc.segment(WidgetState::HOVER);
         let [top, _, bottom, _] = padding_of(&sc.segment(WidgetState::NONE));
         Self {
             background: next::window_background(r),
-            hover: next::ruled_fill(&hover, &hover),
+            hover: next::ruled_fill(
+                &hover,
+                &hover,
+                "segmented_control.segment(HOVER).fill",
+                unmapped,
+            ),
             padded: top.is_some() || bottom.is_some(),
         }
     }

@@ -53,6 +53,13 @@ Limits under the 0.8.0 model:
   the track, and egui's own `Checkbox` draws none
   (`Switch::next_glyphs_unmapped` reports it as a `Note::Unmapped` at its
   home).
+* A fill a widget reads that the theme states as layers that are all
+  gradients has no single colour for egui to paint (docs/v0.8.0-spec.md §10,
+  rule 4): the widget draws egui's own there, as where the theme states no
+  fill, and `next_fills_unmapped` reports each as a `Note::Unmapped` at its
+  home; a switch whose fill at `switch.track(NONE)`, `switch.track(CHECKED)`
+  or `switch.thumb(CHECKED)` is one is egui's own `Checkbox`. No bundled
+  preset states one.
 * The switch's label is lettered at `switch.label(NONE)`'s size in egui's
   `Proportional` family, as the connector's role fonts are
   (`native_theme_egui::next::text_role_font`): that family holds the face the

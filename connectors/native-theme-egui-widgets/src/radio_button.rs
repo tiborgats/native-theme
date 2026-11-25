@@ -6,8 +6,8 @@ use native_theme_egui::native_theme::next::{
     PartStated, PartStyle, ResolvedTheme as NextResolvedTheme, Stroke as NextStroke, StrokeAlign,
     TextStated, WidgetState,
 };
-use native_theme_egui::next::{fill_of, stroke_color_of, stroke_width_of, text_color_of};
-use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
+use native_theme_egui::next::{stroke_color_of, stroke_width_of, text_color_of};
+use native_theme_egui::{Note, ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::{next, scope};
@@ -159,6 +159,17 @@ impl Over {
     /// radio's values are read where a rule for `DISABLED` states them, the scope's disabled
     /// cell elsewhere (its disabled colours, faded as egui fades a disabled widget).
     pub(crate) fn next_of(r: &NextResolvedTheme, checked: bool, disabled: bool) -> Self {
+        Self::next_noted(r, checked, disabled, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at each fill's home the
+    /// theme states as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(
+        r: &NextResolvedTheme,
+        checked: bool,
+        disabled: bool,
+        unmapped: &mut Vec<Note>,
+    ) -> Self {
         let radio = &r.radio;
         let mut base = WidgetState::NONE;
         if checked {
@@ -167,44 +178,111 @@ impl Over {
         if disabled {
             base |= WidgetState::DISABLED;
         }
-        // Each read at `base | state`, where a rule for `ruled` alone states it (`NONE`: always).
-        let entry = |state: WidgetState, rule: WidgetState| {
-            let indicator = radio.indicator(base | state);
-            let dot = radio.dot(base | state | WidgetState::CHECKED);
-            let (ruled_dot, ruled) = (radio.dot(rule), radio.indicator(rule));
-            let at = |part: &PartStyle, bit: PartStated| {
-                rule == WidgetState::NONE || part.from_state.contains(bit)
+        // Each read at `base | state`, where a rule for `ruled` alone states it (`NONE`: always);
+        // `homes` the indicator's and the dot's fills there.
+        let mut entry =
+            |state: WidgetState, rule: WidgetState, homes: (&'static str, &'static str)| {
+                let indicator = radio.indicator(base | state);
+                let dot = radio.dot(base | state | WidgetState::CHECKED);
+                let (ruled_dot, ruled) = (radio.dot(rule), radio.indicator(rule));
+                let at = |part: &PartStyle, bit: PartStated| {
+                    rule == WidgetState::NONE || part.from_state.contains(bit)
+                };
+                let stroke = match (&indicator.stroke, stroke_color_of(&indicator)) {
+                    (NextStroke::Uniform { align, .. }, Some(colour)) => Some((colour, *align)),
+                    _ => None,
+                };
+                let (fill_home, dot_home) = homes;
+                Entry {
+                    fill: if at(&ruled, PartStated::FILL) {
+                        next::fill(&indicator, fill_home, unmapped)
+                    } else {
+                        None
+                    },
+                    stroke_width: at(&ruled, PartStated::STROKE)
+                        .then(|| stroke_width_of(&indicator))
+                        .flatten(),
+                    stroke: at(&ruled, PartStated::STROKE).then_some(stroke).flatten(),
+                    dot: if at(&ruled_dot, PartStated::FILL) {
+                        next::fill(&dot, dot_home, unmapped)
+                    } else {
+                        None
+                    },
+                }
             };
-            let stroke = match (&indicator.stroke, stroke_color_of(&indicator)) {
-                (NextStroke::Uniform { align, .. }, Some(colour)) => Some((colour, *align)),
-                _ => None,
-            };
-            Entry {
-                fill: at(&ruled, PartStated::FILL)
-                    .then(|| fill_of(&indicator))
-                    .flatten(),
-                stroke_width: at(&ruled, PartStated::STROKE)
-                    .then(|| stroke_width_of(&indicator))
-                    .flatten(),
-                stroke: at(&ruled, PartStated::STROKE).then_some(stroke).flatten(),
-                dot: at(&ruled_dot, PartStated::FILL)
-                    .then(|| fill_of(&dot))
-                    .flatten(),
-            }
-        };
-        let off = WidgetState::DISABLED;
-        let (rest, hovered, pressed) = if disabled {
-            (
-                entry(WidgetState::NONE, off),
+        let (none, off) = (WidgetState::NONE, WidgetState::DISABLED);
+        let (hover, press) = (WidgetState::HOVER, WidgetState::PRESSED);
+        let (rest, hovered, pressed) = match (disabled, checked) {
+            (true, false) => (
+                entry(
+                    none,
+                    off,
+                    (
+                        "radio.indicator(DISABLED).fill",
+                        "radio.dot(DISABLED|CHECKED).fill",
+                    ),
+                ),
                 Entry::default(),
                 Entry::default(),
-            )
-        } else {
-            (
-                entry(WidgetState::NONE, WidgetState::NONE),
-                entry(WidgetState::HOVER, WidgetState::HOVER),
-                entry(WidgetState::PRESSED, WidgetState::PRESSED),
-            )
+            ),
+            (true, true) => (
+                entry(
+                    none,
+                    off,
+                    (
+                        "radio.indicator(DISABLED|CHECKED).fill",
+                        "radio.dot(DISABLED|CHECKED).fill",
+                    ),
+                ),
+                Entry::default(),
+                Entry::default(),
+            ),
+            (false, false) => (
+                entry(
+                    none,
+                    none,
+                    ("radio.indicator(NONE).fill", "radio.dot(CHECKED).fill"),
+                ),
+                entry(
+                    hover,
+                    hover,
+                    (
+                        "radio.indicator(HOVER).fill",
+                        "radio.dot(HOVER|CHECKED).fill",
+                    ),
+                ),
+                entry(
+                    press,
+                    press,
+                    (
+                        "radio.indicator(PRESSED).fill",
+                        "radio.dot(PRESSED|CHECKED).fill",
+                    ),
+                ),
+            ),
+            (false, true) => (
+                entry(
+                    none,
+                    none,
+                    ("radio.indicator(CHECKED).fill", "radio.dot(CHECKED).fill"),
+                ),
+                entry(
+                    hover,
+                    hover,
+                    (
+                        "radio.indicator(HOVER|CHECKED).fill",
+                        "radio.dot(HOVER|CHECKED).fill",
+                    ),
+                ),
+                entry(
+                    press,
+                    press,
+                    (
+                        "radio.indicator(PRESSED|CHECKED).fill",
+                        "radio.dot(PRESSED|CHECKED).fill",
+                    ),
+                ),
+            ),
         };
         let label = (!disabled || radio.label(off).from_state.contains(TextStated::COLOR))
             .then(|| text_color_of(&radio.label(base)))
