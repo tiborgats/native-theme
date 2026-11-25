@@ -149,6 +149,21 @@ pub fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::ghost_button_rest(r)
 }
 
+/// A flat `Button` that is on (`selected(true)`), a 0.8.0 builder with no
+/// 0.7.2 one, after its box: where a rule states the checked flat body's
+/// stroke, `button.body(CHECKED; variant=Flat).stroke`, a border of that
+/// width in that colour, each stated side of `button.body(NONE)`'s padding
+/// less the width, floored at 0, and no fill; nothing where none does.
+/// Upstream lays out a border width only for the Default and outline
+/// variants and replays the refinement over its selected style
+/// (gpui-component 0.10.0 `button/button.rs:727-732`, `:836-842`), so this
+/// gives the selected ghost its edge and keeps its size. A selected Button
+/// takes no hover or press style, so the edge stays under the pointer and
+/// pressed (the crate's README, *Limits*).
+pub fn ghost_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::ghost_button_checked(r)
+}
+
 /// The disabled state of a toolbar `Button` built on
 /// [`next::variants::toolbar_button`](super::variants::toolbar_button), a
 /// 0.8.0 builder with no 0.7.2 one, applied after [`toolbar_button_rest`]:
@@ -238,6 +253,44 @@ mod tests {
                     ctx.scheme
                 );
             }
+        }
+    }
+
+    /// kde-breeze's checked flat button is edged in the pen its preset states
+    /// for it, `button.body(CHECKED; variant=Flat).stroke` (Breeze's plain
+    /// button pen, not the hovered Highlight one), at that stroke's width,
+    /// with no fill over the selected style's.
+    #[test]
+    fn a_checked_flat_button_takes_the_stated_checked_outline() {
+        use gpui::{AbsoluteLength, px};
+        use native_theme::next::ButtonQuery;
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+            let flat = |state| r.button.body(ButtonQuery::flat().state(state));
+            let checked = flat(WidgetState::CHECKED);
+            let pen = super::super::state_stroke_color_of(&checked);
+            let width = super::super::stroke_width_of(&checked);
+            assert!(
+                pen.is_some()
+                    && width.is_some_and(|w| w > 0.0)
+                    && pen != super::super::state_stroke_color_of(&flat(WidgetState::HOVER)),
+                "kde-breeze {:?} states no checked flat outline apart from the hovered one, \
+                 so this proves nothing",
+                ctx.scheme
+            );
+            let style = ghost_button_checked(&r);
+            let w = width.map(|w| Some(AbsoluteLength::Pixels(px(w))));
+            assert_eq!(
+                style.as_ref().map(|s| (
+                    s.border_color,
+                    s.border_widths.top,
+                    s.border_widths.left,
+                    s.background.is_none()
+                )),
+                Ok((pen, w.flatten(), w.flatten(), true)),
+                "kde-breeze {:?}",
+                ctx.scheme
+            );
         }
     }
 

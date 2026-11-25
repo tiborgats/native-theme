@@ -957,6 +957,30 @@ pub(crate) fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
+/// [`super::geometry::ghost_button_checked`]: where a rule states the
+/// checked flat body's stroke for `CHECKED`,
+/// `button.body(CHECKED; variant=Flat).stroke`, a border of its width in its
+/// colour, each stated side of the push button's padding less that width
+/// ([`geometry::toolbar_button_rest_from`]), and no fill, so the selected
+/// style's stands; nothing where none does.
+pub(crate) fn ghost_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let checked = r
+        .button
+        .body(ButtonQuery::flat().state(WidgetState::CHECKED));
+    let Some(color) =
+        state_stroke_color(&checked, "button.body(CHECKED; variant=Flat).stroke.color")?
+    else {
+        return Ok(StyleRefinement::default());
+    };
+    let mut style = geometry::toolbar_button_rest_from(
+        true,
+        stroke_width(&checked, "button.body(CHECKED; variant=Flat).stroke.width")?,
+        padding_of(&r.button.body(WidgetState::NONE)),
+    );
+    style.background = None;
+    Ok(style.border_color(color))
+}
+
 #[cfg(test)]
 mod tests {
     use gpui::{AbsoluteLength, TestAppContext};

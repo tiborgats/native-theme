@@ -1998,9 +1998,16 @@ pub(crate) fn panel_toggle(
     // Selected, it is not refined at rest: upstream replays the refinement
     // over the selected style (button/button.rs, RenderOnce for Button), so
     // `ghost_button_rest`'s transparent fill would hide the selected one, and
-    // a selected Button takes no hover or press style to outline.
+    // a selected Button takes no hover or press style to outline; it is
+    // edged in the checked flat body's stroke instead, where stated.
     let button = if open {
-        button
+        next_native_info(
+            button,
+            cx,
+            next::geometry::ghost_button_checked,
+            "ghost_button_checked",
+            &mut button_info,
+        )
     } else {
         ButtonKind::Ghost.at_rest(button, cx, &mut button_info)
     };

@@ -5246,6 +5246,36 @@ fn within(inner: Bounds<Pixels>, outer: Bounds<Pixels>) -> bool {
         && inner.bottom() <= outer.bottom() + slack
 }
 
+/// The side-panel toggle, selected while the panel is shown, is edged in the
+/// checked flat button's pen kde-breeze states,
+/// `button.body(CHECKED; variant=Flat).stroke.color`, through
+/// `next::geometry::ghost_button_checked` (N4).
+#[gpui::test]
+fn the_open_side_panel_toggle_is_edged_in_the_checked_flat_pen(cx: &mut TestAppContext) {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    use native_theme_gpui::next::state_stroke_color_of;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let pen = next_theme(&mut cx, &showcase).and_then(|r| {
+        state_stroke_color_of(
+            &r.button
+                .body(ButtonQuery::flat().state(WidgetState::CHECKED)),
+        )
+    });
+    assert!(
+        pen.is_some(),
+        "kde-breeze light states no checked flat pen, so this proves nothing"
+    );
+    let middle = bounds_of(&mut cx, CHROME_STATUS_BAR).center();
+    hover(&mut cx, middle);
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
+        pen,
+        "the open side-panel toggle is not edged in button.body(CHECKED; variant=Flat).stroke.color"
+    );
+}
+
 /// The status bar's side-panel toggle hides the side panel and shows it
 /// again (spec S4), through `ToggleSidePanel`, and is selected while the
 /// panel is shown. Hidden, nothing of the panel is drawn -- no rail -- and

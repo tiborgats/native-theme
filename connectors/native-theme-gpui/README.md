@@ -975,12 +975,14 @@ gives a selected `Button` no hover or press style: it registers its hover and
 active styles only while the Button is not selected (gpui-component 0.10.0
 `src/button/button.rs:733`, `:758`), and replays the caller's refinement over
 its selected style (`:836-842`). So a checked button, the push button
-(`next::geometry::button_checked`) and the toolbar's
-(`next::geometry::toolbar_button_checked`), is drawn in its checked fill,
-label and pen under the pointer and pressed too, and a fill or label the theme
-states for `CHECKED | HOVER` or `CHECKED | PRESSED` (the macOS presets state
-both for the toolbar button) is not drawn; the connector draws nothing of its
-own in its place.
+(`next::geometry::button_checked`), the toolbar's
+(`next::geometry::toolbar_button_checked`) and the flat one's edge
+(`next::geometry::ghost_button_checked`), is drawn in its checked fill,
+label and pen under the pointer and pressed too, and a fill, label or pen the
+theme states for `CHECKED | HOVER` or `CHECKED | PRESSED` (the macOS presets
+state the toolbar button's fills and labels, kde-breeze the flat button's
+hovered Highlight pen) is not drawn; the connector draws nothing of its own in
+its place.
 
 **A toolbar button's icon takes one colour.** gpui-component's `Button` gives
 its icon no colour of its own: an `Icon` is drawn in the colour it is given
