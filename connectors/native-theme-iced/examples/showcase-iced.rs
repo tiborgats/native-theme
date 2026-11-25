@@ -2751,13 +2751,18 @@ impl State {
     /// Apply the accessibility preferences ([`State::preferences`]) at a
     /// change in the dialog: the 0.8.0 theme is resolved again in the
     /// context they give ([`next_context`]) and its iced theme installed,
-    /// and the 0.7.2 theme's pages read them. Where the connector cannot
-    /// build the iced theme of the new resolve, the error is in the banner
-    /// and the installed one stays.
+    /// its icons and spinner loaded again in its colours
+    /// ([`State::reload_icons`]: High contrast can change the window's text
+    /// colour), and the 0.7.2 theme's pages read them. Where the connector
+    /// cannot build the iced theme of the new resolve, the error is in the
+    /// banner and the installed one stays.
     fn apply_preferences(&mut self) {
         let prefs = self.preferences();
         match self.next_install(&self.current_choice.clone(), self.is_dark, &prefs) {
-            Ok(next) => self.keep_next(next),
+            Ok(next) => {
+                self.keep_next(next);
+                self.reload_icons();
+            }
             Err(error) => self.error_message = Some(error),
         }
         self.accessibility = prefs;
@@ -6668,8 +6673,8 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 /// `separator.thickness` thick in [`Line::MenuSeparator`]. The row, its
 /// margins too, has the tools area's `toolbar.bar(NONE).fill` (none, iced's
 /// own container, where unstated), as the bar and the toolbar under it, and no
-/// frame; a menu's panel is `menu.background_color`, framed by the popover's
-/// border (platform-facts §2.6: the popup border is §2.16's); its open title
+/// frame; a menu's panel is `menu.panel(NONE).fill`, framed by
+/// [`menu_frame`]'s stroke ([`menu_bar_style`]); its open title
 /// the bar's current item ([`menu_title`]). The row's sides are
 /// `layout.container_margin`, as
 /// the gpui showcase's, and [`MENU_BAR_PADDING`] where that is unstated: the
@@ -7425,8 +7430,9 @@ fn inspector_tabs(state: &State) -> Element<'_, Message> {
 /// The side panel (spec S2): the theme settings -- Theme, Mode and Icon
 /// theme, each labelled above its drop-down, [`settings_gap`] apart; a
 /// separator; then the inspector's tabs and its content, which fills the rest
-/// of the panel and scrolls. Filled with `sidebar.background_color`,
-/// lettered in `sidebar.font.color`. As the gpui showcase's: where the theme
+/// of the panel and scrolls. Filled with `sidebar.container(NONE).fill`,
+/// lettered in `sidebar.item_label(NONE).color` ([`Surface::SidePanel`]).
+/// As the gpui showcase's: where the theme
 /// states any side of `sidebar.container(NONE).padding`
 /// ([`sidebar_padding`]), the whole panel is padded by it and its content
 /// adds none; where it states no side, `layout.container_margin` pads the
@@ -7707,10 +7713,13 @@ impl RingPart {
 /// ring, none where the part states it has none (`iced_next::part_ring_look`;
 /// spec §2, `FocusIndicator`), the part read at `FOCUS_VISIBLE` for a focus
 /// that followed a key and at `FOCUSED` for another
-/// (`iced_next::focus_rings_with`); the field alone, as iced draws it with
-/// no ring, where the connector maps no ring for the theme
+/// (`iced_next::focus_rings_with`); no ring, as iced draws the field, where
+/// the connector maps no ring for the theme
 /// (`native_theme_iced::next::Unmapped`: the indicator is not a ring, a
-/// stroke is per side or the corners concentric).
+/// stroke is per side or the corners concentric). The field is in the
+/// ring's wrapper either way, so a switch to such a theme keeps the
+/// widget tree's shape and iced keeps the field's state (its focus, its
+/// cursor, its text).
 fn next_focus_ring<'a>(
     r: &native_theme::next::ResolvedTheme,
     part: RingPart,
@@ -7721,7 +7730,7 @@ fn next_focus_ring<'a>(
         |state| iced_next::part_ring_look(r, &part.part(r, state), part.homes(), corner_radius);
     match (look(WidgetState::FOCUSED), look(WidgetState::FOCUS_VISIBLE)) {
         (Ok(look), Ok(key)) => iced_next::focus_rings_with(look, key, field),
-        _ => field.into(),
+        _ => iced_next::focus_rings_with(None, None, field),
     }
 }
 
@@ -33454,6 +33463,37 @@ mod tests {
         }
     }
 
+    /// A change of the preferences, which resolves the 0.8.0 theme again,
+    /// loads the icons and the spinner again from the new resolve
+    /// ([`State::apply_preferences`]): kde-breeze's spinner built from a
+    /// theme spliced 37 px across is, after Reduce motion is switched, the
+    /// new resolve's `spinner.diameter` across.
+    #[test]
+    fn a_preference_change_loads_the_icons_again() -> Result<(), String> {
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        state.icon_set_choice = IconSetChoice::Material;
+        splice_next(&mut state, |r| r.spinner.diameter = 37.0);
+        state.reload_icons();
+        let before = probe_bounds(&mut interface(&state), probes::BASIC_SPINNER);
+        if (before.width - 37.0).abs() > 0.01 {
+            return Err(format!("the spliced spinner is {before:?}, not 37 across"));
+        }
+        let on = !state.accessibility.reduce_motion;
+        state.set_preference(|set| set.reduce_motion = Some(on));
+        let diameter = state.next_resolved.spinner.diameter;
+        if (diameter - 37.0).abs() <= 0.01 {
+            return Err("kde-breeze's spinner is 37 across: this test needs another".into());
+        }
+        let after = probe_bounds(&mut interface(&state), probes::BASIC_SPINNER);
+        if (after.width - diameter).abs() > 0.01 || (after.height - diameter).abs() > 0.01 {
+            return Err(format!(
+                "after the preference change the spinner is {after:?}, not the theme's {diameter} \
+                 across"
+            ));
+        }
+        Ok(())
+    }
+
     /// The Basic page's folder icons, a bundled set's, are drawn in the
     /// installed 0.8.0 theme's `colors.window.foreground` alone: kde-breeze
     /// in the Material set with, on the 0.8.0 theme only, a window text
@@ -40162,6 +40202,44 @@ mod tests {
                 let combination = state.installed_combination().unwrap_or_default();
                 each(&state, &combination, &infos, &json);
             }
+        }
+    }
+
+    /// A field is in the focus ring's wrapper whether the connector maps the
+    /// theme's ring or not ([`next_focus_ring`]): kde-breeze's ring, and the
+    /// same theme with a `Fill` indicator, which iced cannot draw as a ring,
+    /// give one widget tag, not the bare field's, so a switch between such
+    /// themes keeps the tree's shape and iced the field's state.
+    #[test]
+    fn a_field_keeps_the_ring_wrapper_where_no_ring_is_mapped() -> Result<(), String> {
+        use iced::advanced::widget::Tree;
+
+        let state = loaded("kde-breeze", false);
+        let ringed = state.next_shown();
+        if iced_next::ring_look(ringed, 0.0).is_err() {
+            return Err("kde-breeze's ring is unmapped: this test needs a mapped one".into());
+        }
+        let mut fill = ringed.clone();
+        fill.focus_ring.kind = native_theme::next::FocusKind::Fill;
+        if iced_next::ring_look(&fill, 0.0).is_ok() {
+            return Err("a Fill indicator is mapped: this test needs an unmapped one".into());
+        }
+        let field = || iced::widget::text_input::<Message, Theme, iced::Renderer>("", "");
+        let bare: Element<'_, Message> = field().into();
+        let mapped = next_focus_ring(ringed, RingPart::Input, ICED_FIELD_RADIUS, field());
+        let unmapped = next_focus_ring(&fill, RingPart::Input, ICED_FIELD_RADIUS, field());
+        let tag = |element: &Element<'_, Message>| Tree::new(element).tag;
+        if tag(&mapped) == tag(&bare) {
+            return Err("the ring's wrapper has the field's own tag: the test cannot tell".into());
+        }
+        if tag(&unmapped) == tag(&mapped) {
+            Ok(())
+        } else {
+            Err(
+                "with no ring mapped the field is not in the ring's wrapper: a theme switch \
+                 changes the tree's shape and iced resets the field's state"
+                    .into(),
+            )
         }
     }
 

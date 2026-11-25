@@ -1290,8 +1290,10 @@ pub fn ring_look(r: &ResolvedTheme, radius: f32) -> Mapped<Option<RingLook>> {
 
 /// The homes of a focus indicator's fields, which [`Unmapped`] names where
 /// the connector cannot draw one: the global ring's (`focus_ring`), or the
-/// ring a part states of its own (`PartStyle.focus`), read at the part's
-/// focused state.
+/// ring a part states of its own (`PartStyle.focus`), named at the part's
+/// `FOCUSED` state whether the part is read at `FOCUSED` or at
+/// `FOCUS_VISIBLE`, which includes it (spec §3: a query that sets
+/// `FOCUS_VISIBLE` matches the rules on `FOCUSED`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RingHomes {
     /// The indicator's `kind`.
