@@ -15115,6 +15115,48 @@ fn no_bundled_preset_leaves_a_drawn_fill_unmapped() {
     assert!(unmapped.is_empty(), "{unmapped:#?}");
 }
 
+/// The side-panel toggle's checked fill, `button.body(CHECKED; variant=Flat).fill`
+/// (`chrome::toggle_checked`), stated as layers that are all gradients for the flat button
+/// alone, is a drawn fill `demo::drawn_fills_unmapped` reports at its home.
+#[test]
+fn the_toggles_checked_flat_fill_is_a_drawn_fill() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, GradientStop, Paint, PaintLayer, PartPatch, Preset,
+        Theme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let patch = ThemePatch::new().button(
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(WidgetState::CHECKED)
+            .body(PartPatch::new().fill(gradient)),
+    );
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let notes = crate::demo::drawn_fills_unmapped(&r);
+    assert_eq!(
+        notes,
+        vec![native_theme_egui::Note::unmapped(
+            "button.body(CHECKED; variant=Flat).fill"
+        )],
+    );
+    Ok(())
+}
+
 /// A fill the theme states as layers that are all gradients, at a home a showcase drawing site
 /// reads (`tab.indicator(SELECTED).fill`, the selected tab's line) and at one a companion
 /// widget reads (`switch.track(CHECKED).fill`, the switch), is listed under the Theme tab's

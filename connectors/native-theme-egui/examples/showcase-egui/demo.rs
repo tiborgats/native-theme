@@ -1775,7 +1775,8 @@ type DrawnPart = (
 /// Every fill the showcase's own drawing sites read ([`DrawnPart`]): the menu bar
 /// (`chrome::menu_panel`), the selected tab's line (`next_indicator_line`), the Icons page's
 /// skeleton, the toggle's and the edit switch's checked fills (`pages::basic::toggle_on_at`,
-/// `edit_look`), the Basic list's and the table's frames (`list_frame`), their rows and
+/// `edit_look`), the side-panel toggle's, a flat button's (`chrome::toggle_checked`), the Basic
+/// list's and the table's frames (`list_frame`), their rows and
 /// highlights in each state the page draws them in (`RowLook::of`: the window focused or not,
 /// selected or not, and the list's hovered or not; the table's rows are never hovered), and the
 /// table's header, its hovered and pressed sections (`header_section_fill`) and its line.
@@ -1798,6 +1799,10 @@ const DRAWN_FILLS: &[DrawnPart] = {
         ("button.body(NONE).fill", false, |r| r.button.body(S::NONE)),
         ("button.body(CHECKED).fill", true, |r| {
             r.button.body(S::CHECKED)
+        }),
+        ("button.body(CHECKED; variant=Flat).fill", true, |r| {
+            r.button
+                .body(native_theme::next::ButtonQuery::flat().with_state(S::CHECKED))
         }),
         ("toolbar.button(CHECKED).fill", true, |r| {
             r.toolbar.button(S::CHECKED)
