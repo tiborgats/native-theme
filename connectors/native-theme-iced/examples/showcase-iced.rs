@@ -81,7 +81,6 @@ use native_theme::next::{
 use native_theme::theme::FontStyle;
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
-use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
 use native_theme_iced::{AccessibilityPreferences, at_least};
 // The colour-mode picker's rows: its `Display` is the Mode drop-down's and
@@ -8478,12 +8477,18 @@ fn info_inks(r: &native_theme::next::ResolvedTheme) -> (Option<Color>, Option<Co
 }
 
 /// The colour a Widget Info line ends in: its last word, `#` and the hex
-/// `color_to_hex` writes (`#rrggbb`, `#rrggbbaa`), as native-theme's `Rgba`
-/// parses it, which takes the 3- and 4-digit shorthand `#rgb` and `#rgba`
-/// too. A last word without the `#` is no colour, whatever its letters.
+/// `color_to_hex` writes (`#rrggbb`, `#rrggbbaa`), as the 0.8.0 model's
+/// `Color::from_hex` reads it, which takes the 3- and 4-digit shorthand
+/// `#rgb` and `#rgba` too. A last word without the `#` is no colour,
+/// whatever its letters.
 fn hex_color(line: &str) -> Option<Color> {
-    let hex = line.rsplit(' ').next()?.strip_prefix('#')?;
-    hex.parse::<native_theme::color::Rgba>().ok().map(to_color)
+    let hex = line
+        .rsplit(' ')
+        .next()
+        .filter(|word| word.starts_with('#'))?;
+    native_theme::next::Color::from_hex(hex)
+        .ok()
+        .map(next_colour)
 }
 
 // ---------------------------------------------------------------------------
@@ -23854,8 +23859,8 @@ mod tests {
             );
         }
         let mark = "#13579b";
-        let want = match mark.parse::<native_theme::color::Rgba>() {
-            Ok(colour) => to_color(colour).into_rgba8(),
+        let want = match mark.parse::<native_theme::next::Color>() {
+            Ok(colour) => next_colour(colour).into_rgba8(),
             Err(error) => panic!("{error}"),
         };
         // Whether the button is filled with the mark stated at the
@@ -24416,22 +24421,21 @@ mod tests {
         // Theme preset. The entry is the first preset this platform offers
         // that would put a different background on screen, so the assertion
         // is about the installed theme moving and not about which desktop
-        // this runs on.
-        let mode = if state.is_dark {
-            native_theme_iced::ColorMode::Dark
-        } else {
-            native_theme_iced::ColorMode::Light
-        };
+        // this runs on. The expected theme is the one the showcase builds
+        // for the row's choice in the mode shown ([`State::next_install`]);
+        // the row's index is its place among the picker's rows.
+        let (is_dark, prefs) = (state.is_dark, state.preferences());
         let before = theme(state).extended_palette().background.base.color;
-        let chosen = native_theme::theme::Theme::list_presets_for_platform()
-            .iter()
+        let chosen = theme_choices(&state.default_preset)
+            .into_iter()
             .enumerate()
-            .find_map(|(index, info)| {
-                let native = native_theme::theme::Theme::preset(info.key).ok()?;
-                let resolved = native.resolve(mode).ok()?;
-                let built = native_theme_iced::to_theme(&resolved.variant, &native.name);
+            .find_map(|(nth, choice)| {
+                let ThemeChoice::Preset(key) = &choice else {
+                    return None;
+                };
+                let built = state.next_install(&choice, is_dark, &prefs).ok()?.iced;
                 (built.extended_palette().background.base.color != before)
-                    .then(|| (index + 1, info.key.to_string(), built))
+                    .then(|| (nth, key.clone(), built))
             });
         let (nth, preset, expected) = match chosen {
             Some(chosen) => chosen,
@@ -24658,23 +24662,22 @@ mod tests {
     }
 
     /// The icon choice a preset's install derives where the choice follows
-    /// the preset (`default_icon_choice`).
+    /// the preset (`default_icon_choice`): the icons of its 0.8.0 theme in
+    /// the mode `is_dark` names, its icon theme where it states one
+    /// (`icons.theme_explicit`); `None` where the 0.8.0 model has no preset
+    /// `key`.
     fn preset_icon_choice(key: &str, is_dark: bool) -> Option<IconSetChoice> {
-        let mode = if is_dark {
-            native_theme_iced::ColorMode::Dark
+        let ctx = if is_dark {
+            ThemeContext::dark()
         } else {
-            native_theme_iced::ColorMode::Light
+            ThemeContext::light()
         };
-        let resolved = native_theme::theme::Theme::preset(key)
-            .ok()?
-            .resolve(mode)
-            .ok()?;
-        let icon_theme = resolved.icon_theme.map(Cow::into_owned);
+        let icons = native_theme::next::Theme::preset(Preset::from_name(key)?)
+            .resolve(&ctx)
+            .icons;
         Some(default_icon_choice(
-            resolved.icon_set,
-            icon_theme
-                .as_deref()
-                .filter(|_| resolved.icon_theme_explicit),
+            icons.set,
+            icons.theme.as_deref().filter(|_| icons.theme_explicit),
         ))
     }
 
@@ -28820,8 +28823,12 @@ mod tests {
             AppColorMode::Light
         ));
         let unfocused = (
-            Some(to_color(native_theme::Rgba::rgb(0xc2, 0xe0, 0xf5))),
-            Some(to_color(native_theme::Rgba::rgb(0x23, 0x26, 0x29))),
+            Some(next_colour(native_theme::next::Color::from_srgb8(
+                0xc2, 0xe0, 0xf5, 0xff,
+            ))),
+            Some(next_colour(native_theme::next::Color::from_srgb8(
+                0x23, 0x26, 0x29, 0xff,
+            ))),
         );
         let list = (
             drawn_state_fill(&state.next_resolved.list.highlight(WidgetState::SELECTED)),
@@ -29281,9 +29288,9 @@ mod tests {
             // kde-breeze states the hovered fill, Breeze's #d6ecf8 in light.
             if preset == "kde-breeze" {
                 let hovered = header_section_style(&r, true)(&theme, button::Status::Hovered);
-                let want = Some(iced::Background::Color(to_color(native_theme::Rgba::rgb(
-                    0xd6, 0xec, 0xf8,
-                ))));
+                let want = Some(iced::Background::Color(next_colour(
+                    native_theme::next::Color::from_srgb8(0xd6, 0xec, 0xf8, 0xff),
+                )));
                 if hovered.background != want {
                     faults.push(format!(
                         "{preset}: the hovered header section's fill is {:?}, want {want:?}",
@@ -33518,13 +33525,11 @@ mod tests {
     /// colour of `#13579b` draws the large folder icon in it.
     #[test]
     fn the_basic_folder_icons_take_the_0_8_0_text_colour() -> Result<(), String> {
-        let mark = native_theme::color::Rgba::rgb(0x13, 0x57, 0x9b);
+        let mark = native_theme::next::Color::from_srgb8(0x13, 0x57, 0x9b, 0xff);
         let mut state = page_state("kde-breeze", Tab::Basic);
         state.icon_set_choice = IconSetChoice::Material;
         splice_next(&mut state, |r| {
-            r.colors.window.foreground = Some(native_theme::next::Color::from_srgb8(
-                0x13, 0x57, 0x9b, 0xff,
-            ));
+            r.colors.window.foreground = Some(mark);
         });
         state.reload_icons();
         let (image, rects, scale) =
@@ -33614,20 +33619,24 @@ mod tests {
     /// (about 2π seconds after the start) among them: the ink a snapshot of
     /// it shows reaches across `spinner.diameter` (its two farthest pixels at
     /// least the diameter less a stroke apart), and its body is
-    /// `spinner.fill_color`.
+    /// `spinner.color`, on each preset's light 0.8.0 theme, as the
+    /// connector's 0.8.0 spinner draws it (`next::spinner`).
     #[test]
     fn the_spinner_arc_reaches_across_its_diameter() {
         let root =
             std::env::temp_dir().join(format!("showcase-iced-spinner-{}", std::process::id()));
         let pi = std::f32::consts::PI;
         for preset in ["kde-breeze", "material-3", "adwaita"] {
-            let resolved = match native_theme_iced::from_preset(preset, false) {
-                Ok((_, resolved)) => resolved,
-                Err(error) => panic!("{preset}: {error}"),
+            let Some(id) = Preset::from_name(preset) else {
+                panic!("{preset} is no preset of the 0.8.0 model");
             };
+            let resolved = native_theme::next::Theme::preset(id).resolve(&ThemeContext::light());
             let s = &resolved.spinner;
-            let fill = to_color(s.fill_color).into_rgba8();
-            let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::SegoeFluent, None);
+            let fill = next_colour(s.color).into_rgba8();
+            let spinner = match iced_next::spinner(&resolved, IconSet::SegoeFluent, None) {
+                Ok(spinner) => spinner,
+                Err(error) => panic!("{preset}: {}", error.home()),
+            };
             assert!(!spinner.is_indicator(), "{preset}: Segoe has no indicator");
             for (n, elapsed) in [0.0, 0.25, 0.5, 1.0, pi, 2.0 * pi, 6.3, 7.0, 3.0 * pi]
                 .into_iter()
@@ -33694,7 +33703,7 @@ mod tests {
                         .iter()
                         .zip(fill)
                         .all(|(a, b)| a.abs_diff(b) <= 2)),
-                    "{preset} at {elapsed}s: no pixel of the arc is spinner.fill_color"
+                    "{preset} at {elapsed}s: no pixel of the arc is spinner.color"
                 );
             }
         }
@@ -35805,11 +35814,11 @@ mod tests {
     /// that colour. Read from the drawing, not from the state, so a row that
     /// gives a tab the wrong `open` is seen.
     fn drawn_open(state: &mut State) -> BTreeMap<&'static str, bool> {
-        let mark: native_theme::color::Rgba = match "#13579b".parse() {
+        let mark: native_theme::next::Color = match "#13579b".parse() {
             Ok(colour) => colour,
             Err(error) => panic!("{error}"),
         };
-        let want = to_color(mark).into_rgba8();
+        let want = next_colour(mark).into_rgba8();
         let kept = (state.next_resolved.clone(), state.next_inactive.clone());
         for next in [&mut state.next_resolved, &mut state.next_inactive] {
             if let Some(marked) = with_home(next, "tab.tab(SELECTED).fill", "#13579b") {
@@ -37026,11 +37035,11 @@ mod tests {
             rect(&rects, "basic.tabs.two"),
         );
 
-        let fill: native_theme::color::Rgba = match "#13579b".parse() {
+        let fill: native_theme::next::Color = match "#13579b".parse() {
             Ok(colour) => colour,
             Err(error) => panic!("{error}"),
         };
-        let want = to_color(fill).into_rgba8();
+        let want = next_colour(fill).into_rgba8();
         let filled = |image: &image::RgbaImage, tab: Rectangle| {
             let pixels = pixels_in(image, tab, scale);
             let inked = pixels
@@ -37093,7 +37102,7 @@ mod tests {
     }
 
     /// A colour for a splice, from its `#rrggbb`.
-    fn spliced_colour(hex: &str) -> native_theme::color::Rgba {
+    fn spliced_colour(hex: &str) -> native_theme::next::Color {
         match hex.parse() {
             Ok(colour) => colour,
             Err(error) => panic!("{hex}: {error}"),
@@ -37182,7 +37191,7 @@ mod tests {
     #[test]
     fn the_basic_tabs_curve_out_at_the_open_tabs_feet() {
         let fill = spliced_colour("#13579b");
-        let want = to_color(fill).into_rgba8();
+        let want = next_colour(fill).into_rgba8();
         for (open, id) in [(0, "basic.tabs.one"), (1, "basic.tabs.two")] {
             for radius in [Some(4.0), None] {
                 let mut state = curving_out(radius);
@@ -37524,9 +37533,9 @@ mod tests {
         image: &image::RgbaImage,
         rect: Rectangle,
         scale: f32,
-        colour: native_theme::color::Rgba,
+        colour: native_theme::next::Color,
     ) -> (usize, usize) {
-        let want = to_color(colour).into_rgba8();
+        let want = next_colour(colour).into_rgba8();
         let pixels = pixels_in(image, rect, scale);
         let inked = pixels
             .iter()
@@ -38122,7 +38131,7 @@ mod tests {
     fn the_extra_tab_bars_curve_out_at_the_open_tabs_feet() -> Result<(), String> {
         let [open_fill, bar_fill] = ["#13579b", "#579b13"].map(spliced_colour);
         let is = |image: &image::RgbaImage, x: u32, y: u32, colour| {
-            let want = to_color(colour).into_rgba8();
+            let want = next_colour(colour).into_rgba8();
             image
                 .get_pixel_checked(x, y)
                 .is_some_and(|p| p.0.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
@@ -38704,8 +38713,8 @@ mod tests {
             // bar out at the width its limits give, which can pass the
             // bounds it reports for the Tabs.
             let xs = (tabs.x * scale) as u32..image.width();
-            let is = |x: u32, colour: native_theme::color::Rgba| {
-                let want = to_color(colour).into_rgba8();
+            let is = |x: u32, colour: native_theme::next::Color| {
+                let want = next_colour(colour).into_rgba8();
                 x < image.width()
                     && y < image.height()
                     && image
@@ -38893,7 +38902,7 @@ mod tests {
     #[test]
     fn the_extra_card_shows_its_border_at_its_sides() -> Result<(), String> {
         let hex = "#13579b";
-        let want = to_color(spliced_colour(hex));
+        let want = next_colour(spliced_colour(hex));
         let toml = home_toml("card.container(NONE).stroke.color", hex)?;
         for mode in [AppColorMode::Light, AppColorMode::Dark] {
             let mut state = extra_state("kde-breeze", mode);
@@ -40806,8 +40815,8 @@ mod tests {
     fn menu_titles_take_the_bar_fills_and_padding() -> Result<(), String> {
         let fill = |style: &button::Style| style.background.map(|b| format!("{b:?}"));
         let hex = |hex: &str| {
-            hex.parse::<native_theme::color::Rgba>()
-                .map(|c| Some(format!("{:?}", iced::Background::Color(to_color(c)))))
+            hex.parse::<native_theme::next::Color>()
+                .map(|c| Some(format!("{:?}", iced::Background::Color(next_colour(c)))))
                 .map_err(|error| format!("{hex}: {error}"))
         };
         let rows = Padding {
@@ -41194,8 +41203,12 @@ mod tests {
             if preset == "kde-breeze"
                 && want.map(|b| b.color)
                     != Some(styles::composite_over(
-                        to_color(native_theme::color::Rgba::new(0x3d, 0xae, 0xe9, 0xcc)),
-                        to_color(native_theme::color::Rgba::new(0x3d, 0xae, 0xe9, 0x4d)),
+                        next_colour(native_theme::next::Color::from_srgb8(
+                            0x3d, 0xae, 0xe9, 0xcc,
+                        )),
+                        next_colour(native_theme::next::Color::from_srgb8(
+                            0x3d, 0xae, 0xe9, 0x4d,
+                        )),
                     ))
             {
                 failures.push(format!("{label}: the outline is {want:?}"));
@@ -46446,5 +46459,511 @@ thing(0);
         assert!(matches!(next_arrow_handle(r), pick_list::Handle::Static(_)));
         let _: Element<'_, Message> = text("Body").next_body(r).into();
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // the_showcase_reads_no_0_7_2_theme
+    // -----------------------------------------------------------------------
+
+    /// The 0.7.2 model's reads and installs of a theme, which the showcase
+    /// reads through no path other than the 0.8.0 model's
+    /// ([`is_next_path`]), as the gpui showcase's `OLD_MODEL_THEME_READS`
+    /// (`connectors/native-theme-gpui/src/showcase.rs`): the desktop's theme
+    /// (`SystemTheme`, the connector's `from_system` and its `SystemThemeExt`
+    /// install, `to_iced_theme`), a preset loaded or resolved
+    /// (`Theme::preset`, `Theme::from_toml`, the connector's `from_preset`,
+    /// `resolve_with`, `into_resolved`, `ResolutionContext`, the resolved
+    /// `native_theme::Resolved`, `ResolvedTheme` and its `ResolvedFontSpec`),
+    /// its modes (`ThemeMode`, `ColorMode`), the connector's installs of it
+    /// (`to_theme`, `to_theme_in`), and the pipeline's preset guess
+    /// (`platform_preset_name`). Each is matched as a whole path, wherever it
+    /// stands: after `::`, at a crate root, or bare and imported by a `use`.
+    /// What reads no theme is not one: the preset list
+    /// (`Theme::list_presets`, `Theme::list_presets_for_platform`, which
+    /// [`preset_display_name`] reads), `AccessibilityPreferences` (which the
+    /// 0.8.0 context's preferences are, [`preferences_of`]),
+    /// `native_theme::color::Rgba` (the colour the icon loaders' `color_opt`
+    /// takes, which the 0.8.0 icons are loaded with, [`load_all_icons`]) and
+    /// the connector's `to_iced_weight`, a CSS weight as iced's.
+    const OLD_MODEL_THEME_READS: &[&str] = &[
+        "SystemTheme",
+        "SystemThemeExt",
+        "to_iced_theme",
+        "Theme::preset",
+        "Theme::from_toml",
+        "from_preset",
+        "from_system",
+        "resolve_with",
+        "into_resolved",
+        "ResolutionContext",
+        "native_theme::Resolved",
+        "ResolvedTheme",
+        "ResolvedFontSpec",
+        "ThemeMode",
+        "ColorMode",
+        "to_theme",
+        "to_theme_in",
+        "platform_preset_name",
+    ];
+
+    /// The connector's 0.7.2 modules, each with its source: their public
+    /// functions are the 0.7.2 styles and colours ([`old_module_calls`]),
+    /// which the 0.8.0 ones under `next::` replace.
+    const OLD_MODULES: &[(&str, &str)] = &[
+        ("styles", include_str!("../src/styles.rs")),
+        ("aw", include_str!("../src/styles/aw.rs")),
+        ("palette", include_str!("../src/palette.rs")),
+    ];
+
+    /// The public functions of [`OLD_MODULES`] the showcase still calls
+    /// outside `next::`, each one 0.8.0 itself still uses: `composite_over`,
+    /// one colour laid over another, which reads no theme and which the 0.8.0
+    /// styles paint with (`styles::Line`, which `next::styles` takes). The
+    /// modules' types are not refused: `styles::SegmentPosition` is the
+    /// position 0.8.0's `next::styles::segment` takes.
+    const OLD_MODULE_FUNCTIONS_KEPT: &[&str] = &["composite_over"];
+
+    /// Whether `c` can stand in an identifier.
+    fn is_ident_char(c: char) -> bool {
+        c.is_alphanumeric() || c == '_'
+    }
+
+    /// Every offset at which `code` holds `pattern` as a whole: no
+    /// identifier character before a pattern that begins with one, none
+    /// after a pattern that ends with one.
+    fn whole_matches(code: &str, pattern: &str) -> Vec<usize> {
+        let starts_ident = pattern.chars().next().is_some_and(is_ident_char);
+        let ends_ident = pattern.chars().next_back().is_some_and(is_ident_char);
+        code.match_indices(pattern)
+            .map(|(at, _)| at)
+            .filter(|&at| {
+                let before_ok = !starts_ident
+                    || code
+                        .get(..at)
+                        .and_then(|t| t.chars().next_back())
+                        .is_none_or(|c| !is_ident_char(c));
+                let after_ok = !ends_ident
+                    || code
+                        .get(at + pattern.len()..)
+                        .and_then(|t| t.chars().next())
+                        .is_none_or(|c| !is_ident_char(c));
+                before_ok && after_ok
+            })
+            .collect()
+    }
+
+    /// One name a `use` declaration brings in: the declaration's span, the
+    /// item's full path and the name it binds.
+    struct UseItem {
+        span: std::ops::Range<usize>,
+        path: Vec<String>,
+        binds: String,
+    }
+
+    /// Every item of every `use` declaration in `code`, in source order.
+    fn use_items(code: &str) -> Vec<UseItem> {
+        let mut out = Vec::new();
+        for at in whole_matches(code, "use") {
+            let head = code.get(..at).unwrap_or("").trim_end_matches([' ', '\t']);
+            let head_ok = head.ends_with("pub")
+                || head
+                    .chars()
+                    .next_back()
+                    .is_none_or(|c| matches!(c, '\n' | ';' | '{' | '}' | ')'));
+            let tail = code.get(at + "use".len()..).unwrap_or("");
+            if !head_ok || !tail.starts_with([' ', '\n']) {
+                continue;
+            }
+            let Some(len) = tail.find(';') else { continue };
+            let tree = tail
+                .get(..len)
+                .unwrap_or("")
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ");
+            let span = at..at + "use".len() + len;
+            let mut items = Vec::new();
+            use_tree_items(&tree, &[], &mut items);
+            out.extend(items.into_iter().map(|(path, binds)| UseItem {
+                span: span.clone(),
+                path,
+                binds,
+            }));
+        }
+        out
+    }
+
+    /// The parts of `tree`, a `use` tree, split at its top-level commas and
+    /// trimmed.
+    fn top_level_parts(tree: &str) -> Vec<&str> {
+        let mut parts = Vec::new();
+        let mut depth = 0usize;
+        let mut from = 0usize;
+        for (ix, c) in tree.char_indices() {
+            match c {
+                '{' => depth += 1,
+                '}' => depth = depth.saturating_sub(1),
+                ',' if depth == 0 => {
+                    parts.push(tree.get(from..ix).unwrap_or(""));
+                    from = ix + 1;
+                }
+                _ => {}
+            }
+        }
+        parts.push(tree.get(from..).unwrap_or(""));
+        parts
+            .into_iter()
+            .map(str::trim)
+            .filter(|p| !p.is_empty())
+            .collect()
+    }
+
+    /// The segments of `path`, a written path such as `a :: b::c`.
+    fn path_segments(path: &str) -> impl Iterator<Item = String> + '_ {
+        path.split("::")
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+    }
+
+    /// The (full path, bound name) of every item of `tree`, under `prefix`.
+    fn use_tree_items(tree: &str, prefix: &[String], out: &mut Vec<(Vec<String>, String)>) {
+        for part in top_level_parts(tree) {
+            let part = part.trim_start_matches("::");
+            if let Some(open) = part.find('{') {
+                let mut path = prefix.to_vec();
+                path.extend(path_segments(part.get(..open).unwrap_or("")));
+                let inner = part
+                    .get(open + 1..)
+                    .and_then(|t| t.trim_end().strip_suffix('}'))
+                    .unwrap_or("");
+                use_tree_items(inner, &path, out);
+                continue;
+            }
+            let (named, alias) = match part.split_once(" as ") {
+                Some((named, alias)) => (named, Some(alias.trim())),
+                None => (part, None),
+            };
+            let mut path = prefix.to_vec();
+            path.extend(path_segments(named));
+            if path.last().is_some_and(|leaf| leaf == "self") {
+                path.pop();
+            }
+            let binds = alias
+                .map(str::to_string)
+                .or_else(|| path.last().cloned())
+                .unwrap_or_default();
+            out.push((path, binds));
+        }
+    }
+
+    /// Whether `path` is the 0.8.0 model's -- it passes through a `next`
+    /// module (`native_theme::next`, `native_theme_iced::next`, or the
+    /// latter as the showcase imports it, `iced_next`) -- or iced's own,
+    /// whose `Theme` the 0.7.2 model's name shares.
+    fn is_next_path<S: AsRef<str>>(path: &[S]) -> bool {
+        path.iter()
+            .any(|s| matches!(s.as_ref(), "next" | "iced_next"))
+            || path.first().is_some_and(|s| s.as_ref() == "iced")
+    }
+
+    /// The identifier `s` ends with.
+    fn trailing_ident(s: &str) -> &str {
+        let start = s
+            .char_indices()
+            .rfind(|(_, c)| !is_ident_char(*c))
+            .map(|(ix, c)| ix + c.len_utf8())
+            .unwrap_or_default();
+        s.get(start..).unwrap_or("")
+    }
+
+    /// The path written right before offset `at` of `code`, as segments: the
+    /// `a::b::` that qualifies whatever begins at `at`.
+    fn written_qualifier(code: &str, at: usize) -> Vec<String> {
+        let mut head = code.get(..at).unwrap_or("");
+        let mut segments = Vec::new();
+        while let Some(rest) = head.strip_suffix("::") {
+            let segment = trailing_ident(rest);
+            if segment.is_empty() {
+                break;
+            }
+            segments.push(segment.to_string());
+            head = rest
+                .get(..rest.len().saturating_sub(segment.len()))
+                .unwrap_or("");
+        }
+        segments.reverse();
+        segments
+    }
+
+    /// The full path of the name written at offset `at` of `code` as
+    /// `written`: its written qualifier, and its first segment resolved
+    /// through the nearest `use` before it that binds that name.
+    fn full_path(code: &str, uses: &[UseItem], at: usize, written: &str) -> Vec<String> {
+        let mut path = written_qualifier(code, at);
+        path.extend(written.split("::").map(str::to_string));
+        let first = path.first().cloned().unwrap_or_default();
+        match uses
+            .iter()
+            .rfind(|item| item.span.end <= at && item.binds == first)
+        {
+            Some(item) => {
+                let mut full = item.path.clone();
+                full.extend(path.into_iter().skip(1));
+                full
+            }
+            None => path,
+        }
+    }
+
+    /// The argument list of the call whose `(` is at offset `open` of
+    /// `code`, up to the `)` that closes it, trimmed; `None` where none
+    /// closes it.
+    fn call_arguments(code: &str, open: usize) -> Option<&str> {
+        let mut depth = 0usize;
+        for (ix, c) in code.get(open..)?.char_indices() {
+            match c {
+                '(' => depth += 1,
+                ')' => {
+                    depth = depth.saturating_sub(1);
+                    if depth == 0 {
+                        return code.get(open + 1..open + ix).map(str::trim);
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// The public functions of each of [`OLD_MODULES`] but
+    /// [`OLD_MODULE_FUNCTIONS_KEPT`], by module.
+    fn old_module_functions() -> Vec<(&'static str, Vec<String>)> {
+        OLD_MODULES
+            .iter()
+            .map(|(module, source)| {
+                let names = public_functions(source)
+                    .into_iter()
+                    .filter(|name| !OLD_MODULE_FUNCTIONS_KEPT.contains(&name.as_str()))
+                    .collect();
+                (*module, names)
+            })
+            .collect()
+    }
+
+    /// Every call or import in `code` of a function of `modules`, the
+    /// connector's 0.7.2 styles and colours ([`old_module_functions`]),
+    /// through a path that is not 0.8.0's, as (offset, what it reads): a
+    /// written `<module>::<function>`, and a `use` of one or of a whole
+    /// module's items (`::*`).
+    fn old_module_calls(
+        code: &str,
+        uses: &[UseItem],
+        modules: &[(&str, Vec<String>)],
+    ) -> Vec<(usize, String)> {
+        let mut findings = Vec::new();
+        for (module, names) in modules {
+            for name in names {
+                let written = format!("{module}::{name}");
+                for at in whole_matches(code, &written) {
+                    let in_use = uses.iter().any(|item| item.span.contains(&at));
+                    if !in_use && !is_next_path(&full_path(code, uses, at, &written)) {
+                        findings.push((at, format!("calls the 0.7.2 {written}")));
+                    }
+                }
+            }
+        }
+        for item in uses {
+            if is_next_path(&item.path) {
+                continue;
+            }
+            let module = item
+                .path
+                .len()
+                .checked_sub(2)
+                .and_then(|ix| item.path.get(ix));
+            let leaf = item.path.last().map_or("", String::as_str);
+            let imported = modules.iter().any(|(name, names)| {
+                module.is_some_and(|m| m == name)
+                    && (leaf == "*" || names.iter().any(|n| n == leaf))
+            });
+            if imported {
+                findings.push((
+                    item.span.start,
+                    format!("imports the 0.7.2 {}", item.path.join("::")),
+                ));
+            }
+        }
+        findings
+    }
+
+    /// What `code`, the showcase's code, reads of the 0.7.2 model, as
+    /// (offset, what it reads): a name of [`OLD_MODEL_THEME_READS`] through
+    /// a path that is not 0.8.0's, in code or imported by a `use` (with the
+    /// first segment of a longer name, as `use native_theme::theme::Theme;`
+    /// for `Theme::preset`); a function of the connector's 0.7.2 styles and
+    /// colours of `modules` ([`old_module_calls`]); and a `.resolve(` that
+    /// is 0.7.2's. 0.8.0's `Theme::resolve` takes a `&ThemeContext`
+    /// (`native-theme/src/next/preset.rs`): a `&` expression, or `ctx`,
+    /// the `&ThemeContext` [`NextInstall::new`] is handed; 0.7.2's a
+    /// `ColorMode` (`ThemeSpec::resolve`, `native-theme/src/model/mod.rs`)
+    /// or nothing (`ThemeVariant::resolve`, `native-theme/src/resolve/mod.rs`):
+    /// an argument that is neither is 0.7.2's.
+    fn old_model_reads(code: &str, modules: &[(&str, Vec<String>)]) -> Vec<(usize, String)> {
+        let uses = use_items(code);
+        let in_use = |at: usize| uses.iter().any(|item| item.span.contains(&at));
+        let mut findings = Vec::new();
+        for name in OLD_MODEL_THEME_READS {
+            for at in whole_matches(code, name) {
+                if !in_use(at) && !is_next_path(&full_path(code, &uses, at, name)) {
+                    findings.push((at, format!("reads or installs a 0.7.2 theme, {name}")));
+                }
+            }
+        }
+        for item in &uses {
+            if is_next_path(&item.path) {
+                continue;
+            }
+            let joined = item.path.join("::");
+            let leaf = item.path.last().map_or("", String::as_str);
+            let imports_a_read = OLD_MODEL_THEME_READS.iter().any(|name| {
+                let segments: Vec<&str> = name.split("::").collect();
+                let ends_with_it = item.path.len() >= segments.len()
+                    && item
+                        .path
+                        .iter()
+                        .rev()
+                        .zip(segments.iter().rev())
+                        .all(|(have, want)| have == want);
+                let its_type = segments.len() > 1
+                    && segments.first().is_some_and(|first| {
+                        *first == leaf && first.starts_with(char::is_uppercase)
+                    });
+                ends_with_it || its_type
+            });
+            if imports_a_read {
+                findings.push((item.span.start, format!("imports a 0.7.2 name, {joined}")));
+            }
+        }
+        findings.extend(old_module_calls(code, &uses, modules));
+        for (at, m) in code.match_indices(".resolve(") {
+            let open = at + m.len() - "(".len();
+            let argument = call_arguments(code, open).unwrap_or("");
+            if !argument.starts_with('&') && argument != "ctx" {
+                findings.push((
+                    at,
+                    "resolves a 0.7.2 theme, .resolve( without a &ThemeContext".to_string(),
+                ));
+            }
+        }
+        findings.sort();
+        findings
+    }
+
+    /// The iced showcase reads no 0.7.2 theme, as the gpui showcase's
+    /// `the_showcase_reads_no_0_7_2_theme`: its code, the tests included,
+    /// names no read or install of [`OLD_MODEL_THEME_READS`], calls no 0.7.2
+    /// style or colour of the connector but [`OLD_MODULE_FUNCTIONS_KEPT`],
+    /// and resolves no 0.7.2 theme ([`old_model_reads`]). Comments and
+    /// strings are not read (`strip_comments_and_strings`): a note may name
+    /// what the 0.7.2 model did.
+    #[test]
+    fn the_showcase_reads_no_0_7_2_theme() {
+        let modules = old_module_functions();
+        for (module, names) in &modules {
+            assert!(
+                !names.is_empty(),
+                "the 0.7.2 {module} declares no public function, so this test would pass vacuously"
+            );
+        }
+        let code = strip_comments_and_strings(SHOWCASE);
+        let findings: Vec<String> = old_model_reads(&code, &modules)
+            .into_iter()
+            .map(|(at, what)| {
+                let line = code
+                    .get(..at)
+                    .map(|s| s.matches('\n').count() + 1)
+                    .unwrap_or_default();
+                format!("showcase-iced.rs:{line}: {what}")
+            })
+            .collect();
+        assert!(
+            findings.is_empty(),
+            "the iced showcase still reads the 0.7.2 theme:\n  {}",
+            findings.join("\n  ")
+        );
+    }
+
+    /// [`old_model_reads`] refuses each 0.7.2 read, however it is written,
+    /// and takes its 0.8.0 namesake and what reads no theme: one refused and
+    /// one taken snippet per pattern.
+    #[test]
+    fn old_model_reads_refuses_each_pattern() {
+        let modules = old_module_functions();
+        let refused = [
+            "let t = native_theme::Theme::preset(\"x\")?;",
+            "use native_theme::theme::Theme;\nfn f() { let t = Theme::preset(\"x\"); }",
+            "use native_theme::{AccessibilityPreferences, theme::Theme};",
+            "use native_theme::theme::Theme as Old;",
+            "let t = native_theme::theme::Theme::from_toml(s);",
+            "let t = native_theme_iced::from_preset(p, false);",
+            "let l = native_theme_iced::from_system();",
+            "let s = native_theme::SystemTheme::from_system();",
+            "use native_theme_iced::SystemThemeExt as _;",
+            "let l = system.to_iced_theme();",
+            "let r = v.resolve_with(m, &c);",
+            "let r = v.into_resolved(c);",
+            "let c = native_theme::ResolutionContext::default();",
+            "fn f(r: &native_theme::Resolved) {}",
+            "fn f(r: &native_theme::ResolvedTheme) {}",
+            "fn f(r: &native_theme_iced::ResolvedTheme) {}",
+            "fn f(r: &ResolvedTheme) {}",
+            "fn f(f: &native_theme::theme::ResolvedFontSpec) {}",
+            "let m = native_theme::ThemeMode::default();",
+            "let m = native_theme_iced::ColorMode::Dark;",
+            "let t = native_theme_iced::to_theme(&r, \"x\");",
+            "let t = native_theme_iced::to_theme_in(&r, \"x\", m);",
+            "let p = native_theme::platform_preset_name();",
+            "let r = theme.resolve(mode);",
+            "variant.resolve();",
+            "use native_theme_iced::styles;\nfn f() { let s = styles::button(&r, k); }",
+            "let s = native_theme_iced::styles::toggler(&r);",
+            "let c = native_theme_iced::styles::aw::card(&r);",
+            "use native_theme_iced::styles::*;",
+            "use native_theme_iced::palette::to_color;",
+            "let p = native_theme_iced::palette::to_palette(&r);",
+        ];
+        for code in refused {
+            assert!(
+                !old_model_reads(code, &modules).is_empty(),
+                "takes a 0.7.2 read: {code}"
+            );
+        }
+        let taken = [
+            "let t = native_theme::next::Theme::preset(p);",
+            "use native_theme::next::{Preset, Theme};\nfn f() { let t = Theme::preset(p); }",
+            "let t = native_theme::next::Theme::from_system();",
+            "fn f(r: &native_theme::next::ResolvedTheme) {}",
+            "use native_theme_iced::next as iced_next;\nfn f() { let t = iced_next::to_theme(&r); }",
+            "let s = native_theme_iced::next::styles::button(&r, k);",
+            "use native_theme_iced::next as iced_next;\nfn f() { let c = iced_next::styles::aw::card(&r); }",
+            "use iced_next::styles as s;\nfn f() { let c = s::aw::card(&r); }",
+            "use iced::{Color, Theme};\nfn f(t: &Theme) {}",
+            "let r = theme.resolve(ctx);",
+            "let r = system\n    .resolve(\n        &ctx);",
+            "use native_theme_iced::styles;\nfn f() { let c = styles::composite_over(a, b); }",
+            "use native_theme_iced::styles;\nfn f() { let p = styles::SegmentPosition::of(0, 3); }",
+            "let presets = native_theme::theme::Theme::list_presets();",
+            "let p = native_theme::AccessibilityPreferences::default();",
+            "let c = native_theme::color::Rgba::rgb(1, 2, 3);",
+            "let m = AppColorMode::Dark;",
+        ];
+        for code in taken {
+            assert_eq!(
+                old_model_reads(code, &modules),
+                Vec::new(),
+                "refuses a 0.8.0 read or what reads no theme: {code}"
+            );
+        }
     }
 }
