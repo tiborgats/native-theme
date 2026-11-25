@@ -912,7 +912,7 @@ mod tests {
     /// A whole controls pass's output: in the controls sheet a pressed
     /// target, a hovered one and one neither, in the toolbar sheet a
     /// pressed one, in the toolbar items sheet its three items and in the
-    /// toolbar states sheet its five specimens.
+    /// toolbar states sheet its nine specimens.
     fn controls_doc() -> Result<toml::Table, String> {
         let mut text = sheet_text(
             CONTROLS,
@@ -939,6 +939,10 @@ mod tests {
                 ("toolbar_toggle_on", true, true),
                 ("toolbar_toggle_off", false, false),
                 ("toolbar_image", true, false),
+                ("toolbar_image_on", true, true),
+                ("toolbar_image_disabled", false, false),
+                ("toolbar_titled_image_on", true, true),
+                ("toolbar_titled_image_disabled", false, false),
             ],
         ));
         text.parse().map_err(|e: toml::de::Error| e.to_string())
@@ -1281,12 +1285,16 @@ mod tests {
     #[test]
     fn a_toolbar_states_sheet_missing_or_in_error_is_a_failure() -> Result<(), String> {
         type Edit<'a> = &'a dyn Fn(&mut toml::Table) -> Result<(), String>;
-        const SPECIMENS: [&str; 5] = [
+        const SPECIMENS: [&str; 9] = [
             "toolbar_button",
             "toolbar_button_disabled",
             "toolbar_toggle_on",
             "toolbar_toggle_off",
             "toolbar_image",
+            "toolbar_image_on",
+            "toolbar_image_disabled",
+            "toolbar_titled_image_on",
+            "toolbar_titled_image_disabled",
         ];
         let in_error = |name: &'static str| {
             move |d: &mut toml::Table| {

@@ -12,7 +12,8 @@
 //! items in its toolbar, the selected one, an unselected one and a disabled
 //! one; then the toolbar states sheet, the toolbar button again over an
 //! opaque title bar beside itself disabled, as a toggle on and off, and with
-//! an image and no title. Every state is captured over the window's own background and
+//! an image and no title or beside its title, those on and disabled too.
+//! Every state is captured over the window's own background and
 //! the three opaque backdrops, so each state's layer is solved
 //! ([`super::layer`]). The analysis reads each control's part from the
 //! layers at the rects this pass records.
@@ -94,29 +95,30 @@ const TOOLBAR_STATES_SHEET_ID: &str = "NativeThemeOsProbeControlsToolbarStates";
 
 /// One of the toolbar states sheet's specimens: the controls sheet's
 /// toolbar button (`toolbar_bezel_button`) of `button_type`, set on or off,
-/// enabled or not, and given the button pass's symbol image in place of its
-/// title where `image` is true.
+/// enabled or not, and given the button pass's symbol image at `image`'s
+/// position where it is set: in place of its title at `ImageOnly` (the title
+/// set empty), beside it at `ImageLeading`.
 struct Specimen {
     name: &'static str,
     setup: &'static str,
     button_type: NSButtonType,
     on: bool,
     enabled: bool,
-    image: bool,
+    image: Option<NSCellImagePosition>,
     hover: bool,
     press: bool,
 }
 
 /// The toolbar states sheet's specimens, left to right, each the view of an
 /// item of its own, a flexible space item between each two.
-const TOOLBAR_SPECIMENS: [Specimen; 5] = [
+const TOOLBAR_SPECIMENS: [Specimen; 9] = [
     Specimen {
         name: "toolbar_button",
         setup: "NSButton, NSButtonTypeMomentaryPushIn, NSBezelStyleToolbar, the view of an NSToolbarItem (the controls sheet's toolbar button)",
         button_type: NSButtonType::MomentaryPushIn,
         on: false,
         enabled: true,
-        image: false,
+        image: None,
         hover: true,
         press: true,
     },
@@ -126,7 +128,7 @@ const TOOLBAR_SPECIMENS: [Specimen; 5] = [
         button_type: NSButtonType::MomentaryPushIn,
         on: false,
         enabled: false,
-        image: false,
+        image: None,
         hover: false,
         press: false,
     },
@@ -136,7 +138,7 @@ const TOOLBAR_SPECIMENS: [Specimen; 5] = [
         button_type: NSButtonType::PushOnPushOff,
         on: true,
         enabled: true,
-        image: false,
+        image: None,
         hover: true,
         press: true,
     },
@@ -146,7 +148,7 @@ const TOOLBAR_SPECIMENS: [Specimen; 5] = [
         button_type: NSButtonType::PushOnPushOff,
         on: false,
         enabled: true,
-        image: false,
+        image: None,
         hover: false,
         press: false,
     },
@@ -156,8 +158,48 @@ const TOOLBAR_SPECIMENS: [Specimen; 5] = [
         button_type: NSButtonType::MomentaryPushIn,
         on: false,
         enabled: true,
-        image: true,
+        image: Some(NSCellImagePosition::ImageOnly),
         hover: true,
+        press: false,
+    },
+    Specimen {
+        name: "toolbar_image_on",
+        setup: "NSButton, NSButtonTypePushOnPushOff, NSBezelStyleToolbar, state on, the symbol image, empty title, NSImageOnly, the view of an NSToolbarItem",
+        button_type: NSButtonType::PushOnPushOff,
+        on: true,
+        enabled: true,
+        image: Some(NSCellImagePosition::ImageOnly),
+        hover: true,
+        press: true,
+    },
+    Specimen {
+        name: "toolbar_image_disabled",
+        setup: "NSButton, NSButtonTypeMomentaryPushIn, NSBezelStyleToolbar, setEnabled: NO, the symbol image, empty title, NSImageOnly, the view of an NSToolbarItem",
+        button_type: NSButtonType::MomentaryPushIn,
+        on: false,
+        enabled: false,
+        image: Some(NSCellImagePosition::ImageOnly),
+        hover: false,
+        press: false,
+    },
+    Specimen {
+        name: "toolbar_titled_image_on",
+        setup: "NSButton, NSButtonTypePushOnPushOff, NSBezelStyleToolbar, state on, the symbol image beside the title, NSImageLeading, the view of an NSToolbarItem",
+        button_type: NSButtonType::PushOnPushOff,
+        on: true,
+        enabled: true,
+        image: Some(NSCellImagePosition::ImageLeading),
+        hover: true,
+        press: true,
+    },
+    Specimen {
+        name: "toolbar_titled_image_disabled",
+        setup: "NSButton, NSButtonTypeMomentaryPushIn, NSBezelStyleToolbar, setEnabled: NO, the symbol image beside the title, NSImageLeading, the view of an NSToolbarItem",
+        button_type: NSButtonType::MomentaryPushIn,
+        on: false,
+        enabled: false,
+        image: Some(NSCellImagePosition::ImageLeading),
+        hover: false,
         press: false,
     },
 ];
@@ -402,7 +444,8 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
 
 /// The toolbar states sheet: the controls sheet's toolbar button beside
 /// itself disabled, as a toggle on and off, and with the symbol image in
-/// place of its title, in a toolbar over an opaque title bar as the
+/// place of its title or beside it, on and disabled too, in a toolbar over
+/// an opaque title bar as the
 /// controls sheet's, captured as the toolbar sheet is.
 fn toolbar_states_sheet_table(pass: &Pass<'_>) -> Table {
     let mut t = Table::new();
@@ -2617,10 +2660,12 @@ fn build_toolbar_states_sheet(pass: &Pass<'_>) -> Result<StatesSheet, String> {
     for (i, specimen) in TOOLBAR_SPECIMENS.iter().enumerate() {
         let button = toolbar_bezel_button(mtm, specimen.button_type);
         button.setState(state_value(specimen.on));
-        if specimen.image {
-            button.setTitle(&ns(""));
+        if let Some(position) = specimen.image {
+            if position == NSCellImagePosition::ImageOnly {
+                button.setTitle(&ns(""));
+            }
             button.setImage(Some(&image));
-            button.setImagePosition(NSCellImagePosition::ImageOnly);
+            button.setImagePosition(position);
             button.sizeToFit();
         }
         if i > 0 {
@@ -2970,7 +3015,7 @@ fn toolbar_states_method_text() -> String {
         })
         .collect();
     format!(
-        "after the toolbar items sheet's window is closed, one titled NSWindow ({} x {} pt content from {}, empty title) made as the controls sheet's, its title bar opaque and its content view below it (styleMask_fullSizeContentView and titlebarAppearsTransparent read back, both false), so the toolbar lies over no backdrop, as the controls sheet's; its NSToolbar (identifier {TOOLBAR_STATES_SHEET_ID}) holds, left to right, one item per specimen, each the item the controls sheet's toolbar button is given (autovalidates NO) whose view is an NSButton made as that one (setButtonType:, NSBezelStyleToolbar, \"{TITLE}\", sizeToFit), and a flexible space item (NSToolbarFlexibleSpaceItemIdentifier) between each two: {}; for the image specimen the title then set empty, the button pass's symbol image set, imagePosition NSImageOnly and sizeToFit again; the disabled specimen's item and button setEnabled: NO; per appearance specimens.<target>: each button's state and isEnabled read before the states are captured; the window made key as a button sheet's; per appearance normal, highlighted (highlight: YES on every specimen's button), hovered and pressed, each over every backdrop, as the toolbar sheet's (targets.<target>: its part the button's bounds; settled captures, each capture's backdrop); after each press the pressed specimen set back to its state and that read back (state_after_reset); its captures in <appearance>/controls_toolbar_states/; each layer solved from the black and white captures as the button pass's (layer_method)",
+        "after the toolbar items sheet's window is closed, one titled NSWindow ({} x {} pt content from {}, empty title) made as the controls sheet's, its title bar opaque and its content view below it (styleMask_fullSizeContentView and titlebarAppearsTransparent read back, both false), so the toolbar lies over no backdrop, as the controls sheet's; its NSToolbar (identifier {TOOLBAR_STATES_SHEET_ID}) holds, left to right, one item per specimen, each the item the controls sheet's toolbar button is given (autovalidates NO) whose view is an NSButton made as that one (setButtonType:, NSBezelStyleToolbar, \"{TITLE}\", sizeToFit), and a flexible space item (NSToolbarFlexibleSpaceItemIdentifier) between each two: {}; for an NSImageOnly specimen the title then set empty, and for each image specimen the button pass's symbol image set, imagePosition set (NSImageOnly, or NSImageLeading beside the title) and sizeToFit again; each disabled specimen's item and button setEnabled: NO; per appearance specimens.<target>: each button's state and isEnabled read before the states are captured; the window made key as a button sheet's; per appearance normal, highlighted (highlight: YES on every specimen's button), hovered and pressed, each over every backdrop, as the toolbar sheet's (targets.<target>: its part the button's bounds; settled captures, each capture's backdrop); after each press the pressed specimen set back to its state and that read back (state_after_reset); its captures in <appearance>/controls_toolbar_states/; each layer solved from the black and white captures as the button pass's (layer_method)",
         TOOLBAR_CONTENT.width,
         TOOLBAR_CONTENT.height,
         point_text(CONTROLS_ORIGIN),
