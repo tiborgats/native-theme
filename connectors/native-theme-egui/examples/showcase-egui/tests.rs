@@ -1105,6 +1105,86 @@ fn toggle_frame_fills(harness: &Harness<'_, App>) -> Result<Vec<egui::Color32>, 
         .collect())
 }
 
+/// The open side panel's toggle under kde-breeze light, which states the flat button's checked
+/// outline (`button.body(CHECKED; variant=Flat).stroke`, ButtonText's frame pen), is outlined
+/// in it, not left unframed as the flat button at rest.
+#[test]
+fn the_open_toggle_is_outlined_in_the_checked_flat_pen() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    harness.run_steps(SETTLE);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?;
+    let pen = crate::demo::state_pen(
+        &r.button
+            .body(ButtonQuery::flat().with_state(WidgetState::CHECKED)),
+    )
+    .ok_or("kde-breeze states no checked flat outline")?;
+    assert!(pen.width > 0.0 && pen.color.a() > 0, "{pen:?}");
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some("chrome.status_bar.toggle"))
+        .map(|record| record.rect)
+        .ok_or("the toggle records nothing")?;
+    let strokes: Vec<egui::Stroke> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) if shape.rect == rect => Some(shape.stroke),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(strokes, [pen], "the toggle's frame at {rect:?}");
+    Ok(())
+}
+
+/// The side-panel toggle's icon takes the colour the theme states for the flat button's icon
+/// in the state it is in, `button.icon(CHECKED; variant=Flat).color` while on and
+/// `button.icon(NONE; variant=Flat).color` while off; kde-breeze states none, and the icon is
+/// not lettered in the checked label's colour.
+#[test]
+fn the_toggles_icon_takes_the_stated_flat_icon_colour() {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, Preset, Theme, ThemeContext, ThemePatch,
+        WidgetState,
+    };
+    let stock = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    assert_eq!(crate::chrome::toggle_icon_colour(Some(&stock), true), None);
+    assert_eq!(crate::chrome::toggle_icon_colour(Some(&stock), false), None);
+    assert_eq!(crate::chrome::toggle_icon_colour(None, true), None);
+    let [on, off] = [
+        Color::new(1.0, 0.0, 1.0, 1.0),
+        Color::new(0.0, 1.0, 0.0, 1.0),
+    ];
+    let rule = |state: WidgetState, colour: Color| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .icon(IconPatch::new().color(colour))
+    };
+    let patch = ThemePatch::new()
+        .button(rule(WidgetState::NONE, off))
+        .button(rule(WidgetState::CHECKED, on));
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        crate::chrome::toggle_icon_colour(Some(&r), true),
+        Some(native_theme_egui::next::to_color32(on))
+    );
+    assert_eq!(
+        crate::chrome::toggle_icon_colour(Some(&r), false),
+        Some(native_theme_egui::next::to_color32(off))
+    );
+}
+
 /// The side-panel toggle while the panel is open, under a theme that states no checked flat
 /// fill or label (macos-monterey light states neither), is egui's own selected button
 /// (`Button::selected`, spec §10, rule 0a): its frame is filled as the suggested-action button

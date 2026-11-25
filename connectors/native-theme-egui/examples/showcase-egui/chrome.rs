@@ -513,6 +513,50 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
     )
 }
 
+/// The side-panel toggle's outline while on, egui's inactive, hovered and active entries: the
+/// pen `button.body(CHECKED; variant=Flat).stroke` where a rule states it for `CHECKED`, and
+/// then under the pointer and pressed `(CHECKED | HOVER)`'s and `(CHECKED | PRESSED)`'s, each
+/// the theme's answer for that state (spec §10, rule 0); all `None` where no rule states it for
+/// `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
+fn toggle_checked_pens(r: Option<&native_theme::next::ResolvedTheme>) -> [Option<egui::Stroke>; 3] {
+    let Some(r) = r else {
+        return [None; 3];
+    };
+    let at = |state| {
+        r.button
+            .body(native_theme::next::ButtonQuery::flat().with_state(state))
+    };
+    let Some(rest) = demo::state_pen(&at(WidgetState::CHECKED)) else {
+        return [None; 3];
+    };
+    [
+        Some(rest),
+        demo::state_pen(&at(WidgetState::CHECKED | WidgetState::HOVER)),
+        demo::state_pen(&at(WidgetState::CHECKED | WidgetState::PRESSED)),
+    ]
+}
+
+/// The side-panel toggle's icon colour, `button.icon(<state>; variant=Flat).color` in the state
+/// it is in, `CHECKED` while on, where the theme states it: egui draws a button's image alike
+/// in every state, so a colour stated at rest holds while on (spec §10, rule 0). `None` where it
+/// states none, and the icon keeps the colour it loads in, never the label's.
+pub(crate) fn toggle_icon_colour(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    open: bool,
+) -> Option<egui::Color32> {
+    let state = if open {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
+    let icon = r?
+        .button
+        .icon(native_theme::next::ButtonQuery::flat().with_state(state));
+    icon.stated
+        .contains(native_theme::next::IconStated::COLOR)
+        .then(|| next::to_color32(icon.color))
+}
+
 /// The notes naming the checked colours `r` states for the side-panel toggle while on, `[fill,
 /// text]`, each `None` where no rule states it for the state: at the flat button's own homes,
 /// with the theme's values, which the Widget Info rows, at the push button's homes, do not show,
@@ -800,7 +844,14 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             // `interact_size.y` tall and centres what it holds on that height
             // (`egui/src/ui.rs:2376-2379`), so the row is set to the taller of the two.
             // The toggle's icon, where the theme states its size and the set has it; without
-            // one the toggle is its label, whose button egui sizes itself.
+            // one the toggle is its label, whose button egui sizes itself. It loads in the
+            // colour the theme states for it ([`toggle_icon_colour`]), else in the bar's text.
+            let shown = ui.visuals().override_text_color;
+            if let Some(colour) =
+                toggle_icon_colour(app.atlas.next_shown(ui.ctx()), app.side_panel_visible)
+            {
+                ui.visuals_mut().override_text_color = Some(colour);
+            }
             let image = icon_size.and_then(|size| {
                 chrome_button_image(
                     &mut app.icon_cache,
@@ -810,6 +861,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     size,
                 )
             });
+            ui.visuals_mut().override_text_color = shown;
             let line = ui.text_style_height(&egui::TextStyle::Body);
             let [top, ..] = padding;
             let toggle = icon_size
@@ -821,6 +873,11 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 let open = app.side_panel_visible;
                 let checked = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
                 let stated = open.then(|| toggle_stated_notes(app.atlas.next_shown(ui.ctx())));
+                let pens = if open {
+                    toggle_checked_pens(app.atlas.next_shown(ui.ctx()))
+                } else {
+                    [None; 3]
+                };
                 let App {
                     registry,
                     side_panel_visible,
@@ -838,6 +895,17 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     |ui| {
                         demo::next_tool_button(ui, padding);
                         flat = demo::flat(ui);
+                        // While on, the outline the theme states for the checked state; the
+                        // selected button takes its pen from the entry of its state.
+                        let w = &mut ui.visuals_mut().widgets;
+                        for (entry, pen) in [&mut w.inactive, &mut w.hovered, &mut w.active]
+                            .into_iter()
+                            .zip(pens)
+                        {
+                            if let Some(pen) = pen {
+                                entry.bg_stroke = pen;
+                            }
+                        }
                         let r = ui.add(ghost_button(image, label, checked));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
