@@ -7763,6 +7763,11 @@ fn next_flare_room(r: &native_theme::next::ResolvedTheme) -> f32 {
         .unwrap_or_default()
 }
 
+/// Widget Info's line for `tab.active_outward_corner_radius` where
+/// [`next_flare_room`] is none.
+const NO_FLARES: &str = "not drawn: unstated, or not a positive, finite length; tab_flares draws \
+                         no flares and the row keeps no room for them";
+
 /// The gap between the tabs of a [`tab_row`] on the installed 0.8.0 theme:
 /// `tab.item_gap` where stated, a row's own spacing, none, where not.
 fn next_tab_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
@@ -8725,7 +8730,8 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_t
 /// the Basic list's, the Basic table's and the Basic page's tabs' elements,
 /// the page tabs' and the inspector's tab rows and tabs, the window menus'
 /// elements, the single-line fields' ([`single_line_field`]), and the flat
-/// and tool buttons' and the Basic page's icons' ([`button_element`]).
+/// and tool buttons' and the Basic page's icons' ([`button_element`]), and
+/// the Basic page's and its columns' ([`page_element`]).
 fn home_keyed(id: &str) -> bool {
     id.starts_with("basic.list.")
         || id.starts_with("basic.table.")
@@ -8734,6 +8740,12 @@ fn home_keyed(id: &str) -> bool {
         || id.starts_with("chrome.menu")
         || single_line_field(id)
         || button_element(id)
+        || page_element(id)
+}
+
+/// Whether the list's id `id` names the Basic page or one of its columns.
+fn page_element(id: &str) -> bool {
+    id == "basic.page" || id.starts_with("basic.column_")
 }
 
 /// Whether the list's id `id` names an element of the Basic page's
@@ -10647,11 +10659,7 @@ fn tab_layout_route(
                 .to_owned()
         }
         "tab.item_gap" => format!("{row}: the tabs' Row::spacing, tab.item_gap"),
-        "tab.active_outward_corner_radius" if next_flare_room(r) == 0.0 => {
-            "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
-             and the row keeps no room for them"
-                .to_owned()
-        }
+        "tab.active_outward_corner_radius" if next_flare_room(r) == 0.0 => NO_FLARES.to_owned(),
         "tab.active_outward_corner_radius" if strip => {
             "the row's padding at both ends (next_flare_room)".to_owned()
         }
@@ -11142,10 +11150,7 @@ fn tab_home_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -
         "tab.indicator(SELECTED).min_size[1]" | "tab.indicator_side" if aw => {
             "iced_next::tab_indicator_line over the open tab's place in iced_aw's bar"
         }
-        "tab.active_outward_corner_radius" if aw && next_flare_room(r) == 0.0 => {
-            "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
-             and the row keeps no room for them"
-        }
+        "tab.active_outward_corner_radius" if aw && next_flare_room(r) == 0.0 => NO_FLARES,
         "tab.active_outward_corner_radius" if aw && id == "basic.tabs.bar" => {
             "a container's padding outside the bar at both ends, filled tab.bar(NONE).fill as \
              the bar is"
@@ -11313,6 +11318,60 @@ fn input_home_route(home: &str) -> Option<String> {
     Some(route.to_owned())
 }
 
+/// The route of a page's or a column's gap or margin home `home`
+/// (`layout.widget_gap`, `.window_margin`, `.section_gap`): the spacing or
+/// padding it sets. `None` for another home.
+fn layout_gap_route(home: &str) -> Option<&'static str> {
+    Some(match home {
+        "layout.widget_gap" => "Row/Column::spacing between the items",
+        "layout.window_margin" => "the page's padding",
+        "layout.section_gap" => "Column::spacing between the groups",
+        _ => return None,
+    })
+}
+
+/// The route of the home `home` of the Basic page or one of its columns
+/// under `r`, the installed 0.8.0 theme: the gaps and margins
+/// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
+/// and the widths [`basic_column_count`] lays the columns out by. `None` for
+/// a home none of them reads.
+fn page_home_route(r: &native_theme::next::ResolvedTheme, home: &str) -> Option<String> {
+    if let Some(route) = layout_gap_route(home) {
+        return Some(route.to_owned());
+    }
+    let route = match home {
+        "scrollbar.track(NONE; orientation=Vertical).min_size[0]" => {
+            return Some(page_bar_width_route(r));
+        }
+        "scrollbar.overlay_mode" => {
+            "iced_next::styles::scrollbar: no spacing beside the content, \
+             scrollbar.overlay_mode; iced_next::styles::scrollable: a floating bar transparent \
+             at rest and shown under the pointer, iced having no reveal on scroll; \
+             basic_column_count: the room a bar beside the page takes"
+        }
+        "tab.tab(NONE).min_size[0]" if cfg!(feature = "iced_aw") => {
+            "basic_tabs_width: the two tabs a column holds, each next_aw_tab_width wide, at \
+             least tab.tab(NONE).min_size[0]"
+        }
+        "tab.tab(NONE).min_size[0]" => {
+            "basic_tabs_width: the two tabs a column holds, each next_tab_width wide, at least \
+             tab.tab(NONE).min_size[0]"
+        }
+        "tab.item_gap" => {
+            "basic_widest: the gap between the two tabs a column holds, tab.item_gap \
+             (next_tab_gap)"
+        }
+        "tab.active_outward_corner_radius" if next_flare_room(r) == 0.0 => NO_FLARES,
+        "tab.active_outward_corner_radius" => "room for both flares in basic_column_count",
+        "combo_box.field(NONE).min_size[0]" => {
+            "basic_widest: a column at least as wide as the drop-down, next_drop_down_width \
+             (combo_box.field(NONE).min_size[0] where stated)"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// [`colour_route`] of the colour home `home` of `element`: the rows of its
 /// [`Drawing`] the home moves, or why none reads it; `None` where the
 /// showcase draws it itself, the element lists no such home, or the export
@@ -11409,6 +11468,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         input_home_route(home)
     } else if button_element(id) {
         button_home_route(state, id, home)
+    } else if page_element(id) {
+        page_home_route(r, home)
     } else {
         None
     };
@@ -11798,11 +11859,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("combo_box", "min_height_px") => {
             "control_line_height: the line box that fills it inside combo_box_padding".into()
         }
-        ("combo_box", "min_width_px") if id == "basic.page" => {
-            "basic_widest: a column at least as wide as the drop-down, next_drop_down_width \
-             (combo_box.field(NONE).min_size[0] where stated)"
-                .into()
-        }
         ("combo_box", "min_width_px") => {
             "not reachable: PickList takes a width, not a minimum; the page's own width".into()
         }
@@ -11921,32 +11977,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
         // A tab row's and a tab's are tab_home_route's.
-        ("tab", "item_gap_px") if id == "basic.page" => {
-            "basic_widest: the gap between the two tabs a column holds, tab.item_gap \
-             (next_tab_gap)"
-                .into()
-        }
-        ("tab", "min_width_px") if id == "basic.page" => {
-            if cfg!(feature = "iced_aw") {
-                "basic_tabs_width: the two tabs a column holds, each next_aw_tab_width wide, \
-                 at least tab.tab(NONE).min_size[0]"
-                    .into()
-            } else {
-                "basic_tabs_width: the two tabs a column holds, each next_tab_width wide, at \
-                 least tab.tab(NONE).min_size[0]"
-                    .into()
-            }
-        }
-        ("tab", "active_outward_corner_radius_px")
-            if next_flare_room(state.next_shown()) == 0.0 =>
-        {
-            "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
-             and the row keeps no room for them"
-                .into()
-        }
-        ("tab", "active_outward_corner_radius_px") if id == "basic.page" => {
-            "room for both flares in basic_column_count".into()
-        }
         // ---- slider, progress bar, spinner ----
         ("slider", "track_height_px") if under("basic.slider.") => {
             "styles::slider: the rail's width; next_slider_sizes: the rail the parts lay out, \
@@ -12042,21 +12072,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("segmented_control", f) if side(f).is_some() => {
             "Button::padding of each segment, iced's own on an unstated side".into()
-        }
-        // ---- scrollbar ----
-        ("scrollbar", "groove_width_px") => page_bar_width_route(state.next_shown()).into(),
-        ("scrollbar", "thumb_width_px") => {
-            "iced_next::styles::scrollbar: Scrollbar::scroller_width".into()
-        }
-        ("scrollbar", "min_thumb_length_px") => {
-            "not reachable: iced's scroller has no minimum length setter".into()
-        }
-        ("scrollbar", "overlay_mode") => {
-            "iced_next::styles::scrollbar: no spacing beside the content, \
-             scrollbar.overlay_mode; iced_next::styles::scrollable: a floating bar transparent \
-             at rest and shown under the pointer, iced having no reveal on scroll; \
-             basic_column_count: the room a bar beside the page takes"
-                .into()
         }
         // ---- expander ----
         ("expander", "font") if under("basic.expander.") => {
@@ -12204,10 +12219,13 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              unstated"
                 .into()
         }
-        ("layout", "widget_gap_px") => "Row/Column::spacing between the items".into(),
         ("layout", "container_margin_px") => "the container's padding".into(),
-        ("layout", "window_margin_px") => "the page's padding".into(),
-        ("layout", "section_gap_px") => "Column::spacing between the groups".into(),
+        ("layout", f @ ("widget_gap_px" | "window_margin_px" | "section_gap_px")) => {
+            layout_gap_route(&format!("layout.{}", f.trim_end_matches("_px"))).map_or_else(
+                || Cow::Owned(format!("{leaf}: no route recorded")),
+                Cow::Borrowed,
+            )
+        }
         // ---- defaults, text scale, icons ----
         ("defaults", "line_height") if under("chrome.status_bar") => {
             "status_line_box: the text's LineHeight, status_bar.label's line box \
