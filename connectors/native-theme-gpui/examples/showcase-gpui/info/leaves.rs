@@ -138,7 +138,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(NONE; variant=Primary).corners",
             "button.body(NONE; variant=Primary).stroke.width",
         ],
-        "gpui: not read — next::geometry::button edges and rounds the Primary Button as every Button, by button.body(NONE), no variant asked (native-theme-gpui next/builders.rs, button)",
+        "gpui: not applied — next::geometry::button edges and rounds the Primary Button as every Button, by button.body(NONE), no variant asked (native-theme-gpui next/builders.rs, button)",
     ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (
@@ -167,7 +167,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "not reachable: the Copy box is the 0.7.2 ghost, variants::ghost_button, which has no outline colour of its own and no width to draw one at (inspector.rs; native-theme-gpui/variants.rs, ghost_button)",
+        "not drawn: the showcase builds the Copy box as the 0.7.2 ghost, variants::ghost_button, which has no outline colour of its own and no width to draw one at, so it is edged in none under the pointer or pressed (inspector.rs; native-theme-gpui/variants.rs, ghost_button)",
     ),
     (
         "chrome.info.copy",
@@ -2173,7 +2173,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "scrollbar.thumb(NONE).corners",
             "scrollbar.thumb(UNFOCUSED_VIEW).corners",
         ],
-        "gpui: not read — gpui-base's thumb is rounded by layout.corner_radius (native-theme-gpui next/mod.rs, scrollbar_geometry)",
+        "gpui: not applied — gpui-base's thumb is rounded by layout.corner_radius (native-theme-gpui next/mod.rs, scrollbar_geometry)",
     ),
     (
         "",
@@ -2248,7 +2248,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.segmented.divider_",
         &["segmented_control.track(NONE).stroke.color"],
-        "gpui: not read — the line between two segments is drawn in segmented_control.separator(NONE).fill, not in the frame's colour (demo::segmented, SegmentedLook)",
+        "gpui: not applied — the line between two segments is drawn in segmented_control.separator(NONE).fill, not in the frame's colour (demo::segmented, SegmentedLook)",
     ),
     (
         "",

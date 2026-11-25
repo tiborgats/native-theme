@@ -623,7 +623,7 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      it for that state (pages::basic::RowLook::of)";
 
 /// The route of a home of the primary button's own variant: egui reads none of them.
-const PRIMARY_VARIANT_UNREAD: &str = "not reachable: the primary button is egui's selected \
+const PRIMARY_VARIANT_UNREAD: &str = "not drawn: the primary button is drawn as egui's selected \
      Button in the button scope (pages::basic, primary), outlined and rounded as the push \
      button, by button.body(NONE) and its hovered and pressed states";
 
@@ -639,7 +639,7 @@ const UNFOCUSED_THUMB_CORNERS: &str = "not reachable: egui rounds the thumb alik
 
 /// The route of the segmented control's separator colour on a divider: the companion crate's
 /// control draws its dividers in its outline's colour.
-const SEGMENT_DIVIDER_UNREAD: &str = "not reachable: native-theme-egui-widgets SegmentedControl \
+const SEGMENT_DIVIDER_UNREAD: &str = "not drawn: native-theme-egui-widgets SegmentedControl \
      (docs/archive/todo_egui-widgets-spec.md §4.4) paints its dividers in its outline's colour, \
      the scope's segmented_control.track(NONE).stroke.color (native-theme-egui-widgets \
      segmented_control.rs, Outline::paint_lines)";
