@@ -91,8 +91,10 @@ use native_theme_showcase_support::cli::{
     self, CliArgs, IconPick, Output, Outputs, ThemeKey, reported,
 };
 use native_theme_showcase_support::elements::{self, ShowcaseElement};
-use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::info::{InfoRow, ListedInfo};
+use native_theme_showcase_support::next::info as next_info;
 use native_theme_showcase_support::next::status as next_status;
+use native_theme_showcase_support::next::values::{StatedFont, Styled, ruled_style};
 #[cfg(test)]
 use native_theme_showcase_support::status;
 use native_theme_showcase_support::status::DrawnFamily as FontDrawing;
@@ -1841,6 +1843,12 @@ struct State {
     next_resolved: native_theme::next::ResolvedTheme,
     /// `next_theme` resolved for an inactive window, beside it.
     next_inactive: native_theme::next::ResolvedTheme,
+    /// `next_resolved` and `next_inactive` as a listed element's 0.8.0 rows
+    /// read their values ([`next_theme_json`], [`State::next_json`]),
+    /// serialised with them. Written only with them, in
+    /// [`State::keep_next`] and at startup: a test that sets them and reads
+    /// a listed element's global homes sets this too.
+    next_json: (serde_json::Value, serde_json::Value),
     /// Why `next_resolved` is at a lower contrast than the preferences ask
     /// for, where it is ([`ContrastHeld`]).
     contrast_held: Option<ContrastHeld>,
@@ -2306,6 +2314,10 @@ impl State {
             is_dark,
             theme_palette: None,
             next_theme: start_next.theme,
+            next_json: (
+                next_theme_json(&start_next.resolved),
+                next_theme_json(&start_next.inactive),
+            ),
             next_resolved: start_next.resolved,
             next_inactive: start_next.inactive,
             contrast_held: start_next.contrast_held,
@@ -2756,6 +2768,10 @@ impl State {
     /// preferences built, and install its iced theme.
     fn keep_next(&mut self, next: NextInstall) {
         self.next_theme = next.theme;
+        self.next_json = (
+            next_theme_json(&next.resolved),
+            next_theme_json(&next.inactive),
+        );
         self.next_resolved = next.resolved;
         self.next_inactive = next.inactive;
         self.contrast_held = next.contrast_held;
@@ -2834,6 +2850,15 @@ impl State {
             &self.next_resolved
         } else {
             &self.next_inactive
+        }
+    }
+
+    /// [`State::next_shown`] serialised ([`State::next_json`]'s field).
+    fn next_json(&self) -> &serde_json::Value {
+        if self.window_active {
+            &self.next_json.0
+        } else {
+            &self.next_json.1
         }
     }
 
@@ -8605,12 +8630,22 @@ fn theme_json(resolved: &ResolvedTheme) -> serde_json::Value {
     values::theme_json(resolved).unwrap_or_default()
 }
 
+/// The installed 0.8.0 theme `r` as a listed element's 0.8.0 rows read the
+/// values of its global homes (`next::values::theme_json`); `Null`, every
+/// such value then not stated, where it does not serialise.
+fn next_theme_json(r: &native_theme::next::ResolvedTheme) -> serde_json::Value {
+    native_theme_showcase_support::next::values::theme_json(r).unwrap_or_default()
+}
+
 /// What Widget Info shows, as [`State::rebuild_info`] built it: a listed
 /// element's info with the text Copy copies, or a page widget's text, which
 /// Copy copies as it is.
 #[derive(Clone, Debug)]
 enum ShownInfo {
-    Listed { info: ListedInfo, copied: String },
+    Listed {
+        info: ListedInfo<native_theme::next::Color>,
+        copied: String,
+    },
     Unlisted(String),
 }
 
@@ -8628,16 +8663,35 @@ fn shown_info(state: &State, hovered: Hovered) -> Option<ShownInfo> {
 }
 
 /// Widget Info of one element of the list, in the three showcases' form
-/// (`info::ListedInfo`): its title, a row per leaf in the list's order with
-/// its value -- the layout distances, the icon set and the icon theme read
-/// where the showcase keeps them, each font's family by what iced draws
-/// ([`listed_family`]) -- and how iced applies it ([`iced_route`]), then
-/// what iced draws for it that the theme states nothing for
-/// ([`iced_not_themeable`]).
-fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
+/// (`info::ListedInfo`): its title, a row per key of the element
+/// ([`route_keys`]) in the list's order with its value and how iced applies
+/// it ([`iced_route`]), then what iced draws for it that the theme states
+/// nothing for ([`iced_not_themeable`]). An element on its 0.8.0 rows
+/// ([`home_keyed`]) has a row per home, its value read from the installed
+/// 0.8.0 theme ([`State::next_shown`], `next::info::listed_info`), each text
+/// style's family by what iced draws ([`next_listed_family`]); another a
+/// row per 0.7.2 leaf, the layout distances, the icon set and the icon
+/// theme read where the showcase keeps them, each font's family by what
+/// iced draws ([`listed_family`]).
+fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_theme::next::Color> {
     #[cfg(test)]
     LISTED_INFO_BUILDS.with(|builds| builds.set(builds.get() + 1));
-    ListedInfo::new(
+    let not_themeable = iced_not_themeable(state, element)
+        .into_iter()
+        .map(Cow::into_owned)
+        .collect();
+    if home_keyed(&element.id) {
+        let r = state.next_shown();
+        return next_info::listed_info(
+            element,
+            r,
+            state.next_json(),
+            |path, font| next_listed_family(r, path, font),
+            |home| iced_route(state, element, home),
+            not_themeable,
+        );
+    }
+    let listed = ListedInfo::new(
         element,
         &state.theme_json,
         &state.layout,
@@ -8645,11 +8699,92 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
         state.current_icon_theme.as_deref(),
         listed_family,
         |leaf| iced_route(state, element, leaf),
-        iced_not_themeable(state, element)
+        not_themeable,
+    );
+    ListedInfo {
+        title: listed.title,
+        rows: listed
+            .rows
             .into_iter()
-            .map(Cow::into_owned)
+            .map(|row| InfoRow {
+                colour: row.colour.map(|c| {
+                    let c = to_color(c);
+                    native_theme::next::Color::new(c.r, c.g, c.b, c.a)
+                }),
+                leaf: row.leaf,
+                value: row.value,
+                how: row.how,
+            })
             .collect(),
-    )
+        not_themeable: listed.not_themeable,
+    }
+}
+
+/// Whether Widget Info lists the element of id `id` by its 0.8.0 homes, a
+/// row per home routed by [`home_route`], rather than by its 0.7.2 leaves:
+/// the Basic list's elements.
+fn home_keyed(id: &str) -> bool {
+    id.starts_with("basic.list.")
+}
+
+/// The keys of `element`'s Widget Info rows, which [`iced_route`] routes:
+/// its homes where it is [`home_keyed`], else its 0.7.2 leaves.
+#[cfg(test)]
+fn route_keys(element: &ShowcaseElement) -> &[String] {
+    if home_keyed(&element.id) {
+        &element.homes
+    } else {
+        &element.leaves
+    }
+}
+
+/// The text style of the installed 0.8.0 theme `r` at `path`, a text style's
+/// home as `next::values::home_value` hands it to a family lookup
+/// (`typography.body`, `list.item_label(NONE)`): `None` where the theme has
+/// none there.
+fn next_text_style_at(r: &native_theme::next::ResolvedTheme, path: &str) -> Option<TextStyle> {
+    let t = &r.typography;
+    if let Some(role) = path.strip_prefix("typography.") {
+        return match role {
+            "body" => Some(t.body.clone()),
+            "monospace" => Some(t.monospace.clone()),
+            "display" => t.display.clone(),
+            "title1" => t.title1.clone(),
+            "title2" => t.title2.clone(),
+            "title3" => t.title3.clone(),
+            "title4" => t.title4.clone(),
+            "headline" => t.headline.clone(),
+            "callout" => t.callout.clone(),
+            "subheadline" => t.subheadline.clone(),
+            "caption" => t.caption.clone(),
+            _ => None,
+        };
+    }
+    let (head, query) = path.strip_suffix(')')?.split_once('(')?;
+    let (widget, part) = head.split_once('.')?;
+    match ruled_style(r, widget, part, query) {
+        Ok(Some((Styled::Text(style), _))) => Some(style),
+        _ => None,
+    }
+}
+
+/// The family of `font`, the text style at `path` of the installed 0.8.0
+/// theme `r`, as a listed home's row shows it (`next::values::home_value`'s
+/// lookup): the label of how iced draws the style ([`next_font_from_database`]),
+/// in its monospace family for `typography.monospace`; where `r` has no
+/// text style at `path`, the stated family with that said.
+fn next_listed_family(
+    r: &native_theme::next::ResolvedTheme,
+    path: &str,
+    font: &StatedFont,
+) -> String {
+    match next_text_style_at(r, path) {
+        Some(style) => next_family_drawing(
+            next_font_from_database(&style, path == "typography.monospace").as_ref(),
+        )
+        .label(&style.family),
+        None => format!("{} (no text style at {path})", font.family),
+    }
 }
 
 /// Text in the side panel's label, `sidebar.item_label(NONE)` (size,
@@ -8690,7 +8825,7 @@ fn info_gap(stated: Option<f32>) -> f32 {
 /// Widget Info has.
 fn element_info_view<'a>(
     state: &'a State,
-    info: &'a ListedInfo,
+    info: &'a ListedInfo<native_theme::next::Color>,
     copied: &str,
 ) -> Element<'a, Message> {
     let r = state.next_shown();
@@ -8743,7 +8878,7 @@ fn element_info_view<'a>(
             (leaf.into(), how.into())
         };
         let lines = column![leaf, how].width(Fill);
-        let content: Element<'a, Message> = match row.colour.map(to_color) {
+        let content: Element<'a, Message> = match row.colour.map(next_colour) {
             Some(colour) => {
                 let swatch = container(space())
                     .width(Length::Fixed(line))
@@ -9871,12 +10006,12 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
     Some(route.to_owned())
 }
 
-/// The route of a colour leaf `leaf` of the Basic list under `r`, of its
+/// The route of a colour home `home` of the Basic list under `r`, of its
 /// frame where `frame` ([`list_frame`]), else of a row ([`list_row`]): what
-/// the function draws of the leaf's 0.8.0 home, naming it, or that the home
-/// is unstated and what is drawn in its place. `None` for a leaf neither
+/// the function draws of the home, naming what it reads, or that it is
+/// unstated and what is drawn in its place. `None` for a home neither
 /// reads.
-fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -> Option<String> {
+fn list_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -> Option<String> {
     let l = &r.list;
     let fill = |state: WidgetState| drawn_state_fill(&l.highlight(state)).is_some();
     let ink = |state: WidgetState| iced_next::state_text_color_of(&l.item_label(state)).is_some();
@@ -9884,18 +10019,18 @@ fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) ->
     let container = l.container(WidgetState::NONE);
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
     let unmapped = unmapped_fill_route(
-        leaf,
+        home,
         &[
             (
-                "list.background_color",
+                "list.container(NONE).fill",
                 iced_next::fill_of(&container, "list.container(NONE).fill"),
             ),
             (
-                "list.selection_background",
+                "list.highlight(SELECTED).fill",
                 iced_next::state_fill_of(&l.highlight(selected), "list.highlight(SELECTED).fill"),
             ),
             (
-                "list.hover_background",
+                "list.highlight(HOVER).fill",
                 iced_next::state_fill_of(&l.highlight(hover), "list.highlight(HOVER).fill"),
             ),
         ],
@@ -9903,82 +10038,86 @@ fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) ->
     if unmapped.is_some() {
         return unmapped;
     }
-    let route = match leaf {
-        "list.background_color" if drawn_fill(&container).is_none() => {
+    let route = match home {
+        "list.container(NONE).fill" if drawn_fill(&container).is_none() => {
             "not drawn: list.container(NONE).fill is unstated, so the frame is iced's own \
              container, which has no fill"
         }
-        "list.background_color" if frame => {
+        "list.container(NONE).fill" if frame => {
             "list_frame: the list container's background, list.container(NONE).fill"
         }
-        "list.background_color" => {
+        "list.container(NONE).fill" => {
             "list_frame: the list container's background, under the row, \
              list.container(NONE).fill"
         }
-        "list.border.color"
+        "list.container(NONE).stroke.color"
             if iced_next::stroke_color_of(&container).is_none()
                 || !iced_next::stroke_width_of(&container).is_some_and(|width| width > 0.0) =>
         {
             "not drawn: list.container(NONE).stroke is unstated or none, so the frame has no line"
         }
-        "list.border.color" => {
+        "list.container(NONE).stroke.color" => {
             "list_frame: the frame container's border.color, list.container(NONE).stroke.color"
         }
-        "list.item_font.color"
+        "list.item_label(NONE).color"
             if iced_next::text_color_of(&l.item_label(WidgetState::NONE)).is_none() =>
         {
             "not drawn: list.item_label(NONE).color is unstated, so a row's label at rest is \
              iced's own flat button's (button::text)"
         }
-        "list.item_font.color" => "list_row: text_color at rest, list.item_label(NONE).color",
-        "list.selection_background" if !fill(selected) => {
+        "list.item_label(NONE).color" => {
+            "list_row: text_color at rest, list.item_label(NONE).color"
+        }
+        "list.highlight(SELECTED).fill" if !fill(selected) => {
             "not drawn: list.highlight(SELECTED).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
-        "list.selection_background" => {
+        "list.highlight(SELECTED).fill" => {
             "list_row: the selected row's fill, list.highlight(SELECTED).fill"
         }
-        "list.selection_text_color" if !ink(selected) => {
+        "list.item_label(SELECTED).color" if !ink(selected) => {
             "not drawn: list.item_label(SELECTED).color is unstated, so the selected row's label \
              is iced's own flat button's (button::text)"
         }
-        "list.selection_text_color" => {
+        "list.item_label(SELECTED).color" => {
             "list_row: the selected row's text_color, list.item_label(SELECTED).color"
         }
-        "list.hover_background" if !fill(hover) => {
+        "list.highlight(HOVER).fill" if !fill(hover) => {
             "not drawn: list.highlight(HOVER).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
-        "list.hover_background" => "list_row: the Hovered fill, list.highlight(HOVER).fill",
-        "list.hover_text_color" if !ink(hover) => {
+        "list.highlight(HOVER).fill" => "list_row: the Hovered fill, list.highlight(HOVER).fill",
+        "list.item_label(HOVER).color" if !ink(hover) => {
             "not drawn: list.item_label(HOVER).color is unstated, so the Hovered label is iced's \
              own flat button's (button::text)"
         }
-        "list.hover_text_color" => "list_row: the Hovered text_color, list.item_label(HOVER).color",
-        "list.hover_border_color"
+        "list.item_label(HOVER).color" => {
+            "list_row: the Hovered text_color, list.item_label(HOVER).color"
+        }
+        "list.highlight(HOVER).stroke.color"
             if !l.highlight(hover).from_state.contains(PartStated::STROKE) =>
         {
             "not drawn: list.highlight(HOVER).stroke is unstated, and list_row outlines no row, \
              as iced's own flat button (button::text) outlines none"
         }
-        "list.hover_border_color" => {
+        "list.highlight(HOVER).stroke.color" => {
             "list_row: the Hovered border, list.highlight(HOVER).stroke.color"
         }
-        "defaults.selection_inactive_background" if inactive.0 == active.0 => {
+        "colors.selection.unfocused_background" if inactive.0 == active.0 => {
             "not drawn: list.highlight(SELECTED|UNFOCUSED_VIEW).fill is unstated, or stated as \
              list.highlight(SELECTED).fill, so a selected row keeps its fill while the window is \
              not active"
         }
-        "defaults.selection_inactive_background" => {
+        "colors.selection.unfocused_background" => {
             "list_row: the selected row's fill while the window is not active, \
              list.highlight(SELECTED|UNFOCUSED_VIEW).fill"
         }
-        "defaults.selection_inactive_text_color" if inactive.1 == active.1 => {
+        "colors.selection.unfocused_foreground" if inactive.1 == active.1 => {
             "not drawn: list.item_label(SELECTED|UNFOCUSED_VIEW).color is unstated, or stated as \
              list.item_label(SELECTED).color, so a selected row keeps its label while the window \
              is not active"
         }
-        "defaults.selection_inactive_text_color" => {
+        "colors.selection.unfocused_foreground" => {
             "list_row: the selected row's text_color while the window is not active, \
              list.item_label(SELECTED|UNFOCUSED_VIEW).color"
         }
@@ -10027,8 +10166,11 @@ fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -
         return unmapped;
     }
     let route = match leaf {
-        "list.background_color" | "list.border.color" => {
-            return list_route(r, leaf, frame);
+        "list.background_color" => {
+            return list_route(r, "list.container(NONE).fill", frame);
+        }
+        "list.border.color" => {
+            return list_route(r, "list.container(NONE).stroke.color", frame);
         }
         "list.item_font.color" if iced_next::text_color_of(&l.item_label(none)).is_none() => {
             "not drawn: list.item_label(NONE).color is unstated, so a cell's text is iced's own \
@@ -10115,15 +10257,20 @@ fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -
     Some(route.to_owned())
 }
 
-/// The route of a Basic list row's corner, line or padding leaf `leaf`
-/// under `r`, the installed 0.8.0 theme, the row's fill in the state it is
-/// filled in, `SELECTED` where `selected`, else `HOVER` ([`list_row_fill`]):
-/// the fill's corners, `list.highlight(<state>).corners` where stated, else
-/// the frame's inner radius, which the frame's line width rounds; the fill's
-/// inset, `list.highlight(<state>).margin` on the side where stated; the
-/// row's padding, `list.row(NONE).padding` on the side
-/// ([`next_list_row_padding`]).
-fn list_shape_route(r: &native_theme::next::ResolvedTheme, leaf: &str, selected: bool) -> String {
+/// The route of a Basic list row's corner, line, padding or inset home
+/// `home` under `r`, the installed 0.8.0 theme, the row's fill in the state
+/// it is filled in, `SELECTED` where `selected`, else `HOVER`
+/// ([`list_row_fill`]): the fill's corners, `list.highlight(<state>).corners`
+/// where stated, else the frame's inner radius, which the frame's line width
+/// rounds; the row's padding, `list.row(NONE).padding` on the side
+/// ([`next_list_row_padding`]); the fill's inset,
+/// `list.highlight(<state>).margin` on the side where stated. `None` for a
+/// home it does not lay out.
+fn list_shape_route(
+    r: &native_theme::next::ResolvedTheme,
+    home: &str,
+    selected: bool,
+) -> Option<String> {
     let (state, name) = if selected {
         (WidgetState::SELECTED, "SELECTED")
     } else {
@@ -10131,46 +10278,52 @@ fn list_shape_route(r: &native_theme::next::ResolvedTheme, leaf: &str, selected:
     };
     let part = r.list.highlight(state);
     let rounded = iced_next::radius_of(&part).is_some();
-    let margin = [
+    let sides = [
         ("top", PartStated::MARGIN_TOP),
         ("right", PartStated::MARGIN_RIGHT),
         ("bottom", PartStated::MARGIN_BOTTOM),
         ("left", PartStated::MARGIN_LEFT),
-    ]
-    .into_iter()
-    .find(|(side, _)| leaf == format!("list.border.padding_{side}_px"));
-    match (leaf, margin) {
-        ("list.border.corner_radius_px", _) if rounded => format!(
+    ];
+    let padding = sides
+        .iter()
+        .find(|(side, _)| home == format!("list.row(NONE).padding.{side}"));
+    let margin = sides
+        .iter()
+        .find(|(side, _)| home == format!("list.highlight(NONE).margin.{side}"));
+    Some(match (home, padding, margin) {
+        (_, Some((side, _)), _) => format!(
+            "next_list_row_padding: a row's padding, list.row(NONE).padding.{side}, iced_aw's \
+             list's 5 px where unstated"
+        ),
+        (_, _, Some((side, bit))) if part.stated.contains(*bit) => format!(
+            "list_row_fill: the fill inset by list.highlight({name}).margin.{side} \
+             (highlight_box)"
+        ),
+        (_, _, Some((side, _))) => format!(
+            "list_row_fill: the fill spans the row's {side} side, \
+             list.highlight({name}).margin.{side} being unstated"
+        ),
+        ("list.container(NONE).corners", ..) if rounded => format!(
             "list_row_fill: the row's whole fill rounded by list.highlight({name}).corners, the \
              view's clip cutting it"
         ),
-        ("list.border.corner_radius_px", _) => format!(
+        ("list.container(NONE).corners", ..) => format!(
             "list_row_fill: the row's fill rounded where it meets the frame's inside, by the \
              frame's inner radius, list.container(NONE).corners less its stroke's width \
              (next_inner_radius), list.highlight({name}).corners being unstated"
         ),
-        ("list.border.line_width_px", _) if rounded => format!(
+        ("list.container(NONE).stroke.width", ..) if rounded => format!(
             "list_row_fill: not the fill's corners, which list.highlight({name}).corners round; \
              the frame's line, list.container(NONE).stroke.width, pads the rows \
              (list_frame_border)"
         ),
-        ("list.border.line_width_px", _) => format!(
+        ("list.container(NONE).stroke.width", ..) => format!(
             "list_row_fill: list.container(NONE).stroke.width, taken from the frame's corners \
              for the fill's rounded corners (next_inner_radius), list.highlight({name}).corners \
              being unstated"
         ),
-        (_, Some((side, bit))) if part.stated.contains(bit) => format!(
-            "next_list_row_padding: a row's padding, list.row(NONE).padding.{side}, iced_aw's \
-             list's 5 px where unstated; list_row_fill: the fill inset by \
-             list.highlight({name}).margin.{side} (highlight_box)"
-        ),
-        (_, Some((side, _))) => format!(
-            "next_list_row_padding: a row's padding, list.row(NONE).padding.{side}, iced_aw's \
-             list's 5 px where unstated; list_row_fill: the fill spans the row's {side} side, \
-             list.highlight({name}).margin.{side} being unstated"
-        ),
-        _ => format!("list_row_fill: draws nothing of {leaf}"),
-    }
+        _ => return None,
+    })
 }
 
 /// The route of a window menu's layout leaf `leaf` under `r`, the installed
@@ -10669,6 +10822,133 @@ fn focus_ring_route(
     Some(format!("native_theme_iced::next::focus_ring: {line}"))
 }
 
+/// [`colour_route`] of the colour home `home` of `element`: the rows of its
+/// [`Drawing`] the home moves, or why none reads it; `None` where the
+/// showcase draws it itself, the element lists no such home, or the export
+/// holds none.
+fn colour_home_route(
+    element: &ShowcaseElement,
+    home: &str,
+    shown: Shown<'_>,
+    installed: Option<&str>,
+) -> Option<String> {
+    let export = contract_homes()?;
+    let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
+    let home = element
+        .homes
+        .iter()
+        .find(|listed| *listed == home && export.homes.contains_key(home))?;
+    let drawing = drawing(element, home, shown)?;
+    Some(drawing_route(export, &[home.as_str()], &drawing, installed))
+}
+
+/// How iced applies the 0.8.0 home `home` to `element`, an element Widget
+/// Info lists by its homes ([`home_keyed`]), as `state` draws it on the
+/// installed 0.8.0 theme ([`State::next_shown`]): the connector's style
+/// function or the showcase's helper and the field or setter the home
+/// reaches, or why it cannot. A colour home the connector draws is routed
+/// from the contract's export ([`colour_home_route`]); the Basic list's
+/// own colours are [`list_route`]'s, its rows' corners, lines and insets
+/// [`list_shape_route`]'s. One muted line of Widget Info.
+fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
+    let id = element.id.as_str();
+    let r = state.next_shown();
+    let installed = state.installed_combination();
+    if let Some(line) = colour_home_route(element, home, Shown::of(state), installed.as_deref()) {
+        return line;
+    }
+    let under = |prefix: &str| id.starts_with(prefix);
+    // The frame's corners and line are its container's; a row's, the
+    // fill's ([`list_shape_route`]).
+    let frame = id == "basic.list.frame";
+    let frame_shape = frame
+        && matches!(
+            home,
+            "list.container(NONE).corners" | "list.container(NONE).stroke.width"
+        );
+    let route = if under("basic.list.") && !under("basic.list.scrollbar") {
+        list_route(r, home, frame).or_else(|| {
+            (!frame_shape)
+                .then(|| list_shape_route(r, home, under("basic.list.row_2")))
+                .flatten()
+        })
+    } else {
+        None
+    };
+    let line: Cow<'static, str> = match (route, home) {
+        (Some(route), _) => route.into(),
+        (None, "typography.headline") => {
+            "next_section_title: the heading's size, line box and weight, typography.headline \
+             laid over typography.body (native_theme_iced::next::text_scale's section_heading)"
+                .into()
+        }
+        (None, "typography.body.family") if id.ends_with(".heading") => {
+            "next_section_title: the heading's family, typography.headline's where it states \
+             one, else typography.body.family (Typography::over_body)"
+                .into()
+        }
+        (None, "list.item_label(NONE)") => {
+            "next_text: the row label's size, line box and font, list.item_label(NONE)".into()
+        }
+        (None, "list.row(NONE).min_size[1]") => {
+            "next_list_row_height: a row's height, at least list.row(NONE).min_size[1], grown to \
+             hold its label's line box, list.item_label(NONE) (next_line_box), and its padding \
+             (next_list_row_padding); that content where no minimum is stated"
+                .into()
+        }
+        (None, "typography.line_height_multiplier") => {
+            "next_text: the row label's line box, list.item_label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box); \
+             next_list_row_height: the row grown to hold it"
+                .into()
+        }
+        (None, "layout.border_width") => {
+            "list_row_fill: the hovered row's outline width, list.highlight(HOVER).stroke.width, \
+             where a HOVER rule states the stroke (list_row's border)"
+                .into()
+        }
+        (None, "list.container(NONE).corners") => {
+            "the frame container's border.radius, list.container(NONE).corners (list_frame)".into()
+        }
+        (None, "list.container(NONE).stroke.width") => {
+            "the frame container's border.width and padding, list.container(NONE).stroke.width \
+             (list_frame_border)"
+                .into()
+        }
+        (None, "scrollbar.track(NONE; orientation=Vertical).min_size[0]") => {
+            list_bar_width_route(r, false).into()
+        }
+        (None, "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]") => {
+            list_bar_width_route(r, true).into()
+        }
+        (
+            None,
+            "scrollbar.track(NONE; orientation=Vertical).max_size[0]"
+            | "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]",
+        ) => "not reachable: iced draws a bar at one width (Scrollbar::width, \
+              Scrollbar::scroller_width), which iced_next::styles::scrollbar takes from the \
+              part's min_size[0]"
+            .into(),
+        (None, "scrollbar.min_thumb_length") => {
+            "not reachable: iced's scroller has no minimum length setter".into()
+        }
+        (None, "scrollbar.overlay_mode") => {
+            "iced_next::styles::scrollbar: no spacing beside the content, \
+             scrollbar.overlay_mode; iced_next::styles::scrollable: a floating bar transparent \
+             at rest and shown under the pointer, iced having no reveal on scroll; \
+             list_bar_margin: a floating bar held the frame's inner radius off its right edge, \
+             one beside the rows as far as its corners need"
+                .into()
+        }
+        (None, _) => Cow::Owned(format!("{home}: no route recorded")),
+    };
+    if line.starts_with("not reachable") || line.starts_with("not drawn") {
+        line.into_owned()
+    } else {
+        format!("iced: {line}")
+    }
+}
+
 /// How iced applies `leaf` to `element` as `state` draws it: the
 /// connector's style function or helper and the field or setter it reaches,
 /// or why it cannot. One muted line of Widget Info.
@@ -10684,6 +10964,9 @@ fn focus_ring_route(
 /// where the theme states its line, the arc where the icon set has no
 /// indicator, a flat button's label colours where it shows its label.
 fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
+    if home_keyed(&element.id) {
+        return home_route(state, element, leaf);
+    }
     let id = element.id.as_str();
     if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, leaf, open)) {
         return line.to_owned();
@@ -10779,15 +11062,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     };
     if table == "tab"
         && let Some(route) = tab_route(state.next_shown(), leaf)
-    {
-        return if route.starts_with("not drawn") {
-            route
-        } else {
-            format!("iced: {route}")
-        };
-    }
-    if under("basic.list.")
-        && let Some(route) = list_route(state.next_shown(), leaf, under("basic.list.frame"))
     {
         return if route.starts_with("not drawn") {
             route
@@ -11570,9 +11844,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- list and table ----
         // The colours are list_route's and table_route's.
-        ("list", "item_font") if under("basic.list.") => {
-            "next_text: the row label's size, line box and font, list.item_label(NONE)".into()
-        }
         ("list", "item_font") if under("basic.table.") => {
             "next_text: a cell's size, line box and font, list.item_label(NONE)".into()
         }
@@ -11606,12 +11877,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              that content where no minimum is stated"
                 .into()
         }
-        ("list", "row_height_px") if under("basic.list.") => {
-            "next_list_row_height: a row's height, at least list.row(NONE).min_size[1], grown to \
-             hold its label's line box, list.item_label(NONE) (next_line_box), and its padding \
-             (next_list_row_padding); that content where no minimum is stated"
-                .into()
-        }
         ("list", "row_height_px") => {
             "a row's height, grown above a text scale of 1 to hold its label and padding \
              (rows::scaled_height); the label's line box and padding where unstated"
@@ -11628,11 +11893,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         {
             "not reachable: the table's rows are containers, not hoverable".into()
         }
-        ("defaults", "border.line_width_px") if under("basic.list.") => {
-            "list_row_fill: the hovered row's outline width, list.highlight(HOVER).stroke.width, \
-             where a HOVER rule states the stroke (list_row's border)"
-                .into()
-        }
         ("list", "border.corner_radius_px") if under("basic.table.header") => {
             "table_row_style: the header's fill rounded at its top corners by the frame's \
              inner radius, list.container(NONE).corners less its stroke's width \
@@ -11645,11 +11905,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              frame's inner radius, list.container(NONE).corners less its stroke's width \
              (next_inner_radius)"
                 .into()
-        }
-        ("list", "border.corner_radius_px" | "border.line_width_px")
-            if under("basic.list.row_") =>
-        {
-            list_shape_route(state.next_shown(), leaf, under("basic.list.row_2")).into()
         }
         ("list", "border.line_width_px")
             if under("basic.table.header") || under("basic.table.row_") =>
@@ -11677,27 +11932,13 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 })
                 .into()
         }
-        ("list", f) if side(f).is_some() => {
-            list_shape_route(state.next_shown(), leaf, under("basic.list.row_2")).into()
-        }
         // ---- scrollbar ----
-        ("scrollbar", f @ ("groove_width_px" | "thumb_width_px")) if under("basic.list.") => {
-            list_bar_width_route(state.next_shown(), f == "thumb_width_px").into()
-        }
         ("scrollbar", "groove_width_px") => page_bar_width_route(state.next_shown()).into(),
         ("scrollbar", "thumb_width_px") => {
             "iced_next::styles::scrollbar: Scrollbar::scroller_width".into()
         }
         ("scrollbar", "min_thumb_length_px") => {
             "not reachable: iced's scroller has no minimum length setter".into()
-        }
-        ("scrollbar", "overlay_mode") if under("basic.list.") => {
-            "iced_next::styles::scrollbar: no spacing beside the content, \
-             scrollbar.overlay_mode; iced_next::styles::scrollable: a floating bar transparent \
-             at rest and shown under the pointer, iced having no reveal on scroll; \
-             list_bar_margin: a floating bar held the frame's inner radius off its right edge, \
-             one beside the rows as far as its corners need"
-                .into()
         }
         ("scrollbar", "overlay_mode") => {
             "iced_next::styles::scrollbar: no spacing beside the content, \
@@ -11909,12 +12150,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "next_control_line: the label's line box, combo_box.label(NONE)'s size by \
              typography.line_height_multiplier where it states no line height (next_line_box), \
              grown to fill combo_box.field(NONE).min_size[1] inside the padding"
-                .into()
-        }
-        ("defaults", "line_height") if under("basic.list.") => {
-            "next_text: the row label's line box, list.item_label(NONE)'s size by \
-             typography.line_height_multiplier where it states no line height (next_line_box); \
-             next_list_row_height: the row grown to hold it"
                 .into()
         }
         ("defaults", "line_height") if under("basic.table.") => {
@@ -28561,14 +28796,18 @@ mod tests {
     /// states apart among the presets.
     #[test]
     fn the_unfocused_pairs_routes_say_where_it_is_not_drawn() {
+        // The 0.7.2 leaves, and the homes of an element Widget Info lists by
+        // its homes (`route_keys`).
         let leaves = [
             "defaults.selection_inactive_background",
             "defaults.selection_inactive_text_color",
+            "colors.selection.unfocused_background",
+            "colors.selection.unfocused_foreground",
         ];
         let mut list_swapped = BTreeSet::new();
         let elements: Vec<_> = elements::elements()
             .iter()
-            .filter(|e| e.leaves.iter().any(|l| leaves.contains(&l.as_str())))
+            .filter(|e| route_keys(e).iter().any(|l| leaves.contains(&l.as_str())))
             .collect();
         assert!(
             elements.iter().any(|e| e.id.starts_with("basic.table."))
@@ -28610,8 +28849,7 @@ mod tests {
                     list_swapped.insert(format!("{}/{mode:?}", preset.key));
                 }
                 for element in &elements {
-                    for leaf in element
-                        .leaves
+                    for leaf in route_keys(element)
                         .iter()
                         .filter(|l| leaves.contains(&l.as_str()))
                     {
@@ -33240,7 +33478,7 @@ mod tests {
         let mut unrouted = BTreeSet::new();
         for state in &route_states() {
             for element in &list {
-                for leaf in &element.leaves {
+                for leaf in route_keys(element) {
                     let route = iced_route(state, element, leaf);
                     if route.contains("no route recorded") {
                         unrouted.insert(format!("{}: {leaf}", element.id));
@@ -33265,7 +33503,18 @@ mod tests {
             Some(element) => iced_route(&state, element, leaf),
             None => panic!("{id} is not listed"),
         };
-        let leaves = ["list.border.corner_radius_px", "list.border.line_width_px"];
+        // The 0.7.2 leaves, or the list's homes of them where Widget Info
+        // lists it by its homes.
+        let leaves = |id: &str| {
+            if home_keyed(id) {
+                [
+                    "list.container(NONE).corners",
+                    "list.container(NONE).stroke.width",
+                ]
+            } else {
+                ["list.border.corner_radius_px", "list.border.line_width_px"]
+            }
+        };
         for (id, names) in [
             ("basic.table.header", "table_row_style"),
             ("basic.table.row_2", "table_row_style"),
@@ -33273,7 +33522,7 @@ mod tests {
             ("basic.list.row_2", "list_row_fill"),
             ("basic.list.row_3", "list_row_fill"),
         ] {
-            for leaf in leaves {
+            for leaf in leaves(id) {
                 let line = route(id, leaf);
                 assert!(
                     line.contains(names) && !line.contains("frame container"),
@@ -33282,7 +33531,7 @@ mod tests {
             }
         }
         for id in ["basic.table.frame", "basic.list.frame"] {
-            for leaf in leaves {
+            for leaf in leaves(id) {
                 let line = route(id, leaf);
                 assert!(line.contains("frame container"), "{id} {leaf}: {line:?}");
             }
@@ -33294,6 +33543,61 @@ mod tests {
             ["table_row_style", "header_section_style"],
             "basic.table.header list.border.corner_radius_px: {line:?}"
         );
+    }
+
+    /// The Basic list's elements are listed by their 0.8.0 homes
+    /// (`home_keyed`): a row per home in the list's order, each value read
+    /// from the installed 0.8.0 theme (`next::values::home_value`), the row
+    /// label's family by what iced draws it in (`next_listed_family`); a
+    /// row's padding and its fill's inset, one 0.7.2 leaf, are routed apart,
+    /// each naming what reads its home.
+    #[test]
+    fn the_basic_list_is_listed_by_its_homes() -> Result<(), String> {
+        let state = route_states().swap_remove(0);
+        let r = state.next_shown();
+        let json = next_theme_json(r);
+        let family = |path: &str, font: &StatedFont| next_listed_family(r, path, font);
+        for element in elements::elements()
+            .iter()
+            .filter(|e| e.id.starts_with("basic.list."))
+        {
+            let info = element_info(&state, element);
+            let keys: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
+            let homes: Vec<&str> = element.homes.iter().map(String::as_str).collect();
+            assert_eq!(keys, homes, "{}: a row per home", element.id);
+            for row in &info.rows {
+                let want = native_theme_showcase_support::next::values::home_value(
+                    &row.leaf, r, &json, &family,
+                )
+                .map_err(|e| format!("{}: {e}", element.id))?;
+                assert_eq!(row.value, want.text, "{} {}", element.id, row.leaf);
+            }
+        }
+        let element = elements::element("basic.list.row_1").ok_or("basic.list.row_1")?;
+        let info = element_info(&state, element);
+        let label = r.list.item_label(WidgetState::NONE);
+        let drawn = next_family_drawing(next_font_from_database(&label, false).as_ref())
+            .label(&label.family);
+        let value = info
+            .rows
+            .iter()
+            .find(|row| row.leaf == "list.item_label(NONE)")
+            .map(|row| row.value.clone())
+            .ok_or("basic.list.row_1 has no list.item_label(NONE) row")?;
+        assert!(value.contains(&drawn), "{value:?} names no {drawn:?}");
+        let route = |home: &str| iced_route(&state, element, home);
+        let padding = route("list.row(NONE).padding.left");
+        assert!(
+            padding.starts_with("iced: next_list_row_padding")
+                && !padding.contains("list_row_fill"),
+            "{padding}"
+        );
+        let inset = route("list.highlight(NONE).margin.left");
+        assert!(
+            inset.starts_with("iced: list_row_fill") && !inset.contains("padding"),
+            "{inset}"
+        );
+        Ok(())
     }
 
     /// A fill stated as layers that are all gradients, which iced cannot
@@ -33348,7 +33652,7 @@ mod tests {
                 "tab.tab(SELECTED).fill",
             ),
             (
-                list_route(&patched, "list.hover_background", false),
+                list_route(&patched, "list.highlight(HOVER).fill", false),
                 "list.highlight(HOVER).fill",
             ),
             (
@@ -33373,7 +33677,7 @@ mod tests {
         state.next_resolved = patched;
         let element = elements::element("basic.list.row_1").ok_or("basic.list.row_1")?;
         assert_eq!(
-            iced_route(&state, element, "list.hover_background"),
+            iced_route(&state, element, "list.highlight(HOVER).fill"),
             line("list.highlight(HOVER).fill")
         );
         Ok(())
@@ -34070,23 +34374,25 @@ mod tests {
         })
     }
 
-    /// The home of the Basic list's colour leaf `leaf`, which [`list_frame`]
-    /// reads where its `bool` is true, else [`list_row`]: `None` for a leaf
+    /// The home that the Basic list's colour row `home` draws, which
+    /// [`list_frame`] reads where its `bool` is true, else [`list_row`]: the
+    /// row's own home, but for the unfocused selection's, whose colours a
+    /// row draws from its `SELECTED|UNFOCUSED_VIEW` state; `None` for a home
     /// neither reads.
-    fn list_home(leaf: &str) -> Option<(&'static str, bool)> {
-        Some(match leaf {
-            "list.background_color" => ("list.container(NONE).fill", true),
-            "list.border.color" => ("list.container(NONE).stroke.color", true),
-            "list.item_font.color" => ("list.item_label(NONE).color", false),
-            "list.selection_background" => ("list.highlight(SELECTED).fill", false),
-            "list.selection_text_color" => ("list.item_label(SELECTED).color", false),
-            "list.hover_background" => ("list.highlight(HOVER).fill", false),
-            "list.hover_text_color" => ("list.item_label(HOVER).color", false),
-            "list.hover_border_color" => ("list.highlight(HOVER).stroke.color", false),
-            "defaults.selection_inactive_background" => {
+    fn list_home(home: &str) -> Option<(&'static str, bool)> {
+        Some(match home {
+            "list.container(NONE).fill" => ("list.container(NONE).fill", true),
+            "list.container(NONE).stroke.color" => ("list.container(NONE).stroke.color", true),
+            "list.item_label(NONE).color" => ("list.item_label(NONE).color", false),
+            "list.highlight(SELECTED).fill" => ("list.highlight(SELECTED).fill", false),
+            "list.item_label(SELECTED).color" => ("list.item_label(SELECTED).color", false),
+            "list.highlight(HOVER).fill" => ("list.highlight(HOVER).fill", false),
+            "list.item_label(HOVER).color" => ("list.item_label(HOVER).color", false),
+            "list.highlight(HOVER).stroke.color" => ("list.highlight(HOVER).stroke.color", false),
+            "colors.selection.unfocused_background" => {
                 ("list.highlight(SELECTED|UNFOCUSED_VIEW).fill", false)
             }
-            "defaults.selection_inactive_text_color" => {
+            "colors.selection.unfocused_foreground" => {
                 ("list.item_label(SELECTED|UNFOCUSED_VIEW).color", false)
             }
             _ => return None,
@@ -35420,7 +35726,7 @@ mod tests {
                                         ));
                                     }
                                 }
-                                for leaf in &element.leaves {
+                                for leaf in route_keys(element) {
                                     let route = iced_route(&state, element, leaf);
                                     failures.extend(
                                         route_faults(&state, &laid, open, element, leaf, &route)
@@ -41028,14 +41334,20 @@ mod tests {
         let states = route_states();
         let routes = states.iter().flat_map(|state| {
             elements::elements().iter().flat_map(move |element| {
-                element
-                    .leaves
+                route_keys(element)
                     .iter()
                     .map(move |leaf| (state, element, leaf))
             })
         });
         for (state, element, leaf) in routes {
-            if !export.has_leaf(leaf) || drawing(element, leaf, Shown::of(state)).is_some() {
+            // A colour row: a colour home of the export where the element
+            // is listed by its homes, else a 0.7.2 colour leaf.
+            let colour = if home_keyed(&element.id) {
+                export.homes.contains_key(leaf.as_str())
+            } else {
+                export.has_leaf(leaf)
+            };
+            if !colour || drawing(element, leaf, Shown::of(state)).is_some() {
                 continue;
             }
             let route = iced_route(state, element, leaf);
@@ -41399,7 +41711,8 @@ mod tests {
                 assert_eq!(info.title, title);
                 assert_eq!(shown_title(&state).as_deref(), Some(title));
                 let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
-                let listed_leaves: Vec<&str> = element.leaves.iter().map(String::as_str).collect();
+                let listed_leaves: Vec<&str> =
+                    route_keys(element).iter().map(String::as_str).collect();
                 assert_eq!(leaves, listed_leaves, "{id}: rows out of the list's order");
                 assert!(
                     info.rows.iter().all(|row| !row.value.is_empty()),
