@@ -60,12 +60,20 @@ pub(crate) struct SchemeInput<'a> {
 
 /// What one scheme's styles are read from, filled from either model: [`Sources::old`] from
 /// the 0.7.2 model, `next::build::sources` from the 0.8.0 model's homes.
+/// [`Sources::part_rings`]: per role and variant, the part's own ring for a focus that followed
+/// no key press and for one that did.
+pub(crate) type PartRingSources = [[[crate::plugin::PartRingSource; 2]; 4]; 25];
+
 pub(crate) struct Sources {
     pub base: base::BaseSource,
     pub cells: cells::CellSource,
     pub variants: variants::VariantSource,
     pub frames: frames::FrameSource,
     pub focus_ring: crate::plugin::FocusRingSource,
+    /// `part_rings[role.index()][variant.index()]`: what the part each role's cell reads
+    /// states of its own ring, for a focus that followed no key press and for one that did; the
+    /// 0.7.2 model states none.
+    pub part_rings: Option<PartRingSources>,
     /// Whether a hover or press the sources leave `None` takes egui's own treatment (spec §10,
     /// rule 0, the 0.8.0 model's) or the 0.7.2 model's copy (§6.1).
     pub rule_0: bool,
@@ -84,6 +92,7 @@ impl Sources {
             variants: variants::VariantSource::old(theme),
             frames: frames::FrameSource::old(theme, layout),
             focus_ring: crate::plugin::FocusRingSource::old(theme),
+            part_rings: None,
             rule_0: false,
         }
     }
@@ -195,6 +204,16 @@ pub(crate) fn compile_from(
         cells,
         frames,
         focus_ring: crate::plugin::build_focus_ring_from(&src.focus_ring, notes),
+        part_rings: match &src.part_rings {
+            Some(rings) => rings.each_ref().map(|row| {
+                row.each_ref()
+                    .map(|[pointer, keyboard]| crate::plugin::PartRings {
+                        pointer: pointer.build(notes),
+                        keyboard: keyboard.build(notes),
+                    })
+            }),
+            None => Default::default(),
+        },
         menu_bar: roles::MenuBarTitles::of(&src.cells.menu),
     }
 }

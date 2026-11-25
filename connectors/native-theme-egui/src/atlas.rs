@@ -12,7 +12,7 @@ use crate::{
     Surface,
 };
 
-/// A non-fatal observation made while compiling a [`ThemeAtlas`]. Six variants.
+/// A non-fatal observation made while compiling a [`ThemeAtlas`]. Seven variants.
 ///
 /// `#[non_exhaustive]` on the *enum* keeps adding a variant non-breaking; it does **not**
 /// protect a variant's payload, which stays exhaustively patternable downstream (verified with
@@ -88,6 +88,26 @@ pub enum Note {
         /// The family name the face was registered under.
         family: std::sync::Arc<str>,
     },
+    /// A 0.8.0 theme states a value in a form egui cannot draw, and egui's own stays in its
+    /// place (spec §10, rule 2): corners whose radii differ corner by corner, or concentric
+    /// ones (egui rounds a widget by one radius, [`crate::next::radius_of`]), or a stroke
+    /// stated per side (egui strokes a widget by one `egui::Stroke`). A whole-theme failure,
+    /// such as a focus indicator that is not a ring, is [`crate::next::Unmapped`] instead.
+    #[non_exhaustive]
+    Unmapped {
+        /// The value's home in the 0.8.0 model, as [`crate::next::Unmapped`] names it
+        /// (`"button.body(NONE).corners"`).
+        path: &'static str,
+    },
+}
+
+impl Note {
+    /// [`Note::Unmapped`] at `path`, for a companion crate that draws a 0.8.0 theme's value
+    /// beside the atlas and reports one it cannot draw on the same channel.
+    #[must_use]
+    pub const fn unmapped(path: &'static str) -> Self {
+        Self::Unmapped { path }
+    }
 }
 
 /// The builder's stored style patch (spec §4.3): a named type, because the spelled-out
@@ -119,6 +139,10 @@ pub(crate) struct SchemeStyles {
     /// The ring the install plugin paints (spec §6.18); `None` for a zero or non-finite width or a
     /// non-finite offset, which paints no ring.
     pub(crate) focus_ring: Option<FocusRing>,
+    /// `part_rings[role.index()][variant.index()]`: the ring the part a role's cell reads states
+    /// of its own, which the install plugin paints in place of `focus_ring` round a widget in
+    /// that cell's scope.
+    pub(crate) part_rings: [[crate::plugin::PartRings; 4]; 25],
     /// What [`ThemeAtlas::menu_bar_modifier`] writes over the `Role::Menu` cell.
     pub(crate) menu_bar: crate::style::roles::MenuBarTitles,
 }
@@ -132,6 +156,17 @@ impl SchemeStyles {
             .get(role.index())
             .and_then(|row| row.get(variant.index()))
             .unwrap_or(&self.base)
+    }
+
+    /// The rings of a role's part in a variant ([`SchemeStyles::part_rings`]); the indices are
+    /// below 25 and 4 by construction, and the scheme's ring is the fallback the lint-free `get`
+    /// needs, never reached.
+    pub(crate) fn part_rings(&self, role: Role, variant: RoleVariant) -> crate::plugin::PartRings {
+        self.part_rings
+            .get(role.index())
+            .and_then(|row| row.get(variant.index()))
+            .copied()
+            .unwrap_or_default()
     }
 
     /// The frame of a surface; the index is below 11 by construction (`SURFACES`), and
@@ -1092,7 +1127,7 @@ impl<'a> NextBuilder<'a> {
         let patch = self.style_patch.as_deref();
         let mut compiled = |scheme, theme, inactive| {
             let prefs = crate::next::accessibility_of(theme);
-            let sources = crate::next::build::sources(theme, inactive)?;
+            let sources = crate::next::build::sources(theme, inactive, &mut notes)?;
             Ok(compile_scheme(
                 scheme, &sources, &prefs, &defs, &mut notes, patch,
             ))

@@ -15,7 +15,8 @@
 //! same colour, so egui's own hover underline matches it. `link.underline_enabled` underlines
 //! the text at rest (`WidgetText::underline`, drawn in the text's colour), and
 //! `link.background_color`, with `link.hover_background` composited over it while hovered, is
-//! the text's background (`WidgetText::background_color`).
+//! the text's background (`WidgetText::background_color`); under the 0.8.0 model the hovered
+//! container's stated fill is that background, taken as it is (spec §9, step 2).
 //!
 //! A link wrapped over several rows answers on its first row only: a wrapped `Label` gives
 //! each further row an id of its own (`egui/src/widgets/label.rs:219-227`).
@@ -29,10 +30,14 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use native_theme_egui::convert::{composite_over, to_color32};
+use native_theme_egui::convert::to_color32;
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{
+    DecorationKind, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
+};
 use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
+
+use crate::next;
 
 /// The URLs a [`hyperlink`] of this `Context` was clicked for: its visited set, kept in
 /// `Context` data for the life of the `Context`. Shared, so a read clones the `Arc` and not the
@@ -46,41 +51,112 @@ fn visited_key() -> egui::Id {
 }
 
 /// What a link reads of a theme, every colour read in one place, so the crate's colour-leaf
-/// coverage test sees the widget's reads.
+/// coverage test sees the widget's reads. Each is `None` where the theme states none: the
+/// text keeps egui's own colour there, the background none, the hovered one the rest's, and the
+/// underline egui's own (spec §10, rule 0).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `link.font.color`: the text at rest.
-    pub(crate) text_color: Rgba,
-    pub(crate) background_color: Rgba,
-    pub(crate) hover_background: Rgba,
-    pub(crate) hover_text_color: Rgba,
-    pub(crate) active_text_color: Rgba,
-    pub(crate) visited_text_color: Rgba,
-    pub(crate) disabled_text_color: Rgba,
-    pub(crate) underline_enabled: bool,
+    pub(crate) text_color: Option<egui::Color32>,
+    pub(crate) background_color: Option<egui::Color32>,
+    /// The hovered background's whole fill: the 0.8.0 theme's stated fill as it is, or 0.7.2's
+    /// `link.hover_background` composited over `link.background_color`.
+    pub(crate) hover_background: Option<egui::Color32>,
+    pub(crate) hover_text_color: Option<egui::Color32>,
+    pub(crate) active_text_color: Option<egui::Color32>,
+    pub(crate) visited_text_color: Option<egui::Color32>,
+    pub(crate) disabled_text_color: Option<egui::Color32>,
+    pub(crate) underline_enabled: Option<bool>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         let l = &t.link;
+        let c = |colour| Some(to_color32(colour));
         Self {
-            text_color: l.font.color,
-            background_color: l.background_color,
-            hover_background: l.hover_background,
-            hover_text_color: l.hover_text_color,
-            active_text_color: l.active_text_color,
-            visited_text_color: l.visited_text_color,
-            disabled_text_color: l.disabled_text_color,
-            underline_enabled: l.underline_enabled,
+            text_color: c(l.font.color),
+            background_color: c(l.background_color),
+            hover_background: c(l.background_color)
+                .map(|rest| rest.blend(to_color32(l.hover_background))),
+            hover_text_color: c(l.hover_text_color),
+            active_text_color: c(l.active_text_color),
+            visited_text_color: c(l.visited_text_color),
+            disabled_text_color: c(l.disabled_text_color),
+            underline_enabled: Some(l.underline_enabled),
+        }
+    }
+
+    /// The look of a link of a 0.8.0 theme, at the homes of the 0.7.2 fields `of` reads:
+    /// `link.label`'s colour at `NONE`, `HOVER`, `PRESSED`, `VISITED` and `DISABLED`,
+    /// `link.container(NONE)`'s fill, the hovered fill `link.container(HOVER)`'s where a
+    /// rule for `HOVER` states it (spec §2, `from_state`), and the underline at rest, whether
+    /// `link.label(NONE)`'s stated decoration is an underline.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let l = &r.link;
+        let label = |s: WidgetState| next::text_color_of(&l.label(s));
+        let rest = l.label(WidgetState::NONE);
+        let hover = l.container(WidgetState::HOVER);
+        Self {
+            text_color: next::text_color_of(&rest),
+            background_color: next::fill_of(&l.container(WidgetState::NONE)),
+            hover_background: next::ruled_fill(&hover, &hover),
+            hover_text_color: label(WidgetState::HOVER),
+            active_text_color: label(WidgetState::PRESSED),
+            visited_text_color: label(WidgetState::VISITED),
+            disabled_text_color: label(WidgetState::DISABLED),
+            underline_enabled: rest
+                .stated
+                .contains(TextStated::DECORATION)
+                .then_some(rest.decoration.kind == DecorationKind::Underline),
+        }
+    }
+
+    /// The look as a link paints it, so two looks that paint alike compare equal: a
+    /// transparent background, which paints as none, given as none, and a hover fill that is
+    /// the background at rest given as none.
+    #[cfg(test)]
+    pub(crate) fn painted(self) -> Self {
+        let clear = |c: Option<egui::Color32>| c.filter(|c| *c != egui::Color32::TRANSPARENT);
+        let rest = self.background_color.unwrap_or(egui::Color32::TRANSPARENT);
+        Self {
+            background_color: clear(self.background_color),
+            hover_background: self.hover_background.filter(|&hover| hover != rest),
+            ..self
+        }
+    }
+
+    /// The text's colour in a state: disabled, pressed, hovered, visited or at rest, each
+    /// where the theme states it.
+    fn text(
+        &self,
+        enabled: bool,
+        pressed: bool,
+        hovered: bool,
+        visited: bool,
+    ) -> Option<egui::Color32> {
+        if !enabled {
+            self.disabled_text_color
+        } else if pressed {
+            self.active_text_color
+        } else if hovered {
+            self.hover_text_color
+        } else if visited {
+            self.visited_text_color
+        } else {
+            self.text_color
         }
     }
 }
 
-/// `ui`'s link look, from the installed atlas in the scheme egui is drawing; `None` without
-/// one, or with one of the 0.8.0 model.
+/// `ui`'s link look, from the installed atlas in the scheme egui is drawing, of either model;
+/// `None` without one.
 fn link_theme(ui: &egui::Ui) -> Option<Look> {
-    ThemeAtlas::from_ctx(ui.ctx())
-        .and_then(|atlas| atlas.resolved_for(ui.ctx().theme()).map(Look::of))
+    let atlas = ThemeAtlas::from_ctx(ui.ctx())?;
+    let theme = ui.ctx().theme();
+    match atlas.resolved_for(theme) {
+        Some(t) => Some(Look::of(t)),
+        None => atlas.next_resolved_for(theme).map(Look::next_of),
+    }
 }
 
 /// egui's `Link` in `link.*`'s colours. `ui` is read for the atlas and the scheme only.
@@ -143,25 +219,18 @@ fn themed(
         let pressed = previous
             .as_ref()
             .is_some_and(egui::Response::is_pointer_button_down_on);
-        let colour = if !ui.is_enabled() {
-            l.disabled_text_color
-        } else if pressed {
-            l.active_text_color
-        } else if hovered {
-            l.hover_text_color
-        } else if visited {
-            l.visited_text_color
-        } else {
-            l.text_color
-        };
-        let background = if hovered && ui.is_enabled() {
-            composite_over(l.hover_background, l.background_color)
-        } else {
-            to_color32(l.background_color)
-        };
-        ui.visuals_mut().hyperlink_color = to_color32(colour);
-        let mut text = text.color(to_color32(colour)).background_color(background);
-        if l.underline_enabled {
+        let enabled = ui.is_enabled();
+        let mut text = text;
+        if let Some(colour) = l.text(enabled, pressed, hovered, visited) {
+            ui.visuals_mut().hyperlink_color = colour;
+            text = text.color(colour);
+        }
+        let hover = l.hover_background.filter(|_| hovered && enabled);
+        let background = hover.or(l.background_color);
+        if let Some(background) = background {
+            text = text.background_color(background);
+        }
+        if l.underline_enabled == Some(true) {
             text = text.underline();
         }
         let response = match url {

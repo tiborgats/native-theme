@@ -470,6 +470,13 @@ const DIFFERENCES: &[Difference] = &[
         Cause::Base,
         CARD_OUTLINE,
     ),
+    d(
+        "Scrollbar",
+        &[M3],
+        ".visuals.widgets.{inactive,hovered,active}.corner_radius.*",
+        Cause::Base,
+        THUMB_UNSTATED,
+    ),
 ];
 
 /// A model gap: a native preset that leaves a state's value unstated where the platform draws
@@ -518,12 +525,14 @@ struct Home {
 }
 
 /// A home's value as the builder reads it: a fill or a text colour, written as given; a stroke
-/// colour, which the builder lays over the fill its entry paints; a stroke width.
+/// colour, which the builder lays over the fill its entry paints; a stroke width; a corner
+/// radius, which the builder rounds to egui's whole points (`convert::to_corner_radius`).
 #[derive(Clone, Copy, Debug)]
 enum HomeValue {
     Color(Rgba),
     Line(Rgba),
     Width(f32),
+    Radius(f32),
 }
 
 /// Whether `bit` of a part is stated for `state`: by a rule for the state (`from_state`), or,
@@ -533,6 +542,16 @@ fn part_stated(part: &PartStyle, bit: PartStated, state: WidgetState) -> bool {
         part.stated.contains(bit)
     } else {
         part.from_state.contains(bit)
+    }
+}
+
+/// Whether an icon's stroke width is stated for `state`: by a rule for the state
+/// (`from_state`), or, at rest, by the theme.
+fn icon_width_stated(icon: &IconStyle, state: WidgetState) -> bool {
+    if state == WidgetState::NONE {
+        icon.stated.contains(IconStated::STROKE_WIDTH)
+    } else {
+        icon.from_state.contains(IconStated::STROKE_WIDTH)
     }
 }
 
@@ -584,7 +603,8 @@ impl ColorAt for IconStyle {
 }
 
 /// The [`Home`] `<widget>.<part>(<STATE>).<property>`, `property` a part's `fill`,
-/// `stroke.color` or `stroke.width`, or a text style's or an icon's `color`; `<STATE>` one
+/// `stroke.color`, `stroke.width` or `corners`, a text style's or an icon's `color`, or an icon's
+/// `stroke_width`; `<STATE>` one
 /// state or several joined by `|`.
 macro_rules! home {
     (@at $w:ident . $p:ident ($($s:ident)|+) . $($prop:ident).+, $stated:expr, $value:expr) => {
@@ -644,6 +664,40 @@ macro_rules! home {
             }
         )
     };
+    ($w:ident . $p:ident ($($s:ident)|+) . corners) => {
+        home!(
+            @at $w.$p($($s)|+).corners,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                part_stated(&r.$w.$p(s), PartStated::CORNERS, s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let part = r.$w.$p(s);
+                part_stated(&part, PartStated::CORNERS, s)
+                    .then(|| super::radius_of(&part))
+                    .flatten()
+                    .map(HomeValue::Radius)
+            }
+        )
+    };
+    ($w:ident . $p:ident ($($s:ident)|+) . stroke_width) => {
+        home!(
+            @at $w.$p($($s)|+).stroke_width,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                icon_width_stated(&r.$w.$p(s), s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let icon = r.$w.$p(s);
+                icon_width_stated(&icon, s)
+                    .then_some(icon.stroke_width)
+                    .flatten()
+                    .map(HomeValue::Width)
+            }
+        )
+    };
     ($w:ident . $p:ident ($($s:ident)|+) . color) => {
         home!(
             @at $w.$p($($s)|+).color,
@@ -670,6 +724,8 @@ impl Home {
         let (state, property) = rest.split_once(").").ok_or(self.path)?;
         let value = if property.starts_with("stroke.") {
             "stroke = { width = 3.0, color = \"#ff00ff\" }".to_owned()
+        } else if property == "stroke_width" {
+            "stroke_width = 3.0".to_owned()
         } else {
             format!("{property} = \"#ff00ff\"")
         };
@@ -698,6 +754,14 @@ const STATED: &str = "the 0.8.0 preset states the value at the home, from the so
      comment there cites (M2.FS4); 0.7.2's resolver gave the resting value, another state's, or \
      a layer laid over the resting fill";
 
+const THUMB_CORNERS: &str = "the scroll bar's thumb and trough are rounded by the corners the \
+     0.8.0 preset states for the thumb, a pill, egui's largest radius, which epaint clamps to \
+     half the thumb's shorter side; 0.7.2 rounded them by defaults.border.corner_radius";
+
+const THUMB_UNSTATED: &str = "the 0.8.0 theme states no corners for the scroll bar's thumb \
+     (scrollbar.thumb(NONE).corners) where 0.7.2 rounded the thumb and trough by \
+     defaults.border.corner_radius: the cell keeps the base's";
+
 /// A button stroked as none at rest.
 const NO_LINE_AT_REST: &str = "macos-tahoe states its push button's bezel stroked as none \
      (M2.FS4, measured): the width is 0 (spec §10, rule 2) and the colour under it egui's own, \
@@ -715,6 +779,13 @@ const fn s(
 
 /// The values the FS4 presets state at a home where 0.7.2's resolver gave another (M2.FS4b).
 const STATED_ON_A_PRESET: &[Difference] = &[
+    d(
+        "Scrollbar",
+        &[K],
+        ".visuals.widgets.{inactive,hovered,active}.corner_radius.*",
+        Cause::Stated(home!(scrollbar.thumb(NONE).corners)),
+        THUMB_CORNERS,
+    ),
     s(
         "base",
         &[M, T],
@@ -1104,6 +1175,13 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
+    // the checked box's outline width, a stroke stated as none for `CHECKED` no width
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(checkbox.indicator(CHECKED).stroke.width),
+    ),
     // the checked box's outline, which the disabled checked cell keeps
     s(
         "Checkbox/SelectedDisabled",
@@ -1340,6 +1418,14 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(checkbox.checkmark(PRESSED).color),
+    ),
+    // the check mark is a line in the state's `fg_stroke`, which egui's own entries widen under
+    // the pointer (egui 0.37.0 `src/style.rs`, `Widgets::light`, `Widgets::dark`)
+    r0(
+        "Checkbox",
+        &[K, A, M3],
+        ".visuals.widgets.hovered.fg_stroke.width",
+        home!(checkbox.checkmark(HOVER).stroke_width),
     ),
     r0(
         "ComboBox",
@@ -1832,6 +1918,7 @@ fn stated_leaf(
         HomeValue::Color(c) => Some(format!("{:?}", to_color32(c))),
         HomeValue::Line(c) => over(to_color32(c)),
         HomeValue::Width(w) => Some(format!("{w:?}")),
+        HomeValue::Radius(v) => Some(format!("{:?}", crate::convert::u8_from_f32_saturating(v))),
     }
 }
 
@@ -2029,7 +2116,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             let (old_styles, new_styles) = (old_atlas.scheme(scheme), new_atlas.scheme(scheme));
             // each side's sources and cell input as its atlas compiled them
             let old_sources = crate::style::Sources::old(old, &prefs, &layout);
-            let new_sources = super::build::sources(new, inactive)?;
+            let new_sources = super::build::sources(new, inactive, &mut Vec::new())?;
             let cell_input = |sources: &crate::style::Sources| CellInput {
                 scheme,
                 row_height: crate::atlas::row_height(scheme, sources, &defs),
@@ -2038,7 +2125,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             };
             let (old_input, new_input) = (cell_input(&old_sources), cell_input(&new_sources));
             let (old_base, new_base) = (&*old_styles.base, &*new_styles.base);
-            let new_src = base_source(new);
+            let new_src = base_source(new, &mut Vec::new());
             let own = leaves(&format!("{:#?}", scheme.default_style()));
             let old_leaves = leaves(&format!("{old_base:#?}"));
             let new_leaves = leaves(&format!("{new_base:#?}"));
@@ -2077,8 +2164,8 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                 bases: None,
             };
             compare(&side, old_base, new_base, &base_expected, &mut tally);
-            let new_cells = cell_source(new);
-            let new_variant_src = variant_source(new);
+            let new_cells = cell_source(new, &mut Vec::new());
+            let new_variant_src = variant_source(new, &mut Vec::new());
             for role in Role::all() {
                 let what = format!("{role:?}");
                 let old_cell = &**old_styles.cell(*role, RoleVariant::Normal);
@@ -2201,7 +2288,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                     let checked = variant != RoleVariant::Disabled;
                     let variant_over = |color: egui::Color32, path: &str| {
                         let (align, weak) = if checked {
-                            (new_variant_src.checked.align, Some(false))
+                            (new_variant_src.checked.look.align, Some(false))
                         } else {
                             outline_of(*role, &new_cells)?
                         };

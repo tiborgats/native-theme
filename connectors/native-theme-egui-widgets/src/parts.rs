@@ -179,6 +179,15 @@ pub(crate) fn text_after(before: egui::Rect, gap: f32, size: egui::Vec2) -> egui
     )
 }
 
+/// The rectangle of a text atom laid out before an atom whose cell is `after`, `gap` apart, as
+/// [`text_after`] places one after it: ending at the start of the gap, centred on the row.
+pub(crate) fn text_before(after: egui::Rect, gap: f32, size: egui::Vec2) -> egui::Rect {
+    egui::Rect::from_min_size(
+        egui::pos2(after.left() - gap - size.x, after.center().y - 0.5 * size.y),
+        size,
+    )
+}
+
 /// How many widgets' parts the store keeps for `ctx`'s viewport.
 #[cfg(test)]
 pub(crate) fn stored(ctx: &egui::Context) -> usize {
