@@ -432,12 +432,21 @@ fn focus_band_of(r: &ResolvedTheme) -> Mapped<bool> {
 /// view that has the focus, and the plain handle is its `UNFOCUSED_VIEW`
 /// rule; a preset without an `UNFOCUSED_VIEW` rule returns its base there.
 /// When the widgets are ported, the connector sets the bit from the view's
-/// real focus instead.
+/// real focus instead. Where the theme leaves the fill unstated, it is
+/// gpui-component's own ([`rest_thumb_fill`]).
 fn thumb_at_rest(r: &ResolvedTheme) -> Mapped<Hsla> {
-    fill(
+    rest_thumb_fill(
         &r.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW),
-        "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+        &upstream_colors(r),
     )
+}
+
+/// The rest thumb `thumb`'s fill, where stated; where the theme leaves it
+/// unstated, gpui-component's own `scrollbar_thumb` in `upstream`, which
+/// gpui-base's own thumb also takes (spec §10, rule 0).
+fn rest_thumb_fill(thumb: &PartStyle, upstream: &ThemeColor) -> Mapped<Hsla> {
+    Ok(stated_fill(thumb, "scrollbar.thumb(UNFOCUSED_VIEW).fill")?
+        .unwrap_or(upstream.scrollbar_thumb))
 }
 
 /// The opacity of `accent` gpui-component gives `list_hover` where a
@@ -1417,6 +1426,33 @@ mod tests {
         assert_eq!(unset.thumb_active, hsla(GREEN));
         let stated = geometry_of(&source(&filled(RED, true))?);
         assert_eq!(stated.thumb_active, hsla(RED));
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for the thumb at rest: its fill where stated, else
+    /// gpui-component's own `scrollbar_thumb`, in each scheme; a fill
+    /// stated in a form gpui cannot paint is the home lacked.
+    #[test]
+    fn an_unstated_rest_thumb_is_gpui_components_own() -> Mapped<()> {
+        let mut unstated = filled(RED, false);
+        unstated.stated = PartStated::default();
+        for upstream in [ThemeColor::light(), ThemeColor::dark()] {
+            assert_eq!(
+                rest_thumb_fill(&unstated, &upstream)?,
+                upstream.scrollbar_thumb
+            );
+            assert_eq!(rest_thumb_fill(&filled(RED, false), &upstream)?, hsla(RED));
+        }
+        let mut gradient = filled(RED, false);
+        gradient.fill = Paint::layers(vec![native_theme::next::PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: Vec::new().into(),
+            blend: native_theme::next::BlendMode::Normal,
+        }]);
+        assert_eq!(
+            rest_thumb_fill(&gradient, &ThemeColor::light()),
+            Err(Unmapped("scrollbar.thumb(UNFOCUSED_VIEW).fill"))
+        );
         Ok(())
     }
 
