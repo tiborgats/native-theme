@@ -51,6 +51,12 @@
 # checked one's `HOVER|CHECKED`; every state the element enters where the one leaf colours each)
 # or its axis, said in a `# homes:` comment above the entry's `homes`.
 #
+# A home the 0.8.0 model has where 0.7.2 had no field (a variant's outline, a metric 0.7.2 lacked)
+# has no leaf and no row of native-theme/tests/next_homes.toml. An element that draws one lists it
+# in `homes` with no leaf for it, and `model_only_homes` (below the header) names it once with the
+# reason 0.7.2 had no field there. Scaffolding of the 0.8.0 work, as `leaves` is: the cut deletes
+# both with that table.
+#
 # A home is one of:
 #
 #   <global>                         a field of the resolved theme outside the widgets, by its path in
@@ -213,6 +219,18 @@
 #   | Theme Map   | Theme Map  | Theme Map               | Theme Map  |
 #
 # iced's Extra widgets page is in a build with the iced connector's `iced_aw` feature only.
+
+# =============================================================================================
+# Homes of the 0.8.0 model alone
+# =============================================================================================
+#
+# Each a home some element lists with no leaf for it, and why no 0.7.2 field is there. Read by
+# showcase-support's `the_homes_are_the_leaves_rows_homes` and
+# `the_model_only_homes_have_no_row_and_are_listed`, and by native-theme-egui's
+# `every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row`.
+
+model_only_homes = [
+]
 
 # =============================================================================================
 # Chrome

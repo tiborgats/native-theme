@@ -105,6 +105,49 @@ fn parse(text: &str) -> Result<Vec<ShowcaseElement>, String> {
         .collect()
 }
 
+/// A home of the 0.8.0 model that an element of the list names with no leaf
+/// for it, and why: no 0.7.2 field was there, so no row of
+/// `native-theme/tests/next_homes.toml` names it (the list's
+/// `model_only_homes`). Scaffolding of the 0.8.0 work, deleted at the cut
+/// with `leaves` and that table.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ModelOnlyHome {
+    /// The home, in the grammar of the list's header.
+    pub home: String,
+    /// Why no 0.7.2 field is there.
+    pub reason: String,
+}
+
+/// The list's `model_only_homes`, in its order, or why they do not parse.
+pub fn model_only_homes() -> Result<Vec<ModelOnlyHome>, String> {
+    model_only_homes_of(SHOWCASE_ELEMENTS)
+}
+
+/// The `model_only_homes` of `text`, a list in
+/// `docs/showcase-elements.toml`'s schema.
+fn model_only_homes_of(text: &str) -> Result<Vec<ModelOnlyHome>, String> {
+    let table: toml::Table = toml::from_str(text).map_err(|e| e.to_string())?;
+    let rows = table
+        .get("model_only_homes")
+        .and_then(toml::Value::as_array)
+        .ok_or("docs/showcase-elements.toml: no model_only_homes list")?;
+    rows.iter()
+        .map(|row| {
+            let text = |key: &str| {
+                row.get(key)
+                    .and_then(toml::Value::as_str)
+                    .filter(|value| !value.trim().is_empty())
+                    .map(str::to_owned)
+                    .ok_or_else(|| format!("a model_only_homes entry has no `{key}`"))
+            };
+            Ok(ModelOnlyHome {
+                home: text("home")?,
+                reason: text("reason")?,
+            })
+        })
+        .collect()
+}
+
 /// The list, parsed once. A list that does not parse is reported once on
 /// stderr and taken as empty: Widget Info then falls back to each widget's
 /// own info, and the dump holds nothing, which the comparator reports.
@@ -264,6 +307,32 @@ mod tests {
         };
         assert_eq!(checkbox.title(), "Checkbox · Checked");
         assert_eq!(toolbar.title(), "Toolbar");
+    }
+
+    /// The model-only homes read each entry's home and reason; a list
+    /// without them, and an entry with a blank reason, do not read.
+    #[test]
+    fn the_model_only_homes_read_each_entry() {
+        let read = model_only_homes_of(
+            "model_only_homes = [\n  { home = \"switch.label_gap\", reason = \"none in 0.7.2\" },\n]\n",
+        );
+        assert_eq!(
+            read,
+            Ok(vec![ModelOnlyHome {
+                home: "switch.label_gap".into(),
+                reason: "none in 0.7.2".into(),
+            }])
+        );
+        assert_eq!(
+            model_only_homes_of("model_only_homes = []\n"),
+            Ok(Vec::new())
+        );
+        assert!(model_only_homes_of("").is_err());
+        assert_eq!(
+            model_only_homes_of("model_only_homes = [{ home = \"a.b\", reason = \" \" }]\n"),
+            Err("a model_only_homes entry has no `reason`".to_string())
+        );
+        assert!(model_only_homes().is_ok());
     }
 
     /// A list without elements, an element without a field, and a leaf or
