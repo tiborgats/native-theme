@@ -37,11 +37,19 @@ const REGENERATE_HOMES: &str =
 /// The state queries the 0.8.0 style functions ask that the table of homes
 /// names for no colour leaf (the homes of `crate::next::styles`' `Unmapped`
 /// sources): a variant's outline, a disabled or pressed state 0.7.2 had no
-/// field for.
+/// field for; and the colour homes of the same kind docs/showcase-elements.toml
+/// lists that none of them asks, which [`UNREAD_HOMES`] names: a checked
+/// flat button's outline, a flat button's icon, a toolbar button's icon.
 const QUERIED_HOMES: &[&str] = &[
+    "button.body(CHECKED; variant=Flat).stroke.color",
+    "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color",
     "button.body(HOVER; variant=Primary).stroke.color",
+    "button.body(HOVER|CHECKED; variant=Flat).stroke.color",
     "button.body(NONE; variant=Primary).stroke.color",
     "button.body(PRESSED; variant=Primary).stroke.color",
+    "button.body(PRESSED|CHECKED; variant=Flat).stroke.color",
+    "button.icon(CHECKED; variant=Flat).color",
+    "button.icon(NONE; variant=Flat).color",
     "checkbox.indicator(DISABLED).stroke.color",
     "checkbox.indicator(DISABLED|CHECKED).stroke.color",
     "expander.header(PRESSED).fill",
@@ -58,11 +66,22 @@ const QUERIED_HOMES: &[&str] = &[
     "switch.thumb(HOVER).fill",
     "switch.thumb(HOVER|CHECKED).fill",
     "tab.tab(NONE).stroke.color",
+    "toolbar.button(HOVER|CHECKED).fill",
+    "toolbar.button(NONE).fill",
+    "toolbar.button(PRESSED|CHECKED).fill",
     "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
+    "toolbar.button_icon(CHECKED).color",
+    "toolbar.button_icon(HOVER).color",
+    "toolbar.button_icon(HOVER|CHECKED).color",
+    "toolbar.button_icon(NONE).color",
+    "toolbar.button_icon(PRESSED).color",
+    "toolbar.button_icon(PRESSED|CHECKED).color",
     "toolbar.button_label(CHECKED).color",
     "toolbar.button_label(DISABLED).color",
     "toolbar.button_label(HOVER).color",
+    "toolbar.button_label(HOVER|CHECKED).color",
     "toolbar.button_label(PRESSED).color",
+    "toolbar.button_label(PRESSED|CHECKED).color",
 ];
 
 /// A colour home that moves no row in any preset, and why: the kind of
@@ -89,9 +108,81 @@ const SWITCH_LABEL: &str = "the showcase colours the switch's label, the text it
      iced's `Toggler`; no connector style reads it (`next::styles::toggler` keeps iced's own \
      `text_color`, src/styles.rs, `toggler_from`)";
 
+/// Why no row reads a flat button's checked outline or its icon's colour.
+const FLAT_BUTTON: &str = "no `next::styles` function draws a flat button; the iced \
+     showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked \
+     one, and its `icon_colour` loads an icon in the button's label colour";
+
+/// Why no row reads a toolbar button's icon colour.
+const TOOL_ICON: &str = "iced's button draws its content in one `text_color` and passes it no \
+     status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over \
+     its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar \
+     button's icon (the crate's README, Limits); an application loads the icon in a colour \
+     (`icons::to_svg_handle`)";
+
 /// The colour homes no row reads, or no patch states, that the 0.7.2 tables
 /// do not already name by a leaf the table of homes places there.
 const UNREAD_HOMES: &[UnreadHome] = &[
+    UnreadHome {
+        home: "button.body(CHECKED; variant=Flat).stroke.color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.body(HOVER|CHECKED; variant=Flat).stroke.color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.body(PRESSED|CHECKED; variant=Flat).stroke.color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.icon(CHECKED; variant=Flat).color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.icon(NONE; variant=Flat).color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(CHECKED).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(HOVER).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(HOVER|CHECKED).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(NONE).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(PRESSED).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(PRESSED|CHECKED).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
     UnreadHome {
         home: "radio.indicator(DISABLED).fill",
         kind: "no receiver",
