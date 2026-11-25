@@ -958,25 +958,6 @@ const fn unfilled_toolbar(presets: &'static [&'static str]) -> Difference {
     }
 }
 
-/// A toolbar button on `presets` whose checked fill the theme states nothing
-/// for ([`CHECKED`]), its hovered and pressed fills stated
-/// ([`MEASURED_TOOLBAR_FILLS`]).
-const fn unchecked_toolbar(presets: &'static [&'static str]) -> Difference {
-    Difference {
-        leaf: "toolbar_button",
-        presets,
-        listed: Listed {
-            states: States {
-                checked: true,
-                ..States::STATED
-            },
-            ..Listed::aligned(LineAlign::Outside)
-        },
-        stated: &[],
-        reason: &[MEASURED_TOOLBAR_FILLS, CHECKED],
-    }
-}
-
 /// The reason of the macOS presets' toolbar button fills.
 const MEASURED_TOOLBAR_FILLS: &str = "0.7.2's macOS toolbar states no \
      toolbar.button_hover_background or button_active_background, so its connector drew \
@@ -987,6 +968,16 @@ const MEASURED_TOOLBAR_FILLS: &str = "0.7.2's macOS toolbar states no \
      `*.pressed.toolbar_button` `fill`; native-theme/tests/next_homes.toml, rows \
      toolbar.button_hover_background and toolbar.button_active_background, listed \
      differences), toolbar.button(HOVER) and toolbar.button(PRESSED)";
+
+/// The reason of the macOS presets' checked toolbar button fill.
+const MEASURED_TOOLBAR_CHECKED: &str = "0.7.2's macOS toolbar states no \
+     toolbar.button_checked_background, so its connector drew a checked toolbar button in \
+     the pressed pair that stands in for it; the 0.8.0 presets state the real toolbar's \
+     toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle, toolbar.button(CHECKED), \
+     macos-monterey #dfdfdf / #414141, macos-tahoe the accent, #007aff (os-probe run \
+     45634379188, macOS 15 and 26, toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`; \
+     native-theme/tests/next_homes.toml, row toolbar.button_checked_background, a listed \
+     difference), which the 0.8.0 side draws in each status of the checked button";
 
 /// The reason of a checked button whose fill and label the 0.8.0 theme
 /// states and 0.7.2 does not.
@@ -1254,6 +1245,26 @@ const TOOLBAR_FILLS: [Stated; 2] = [
         at!(PRESSED),
         Field::Background,
         home!(fill, toolbar.button(PRESSED)),
+    ),
+];
+
+/// A checked toolbar button's fill in each status, the macOS presets'
+/// measured one ([`MEASURED_TOOLBAR_CHECKED`]).
+const TOOLBAR_CHECKED_FILL: [Stated; 3] = [
+    set(
+        at!(NONE | CHECKED),
+        Field::Background,
+        home!(fill, toolbar.button(CHECKED)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, toolbar.button(CHECKED)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::Background,
+        home!(fill, toolbar.button(CHECKED)),
     ),
 ];
 
@@ -2256,11 +2267,11 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         TOGGLE_PRESSED_STROKE,
     ),
-    unchecked_toolbar(&["macos-tahoe", "macos-monterey"]).stating(
-        &[&TOOLBAR_FILLS],
+    toolbar_labels(&["macos-tahoe", "macos-monterey"]).stating(
+        &[&TOOLBAR_FILLS, &TOOLBAR_CHECKED_FILL],
         &[
             MEASURED_TOOLBAR_FILLS,
-            CHECKED,
+            MEASURED_TOOLBAR_CHECKED,
             STATED,
             TOOLBAR_LABELS,
             TOOLBAR_OUTLINE,

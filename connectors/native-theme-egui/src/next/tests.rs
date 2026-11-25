@@ -56,6 +56,33 @@ fn the_public_part_reads_are_the_mappings_own() {
     }
 }
 
+/// A checked toolbar button on either macOS preset takes the checked fill
+/// the preset states, `toolbar.button(CHECKED).fill`, the toolbar-bezel
+/// button's as an on toggle: macos-monterey #dfdfdf / #414141, macos-tahoe
+/// the accent, #007aff (os-probe run 45634379188, toolbar states sheet,
+/// `*.normal.toolbar_toggle_on` `fill`).
+#[test]
+fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() {
+    for (preset, light, dark) in [
+        (
+            Preset::MacosMonterey,
+            [0xdf, 0xdf, 0xdf],
+            [0x41, 0x41, 0x41],
+        ),
+        (Preset::MacosTahoe, [0x00, 0x7a, 0xff], [0x00, 0x7a, 0xff]),
+    ] {
+        for (ctx, [r, g, b]) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+            let theme = Theme::preset(preset).resolve(&ctx);
+            assert_eq!(
+                super::toolbar_button_checked_background(&theme),
+                Ok(Some(egui::Color32::from_rgb(r, g, b))),
+                "{preset:?} {:?}",
+                ctx.scheme
+            );
+        }
+    }
+}
+
 /// A stated uniform stroke gives its colour and width in every alignment; a
 /// per-side stroke gives neither, which egui cannot draw as one stroke.
 #[test]

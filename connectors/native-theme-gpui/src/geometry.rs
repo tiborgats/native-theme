@@ -2042,7 +2042,7 @@ pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
         button_active_background: t.button_active_background.map(rgba_to_hsla),
         button_checked_border_color: t.button_checked_border_color.map(rgba_to_hsla),
         checked_text_color: b.checked_text_color.map(rgba_to_hsla),
-        active_text_color: rgba_to_hsla(b.active_text_color),
+        active_text_color: Some(rgba_to_hsla(b.active_text_color)),
         active_background: b.active_background.map(rgba_to_hsla),
     })
 }
@@ -2051,23 +2051,28 @@ pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
 /// model, each named after its 0.7.2 field and `None` where the theme states
 /// none: the toolbar's (`toolbar.button_*`) and the push button's
 /// (`button.checked_text_color`, `button.active_text_color`,
-/// `button.active_background`). The 0.8.0 builder takes no fill of another
-/// state (spec §10, rule 0a): it gives no `button_active_background`, and as
-/// `active_background` gpui-component's own selected ghost's fill.
+/// `button.active_background`). The 0.8.0 builder takes no fill or label of
+/// another state (spec §10, rule 0a): it gives no `button_active_background`
+/// and no `active_text_color`, and as `active_background` gpui-component's own
+/// selected ghost's fill.
 pub(crate) struct ToolbarChecked {
     pub(crate) button_checked_background: Option<Hsla>,
     pub(crate) button_active_background: Option<Hsla>,
     pub(crate) button_checked_border_color: Option<Hsla>,
     pub(crate) checked_text_color: Option<Hsla>,
-    pub(crate) active_text_color: Hsla,
+    pub(crate) active_text_color: Option<Hsla>,
     pub(crate) active_background: Option<Hsla>,
 }
 
-/// [`toolbar_button_checked`] of the values `t`.
+/// [`toolbar_button_checked`] of the values `t`: with a checked fill, the text
+/// colour `checked_text_color`, else `active_text_color`, else none set, so
+/// the variant's own foreground letters it.
 pub(crate) fn toolbar_button_checked_from(t: &ToolbarChecked) -> StyleRefinement {
-    let r = match t.button_checked_background {
-        Some(_) => StyleRefinement::default()
-            .text_color(t.checked_text_color.unwrap_or(t.active_text_color)),
+    let text = t
+        .button_checked_background
+        .and(t.checked_text_color.or(t.active_text_color));
+    let r = match text {
+        Some(color) => StyleRefinement::default().text_color(color),
         None => StyleRefinement::default(),
     };
     match t

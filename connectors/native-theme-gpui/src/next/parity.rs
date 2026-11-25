@@ -278,6 +278,11 @@ struct Difference {
 /// [`DIFFERENCES`] says.
 const DIALOG_SIZES_UNSTATED: &[&str] = &["kde-breeze"];
 
+/// The presets whose 0.8.0 side states the toolbar button's checked fill
+/// where 0.7.2 states none, as `geometry::toolbar_button_checked`'s entry in
+/// [`DIFFERENCES`] says; on the other listed presets neither does.
+const TOOLBAR_CHECKED_MEASURED: &[&str] = &["macos-monterey", "macos-tahoe"];
+
 /// The button height 0.7.2's kde-breeze states, `button.min_height` in
 /// `native-theme/src/presets/kde-breeze.toml`, which [`DIFFERENCES`]' entry
 /// names.
@@ -780,22 +785,26 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "geometry::toolbar_button_checked",
         presets: &["macos-monterey", "macos-tahoe"],
-        reason: "neither model states a toolbar button's checked fill on the macOS presets, so \
-                 0.7.2's refinement's fill is the push button's pressed one \
+        reason: "0.7.2 states no toolbar button's checked fill on the macOS presets, so its \
+                 refinement's fill is the push button's pressed one \
                  (crate::geometry::toolbar_button_checked), macos-monterey's \
                  button.active_background #d6d6db / #4e4e50 and on macos-tahoe none (no \
-                 fill), and 0.8.0's keeps gpui-component's own selected ghost's treatment, \
-                 secondary_active (gpui-component 0.10.0 button/button.rs:1346; spec §10, \
-                 rules 0 and 0a), which crate::next installs from the flat button's pressed \
-                 fill, button.body(PRESSED; variant=Flat); the 0.8.0 macOS presets state AppKit's \
-                 borderless button's, no fill (os-probe run 41006842699, \
-                 layers-key-styles_b.toml `key.styles_b.aqua.<state>.mini-flat.fill` absent; os-probe \
-                 run 42272240639, layers-key-image_b.toml \
-                 `key.image_b.<appearance>.pressed.regular-flat.fill` absent; \
-                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
-                 variants [flat]), so a checked tool button shows no fill of its own on either \
-                 preset, light or dark: the refinement's background is transparent, \
-                 secondary_active's; every other field of the refinement is equal",
+                 fill); the 0.8.0 macOS presets state the real toolbar's toolbar-bezel button as \
+                 an on NSButtonTypePushOnPushOff toggle, toolbar.button(CHECKED).fill: \
+                 macos-monterey #dfdfdf / #414141, macos-tahoe the accent, #007aff (os-probe run \
+                 45634379188, macOS 15 and 26, toolbar states sheet, \
+                 `*.normal.toolbar_toggle_on` `fill`; native-theme/tests/next_homes.toml, row \
+                 toolbar.button_checked_background, a listed difference), so the refinement's \
+                 background is that fill, lettered in the toolbar's checked label the presets \
+                 state, toolbar.button_label(CHECKED).color, macos-monterey #424242 / #ececec, \
+                 macos-tahoe #ffffff (the same run, `*.normal.toolbar_toggle_on` `label`), where \
+                 0.7.2, with no checked fill, sets no text colour \
+                 (crate::geometry::toolbar_button_checked), and its border colour transparent, \
+                 toolbar.button(CHECKED).stroke stated as none, as that toggle draws no outline \
+                 (the same run, `toolbar_bezel_fitted-toolbar_states_sheet.toml` \
+                 `*.toolbar_toggle_on` `edge_*`; next_homes.toml, row \
+                 toolbar.button_checked_border_color, a listed difference); every other field \
+                 of the refinement is equal",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",
@@ -2746,17 +2755,38 @@ fn compare_builders(
                 super::builders::toolbar_button_checked(new),
             ) {
                 use gpui::Styled as _;
-                use native_theme::next::WidgetState;
+                use native_theme::next::{TextStated, WidgetState};
                 report.count(toolbar_checked);
                 let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
-                let unstated = state_fill(&new.toolbar.button(WidgetState::CHECKED)).is_none();
+                let stated = state_fill(&new.toolbar.button(WidgetState::CHECKED));
                 let own = super::flat_button_states(new)
                     .ok()
                     .map(|(_, pressed)| pressed);
                 let mut corrected = o.clone();
                 corrected.background = n.background.clone();
-                let filled = own.map(|fill| gpui::StyleRefinement::default().bg(fill).background);
-                if !unstated || filled != Some(n.background.clone()) || corrected != n || o == n {
+                let measured = TOOLBAR_CHECKED_MEASURED.contains(&report.preset);
+                let filled = if measured { stated } else { own }
+                    .map(|fill| gpui::StyleRefinement::default().bg(fill).background);
+                let pen = measured.then(Hsla::transparent_black);
+                let label = [
+                    new.toolbar.button_label(WidgetState::CHECKED),
+                    new.button.label(WidgetState::CHECKED),
+                ]
+                .into_iter()
+                .find(|label| label.from_state.contains(TextStated::COLOR))
+                .filter(|_| measured)
+                .map(|label| super::hsla(label.color));
+                if measured {
+                    corrected.border_color = n.border_color;
+                    corrected.text = n.text.clone();
+                }
+                if stated.is_some() != measured
+                    || filled != Some(n.background.clone())
+                    || n.border_color != pen
+                    || n.text.color != label
+                    || corrected != n
+                    || o == n
+                {
                     report.failures.push(format!(
                         "{}: {toolbar_checked}: the listed difference ({}) no longer \
                          describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",

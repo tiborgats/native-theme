@@ -850,8 +850,8 @@ rule 0).
   chosen button by its primary class: its own `todos` example draws the
   chosen filter with `button::primary` (iced 0.14.0
   `examples/todos/src/main.rs`). So where the theme states no checked fill
-  (`button.body(CHECKED)`, `toolbar.button(CHECKED)`: the macOS and iOS
-  presets, and material-3's toolbar), `next::styles::button_toggle` and
+  (`button.body(CHECKED)` on macos-monterey, `toolbar.button(CHECKED)` on
+  ios-13 and material-3), `next::styles::button_toggle` and
   `next::styles::toolbar_button` draw a checked button in the primary
   button's fill and label in the same status, a label the theme states for
   `CHECKED` laid over; its outline, corners and shadow are the unchecked

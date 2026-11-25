@@ -2300,11 +2300,19 @@ difference_values = { "macos-monterey" = { light = "#d2d2d2", dark = "#4e4e4e" }
 [[row]]
 key = "toolbar.button_checked_background"
 homes = ["toolbar.button(CHECKED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no checked button fill; 0.8.0 states the real toolbar's measured toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle, opaque over the opaque title bar: macos-monterey a grey of its own, macos-tahoe the accent"
+difference_citation = "os-probe run 45634379188 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-25-run-45634379188/), toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`"
+difference_values = { "macos-monterey" = { light = "#dfdfdf", dark = "#414141" }, "macos-tahoe" = "#007aff" }
 
 [[row]]
 key = "toolbar.button_checked_border_color"
 homes = ["toolbar.button(CHECKED).stroke.color"]
 note = "drawn at button.border.line_width (0.7.2 doc): the CHECKED stroke's width is button's, no key of its own"
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no checked button outline; 0.8.0 states it as none, as the real toolbar's toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle draws none at rest, hovered or pressed (its edge pixel is the fill)"
+difference_citation = "os-probe run 45634379188 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-25-run-45634379188/), `toolbar_bezel_fitted-toolbar_states_sheet.toml` `*.toolbar_toggle_on` `edge_*`"
+difference_values = { "macos-monterey" = "none", "macos-tahoe" = "none" }
 
 [[row]]
 key = "toolbar.font.family"

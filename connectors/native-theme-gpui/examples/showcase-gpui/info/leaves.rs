@@ -284,7 +284,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.icons.edit",
         &["button.label(CHECKED).color"],
-        "gpui: button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill",
+        "gpui: toolbar.button_label(CHECKED).color where a rule states it for CHECKED, else button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill; where neither label is stated, none, the variant's own foreground",
     ),
     (
         "basic.icons.edit",

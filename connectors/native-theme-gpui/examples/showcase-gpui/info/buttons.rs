@@ -1325,23 +1325,31 @@ fn toolbar_checked_colors(
                     &r.toolbar.button(WidgetState::CHECKED),
                     "toolbar.button(CHECKED).fill",
                 ),
-                "native-theme-gpui/next/builders.rs:685",
+                "native-theme-gpui/next/builders.rs:691",
             );
-            // The builder applies, so it states the pressed text it falls
-            // back to.
+            // The toolbar's checked label, else the push button's, else none
+            // set, so the variant's one foreground letters it.
             let text = stated_claim(
                 "checked text",
-                "button.label(CHECKED).color",
-                state_text_color_of(&r.button.label(WidgetState::CHECKED)),
-                "native-theme-gpui/next/builders.rs:693",
+                "toolbar.button_label(CHECKED).color",
+                state_text_color_of(&r.toolbar.button_label(WidgetState::CHECKED)),
+                "native-theme-gpui/next/builders.rs:681",
             )
             .or_else(|| {
                 stated_claim(
                     "checked text",
-                    "button.label(PRESSED).color",
-                    text_color_of(&r.button.label(WidgetState::PRESSED)),
-                    "native-theme-gpui/next/builders.rs:697",
+                    "button.label(CHECKED).color",
+                    state_text_color_of(&r.button.label(WidgetState::CHECKED)),
+                    "native-theme-gpui/next/builders.rs:686",
                 )
+            })
+            .or_else(|| {
+                Some(claim(
+                    "checked text",
+                    "secondary_foreground",
+                    t.secondary_foreground,
+                    "native-theme-gpui/variants.rs:62",
+                ))
             });
             info.colors(fill).colors(text)
         }
@@ -1424,7 +1432,7 @@ fn toolbar_checked(
         "toolbar.button(CHECKED).stroke.color",
         applied.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED))),
         rest_border(native),
-        "native-theme-gpui/next/builders.rs:689",
+        "native-theme-gpui/next/builders.rs:695",
     ));
     info.not_themeable(
         "hover outline while checked",
