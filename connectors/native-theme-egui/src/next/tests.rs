@@ -1411,8 +1411,8 @@ fn a_tool_button_and_a_menu_item_draw_their_stated_widths() -> Result<(), Box<dy
 /// A tool button at rest is filled and rounded as `toolbar.button(NONE)` states, in the
 /// toolbar's `Normal` cell, and disabled filled as a rule states `toolbar.button(DISABLED)`'s
 /// fill, in its `Disabled` cell: macos-tahoe's rest capsule, #ffffff light and #252525 dark, a
-/// pill, disabled unchanged; macos-monterey's disabled button none, transparent, its rest fill
-/// unstated and so the base style's (spec §10, rule 0). Measured, os-probe run 45634379188,
+/// pill, disabled unchanged; macos-monterey's none at rest and disabled, transparent, stated as
+/// no fill and drawn so (spec §10, rule 0), not the base style's resting fill. Measured, os-probe run 45634379188,
 /// toolbar states sheet, `*.normal.toolbar_button` and `*.normal.toolbar_button_disabled`
 /// `fill`, `*.normal.toolbar_toggle_on` `box` (native-theme/src/next/presets/macos.rs,
 /// `toolbar_button_rest`, `toolbar_button_corners`).
@@ -1460,8 +1460,13 @@ fn a_tool_buttons_rest_and_disabled_capsule_is_drawn_as_stated()
                 .widgets
                 .inactive
                 .weak_bg_fill,
+            egui::Color32::TRANSPARENT,
+            "macos-monterey {scheme:?} at rest"
+        );
+        assert_ne!(
             styles.base.visuals.widgets.inactive.weak_bg_fill,
-            "macos-monterey {scheme:?} at rest: the base style's"
+            egui::Color32::TRANSPARENT,
+            "macos-monterey {scheme:?}: the base style's resting fill"
         );
         assert_eq!(
             styles

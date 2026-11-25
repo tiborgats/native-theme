@@ -1918,6 +1918,40 @@
           "button_icon": {
             "color": "#ebebeb"
           }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button_icon": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button_icon": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button_icon": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_icon": {
+            "color": "#666666"
+          }
         }
       ]
     },

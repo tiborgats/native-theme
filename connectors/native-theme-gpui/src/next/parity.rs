@@ -820,12 +820,12 @@ const DIFFERENCES: &[Difference] = &[
                  toolbar.button(NONE).corners, kde-breeze 5 px, the push button frame's (Breeze \
                  Frame_FrameRadius, breezemetrics.h at breeze f0b1d75, as the preset cites it), \
                  macos-monterey 5 px and macos-tahoe a capsule, drawn as the full radius, and \
-                 macos-tahoe the rest capsule's fill, toolbar.button(NONE).fill #ffffff / \
-                 #252525 (os-probe run 45634379188, macOS 15 and 26, \
-                 `toolbar_bezel_fitted-toolbar_states_sheet.toml` `corner_*`, toolbar states \
-                 sheet `*.normal.toolbar_button` `fill`), so the refinement's corner radii are \
-                 those and its background that fill (docs/v0.8.0-spec.md §10, rule 0); every \
-                 other field of the refinement is equal",
+                 the rest fill, toolbar.button(NONE).fill, macos-tahoe the rest capsule's \
+                 #ffffff / #252525, macos-monterey none, drawn transparent (os-probe run \
+                 45634379188, macOS 15 and 26, `toolbar_bezel_fitted-toolbar_states_sheet.toml` \
+                 `corner_*`, `*.normal.toolbar_button` and `*.normal.toolbar_image` `fill`), so \
+                 the refinement's corner radii are those and its background that fill \
+                 (docs/v0.8.0-spec.md §10, rule 0); every other field of the refinement is equal",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",

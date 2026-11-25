@@ -3,7 +3,7 @@ use super::*;
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::preset::Theme;
 use crate::next::query::{ButtonQuery, ListQuery, ListVariant, MotionPreference};
-use crate::next::style::PartStated;
+use crate::next::style::{IconStated, PartStated};
 use crate::next::window::WindowState;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -307,11 +307,12 @@ fn a_pressed_scroll_handle_wins_over_the_pointer() {
 
 /// The toolbar button (os-probe run 45634379188, the toolbar states sheet):
 /// its measured corners; at rest the measured fill where the scheme states
-/// one, else none stated; checked, as an on toggle, no outline and the
+/// one, else no fill stated; checked, as an on toggle, no outline and the
 /// measured fills and labels, on `macos-tahoe` the accent at rest; checked,
 /// hovered and pressed, the pressed look; disabled, the rest fill or none
 /// and the measured label, checked or not; the icon's measured colours at
-/// rest and hovered.
+/// rest and hovered, and checked in each state and disabled over every
+/// other (os-probe run 45663039135).
 #[test]
 fn the_toolbar_button_takes_its_measured_states() -> TestResult {
     use crate::next::style::TextStated;
@@ -330,11 +331,11 @@ fn the_toolbar_button_takes_its_measured_states() -> TestResult {
         }
         let rest = t.button(WidgetState::NONE);
         assert_eq!(
-            rest.stated
-                .contains(PartStated::FILL)
-                .then(|| solid(&rest.fill))
-                .flatten(),
-            c.toolbar_button_rest,
+            (rest.stated.contains(PartStated::FILL), &rest.fill),
+            (
+                true,
+                &c.toolbar_button_rest.map_or(Paint::None, Paint::Solid)
+            ),
             "{preset:?} {scheme:?}"
         );
         let (fill, hover, pressed) = c
@@ -393,6 +394,81 @@ fn the_toolbar_button_takes_its_measured_states() -> TestResult {
             ],
             [icon, icon_hover],
             "{preset:?} {scheme:?}"
+        );
+        let (icon, hover_icon, pressed_icon) = c.toolbar_checked_icon;
+        for (state, icon) in [
+            (checked, icon),
+            (checked | WidgetState::HOVER, hover_icon),
+            (checked | WidgetState::PRESSED, pressed_icon),
+            (
+                checked | WidgetState::HOVER | WidgetState::PRESSED,
+                pressed_icon,
+            ),
+            (WidgetState::DISABLED, c.toolbar_icon_disabled),
+            (WidgetState::DISABLED | checked, c.toolbar_icon_disabled),
+            (
+                WidgetState::DISABLED | WidgetState::HOVER,
+                c.toolbar_icon_disabled,
+            ),
+        ] {
+            let style = t.button_icon(state);
+            assert_eq!(style.color, icon, "{preset:?} {scheme:?} {state:?}");
+            assert!(
+                style.from_state.contains(IconStated::COLOR),
+                "{preset:?} {scheme:?} {state:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// `macos-monterey`'s checked toolbar button keeps its grey fills, label and
+/// icon under a custom accent the reader reads: under the red accent the
+/// on toggle reads as under the default one (os-probe run 45663039135,
+/// macOS 15, `os-probe-macos-15-controls-accent/controls-toolbar_states_sheet.toml`,
+/// 48 of 48 entries equal), so the fills are not dropped with the ones
+/// measured on the default accent ([`drop_accent_measurements`]).
+#[test]
+fn monterey_s_checked_toolbar_button_keeps_its_greys_under_a_custom_accent() -> TestResult {
+    use crate::next::parity::macos_cases;
+    use crate::next::reader::macos::snapshot_from_settings;
+    let checked = WidgetState::CHECKED;
+    let cases = macos_cases();
+    let (_, settings, _, _) = cases
+        .iter()
+        .find(|(name, ..)| *name == "a custom accent, light")
+        .ok_or("no reader case \"a custom accent, light\"")?;
+    let snapshot = snapshot_from_settings(settings);
+    assert_eq!(snapshot.preset, Preset::MacosMonterey);
+    let theme = Theme::preset(snapshot.preset)
+        .with_system_overrides(snapshot.overrides)
+        .resolve(&snapshot.context);
+    let c = constants(Preset::MacosMonterey, Scheme::Light);
+    assert_ne!(theme.colors.accent.fill, c.accent, "the custom accent");
+    let (fill, hover, pressed) = c
+        .toolbar_checked_off_accent
+        .ok_or("macos-monterey states no grey checked fills")?;
+    let (label, hover_label, pressed_label) = c.toolbar_checked_label;
+    let (icon, hover_icon, pressed_icon) = c.toolbar_checked_icon;
+    let t = &theme.toolbar;
+    for (state, fill, label, icon) in [
+        (checked, fill, label, icon),
+        (checked | WidgetState::HOVER, hover, hover_label, hover_icon),
+        (
+            checked | WidgetState::PRESSED,
+            pressed,
+            pressed_label,
+            pressed_icon,
+        ),
+    ] {
+        assert_eq!(
+            (
+                solid(&t.button(state).fill),
+                t.button_label(state).color,
+                t.button_icon(state).color
+            ),
+            (Some(fill), label, icon),
+            "{state:?}"
         );
     }
     Ok(())
