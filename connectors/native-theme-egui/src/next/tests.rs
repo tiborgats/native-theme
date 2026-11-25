@@ -56,8 +56,6 @@ fn the_public_part_reads_are_the_mappings_own() {
     }
 }
 
-/// A stated uniform stroke gives its colour and width in every alignment; a
-/// per-side stroke gives neither, which egui cannot draw as one stroke.
 /// A checked toolbar button on either macOS preset takes the checked fill
 /// the preset states, `toolbar.button(CHECKED).fill`, the toolbar-bezel
 /// button's as an on toggle: macos-monterey #dfdfdf / #414141, macos-tahoe
@@ -85,6 +83,8 @@ fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() {
     }
 }
 
+/// A stated uniform stroke gives its colour and width in every alignment; a
+/// per-side stroke gives neither, which egui cannot draw as one stroke.
 #[test]
 fn a_stroke_is_read_as_stated_and_a_per_side_one_not_at_all() {
     let ctx = ThemeContext::light();

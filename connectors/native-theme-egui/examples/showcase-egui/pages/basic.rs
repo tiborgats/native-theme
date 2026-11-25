@@ -1594,7 +1594,10 @@ fn icon_buttons(
                 if on {
                     let unstated = [
                         look.fill_note("toolbar.button(CHECKED).fill"),
-                        look.text_note("button.label(CHECKED).color"),
+                        look.text_note(
+                            "toolbar.button_label(CHECKED).color, else \
+                             button.label(CHECKED).color",
+                        ),
                     ];
                     for (what, note) in unstated.into_iter().flatten() {
                         reg.note_last(what, &note);
@@ -1614,14 +1617,19 @@ fn icon_buttons(
 /// The Basic page's edit-mode switch's colours while on, of the installed 0.8.0 theme `r`, each
 /// asked with the checked flag alone and `None` where no rule states it: the fill
 /// `toolbar.button(CHECKED).fill`, the toolbar's checked fill, and the text colour
-/// `button.label(CHECKED).color`, the checked button text (the table of homes'
-/// `toolbar.button_checked_background` and `button.checked_text_color`). Neither falls back to
-/// another state's: what the theme leaves unstated, and both without an installed 0.8.0 theme,
-/// is egui's own selected button's, as the toggle's ([`toggle_on_at`], spec §10, rules 0 and 0a).
+/// `toolbar.button_label(CHECKED).color`, the toolbar's checked label, where a rule states it,
+/// else `button.label(CHECKED).color`, the checked button text (the table of homes'
+/// `toolbar.button_checked_background` and `button.checked_text_color`), as iced's tool button
+/// letters it (`styles::toolbar_button_from`). Neither falls back to a state other than the
+/// checked one: what the theme leaves unstated, and both without an installed 0.8.0 theme, is
+/// egui's own selected button's, as the toggle's ([`toggle_on_at`], spec §10, rules 0 and 0a).
 pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
     ToggleOn {
         fill: r.and_then(|r| demo::drawn_state_fill(&r.toolbar.button(NextState::CHECKED))),
-        text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
+        text: r.and_then(|r| {
+            next::state_text_color_of(&r.toolbar.button_label(NextState::CHECKED))
+                .or_else(|| next::state_text_color_of(&r.button.label(NextState::CHECKED)))
+        }),
     }
 }
 

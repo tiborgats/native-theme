@@ -23603,8 +23603,9 @@ fn a_hovered_tool_button_with_no_stated_fill_is_gpui_components_own(cx: &mut Tes
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
 /// with `toolbar.button(CHECKED).fill` and its info, titled a checked
-/// toolbar Button, claims `button.label(CHECKED).color` as the checked text
-/// and no colour but the checked fill and text, and the checked pen where
+/// toolbar Button, claims `toolbar.button_label(CHECKED).color` where the
+/// theme states it (windows-11), else `button.label(CHECKED).color`, as the
+/// checked text and no colour but the checked fill and text, and the checked pen where
 /// the theme states it with the toolbar's outline (kde-breeze) (upstream
 /// paints no hover or press on a selected Button); a click turns it off, and with the pointer
 /// moved off it paints no fill (the rest fill is transparent), and its info
@@ -23629,7 +23630,14 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
         let Some(r) = r else { return };
         let fill = drawn_state_fill(&r.toolbar.button(WidgetState::CHECKED));
-        let text = state_text_color_of(&r.button.label(WidgetState::CHECKED));
+        let (home, text) = match state_text_color_of(&r.toolbar.button_label(WidgetState::CHECKED))
+        {
+            Some(own) => ("toolbar.button_label(CHECKED).color", Some(own)),
+            None => (
+                "button.label(CHECKED).color",
+                state_text_color_of(&r.button.label(WidgetState::CHECKED)),
+            ),
+        };
         assert!(
             fill.is_some() && text.is_some(),
             "{preset} no longer states the checked toolbar fill and text, so this test proves nothing"
@@ -23647,10 +23655,9 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         );
         let info = settle_on(&mut cx, &showcase, button);
         assert_eq!(
-            info.as_ref()
-                .and_then(|info| claim_of(info, "button.label(CHECKED).color")),
+            info.as_ref().and_then(|info| claim_of(info, home)),
             text,
-            "{preset}: the checked edit button's info does not claim button.label(CHECKED).color: {info:?}"
+            "{preset}: the checked edit button's info does not claim {home}: {info:?}"
         );
         assert!(
             info.as_ref().is_some_and(|info| {

@@ -795,8 +795,10 @@ const DIFFERENCES: &[Difference] = &[
                  45634379188, macOS 15 and 26, toolbar states sheet, \
                  `*.normal.toolbar_toggle_on` `fill`; native-theme/tests/next_homes.toml, row \
                  toolbar.button_checked_background, a listed difference), so the refinement's \
-                 background is that fill, lettered as 0.7.2 letters a checked toolbar button \
-                 that has a fill, button.label(CHECKED).color, else button.label(PRESSED).color \
+                 background is that fill, lettered in the toolbar's checked label the presets \
+                 state, toolbar.button_label(CHECKED).color, macos-monterey #424242 / #ececec, \
+                 macos-tahoe #ffffff (the same run, `*.normal.toolbar_toggle_on` `label`), where \
+                 0.7.2, with no checked fill, sets no text colour \
                  (crate::geometry::toolbar_button_checked), and its border colour transparent, \
                  toolbar.button(CHECKED).stroke stated as none, as that toggle draws no outline \
                  (the same run, `toolbar_bezel_fitted-toolbar_states_sheet.toml` \
@@ -2766,14 +2768,14 @@ fn compare_builders(
                 let filled = if measured { stated } else { own }
                     .map(|fill| gpui::StyleRefinement::default().bg(fill).background);
                 let pen = measured.then(Hsla::transparent_black);
-                let checked_label = new.button.label(WidgetState::CHECKED);
-                let label = measured.then(|| {
-                    super::hsla(if checked_label.from_state.contains(TextStated::COLOR) {
-                        checked_label.color
-                    } else {
-                        new.button.label(WidgetState::PRESSED).color
-                    })
-                });
+                let label = [
+                    new.toolbar.button_label(WidgetState::CHECKED),
+                    new.button.label(WidgetState::CHECKED),
+                ]
+                .into_iter()
+                .find(|label| label.from_state.contains(TextStated::COLOR))
+                .filter(|_| measured)
+                .map(|label| super::hsla(label.color));
                 if measured {
                     corrected.border_color = n.border_color;
                     corrected.text = n.text.clone();

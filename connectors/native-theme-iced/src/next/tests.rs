@@ -770,6 +770,10 @@ fn a_flare_radius_that_is_not_positive_and_finite_draws_none() -> TestResult {
 /// toolbar-bezel button's as an on toggle: macos-monterey #dfdfdf /
 /// #414141, macos-tahoe the accent, #007aff (os-probe run 45634379188,
 /// toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`), at rest.
+/// Only macos-monterey proves the stated fill is read: an unstated one is the
+/// primary button's, which on macos-tahoe is the same accent, and iced reads
+/// no hovered or pressed checked shade (`toolbar.button(CHECKED | HOVER)`)
+/// that could tell the two apart.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() -> TestResult {

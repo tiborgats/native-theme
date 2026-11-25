@@ -4579,6 +4579,9 @@ fn toolbar(
         )
         .build();
     let (icon_rest, icon_hover) = c.toolbar_icon;
+    // The icon's checked and disabled colours were not measured (M2.FS4c13 read the image-only
+    // button at rest and hovered only): no rule states them, so `toolbar.button_icon(CHECKED)`
+    // and `(DISABLED)` report the base's rest colour, with an empty `from_state` (spec §3).
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(g.icon_toolbar), IconProp::Color(icon_rest)])
         .rule(

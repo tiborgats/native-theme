@@ -668,18 +668,24 @@ pub(crate) fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> 
 }
 
 /// [`crate::geometry::toolbar_button_checked`]: each soft option where a rule
-/// states it for its state (module doc of `next`), else unset, so the 0.7.2
-/// path's fallbacks are taken; but a checked fill no rule states is
-/// gpui-component's own selected ghost's, `secondary_active`
-/// (gpui-component 0.10.0 `button/button.rs:1346`), as [`super::apply`]
-/// installs it from the flat button's pressed fill, not the toolbar's or the
-/// push button's pressed fill (spec §10, rule 0a): which state looks like
-/// which is the theme's to state. The label is the 0.7.2 path's.
+/// states it for its state (module doc of `next`), else unset; an unstated
+/// checked fill is gpui-component's own selected ghost's, `secondary_active`
+/// (gpui-component 0.10.0 `button/button.rs:1346`), from [`super::apply`], and
+/// the label `toolbar.button_label(CHECKED)`'s, else `button.label(CHECKED)`'s,
+/// else the variant's own: never another state's (spec §10, rule 0a).
 pub(crate) fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
-    let t = &r.toolbar;
-    let b = &r.button;
-    let checked = t.button(WidgetState::CHECKED);
+    let checked = r.toolbar.button(WidgetState::CHECKED);
     let (_, own_selected) = flat_button_states(r)?;
+    let checked_text_color = match state_text_color(
+        &r.toolbar.button_label(WidgetState::CHECKED),
+        "toolbar.button_label(CHECKED).color",
+    )? {
+        Some(color) => Some(color),
+        None => state_text_color(
+            &r.button.label(WidgetState::CHECKED),
+            "button.label(CHECKED).color",
+        )?,
+    };
     Ok(geometry::toolbar_button_checked_from(
         &geometry::ToolbarChecked {
             button_checked_background: state_fill_of(&checked, "toolbar.button(CHECKED).fill")?,
@@ -688,14 +694,8 @@ pub(crate) fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinemen
                 &checked,
                 "toolbar.button(CHECKED).stroke.color",
             )?,
-            checked_text_color: state_text_color(
-                &b.label(WidgetState::CHECKED),
-                "button.label(CHECKED).color",
-            )?,
-            active_text_color: text_color(
-                &b.label(WidgetState::PRESSED),
-                "button.label(PRESSED).color",
-            )?,
+            checked_text_color,
+            active_text_color: None,
             active_background: Some(own_selected),
         },
     ))

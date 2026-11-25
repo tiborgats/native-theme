@@ -13427,6 +13427,53 @@ fn the_basic_edit_button_starts_checked_and_switches() -> Result<(), String> {
     Ok(())
 }
 
+/// The Basic page's edit-mode switch while on is lettered in `toolbar.button_label(CHECKED)`
+/// where a rule states it, ahead of the push button's checked label: macos-monterey states the
+/// toolbar's checked label and not `button.label(CHECKED)`, so egui's own selected text
+/// (`visuals.selection.stroke`, white) would letter the switch over its light grey checked fill.
+/// Under an icon theme that gives no icon, Edit's label is painted, in light and dark.
+#[test]
+fn the_basic_edit_button_is_lettered_in_the_toolbars_checked_label() -> Result<(), String> {
+    use crate::pages::basic::edit_look;
+    // macos-monterey's `toolbar.button_label(CHECKED).color`: the toolbar-bezel button as an on
+    // toggle, #424242 light, #ececec dark (os-probe run 45634379188,
+    // `controls-toolbar_states_sheet.toml`, `*.normal.toolbar_toggle_on` `label`).
+    for (theme, stated) in [
+        (
+            egui::Theme::Light,
+            egui::Color32::from_rgb(0x42, 0x42, 0x42),
+        ),
+        (egui::Theme::Dark, egui::Color32::from_rgb(0xec, 0xec, 0xec)),
+    ] {
+        let mut harness = open_page_under(Page::Basic, theme, "macos-monterey");
+        harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
+        harness.run_steps(SETTLE);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(theme)
+            .cloned()
+            .ok_or("macos-monterey's 0.8.0 theme is not installed")?;
+        assert!(
+            harness.state().demo_state.basic_edit,
+            "Edit is not on at start"
+        );
+        assert_eq!(
+            edit_look(Some(&r)).text,
+            Some(stated),
+            "macos-monterey {theme:?}: Edit's text colour while on"
+        );
+        let edit = painted_label_colour(&harness, "Edit", "basic.icons.edit");
+        assert_eq!(
+            edit,
+            Some(stated),
+            "macos-monterey {theme:?}: Edit while on is not lettered in \
+             toolbar.button_label(CHECKED).color"
+        );
+    }
+    Ok(())
+}
+
 /// The Basic page's icon buttons on the 0.8.0 model, under every bundled preset in light: Copy,
 /// Paste and Delete stand the toolbar scope's item gap apart, `toolbar.item_gap` where the theme
 /// states it, else `layout.widget_gap`, which the connector's base style carries, and so no

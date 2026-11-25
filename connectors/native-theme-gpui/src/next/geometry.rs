@@ -192,6 +192,34 @@ mod tests {
         }
     }
 
+    /// A checked toolbar button on either macOS preset is lettered in the
+    /// toolbar's checked label the preset states,
+    /// `toolbar.button_label(CHECKED).color`, the toolbar-bezel button's as an
+    /// on toggle: macos-monterey #424242 / #ececec, macos-tahoe #ffffff
+    /// (os-probe run 45634379188, toolbar states sheet,
+    /// `*.normal.toolbar_toggle_on` `label`), not in the push button's pressed
+    /// label (spec §10, rule 0a).
+    #[test]
+    fn a_checked_macos_toolbar_button_takes_the_stated_checked_label() {
+        use native_theme::next::Color;
+        for (preset, light, dark) in [
+            (Preset::MacosMonterey, 0x424242_u32, 0xececec_u32),
+            (Preset::MacosTahoe, 0xffffff, 0xffffff),
+        ] {
+            for (ctx, rgb) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+                let r = Theme::preset(preset).resolve(&ctx);
+                let [_, red, green, blue] = rgb.to_be_bytes();
+                let want = super::super::hsla(Color::from_srgb8(red, green, blue, u8::MAX));
+                assert_eq!(
+                    toolbar_button_checked(&r).map(|c| c.text.color),
+                    Ok(Some(want)),
+                    "{preset:?} {:?}",
+                    ctx.scheme
+                );
+            }
+        }
+    }
+
     /// A checked toolbar button whose checked fill no rule states (ios-13
     /// states none) is filled as gpui-component's own selected ghost, with
     /// `tokens.secondary_active` as `apply` installs it, not with a pressed
