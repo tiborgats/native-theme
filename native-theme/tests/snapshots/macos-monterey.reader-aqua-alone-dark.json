@@ -1809,6 +1809,7 @@
     },
     "button": {
       "base": {
+        "fill": "none",
         "corners": 5.0
       },
       "rules": [
@@ -1941,6 +1942,40 @@
           ],
           "button_icon": {
             "color": "#aeaeae"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button_icon": {
+            "color": "#e3e3e3"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button_icon": {
+            "color": "#e7e7e7"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button_icon": {
+            "color": "#e9e9e9"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_icon": {
+            "color": "#565656"
           }
         }
       ]
