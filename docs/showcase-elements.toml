@@ -1326,7 +1326,7 @@ name = "Switch label"
 parent = "basic.switches.off.track"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
 # homes: defaults.font, defaults.font.color: switch.label(NONE),
-#        the label's text part, which the switch's label is drawn in (spec §5, switch).
+#        the label's text part, which the switch's label is drawn in (v0.8.0-spec.md §5, switch).
 homes = ["switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier"]
 states = ["Off"]
 part = true
@@ -1370,7 +1370,7 @@ parent = "basic.switches.on.track"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
 # homes: defaults.font: switch.label(NONE), not CHECKED: no rule for CHECKED states the label's
 #        font; defaults.font.color: switch.label(CHECKED), the label's text part, which the
-#        switch's label is drawn in (spec §5, switch).
+#        switch's label is drawn in (v0.8.0-spec.md §5, switch).
 homes = ["switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier"]
 states = ["On"]
 part = true
@@ -1417,7 +1417,7 @@ parent = "basic.switches.disabled.track"
 leaves = ["switch.disabled_opacity", "defaults.font", "defaults.line_height", "defaults.disabled_text_color"]
 # homes: defaults.font: switch.label(NONE), not DISABLED|CHECKED: no rule for either flag states
 #        the label's font; defaults.disabled_text_color: switch.label(DISABLED|CHECKED), the label's
-#        text part, which the switch's label is drawn in (spec §5, switch).
+#        text part, which the switch's label is drawn in (v0.8.0-spec.md §5, switch).
 homes = ["switch.disabled_opacity", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color"]
 states = ["On, disabled"]
 part = true
