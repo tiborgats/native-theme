@@ -8722,9 +8722,13 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_t
 
 /// Whether Widget Info lists the element of id `id` by its 0.8.0 homes, a
 /// row per home routed by [`home_route`], rather than by its 0.7.2 leaves:
-/// the Basic list's and the Basic table's elements.
+/// the Basic list's, the Basic table's and the Basic page's tabs' elements,
+/// and the page tabs' and the inspector's tab rows and tabs.
 fn home_keyed(id: &str) -> bool {
-    id.starts_with("basic.list.") || id.starts_with("basic.table.")
+    id.starts_with("basic.list.")
+        || id.starts_with("basic.table.")
+        || id.starts_with("basic.tabs.")
+        || tab_element(id)
 }
 
 /// The keys of `element`'s Widget Info rows, which [`iced_route`] routes:
@@ -9386,7 +9390,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if under("basic.tabs") => Drawing::of(AW_TAB_BAR),
         // The page's and the inspector's tabs are the showcase's
         // ([`tab_style`]); their line is the connector's.
-        _ if leaf == "tab.active_indicator_color" => Drawing::of(&["crate::tab_indicator_line"]),
+        _ if leaf == "tab.indicator(SELECTED).fill" => Drawing::of(&["crate::tab_indicator_line"]),
         _ if under("basic.segmented.week") => {
             Drawing::only(SEGMENT, &[], &["(false, ", "Disabled"])
         }
@@ -9917,27 +9921,27 @@ fn unmapped_fill_route(
     })
 }
 
-/// The route of a colour leaf `leaf` of a tab [`tab_style`] draws under
-/// `r`: what it draws of the leaf's 0.8.0 home, naming it, or that the home
-/// is unstated and what is drawn in its place. `None` for a leaf it does
-/// not read. The open and closed tab's leaves it does not draw are
+/// The route of a colour home `home` of a tab [`tab_style`] draws under
+/// `r`: what it draws of the home, naming what it reads, or that it is
+/// unstated and what is drawn in its place. `None` for a home it does not
+/// read. The open and closed tab's homes it does not draw are
 /// [`shown_tab_route`]'s.
-fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String> {
+fn tab_route(r: &native_theme::next::ResolvedTheme, home: &str) -> Option<String> {
     let t = &r.tab;
     let open = t.tab(WidgetState::SELECTED);
     let unmapped = unmapped_fill_route(
-        leaf,
+        home,
         &[
             (
-                "tab.active_background",
+                "tab.tab(SELECTED).fill",
                 iced_next::fill_of(&open, "tab.tab(SELECTED).fill"),
             ),
             (
-                "tab.background_color",
+                "tab.tab(NONE).fill",
                 iced_next::fill_of(&t.tab(WidgetState::NONE), "tab.tab(NONE).fill"),
             ),
             (
-                "tab.hover_background",
+                "tab.tab(HOVER).fill",
                 iced_next::state_fill_of(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill"),
             ),
         ],
@@ -9945,58 +9949,60 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
     if unmapped.is_some() {
         return unmapped;
     }
-    let route = match leaf {
-        "tab.active_background" if drawn_fill(&open).is_none() => {
+    let route = match home {
+        "tab.tab(SELECTED).fill" if drawn_fill(&open).is_none() => {
             "not drawn: tab.tab(SELECTED).fill is unstated, so tab_style fills the open tab as \
              a tab at rest"
         }
-        "tab.active_background" => {
+        "tab.tab(SELECTED).fill" => {
             "tab_style: the open tab's background, tab.tab(SELECTED).fill; and the connector's \
              tab_flares's flares, where tab.active_outward_corner_radius is stated"
         }
-        "tab.active_text_color"
+        "tab.label(SELECTED).color"
             if iced_next::text_color_of(&t.label(WidgetState::SELECTED)).is_none() =>
         {
             "not drawn: tab.label(SELECTED).color is unstated, so tab_style letters the open tab \
              as a tab at rest"
         }
-        "tab.active_text_color" => {
+        "tab.label(SELECTED).color" => {
             "tab_style: the open tab's text colour, tab.label(SELECTED).color"
         }
-        "tab.background_color" if drawn_fill(&t.tab(WidgetState::NONE)).is_none() => {
+        "tab.tab(NONE).fill" if drawn_fill(&t.tab(WidgetState::NONE)).is_none() => {
             "not drawn: tab.tab(NONE).fill is unstated, so a tab at rest has iced's own flat \
              button's fill (button::text), none"
         }
-        "tab.background_color" => "tab_style: a tab's background at rest, tab.tab(NONE).fill",
-        "tab.hover_background" if drawn_state_fill(&t.tab(WidgetState::HOVER)).is_none() => {
+        "tab.tab(NONE).fill" => "tab_style: a tab's background at rest, tab.tab(NONE).fill",
+        "tab.tab(HOVER).fill" if drawn_state_fill(&t.tab(WidgetState::HOVER)).is_none() => {
             "not drawn: tab.tab(HOVER).fill is unstated; tab_style fills a tab under the pointer \
              as at rest"
         }
-        "tab.hover_background" => {
+        "tab.tab(HOVER).fill" => {
             "tab_style: a tab's background under the pointer and pressed, tab.tab(HOVER).fill"
         }
-        "tab.hover_text_color"
+        "tab.label(HOVER).color"
             if iced_next::state_text_color_of(&t.label(WidgetState::HOVER)).is_none() =>
         {
             "not drawn: tab.label(HOVER).color is unstated, so a tab's label under the pointer is \
              iced's own flat button's (button::text)"
         }
-        "tab.hover_text_color" => {
+        "tab.label(HOVER).color" => {
             "tab_style: a tab's text colour under the pointer and pressed, tab.label(HOVER).color"
         }
-        "tab.font.color" if iced_next::text_color_of(&t.label(WidgetState::NONE)).is_none() => {
+        "tab.label(NONE).color"
+            if iced_next::text_color_of(&t.label(WidgetState::NONE)).is_none() =>
+        {
             "not drawn: tab.label(NONE).color is unstated, so a tab's label at rest is iced's own \
              flat button's (button::text)"
         }
-        "tab.font.color" => "tab_style: a tab's text colour at rest, tab.label(NONE).color",
-        "tab.border.color"
+        "tab.label(NONE).color" => "tab_style: a tab's text colour at rest, tab.label(NONE).color",
+        "tab.tab(SELECTED).stroke.color"
             if iced_next::stroke_color_of(&open).is_none()
                 || !iced_next::stroke_width_of(&open).is_some_and(|width| width > 0.0) =>
         {
             "not drawn: tab.tab(SELECTED).stroke is unstated or none, so the open tab has no \
              outline"
         }
-        "tab.border.color" => {
+        "tab.tab(SELECTED).stroke.color" => {
             "tab_style: the open tab's border colour, tab.tab(SELECTED).stroke.color; and the \
              connector's tab_flares's flares, where tab.active_outward_corner_radius is stated \
              and tab.tab(SELECTED).stroke.width is positive"
@@ -10509,15 +10515,15 @@ fn menu_layout_route(
     Some(route)
 }
 
-/// The route of a layout leaf `leaf` of the page tabs, the inspector's tabs
+/// The route of a layout home `home` of the page tabs, the inspector's tabs
 /// or, without `iced_aw`, the Basic page's, under `r`, the installed 0.8.0
 /// theme, of the tab row where `strip` (laid out by `row`, [`tab_row`] or
 /// [`basic_tab_row`]), else of a tab ([`next_tab_button`]): what is drawn
-/// of the leaf's 0.8.0 home, naming it, or that the home is unstated and
-/// what is drawn in its place. `None` for a leaf neither lays out.
+/// of the home, naming what it reads, or that it is unstated and what is
+/// drawn in its place. `None` for a home neither lays out.
 fn tab_layout_route(
     r: &native_theme::next::ResolvedTheme,
-    leaf: &str,
+    home: &str,
     strip: bool,
     row: &str,
 ) -> Option<String> {
@@ -10529,71 +10535,71 @@ fn tab_layout_route(
     let side = ["top", "right", "bottom", "left"]
         .into_iter()
         .zip([top, right, bottom, left])
-        .find(|(s, _)| leaf == format!("tab.border.padding_{s}_px"));
-    let route = match leaf {
-        "tab.item_gap_px" if t.item_gap.is_none() => {
+        .find(|(s, _)| home == format!("tab.tab(NONE).padding.{s}"));
+    let route = match home {
+        "tab.item_gap" if t.item_gap.is_none() => {
             "not drawn: tab.item_gap is unstated; the tabs' row keeps its own spacing, none"
                 .to_owned()
         }
-        "tab.item_gap_px" => format!("{row}: the tabs' Row::spacing, tab.item_gap"),
-        "tab.active_outward_corner_radius_px" if next_flare_room(r) == 0.0 => {
+        "tab.item_gap" => format!("{row}: the tabs' Row::spacing, tab.item_gap"),
+        "tab.active_outward_corner_radius" if next_flare_room(r) == 0.0 => {
             "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
              and the row keeps no room for them"
                 .to_owned()
         }
-        "tab.active_outward_corner_radius_px" if strip => {
+        "tab.active_outward_corner_radius" if strip => {
             "the row's padding at both ends (next_flare_room)".to_owned()
         }
-        "tab.active_outward_corner_radius_px" => {
+        "tab.active_outward_corner_radius" => {
             "native_theme_iced::next::tab_flares, over the row".to_owned()
         }
-        "tab.font" => "the label's Text in tab.label(NONE) (Typeset::next_text), measured in it \
-                       for the strip (next_tab_width)"
+        "tab.label(NONE)" => "the label's Text in tab.label(NONE) (Typeset::next_text), measured \
+                              in it for the strip (next_tab_width)"
             .to_owned(),
-        "defaults.line_height" => {
+        "typography.line_height_multiplier" => {
             "the label's line box, tab.label(NONE).line_height, else its size times \
              typography.line_height_multiplier (next_line_box)"
                 .to_owned()
         }
-        "tab.min_width_px" if min_width.is_none() => {
+        "tab.tab(NONE).min_size[0]" if min_width.is_none() => {
             "not drawn: tab.tab(NONE).min_size[0] is unstated; the tab is its label's width \
              and padding"
                 .to_owned()
         }
-        "tab.min_width_px" => {
+        "tab.tab(NONE).min_size[0]" => {
             "next_tab_floor: at_least(label, ..), tab.tab(NONE).min_size[0] less the padding"
                 .to_owned()
         }
-        "tab.min_height_px" if min_height.is_none() => {
+        "tab.tab(NONE).min_size[1]" if min_height.is_none() => {
             "not drawn: tab.tab(NONE).min_size[1] is unstated; the tab is its label's height \
              and padding"
                 .to_owned()
         }
-        "tab.min_height_px" => {
+        "tab.tab(NONE).min_size[1]" => {
             "next_tab_floor: at_least(label, ..), tab.tab(NONE).min_size[1] less the padding"
                 .to_owned()
         }
-        "tab.border.line_width_px" => {
+        "tab.tab(SELECTED).stroke.width" => {
             "the open tab's border width in tab_style, tab.tab(SELECTED).stroke.width, which \
              next_tab_padding adds to each stated side of every tab"
                 .to_owned()
         }
-        "tab.active_indicator_width_px" if indicator.min_size[1].is_none() => {
+        "tab.indicator(SELECTED).min_size[1]" if indicator.min_size[1].is_none() => {
             "not drawn: tab.indicator(SELECTED).min_size[1] is unstated, so \
              native_theme_iced::next::tab_indicator draws no line"
                 .to_owned()
         }
-        "tab.active_indicator_width_px" => {
+        "tab.indicator(SELECTED).min_size[1]" => {
             "native_theme_iced::next::tab_indicator: the line stacked over the open tab, \
              tab.indicator(SELECTED).min_size[1] thick"
                 .to_owned()
         }
-        "tab.active_indicator_side" if t.indicator_side.is_none() => {
+        "tab.indicator_side" if t.indicator_side.is_none() => {
             "not drawn: tab.indicator_side is unstated, so native_theme_iced::next::tab_indicator \
              draws no line"
                 .to_owned()
         }
-        "tab.active_indicator_side" => {
+        "tab.indicator_side" => {
             "native_theme_iced::next::tab_indicator: the line along the open tab's \
              tab.indicator_side"
                 .to_owned()
@@ -10784,37 +10790,41 @@ fn ghost_icon<'a>(state: &'a State, id: &str) -> Option<&'a IconData> {
     icon.filter(|icon| matches!(icon, IconData::Svg(_) | IconData::Rgba(_)))
 }
 
-/// The route of a tab's `leaf` that its state shows it not drawing, where
-/// the tab with the list's id `id` is `open` or not: a closed tab neither
-/// framed nor marked (`tab_style`, `tab_indicator`, iced_aw's `TabBar`
-/// frames only its `Active` tab); and where `tab_style` draws it, a closed
-/// tab without the open tab's colours and an open one without a closed
-/// tab's, in every status. `None` where the leaf is drawn as its route says.
-fn shown_tab_route(id: &str, leaf: &str, open: bool) -> Option<&'static str> {
+/// The route of a tab's home `home` that its state shows it not drawing,
+/// where the tab with the list's id `id` is `open` or not: a closed tab
+/// neither framed nor marked (`tab_style`, `tab_indicator`, iced_aw's
+/// `TabBar` frames only its `Active` tab); and where `tab_style` draws it,
+/// a closed tab without the open tab's colours and an open one without a
+/// closed tab's, in every status. `None` where the home is drawn as its
+/// route says.
+fn shown_tab_route(id: &str, home: &str, open: bool) -> Option<&'static str> {
     let by_tab_style = !(cfg!(feature = "iced_aw") && basic_tab_index(id).is_some());
-    match leaf {
-        "tab.active_indicator_color"
-        | "tab.active_indicator_width_px"
-        | "tab.active_indicator_side"
+    match home {
+        "tab.indicator(SELECTED).fill"
+        | "tab.indicator(SELECTED).min_size[1]"
+        | "tab.indicator(SELECTED).max_size[1]"
+        | "tab.indicator_side"
             if !open =>
         {
             Some("not drawn: the line marks the open tab, and this one is closed")
         }
-        "tab.border.color" | "tab.border.corner_radius_px" | "tab.border.line_width_px"
+        "tab.tab(SELECTED).stroke.color"
+        | "tab.tab(SELECTED).corners"
+        | "tab.tab(SELECTED).stroke.width"
             if !open =>
         {
             Some("not drawn: only the open tab is framed, and this one is closed")
         }
-        "tab.active_outward_corner_radius_px" if !open => {
+        "tab.active_outward_corner_radius" if !open => {
             Some("not drawn: only the open tab curves out at its feet, and this one is closed")
         }
-        "tab.active_background" | "tab.active_text_color" if !open && by_tab_style => {
+        "tab.tab(SELECTED).fill" | "tab.label(SELECTED).color" if !open && by_tab_style => {
             Some("not drawn: this tab is closed; tab_style gives the open one these")
         }
-        "tab.background_color"
-        | "tab.font.color"
-        | "tab.hover_background"
-        | "tab.hover_text_color"
+        "tab.tab(NONE).fill"
+        | "tab.label(NONE).color"
+        | "tab.tab(HOVER).fill"
+        | "tab.label(HOVER).color"
             if open && by_tab_style =>
         {
             Some(
@@ -10823,6 +10833,114 @@ fn shown_tab_route(id: &str, leaf: &str, open: bool) -> Option<&'static str> {
         }
         _ => None,
     }
+}
+
+/// Whether the list's id `id` names a tab row or a tab: the page tabs',
+/// the inspector's and the Basic page's, which [`tab_home_route`] routes.
+fn tab_element(id: &str) -> bool {
+    matches!(
+        id,
+        "chrome.page_tabs"
+            | "chrome.page_tabs.basic"
+            | "chrome.page_tabs.buttons"
+            | "chrome.side_panel.inspector_tabs"
+            | "chrome.side_panel.inspector_tabs.widget"
+            | "chrome.side_panel.inspector_tabs.theme"
+            | "basic.tabs.bar"
+            | "basic.tabs.one"
+            | "basic.tabs.two"
+    )
+}
+
+/// The route of the home `home` of the tab row or tab of the list's id
+/// `id` ([`tab_element`]) under `r`, the installed 0.8.0 theme: a colour
+/// [`tab_style`] draws ([`tab_route`]); a length of the page tabs, the
+/// inspector's tabs or, without `iced_aw`, the Basic page's
+/// ([`tab_layout_route`]); with `iced_aw`, what its `TabBar` lays out of a
+/// Basic tab's; else the strip's fill, the open tab's corners and the tab
+/// rows' margin. `None` for a home none of them reads.
+fn tab_home_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -> Option<String> {
+    if let Some(route) = tab_route(r, home) {
+        return Some(route);
+    }
+    let aw = cfg!(feature = "iced_aw") && id.starts_with("basic.tabs.");
+    if !aw
+        && let Some(route) = tab_layout_route(
+            r,
+            home,
+            [
+                "chrome.page_tabs",
+                "chrome.side_panel.inspector_tabs",
+                "basic.tabs.bar",
+            ]
+            .contains(&id),
+            if id.starts_with("basic.tabs.") {
+                "basic_tab_row"
+            } else {
+                "tab_row"
+            },
+        )
+    {
+        return Some(route);
+    }
+    let sides = ["top", "right", "bottom", "left"];
+    if aw
+        && sides
+            .iter()
+            .any(|side| home == format!("tab.tab(NONE).padding.{side}"))
+    {
+        return Some("TabBar::padding, where every side is stated".to_owned());
+    }
+    let route = match home {
+        "tab.bar(NONE).fill" => "surface: the strip container's background, tab.bar(NONE).fill",
+        "tab.tab(SELECTED).corners" => {
+            "the open tab's top corners in tab_style, tab.tab(SELECTED).corners"
+        }
+        "tab.indicator(SELECTED).max_size[1]" => {
+            "not reachable: native_theme_iced::next::tab_indicator draws the line at one \
+             thickness, tab.indicator(SELECTED).min_size[1]"
+        }
+        "layout.container_margin" if id == "chrome.side_panel.inspector_tabs" => {
+            "the tab row's left and right padding where sidebar.border.padding states no side \
+             (none where that is unstated); where it states any, the side panel's padding \
+             insets it (side_panel_content_margin)"
+        }
+        "layout.container_margin" if id == "chrome.page_tabs" => {
+            "the tab row's left and right padding (none where that is unstated)"
+        }
+        "tab.item_gap" if aw => "the tabs' spacing, where stated",
+        "tab.indicator(SELECTED).min_size[1]" | "tab.indicator_side" if aw => {
+            "iced_next::tab_indicator_line over the open tab's place in iced_aw's bar"
+        }
+        "tab.active_outward_corner_radius" if aw && next_flare_room(r) == 0.0 => {
+            "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
+             and the row keeps no room for them"
+        }
+        "tab.active_outward_corner_radius" if aw && id == "basic.tabs.bar" => {
+            "a container's padding outside the bar at both ends, filled tab.bar(NONE).fill as \
+             the bar is"
+        }
+        "tab.active_outward_corner_radius" if aw => {
+            "native_theme_iced::tab_flares, over the bar (the selected tab under the pointer is \
+             iced_aw's Hovered, drawn with no outline and square corners, styles/aw.rs:241-244, \
+             while its flares, their arcs and the strip stay)"
+        }
+        "tab.label(NONE)" if aw => "the label's size and theme_font",
+        "tab.tab(NONE).min_size[0]" | "tab.tab(NONE).min_size[1]" if aw => {
+            "TabBar::tab_width, tab.tab(NONE).min_size[0] or the wider label inside iced_aw's \
+             paddings (next_aw_tab_width), and height, tab.tab(NONE).min_size[1] or the \
+             label's line inside them (next_aw_tab_height), both fixed: iced_aw takes no \
+             minimum"
+        }
+        "tab.tab(SELECTED).stroke.width" if aw => {
+            "the open tab's border width in tab_style, tab.tab(SELECTED).stroke.width"
+        }
+        "typography.line_height_multiplier" if aw => {
+            "the text's LineHeight::Relative (native_theme_iced::line_height)"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
 }
 
 /// Whether the Basic page's spinner is a freedesktop indicator, which keeps
@@ -10943,11 +11061,15 @@ fn colour_home_route(
 /// from the contract's export ([`colour_home_route`]); the Basic list's
 /// own colours are [`list_route`]'s, its rows' corners, lines and insets
 /// [`list_shape_route`]'s; the Basic table's colours are [`table_route`]'s,
-/// its fonts, lengths and hover homes [`table_layout_route`]'s. One muted
-/// line of Widget Info.
+/// its fonts, lengths and hover homes [`table_layout_route`]'s; a tab row's
+/// and a tab's [`tab_home_route`]'s, after what a tab's state shows it not
+/// drawing ([`shown_tab_route`]). One muted line of Widget Info.
 fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     let id = element.id.as_str();
     let r = state.next_shown();
+    if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, home, open)) {
+        return line.to_owned();
+    }
     let installed = state.installed_combination();
     if let Some(line) = colour_home_route(element, home, Shown::of(state), installed.as_deref()) {
         return line;
@@ -10969,6 +11091,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         })
     } else if under("basic.table.") {
         table_route(r, home, id == "basic.table.frame").or_else(|| table_layout_route(r, id, home))
+    } else if tab_element(id) {
+        tab_home_route(r, id, home)
     } else {
         None
     };
@@ -11065,9 +11189,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         return home_route(state, element, leaf);
     }
     let id = element.id.as_str();
-    if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, leaf, open)) {
-        return line.to_owned();
-    }
     if id == "basic.spinner.indicator"
         && leaf.starts_with("spinner.")
         && state.basic_spinner.is_none()
@@ -11157,44 +11278,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .into_iter()
             .find(|s| field == format!("border.padding_{s}_px"))
     };
-    if table == "tab"
-        && let Some(route) = tab_route(state.next_shown(), leaf)
-    {
-        return if route.starts_with("not drawn") {
-            route
-        } else {
-            format!("iced: {route}")
-        };
-    }
-    let chrome_tabs = (under("chrome.page_tabs")
-        && !under("chrome.page_tabs.menu")
-        && !under("chrome.page_tabs.rule"))
-        || under("chrome.side_panel.inspector_tabs");
-    let basic_tabs = !cfg!(feature = "iced_aw")
-        && ["basic.tabs.bar", "basic.tabs.one", "basic.tabs.two"].contains(&id);
-    if (chrome_tabs || basic_tabs)
-        && let Some(route) = tab_layout_route(
-            state.next_shown(),
-            leaf,
-            [
-                "chrome.page_tabs",
-                "chrome.side_panel.inspector_tabs",
-                "basic.tabs.bar",
-            ]
-            .contains(&id),
-            if basic_tabs {
-                "basic_tab_row"
-            } else {
-                "tab_row"
-            },
-        )
-    {
-        return if route.starts_with("not drawn") {
-            route
-        } else {
-            format!("iced: {route}")
-        };
-    }
     if (under("chrome.menu") || under("chrome.page_tabs.menu"))
         && let Some(route) = menu_layout_route(state.next_shown(), leaf, under("chrome.menu_bar."))
     {
@@ -11746,9 +11829,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
-        ("tab", "bar_background") => {
-            "surface: the strip container's background, tab.bar(NONE).fill".into()
-        }
+        // A tab row's and a tab's are tab_home_route's.
         ("tab", "item_gap_px") if id == "basic.page" => {
             "basic_widest: the gap between the two tabs a column holds, tab.item_gap \
              (next_tab_gap)"
@@ -11765,14 +11846,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                     .into()
             }
         }
-        ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
-        #[cfg(feature = "iced_aw")]
-        ("tab", "active_indicator_width_px" | "active_indicator_side") if under("basic.tabs.") => {
-            "iced_next::tab_indicator_line over the open tab's place in iced_aw's bar".into()
-        }
-        ("tab", "active_indicator_width_px" | "active_indicator_side") => {
-            "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
-        }
         ("tab", "active_outward_corner_radius_px")
             if next_flare_room(state.next_shown()) == 0.0 =>
         {
@@ -11782,52 +11855,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("tab", "active_outward_corner_radius_px") if id == "basic.page" => {
             "room for both flares in basic_column_count".into()
-        }
-        #[cfg(feature = "iced_aw")]
-        ("tab", "active_outward_corner_radius_px") if id == "basic.tabs.bar" => {
-            "a container's padding outside the bar at both ends, filled tab.bar_background as \
-             the bar is"
-                .into()
-        }
-        ("tab", "active_outward_corner_radius_px")
-            if ["basic.tabs.bar", "chrome.page_tabs", "chrome.side_panel.inspector_tabs"]
-                .contains(&id) =>
-        {
-            "the row's padding at both ends".into()
-        }
-        #[cfg(feature = "iced_aw")]
-        ("tab", "active_outward_corner_radius_px") if under("basic.tabs.") => {
-            "native_theme_iced::tab_flares, over the bar (the selected tab under the pointer is \
-             iced_aw's Hovered, drawn with no outline and square corners, styles/aw.rs:241-244, \
-             while its flares, their arcs and the strip stay)"
-                .into()
-        }
-        ("tab", "active_outward_corner_radius_px") => {
-            "native_theme_iced::tab_flares, over the row".into()
-        }
-        ("tab", "font") => "the label's size and theme_font".into(),
-        #[cfg(feature = "iced_aw")]
-        ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
-            "TabBar::tab_width, tab.min_width or the wider label inside iced_aw's \
-             paddings (aw_tab_width), and height, tab.min_height or the label's \
-             line inside them (aw_tab_height), both fixed: iced_aw takes no minimum"
-                .into()
-        }
-        ("tab", "min_width_px" | "min_height_px") => {
-            "at_least(label, ..): the minimum less the padding".into()
-        }
-        ("tab", "border.corner_radius_px") => {
-            "the open tab's top corners in tab_style, tab.tab(SELECTED).corners".into()
-        }
-        ("tab", "border.line_width_px") => {
-            "the open tab's border width in tab_style, tab.tab(SELECTED).stroke.width".into()
-        }
-        #[cfg(feature = "iced_aw")]
-        ("tab", f) if side(f).is_some() && under("basic.tabs.") => {
-            "TabBar::padding, where every side is stated".into()
-        }
-        ("tab", f) if side(f).is_some() => {
-            "padding_inside_border: the button's padding, the side plus the line width".into()
         }
         // ---- slider, progress bar, spinner ----
         ("slider", "track_height_px") if under("basic.slider.") => {
@@ -12079,12 +12106,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              content (none where that is unstated) (side_panel)"
                 .into()
         }
-        ("layout", "container_margin_px") if id == "chrome.side_panel.inspector_tabs" => {
-            "the tab row's left and right padding where sidebar.border.padding states no side \
-             (none where that is unstated); where it states any, the side panel's padding \
-             insets it (side_panel_content_margin)"
-                .into()
-        }
         ("layout", "container_margin_px")
             if id == "chrome.side_panel.settings" || id == "chrome.side_panel.inspector" =>
         {
@@ -12092,9 +12113,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              unstated); where it states any, the side panel's padding pads it \
              (side_panel_content_margin)"
                 .into()
-        }
-        ("layout", "container_margin_px") if id == "chrome.page_tabs" => {
-            "the tab row's left and right padding (none where that is unstated)".into()
         }
         ("layout", "container_margin_px") if id == "chrome.status_bar" => {
             "not drawn: a side status_bar.bar.padding leaves unstated takes \
@@ -33531,8 +33549,10 @@ mod tests {
     /// installed 0.8.0 theme (`next::values::home_value`), the Basic list's
     /// row label's family by what iced draws it in (`next_listed_family`); a
     /// list row's padding and its fill's inset, one 0.7.2 leaf, are routed
-    /// apart, each naming what reads its home, and a table row's inset,
-    /// which `basic_table` does not draw, is said not drawn.
+    /// apart, each naming what reads its home, a table row's inset, which
+    /// `basic_table` does not draw, is said not drawn, and the open tab's
+    /// line's greatest thickness, which iced cannot draw apart from its
+    /// least, not reachable.
     #[test]
     fn the_home_keyed_elements_are_listed_by_their_homes() -> Result<(), String> {
         let state = route_states().swap_remove(0);
@@ -33596,6 +33616,16 @@ mod tests {
             inset.starts_with("not drawn: basic_table") && !inset.contains("padding"),
             "{inset}"
         );
+        // The open tab's line, one 0.7.2 leaf, two homes: iced draws the
+        // line at one thickness.
+        let element =
+            elements::element("chrome.page_tabs.basic").ok_or("chrome.page_tabs.basic")?;
+        let most = iced_route(&state, element, "tab.indicator(SELECTED).max_size[1]");
+        assert!(
+            most.starts_with("not reachable")
+                && most.contains("tab.indicator(SELECTED).min_size[1]"),
+            "{most}"
+        );
         Ok(())
     }
 
@@ -33647,7 +33677,7 @@ mod tests {
         };
         for (route, home) in [
             (
-                tab_route(&patched, "tab.active_background"),
+                tab_route(&patched, "tab.tab(SELECTED).fill"),
                 "tab.tab(SELECTED).fill",
             ),
             (
@@ -34358,19 +34388,20 @@ mod tests {
         "toolbar.button_checked_background",
     ];
 
-    /// The home of a tab's colour leaf `leaf`, which [`tab_style`] reads:
-    /// `None` for a leaf it does not read.
-    fn tab_home(leaf: &str) -> Option<&'static str> {
-        Some(match leaf {
-            "tab.background_color" => "tab.tab(NONE).fill",
-            "tab.font.color" => "tab.label(NONE).color",
-            "tab.hover_background" => "tab.tab(HOVER).fill",
-            "tab.hover_text_color" => "tab.label(HOVER).color",
-            "tab.active_background" => "tab.tab(SELECTED).fill",
-            "tab.active_text_color" => "tab.label(SELECTED).color",
-            "tab.border.color" => "tab.tab(SELECTED).stroke.color",
-            _ => return None,
-        })
+    /// A tab's colour home `home`, where [`tab_style`] reads it: `None` for
+    /// a home it does not read.
+    fn tab_home(home: &str) -> Option<&'static str> {
+        [
+            "tab.tab(NONE).fill",
+            "tab.label(NONE).color",
+            "tab.tab(HOVER).fill",
+            "tab.label(HOVER).color",
+            "tab.tab(SELECTED).fill",
+            "tab.label(SELECTED).color",
+            "tab.tab(SELECTED).stroke.color",
+        ]
+        .into_iter()
+        .find(|read| *read == home)
     }
 
     /// The home that the Basic list's colour row `home` draws, which
@@ -35532,8 +35563,9 @@ mod tests {
         if let Some(&open) = opens.get(id) {
             let aw = cfg!(feature = "iced_aw") && id.starts_with("basic.tabs.");
             if !open
-                && (leaf.starts_with("tab.active_indicator") || leaf.starts_with("tab.border."))
-                && !leaf.starts_with("tab.border.padding")
+                && (leaf.starts_with("tab.indicator")
+                    || leaf.starts_with("tab.tab(SELECTED).stroke.")
+                    || leaf == "tab.tab(SELECTED).corners")
                 && !not_drawn
             {
                 fault("only the open tab is framed and marked");
@@ -36985,18 +37017,27 @@ mod tests {
         }
     }
 
-    /// G3 T13 (D1): the routes of `tab.active_outward_corner_radius_px`, the
-    /// leaf the shared list names on the three open tabs, the three bars and
-    /// `basic.page` (since G3 T15), name what draws it: `tab_flares` on
-    /// the open tabs (and, under iced_aw, its hovered-tab limit), the row's
-    /// padding or the container's outside an iced_aw bar on the bars, the
-    /// column rule on the page; a closed tab draws none, and an unstated
-    /// radius nothing. The colour routes of `tab.active_background` and
-    /// `tab.border.color` name `tab_flares` too: by hand on the tabs
-    /// `tab_style` draws, through the drawing's rows under iced_aw.
+    /// G3 T13 (D1): the routes of `tab.active_outward_corner_radius`, the
+    /// home the shared list names on the three open tabs and the three bars
+    /// (on `basic.page`, since G3 T15, its 0.7.2 leaf
+    /// `tab.active_outward_corner_radius_px`), name what draws it:
+    /// `tab_flares` on the open tabs (and, under iced_aw, its hovered-tab
+    /// limit), the row's padding or the container's outside an iced_aw bar
+    /// on the bars, the column rule on the page; a closed tab draws none,
+    /// and an unstated radius nothing. The colour routes of
+    /// `tab.tab(SELECTED).fill` and `tab.tab(SELECTED).stroke.color` name
+    /// `tab_flares` too: by hand on the tabs `tab_style` draws, through the
+    /// drawing's rows under iced_aw.
     #[test]
     fn the_outward_corner_routes_name_what_draws_them() {
-        const LEAF: &str = "tab.active_outward_corner_radius_px";
+        // The element's key of the radius (`route_keys`).
+        let key = |id: &str| {
+            if home_keyed(id) {
+                "tab.active_outward_corner_radius"
+            } else {
+                "tab.active_outward_corner_radius_px"
+            }
+        };
         // The line Widget Info shows, without its toolkit's name.
         let route = |state: &State, id: &str, leaf: &str| match elements::element(id) {
             Some(element) => {
@@ -37038,20 +37079,20 @@ mod tests {
                 "basic.tabs.bar",
                 if aw {
                     "a container's padding outside the bar at both ends, filled \
-                     tab.bar_background as the bar is"
+                     tab.bar(NONE).fill as the bar is"
                 } else {
                     "the row's padding at both ends (next_flare_room)"
                 },
             ),
             ("basic.page", "room for both flares in basic_column_count"),
         ] {
-            assert_eq!(route(&state, id, LEAF), want, "{id}");
+            assert_eq!(route(&state, id, key(id)), want, "{id}");
         }
         for id in [
             "chrome.page_tabs.basic",
             "chrome.side_panel.inspector_tabs.widget",
         ] {
-            for leaf in ["tab.active_background", "tab.border.color"] {
+            for leaf in ["tab.tab(SELECTED).fill", "tab.tab(SELECTED).stroke.color"] {
                 let line = route(&state, id, leaf);
                 assert!(
                     line.contains("the connector's tab_flares's flares"),
@@ -37066,27 +37107,28 @@ mod tests {
         );
         state.basic_tab = 1;
         assert!(
-            route(&state, "basic.tabs.one", LEAF).starts_with("not drawn: only the open tab"),
+            route(&state, "basic.tabs.one", key("basic.tabs.one"))
+                .starts_with("not drawn: only the open tab"),
             "a closed tab"
         );
         let state = curving_out(None);
         for id in ["chrome.page_tabs.basic", "chrome.page_tabs", "basic.page"] {
             assert!(
-                route(&state, id, LEAF).starts_with("not drawn: unstated"),
+                route(&state, id, key(id)).starts_with("not drawn: unstated"),
                 "{id}: {}",
-                route(&state, id, LEAF)
+                route(&state, id, key(id))
             );
         }
     }
 
     /// The rows of the drawing of the listed element `id`'s
-    /// `tab.active_background`, as the showcase opens.
+    /// `tab.tab(SELECTED).fill`, as the showcase opens.
     fn drawing_rows(id: &str) -> Option<&'static [&'static str]> {
         let element = elements::element(id)?;
         let state = curving_out(Some(4.0));
         drawing(
             element,
-            "tab.active_background",
+            "tab.tab(SELECTED).fill",
             Shown::opening(state.next_shown()),
         )
         .map(|d| d.rows)
@@ -42854,7 +42896,7 @@ mod tests {
         let tabs = route_of(
             &state,
             "chrome.side_panel.inspector_tabs",
-            "layout.container_margin_px",
+            "layout.container_margin",
         );
         assert!(tabs.contains("left and right"), "{tabs}");
     }
