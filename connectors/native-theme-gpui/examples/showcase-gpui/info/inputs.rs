@@ -21,7 +21,9 @@ use super::{
     stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
-use crate::support::{SampleIcon, drawn_state_fill};
+use crate::support::SampleIcon;
+#[cfg(feature = "widgets")]
+use crate::support::drawn_state_fill;
 
 /// A refined, enabled field's surface, which the showcase draws under the
 /// field (`demo::text_field`), its line `width` wide: `r`'s
