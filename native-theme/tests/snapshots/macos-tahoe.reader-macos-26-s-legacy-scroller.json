@@ -1821,7 +1821,10 @@
       }
     },
     "button": {
-      "base": {},
+      "base": {
+        "fill": "#ffffff",
+        "corners": "pill"
+      },
       "rules": [
         {
           "states": [
@@ -1837,6 +1840,41 @@
           ],
           "button": {
             "fill": "#e6e6e6"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button": {
+            "fill": "#007aff",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button": {
+            "fill": "#006df2"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button": {
+            "fill": "#0061e6"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button": {
+            "fill": "#ffffff"
           }
         }
       ]
@@ -1868,13 +1906,58 @@
           "button_label": {
             "color": "#454545"
           }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button_label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_label": {
+            "color": "#bfbfbf"
+          }
         }
       ]
     },
     "button_icon": {
       "base": {
-        "size": 24.0
-      }
+        "size": 24.0,
+        "color": "#4d4d4d"
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "button_icon": {
+            "color": "#494949"
+          }
+        }
+      ]
     },
     "separator": {
       "base": {}

@@ -137,6 +137,12 @@
 //!   label's disabled colour over both, by egui's order above;
 //! - the scroll bar's handle and the toolbar's button and its label: the
 //!   pressed fill (and label) over the hovered one, by egui's order above;
+//!   the toolbar's checked fill and label over both, as AppKit draws an on
+//!   toggle hovered and pressed in fills and labels of its own (os-probe run
+//!   45634379188, `*.toolbar_toggle_on`), and the checked and pressed over
+//!   the checked and hovered, by egui's order; the disabled fill and label
+//!   over every other, by egui's order, as no disabled checked toolbar
+//!   button was measured;
 //! - the slider's knob (`macos-monterey`), the menu's item label and the
 //!   pop-up button's field and label: the disabled look over the hovered
 //!   one, by egui's order above;
@@ -412,6 +418,25 @@ struct SchemeColors {
     toolbar_button_hover: Color,
     /// A toolbar button's fill pressed, opaque over the opaque title bar.
     toolbar_button_pressed: Color,
+    /// A toolbar button's fill at rest and disabled, opaque over the opaque
+    /// title bar; `None` where it draws no fill disabled and the preset
+    /// states none at rest.
+    toolbar_button_rest: Option<Color>,
+    /// A toolbar button's label disabled.
+    toolbar_label_disabled: Color,
+    /// A checked toolbar button's fill at rest, hovered and pressed,
+    /// measured, where the generation does not draw it on the accent; `None`
+    /// where it does.
+    toolbar_checked_off_accent: Option<(Color, Color, Color)>,
+    /// A checked toolbar button's fill hovered and pressed where the
+    /// generation draws it on the accent, measured on the default accent;
+    /// `None` where it does not or another accent is laid over
+    /// ([`drop_accent_measurements`]).
+    toolbar_checked_on_accent: Option<(Color, Color)>,
+    /// A checked toolbar button's label at rest, hovered and pressed.
+    toolbar_checked_label: (Color, Color, Color),
+    /// A toolbar button's icon at rest and hovered.
+    toolbar_icon: (Color, Color),
     /// The box's fill.
     card_fill: Color,
     /// The box's outline; `None` where it draws none.
@@ -726,6 +751,27 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // `aqua.pressed.toolbar_button`, `aqua.normal.toolbar_button` `fill`)
     toolbar_button_hover: srgb8(0xdfdf_dfff),
     toolbar_button_pressed: srgb8(0xd2d2_d2ff),
+    // `toolbar.button(DISABLED).fill`: none, the title bar inside the rest ring (measured, os-probe
+    // run 45634379188, macOS 15, toolbar states sheet, `aqua.normal.toolbar_button_disabled`
+    // `fill`, `edge_*`); at rest the preset states none, as the 1 px rest ring is not stated
+    toolbar_button_rest: None,
+    // `toolbar.button_label(DISABLED).color`: #acacac, opaque (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `aqua.normal.toolbar_button_disabled` `label`)
+    toolbar_label_disabled: srgb8(0xacac_acff),
+    // `toolbar.button(CHECKED).fill`, `(CHECKED|HOVER)`, `(CHECKED|PRESSED)`: the toolbar-bezel
+    // button as an on `NSButtonTypePushOnPushOff` toggle, #dfdfdf at rest (the hover fill's
+    // colour), #c6c6c6 hovered, #b9b9b9 pressed, opaque over the opaque title bar (measured, the
+    // same run's `controls-toolbar_states_sheet.toml`,
+    // `aqua.{normal,hovered,pressed}.toolbar_toggle_on` `fill`)
+    toolbar_checked_off_accent: Some((srgb8(0xdfdf_dfff), srgb8(0xc6c6_c6ff), srgb8(0xb9b9_b9ff))),
+    toolbar_checked_on_accent: None,
+    // `toolbar.button_label(CHECKED).color`, `(CHECKED|HOVER)`, `(CHECKED|PRESSED)`: #424242 at
+    // rest, #343434 hovered and pressed (the same keys, `label`)
+    toolbar_checked_label: (srgb8(0x4242_42ff), srgb8(0x3434_34ff), srgb8(0x3434_34ff)),
+    // `toolbar.button_icon.color`, `(HOVER)`: the image-only button's glyph, #676767 at rest,
+    // #666666 hovered, its pixel farthest from the fill (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `aqua.{normal,hovered}.toolbar_image` `ink`)
+    toolbar_icon: (srgb8(0x6767_67ff), srgb8(0x6666_66ff)),
     // `card.container.fill`: NSBox (primary, untitled), black at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 15, `*.normal.box` `fill`)
     card_fill: srgb8(0x0000_0008),
@@ -1041,6 +1087,27 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `darkAqua.pressed.toolbar_button`, `darkAqua.normal.toolbar_button` `fill`)
     toolbar_button_hover: srgb8(0x4141_41ff),
     toolbar_button_pressed: srgb8(0x4e4e_4eff),
+    // `toolbar.button(DISABLED).fill`: none, the title bar inside the rest ring (measured, os-probe
+    // run 45634379188, macOS 15, toolbar states sheet, `darkAqua.normal.toolbar_button_disabled`
+    // `fill`, `edge_*`); at rest the preset states none, as the 1 px rest ring is not stated
+    toolbar_button_rest: None,
+    // `toolbar.button_label(DISABLED).color`: #585858, opaque (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `darkAqua.normal.toolbar_button_disabled` `label`)
+    toolbar_label_disabled: srgb8(0x5858_58ff),
+    // `toolbar.button(CHECKED).fill`, `(CHECKED|HOVER)`, `(CHECKED|PRESSED)`: the toolbar-bezel
+    // button as an on `NSButtonTypePushOnPushOff` toggle, #414141 at rest (the hover fill's
+    // colour), #5a5a5a hovered, #676767 pressed, opaque over the opaque title bar (measured, the
+    // same run's `controls-toolbar_states_sheet.toml`,
+    // `darkAqua.{normal,hovered,pressed}.toolbar_toggle_on` `fill`)
+    toolbar_checked_off_accent: Some((srgb8(0x4141_41ff), srgb8(0x5a5a_5aff), srgb8(0x6767_67ff))),
+    toolbar_checked_on_accent: None,
+    // `toolbar.button_label(CHECKED).color`, `(CHECKED|HOVER)`, `(CHECKED|PRESSED)`: #ececec at
+    // rest, #efefef hovered, #f0f0f0 pressed (the same keys, `label`)
+    toolbar_checked_label: (srgb8(0xecec_ecff), srgb8(0xefef_efff), srgb8(0xf0f0_f0ff)),
+    // `toolbar.button_icon.color`, `(HOVER)`: the image-only button's glyph, #aeaeae at rest and
+    // hovered, its pixel farthest from the fill (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `darkAqua.{normal,hovered}.toolbar_image` `ink`)
+    toolbar_icon: (srgb8(0xaeae_aeff), srgb8(0xaeae_aeff)),
     // `card.container.fill`: NSBox (primary, untitled), white at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 15, `*.normal.box` `fill`)
     card_fill: srgb8(0xffff_ff08),
@@ -1352,6 +1419,29 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `fill`)
     toolbar_button_hover: srgb8(0xf2f2_f2ff),
     toolbar_button_pressed: srgb8(0xe6e6_e6ff),
+    // `toolbar.button.fill`, `(DISABLED)`: the rest capsule, #ffffff, opaque over the opaque title
+    // bar, disabled unchanged, the image-only button's the same (measured, os-probe run
+    // 45634379188, macOS 26, toolbar states sheet, `aqua.normal.toolbar_button`,
+    // `aqua.normal.toolbar_button_disabled`, `aqua.normal.toolbar_image` `fill`); its light edge
+    // is the fill (`toolbar_bezel_fitted-toolbar_states_sheet.toml`, `edge_*`)
+    toolbar_button_rest: Some(srgb8(0xffff_ffff)),
+    // `toolbar.button_label(DISABLED).color`: #bfbfbf, opaque (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `aqua.normal.toolbar_button_disabled` `label`)
+    toolbar_label_disabled: srgb8(0xbfbf_bfff),
+    toolbar_checked_off_accent: None,
+    // `toolbar.button(CHECKED|HOVER).fill`, `(CHECKED|PRESSED)`: the toolbar-bezel button as an on
+    // `NSButtonTypePushOnPushOff` toggle, #006df2 hovered, #0061e6 pressed, at rest the accent
+    // #007aff, on the default accent (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `aqua.{normal,hovered,pressed}.toolbar_toggle_on`
+    // `fill`)
+    toolbar_checked_on_accent: Some((srgb8(0x006d_f2ff), srgb8(0x0061_e6ff))),
+    // `toolbar.button_label(CHECKED).color`, `(CHECKED|HOVER)`, `(CHECKED|PRESSED)`: #ffffff in
+    // each (the same keys, `label`)
+    toolbar_checked_label: (srgb8(0xffff_ffff), srgb8(0xffff_ffff), srgb8(0xffff_ffff)),
+    // `toolbar.button_icon.color`, `(HOVER)`: the image-only button's glyph, #4d4d4d at rest,
+    // #494949 hovered, its pixel farthest from the fill, the label's colours (measured, the same
+    // run's `controls-toolbar_states_sheet.toml`, `aqua.{normal,hovered}.toolbar_image` `ink`)
+    toolbar_icon: (srgb8(0x4d4d_4dff), srgb8(0x4949_49ff)),
     // `card.container.fill`: NSBox (primary, untitled), black at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 26, `*.normal.box` `fill`)
     card_fill: srgb8(0x0000_0008),
@@ -1669,6 +1759,31 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `darkAqua.normal.toolbar_button` `fill`)
     toolbar_button_hover: srgb8(0x3939_39ff),
     toolbar_button_pressed: srgb8(0x4848_48ff),
+    // `toolbar.button.fill`, `(DISABLED)`: the rest capsule, #252525, opaque over the opaque title
+    // bar, disabled unchanged, the image-only button's the same (measured, os-probe run
+    // 45634379188, macOS 26, toolbar states sheet, `darkAqua.normal.toolbar_button`,
+    // `darkAqua.normal.toolbar_button_disabled`, `darkAqua.normal.toolbar_image` `fill`); the
+    // 1 px rim on its edge (#3e3e3e at rest) not stated, as it is not settled as one fixed layer
+    // (`toolbar_bezel_fitted-toolbar_states_sheet.toml`, `edge_*`)
+    toolbar_button_rest: Some(srgb8(0x2525_25ff)),
+    // `toolbar.button_label(DISABLED).color`: #666666, opaque (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `darkAqua.normal.toolbar_button_disabled` `label`)
+    toolbar_label_disabled: srgb8(0x6666_66ff),
+    toolbar_checked_off_accent: None,
+    // `toolbar.button(CHECKED|HOVER).fill`, `(CHECKED|PRESSED)`: the toolbar-bezel button as an on
+    // `NSButtonTypePushOnPushOff` toggle, #148eff hovered, #239dff pressed, at rest the accent
+    // #007aff, on the default accent (measured, the same run's
+    // `controls-toolbar_states_sheet.toml`, `darkAqua.{normal,hovered,pressed}.toolbar_toggle_on`
+    // `fill`)
+    toolbar_checked_on_accent: Some((srgb8(0x148e_ffff), srgb8(0x239d_ffff))),
+    // `toolbar.button_label(CHECKED).color`, `(CHECKED|HOVER)`, `(CHECKED|PRESSED)`: #ffffff in
+    // each (the same keys, `label`)
+    toolbar_checked_label: (srgb8(0xffff_ffff), srgb8(0xffff_ffff), srgb8(0xffff_ffff)),
+    // `toolbar.button_icon.color`, `(HOVER)`: the image-only button's glyph, #e9e9e9 at rest,
+    // #ebebeb hovered, its pixel farthest from the fill, the label's colours (measured, the same
+    // run's `controls-toolbar_states_sheet.toml`, `darkAqua.{normal,hovered}.toolbar_image`
+    // `ink`)
+    toolbar_icon: (srgb8(0xe9e9_e9ff), srgb8(0xebeb_ebff)),
     // `card.container.fill`: NSBox (primary, untitled), white at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 26, `*.normal.box` `fill`)
     card_fill: srgb8(0xffff_ff08),
@@ -1780,6 +1895,8 @@ struct Generation {
     /// Whether a selected tab is drawn on the accent, lettered in the
     /// accent's text.
     tab_selected_on_accent: bool,
+    /// A toolbar button's corners.
+    toolbar_button_corners: Corners,
     toolbar_bar_height: Option<f32>,
     toolbar_item_gap: Option<f32>,
     toolbar_padding_vertical: Option<f32>,
@@ -2038,6 +2155,13 @@ const MONTEREY: Generation = Generation {
     // `tab.tab(SELECTED).fill`: not on the accent, #ffffff / #ffffff49 (measured, os-probe run
     // 45252258079, macOS 15, `*.normal.tab_One` `fill`)
     tab_selected_on_accent: false,
+    // `toolbar.button.corners`: 5 px, the hovered, pressed and checked fills' box (fit
+    // 4.75–5.0 px at every corner, measured, os-probe run 45634379188, macOS 15,
+    // `toolbar_bezel_fitted-toolbar_states_sheet.toml`, `*.{hovered,pressed}.toolbar_button`,
+    // `*.toolbar_toggle_on`, `*.hovered.toolbar_image` `corner_*`). The 1 px rest ring on those
+    // corners (#dfdfdf / #414141) is not stated: the titled buttons draw it, the image-only one
+    // does not, and whether "Show toolbar button shapes" draws it is not verified
+    toolbar_button_corners: Corners::uniform(5.0),
     // `toolbar.bar_height`: platform-facts.md (§2.13): NSToolbar 38
     toolbar_bar_height: Some(38.0),
     // `toolbar.item_gap`: platform-facts.md (§2.13): AppKit 8
@@ -2357,6 +2481,12 @@ const TAHOE: Generation = Generation {
     // the checked check box's fill under each (`*.normal.tab_One`, `*.normal.checkbox_on` `fill`,
     // `label`, os-probe run 45345116763, macOS 26, `controls-accent`)
     tab_selected_on_accent: true,
+    // `toolbar.button.corners`: a capsule, half the 36 px height (the on toggle's box fits
+    // 17.75–18.0 px at every corner; the image-only button draws a capsule too, 39 x 36 px;
+    // measured, os-probe run 45634379188, macOS 26,
+    // `toolbar_bezel_fitted-toolbar_states_sheet.toml`, `*.normal.toolbar_toggle_on` `box`,
+    // `corner_*`, `*.normal.toolbar_image` `box`)
+    toolbar_button_corners: Corners::pill(),
     toolbar_bar_height: None,
     toolbar_item_gap: None,
     toolbar_padding_vertical: None,
@@ -2676,7 +2806,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
         menu_bar: menu_bar(c),
         tab: tab(c, g, &colors, &typography),
         sidebar: sidebar(c, &colors, &typography, &layout),
-        toolbar: toolbar(c, g, &typography, &layout),
+        toolbar: toolbar(c, g, &colors, &typography, &layout),
         status_bar: status_bar(c, &typography, &layout),
         popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, g, &colors, &typography),
@@ -2931,13 +3061,16 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// which then takes the accent's fill, as the checked box's does, and the
 /// disabled checked box's and circle's fill measured on it, which then take
 /// the checked button's disabled fill, the accent's mix at alpha 0x70, as
-/// the red accent reads ([`indicator`]).
+/// the red accent reads ([`indicator`]), and the checked toolbar button's
+/// hovered and pressed fills measured on it, read under no other accent,
+/// which then keep the checked fill, the accent's ([`toolbar`]).
 fn drop_accent_measurements(c: &mut SchemeColors) {
     c.checkbox_checked_pressed = None;
     c.checkbox_checked_disabled = None;
     c.slider_fill_pressed = None;
     c.sidebar_pressed = None;
     c.tab_selected = None;
+    c.toolbar_checked_on_accent = None;
 }
 
 /// The fonts the system states for widgets of their own: the menu's
@@ -4412,11 +4545,21 @@ fn sidebar(
 /// labels in the UI font (`toolbar.font`: `defaults.font` where unstated)
 /// and their measured colours,
 /// their icons at the toolbar's size (`toolbar.icon_size`:
-/// `defaults.icon_sizes.toolbar` where unstated); a hovered and a pressed
-/// button in its measured fill (0.7.2 states no button fill).
+/// `defaults.icon_sizes.toolbar` where unstated) in their measured colours
+/// at rest and hovered; the button (the toolbar-bezel `NSButton` set as a
+/// toolbar item's view) in its measured corners, at rest in its measured
+/// fill where the generation states one ([`SchemeColors::toolbar_button_rest`]),
+/// a hovered and a pressed button in its measured fill (0.7.2 states no
+/// button fill); checked, as an on `NSButtonTypePushOnPushOff` toggle, with
+/// no outline, its measured fills and labels, or where the generation draws
+/// it on the accent the accent's fill and the hovered and pressed fills
+/// measured on the default accent
+/// ([`SchemeColors::toolbar_checked_on_accent`]); disabled, the rest fill
+/// or none, and its measured label.
 fn toolbar(
     c: &SchemeColors,
     g: &Generation,
+    roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> ToolbarWidget {
@@ -4435,13 +4578,21 @@ fn toolbar(
                 .map(|h| PartProp::MinSize([None, Some(h)])),
         )
         .build();
+    let (icon_rest, icon_hover) = c.toolbar_icon;
     let button_icon = RuleBuilder::new(IconStyle::default())
-        .base([IconProp::Size(g.icon_toolbar)])
+        .base([IconProp::Size(g.icon_toolbar), IconProp::Color(icon_rest)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [IconProp::Color(icon_hover)],
+        )
         .build();
+    let checked = |state: WidgetState| RuleSelector::on(WidgetState::CHECKED | state);
     // At rest, the measured label; hovered, the scheme's hovered label where it states one, else
-    // as at rest, measured so; pressed, the measured label.
+    // as at rest, measured so; pressed, the measured label; checked, in each of the three its
+    // measured label; disabled, the measured label, over every other by egui's order.
     let rest_label = label(&typography.body, Some(c.toolbar_label));
     let hover_label = rest_label.color;
+    let (checked_label, checked_hover_label, checked_pressed_label) = c.toolbar_checked_label;
     let button_label = RuleBuilder::new(rest_label)
         .rule(
             RuleSelector::on(WidgetState::HOVER),
@@ -4453,8 +4604,34 @@ fn toolbar(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(c.toolbar_label_pressed)],
         )
+        .rule(checked(WidgetState::NONE), [TextProp::Color(checked_label)])
+        .rule(
+            checked(WidgetState::HOVER),
+            [TextProp::Color(checked_hover_label)],
+        )
+        .rule(
+            checked(WidgetState::PRESSED),
+            [TextProp::Color(checked_pressed_label)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.toolbar_label_disabled)],
+        )
         .build();
+    // Checked, the measured fills, or on the accent the accent's fill and the hovered and pressed
+    // ones measured on the default accent, which another accent drops (no other accent was read):
+    // the checked button then keeps the accent's fill hovered and pressed.
+    let (checked_fill, checked_hover, checked_pressed) = match c.toolbar_checked_off_accent {
+        Some((rest, hover, pressed)) => (rest, Some(hover), Some(pressed)),
+        None => (
+            roles.accent.fill,
+            c.toolbar_checked_on_accent.map(|(hover, _)| hover),
+            c.toolbar_checked_on_accent.map(|(_, pressed)| pressed),
+        ),
+    };
     let button = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::Corners(g.toolbar_button_corners)])
+        .base(c.toolbar_button_rest.map(fill))
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.toolbar_button_hover)],
@@ -4462,6 +4639,23 @@ fn toolbar(
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.toolbar_button_pressed)],
+        )
+        .rule(
+            checked(WidgetState::NONE),
+            [fill(checked_fill), PartProp::Stroke(Stroke::None)],
+        )
+        .rules(
+            checked_hover.map(|_| checked(WidgetState::HOVER)),
+            checked_hover.map(fill),
+        )
+        .rules(
+            checked_pressed.map(|_| checked(WidgetState::PRESSED)),
+            checked_pressed.map(fill),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [c.toolbar_button_rest
+                .map_or(PartProp::Fill(Paint::None), fill)],
         )
         .build();
     ToolbarWidget::new(

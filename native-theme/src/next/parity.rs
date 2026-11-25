@@ -3563,17 +3563,21 @@ pub(crate) fn macos_cases() -> Vec<(
     // the label is the listed white where the case states no accent text of its own. The disabled
     // checked box's and circle's fill is the listed default accent's measured one (os-probe run
     // 45345116763, macOS 26, `*.normal.checkbox_disabled_on` `fill`), dropped under another
-    // accent: the checked fill as at rest.
+    // accent: the checked fill as at rest. M2.FS4c13: the checked toolbar button is the accent in
+    // force (os-probe run 45634379188, macOS 26, `*.normal.toolbar_toggle_on` `fill`), where the
+    // listed difference gives the default accent's.
     const TAHOE_CUSTOM_ACCENT: &[&str] = &[
         "button.checked_background",
         "checkbox.disabled_background",
         "tab.active_background",
+        "toolbar.button_checked_background",
     ];
     const TAHOE_ACCENT: &[&str] = &[
         "button.checked_background",
         "checkbox.disabled_background",
         "tab.active_background",
         "tab.active_text_color",
+        "toolbar.button_checked_background",
     ];
     const PINNED_TAHOE_ACCENT: &[&str] = &[
         "button.checked_background",
@@ -3581,6 +3585,7 @@ pub(crate) fn macos_cases() -> Vec<(
         "switch.disabled_checked_background",
         "tab.active_background",
         "tab.active_text_color",
+        "toolbar.button_checked_background",
     ];
     let base = default_macos_settings;
     let every = || MacosSettings {

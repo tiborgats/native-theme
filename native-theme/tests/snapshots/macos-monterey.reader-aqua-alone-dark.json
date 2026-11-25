@@ -1808,7 +1808,9 @@
       }
     },
     "button": {
-      "base": {},
+      "base": {
+        "corners": 5.0
+      },
       "rules": [
         {
           "states": [
@@ -1824,6 +1826,41 @@
           ],
           "button": {
             "fill": "#4e4e4e"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button": {
+            "fill": "#414141",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button": {
+            "fill": "#5a5a5a"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button": {
+            "fill": "#676767"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button": {
+            "fill": "none"
           }
         }
       ]
@@ -1855,13 +1892,58 @@
           "button_label": {
             "color": "#eeeeee"
           }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button_label": {
+            "color": "#ececec"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#efefef"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#f0f0f0"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_label": {
+            "color": "#585858"
+          }
         }
       ]
     },
     "button_icon": {
       "base": {
-        "size": 24.0
-      }
+        "size": 24.0,
+        "color": "#aeaeae"
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "button_icon": {
+            "color": "#aeaeae"
+          }
+        }
+      ]
     },
     "separator": {
       "base": {}

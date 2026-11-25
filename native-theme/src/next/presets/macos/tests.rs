@@ -305,6 +305,99 @@ fn a_pressed_scroll_handle_wins_over_the_pointer() {
     }
 }
 
+/// The toolbar button (os-probe run 45634379188, the toolbar states sheet):
+/// its measured corners; at rest the measured fill where the scheme states
+/// one, else none stated; checked, as an on toggle, no outline and the
+/// measured fills and labels, on `macos-tahoe` the accent at rest; checked,
+/// hovered and pressed, the pressed look; disabled, the rest fill or none
+/// and the measured label, checked or not; the icon's measured colours at
+/// rest and hovered.
+#[test]
+fn the_toolbar_button_takes_its_measured_states() -> TestResult {
+    use crate::next::style::TextStated;
+    let checked = WidgetState::CHECKED;
+    for (preset, scheme) in every_scheme() {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(preset).resolve(&ctx);
+        let c = constants(preset, scheme);
+        let t = &theme.toolbar;
+        let corners = match preset {
+            Preset::MacosTahoe => Corners::pill(),
+            _ => Corners::uniform(5.0),
+        };
+        for state in [WidgetState::NONE, WidgetState::HOVER, checked] {
+            assert_eq!(t.button(state).corners, corners, "{preset:?} {scheme:?}");
+        }
+        let rest = t.button(WidgetState::NONE);
+        assert_eq!(
+            rest.stated
+                .contains(PartStated::FILL)
+                .then(|| solid(&rest.fill))
+                .flatten(),
+            c.toolbar_button_rest,
+            "{preset:?} {scheme:?}"
+        );
+        let (fill, hover, pressed) = c
+            .toolbar_checked_off_accent
+            .or_else(|| {
+                c.toolbar_checked_on_accent
+                    .map(|(hover, pressed)| (c.accent, hover, pressed))
+            })
+            .ok_or_else(|| format!("{preset:?} {scheme:?}: no checked fills"))?;
+        let (label, hover_label, pressed_label) = c.toolbar_checked_label;
+        for (state, fill, label) in [
+            (checked, fill, label),
+            (checked | WidgetState::HOVER, hover, hover_label),
+            (checked | WidgetState::PRESSED, pressed, pressed_label),
+            (
+                checked | WidgetState::HOVER | WidgetState::PRESSED,
+                pressed,
+                pressed_label,
+            ),
+        ] {
+            let body = t.button(state);
+            assert_eq!(
+                (solid(&body.fill), &body.stroke),
+                (Some(fill), &Stroke::None),
+                "{preset:?} {scheme:?} {state:?}"
+            );
+            assert_eq!(
+                t.button_label(state).color,
+                label,
+                "{preset:?} {scheme:?} {state:?}"
+            );
+        }
+        for state in [WidgetState::DISABLED, WidgetState::DISABLED | checked] {
+            let body = t.button(state);
+            assert_eq!(
+                body.fill,
+                c.toolbar_button_rest.map_or(Paint::None, Paint::Solid),
+                "{preset:?} {scheme:?} {state:?}"
+            );
+            assert!(
+                body.from_state.contains(PartStated::FILL),
+                "{preset:?} {scheme:?} {state:?}"
+            );
+            let label = t.button_label(state);
+            assert_eq!(
+                label.color, c.toolbar_label_disabled,
+                "{preset:?} {scheme:?} {state:?}"
+            );
+            assert!(label.stated.contains(TextStated::COLOR));
+        }
+        let (icon, icon_hover) = c.toolbar_icon;
+        assert_eq!(
+            [
+                t.button_icon(WidgetState::NONE).color,
+                t.button_icon(WidgetState::HOVER).color
+            ],
+            [icon, icon_hover],
+            "{preset:?} {scheme:?}"
+        );
+    }
+    Ok(())
+}
+
 /// The overlay knob states no fill at rest (no source states one) and the
 /// measured one hovered and pressed; the legacy knob its measured rest fill,
 /// hovered and pressed its active one, and the track each style's (os-probe
@@ -722,6 +815,15 @@ fn accent_fills(
         fills.push((
             "selected segment",
             solid(&theme.segmented_control.segment(WidgetState::SELECTED).fill),
+        ));
+    }
+    if constants(preset, scheme)
+        .toolbar_checked_off_accent
+        .is_none()
+    {
+        fills.push((
+            "checked toolbar button",
+            solid(&theme.toolbar.button(checked).fill),
         ));
     }
     fills
@@ -1368,10 +1470,12 @@ fn tahoe_s_pressed_and_disabled_checked_button_mix_the_accent_in_force() {
 }
 
 /// The pressed fills `macos-tahoe` measured on the default accent (the
-/// checked box's, the slider's filled track's, the source-list row's) stand
-/// under that accent, given explicitly or by a palette, and drop under
-/// another, given either way ([`lay_accent_over`]): the checked box and the
-/// filled track then keep their fill pressed, the row takes the selection's.
+/// checked box's, the slider's filled track's, the source-list row's, the
+/// checked toolbar button's hovered and pressed) stand under that accent,
+/// given explicitly or by a palette, and drop under another, given either
+/// way ([`lay_accent_over`]): the checked box, the filled track and the
+/// checked toolbar button then keep their fill, the row takes the
+/// selection's.
 #[test]
 fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
     let pressed = |theme: &ResolvedTheme| {
@@ -1384,6 +1488,18 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
             ),
             solid(&theme.slider.active_track(WidgetState::PRESSED).fill),
             solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+            solid(
+                &theme
+                    .toolbar
+                    .button(WidgetState::CHECKED | WidgetState::HOVER)
+                    .fill,
+            ),
+            solid(
+                &theme
+                    .toolbar
+                    .button(WidgetState::CHECKED | WidgetState::PRESSED)
+                    .fill,
+            ),
         ]
     };
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -1393,6 +1509,8 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
             c.checkbox_checked_pressed,
             c.slider_fill_pressed,
             c.sidebar_pressed,
+            c.toolbar_checked_on_accent.map(|(hover, _)| hover),
+            c.toolbar_checked_on_accent.map(|(_, pressed)| pressed),
         ];
         assert!(measured.iter().all(Option::is_some), "{scheme:?}");
         let preset = || Theme::preset(Preset::MacosTahoe);
@@ -1425,6 +1543,8 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
                     solid(&theme.checkbox.indicator(WidgetState::CHECKED).fill),
                     solid(&theme.slider.active_track(WidgetState::NONE).fill),
                     solid(&theme.sidebar.item(WidgetState::SELECTED).fill),
+                    solid(&theme.toolbar.button(WidgetState::CHECKED).fill),
+                    solid(&theme.toolbar.button(WidgetState::CHECKED).fill),
                 ],
                 "{scheme:?} {how}"
             );
@@ -1571,6 +1691,18 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_a_system_accent()
             ),
             solid(&theme.slider.active_track(WidgetState::PRESSED).fill),
             solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+            solid(
+                &theme
+                    .toolbar
+                    .button(WidgetState::CHECKED | WidgetState::HOVER)
+                    .fill,
+            ),
+            solid(
+                &theme
+                    .toolbar
+                    .button(WidgetState::CHECKED | WidgetState::PRESSED)
+                    .fill,
+            ),
         ]
     };
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -1580,6 +1712,8 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_a_system_accent()
             c.checkbox_checked_pressed,
             c.slider_fill_pressed,
             c.sidebar_pressed,
+            c.toolbar_checked_on_accent.map(|(hover, _)| hover),
+            c.toolbar_checked_on_accent.map(|(_, pressed)| pressed),
         ];
         assert!(measured.iter().all(Option::is_some), "{scheme:?}");
         let with_system_accent = |accent| {
@@ -1607,6 +1741,8 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_a_system_accent()
                 solid(&other.checkbox.indicator(WidgetState::CHECKED).fill),
                 solid(&other.slider.active_track(WidgetState::NONE).fill),
                 solid(&other.sidebar.item(WidgetState::SELECTED).fill),
+                solid(&other.toolbar.button(WidgetState::CHECKED).fill),
+                solid(&other.toolbar.button(WidgetState::CHECKED).fill),
             ],
             "{scheme:?} another accent"
         );
