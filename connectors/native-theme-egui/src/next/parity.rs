@@ -667,7 +667,7 @@ macro_rules! home {
                 let s = $(WidgetState::$s)|+;
                 let part = r.$w.$p(s);
                 part_stated(&part, PartStated::FILL, s)
-                    .then(|| build::fill(&part))
+                    .then(|| super::reads::fill(&part).map(build::rgba))
                     .flatten()
                     .map(HomeValue::Color)
             }

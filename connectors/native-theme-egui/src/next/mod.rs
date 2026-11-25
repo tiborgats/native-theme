@@ -110,14 +110,6 @@ pub(crate) mod reads {
         }
     }
 
-    /// [`fill`] where a rule states it for the queried state.
-    pub(crate) fn state_fill(part: &PartStyle) -> Option<Color> {
-        part.from_state
-            .contains(PartStated::FILL)
-            .then(|| fill(part))
-            .flatten()
-    }
-
     /// A part's stroke colour, where stated as one stroke of one colour, in
     /// any alignment; `None` for a per-side stroke.
     pub(crate) fn stroke(part: &PartStyle) -> Option<Color> {

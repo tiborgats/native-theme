@@ -1607,10 +1607,12 @@ pub(crate) fn theme_tab(
     section(ui, "Notes");
     // The companion crate's widgets and the showcase's own drawing sites report a fill they
     // draw egui's own in place of on the atlas's channel
-    // (`native_theme_egui_widgets::next_fills_unmapped`, `demo::drawn_fills_unmapped`).
+    // (`native_theme_egui_widgets::next_fills_unmapped`, `demo::drawn_fills_unmapped`); one
+    // the atlas holds too, a fill its own styles take, is listed once.
     let widget_notes = r.map(|r| {
         let mut notes = native_theme_egui_widgets::next_fills_unmapped(r);
         notes.extend(crate::demo::drawn_fills_unmapped(r));
+        notes.retain(|n| !atlas.notes().contains(n));
         notes
     });
     let widget_notes = widget_notes.as_deref().unwrap_or_default();

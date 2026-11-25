@@ -30,12 +30,14 @@ fn the_public_part_reads_are_the_mappings_own() {
                 let at = format!("{key} {state:?}");
                 assert_eq!(
                     super::fill_of(&part, "h"),
-                    Ok(super::build::fill(&part).map(crate::convert::to_color32)),
+                    Ok(super::build::fill(&part, "h", &mut Vec::new())
+                        .map(crate::convert::to_color32)),
                     "{at}"
                 );
                 assert_eq!(
                     super::state_fill_of(&part, "h"),
-                    Ok(super::build::state_fill(&part).map(crate::convert::to_color32)),
+                    Ok(super::build::state_fill(&part, "h", &mut Vec::new())
+                        .map(crate::convert::to_color32)),
                     "{at}"
                 );
                 assert_eq!(
@@ -166,6 +168,40 @@ fn an_all_gradient_fill_is_unmapped_at_its_home() {
     );
 }
 
+/// A fill the atlas builds from, stated as layers that are all gradients, is a
+/// `Note::Unmapped` at its home in the atlas's notes (spec §10, rule 4), at rest, for a
+/// state, and for a checked box's hovered fill a rule states for `HOVER` alone; the preset's
+/// own fills give no such note.
+#[test]
+fn the_atlas_notes_an_all_gradient_fill_at_its_home() -> Result<(), Box<dyn std::error::Error>> {
+    let unmapped = |patch: &str| -> Result<Vec<&'static str>, Box<dyn std::error::Error>> {
+        Ok(patched_light(Preset::KdeBreeze, patch)?
+            .notes()
+            .iter()
+            .filter_map(|note| match note {
+                crate::Note::Unmapped { path } => Some(*path),
+                _ => None,
+            })
+            .collect())
+    };
+    assert_eq!(unmapped("")?, Vec::<&str>::new());
+    let gradient = "{ kind = \"linear_gradient\", angle_deg = 0.0, stops = [{ offset = 0.0, color = \"#ff0000\" }, { offset = 1.0, color = \"#0000ff\" }] }";
+    let notes = unmapped(&format!(
+        "[[widgets.menu.rules]]\nstates = []\npanel.fill = {gradient}\n\
+         [[widgets.toolbar.rules]]\nstates = [\"hover\"]\nbutton.fill = {gradient}\n\
+         [[widgets.checkbox.rules]]\nstates = [\"hover\"]\nindicator.fill = {gradient}\n"
+    ))?;
+    for home in [
+        "menu.panel(NONE).fill",
+        "toolbar.button(HOVER).fill",
+        "checkbox.indicator(HOVER).fill",
+        "checkbox.indicator(HOVER|CHECKED).fill",
+    ] {
+        assert!(notes.contains(&home), "{home}: {notes:?}");
+    }
+    Ok(())
+}
+
 /// `to_theme` builds each scheme from its own theme, which the atlas then holds
 /// (`next_resolved_for`; `resolved_for` is `None`): the scheme's focus ring is
 /// the one its theme's ring source builds, and its title bar frame fills from
@@ -198,9 +234,11 @@ fn to_theme_builds_each_scheme_from_its_own_theme() -> Result<(), super::Unmappe
                 &mut Vec::new(),
             );
             assert_eq!(atlas.scheme(scheme).focus_ring, ring, "{at}");
-            if let Some(fill) =
-                super::build::fill(&inactive.window.title_bar(WindowState::default()))
-            {
+            if let Some(fill) = super::build::fill(
+                &inactive.window.title_bar(WindowState::default()),
+                "window.title_bar(normal).fill",
+                &mut Vec::new(),
+            ) {
                 assert_eq!(
                     atlas
                         .surface_frame(scheme, crate::Surface::WindowTitleBar)
@@ -1760,7 +1798,7 @@ fn a_next_atlas_menu_bar_modifier_is_the_menu_cell_with_its_titles()
         for (scheme, r) in [(egui::Theme::Light, &light), (egui::Theme::Dark, &dark)] {
             let mb = &r.menu_bar;
             let stated = [WidgetState::HOVER, WidgetState::OPEN].iter().any(|&s| {
-                super::build::state_fill(&mb.item(s)).is_some()
+                super::build::state_fill(&mb.item(s), "menu_bar.item", &mut Vec::new()).is_some()
                     || super::state_text_color_of(&mb.item_label(s)).is_some()
             });
             if stated {
@@ -1800,9 +1838,14 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         let plain = Theme::preset(preset).resolve(&ThemeContext::light());
         let k = &plain.checkbox;
         let unstated = |r: &native_theme::next::ResolvedTheme, s: WidgetState| {
-            super::build::state_fill(&r.checkbox.indicator(s)).is_none()
+            super::build::state_fill(&r.checkbox.indicator(s), "indicator", &mut Vec::new())
+                .is_none()
         };
-        let Some(checked) = super::build::fill(&k.indicator(WidgetState::CHECKED)) else {
+        let Some(checked) = super::build::fill(
+            &k.indicator(WidgetState::CHECKED),
+            "checkbox.indicator(CHECKED).fill",
+            &mut Vec::new(),
+        ) else {
             continue;
         };
         let checked = crate::convert::to_color32(checked);
@@ -1822,8 +1865,12 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
             if unstated(&plain, state) {
                 Some(by_rule_0(own, checked))
             } else {
-                super::build::fill(&k.indicator(state | WidgetState::CHECKED))
-                    .map(crate::convert::to_color32)
+                super::build::fill(
+                    &k.indicator(state | WidgetState::CHECKED),
+                    "indicator",
+                    &mut Vec::new(),
+                )
+                .map(crate::convert::to_color32)
             }
         };
         assert_eq!(
@@ -1845,6 +1892,8 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
             &patched
                 .checkbox
                 .indicator(WidgetState::HOVER | WidgetState::CHECKED),
+            "checkbox.indicator(HOVER|CHECKED).fill",
+            &mut Vec::new(),
         )
         .ok_or("the combined state has a fill")?;
         let w = cell(&patched_light(preset, hover)?);
@@ -1962,8 +2011,12 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::
             (egui::Theme::Dark, ThemeContext::dark()),
         ] {
             let r = Theme::preset(preset).resolve(&ctx);
-            let body = |s| super::build::state_fill(&r.button.body(s));
-            let rest = super::build::fill(&r.button.body(WidgetState::NONE));
+            let body = |s| super::build::state_fill(&r.button.body(s), "body", &mut Vec::new());
+            let rest = super::build::fill(
+                &r.button.body(WidgetState::NONE),
+                "button.body(NONE).fill",
+                &mut Vec::new(),
+            );
             let Some(rest_fill) = rest else { continue };
             if body(WidgetState::HOVER).is_none() || body(WidgetState::HOVER) != rest {
                 continue;
