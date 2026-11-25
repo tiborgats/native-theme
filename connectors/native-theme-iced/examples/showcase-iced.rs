@@ -27053,6 +27053,10 @@ mod tests {
             "fn a_flat_button_draws_the_stroke_its_state_states(",
         ),
         (
+            "button::text",
+            "fn a_selected_flat_button_is_drawn_checked(",
+        ),
+        (
             "button::primary",
             "fn a_selected_flat_button_is_drawn_checked(",
         ),
@@ -27060,19 +27064,49 @@ mod tests {
 
     /// Whether the use of `class` at `at` in `source` lies in the body of a
     /// function of [`RULE_0_SOURCES`] that reads it: after the function's
-    /// signature and before the next item at the file's top level.
+    /// `fn` and before its closing brace, the first line after it that is a
+    /// `}` alone at the indentation of its `fn` -- a test function's, inside
+    /// `mod tests`, as a top-level function's. A function whose closing
+    /// brace is not found covers nothing.
     fn reads_for_rule_0(source: &str, class: &str, at: usize) -> bool {
         RULE_0_SOURCES
             .iter()
             .filter(|(read, _)| *read == class)
             .any(|(_, function)| {
                 source.find(function).is_some_and(|start| {
-                    let end = source[start..]
-                        .find("\n}\n")
-                        .map_or(source.len(), |end| start + end);
-                    (start..end).contains(&at)
+                    let indent: String = source[..start]
+                        .split('\n')
+                        .next_back()
+                        .into_iter()
+                        .flat_map(str::chars)
+                        .take_while(|c| c.is_whitespace())
+                        .collect();
+                    let close = format!("\n{indent}}}\n");
+                    source[start..]
+                        .find(&close)
+                        .is_some_and(|len| (start..start + len).contains(&at))
                 })
             })
+    }
+
+    /// [`reads_for_rule_0`] takes a use in the body of a listed function,
+    /// top-level or indented in a module, and no use after its closing
+    /// brace.
+    #[test]
+    fn a_rule_0_source_ends_at_its_own_closing_brace() {
+        let source = "fn ghost_button() {\n    button::text(t, s);\n}\n\
+                      fn after() {\n    button::text(t, s);\n}\n\
+                      mod tests {\n    fn a_selected_flat_button_is_drawn_checked() {\n        \
+                      button::primary(t, s);\n    }\n\n    \
+                      fn later() {\n        button::primary(t, s);\n    }\n}\n";
+        let taken = |class: &str| -> Vec<bool> {
+            source
+                .match_indices(class)
+                .map(|(at, _)| reads_for_rule_0(source, class, at))
+                .collect()
+        };
+        assert_eq!(taken("button::text"), [true, false]);
+        assert_eq!(taken("button::primary"), [true, false]);
     }
 
     /// Constructors a connector function dresses itself, as
