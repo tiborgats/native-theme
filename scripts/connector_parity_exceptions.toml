@@ -835,12 +835,6 @@ reason = "gpui's checks of whether a theme-drawn widget's label has a font gpui 
 
 [[exception]]
 connector = "gpui"
-name = ["next::fill_of", "next::state_fill_of"]
-kind = "unlike"
-reason = "iced's and egui's take the fill's home and return `Mapped<Option<..>>`: a fill stated as layers that are all gradients has no single colour, and they report it `Unmapped` at that home (spec §10, rule 4) where gpui's returns `None`, the answer it gives for a fill the theme leaves unstated, so a reader of gpui's draws gpui-component's own in place of a stated value; the main-tree list's G1 gives gpui the same two (connectors/native-theme-iced/src/next/mod.rs and connectors/native-theme-egui/src/next/mod.rs, `fill_of`'s and `state_fill_of`'s doc)"
-
-[[exception]]
-connector = "gpui"
 name = "next::to_color32"
 kind = "absent"
 reason = "egui's conversion of a model colour to its `Color32` (connectors/native-theme-egui/src/next/mod.rs, `to_color32`), public so the egui showcase converts a leaf it draws itself with the connector's own conversion, not a twin of it; gpui's conversion of a model colour is its own type's, `next::hsla` (src/next/mod.rs), crate-private"
