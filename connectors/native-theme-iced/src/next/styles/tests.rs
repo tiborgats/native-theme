@@ -198,6 +198,56 @@ fn a_toolbar_button_reads_the_toolbar_labels() -> TestResult {
     Ok(())
 }
 
+/// A toolbar button is outlined as the toolbar's own button (spec §5, the
+/// toolbar's `button` part), never as the push button: its corners
+/// `toolbar.button(NONE)`'s, iced's own neutral class's where unstated, and
+/// a hovered stroke a rule states drawn at that stroke's width, on every
+/// preset with the push button's corners and stroke patched apart.
+#[test]
+fn a_toolbar_button_is_outlined_as_its_own_part() -> TestResult {
+    use iced_widget::button::{Status, secondary};
+    const WIDTH: f32 = 3.0;
+    let patch = ThemePatch::new()
+        .button(
+            ButtonRule::new().body(
+                PartPatch::new()
+                    .corners(Corners::uniform(7.0))
+                    .stroke(Stroke::uniform(5.0, DISTINCT)),
+            ),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::HOVER)
+                .button(PartPatch::new().stroke(Stroke::uniform(WIDTH, LABEL))),
+        );
+    let (mut stated, mut left) = (0, 0);
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::toolbar_button(&r, false)?;
+        let rest = r.toolbar.button(WidgetState::NONE);
+        let own = secondary(&theme, Status::Active).border.radius;
+        let expected = if rest.stated.contains(PartStated::CORNERS) {
+            stated += 1;
+            super::super::borders::part_radii(&rest, "corners")?
+        } else {
+            left += 1;
+            own
+        };
+        for status in [Status::Active, Status::Hovered, Status::Pressed] {
+            assert_eq!(
+                style(&theme, status).border.radius,
+                expected,
+                "{preset:?} {status:?} corners"
+            );
+        }
+        let hovered = style(&theme, Status::Hovered).border;
+        assert_eq!(hovered.width, WIDTH, "{preset:?} hovered width");
+        assert_eq!(hovered.color, to_color(LABEL), "{preset:?} hovered colour");
+    }
+    assert!(left > 0, "iced's own corners covered ({stated} stated)");
+    Ok(())
+}
+
 /// A toolbar button whose toolbar states no hovered or pressed fill is drawn
 /// in iced's own there (spec §10, rule 0), never in the push button's.
 #[test]
@@ -246,11 +296,63 @@ fn a_field_with_no_disabled_opacity_is_drawn_as_stated() -> TestResult {
             Background::Color(expected_fill),
             "{preset:?}"
         );
-        assert_eq!(
-            style.value,
-            text_color(&r.input.text(WidgetState::DISABLED), "text")?,
-            "{preset:?}"
+        let text = r.input.text(WidgetState::DISABLED);
+        if text.from_state.contains(TextStated::COLOR) {
+            assert_eq!(style.value, text_color(&text, "text")?, "{preset:?}");
+        }
+    }
+    Ok(())
+}
+
+/// A disabled field's value is the colour a rule for `DISABLED` states
+/// (`input.text(DISABLED)`, `text_area.text(DISABLED)`); where none does,
+/// iced's own disabled value, which `text_input::default` and
+/// `text_editor::default` change from the value at rest (spec §2,
+/// `from_state`; §10, rule 0), never the value at rest the query returns.
+#[test]
+fn a_disabled_fields_value_is_stated_for_the_state_else_iceds_own() -> TestResult {
+    let rest = ThemePatch::new()
+        .input(InputRule::new().text(TextPatch::new().color(DISTINCT)))
+        .text_area(InputRule::new().text(TextPatch::new().color(DISTINCT)));
+    let stated = rest
+        .clone()
+        .input(
+            InputRule::new()
+                .states(WidgetState::DISABLED)
+                .text(TextPatch::new().color(LABEL)),
+        )
+        .text_area(
+            InputRule::new()
+                .states(WidgetState::DISABLED)
+                .text(TextPatch::new().color(LABEL)),
         );
+    for (patch, rule) in [(&rest, false), (&stated, true)] {
+        for (preset, mut r) in every_preset_with(patch) {
+            r.input.disabled_opacity = None;
+            r.text_area.disabled_opacity = None;
+            let theme = to_theme(&r)?;
+            let what = format!("{preset:?} rule {rule}");
+            let input = super::text_input(&r)?(&theme, iced_widget::text_input::Status::Disabled);
+            let editor =
+                super::text_editor(&r)?(&theme, iced_widget::text_editor::Status::Disabled);
+            let (own_input, own_editor) = (
+                iced_widget::text_input::default(&theme, iced_widget::text_input::Status::Disabled)
+                    .value,
+                iced_widget::text_editor::default(
+                    &theme,
+                    iced_widget::text_editor::Status::Disabled,
+                )
+                .value,
+            );
+            if rule {
+                assert_eq!(input.value, to_color(LABEL), "{what} input");
+                assert_eq!(editor.value, to_color(LABEL), "{what} editor");
+            } else {
+                assert_eq!(input.value, own_input, "{what} input");
+                assert_eq!(editor.value, own_editor, "{what} editor");
+                assert_ne!(input.value, to_color(DISTINCT), "{what} input");
+            }
+        }
     }
     Ok(())
 }
@@ -1731,7 +1833,6 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
     for (preset, r) in every_preset() {
         let theme = to_theme(&r)?;
         let primary = super::button_primary(&r)?;
-        let plain = super::button(&r)?;
         let stated_label = |label: native_theme::next::TextStyle| {
             label
                 .from_state
@@ -1739,18 +1840,20 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
                 .then(|| text_color(&label, "label"))
                 .transpose()
         };
-        for (stated, checked_label, style, counted) in [
+        type Styled = Box<dyn Fn(&iced_core::theme::Theme, Status) -> iced_widget::button::Style>;
+        for (stated, checked_label, style, unchecked, counted) in [
             (
                 r.button.body(WidgetState::CHECKED),
                 stated_label(r.button.label(WidgetState::CHECKED))?,
-                Box::new(super::button_toggle(&r, true)?)
-                    as Box<dyn Fn(&iced_core::theme::Theme, Status) -> iced_widget::button::Style>,
+                Box::new(super::button_toggle(&r, true)?) as Styled,
+                Box::new(super::button(&r)?) as Styled,
                 &mut unstated.0,
             ),
             (
                 r.toolbar.button(WidgetState::CHECKED),
                 stated_label(r.toolbar.button_label(WidgetState::CHECKED))?,
                 Box::new(super::toolbar_button(&r, true)?),
+                Box::new(super::toolbar_button(&r, false)?),
                 &mut unstated.1,
             ),
         ] {
@@ -1771,13 +1874,13 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
                 );
                 assert_eq!(
                     checked.border.radius,
-                    plain(&theme, status).border.radius,
+                    unchecked(&theme, status).border.radius,
                     "{preset:?} {status:?}"
                 );
             }
             assert_ne!(
                 style(&theme, Status::Active).background,
-                plain(&theme, Status::Active).background,
+                unchecked(&theme, Status::Active).background,
                 "{preset:?}"
             );
         }
@@ -3230,6 +3333,44 @@ fn an_aw_tab_bar_keeps_iced_aws_own_per_property() -> TestResult {
             off.text_color,
             "{preset:?} label"
         );
+    }
+    Ok(())
+}
+
+/// An `iced_aw` sidebar item under the pointer is lettered, its icon too, in
+/// the label a rule for `HOVER` states (`sidebar.item_label(HOVER).color`),
+/// on every preset; with no such rule, in the label at rest.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn a_hovered_aw_sidebar_item_takes_the_stated_hover_label() -> TestResult {
+    use iced_aw::style::Status;
+    use native_theme::next::SidebarRule;
+    let patch = ThemePatch::new().sidebar(
+        SidebarRule::new()
+            .states(WidgetState::HOVER)
+            .item_label(TextPatch::new().color(LABEL)),
+    );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let hovered = super::aw::sidebar(&r)?(&theme, Status::Hovered);
+        assert_eq!(hovered.text_color, to_color(LABEL), "{preset:?} label");
+        assert_eq!(hovered.icon_color, to_color(LABEL), "{preset:?} icon");
+    }
+    for (preset, r) in every_preset() {
+        if r.sidebar
+            .item_label(WidgetState::HOVER)
+            .from_state
+            .contains(TextStated::COLOR)
+        {
+            continue;
+        }
+        let theme = to_theme(&r)?;
+        let style = super::aw::sidebar(&r)?;
+        let (hovered, rest) = (
+            style(&theme, Status::Hovered),
+            style(&theme, Status::Disabled),
+        );
+        assert_eq!(hovered.text_color, rest.text_color, "{preset:?} label");
     }
     Ok(())
 }

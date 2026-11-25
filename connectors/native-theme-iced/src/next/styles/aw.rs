@@ -177,9 +177,10 @@ pub(super) fn tab_bar_source(r: &ResolvedTheme) -> Mapped<TabBarSource> {
 }
 
 /// [`crate::styles::aw::sidebar`]: the panel and its outline, the items
-/// selected and hovered. A hovered fill no `HOVER` rule states, and an
-/// outline, a fill or a label the theme leaves unstated, is `iced_aw`'s own
-/// (spec §10, rule 0).
+/// selected and hovered, a hovered item lettered in
+/// `sidebar.item_label(HOVER).color` where a rule states it. A hovered fill
+/// or label no `HOVER` rule states, and an outline, a fill or a label the
+/// theme leaves unstated, is `iced_aw`'s own (spec §10, rule 0).
 ///
 /// # Errors
 ///
@@ -210,7 +211,10 @@ pub(super) fn sidebar_source(r: &ResolvedTheme) -> Mapped<ListSource> {
         hover_background: state_fill_of(&s.item(WidgetState::HOVER), "sidebar.item(HOVER).fill")?,
         label,
         selection_label: text_color_of(&s.item_label(WidgetState::SELECTED)),
-        hover_label: label,
+        hover_label: state_text_color(
+            &s.item_label(WidgetState::HOVER),
+            "sidebar.item_label(HOVER).color",
+        )?,
         disabled_label: label,
         line,
         width,

@@ -24,7 +24,7 @@ use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
     Line, LinkSource, MenuSource, Outline, PartOutline, PickListSource, ScrollbarSource,
     SegmentPosition, SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
-    ToolbarLabels,
+    ToolbarLabels, ToolbarOutline,
 };
 
 /// A part's fill, where stated, as the state's whole fill (spec §9, step
@@ -116,12 +116,50 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     })
 }
 
+/// A part's stroke width where a rule states its stroke for the queried
+/// state (its `from_state` bit), as [`stroke_width`] reads it; `None`
+/// where none does.
+fn state_stroke_width(part: &PartStyle, home: &'static str) -> Mapped<Option<f32>> {
+    if part.from_state.contains(PartStated::STROKE) {
+        stroke_width(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// [`ToolbarOutline`] of the 0.8.0 model: `toolbar.button(NONE)`'s stroke
+/// and corners, and the width of each state's stroke a rule states.
+pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
+    let t = &r.toolbar;
+    let width = |state: WidgetState, home| state_stroke_width(&t.button(state), home);
+    let (hover, pressed, checked) = (
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::CHECKED,
+    );
+    Ok(ToolbarOutline {
+        rest: part_outline!(t.button(WidgetState::NONE), "toolbar.button(NONE)")?,
+        hover_width: width(hover, "toolbar.button(HOVER).stroke.width")?,
+        pressed_width: width(pressed, "toolbar.button(PRESSED).stroke.width")?,
+        checked_width: width(checked, "toolbar.button(CHECKED).stroke.width")?,
+        checked_hover_width: width(
+            hover | checked,
+            "toolbar.button(HOVER|CHECKED).stroke.width",
+        )?,
+        checked_pressed_width: width(
+            pressed | hover | checked,
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width",
+        )?,
+    })
+}
+
 /// [`ToolbarButtonSource`] of the 0.8.0 model.
 fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
     let t = &r.toolbar;
     let hover = t.button(WidgetState::HOVER);
     let checked = t.button(WidgetState::CHECKED);
     Ok(ToolbarButtonSource {
+        outline: Some(toolbar_outline(r)?),
         hover_background: state_layer(&hover, "toolbar.button(HOVER).fill")?,
         active_background: state_layer(
             &t.button(WidgetState::PRESSED),
@@ -213,7 +251,12 @@ pub fn button_toggle(
 /// (spec §10, rule 0), never the push button's. The labels are
 /// `toolbar.button_label(<state>)`'s: at rest where stated, else iced's
 /// own; another state's where a rule states it, else as iced's own class
-/// derives it from the label at rest, never the push button's.
+/// derives it from the label at rest, never the push button's. The outline
+/// is the toolbar button's own (spec §5, the toolbar's `button` part):
+/// `toolbar.button(NONE)`'s stroke and corners, each iced's own neutral
+/// class's where unstated (spec §10, rule 0), and a state's stroke a rule
+/// states drawn at that stroke's width, never the push button's
+/// (`button.body(NONE)`).
 ///
 /// # Errors
 ///
@@ -392,7 +435,10 @@ macro_rules! input_source {
                 concat!($home, ".field(DISABLED).fill"),
             )?,
             text: text_color_of(&i.text(WidgetState::NONE)),
-            disabled_text: text_color_of(&i.text(WidgetState::DISABLED)),
+            disabled_text: state_text_color(
+                &i.text(WidgetState::DISABLED),
+                concat!($home, ".text(DISABLED).color"),
+            )?,
             disabled_opacity: i.disabled_opacity,
             border: part_outline!(rest, concat!($home, ".field(NONE)"))?,
             hover_border_color: state_line(
@@ -413,7 +459,9 @@ macro_rules! input_source {
 /// [`crate::styles::text_input`]: a hovered or focused field's stroke the
 /// theme states nothing for is iced's own field's (`text_input::default`
 /// recolours the border under the pointer and when focused), its width and
-/// corners the theme's at rest (spec §2, `from_state`). The field draws no
+/// corners the theme's at rest (spec §2, `from_state`); so is a disabled
+/// field's value no rule for `DISABLED` states (`input.text(DISABLED)`):
+/// `text_input::default` recolours it when disabled. The field draws no
 /// focus ring, an inset one included: [`super::focus_ring`] paints it over
 /// the field.
 ///

@@ -909,6 +909,24 @@ pub(crate) struct ToolbarButtonSource {
     /// The toolbar's own labels, on the 0.8.0 model; `None` on 0.7.2's,
     /// whose toolbar button is lettered in the push button's labels.
     pub labels: Option<ToolbarLabels>,
+    /// The toolbar button's own outline, on the 0.8.0 model; `None` on
+    /// 0.7.2's, whose toolbar button is outlined as the push button at rest
+    /// (its width and corners) in no colour at rest.
+    pub outline: Option<ToolbarOutline>,
+}
+
+/// A toolbar button's own outline on the 0.8.0 model (spec §5, the toolbar's
+/// `button` part): at rest `toolbar.button(NONE)`'s stroke and corners, each
+/// iced's own where unstated (spec §10, rule 0); in a state a rule states
+/// the stroke for, that stroke's own width, else the width at rest.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolbarOutline {
+    pub rest: PartOutline,
+    pub hover_width: Option<f32>,
+    pub pressed_width: Option<f32>,
+    pub checked_width: Option<f32>,
+    pub checked_hover_width: Option<f32>,
+    pub checked_pressed_width: Option<f32>,
 }
 
 /// A toolbar button's labels on the 0.8.0 model: the label at rest where
@@ -951,6 +969,7 @@ impl ToolbarButtonSource {
             checked_hover_border_color: checked_hover,
             checked_pressed_border_color: checked_hover,
             labels: None,
+            outline: None,
         }
     }
 
@@ -965,6 +984,10 @@ impl ToolbarButtonSource {
             pressed_border_color: line(self.pressed_border_color),
             checked_hover_border_color: line(self.checked_hover_border_color),
             checked_pressed_border_color: line(self.checked_pressed_border_color),
+            outline: self.outline.map(|o| ToolbarOutline {
+                rest: o.rest.aligned(align),
+                ..o
+            }),
             ..self
         }
     }
@@ -1010,10 +1033,29 @@ pub(crate) fn toolbar_button_from(
     move |theme, status| {
         let iced = Style::default();
         let (_, push_label, push_outline) = source.at_rest(theme);
-        let outline = Outline {
-            line: Line::outside(Color::TRANSPARENT),
-            ..push_outline
+        // On the 0.8.0 model the toolbar button's own outline, what it leaves
+        // unstated iced's own neutral class's; on 0.7.2's the push button's
+        // width and corners in no colour at rest.
+        let outline = match t.outline {
+            Some(own) => own
+                .rest
+                .or(iced_widget::button::secondary(theme, Status::Active).border),
+            None => Outline {
+                line: Line::outside(Color::TRANSPARENT),
+                ..push_outline
+            },
         };
+        let widths = t.outline.map(|o| {
+            (
+                o.hover_width,
+                o.pressed_width,
+                o.checked_width,
+                o.checked_hover_width,
+                o.checked_pressed_width,
+            )
+        });
+        let (hover_width, pressed_width, checked_width, checked_hover_width, checked_pressed_width) =
+            widths.unwrap_or_default();
         // On the 0.8.0 model the toolbar's own labels, an unstated label at
         // rest iced's own neutral class's; on 0.7.2's the push button's.
         let (label, hover_label, active_label, checked_label, disabled_label) = match t.labels {
@@ -1077,14 +1119,33 @@ pub(crate) fn toolbar_button_from(
             (Some(fill), _) => (fill, checked_label.unwrap_or(pressed_label)),
             (None, _) => (pressed, pressed_label),
         };
-        let (background, text_color, line) = match (checked, status) {
-            (false, Status::Active) => (Color::TRANSPARENT, label, None),
-            (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color),
-            (false, Status::Pressed) => (pressed, pressed_label, t.pressed_border_color),
-            (true, Status::Active) => (fill, checked_label, t.checked_border_color),
-            (true, Status::Hovered) => (fill, checked_label, t.checked_hover_border_color),
-            (true, Status::Pressed) => (fill, checked_label, t.checked_pressed_border_color),
-            (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, None),
+        let (background, text_color, line, width) = match (checked, status) {
+            (false, Status::Active) => (Color::TRANSPARENT, label, None, None),
+            (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color, hover_width),
+            (false, Status::Pressed) => (
+                pressed,
+                pressed_label,
+                t.pressed_border_color,
+                pressed_width,
+            ),
+            (true, Status::Active) => (fill, checked_label, t.checked_border_color, checked_width),
+            (true, Status::Hovered) => (
+                fill,
+                checked_label,
+                t.checked_hover_border_color,
+                checked_hover_width,
+            ),
+            (true, Status::Pressed) => (
+                fill,
+                checked_label,
+                t.checked_pressed_border_color,
+                checked_pressed_width,
+            ),
+            (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, None, None),
+        };
+        let outline = Outline {
+            width: width.unwrap_or(outline.width),
+            ..outline
         };
         let border = outline.with(line).over(background);
         Style {
@@ -1584,7 +1645,11 @@ impl InputColors {
                     color: fade(disabled_border.color),
                     ..disabled_border
                 },
-                i.disabled_text.map_or(own_disabled_value, fade),
+                in_state(
+                    i.disabled_text.map(fade),
+                    fade(text),
+                    (own_value, own_disabled_value),
+                ),
             ),
             placeholder: i.placeholder,
             selection: i.selection,
@@ -1621,10 +1686,13 @@ impl InputColors {
 /// border, and the focus ring's colour, width and offset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct InputSource {
-    /// The fill, the value, the disabled value, the placeholder and the
-    /// border at rest: each `None` (a border property) where the theme
-    /// leaves it unstated, iced's own field's (spec §10, rule 0); the 0.7.2
-    /// model states each.
+    /// The fill, the value, the placeholder and the border at rest: each
+    /// `None` (a border property) where the theme leaves it unstated,
+    /// iced's own field's (spec §10, rule 0); the 0.7.2 model states each.
+    /// The disabled value where the theme states it for the disabled state
+    /// (on the 0.8.0 model a rule for `DISABLED`, spec §2, `from_state`);
+    /// `None` where it does not, iced's own disabled value where iced's own
+    /// field changes it, else the value at rest ([`in_state`]).
     pub background: Option<Color>,
     pub disabled_background: Option<Color>,
     pub text: Option<Color>,

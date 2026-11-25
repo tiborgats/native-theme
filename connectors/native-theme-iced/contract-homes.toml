@@ -1378,8 +1378,10 @@ moves = [
 [homes."sidebar.item_label(NONE).color"]
 leaves = ["sidebar.font.color"]
 moves = [
-  { row = "styles::aw::sidebar.icon_color", statuses = ["Disabled", "Hovered"] },
-  { row = "styles::aw::sidebar.text_color", statuses = ["Disabled", "Hovered"] },
+  { row = "styles::aw::sidebar.icon_color", statuses = ["Disabled"] },
+  { row = "styles::aw::sidebar.icon_color", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::aw::sidebar.text_color", statuses = ["Disabled"] },
+  { row = "styles::aw::sidebar.text_color", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."sidebar.item_label(SELECTED).color"]

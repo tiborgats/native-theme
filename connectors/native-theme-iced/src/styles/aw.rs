@@ -697,7 +697,7 @@ impl ListSource {
     }
 }
 
-/// [`sidebar`] of what it reads (the hovered and the disabled label unread).
+/// [`sidebar`] of what it reads (the disabled label unread).
 pub(crate) fn sidebar_from(
     s: &ListSource,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::sidebar::Style + Clone + use<> {
@@ -709,6 +709,7 @@ pub(crate) fn sidebar_from(
 
     let label = s.label;
     let selected_label = s.selection_label;
+    let hovered_label = s.hover_label;
 
     let line = s.line;
     let border_width = s.width;
@@ -732,7 +733,11 @@ pub(crate) fn sidebar_from(
                     idle,
                     (rest.tab_label_background, iced.tab_label_background),
                 ),
-                label.unwrap_or(iced.text_color),
+                in_state(
+                    hovered_label,
+                    label.unwrap_or(rest.text_color),
+                    (rest.text_color, iced.text_color),
+                ),
             ),
             Status::Disabled => (idle, label.unwrap_or(iced.text_color)),
             Status::Pressed | Status::Focused | Status::Selected => {
@@ -741,7 +746,12 @@ pub(crate) fn sidebar_from(
         };
         let icon = match status {
             Status::Active => selected_label.unwrap_or(iced.icon_color),
-            Status::Hovered | Status::Disabled => label.unwrap_or(iced.icon_color),
+            Status::Hovered => in_state(
+                hovered_label,
+                label.unwrap_or(rest.icon_color),
+                (rest.icon_color, iced.icon_color),
+            ),
+            Status::Disabled => label.unwrap_or(iced.icon_color),
             Status::Pressed | Status::Focused | Status::Selected => iced.icon_color,
         };
         let background = panel.map(Background::Color).or(iced.background);
