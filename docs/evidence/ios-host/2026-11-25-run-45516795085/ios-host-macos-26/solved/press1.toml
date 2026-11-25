@@ -1,0 +1,548 @@
+# The layers solved from the captures over black and over white (tools/ios-host/solve.swift).
+run = "press1"
+model = "B = a F, W = a F + (1 - a) 255 per channel, 8-bit sRGB encoded; a = 1 - (W - B) / 255, F = B / a"
+
+[[layer]]
+appearance = "dark"
+specimen = "outline_header"
+size = "default"
+state = "normal"
+black = "screen/dark/outline_header/default/black/normal.png"
+white = "screen/dark/outline_header/default/white/normal.png"
+layer = "dark/outline_header/default/normal.png"
+pixels = 379620
+opaque = 962
+transparent = 375061
+partial = 3597
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ebebf599", pixels = 1782 }, { rgba = "#ffffffff", pixels = 962 }, { rgba = "#f0f0f011", pixels = 58 }, { rgba = "#f1f1f112", pixels = 41 }, { rgba = "#ebebf68a", pixels = 39 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "outline_header"
+size = "default"
+state = "pressed"
+black = "screen/dark/outline_header/default/black/pressed.png"
+white = "screen/dark/outline_header/default/white/pressed.png"
+layer = "dark/outline_header/default/pressed.png"
+pixels = 379620
+opaque = 962
+transparent = 375061
+partial = 3597
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#e9e9f42e", pixels = 1813 }, { rgba = "#ffffffff", pixels = 962 }, { rgba = "#ffffff06", pixels = 86 }, { rgba = "#e9e9f417", pixels = 77 }, { rgba = "#ffffff05", pixels = 65 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "segmented_control"
+size = "default"
+state = "normal"
+black = "screen/dark/segmented_control/default/black/normal.png"
+white = "screen/dark/segmented_control/default/white/normal.png"
+layer = "dark/segmented_control/default/normal.png"
+pixels = 379620
+opaque = 1582
+transparent = 333984
+partial = 44054
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#7575823d", pixels = 31795 }, { rgba = "#c1c1cc77", pixels = 10065 }, { rgba = "#ffffffff", pixels = 1582 }, { rgba = "#d2d2d67d", pixels = 52 }, { rgba = "#ededeeb4", pixels = 50 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "segmented_control"
+size = "default"
+state = "pressed"
+black = "screen/dark/segmented_control/default/black/pressed.png"
+white = "screen/dark/segmented_control/default/white/pressed.png"
+layer = "dark/segmented_control/default/pressed.png"
+pixels = 379620
+opaque = 1171
+transparent = 333984
+partial = 44465
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#7575823d", pixels = 31800 }, { rgba = "#c1c1cc77", pixels = 10065 }, { rgba = "#ffffffff", pixels = 1171 }, { rgba = "#dadade8b", pixels = 414 }, { rgba = "#fefefefc", pixels = 39 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "sidebar_row"
+size = "default"
+state = "normal"
+black = "screen/dark/sidebar_row/default/black/normal.png"
+white = "screen/dark/sidebar_row/default/white/normal.png"
+layer = "dark/sidebar_row/default/normal.png"
+pixels = 379620
+opaque = 1410
+transparent = 377149
+partial = 1061
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 1410 }, { rgba = "#ffffff14", pixels = 33 }, { rgba = "#ffffff67", pixels = 33 }, { rgba = "#fffffff7", pixels = 31 }, { rgba = "#ffffffef", pixels = 29 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "sidebar_row"
+size = "default"
+state = "pressed"
+black = "screen/dark/sidebar_row/default/black/pressed.png"
+white = "screen/dark/sidebar_row/default/white/pressed.png"
+layer = "dark/sidebar_row/default/pressed.png"
+pixels = 379620
+opaque = 683
+transparent = 377149
+partial = 1788
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff4d", pixels = 749 }, { rgba = "#ffffffff", pixels = 683 }, { rgba = "#ffffff14", pixels = 36 }, { rgba = "#ffffff4b", pixels = 35 }, { rgba = "#ffffff67", pixels = 32 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "slider"
+size = "default"
+state = "normal"
+black = "screen/dark/slider/default/black/normal.png"
+white = "screen/dark/slider/default/white/normal.png"
+layer = "dark/slider/default/normal.png"
+pixels = 379620
+opaque = 14894
+transparent = 343595
+partial = 21131
+inconsistent = 198
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0091ffff", pixels = 7719 }, { rgba = "#ffffff19", pixels = 7679 }, { rgba = "#ffffffff", pixels = 6622 }, { rgba = "#00000001", pixels = 3989 }, { rgba = "#00000002", pixels = 1603 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "slider"
+size = "default"
+state = "pressed"
+black = "screen/dark/slider/default/black/pressed.png"
+white = "screen/dark/slider/default/white/pressed.png"
+layer = "dark/slider/default/pressed.png"
+pixels = 379620
+opaque = 8873
+transparent = 329229
+partial = 41518
+inconsistent = 178
+alpha_spread_levels = 209
+alpha_spread_over_2_pixels = 3405
+common = [{ rgba = "#0091ffff", pixels = 7165 }, { rgba = "#ffffff19", pixels = 7157 }, { rgba = "#c1c1c121", pixels = 5153 }, { rgba = "#80808002", pixels = 1512 }, { rgba = "#00999902", pixels = 1303 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "switch_form"
+size = "default"
+state = "normal"
+black = "screen/dark/switch_form/default/black/normal.png"
+white = "screen/dark/switch_form/default/white/normal.png"
+layer = "dark/switch_form/default/normal.png"
+pixels = 379620
+opaque = 7657
+transparent = 363382
+partial = 8581
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 7657 }, { rgba = "#ebebf54c", pixels = 7082 }, { rgba = "#ffffffb7", pixels = 76 }, { rgba = "#ffffff9d", pixels = 56 }, { rgba = "#ffffff6a", pixels = 35 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "switch_form"
+size = "default"
+state = "pressed"
+black = "screen/dark/switch_form/default/black/pressed.png"
+white = "screen/dark/switch_form/default/white/pressed.png"
+layer = "dark/switch_form/default/pressed.png"
+pixels = 379620
+opaque = 1035
+transparent = 340100
+partial = 38485
+inconsistent = 0
+alpha_spread_levels = 121
+alpha_spread_over_2_pixels = 4494
+common = [{ rgba = "#dedee563", pixels = 4626 }, { rgba = "#80808002", pixels = 2800 }, { rgba = "#c1c1c121", pixels = 1666 }, { rgba = "#ffffffff", pixels = 1035 }, { rgba = "#55555503", pixels = 947 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "switch_row"
+size = "default"
+state = "normal"
+black = "screen/dark/switch_row/default/black/normal.png"
+white = "screen/dark/switch_row/default/white/normal.png"
+layer = "dark/switch_row/default/normal.png"
+pixels = 379620
+opaque = 7657
+transparent = 363382
+partial = 8581
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 7657 }, { rgba = "#ebebf54c", pixels = 7082 }, { rgba = "#ffffffb7", pixels = 76 }, { rgba = "#ffffff9d", pixels = 56 }, { rgba = "#ffffff6a", pixels = 35 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "switch_row"
+size = "default"
+state = "pressed"
+black = "screen/dark/switch_row/default/black/pressed.png"
+white = "screen/dark/switch_row/default/white/pressed.png"
+layer = "dark/switch_row/default/pressed.png"
+pixels = 379620
+opaque = 1035
+transparent = 340100
+partial = 38485
+inconsistent = 0
+alpha_spread_levels = 121
+alpha_spread_over_2_pixels = 4496
+common = [{ rgba = "#dedee563", pixels = 4624 }, { rgba = "#80808002", pixels = 2800 }, { rgba = "#c1c1c121", pixels = 1666 }, { rgba = "#ffffffff", pixels = 1035 }, { rgba = "#55555503", pixels = 947 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "tab_bar"
+size = "default"
+state = "normal"
+black = "screen/dark/tab_bar/default/black/normal.png"
+white = "screen/dark/tab_bar/default/white/normal.png"
+layer = "dark/tab_bar/default/normal.png"
+pixels = 379620
+opaque = 5215
+transparent = 53884
+partial = 320521
+inconsistent = 5277
+alpha_spread_levels = 16
+alpha_spread_over_2_pixels = 570
+common = [{ rgba = "#e7e7e715", pixels = 94900 }, { rgba = "#00000001", pixels = 36524 }, { rgba = "#b9b9b949", pixels = 35280 }, { rgba = "#00000002", pixels = 33284 }, { rgba = "#00000003", pixels = 24004 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "tab_bar"
+size = "default"
+state = "pressed"
+black = "screen/dark/tab_bar/default/black/pressed.png"
+white = "screen/dark/tab_bar/default/white/pressed.png"
+layer = "dark/tab_bar/default/pressed.png"
+pixels = 379620
+opaque = 6121
+transparent = 34254
+partial = 339245
+inconsistent = 6215
+alpha_spread_levels = 165
+alpha_spread_over_2_pixels = 12989
+common = [{ rgba = "#00000002", pixels = 32458 }, { rgba = "#00000001", pixels = 30018 }, { rgba = "#00000003", pixels = 27036 }, { rgba = "#00000004", pixels = 18812 }, { rgba = "#00000005", pixels = 15376 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "table_row"
+size = "default"
+state = "normal"
+black = "screen/dark/table_row/default/black/normal.png"
+white = "screen/dark/table_row/default/white/normal.png"
+layer = "dark/table_row/default/normal.png"
+pixels = 379620
+opaque = 274032
+transparent = 105588
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#000000ff", pixels = 268807 }, { rgba = "#2a2a2cff", pixels = 2754 }, { rgba = "#ffffffff", pixels = 1410 }, { rgba = "#141414ff", pixels = 33 }, { rgba = "#676767ff", pixels = 33 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "table_row"
+size = "default"
+state = "pressed"
+black = "screen/dark/table_row/default/black/pressed.png"
+white = "screen/dark/table_row/default/white/pressed.png"
+layer = "dark/table_row/default/pressed.png"
+pixels = 379620
+opaque = 274032
+transparent = 105588
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#3a3a3cff", pixels = 163768 }, { rgba = "#000000ff", pixels = 107793 }, { rgba = "#ffffffff", pixels = 1410 }, { rgba = "#676767ff", pixels = 32 }, { rgba = "#141414ff", pixels = 31 }]
+
+[[layer]]
+appearance = "light"
+specimen = "outline_header"
+size = "default"
+state = "normal"
+black = "screen/light/outline_header/default/black/normal.png"
+white = "screen/light/outline_header/default/white/normal.png"
+layer = "light/outline_header/default/normal.png"
+pixels = 379620
+opaque = 962
+transparent = 375061
+partial = 3597
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#3c3c4399", pixels = 1782 }, { rgba = "#000000ff", pixels = 962 }, { rgba = "#3c3c3c11", pixels = 58 }, { rgba = "#39394712", pixels = 41 }, { rgba = "#3b3b438a", pixels = 39 }]
+
+[[layer]]
+appearance = "light"
+specimen = "outline_header"
+size = "default"
+state = "pressed"
+black = "screen/light/outline_header/default/black/pressed.png"
+white = "screen/light/outline_header/default/white/pressed.png"
+layer = "light/outline_header/default/pressed.png"
+pixels = 379620
+opaque = 962
+transparent = 375061
+partial = 3597
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#3d3d432e", pixels = 1813 }, { rgba = "#000000ff", pixels = 962 }, { rgba = "#2b2b5506", pixels = 84 }, { rgba = "#37374317", pixels = 77 }, { rgba = "#33333305", pixels = 61 }]
+
+[[layer]]
+appearance = "light"
+specimen = "segmented_control"
+size = "default"
+state = "normal"
+black = "screen/light/segmented_control/default/black/normal.png"
+white = "screen/light/segmented_control/default/white/normal.png"
+layer = "light/segmented_control/default/normal.png"
+pixels = 379620
+opaque = 12051
+transparent = 334004
+partial = 33565
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#73737b1f", pixels = 31801 }, { rgba = "#ffffffff", pixels = 10056 }, { rgba = "#000000ff", pixels = 1582 }, { rgba = "#16161868", pixels = 52 }, { rgba = "#080809a8", pixels = 50 }]
+
+[[layer]]
+appearance = "light"
+specimen = "segmented_control"
+size = "default"
+state = "pressed"
+black = "screen/light/segmented_control/default/black/pressed.png"
+white = "screen/light/segmented_control/default/white/pressed.png"
+layer = "light/segmented_control/default/pressed.png"
+pixels = 379620
+opaque = 11640
+transparent = 334004
+partial = 33976
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#73737b1f", pixels = 31807 }, { rgba = "#ffffffff", pixels = 10056 }, { rgba = "#000000ff", pixels = 1171 }, { rgba = "#2525284c", pixels = 412 }, { rgba = "#72727b1d", pixels = 44 }]
+
+[[layer]]
+appearance = "light"
+specimen = "sidebar_row"
+size = "default"
+state = "normal"
+black = "screen/light/sidebar_row/default/black/normal.png"
+white = "screen/light/sidebar_row/default/white/normal.png"
+layer = "light/sidebar_row/default/normal.png"
+pixels = 379620
+opaque = 1410
+transparent = 377149
+partial = 1061
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#000000ff", pixels = 1410 }, { rgba = "#00000014", pixels = 33 }, { rgba = "#00000067", pixels = 33 }, { rgba = "#000000f7", pixels = 31 }, { rgba = "#000000ef", pixels = 29 }]
+
+[[layer]]
+appearance = "light"
+specimen = "sidebar_row"
+size = "default"
+state = "pressed"
+black = "screen/light/sidebar_row/default/black/pressed.png"
+white = "screen/light/sidebar_row/default/white/pressed.png"
+layer = "light/sidebar_row/default/pressed.png"
+pixels = 379620
+opaque = 683
+transparent = 377149
+partial = 1788
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0000004d", pixels = 749 }, { rgba = "#000000ff", pixels = 683 }, { rgba = "#00000014", pixels = 36 }, { rgba = "#0000004b", pixels = 35 }, { rgba = "#00000067", pixels = 32 }]
+
+[[layer]]
+appearance = "light"
+specimen = "slider"
+size = "default"
+state = "normal"
+black = "screen/light/slider/default/black/normal.png"
+white = "screen/light/slider/default/white/normal.png"
+layer = "light/slider/default/normal.png"
+pixels = 379620
+opaque = 14907
+transparent = 343595
+partial = 21118
+inconsistent = 193
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0088ffff", pixels = 7719 }, { rgba = "#00000019", pixels = 7687 }, { rgba = "#ffffffff", pixels = 6622 }, { rgba = "#00000001", pixels = 3993 }, { rgba = "#00000002", pixels = 1603 }]
+
+[[layer]]
+appearance = "light"
+specimen = "slider"
+size = "default"
+state = "pressed"
+black = "screen/light/slider/default/black/pressed.png"
+white = "screen/light/slider/default/white/pressed.png"
+layer = "light/slider/default/pressed.png"
+pixels = 379620
+opaque = 8882
+transparent = 329178
+partial = 41560
+inconsistent = 176
+alpha_spread_levels = 203
+alpha_spread_over_2_pixels = 3389
+common = [{ rgba = "#00000019", pixels = 7165 }, { rgba = "#0088ffff", pixels = 7165 }, { rgba = "#c1c1c121", pixels = 5152 }, { rgba = "#80808002", pixels = 1512 }, { rgba = "#00999902", pixels = 1262 }]
+
+[[layer]]
+appearance = "light"
+specimen = "switch_form"
+size = "default"
+state = "normal"
+black = "screen/light/switch_form/default/black/normal.png"
+white = "screen/light/switch_form/default/white/normal.png"
+layer = "light/switch_form/default/normal.png"
+pixels = 379620
+opaque = 7657
+transparent = 363382
+partial = 8581
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#3c3c434c", pixels = 7084 }, { rgba = "#ffffffff", pixels = 6622 }, { rgba = "#000000ff", pixels = 1035 }, { rgba = "#000000b7", pixels = 76 }, { rgba = "#0000009d", pixels = 56 }]
+
+[[layer]]
+appearance = "light"
+specimen = "switch_form"
+size = "default"
+state = "pressed"
+black = "screen/light/switch_form/default/black/pressed.png"
+white = "screen/light/switch_form/default/white/pressed.png"
+layer = "light/switch_form/default/pressed.png"
+pixels = 379620
+opaque = 1035
+transparent = 340202
+partial = 38383
+inconsistent = 2
+alpha_spread_levels = 106
+alpha_spread_over_2_pixels = 4507
+common = [{ rgba = "#68686d62", pixels = 4841 }, { rgba = "#80808002", pixels = 3266 }, { rgba = "#c1c1c121", pixels = 1682 }, { rgba = "#55555503", pixels = 1484 }, { rgba = "#66666605", pixels = 1305 }]
+
+[[layer]]
+appearance = "light"
+specimen = "switch_row"
+size = "default"
+state = "normal"
+black = "screen/light/switch_row/default/black/normal.png"
+white = "screen/light/switch_row/default/white/normal.png"
+layer = "light/switch_row/default/normal.png"
+pixels = 379620
+opaque = 7657
+transparent = 363382
+partial = 8581
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#3c3c434c", pixels = 7084 }, { rgba = "#ffffffff", pixels = 6622 }, { rgba = "#000000ff", pixels = 1035 }, { rgba = "#000000b7", pixels = 76 }, { rgba = "#0000009d", pixels = 56 }]
+
+[[layer]]
+appearance = "light"
+specimen = "switch_row"
+size = "default"
+state = "pressed"
+black = "screen/light/switch_row/default/black/pressed.png"
+white = "screen/light/switch_row/default/white/pressed.png"
+layer = "light/switch_row/default/pressed.png"
+pixels = 379620
+opaque = 1035
+transparent = 340202
+partial = 38383
+inconsistent = 2
+alpha_spread_levels = 106
+alpha_spread_over_2_pixels = 4510
+common = [{ rgba = "#68686d62", pixels = 4847 }, { rgba = "#80808002", pixels = 3266 }, { rgba = "#c1c1c121", pixels = 1684 }, { rgba = "#55555503", pixels = 1484 }, { rgba = "#66666605", pixels = 1305 }]
+
+[[layer]]
+appearance = "light"
+specimen = "tab_bar"
+size = "default"
+state = "normal"
+black = "screen/light/tab_bar/default/black/normal.png"
+white = "screen/light/tab_bar/default/white/normal.png"
+layer = "light/tab_bar/default/normal.png"
+pixels = 379620
+opaque = 5215
+transparent = 53884
+partial = 320521
+inconsistent = 5277
+alpha_spread_levels = 16
+alpha_spread_over_2_pixels = 570
+common = [{ rgba = "#e7e7e715", pixels = 94900 }, { rgba = "#00000001", pixels = 36524 }, { rgba = "#b9b9b949", pixels = 35400 }, { rgba = "#00000002", pixels = 33284 }, { rgba = "#00000003", pixels = 24004 }]
+
+[[layer]]
+appearance = "light"
+specimen = "tab_bar"
+size = "default"
+state = "pressed"
+black = "screen/light/tab_bar/default/black/pressed.png"
+white = "screen/light/tab_bar/default/white/pressed.png"
+layer = "light/tab_bar/default/pressed.png"
+pixels = 379620
+opaque = 6121
+transparent = 34254
+partial = 339245
+inconsistent = 6215
+alpha_spread_levels = 165
+alpha_spread_over_2_pixels = 12989
+common = [{ rgba = "#00000002", pixels = 33052 }, { rgba = "#00000001", pixels = 29424 }, { rgba = "#00000003", pixels = 27036 }, { rgba = "#00000004", pixels = 18812 }, { rgba = "#00000005", pixels = 15376 }]
+
+[[layer]]
+appearance = "light"
+specimen = "table_row"
+size = "default"
+state = "normal"
+black = "screen/light/table_row/default/black/normal.png"
+white = "screen/light/table_row/default/white/normal.png"
+layer = "light/table_row/default/normal.png"
+pixels = 379620
+opaque = 274032
+transparent = 105588
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 268807 }, { rgba = "#e8e8e8ff", pixels = 2760 }, { rgba = "#000000ff", pixels = 1410 }, { rgba = "#989898ff", pixels = 33 }, { rgba = "#ebebebff", pixels = 33 }]
+
+[[layer]]
+appearance = "light"
+specimen = "table_row"
+size = "default"
+state = "pressed"
+black = "screen/light/table_row/default/black/pressed.png"
+white = "screen/light/table_row/default/white/pressed.png"
+layer = "light/table_row/default/pressed.png"
+pixels = 379620
+opaque = 274032
+transparent = 105588
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#d1d1d6ff", pixels = 163768 }, { rgba = "#ffffffff", pixels = 107793 }, { rgba = "#000000ff", pixels = 1410 }, { rgba = "#070707ff", pixels = 32 }, { rgba = "#989898ff", pixels = 32 }]
+

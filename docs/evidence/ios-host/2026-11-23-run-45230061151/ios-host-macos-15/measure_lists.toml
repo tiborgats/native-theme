@@ -180,7 +180,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [press1."light".switch_row.normal]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -206,7 +206,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [press1."dark".table_row.pressed]
 part_pt = [0.0, 0.0, 346.0, 44.333]
@@ -390,7 +390,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [press1."dark".switch_row.normal]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -416,7 +416,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".table_row.normal]
 part_pt = [0.0, 0.0, 346.0, 44.333]
@@ -535,7 +535,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_row.selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -562,7 +562,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = true
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_row.disabled]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -589,7 +589,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_row.disabled_selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -616,7 +616,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = true
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_row.cell_disabled]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -643,7 +643,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_row.cell_disabled_selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -670,7 +670,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = true
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_form.normal]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -686,7 +686,7 @@ uikit_default_disabled_text_color = "#3c3c434c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_form.selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -703,7 +703,7 @@ uikit_default_disabled_text_color = "#3c3c434c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_form.disabled]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -720,7 +720,7 @@ uikit_default_disabled_text_color = "#3c3c434c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."light".switch_form.disabled_selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -737,7 +737,7 @@ uikit_default_disabled_text_color = "#3c3c434c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".table_row.normal]
 part_pt = [0.0, 0.0, 346.0, 44.333]
@@ -856,7 +856,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_row.selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -883,7 +883,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = true
 switch_is_enabled = true
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_row.disabled]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -910,7 +910,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_row.disabled_selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -937,7 +937,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = true
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_row.cell_disabled]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -964,7 +964,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = false
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_row.cell_disabled_selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -991,7 +991,7 @@ switch_frame_pt = [259.0, 41.667, 51.0, 31.0]
 switch_is_on = true
 switch_is_enabled = false
 gap_text_end_to_switch_pt = 181.667
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_form.normal]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -1007,7 +1007,7 @@ uikit_default_disabled_text_color = "#ebebf54c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_form.selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -1024,7 +1024,7 @@ uikit_default_disabled_text_color = "#ebebf54c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_form.disabled]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -1041,7 +1041,7 @@ uikit_default_disabled_text_color = "#ebebf54c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_form.disabled_selected]
 part_pt = [20.0, 35.0, 306.0, 44.0]
@@ -1058,7 +1058,7 @@ uikit_default_disabled_text_color = "#ebebf54c"
 uikit_state_highlighted = false
 uikit_state_selected = false
 uikit_state_disabled = false
-label_ink_box_px = (52, 47, 169, 86)
+label_ink_box_px = [52, 47, 169, 86]
 
 [run1."dark".switch_form.disabled.label_vs_uikit_row]
 equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']

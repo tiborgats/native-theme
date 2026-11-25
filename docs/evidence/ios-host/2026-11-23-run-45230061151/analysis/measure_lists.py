@@ -200,7 +200,7 @@ for run in ("press1", "run1"):
             glyphs = label_glyphs(render, screen_path)
             labels[(run, render["appearance"], render["specimen"], render["state"])] = glyphs
             if glyphs is not None:
-                print(f"label_ink_box_px = {glyphs[1]}")
+                print(f"label_ink_box_px = {list(glyphs[1])}")
         print()
 
 # The SwiftUI Form Toggle's label against the UIKit list row's, per run,
