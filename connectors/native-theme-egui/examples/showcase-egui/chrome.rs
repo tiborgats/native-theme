@@ -515,9 +515,11 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
 
 /// The side-panel toggle's outline while on, egui's inactive, hovered and active entries: the
 /// pen `button.body(CHECKED; variant=Flat).stroke` where a rule states it for `CHECKED`, and
-/// then under the pointer and pressed `(CHECKED | HOVER)`'s and `(CHECKED | PRESSED)`'s, each
-/// the theme's answer for that state (spec §10, rule 0); all `None` where no rule states it for
-/// `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
+/// then under the pointer `(CHECKED | HOVER)`'s and, egui's `active` being press and keyboard
+/// focus alike, `(CHECKED | FOCUS_VISIBLE)`'s where a rule states the flat button's
+/// `FOCUS_VISIBLE` stroke, else `(CHECKED | PRESSED)`'s, as `next::flat_button` lines the flat
+/// button, each the theme's answer for that state (spec §10, rule 0); all `None` where no rule
+/// states it for `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
 fn toggle_checked_pens(r: Option<&native_theme::next::ResolvedTheme>) -> [Option<egui::Stroke>; 3] {
     let Some(r) = r else {
         return [None; 3];
@@ -529,10 +531,15 @@ fn toggle_checked_pens(r: Option<&native_theme::next::ResolvedTheme>) -> [Option
     let Some(rest) = demo::state_pen(&at(WidgetState::CHECKED)) else {
         return [None; 3];
     };
+    let active = if demo::state_pen(&at(WidgetState::FOCUS_VISIBLE)).is_some() {
+        WidgetState::FOCUS_VISIBLE
+    } else {
+        WidgetState::PRESSED
+    };
     [
         Some(rest),
         demo::state_pen(&at(WidgetState::CHECKED | WidgetState::HOVER)),
-        demo::state_pen(&at(WidgetState::CHECKED | WidgetState::PRESSED)),
+        demo::state_pen(&at(WidgetState::CHECKED | active)),
     ]
 }
 
