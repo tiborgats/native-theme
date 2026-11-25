@@ -8742,6 +8742,8 @@ fn home_keyed(id: &str) -> bool {
         || button_element(id)
         || page_element(id)
         || push_button_element(id)
+        || id.starts_with("basic.checkboxes.")
+        || id.starts_with("basic.radios.")
 }
 
 /// Whether the list's id `id` names the Basic page or one of its columns.
@@ -9342,7 +9344,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // `styles::checkbox`'s colour.
         _ if under("basic.checkboxes")
             && next_check_stroke(resolved).is_some()
-            && (id.ends_with(".mark") || leaf == "checkbox.indicator_color") =>
+            && (id.ends_with(".mark") || leaf == "checkbox.checkmark(CHECKED).color") =>
         {
             return None;
         }
@@ -11435,6 +11437,138 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
     Some(route)
 }
 
+/// The route of the home `home` of an element of the Basic page's check
+/// boxes of the list's id `id` under `r`, the installed 0.8.0 theme: the
+/// label, the box's size, corners and outline width, the gap, the disabled
+/// opacity, and the mark the showcase paints ([`CheckMark`]) where `r`
+/// states its line, `checkbox.checkmark(NONE).stroke_width`, iced's own
+/// glyph where it does not. `None` for a home none of them reads, the
+/// colours the export routes ([`colour_home_route`]) among them.
+fn check_box_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -> Option<String> {
+    let mark = next_check_stroke(r).is_some();
+    let route = match home {
+        "checkbox.label(NONE)" => {
+            "Checkbox text_size, text_line_height and font: checkbox.label(NONE)'s size, line \
+             box (next_line_box) and font"
+        }
+        "typography.line_height_multiplier" => {
+            "text_line_height: the label's line box, checkbox.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        "checkbox.indicator(NONE).min_size[0]" if mark => {
+            "Checkbox::size, checkbox.indicator(NONE).min_size[0], iced's own 16 px where \
+             unstated (ICED_CHECKBOX_SIZE); CheckMark: the mark's canvas"
+        }
+        "checkbox.indicator(NONE).min_size[0]" => {
+            "Checkbox::size, checkbox.indicator(NONE).min_size[0], iced's own 16 px where \
+             unstated (ICED_CHECKBOX_SIZE)"
+        }
+        "checkbox.indicator(NONE).min_size[1]"
+        | "checkbox.indicator(NONE).max_size[0]"
+        | "checkbox.indicator(NONE).max_size[1]" => {
+            "not reachable: iced's check box is a square Checkbox::size across, which \
+             checkbox.indicator(NONE).min_size[0] sets"
+        }
+        "checkbox.label_gap" => "Checkbox::spacing, checkbox.label_gap",
+        "checkbox.indicator(NONE).corners" => {
+            "styles::checkbox: checkbox::Style::border.radius, checkbox.indicator(NONE).corners"
+        }
+        "checkbox.indicator(NONE).stroke.width" => {
+            "styles::checkbox: checkbox::Style::border.width, \
+             checkbox.indicator(NONE).stroke.width"
+        }
+        "checkbox.disabled_opacity" => {
+            "styles::checkbox: the Disabled colours' alpha times checkbox.disabled_opacity; a \
+             drawn mark fades with its box's fill"
+        }
+        "checkbox.checkmark(NONE).stroke_width" if mark => {
+            "CheckMark: the mark's stroke width, checkbox.checkmark(NONE).stroke_width, over \
+             iced's glyph made transparent"
+        }
+        "checkbox.checkmark(NONE).stroke_width" => {
+            "not drawn: unstated, so iced draws its own glyph, whose line no style reaches"
+        }
+        "checkbox.indicator(NONE).padding.top"
+        | "checkbox.indicator(NONE).padding.right"
+        | "checkbox.indicator(NONE).padding.bottom"
+        | "checkbox.indicator(NONE).padding.left"
+            if mark =>
+        {
+            "CheckMark: the mark's box, inside the box by checkbox.indicator(NONE).padding on \
+             this side, egui's share of the box where unstated"
+        }
+        "checkbox.indicator(NONE).padding.top"
+        | "checkbox.indicator(NONE).padding.right"
+        | "checkbox.indicator(NONE).padding.bottom"
+        | "checkbox.indicator(NONE).padding.left" => {
+            "not drawn: iced's checkbox takes no padding, and the showcase paints no mark of its \
+             own where the theme states no checkbox.checkmark(NONE).stroke_width"
+        }
+        "checkbox.checkmark(CHECKED).color" if mark => {
+            "CheckMark: the mark's stroke colour, iced_next::styles::checkbox's icon_color, \
+             checkbox.checkmark(CHECKED).color, over its fill"
+        }
+        "checkbox.label(DISABLED).color" if mark && id.ends_with(".mark") => {
+            "CheckMark: the disabled mark, iced_next::styles::checkbox's Disabled icon_color, \
+             checkbox.checkmark(DISABLED).color where a rule states it for the disabled state, \
+             faded with its box"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of an element of the Basic page's radios:
+/// the label, the gap, the circle's outline width, and the circle's and
+/// the dot's sizes `next_radio` lays out (`iced_next::radio`), the check
+/// box's sizes the element lists not read. `None` for a home none of them
+/// reads, the colours the export routes ([`colour_home_route`]) among them.
+fn radio_route(home: &str) -> Option<String> {
+    let route = match home {
+        "radio.label(NONE)" => {
+            "Radio text_size, text_line_height and font: radio.label(NONE)'s size, line box \
+             (next_line_box) and font"
+        }
+        "typography.line_height_multiplier" => {
+            "text_line_height: the label's line box, radio.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        "radio.indicator(NONE).min_size[0]" => {
+            "next_radio: iced_next::radio's Radio::size, radio.indicator(NONE).min_size[0], \
+             iced's own (Radio::DEFAULT_SIZE) where unstated"
+        }
+        "radio.indicator(NONE).min_size[1]"
+        | "radio.indicator(NONE).max_size[0]"
+        | "radio.indicator(NONE).max_size[1]" => {
+            "not reachable: iced's radio is a circle Radio::size across, which \
+             radio.indicator(NONE).min_size[0] sets"
+        }
+        "checkbox.indicator(NONE).min_size[0]"
+        | "checkbox.indicator(NONE).min_size[1]"
+        | "checkbox.indicator(NONE).max_size[0]"
+        | "checkbox.indicator(NONE).max_size[1]" => {
+            "not drawn: a radio's circle is sized by radio.indicator(NONE).min_size[0] \
+             (iced_next::radio), not by the check box's"
+        }
+        "radio.dot(NONE).min_size[0]" => {
+            "next_radio: iced_next::radio's dot, radio.dot(NONE).min_size[0], over iced's own \
+             dot, which is drawn where unstated"
+        }
+        "radio.dot(NONE).min_size[1]"
+        | "radio.dot(NONE).max_size[0]"
+        | "radio.dot(NONE).max_size[1]" => {
+            "not reachable: iced_next::radio's dot is a circle, radio.dot(NONE).min_size[0] \
+             across"
+        }
+        "radio.label_gap" => "next_radio: iced_next::radio's Radio::spacing, radio.label_gap",
+        "radio.indicator(NONE).stroke.width" => {
+            "styles::radio: radio::Style::border_width, radio.indicator(NONE).stroke.width"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of the home `home` of the Basic page or one of its columns
 /// under `r`, the installed 0.8.0 theme: the gaps and margins
 /// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
@@ -11577,6 +11711,10 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         page_home_route(r, home)
     } else if push_button_element(id) {
         push_button_route(id, home)
+    } else if under("basic.checkboxes.") {
+        check_box_route(r, id, home)
+    } else if under("basic.radios.") {
+        radio_route(home)
     } else {
         None
     };
@@ -11695,11 +11833,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         };
     }
     let under = |prefix: &str| id.starts_with(prefix);
-    // Whether the showcase paints the check mark: on the Basic page, where
-    // the installed 0.8.0 theme states its line,
-    // `checkbox.checkmark(NONE).stroke_width`; the Selection page's check
-    // boxes draw iced's own glyph.
-    let mark = under("basic.") && next_check_stroke(state.next_shown()).is_some();
     let (table, field) = leaf.split_once('.').unwrap_or((leaf, ""));
     let side = |field: &str| {
         ["top", "right", "bottom", "left"]
@@ -11729,96 +11862,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("text_area" | "combo_box" | "card", "border.shadow_enabled") => {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
-        }
-        // ---- checkbox and radio ----
-        ("checkbox", "font") if under("basic.checkboxes.") => {
-            "Checkbox text_size, text_line_height and font: checkbox.label(NONE)'s size, line \
-             box (next_line_box) and font"
-                .into()
-        }
-        ("checkbox", "font") if under("basic.radios.") => {
-            "Radio text_size, text_line_height and font: radio.label(NONE)'s size, line box \
-             (next_line_box) and font"
-                .into()
-        }
-        ("checkbox", "indicator_width_px") if under("basic.checkboxes.") && mark => {
-            "Checkbox::size, checkbox.indicator(NONE).min_size[0], iced's own 16 px where \
-             unstated (ICED_CHECKBOX_SIZE); CheckMark: the mark's canvas"
-                .into()
-        }
-        ("checkbox", "indicator_width_px") if under("basic.checkboxes.") => {
-            "Checkbox::size, checkbox.indicator(NONE).min_size[0], iced's own 16 px where \
-             unstated (ICED_CHECKBOX_SIZE)"
-                .into()
-        }
-        ("checkbox", "radio_indicator_width_px" | "indicator_width_px")
-            if under("basic.radios.") =>
-        {
-            "next_radio: iced_next::radio's Radio::size, radio.indicator(NONE).min_size[0], \
-             iced's own (Radio::DEFAULT_SIZE) where unstated"
-                .into()
-        }
-        ("checkbox", "radio_dot_diameter_px") if under("basic.radios.") => {
-            "next_radio: iced_next::radio's dot, radio.dot(NONE).min_size[0], over iced's own \
-             dot, which is drawn where unstated"
-                .into()
-        }
-        ("checkbox", "label_gap_px") if under("basic.checkboxes.") => {
-            "Checkbox::spacing, checkbox.label_gap".into()
-        }
-        ("checkbox", "label_gap_px") if under("basic.radios.") => {
-            "next_radio: iced_next::radio's Radio::spacing, radio.label_gap".into()
-        }
-        ("checkbox", "check_mark_stroke_width_px") if mark && under("basic.checkboxes.") => {
-            "CheckMark: the mark's stroke width, checkbox.checkmark(NONE).stroke_width, over \
-             iced's glyph made transparent"
-                .into()
-        }
-        ("checkbox", f) if side(f).is_some() && mark && under("basic.checkboxes.") => {
-            "CheckMark: the mark's box, inside the box by checkbox.indicator(NONE).padding on \
-             this side, egui's share of the box where unstated"
-                .into()
-        }
-        ("checkbox", "font") => "Checkbox/Radio text_size and font (theme_font)".into(),
-        ("checkbox", "indicator_color") => {
-            "CheckMark: the mark's stroke colour, iced_next::styles::checkbox's icon_color, \
-             checkbox.checkmark(CHECKED).color, over its fill"
-                .into()
-        }
-        ("checkbox", "disabled_text_color") => {
-            "CheckMark: the disabled mark, iced_next::styles::checkbox's Disabled icon_color, \
-             checkbox.checkmark(DISABLED).color where a rule states it for the disabled state, \
-             faded with its box"
-                .into()
-        }
-        ("checkbox", "indicator_width_px") => "Checkbox/Radio::size".into(),
-        ("checkbox", "check_mark_stroke_width_px") if mark => {
-            "CheckMark: the mark's stroke width, over iced's glyph made transparent".into()
-        }
-        ("checkbox", "check_mark_stroke_width_px") => {
-            "not drawn: unstated, so iced draws its own glyph, whose line no style reaches".into()
-        }
-        ("checkbox", "radio_dot_diameter_px") => {
-            "native_theme_iced::radio: the dot's diameter, over iced's own dot".into()
-        }
-        ("checkbox", "radio_indicator_width_px") => {
-            "native_theme_iced::radio: Radio::size, indicator_width where unstated".into()
-        }
-        ("checkbox", "label_gap_px") => "Checkbox/Radio::spacing".into(),
-        ("checkbox", "disabled_opacity") => {
-            "styles::checkbox: the Disabled colours' alpha times it; a drawn mark fades with its box's fill".into()
-        }
-        ("checkbox", "border.corner_radius_px") => "styles::checkbox: checkbox::Style::border.radius".into(),
-        ("checkbox", "border.line_width_px") => {
-            "styles::checkbox / styles::radio: the border width".into()
-        }
-        ("checkbox", f) if side(f).is_some() && mark => {
-            "CheckMark: the mark's box, inside the border and this side".into()
-        }
-        ("checkbox", f) if side(f).is_some() => {
-            "not drawn: iced's checkbox takes no padding, and the showcase paints no mark of its \
-             own where the theme states no check_mark_stroke_width"
-                .into()
         }
         // ---- switch ----
         ("switch", "track_width_px") if under("basic.switches.") => {
@@ -12276,12 +12319,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "status_line_box: the text's LineHeight, status_bar.label's line box \
              (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
              (gpui-pre style.rs:553-556)"
-                .into()
-        }
-        ("defaults", "line_height") if under("basic.checkboxes.") || under("basic.radios.") => {
-            "text_line_height: the label's line box, checkbox.label(NONE)'s or radio.label(NONE)'s \
-             size by typography.line_height_multiplier where it states no line height \
-             (next_line_box)"
                 .into()
         }
         ("defaults", "line_height") if under("basic.text_area.") => {
