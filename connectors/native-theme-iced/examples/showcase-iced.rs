@@ -10619,9 +10619,9 @@ fn tab_layout_route(
 /// of the menu bar where `title` ([`menu_title`]), else of a menu's row or
 /// panel ([`menu_row`], [`menu_bar_style`]): what the function draws of the
 /// home, naming what it reads, or that it is unstated and what is drawn in
-/// its place. `None` for a home neither reads. A row's pressed colours,
-/// listed at `menu.item(HOVER|PRESSED)`, are drawn from the pressed state
-/// asked alone, `menu.item(PRESSED)` (spec §2), which the route names.
+/// its place. `None` for a home neither reads. A row's pressed colours are
+/// drawn from the pressed state asked alone, `menu.item(PRESSED)` (spec
+/// §2), where they are listed.
 fn menu_route(r: &native_theme::next::ResolvedTheme, home: &str, title: bool) -> Option<String> {
     let (m, b) = (&r.menu, &r.menu_bar);
     let fill = |part: PartStyle| drawn_state_fill(&part).is_some();
@@ -10646,7 +10646,7 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, home: &str, title: bool) ->
             item(&b.item(WidgetState::OPEN), "menu_bar.item(OPEN).fill"),
         ),
         (
-            "menu.item(HOVER|PRESSED).fill",
+            "menu.item(PRESSED).fill",
             item(&m.item(pressed), "menu.item(PRESSED).fill"),
         ),
     ];
@@ -10743,16 +10743,16 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, home: &str, title: bool) ->
         "menu.item(HOVER).stroke.color" => {
             "menu_row: the Hovered border, menu.item(HOVER).stroke.color"
         }
-        "menu.item(HOVER|PRESSED).fill" if !fill(m.item(pressed)) => {
+        "menu.item(PRESSED).fill" if !fill(m.item(pressed)) => {
             "not drawn: menu.item(PRESSED).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
-        "menu.item(HOVER|PRESSED).fill" => "menu_row: the Pressed fill, menu.item(PRESSED).fill",
-        "menu.item_label(HOVER|PRESSED).color" if !ink(m.item_label(pressed)) => {
+        "menu.item(PRESSED).fill" => "menu_row: the Pressed fill, menu.item(PRESSED).fill",
+        "menu.item_label(PRESSED).color" if !ink(m.item_label(pressed)) => {
             "not drawn: menu.item_label(PRESSED).color is unstated, so the Pressed label is \
              iced's own flat button's (button::text)"
         }
-        "menu.item_label(HOVER|PRESSED).color" => {
+        "menu.item_label(PRESSED).color" => {
             "menu_row: the Pressed text_color, menu.item_label(PRESSED).color"
         }
         "popover.panel.stroke.color" if menu_frame(r).stated.contains(PartStated::STROKE) => {
@@ -16228,20 +16228,29 @@ fn switch_label_colour(r: &native_theme::next::ResolvedTheme, state: WidgetState
         .contains(TextStated::COLOR);
     if disabled && !ruled {
         let enabled = state.difference(WidgetState::DISABLED);
-        return match (
+        return unruled_disabled_label_ink(
             iced_next::text_color_of(&s.label(enabled)),
             s.disabled_opacity,
-        ) {
-            (Some(colour), Some(opacity)) => LabelInk::Stated(Color {
-                a: colour.a * opacity,
-                ..colour
-            }),
-            (Some(colour), None) => LabelInk::Stated(colour),
-            (None, Some(opacity)) => LabelInk::OwnFaded(opacity),
-            (None, None) => LabelInk::Own,
-        };
+        );
     }
     iced_next::text_color_of(&s.label(state)).map_or(LabelInk::Own, LabelInk::Stated)
+}
+
+/// The colour of a disabled switch's label where no rule states
+/// `switch.label(DISABLED).color` ([`switch_label_colour`]), from what the
+/// theme states: the enabled label's colour `enabled` faded by the
+/// switch's `opacity`, `switch.disabled_opacity`, where stated; iced's own
+/// text colour, faded so, where the theme states no colour.
+fn unruled_disabled_label_ink(enabled: Option<Color>, opacity: Option<f32>) -> LabelInk {
+    match (enabled, opacity) {
+        (Some(colour), Some(opacity)) => LabelInk::Stated(Color {
+            a: colour.a * opacity,
+            ..colour
+        }),
+        (Some(colour), None) => LabelInk::Stated(colour),
+        (None, Some(opacity)) => LabelInk::OwnFaded(opacity),
+        (None, None) => LabelInk::Own,
+    }
 }
 
 /// The label colour of iced's own toggler in `status` on the installed
@@ -29357,8 +29366,9 @@ mod tests {
     /// active window while the window is active, and those asked with
     /// `UNFOCUSED_VIEW` too of the theme resolved for an inactive one while
     /// it is not; the two pairs differ, so a selected row swaps, exactly on
-    /// kde-breeze's two combinations, the one preset that states them apart
-    /// (macOS's unfocused selection is a preset gap of the 0.8.0 model).
+    /// kde-breeze's and the two macOS presets' combinations, the presets that
+    /// state them apart (macOS's unemphasized selection, platform-facts.md
+    /// (§2.1.3), `native-theme/src/next/presets/macos.rs`).
     #[test]
     fn a_selected_row_takes_the_unfocused_pair_only_where_the_theme_gives_one() {
         let mut state = State {
@@ -29420,7 +29430,14 @@ mod tests {
         swapped.sort();
         assert_eq!(
             swapped,
-            ["kde-breeze/Dark", "kde-breeze/Light"],
+            [
+                "kde-breeze/Dark",
+                "kde-breeze/Light",
+                "macos-monterey/Dark",
+                "macos-monterey/Light",
+                "macos-tahoe/Dark",
+                "macos-tahoe/Light"
+            ],
             "the combinations whose selected rows swap"
         );
     }
@@ -29652,8 +29669,9 @@ mod tests {
     /// pair: where the 0.8.0 theme's
     /// `list.highlight(SELECTED|UNFOCUSED_VIEW).fill` and
     /// `list.item_label(SELECTED|UNFOCUSED_VIEW).color` are its
-    /// `SELECTED` ones ([`next_selection_pair`]), which only kde-breeze
-    /// states apart among the presets.
+    /// `SELECTED` ones ([`next_selection_pair`]), which kde-breeze and the
+    /// two macOS presets state apart among the presets (macOS's
+    /// unemphasized selection, platform-facts.md (§2.1.3)).
     #[test]
     fn the_unfocused_pairs_routes_say_where_it_is_not_drawn() {
         let homes = [
@@ -29718,7 +29736,14 @@ mod tests {
         assert!(faults.is_empty(), "{faults:#?}");
         assert_eq!(
             list_swapped.into_iter().collect::<Vec<_>>(),
-            ["kde-breeze/Dark", "kde-breeze/Light"],
+            [
+                "kde-breeze/Dark",
+                "kde-breeze/Light",
+                "macos-monterey/Dark",
+                "macos-monterey/Light",
+                "macos-tahoe/Dark",
+                "macos-tahoe/Light"
+            ],
             "the presets whose selected list rows swap"
         );
     }
@@ -32183,6 +32208,9 @@ mod tests {
     /// by `switch.disabled_opacity`), else the enabled colour faded by
     /// `switch.disabled_opacity`, or iced's own faded where the theme states
     /// no colour; a patch stating the disabled colour is drawn as stated.
+    /// Every bundled preset states the disabled colour, so the enabled
+    /// colour faded is read on each with its disabled rule patched away,
+    /// and iced's own on the stated input ([`unruled_disabled_label_ink`]).
     #[test]
     fn the_switch_label_takes_its_side_stretch_glyphs_and_colour() -> Result<(), String> {
         use native_theme::next::LabelSide;
@@ -32297,18 +32325,41 @@ mod tests {
         }
         // A theme with no disabled rule: the enabled colour, or iced's own,
         // faded by the switch's opacity; a patch stating the colour wins.
+        // Every bundled preset states the disabled label, so each is read
+        // with a rule that requires no state and is kept off the checked
+        // switch stating the label at rest for the unchecked ones, which
+        // clears the disabled colour's `from_state` bit (spec §2,
+        // `from_state`); iced's own colour, which no preset leaves, is read
+        // on the stated input directly.
         let patch = native_theme::next::ThemePatch::from_toml(
             "[[widgets.switch.rules]]\nstates = [\"disabled\"]\nlabel.color = \"#13579b\"\n",
         )
         .map_err(|error| format!("the patch: {error:?}"))?;
-        let (mut stated, mut own) = (0, 0);
-        for (label, mut r) in next_combinations() {
-            if r.switch
+        let unruled = |r: &mut native_theme::next::ResolvedTheme| {
+            use native_theme::next::{SwitchRule, TextPatch, ThemePatch};
+            let rest = r.switch.label(WidgetState::NONE).color;
+            r.apply_patch(
+                &ThemePatch::new().switch(
+                    SwitchRule::new()
+                        .not_states(WidgetState::CHECKED)
+                        .label(TextPatch::new().color(rest)),
+                ),
+            );
+        };
+        let ruled = |r: &native_theme::next::ResolvedTheme| {
+            r.switch
                 .label(WidgetState::DISABLED)
                 .from_state
                 .contains(TextStated::COLOR)
-            {
-                continue;
+        };
+        let (mut stated, mut own) = (0, 0);
+        for (label, mut r) in next_combinations() {
+            if ruled(&r) {
+                unruled(&mut r);
+                if ruled(&r) {
+                    faults.push(format!("{label}: a disabled label rule stays patched"));
+                    continue;
+                }
             }
             r.switch.disabled_opacity = Some(0.5);
             let ink = switch_label_colour(&r, switch_query(true, false));
@@ -32336,6 +32387,26 @@ mod tests {
             let ink = switch_label_colour(&r, switch_query(true, false));
             if ink != LabelInk::Stated(Color::from_rgb8(0x13, 0x57, 0x9b)) {
                 faults.push(format!("{label}: the patched disabled label {ink:?}"));
+            }
+        }
+        let colour = Color::from_rgb8(0x13, 0x57, 0x9b);
+        for (enabled, opacity, want) in [
+            (None, Some(0.5), LabelInk::OwnFaded(0.5)),
+            (None, None, LabelInk::Own),
+            (Some(colour), None, LabelInk::Stated(colour)),
+            (
+                Some(colour),
+                Some(0.5),
+                LabelInk::Stated(Color { a: 0.5, ..colour }),
+            ),
+        ] {
+            own += usize::from(enabled.is_none());
+            let ink = unruled_disabled_label_ink(enabled, opacity);
+            if ink != want {
+                faults.push(format!(
+                    "the unruled disabled label of {enabled:?} at {opacity:?}: {ink:?}, \
+                     not {want:?}"
+                ));
             }
         }
         if stated == 0 || own == 0 {
@@ -34931,16 +35002,6 @@ mod tests {
             TOOL_BUTTON_PUSH_FILL,
         ),
         (
-            "basic.checkboxes.disabled",
-            "checkbox.indicator(CHECKED).stroke.color",
-            DISABLED_CHECKBOX_OUTLINE,
-        ),
-        (
-            "basic.checkboxes.disabled.indicator",
-            "checkbox.indicator(CHECKED).stroke.color",
-            DISABLED_CHECKBOX_OUTLINE,
-        ),
-        (
             "basic.list.scrollbar",
             "scrollbar.thumb(UNFOCUSED_VIEW).fill",
             UNFOCUSED_LIST_BAR,
@@ -34981,13 +35042,6 @@ mod tests {
          from toolbar.button(HOVER) or toolbar.button(PRESSED) where a rule states it, else \
          iced's own, never the push button's button.body(HOVER).fill or \
          button.body(PRESSED).fill (src/next/styles.rs, `toolbar_button`)";
-
-    /// Why the disabled check box's listed outline home moves no row it
-    /// draws.
-    const DISABLED_CHECKBOX_OUTLINE: &str = "\
-         the element's home checkbox.indicator(CHECKED).stroke.color moves the enabled \
-         checked statuses alone; the disabled box is drawn at \
-         `Disabled { is_checked: true }`";
 
     /// The contract's home export parses, and holds every colour home the
     /// element list gives an element: a home whose value is a colour in a
@@ -35623,6 +35677,23 @@ mod tests {
         let mut patched = r.clone();
         patched.apply_patch(&patch);
         Some(patched)
+    }
+
+    /// `r` with `tab.tab(HOVER).fill` unstated, as no bundled preset leaves
+    /// it: a rule that requires no state and is kept off the open tab gives
+    /// every tab not open its fill at rest, which clears the fill's
+    /// `from_state` bit there (spec §2, `from_state`), the open tab's fills
+    /// kept.
+    fn tab_hover_fill_unstated(r: &mut native_theme::next::ResolvedTheme) {
+        use native_theme::next::{PartPatch, TabRule, ThemePatch};
+        let rest = r.tab.tab(WidgetState::NONE).fill;
+        r.apply_patch(
+            &ThemePatch::new().tab(
+                TabRule::new()
+                    .not_states(WidgetState::SELECTED)
+                    .tab(PartPatch::new().fill(rest)),
+            ),
+        );
     }
 
     /// Whether the colour at `home` moves what `drawn` draws under `r`: `r`
@@ -36706,8 +36777,10 @@ mod tests {
     /// without `iced_aw`, a flat button's and a tab's colours as their
     /// drawing functions draw them in the state shown, and a closed tab
     /// neither framed nor marked. Each case, and each tab open and closed, is
-    /// seen both ways somewhere among the presets. The open tabs are read once
-    /// per tab state: the side panel hidden opens the tabs it opens shown.
+    /// seen both ways somewhere among the presets, the hovered tab's fill
+    /// unstated on macos-tahoe patched ([`tab_hover_fill_unstated`]). The
+    /// open tabs are read once per tab state: the side panel hidden opens the
+    /// tabs it opens shown.
     #[test]
     fn a_route_names_a_widget_only_where_the_state_draws_it() {
         recording(|| {
@@ -36717,15 +36790,30 @@ mod tests {
             };
             let mut failures = Vec::new();
             let mut seen = BTreeSet::new();
-            // Every preset the Theme row can install, the 0.8.0 model's.
-            for key in Preset::ALL.iter().map(|preset| preset.as_str()) {
+            // Every preset the Theme row can install, the 0.8.0 model's, and
+            // macos-tahoe with no rule for a state stating the hovered tab's
+            // fill, which every bundled preset states.
+            let runs = Preset::ALL
+                .iter()
+                .map(|preset| (preset.as_str(), false))
+                .chain([("macos-tahoe", true)]);
+            for (name, hover_unstated) in runs {
+                let key = if hover_unstated {
+                    format!("{name}, tab hover fill unstated")
+                } else {
+                    name.to_owned()
+                };
                 for mode in [AppColorMode::Light, AppColorMode::Dark] {
-                    let choice = ThemeChoice::Preset(key.to_owned());
+                    let choice = ThemeChoice::Preset(name.to_owned());
                     assert!(
                         state.install_in_mode(choice, mode),
                         "{key} ({mode:?}): {:?}",
                         state.error_message
                     );
+                    if hover_unstated {
+                        tab_hover_fill_unstated(&mut state.next_resolved);
+                        tab_hover_fill_unstated(&mut state.next_inactive);
+                    }
                     let r = state.next_shown();
                     seen.insert(("stroke", next_check_stroke(r).is_some()));
                     // Every bundled preset states a flat button's hover and
@@ -37050,10 +37138,14 @@ mod tests {
     }
 
     /// M9x CI item I4 (M9-172): the Basic page's focused field is drawn with
-    /// the installed 0.8.0 theme's focus ring: `focus_ring.stroke`'s width wide, from
-    /// `focus_ring.offset` out from the field's edge, in its colour
-    /// ([`next_focus_ring`]). Under macos-tahoe (3 at -1) and
-    /// windows-11 (2 at +1), in both modes, with the field clicked into, a
+    /// the installed 0.8.0 theme's focus ring, the one
+    /// `iced_next::part_focus` picks for the focused field: its stroke's
+    /// width wide, from its offset out from the field's edge, in its colour
+    /// ([`next_focus_ring`]). Under macos-tahoe (the text field's own ring,
+    /// `input.field(FOCUSED).focus`, 4 at -1, measured: os-probe runs
+    /// 45231684209 and 45252258079, `native-theme/src/next/presets/macos.rs`)
+    /// and windows-11 (the global ring, 2 at +1), in both modes, with the
+    /// field clicked into, a
     /// pixel left of the field on its middle row that lies wholly in the
     /// ring's band outside the field is the ring's colour over the ground,
     /// the ground read past the ring, to 3 per channel. windows-11 says its
@@ -37061,10 +37153,10 @@ mod tests {
     /// twice: with `focus_ring.trigger` set to `None`, the
     /// ring's geometry at +1 as above, and as the preset states it, where
     /// the pixel in the band is the ground's, to the same 3 per channel.
-    /// Under macos-tahoe with the indicator made a fill, which iced's ring
-    /// cannot draw (`iced_next::ring_look` is `Unmapped`), the field is
-    /// drawn alone: it is laid out, and the pixel in the band is the
-    /// ground's. Under adwaita (2 at -2, inset at the edge) the ring is the
+    /// Under windows-11 with `focus_ring.trigger` set to `None` and the
+    /// indicator made a fill, which iced's ring cannot draw
+    /// (`iced_next::part_ring_look` is `Unmapped`), the field is drawn alone:
+    /// it is laid out, and the pixel in the band is the ground's. Under adwaita (2 at -2, inset at the edge) the ring is the
     /// band over the field's outermost 2 px (spec §2, `FocusIndicator`): a
     /// pixel in it is the ring's colour over the field's fill, read past
     /// the band. Under windows-11 with the text field patched to state a
@@ -37095,7 +37187,7 @@ mod tests {
             ("macos-tahoe", false, false, false, true),
             ("windows-11", true, false, false, true),
             ("windows-11", false, false, false, false),
-            ("macos-tahoe", false, true, false, false),
+            ("windows-11", true, true, false, false),
             ("adwaita", false, false, false, true),
             ("windows-11", false, false, true, true),
         ];
@@ -37121,13 +37213,24 @@ mod tests {
                     state.next_resolved.apply_patch(&patch);
                     state.next_inactive.apply_patch(&patch);
                 }
-                let ring = if own_ring {
-                    (*own).clone()
-                } else {
-                    state.next_shown().focus_ring.clone()
+                let field = RingPart::Input.part(state.next_shown(), WidgetState::FOCUSED);
+                let homes = RingPart::Input.homes();
+                let Some((ring, _)) = iced_next::part_focus(state.next_shown(), &field, homes)
+                else {
+                    faults.push(format!(
+                        "{preset} {mode:?}: the field states no focus indicator"
+                    ));
+                    continue;
                 };
+                let ring = ring.clone();
+                if own_ring && ring != *own {
+                    faults.push(format!(
+                        "{preset} {mode:?}: the field's own ring is not the patched one"
+                    ));
+                    continue;
+                }
                 assert_eq!(
-                    iced_next::ring_look(state.next_shown(), 0.0).is_err(),
+                    iced_next::part_ring_look(state.next_shown(), &field, homes, 0.0).is_err(),
                     unmapped,
                     "{preset} {mode:?}: the ring's mapping is not as the run expects"
                 );
@@ -37324,29 +37427,31 @@ mod tests {
         );
     }
 
-    /// D13b: a separator spans the segments' height: under kde-breeze, which
+    /// D13b: a separator spans the segments' height: under material-3, which
     /// states a `segmented_control.separator_width` on the installed 0.8.0
-    /// theme the page lays it out by ([`NextSegmented`]), the line between
+    /// theme the page lays it out by ([`NextSegmented`]), the segments'
+    /// shared 1 px outline (platform-facts.md (§2.25); kde-breeze states
+    /// none, an overlap of the tabs' fills, not a line), the line between
     /// Day and Week is the separator's colour as the page draws it
     /// (`iced_next::styles::segment_separator`) a point below the segments'
     /// top and a point above their bottom, the row's `Shrink` height giving
     /// the separator's `Fill` the segments' height and not the page's.
     #[test]
     fn the_separators_span_the_segments_height() -> Result<(), String> {
-        let state = page_state("kde-breeze", Tab::Basic);
+        let state = page_state("material-3", Tab::Basic);
         let geometry = NextSegmented::of(state.next_shown());
         assert!(
             geometry.separator_width > 0.0,
-            "kde-breeze states no segmented_control.separator_width on the 0.8.0 model"
+            "material-3 states no segmented_control.separator_width on the 0.8.0 model"
         );
         let line = iced_next::styles::segment_separator(state.next_shown(), false)
-            .map_err(|e| format!("kde-breeze's separator: {e}"))?;
+            .map_err(|e| format!("material-3's separator: {e}"))?;
         let Some(iced::Background::Color(line)) = line(&state.current_theme).background else {
-            return Err("kde-breeze's separator is drawn with no colour".to_owned());
+            return Err("material-3's separator is drawn with no colour".to_owned());
         };
         assert!(
             (line.a - 1.0).abs() < f32::EPSILON,
-            "kde-breeze's line colour is opaque"
+            "material-3's line colour is opaque"
         );
         let (image, rects, scale) = basic_frame(&state);
         let rect = |id: &str| match rects.get(id) {
@@ -41165,11 +41270,14 @@ mod tests {
     /// `native_theme_iced::next::focus_ring`, which paints it over the
     /// field, as a band over the field where the ring is inset at its edge
     /// (adwaita), round it where it is not (macos-tahoe, windows-11,
-    /// kde-breeze), each at the home `iced_next::part_focus` picks, the
-    /// global ring's `focus_ring` here. The branches no preset reaches, read
-    /// directly ([`focus_ring_route`]) on kde-breeze patched: the field's
-    /// own ring, named at `input.field(FOCUSED).focus`; a field that states
-    /// none; a ring stated with no stroke; an indicator that is not a ring.
+    /// kde-breeze), each at the home `iced_next::part_focus` picks: the
+    /// global ring's `focus_ring`, but macos-tahoe's, whose text field states
+    /// its own, `input.field(FOCUSED).focus` (measured: os-probe runs
+    /// 45231684209 and 45252258079, `native-theme/src/next/presets/macos.rs`).
+    /// The other branches, read directly ([`focus_ring_route`]) on
+    /// kde-breeze patched: the field's own ring, named at
+    /// `input.field(FOCUSED).focus`; a field that states none; a ring stated
+    /// with no stroke; an indicator that is not a ring.
     #[test]
     fn the_focus_ring_routes_name_the_ring_that_draws_it() -> Result<(), String> {
         use native_theme::next::{FocusKind, InputRule, PartPatch, ThemePatch};
@@ -41184,11 +41292,11 @@ mod tests {
             "focus_ring.trigger",
         ];
         let drawn_by = "iced: native_theme_iced::next::focus_ring: ";
-        for (preset, band) in [
-            ("adwaita", true),
-            ("macos-tahoe", false),
-            ("windows-11", false),
-            ("kde-breeze", false),
+        for (preset, band, ring) in [
+            ("adwaita", true, "focus_ring."),
+            ("macos-tahoe", false, "input.field(FOCUSED).focus."),
+            ("windows-11", false, "focus_ring."),
+            ("kde-breeze", false, "focus_ring."),
         ] {
             let state = loaded(preset, false);
             for home in homes {
@@ -41196,7 +41304,7 @@ mod tests {
                     return Err(format!("{home} is not listed"));
                 }
                 let route = iced_route(&state, element, home);
-                if !route.starts_with(drawn_by) || !route.contains("focus_ring.") {
+                if !route.starts_with(drawn_by) || !route.contains(ring) {
                     return Err(format!("{preset} {home}: {route}"));
                 }
             }
@@ -41465,9 +41573,11 @@ mod tests {
     /// `focusOutlineColor()`, #399acc light and #5abaec dark, 1 px wide and
     /// rounded 4.5 as its highlight, filled `menu.item(HOVER).fill`; E2: a
     /// pressed one is filled `menu.item(PRESSED).fill`, Breeze's #3daee9,
-    /// lettered #ffffff light and #fcfcfc dark, and has iced's own flat
-    /// button's border, as no `PRESSED` rule of the 0.8.0 preset states a
-    /// stroke and the pressed row is asked with `PRESSED` alone; at rest and
+    /// lettered #ffffff light and #fcfcfc dark, and outlined in its fill's
+    /// colour, 1 px wide and rounded 4.5, as the 0.8.0 preset's `PRESSED`
+    /// rule states it (Breeze keeps the item's frame and draws its edge in
+    /// the fill's colour, `native-theme/src/next/presets/kde.rs`, `menu`)
+    /// and the pressed row is asked with `PRESSED` alone; at rest and
     /// disabled no row is outlined. With a `PRESSED` label (#f0a014) and a
     /// `PRESSED` stroke (#2468ac) stated on the theme a pressed row is
     /// lettered and outlined in them and a hovered one is not. Under adwaita,
@@ -41509,7 +41619,8 @@ mod tests {
             });
             if pressed_fill.as_deref() != Some("#3daee9")
                 || color_to_hex(pressed.text_color) != pressed_text
-                || pressed.border.width != 0.0
+                || color_to_hex(pressed.border.color) != "#3daee9"
+                || pressed.border.width != 1.0
                 || pressed.border.radius != iced::border::Radius::new(4.5)
             {
                 failures.push(format!("{label}: the pressed row is {pressed:?}"));
