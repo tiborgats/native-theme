@@ -51,6 +51,12 @@
 # checked one's `HOVER|CHECKED`; every state the element enters where the one leaf colours each)
 # or its axis, said in a `# homes:` comment above the entry's `homes`.
 #
+# A home the 0.8.0 model has where 0.7.2 had no field (a variant's outline, a metric 0.7.2 lacked)
+# has no leaf and no row of native-theme/tests/next_homes.toml. An element that draws one lists it
+# in `homes` with no leaf for it, and `model_only_homes` (below the header) names it once with the
+# reason 0.7.2 had no field there. Scaffolding of the 0.8.0 work, as `leaves` is: the cut deletes
+# both with that table.
+#
 # A home is one of:
 #
 #   <global>                         a field of the resolved theme outside the widgets, by its path in
@@ -213,6 +219,27 @@
 #   | Theme Map   | Theme Map  | Theme Map               | Theme Map  |
 #
 # iced's Extra widgets page is in a build with the iced connector's `iced_aw` feature only.
+
+# =============================================================================================
+# Homes of the 0.8.0 model alone
+# =============================================================================================
+#
+# Each a home some element lists with no leaf for it, and why no 0.7.2 field is there. Read by
+# showcase-support's `the_homes_are_the_leaves_rows_homes` and
+# `the_model_only_homes_have_no_row_and_are_listed`, and by native-theme-egui's
+# `every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row`.
+
+model_only_homes = [
+  { home = "button.body(NONE; variant=Primary).stroke.color", reason = "the primary button's own outline at rest (docs/v0.8.0-spec.md §3, ButtonQuery::primary()); 0.7.2's primary button has a fill and a text colour of its own and its outline is the push button's, button.border.color" },
+  { home = "button.body(HOVER; variant=Primary).stroke.color", reason = "the primary button's own outline under the pointer (docs/v0.8.0-spec.md §3); 0.7.2 has none apart from the push button's, button.hover_border_color" },
+  { home = "button.body(PRESSED; variant=Primary).stroke.color", reason = "the primary button's own outline while pressed (docs/v0.8.0-spec.md §3); 0.7.2 has none apart from the push button's, button.hover_border_color" },
+  { home = "button.body(NONE; variant=Primary).corners", reason = "the primary button's own corners (docs/v0.8.0-spec.md §3); 0.7.2 has none apart from the push button's, button.border.corner_radius" },
+  { home = "button.body(NONE; variant=Primary).stroke.width", reason = "the primary button's own outline width (docs/v0.8.0-spec.md §3); 0.7.2 has none apart from the push button's, button.border.line_width" },
+  { home = "scrollbar.thumb(NONE).corners", reason = "the scroll bar thumb's own corners (docs/v0.8.0-spec.md §5, `scrollbar`'s `thumb` part); 0.7.2's `[scrollbar]` (docs/property-registry.toml) has no radius field" },
+  { home = "scrollbar.thumb(UNFOCUSED_VIEW).corners", reason = "the thumb's corners in a view without the focus (docs/v0.8.0-spec.md §5, `scrollbar`); 0.7.2 has no radius field for the thumb in any state" },
+  { home = "segmented_control.separator(NONE).fill", reason = "the colour of the line between two segments (docs/v0.8.0-spec.md §5, `segmented_control`'s `separator` part); 0.7.2 states only the line's width, segmented_control.separator_width, and no colour of its own" },
+  { home = "switch.label_gap", reason = "the space between a switch's track and its label (docs/v0.8.0-spec.md §5, `switch`); 0.7.2's switch has no label, so no field of it places one (§5: the switch's label has no 0.7.2 field)" },
+]
 
 # =============================================================================================
 # Chrome
@@ -489,6 +516,26 @@ sample = { text = "glyph" }
 id = "chrome.side_panel.settings.theme"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.theme_label"
+leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "input.selection_background", "defaults.line_height"]
+# homes: input.selection_background: the selection of a Theme row its toolkit lets one type in
+#          (iced's ComboBox).
+homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "colors.text_selection.background", "typography.line_height_multiplier"]
+states = ["Normal"]
+sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
+
+[[element]]
+id = "chrome.side_panel.settings.palette_label"
+name = "Side panel label"
+parent = "chrome.side_panel.settings.theme"
+leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
+states = ["Normal"]
+sample = { text = "glyph" }
+
+[[element]]
+id = "chrome.side_panel.settings.palette"
+name = "Drop-down"
+parent = "chrome.side_panel.settings.palette_label"
 leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
 homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
@@ -497,7 +544,7 @@ sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = 
 [[element]]
 id = "chrome.side_panel.settings.mode_label"
 name = "Side panel label"
-parent = "chrome.side_panel.settings.theme"
+parent = "chrome.side_panel.settings.palette"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
 homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
@@ -601,8 +648,8 @@ sample = { text = "glyph" }
 id = "chrome.info.copy"
 name = "Copy button"
 parent = "chrome.info.title"
-leaves = ["button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height", "sidebar.font", "sidebar.font.color"]
-homes = ["button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color"]
+leaves = ["button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height", "sidebar.font", "sidebar.font.color"]
+homes = ["button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = { glyph = [0.1, 0.1, 0.9, 0.9] } }
@@ -712,8 +759,8 @@ sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } 
 id = "chrome.page_tabs.menu"
 name = "Pages menu button"
 parent = "chrome.page_tabs"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Normal"]
 
 [[element]]
@@ -745,15 +792,19 @@ homes = ["status_bar.bar.fill", "status_bar.bar.stroke.color", "status_bar.bar.s
 states = ["Normal"]
 sample = { fill = [0.6, 0.5], border = [0.6, 0.0, 0.0, 0.5] }
 
-# The side-panel toggle shows the panel open. It is a flat button, and `button.checked_*` are a
-# raised button's (Breeze fills a checked flat button apart, breezehelper.cpp:680-684); the
-# pressed colours are listed until the maintainer settles it.
+# The side-panel toggle shows the panel open: a flat button that is checked
+# (docs/v0.8.0-spec.md §10, rule 0a). Each connector draws it in
+# button.body(CHECKED; variant=Flat).fill and
+# button.label(CHECKED; variant=Flat).color where a rule states them for the checked state, else
+# in its toolkit's own selected look, never in another state's colours. `button.checked_*` are a
+# raised button's leaves in 0.7.2 (Breeze fills a checked flat button apart,
+# breezehelper.cpp:680-684); their homes are the checked state's.
 [[element]]
 id = "chrome.status_bar.toggle"
 name = "Side panel toggle"
 parent = "chrome.status_bar"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.checked_background", "button.checked_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -911,7 +962,10 @@ parent = "basic.buttons.default"
 leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.primary_background", "button.primary_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 # homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
 #          (0.7.2), and the button is hovered and pressed.
-homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(NONE; variant=Primary).fill", "button.label(NONE; variant=Primary).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
+#        the outline's colours, corners and width twice: at the push button's homes, which gpui's
+#          Primary Button (next::geometry::button) and egui's selected Button read, and at the
+#          primary variant's, which iced's styles::button_primary reads (model_only_homes).
+homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(NONE; variant=Primary).fill", "button.label(NONE; variant=Primary).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE; variant=Primary).stroke.color", "button.body(HOVER; variant=Primary).stroke.color", "button.body(PRESSED; variant=Primary).stroke.color", "button.body(NONE; variant=Primary).corners", "button.body(NONE; variant=Primary).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Primary"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -1204,20 +1258,20 @@ sample = { text = "glyph" }
 id = "basic.radios.option_a"
 name = "Radio button"
 parent = "basic.radios.heading"
-leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Selected).
-homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.dot(CHECKED).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]", "radio.label_gap", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
+homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.dot(CHECKED).fill", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]", "radio.label_gap", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Selected"]
 
 [[element]]
 id = "basic.radios.option_a.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Selected).
-homes = ["checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width"]
+homes = ["radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1248,20 +1302,20 @@ sample = { text = "glyph" }
 id = "basic.radios.option_b"
 name = "Radio button"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Normal).
-homes = ["radio.indicator(NONE).fill", "radio.label(NONE)", "radio.label(NONE).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.label_gap", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
+homes = ["radio.indicator(NONE).fill", "radio.label(NONE)", "radio.label(NONE).color", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.label_gap", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Normal"]
 
 [[element]]
 id = "basic.radios.option_b.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_b"
-leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.background_color", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
 # homes: radio.* not checkbox.*: a radio button.
 #        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Normal).
-homes = ["radio.indicator(NONE).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width"]
+homes = ["radio.indicator(NONE).fill", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1295,7 +1349,7 @@ parent = "basic.switches.heading"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.unchecked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 # homes: switch.thumb_border_color, switch.thumb_background: NONE, not CHECKED: shown unchecked
 #          (Off).
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width", "switch.label_gap"]
 states = ["Off"]
 
 [[element]]
@@ -1327,7 +1381,7 @@ parent = "basic.switches.off.track"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
 # homes: defaults.font, defaults.font.color: switch.label(NONE),
 #        the label's text part, which the switch's label is drawn in (v0.8.0-spec.md §5, switch).
-homes = ["switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier"]
+homes = ["switch.label(NONE)", "switch.label(NONE).color", "typography.line_height_multiplier", "switch.label_gap"]
 states = ["Off"]
 part = true
 sample = { text = "glyph" }
@@ -1339,7 +1393,7 @@ parent = "basic.switches.off"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 # homes: switch.thumb_border_color: CHECKED, not NONE: shown checked (On).
 #        defaults.font: switch.label(NONE), not CHECKED: no rule for CHECKED states the label's font.
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.track(HOVER|CHECKED).fill", "switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier", "switch.track(CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.track(HOVER|CHECKED).fill", "switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier", "switch.track(CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width", "switch.label_gap"]
 states = ["On"]
 
 [[element]]
@@ -1371,7 +1425,7 @@ leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
 # homes: defaults.font: switch.label(NONE), not CHECKED: no rule for CHECKED states the label's
 #        font; defaults.font.color: switch.label(CHECKED), the label's text part, which the
 #        switch's label is drawn in (v0.8.0-spec.md §5, switch).
-homes = ["switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier"]
+homes = ["switch.label(NONE)", "switch.label(CHECKED).color", "typography.line_height_multiplier", "switch.label_gap"]
 states = ["On"]
 part = true
 sample = { text = "glyph" }
@@ -1385,7 +1439,7 @@ leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diame
 #        switch.thumb_border_color: CHECKED, not NONE: shown checked (On, disabled).
 #        defaults.font: switch.label(NONE), not DISABLED|CHECKED: no rule for either flag states the
 #        label's font.
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.disabled_opacity", "switch.track(DISABLED|CHECKED).fill", "switch.thumb(DISABLED|CHECKED).fill", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color", "switch.track(CHECKED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.disabled_opacity", "switch.track(DISABLED|CHECKED).fill", "switch.thumb(DISABLED|CHECKED).fill", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color", "switch.track(CHECKED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width", "switch.label_gap"]
 states = ["On, disabled"]
 
 [[element]]
@@ -1418,7 +1472,7 @@ leaves = ["switch.disabled_opacity", "defaults.font", "defaults.line_height", "d
 # homes: defaults.font: switch.label(NONE), not DISABLED|CHECKED: no rule for either flag states
 #        the label's font; defaults.disabled_text_color: switch.label(DISABLED|CHECKED), the label's
 #        text part, which the switch's label is drawn in (v0.8.0-spec.md §5, switch).
-homes = ["switch.disabled_opacity", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color"]
+homes = ["switch.disabled_opacity", "switch.label(NONE)", "typography.line_height_multiplier", "switch.label(DISABLED|CHECKED).color", "switch.label_gap"]
 states = ["On, disabled"]
 part = true
 sample = { text = "glyph" }
@@ -1812,7 +1866,9 @@ id = "basic.segmented.divider_1"
 name = "Segment divider"
 parent = "basic.segmented.day"
 leaves = ["segmented_control.separator_width_px", "segmented_control.border.color"]
-homes = ["segmented_control.separator_width", "segmented_control.track(NONE).stroke.color"]
+# homes: the line's colour twice: segmented_control.separator(NONE).fill, which gpui and iced
+#          draw it in (model_only_homes), and the frame's, which egui-widgets draws it in.
+homes = ["segmented_control.separator_width", "segmented_control.track(NONE).stroke.color", "segmented_control.separator(NONE).fill"]
 states = ["Normal"]
 part = true
 sample = { line = [0.5, 0.5] }
@@ -1832,7 +1888,9 @@ id = "basic.segmented.divider_2"
 name = "Segment divider"
 parent = "basic.segmented.week"
 leaves = ["segmented_control.separator_width_px", "segmented_control.border.color"]
-homes = ["segmented_control.separator_width", "segmented_control.track(NONE).stroke.color"]
+# homes: the line's colour twice: segmented_control.separator(NONE).fill, which gpui and iced
+#          draw it in (model_only_homes), and the frame's, which egui-widgets draws it in.
+homes = ["segmented_control.separator_width", "segmented_control.track(NONE).stroke.color", "segmented_control.separator(NONE).fill"]
 states = ["Normal"]
 part = true
 sample = { line = [0.5, 0.5] }
@@ -2172,12 +2230,15 @@ sample = { text = "glyph" }
 id = "basic.list.scrollbar"
 name = "Scrollbar"
 parent = "basic.list.frame"
-leaves = ["scrollbar.track_color", "scrollbar.thumb_color", "scrollbar.thumb_hover_color", "scrollbar.groove_width_px", "scrollbar.min_thumb_length_px", "scrollbar.thumb_width_px", "scrollbar.overlay_mode", "scrollbar.thumb_active_color"]
+leaves = ["scrollbar.track_color", "scrollbar.thumb_color", "scrollbar.thumb_hover_color", "scrollbar.groove_width_px", "scrollbar.min_thumb_length_px", "scrollbar.thumb_width_px", "scrollbar.overlay_mode", "scrollbar.thumb_active_color", "defaults.border.corner_radius_px"]
 # homes: scrollbar.groove_width_px: orientation=Vertical, the list's scrollbar is vertical.
 #        scrollbar.thumb_width_px: orientation=Vertical, the list's scrollbar is vertical.
 #        scrollbar.thumb_color: also kde-breeze's scrollbar.thumb(UNFOCUSED_VIEW).fill
 #          (homes_by_preset).
-homes = ["scrollbar.track(NONE).fill", "scrollbar.thumb(NONE).fill", "scrollbar.thumb(UNFOCUSED_VIEW).fill", "scrollbar.thumb(HOVER).fill", "scrollbar.track(NONE; orientation=Vertical).min_size[0]", "scrollbar.track(NONE; orientation=Vertical).max_size[0]", "scrollbar.min_thumb_length", "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]", "scrollbar.overlay_mode", "scrollbar.thumb(PRESSED).fill"]
+#        the thumb's corners: layout.corner_radius, which gpui rounds it by and egui where the
+#          theme states no thumb corners, and the thumb's own, which iced and egui read, the
+#          view without the focus's in iced's inactive window (model_only_homes).
+homes = ["scrollbar.track(NONE).fill", "scrollbar.thumb(NONE).fill", "scrollbar.thumb(UNFOCUSED_VIEW).fill", "scrollbar.thumb(HOVER).fill", "scrollbar.track(NONE; orientation=Vertical).min_size[0]", "scrollbar.track(NONE; orientation=Vertical).max_size[0]", "scrollbar.min_thumb_length", "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]", "scrollbar.overlay_mode", "scrollbar.thumb(PRESSED).fill", "layout.corner_radius", "scrollbar.thumb(NONE).corners", "scrollbar.thumb(UNFOCUSED_VIEW).corners"]
 states = ["Normal"]
 part = true
 when = "the scrollbar is shown at rest"
@@ -2187,11 +2248,14 @@ sample = { track = [0.5, 0.95] }
 id = "basic.list.scrollbar.thumb"
 name = "Scrollbar thumb"
 parent = "basic.list.scrollbar"
-leaves = ["scrollbar.thumb_color", "scrollbar.min_thumb_length_px", "scrollbar.thumb_width_px"]
+leaves = ["scrollbar.thumb_color", "scrollbar.min_thumb_length_px", "scrollbar.thumb_width_px", "defaults.border.corner_radius_px"]
 # homes: scrollbar.thumb_width_px: orientation=Vertical, the list's scrollbar is vertical.
 #        scrollbar.thumb_color: also kde-breeze's scrollbar.thumb(UNFOCUSED_VIEW).fill
 #          (homes_by_preset).
-homes = ["scrollbar.thumb(NONE).fill", "scrollbar.thumb(UNFOCUSED_VIEW).fill", "scrollbar.min_thumb_length", "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]"]
+#        the thumb's corners: layout.corner_radius, which gpui rounds it by and egui where the
+#          theme states no thumb corners, and the thumb's own, which iced and egui read, the
+#          view without the focus's in iced's inactive window (model_only_homes).
+homes = ["scrollbar.thumb(NONE).fill", "scrollbar.thumb(UNFOCUSED_VIEW).fill", "scrollbar.min_thumb_length", "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]", "layout.corner_radius", "scrollbar.thumb(NONE).corners", "scrollbar.thumb(UNFOCUSED_VIEW).corners"]
 states = ["Normal"]
 part = true
 when = "the scrollbar is shown at rest"

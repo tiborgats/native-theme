@@ -622,13 +622,53 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      the window is not focused, list.item_label's query with UNFOCUSED_VIEW where a rule states \
      it for that state (pages::basic::RowLook::of)";
 
+/// The route of a home of the primary button's own variant: egui reads none of them.
+const PRIMARY_VARIANT_UNREAD: &str = "not drawn: the primary button is drawn as egui's selected \
+     Button in the button scope (pages::basic, primary), outlined and rounded as the push \
+     button, by button.body(NONE) and its hovered and pressed states";
+
+/// The route of the scroll bar thumb's corners, which the atlas writes as the scroll bar scope's
+/// radius, which no `mapping.toml` row holds.
+const THUMB_CORNERS: &str = "egui: the scroll bar scope's corner_radius, the thumb's and its \
+     trough's, where stated; else layout.corner_radius's (native-theme-egui next/build.rs, \
+     thumb_radius; style/derived.rs, scrollbar_radii)";
+/// The route of the thumb's corners in a view without the focus.
+const UNFOCUSED_THUMB_CORNERS: &str = "not reachable: egui rounds the thumb alike whether its view \
+     has the focus or not, by scrollbar.thumb(NONE).corners (native-theme-egui next/build.rs, \
+     thumb_radius)";
+
+/// The route of the segmented control's separator colour on a divider: the companion crate's
+/// control draws its dividers in its outline's colour.
+const SEGMENT_DIVIDER_UNREAD: &str = "not drawn: native-theme-egui-widgets SegmentedControl \
+     (docs/archive/todo_egui-widgets-spec.md §4.4) paints its dividers in its outline's colour, \
+     the scope's segmented_control.track(NONE).stroke.color (native-theme-egui-widgets \
+     segmented_control.rs, Outline::paint_lines)";
+
+/// The route of a flat button's hovered outline (the side-panel toggle, the Pages menu button,
+/// the Copy box), which `next::flat_button` lays over the scope's hovered entry per call, not
+/// the atlas's push button row.
+const FLAT_HOVER_EDGE: &str = "egui: per call, the flat button's outline under the pointer, \
+     button.body(HOVER; variant=Flat).stroke.color where a rule states it for HOVER, else egui's \
+     own treatment of the hover (native-theme-egui next::flat_button; demo::flat)";
+/// The route of a flat button's pressed outline, as [`FLAT_HOVER_EDGE`]: egui draws pressed and
+/// focused alike, in its one `active` entry.
+const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline pressed or focused, \
+     egui's one active entry: button.body(FOCUS_VISIBLE; variant=Flat).stroke.color, else \
+     button.body(PRESSED; variant=Flat).stroke.color, where a rule states it for the state, else \
+     egui's own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+
 /// The homes a page applies per call where `mapping.toml`'s row names a style field the
 /// connector writes, or none, by element id (a prefix, for the rows) and home: the List's and
 /// the table's frames, which `pages::basic::list_frame` paints, the rows whose fills
 /// `pages::basic::inner_corners` rounds where they meet a frame, the selected rows' unfocused
 /// look and a hovered list row's outline, which `pages::basic::RowLook::of` takes, the hover
-/// outline the Basic table's rows never take, and the menu bar's fill, which
-/// `chrome::menu_panel` paints.
+/// outline the Basic table's rows never take, the menu bar's fill, which
+/// `chrome::menu_panel` paints, the side-panel toggle's checked look, which `chrome::ghost_button`
+/// lays over egui's selected button, the flat buttons' hovered and pressed outlines, which
+/// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
+/// primary button's own variant and the segmented control's separator colour, which egui reads
+/// none of, and
+/// the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.list.frame",
@@ -733,6 +773,113 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "menu_bar.bar(NONE).fill",
         "egui: per call, the menu bar panel's fill (chrome::menu_panel)",
     ),
+    (
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).stroke.color",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(HOVER; variant=Primary).stroke.color",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(PRESSED; variant=Primary).stroke.color",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).corners",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).stroke.width",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(CHECKED).fill",
+        "egui: per call, the toggle's fill while the side panel is open, \
+         button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED, else egui's \
+         own selected button's, visuals.selection.bg_fill (chrome::ghost_button, \
+         chrome::toggle_checked)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.label(CHECKED).color",
+        "egui: per call, the toggle's label colour while the side panel is open, \
+         button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED, else \
+         egui's own selected button's, visuals.selection.stroke; an icon shown in the label's \
+         place keeps the colour it loads in (chrome::ghost_button, chrome::toggle_checked)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(HOVER).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PRESSED_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(HOVER).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PRESSED_EDGE,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(HOVER).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PRESSED_EDGE,
+    ),
+    (
+        "basic.list.scrollbar",
+        "scrollbar.thumb(NONE).corners",
+        THUMB_CORNERS,
+    ),
+    (
+        "basic.list.scrollbar.thumb",
+        "scrollbar.thumb(NONE).corners",
+        THUMB_CORNERS,
+    ),
+    (
+        "basic.list.scrollbar",
+        "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        UNFOCUSED_THUMB_CORNERS,
+    ),
+    (
+        "basic.list.scrollbar.thumb",
+        "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        UNFOCUSED_THUMB_CORNERS,
+    ),
+    (
+        "basic.segmented.divider_1",
+        "segmented_control.separator(NONE).fill",
+        SEGMENT_DIVIDER_UNREAD,
+    ),
+    (
+        "basic.segmented.divider_2",
+        "segmented_control.separator(NONE).fill",
+        SEGMENT_DIVIDER_UNREAD,
+    ),
+    (
+        "chrome.side_panel.settings.theme",
+        "colors.text_selection.background",
+        "not reachable: the Theme row is a ComboBox, which has no text field to select text in \
+         (chrome::settings_rows)",
+    ),
 ];
 
 /// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
@@ -793,10 +940,17 @@ pub(crate) const TAB_LABEL_PER_CALL: [(&str, &str); 1] = [(
      body's (demo::next_tab_label)",
 )];
 
-/// The homes of a switch's label the companion crate's switch reads from the installed 0.8.0
-/// theme at its home (`pages::basic::switches`), which no `mapping.toml` row holds, each with
-/// its route.
-pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 4] = [
+/// The homes of a switch's label and of its place the companion crate's switch reads from the
+/// installed 0.8.0 theme at its home (`pages::basic::switches`), which no `mapping.toml` row
+/// holds, each with its route.
+pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
+    (
+        "switch.label_gap",
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it: the space between the track and the label where stated, else egui's own \
+         spacing.icon_spacing; the two at the row's ends where switch.label_gap_stretches is \
+         true (native-theme-egui-widgets switch.rs, Geometry::next_of, switch_ui)",
+    ),
     (
         "switch.label(NONE)",
         "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \

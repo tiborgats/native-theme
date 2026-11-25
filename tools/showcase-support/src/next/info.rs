@@ -347,14 +347,18 @@ mod tests {
     }
 
     /// Every home of an element is a home of one of its leaves' rows (a
-    /// preset's own included), and every leaf has one of its row's homes
-    /// among the element's homes.
+    /// preset's own included) or one of the list's `model_only_homes`, and
+    /// every leaf has one of its row's homes among the element's homes.
     #[test]
     fn the_homes_are_the_leaves_rows_homes() -> Result {
         let rows = rows()?;
+        let model_only: BTreeSet<String> = crate::elements::model_only_homes()?
+            .into_iter()
+            .map(|entry| entry.home)
+            .collect();
         let mut faults = Vec::new();
         for element in crate::elements::showcase_elements()? {
-            let mut allowed = BTreeSet::new();
+            let mut allowed = model_only.clone();
             for leaf in &element.leaves {
                 let Some(c) = candidates(leaf, &rows) else {
                     faults.push(format!("{}: no row reads `{leaf}`", element.id));
@@ -372,6 +376,49 @@ mod tests {
                 if !allowed.contains(home) {
                     faults.push(format!("{}: `{home}` is no home of its leaves", element.id));
                 }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+        Ok(())
+    }
+
+    /// Each of the list's `model_only_homes` is named once, by no row of the
+    /// table of homes (`homes` or `homes_by_preset`; a row's home would make
+    /// it a leaf's), and is listed by an element, so no entry is stale.
+    #[test]
+    fn the_model_only_homes_have_no_row_and_are_listed() -> Result {
+        let rows = rows()?;
+        let by_rows: BTreeSet<String> = rows
+            .values()
+            .flat_map(|row| {
+                let by_preset: Vec<String> = row
+                    .get("homes_by_preset")
+                    .and_then(toml::Value::as_table)
+                    .into_iter()
+                    .flat_map(|presets| presets.values())
+                    .filter_map(toml::Value::as_array)
+                    .flatten()
+                    .filter_map(toml::Value::as_str)
+                    .map(str::to_string)
+                    .collect();
+                strings(row, "homes").into_iter().chain(by_preset)
+            })
+            .collect();
+        let listed: BTreeSet<String> = crate::elements::showcase_elements()?
+            .into_iter()
+            .flat_map(|element| element.homes)
+            .collect();
+        let mut seen = BTreeSet::new();
+        let mut faults = Vec::new();
+        for entry in crate::elements::model_only_homes()? {
+            if !seen.insert(entry.home.clone()) {
+                faults.push(format!("{}: named twice", entry.home));
+            }
+            if by_rows.contains(&entry.home) {
+                faults.push(format!("{}: a row of the table names it", entry.home));
+            }
+            if !listed.contains(&entry.home) {
+                faults.push(format!("{}: no element lists it", entry.home));
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");

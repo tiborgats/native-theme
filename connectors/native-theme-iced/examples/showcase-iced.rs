@@ -6972,8 +6972,8 @@ fn setting<'a>(
 /// The Palette row of the theme settings, between Theme and Mode as the gpui
 /// showcase's: its label, set as [`setting`] sets one, over a
 /// [`setting_picker`] of [`palette_choices`], `none` where no palette is
-/// laid over the theme. Neither is an element of the list, which has no
-/// palette row. The label carries the tooltip saying what a palette
+/// laid over the theme, the list's `chrome.side_panel.settings.palette_label`
+/// and `chrome.side_panel.settings.palette`. The label carries the tooltip saying what a palette
 /// recolours and that the mode follows it ([`PALETTE_TOOLTIP`]) and, where
 /// High contrast resolved the theme without the palette chosen (spec §6,
 /// resolution step 1), that too: on the label, not the drop-down, so it
@@ -7004,7 +7004,12 @@ fn palette_setting(state: &State) -> Element<'_, Message> {
         Message::ThemePaletteSelected,
         None,
     );
-    column![label, picker].spacing(settings_gap(r)).into()
+    column![
+        tagged("chrome.side_panel.settings.palette_label", label),
+        tagged("chrome.side_panel.settings.palette", picker),
+    ]
+    .spacing(settings_gap(r))
+    .into()
 }
 
 /// The gap between the theme settings' rows, and between each row's label
@@ -9194,13 +9199,16 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
             Drawing::enabled(TEXT_INPUT)
         }
         _ if under("basic.text_area") => Drawing::enabled(&["styles::text_editor."]),
-        // The Theme row is a field in the drop-down's look, never drawn open
+        // The Theme row is a field in the drop-down's look, never drawn open,
+        // which selects typed text in the text field's selection
         // ([`theme_picker_style`]).
-        _ if id == "chrome.side_panel.settings.theme" => {
-            Drawing::only(&["styles::pick_list."], &[], &["Opened"])
-        }
+        _ if id == "chrome.side_panel.settings.theme" => Drawing::only(
+            &["styles::pick_list.", "styles::text_input.selection"],
+            &[],
+            &["Opened"],
+        ),
         _ if under("basic.drop_down")
-            || ["mode", "icon_theme"]
+            || ["palette", "mode", "icon_theme"]
                 .iter()
                 .any(|s| id == format!("chrome.side_panel.settings.{s}")) =>
         {
@@ -9527,6 +9535,8 @@ fn ghost_home(home: &str) -> Option<&'static str> {
         "button.label(PRESSED).color" => "button.label(PRESSED;variant=Flat).color",
         "button.body(CHECKED).fill" => "button.body(CHECKED;variant=Flat).fill",
         "button.label(CHECKED).color" => "button.label(CHECKED;variant=Flat).color",
+        "button.body(HOVER).stroke.color" => "button.body(HOVER;variant=Flat).stroke.color",
+        "button.body(PRESSED).stroke.color" => "button.body(PRESSED;variant=Flat).stroke.color",
         _ => return None,
     })
 }
@@ -9559,6 +9569,8 @@ fn ghost_route(
     let checked = drawn_state_fill(&b.body(flat(WidgetState::CHECKED))).is_some();
     let checked_label =
         iced_next::state_text_color_of(&b.label(flat(WidgetState::CHECKED))).is_some();
+    let edge = |state: WidgetState| b.body(flat(state)).from_state.contains(PartStated::STROKE);
+    let (hover_edge, pressed_edge) = (edge(WidgetState::HOVER), edge(WidgetState::PRESSED));
     if let Some(line) = unmapped_fill_route(
         home,
         &[
@@ -9724,6 +9736,24 @@ fn ghost_route(
                  button.label(CHECKED;variant=Flat).color"
             }
         },
+        "button.body(HOVER).stroke.color" if hover_edge => {
+            "ghost_button: the Hovered border's colour, selected or not, \
+             button.body(HOVER;variant=Flat).stroke.color, on the bounds over the padding \
+             (next_edge)"
+        }
+        "button.body(HOVER).stroke.color" => {
+            "not drawn: button.body(HOVER;variant=Flat).stroke is unstated, so the Hovered \
+             border is iced's own flat button's (button::text)"
+        }
+        "button.body(PRESSED).stroke.color" if pressed_edge => {
+            "ghost_button: the Pressed border's colour, selected or not, \
+             button.body(PRESSED;variant=Flat).stroke.color, on the bounds over the padding \
+             (next_edge)"
+        }
+        "button.body(PRESSED).stroke.color" => {
+            "not drawn: button.body(PRESSED;variant=Flat).stroke is unstated, so the Pressed \
+             border is iced's own flat button's (button::text)"
+        }
         _ => "not drawn: ghost_button reads no such colour",
     };
     route.to_owned()
@@ -11239,7 +11269,8 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
     };
     // The primary button is outlined in its own variant's
     // (`ButtonSource::primary`).
-    let outline = if under("basic.buttons.primary") {
+    let primary = under("basic.buttons.primary");
+    let outline = if primary {
         "button.body(NONE; variant=Primary)"
     } else {
         "button.body(NONE)"
@@ -11271,13 +11302,19 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
              plus its stroke width, iced's own (button::DEFAULT_PADDING) where unstated"
                 .to_owned()
         }
-        "button.body(NONE).corners" => {
+        "button.body(NONE).corners" | "button.body(NONE).stroke.width" if primary => format!(
+            "not drawn: {class} rounds and edges the primary button by its own variant's \
+             query, button.body(NONE; variant=Primary), not by this one"
+        ),
+        "button.body(NONE).corners" | "button.body(NONE; variant=Primary).corners" => {
             format!("{class}: button::Style::border.radius, {outline}.corners")
         }
-        "button.body(NONE).stroke.width" => format!(
-            "{class}: button::Style::border.width, {outline}.stroke.width, painted over the \
-             padding"
-        ),
+        "button.body(NONE).stroke.width" | "button.body(NONE; variant=Primary).stroke.width" => {
+            format!(
+                "{class}: button::Style::border.width, {outline}.stroke.width, painted over the \
+                 padding"
+            )
+        }
         "button.disabled_opacity" => {
             "styles::button: the Disabled colours' alpha times button.disabled_opacity (iced \
              has no widget opacity)"
@@ -11410,9 +11447,9 @@ fn check_box_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) 
 
 /// The route of the home `home` of an element of the Basic page's radios:
 /// the label, the gap, the circle's outline width, and the circle's and
-/// the dot's sizes `next_radio` lays out (`iced_next::radio`), the check
-/// box's sizes the element lists not read. `None` for a home none of them
-/// reads, the colours the export routes ([`colour_home_route`]) among them.
+/// the dot's sizes `next_radio` lays out (`iced_next::radio`). `None` for a
+/// home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
 fn radio_route(home: &str) -> Option<String> {
     let route = match home {
         "radio.label(NONE)" => {
@@ -11432,13 +11469,6 @@ fn radio_route(home: &str) -> Option<String> {
         | "radio.indicator(NONE).max_size[1]" => {
             "not reachable: iced's radio is a circle Radio::size across, which \
              radio.indicator(NONE).min_size[0] sets"
-        }
-        "checkbox.indicator(NONE).min_size[0]"
-        | "checkbox.indicator(NONE).min_size[1]"
-        | "checkbox.indicator(NONE).max_size[0]"
-        | "checkbox.indicator(NONE).max_size[1]" => {
-            "not drawn: a radio's circle is sized by radio.indicator(NONE).min_size[0] \
-             (iced_next::radio), not by the check box's"
         }
         "radio.dot(NONE).min_size[0]" => {
             "next_radio: iced_next::radio's dot, radio.dot(NONE).min_size[0], over iced's own \
@@ -11478,6 +11508,11 @@ fn switch_route(home: &str) -> Option<String> {
             "next_switch_label: the label's line box, switch.label(state)'s line height, else \
              its size by typography.line_height_multiplier where it states a size \
              (next_line_box), else iced's own"
+        }
+        "switch.label_gap" => {
+            "next_switch_row: the space between the track and the label, switch.label_gap; \
+             iced's own toggler gap (TOGGLER_LABEL_GAP) where unstated, the two at the ends of \
+             BASIC_WIDTH where switch.label_gap_stretches is true"
         }
         "switch.label(NONE).color" => {
             "switch_label_colour: the label's colour, switch.label(NONE).color"
@@ -12496,6 +12531,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
             .into(),
         (None, "scrollbar.min_thumb_length") => {
             "not reachable: iced's scroller has no minimum length setter".into()
+        }
+        (None, "scrollbar.thumb(NONE).corners") if under("basic.list.scrollbar") => {
+            "iced_next::styles::scrollable: the scroller's border.radius in an active window, \
+             scrollbar.thumb(NONE).corners, iced's own where unstated; list_bar_style: its \
+             right-hand corners kept inside the frame (list_bar_corner)"
+                .into()
+        }
+        (None, "scrollbar.thumb(UNFOCUSED_VIEW).corners") if under("basic.list.scrollbar") => {
+            "iced_next::styles::scrollable: the scroller's border.radius in an inactive window, \
+             scrollbar.thumb(UNFOCUSED_VIEW).corners, iced's own where unstated; \
+             list_bar_style: its right-hand corners kept inside the frame (list_bar_corner)"
+                .into()
+        }
+        (None, "layout.corner_radius") if under("basic.list.scrollbar") => {
+            "not drawn: iced rounds the scroller by scrollbar.thumb's own corners, iced's own \
+             where unstated, not by layout.corner_radius"
+                .into()
         }
         (None, "scrollbar.overlay_mode") => {
             "iced_next::styles::scrollbar: no spacing beside the content, \
@@ -24741,7 +24793,9 @@ mod tests {
 
     /// The Theme row's Widget Info names the combo box that draws it, and
     /// the Mode row's the drop-down: its font, its padding, its arrow and its
-    /// colours, these through the field's style.
+    /// colours, these through the field's style; and the typed text's
+    /// selection through the text field's style, which the Mode row's
+    /// drop-down has none of.
     #[test]
     fn the_theme_rows_routes_name_its_combo_box() {
         let state = loaded("kde-breeze", false);
@@ -24751,11 +24805,38 @@ mod tests {
             ("combo_box.field(NONE).padding.left", "ComboBox::padding"),
             ("combo_box.chevron(NONE).size", "text_input::Icon"),
             ("combo_box.field(NONE).fill", "theme_picker_style"),
+            (
+                "colors.text_selection.background",
+                "styles::text_input.selection",
+            ),
         ] {
             let theme = route_of(&state, "chrome.side_panel.settings.theme", leaf);
             assert!(theme.contains(named), "the Theme row's {leaf}: {theme}");
             let mode = route_of(&state, "chrome.side_panel.settings.mode", leaf);
             assert!(!mode.contains(named), "the Mode row's {leaf}: {mode}");
+        }
+    }
+
+    /// Each Basic switch's Widget Info shows the gap between its track and
+    /// its label, `switch.label_gap`, which kde-breeze states (4 px), with
+    /// the route that lays it out.
+    #[test]
+    fn the_switches_widget_info_shows_the_label_gap() {
+        let state = loaded("kde-breeze", false);
+        for id in [
+            "basic.switches.off",
+            "basic.switches.on",
+            "basic.switches.disabled",
+        ] {
+            let Some(element) = elements::element(id) else {
+                panic!("{id} is not listed");
+            };
+            let info = element_info(&state, element);
+            let Some(row) = info.rows.iter().find(|row| row.leaf == "switch.label_gap") else {
+                panic!("{id}: no switch.label_gap row: {:#?}", info.rows);
+            };
+            assert_eq!(row.value, "4 px", "{id}");
+            assert!(row.how.contains("next_switch_row"), "{id}: {}", row.how);
         }
     }
 
@@ -27491,6 +27572,16 @@ mod tests {
         ),
         (
             "chrome.side_panel.settings.theme",
+            "iced_next::styles::pick_list(r)",
+            "pick_list",
+        ),
+        (
+            "chrome.side_panel.settings.theme",
+            "iced_next::styles::text_input(r)",
+            "text_input",
+        ),
+        (
+            "chrome.side_panel.settings.palette",
             "iced_next::styles::pick_list(r)",
             "pick_list",
         ),
@@ -35943,9 +36034,9 @@ mod tests {
     }
 
     /// What `ghost_button` and the icon draw of a flat button under `r`, as
-    /// text: the fill in each status a pointer can give it, the label's
-    /// colour where the label shows, the icon's where `icon_button` colours
-    /// it.
+    /// text: the fill and the outline's colour in each status a pointer can
+    /// give it, the label's colour where the label shows, the icon's where
+    /// `icon_button` colours it.
     fn ghost_drawn(r: &native_theme::next::ResolvedTheme, selected: bool, shows: Shows) -> String {
         let theme = match native_theme_iced::next::to_theme(r) {
             Ok(theme) => theme,
@@ -35959,7 +36050,7 @@ mod tests {
             button::Status::Pressed,
         ] {
             let s = style(&theme, status);
-            drawn.push_str(&format!("{:?};", s.background));
+            drawn.push_str(&format!("{:?};{:?};", s.background, s.border.color));
             if shows == Shows::Label {
                 drawn.push_str(&format!("{:?};", s.text_color));
             }
@@ -44401,8 +44492,7 @@ mod tests {
         };
         let label = rect("chrome.side_panel.settings.theme_label");
         let control = rect("chrome.side_panel.settings.theme");
-        // The Palette row, between Theme and Mode, is no element of the
-        // list: the rows' gap is measured from Mode to Icon theme.
+        // The rows' gap is measured from Mode to Icon theme.
         let mode = rect("chrome.side_panel.settings.mode");
         let next = rect("chrome.side_panel.settings.icon_theme_label");
         assert!(

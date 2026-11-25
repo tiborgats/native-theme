@@ -1500,9 +1500,11 @@ fn homes_by_preset(row: &toml::Table) -> Vec<String> {
 /// Every row's `homes` and `homes_by_preset` are the ones the table of homes gives its leaf, and
 /// every home `docs/showcase-elements.toml` lists for Widget Info has a row holding it: the home
 /// itself, a home named whole by its fields (a text part or style: `button.label(NONE)` by
-/// `button.label(NONE).size_px`, ...), or a home only rows of the table name that serialise no
+/// `button.label(NONE).size_px`, ...), a home only rows of the table name that serialise no
 /// leaf of `ResolvedTheme` (`hand = true`: `Resolved.icon_set`'s `icons.set`), which this
-/// manifest has no row for.
+/// manifest has no row for, or a home of the 0.8.0 model alone, which no 0.7.2 leaf has (the
+/// list's `model_only_homes`, each with its reason; showcase-support's
+/// `the_model_only_homes_have_no_row_and_are_listed` holds them to the table).
 #[test]
 fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -1553,6 +1555,18 @@ fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row()
         .collect();
     let elements: toml::Table =
         toml::from_str(include_str!("../../../docs/showcase-elements.toml"))?;
+    let model_only: BTreeSet<&str> = elements
+        .get("model_only_homes")
+        .and_then(toml::Value::as_array)
+        .ok_or("showcase-elements.toml has no model_only_homes list")?
+        .iter()
+        .map(|entry| {
+            entry
+                .get("home")
+                .and_then(toml::Value::as_str)
+                .ok_or("showcase-elements.toml: a model_only_homes entry names no home")
+        })
+        .collect::<Result<_, _>>()?;
     let listed: BTreeSet<&str> = elements
         .get("element")
         .and_then(toml::Value::as_array)
@@ -1566,7 +1580,11 @@ fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row()
     for home in listed {
         let whole = format!("{home}.");
         let by_fields = held.iter().any(|h| h.starts_with(&whole));
-        if !held.contains(home) && !by_fields && !hand_only.contains(home) {
+        if !held.contains(home)
+            && !by_fields
+            && !hand_only.contains(home)
+            && !model_only.contains(home)
+        {
             problems.push(format!(
                 "{home}: listed in showcase-elements.toml, held by no row"
             ));

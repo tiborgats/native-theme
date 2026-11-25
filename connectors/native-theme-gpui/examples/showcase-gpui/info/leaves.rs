@@ -123,6 +123,23 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         ],
         "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); at rest it is next::geometry::button's button.body(NONE).stroke.color (native-theme-gpui/geometry.rs:285, border_color)",
     ),
+    (
+        "basic.buttons.primary",
+        &[
+            "button.body(HOVER; variant=Primary).stroke.color",
+            "button.body(PRESSED; variant=Primary).stroke.color",
+        ],
+        "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary)",
+    ),
+    (
+        "basic.buttons.primary",
+        &[
+            "button.body(NONE; variant=Primary).stroke.color",
+            "button.body(NONE; variant=Primary).corners",
+            "button.body(NONE; variant=Primary).stroke.width",
+        ],
+        "gpui: not applied — next::geometry::button edges and rounds the Primary Button as every Button, by button.body(NONE), no variant asked (native-theme-gpui next/builders.rs, button)",
+    ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (
         "chrome.info.copy",
@@ -143,6 +160,14 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "chrome.info.copy",
         &["button.label(PRESSED).color"],
         "gpui: the Copy box's text while pressed (inspector.rs)",
+    ),
+    (
+        "chrome.info.copy",
+        &[
+            "button.body(HOVER).stroke.color",
+            "button.body(PRESSED).stroke.color",
+        ],
+        "not drawn: the showcase builds the Copy box as the 0.7.2 ghost, variants::ghost_button, which has no outline colour of its own and no width to draw one at, so it is edged in none under the pointer or pressed (inspector.rs; native-theme-gpui/variants.rs, ghost_button)",
     ),
     (
         "chrome.info.copy",
@@ -189,6 +214,26 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "chrome.page_tabs.menu",
         &["button.body(PRESSED).fill"],
         "gpui: variants::ghost_button's active, ThemeColor secondary_active (colors.rs)",
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(HOVER).stroke.color"],
+        "gpui: next::variants::ghost_button's colour, the border under the pointer and pressed, button.body(HOVER; variant=Flat).stroke.color where a rule states it, laid out by next::geometry::ghost_button_rest and hidden at rest (demo::native_tab_bar)",
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER; variant=Flat).stroke.color's, next::variants::ghost_button's colour (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(HOVER).stroke.color"],
+        "gpui: next::variants::ghost_button's colour, the border under the pointer and pressed while the side panel is closed, button.body(HOVER; variant=Flat).stroke.color where a rule states it, laid out by next::geometry::ghost_button_rest; while it is open the toggle is selected, and a selected Button takes no hover or press style (demo::panel_toggle)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER; variant=Flat).stroke.color's, next::variants::ghost_button's colour (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -248,8 +293,13 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.status_bar.toggle",
-        &["button.body(PRESSED).fill"],
-        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1353, active)",
+        &["button.body(CHECKED).fill"],
+        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.label(CHECKED).color"],
+        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle)",
     ),
     (
         "chrome.toolbar.",
@@ -720,7 +770,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "checkbox.indicator(NONE).min_size[1]",
             "checkbox.indicator(NONE).max_size[1]",
         ],
-        "gpui: checkbox.indicator(NONE).min_size[0] (radio.indicator(NONE).min_size[0]), the box's side, the circle's diameter (CheckboxLook::next_of)",
+        "gpui: checkbox.indicator(NONE).min_size[0], the box's side; a radio's circle is radio.indicator(NONE).min_size[0] (CheckboxLook::next_of)",
     ),
     (
         "",
@@ -765,6 +815,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "chrome.side_panel.settings.theme",
         &["combo_box.label(NONE).color"],
         "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1035-1042, refine_style)",
+    ),
+    (
+        "chrome.side_panel.settings.theme",
+        &["colors.text_selection.background"],
+        "not reachable: the closed Combobox shows its choice, no text field; only its open popup's search field selects typed text (gpui-component 0.10.0 combobox.rs:1078-1108, render_popup_shell)",
     ),
     // --- combo_box: the Basic page's Select, on the 0.8.0 builder --------------
     (
@@ -921,6 +976,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: frames the swatch (inspector.rs)",
     ),
     (
+        "basic.list.scrollbar",
+        &["layout.corner_radius"],
+        "gpui: the thumb's corner radius written onto gpui-base, thumb_radius (base_layer::scrollbar_geometry)",
+    ),
+    (
         "",
         &["layout.corner_radius"],
         "gpui: the swatch's corner radius (inspector.rs)",
@@ -1046,6 +1106,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: widgets::Switch's label, one line of its font's size by it",
     ),
     (
+        "basic.switches",
+        &["switch.label_gap"],
+        "gpui: widgets::Switch's gap between the track and the label where stated, gpui-component's own gap_2 (widgets/switch.rs, LABEL_GAP) where not; the two at the row's ends where switch.label_gap_stretches is true (SwitchLook::next_of)",
+    ),
+    (
         "basic.text_inputs",
         &["typography.line_height_multiplier"],
         "gpui: next::geometry::input's line height (control-height rule)",
@@ -1067,6 +1132,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.side_panel.settings.theme_label",
+        &["typography.line_height_multiplier"],
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
+    ),
+    (
+        "chrome.side_panel.settings.palette_label",
         &["typography.line_height_multiplier"],
         "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
@@ -2098,6 +2168,14 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     // --- scrollbar: gpui-base's, through base_layer -----------------------------
     (
+        "basic.list.scrollbar",
+        &[
+            "scrollbar.thumb(NONE).corners",
+            "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        ],
+        "gpui: not applied — gpui-base's thumb is rounded by layout.corner_radius (native-theme-gpui next/mod.rs, scrollbar_geometry)",
+    ),
+    (
         "",
         &[
             "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
@@ -2126,7 +2204,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "scrollbar.thumb(NONE).fill",
             "scrollbar.thumb(UNFOCUSED_VIEW).fill",
         ],
-        "gpui: gpui-base's thumb at rest is scrollbar.thumb(UNFOCUSED_VIEW).fill, the handle of a view without the focus, which is the plain thumb, scrollbar.thumb(NONE).fill, on a theme with no rule for that state (native-theme-gpui next/mod.rs, thumb_at_rest; base_layer::scrollbar_styles)",
+        "gpui: gpui-base's thumb at rest is scrollbar.thumb(UNFOCUSED_VIEW).fill, the handle of a view without the focus, which is the plain thumb, scrollbar.thumb(NONE).fill, on a theme with no rule for that state, where the theme states it; where it does not, gpui-component's own scrollbar_thumb (native-theme-gpui next/mod.rs, thumb_at_rest; base_layer::scrollbar_styles)",
     ),
     (
         "",
@@ -2161,6 +2239,16 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "",
         &["segmented_control.track(NONE).fill"],
         "gpui: segmented_control.track(NONE).fill, the control's fill; upstream's tab_bar_segmented where unstated (demo::segmented, SegmentedLook)",
+    ),
+    (
+        "basic.segmented.divider_",
+        &["segmented_control.separator(NONE).fill"],
+        "gpui: segmented_control.separator(NONE).fill, the line left of each segment after the first; none where unstated, as upstream's segmented TabBar draws none (demo::segmented, SegmentedLook)",
+    ),
+    (
+        "basic.segmented.divider_",
+        &["segmented_control.track(NONE).stroke.color"],
+        "gpui: not applied — the line between two segments is drawn in segmented_control.separator(NONE).fill, not in the frame's colour (demo::segmented, SegmentedLook)",
     ),
     (
         "",
