@@ -8755,6 +8755,7 @@ fn home_keyed(id: &str) -> bool {
         || separator_element(id)
         || id.starts_with("basic.card.")
         || id.starts_with("basic.typography.")
+        || chrome_element(id)
 }
 
 /// Whether the list's id `id` names a separator line: the Basic page's, the
@@ -11515,7 +11516,8 @@ fn check_box_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) 
             if mark =>
         {
             "CheckMark: the mark's box, inside the box by checkbox.indicator(NONE).padding on \
-             this side, egui's share of the box where unstated"
+             this side; where unstated, a box 8/14 of the indicator's width, centred \
+             (EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH)"
         }
         "checkbox.indicator(NONE).padding.top"
         | "checkbox.indicator(NONE).padding.right"
@@ -11529,9 +11531,12 @@ fn check_box_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) 
              checkbox.checkmark(CHECKED).color, over its fill"
         }
         "checkbox.label(DISABLED).color" if mark && id.ends_with(".mark") => {
-            "CheckMark: the disabled mark, iced_next::styles::checkbox's Disabled icon_color, \
-             checkbox.checkmark(DISABLED).color where a rule states it for the disabled state, \
-             faded with its box"
+            "CheckMark: the disabled mark, iced_next::styles::checkbox's Disabled icon_color: \
+             checkbox.checkmark(DISABLED|CHECKED).color where a rule states \
+             checkbox.checkmark(DISABLED).color; else checkbox.label(DISABLED).color where \
+             checkbox.indicator(DISABLED|CHECKED).fill is stated, iced's own icon colour where \
+             that label colour is unstated; else the checked mark's, \
+             checkbox.checkmark(CHECKED).color"
         }
         _ => return None,
     };
@@ -11996,6 +12001,276 @@ fn expander_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -
     Some(route.to_owned())
 }
 
+/// Whether the list's id `id` names an element of the window's chrome
+/// Widget Info lists by home with [`chrome_route`]: the window and its
+/// content, the toolbar's bar, the side panel with its settings and
+/// inspector, Widget Info's own rows, the splitter and the status bar with
+/// its texts.
+fn chrome_element(id: &str) -> bool {
+    matches!(
+        id,
+        "chrome.window"
+            | "chrome.content"
+            | "chrome.toolbar"
+            | "chrome.side_panel"
+            | "chrome.side_panel.inspector"
+            | "chrome.splitter"
+            | "chrome.status_bar"
+            | "chrome.status_bar.environment"
+            | "chrome.status_bar.shown"
+    ) || id.starts_with("chrome.side_panel.settings")
+        || id.starts_with("chrome.info.")
+}
+
+/// The route of the home `home` of a [`chrome_element`] of id `id` under
+/// `r`, the installed 0.8.0 theme: the surfaces' fills and texts, the
+/// toolbar's [`ToolbarLayout`], the side panel's padding
+/// ([`sidebar_padding`], [`side_panel_content_margin`]), the settings'
+/// labels, gap and drop-downs ([`setting_picker`], [`theme_picker`]),
+/// Widget Info's text ([`info_text`], [`info_inks`]) and swatch frame
+/// ([`swatch_frame`]), the splitter, and the status bar's line, padding,
+/// gap and text. `None` for a home none of them reads, the colours the
+/// export routes ([`colour_home_route`]) among them.
+fn chrome_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -> Option<String> {
+    let settings_label = id.starts_with("chrome.side_panel.settings") && id.ends_with("_label");
+    let info = id.starts_with("chrome.info.");
+    let status_text = id == "chrome.status_bar.environment" || id == "chrome.status_bar.shown";
+    let route: Cow<'static, str> = match home {
+        "window.frame(normal).fill" if id == "chrome.window" => {
+            "surface: the window container's background, window.frame(normal).fill".into()
+        }
+        "window.frame(normal).fill" => "surface: the window container's background, which \
+                                        shows through, window.frame(normal).fill"
+            .into(),
+        "toolbar.bar(NONE).min_size[1]" => {
+            "ToolbarLayout: toolbar.bar(NONE).min_size[1] (next::toolbar_bar_height), the bar \
+             container's least height, less the rule's, where stated: a space that tall beside \
+             the items, less the padding; none where unstated"
+                .into()
+        }
+        "toolbar.item_gap" => format!(
+            "ToolbarLayout: toolbar.item_gap (next::toolbar_item_gap), the buttons' \
+             Row::spacing; layout.widget_gap where unstated, and TOOLBAR_GAP, {TOOLBAR_GAP}px, \
+             gpui's showcase constant, where that is unstated too"
+        )
+        .into(),
+        "toolbar.bar(NONE).stroke.width" => {
+            "ToolbarLayout: toolbar.bar(NONE).stroke.width, the bottom rule's height, under \
+             the bar's padding; iced's own border width, no line, where unstated or stated \
+             none; a stroke stated per side is not drawn, iced's rule being one line"
+                .into()
+        }
+        "toolbar.bar(NONE).padding.top"
+        | "toolbar.bar(NONE).padding.right"
+        | "toolbar.bar(NONE).padding.bottom"
+        | "toolbar.bar(NONE).padding.left" => format!(
+            "ToolbarLayout: the side of toolbar.bar(NONE).padding (next::toolbar_padding), the \
+             bar container's padding; layout.container_margin where unstated, and \
+             TOOLBAR_PADDING, {TOOLBAR_PADDING}px, gpui's showcase constant, where that is \
+             unstated too"
+        )
+        .into(),
+        "sidebar.container(NONE).fill" => {
+            "surface: the panel container's background, sidebar.container(NONE).fill".into()
+        }
+        "sidebar.container(NONE).padding.top"
+        | "sidebar.container(NONE).padding.right"
+        | "sidebar.container(NONE).padding.bottom"
+        | "sidebar.container(NONE).padding.left" => {
+            "sidebar_padding: pads the side panel where any side of \
+             sidebar.container(NONE).padding is stated, a side it leaves unstated by \
+             layout.container_margin (none where that is unstated); where no side is stated, \
+             layout.container_margin pads the settings, the inspector's tab row and its \
+             content (none where that is unstated) (side_panel_content_margin)"
+                .into()
+        }
+        "layout.container_margin" if id == "chrome.side_panel" => {
+            "sidebar_padding: pads a side of the side panel sidebar.container(NONE).padding \
+             leaves unstated, where it states any; where it states none, the settings, the \
+             inspector's tab row and its content (none where that is unstated) \
+             (side_panel_content_margin)"
+                .into()
+        }
+        "layout.container_margin"
+            if id == "chrome.side_panel.settings" || id == "chrome.side_panel.inspector" =>
+        {
+            "side_panel_content_margin: the padding where sidebar.container(NONE).padding \
+             states no side (none where that is unstated); where it states any, the side \
+             panel's padding pads it (sidebar_padding)"
+                .into()
+        }
+        "layout.widget_gap" if id == "chrome.side_panel.settings" => format!(
+            "settings_gap: Column::spacing between the rows and between each label and its \
+             control, layout.widget_gap; THEME_SETTINGS_GAP, {THEME_SETTINGS_GAP}px, gpui's \
+             showcase constant, where unstated"
+        )
+        .into(),
+        "sidebar.item_label(NONE)" if settings_label => {
+            "next_text: the label's size, line box and font, sidebar.item_label(NONE)".into()
+        }
+        "sidebar.item_label(NONE).color" if settings_label => {
+            "surface: the side panel's text_color, which the text takes, \
+             sidebar.item_label(NONE).color"
+                .into()
+        }
+        "typography.line_height_multiplier" if settings_label => {
+            "next_text: the label's line box, sidebar.item_label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .into()
+        }
+        "combo_box.field(NONE).min_size[0]" if id == "chrome.side_panel.settings.theme" => {
+            "not reachable: ComboBox takes a width, not a minimum; the side panel's width".into()
+        }
+        "combo_box.field(NONE).min_size[0]" => {
+            "not reachable: PickList takes a width, not a minimum; the side panel's width".into()
+        }
+        _ if id == "chrome.side_panel.settings.theme" => theme_row_route(home)?.into(),
+        _ if id.starts_with("chrome.side_panel.settings.") => drop_down_route(home)?.into(),
+        "sidebar.item_label(NONE)" if info => {
+            "info_text: the text's size, family and line box, sidebar.item_label(NONE)".into()
+        }
+        "sidebar.item_label(NONE).color" if info => {
+            "info_inks: the text's colour, sidebar.item_label(NONE).color".into()
+        }
+        "colors.window.foreground_muted" if info => {
+            "info_inks: the muted text's colour, colors.window.foreground_muted".into()
+        }
+        "typography.line_height_multiplier" if info => {
+            "info_text: the text's line box, sidebar.item_label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .into()
+        }
+        "colors.window.border" => {
+            "swatch_frame: the swatch container's border.color, colors.window.border".into()
+        }
+        "layout.corner_radius" => {
+            "swatch_frame: the swatch container's border.radius, layout.corner_radius".into()
+        }
+        "layout.border_width" => {
+            "swatch_frame: the swatch container's border.width, layout.border_width".into()
+        }
+        "splitter.divider_width" => {
+            "splitter: the line container's width, splitter.divider_width".into()
+        }
+        "splitter.handle(NONE).fill" => {
+            "splitter: the line container's background, splitter.handle(NONE).fill".into()
+        }
+        "splitter.handle(HOVER).fill" => "splitter: the line's background under the pointer \
+                                          and while dragged, splitter.handle(HOVER).fill"
+            .into(),
+        "status_bar.bar.fill" => {
+            "surface: the bar container's background, status_bar.bar.fill".into()
+        }
+        "status_bar.bar.stroke.color" => {
+            "line_style: the top edge's colour, status_bar.bar.stroke.color".into()
+        }
+        "status_bar.bar.stroke.width"
+            if iced_next::stroke_width_of(&r.status_bar.bar).is_none() =>
+        {
+            "not drawn: status_bar.bar.stroke.width is unstated; the top edge rule is iced's \
+             own border width, none, high (status_line_width)"
+                .into()
+        }
+        "status_bar.bar.stroke.width" => {
+            "status_line_width: the top edge rule's height, status_bar.bar.stroke.width, above \
+             the bar's padding"
+                .into()
+        }
+        "status_bar.bar.padding.top"
+        | "status_bar.bar.padding.right"
+        | "status_bar.bar.padding.bottom"
+        | "status_bar.bar.padding.left" => {
+            let upstream = match home {
+                "status_bar.bar.padding.top" | "status_bar.bar.padding.bottom" => "py_1, a quarter",
+                _ => "px_2, a half",
+            };
+            format!(
+                "the bar container's padding, the side of status_bar.bar.padding; where \
+                 unstated gpui-component's StatusBar padding, which gpui's status bar keeps: \
+                 {upstream} of typography.body.size_px (status_bar_padding; gpui-component \
+                 status_bar.rs:89-90); each side rounded to whole device pixels as gpui rounds \
+                 a padding, a half toward zero (gpui_rounded)"
+            )
+            .into()
+        }
+        "layout.widget_gap" if id == "chrome.status_bar" => {
+            "Row::spacing between the items, layout.widget_gap; a row's own, none, where \
+             unstated"
+                .into()
+        }
+        "layout.container_margin" if id == "chrome.status_bar" => {
+            "not drawn: a side status_bar.bar.padding leaves unstated takes \
+             gpui-component's StatusBar padding (status_bar_padding)"
+                .into()
+        }
+        "status_bar.label" if status_text => {
+            "the text in status_bar.label (Typeset::next_text)".into()
+        }
+        "status_bar.label.color" if status_text => {
+            "surface: the bar's text_color, status_bar.label.color".into()
+        }
+        "typography.line_height_multiplier" if status_text => {
+            "status_line_box: the text's LineHeight, status_bar.label's line box \
+             (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
+             (gpui-pre style.rs:553-556)"
+                .into()
+        }
+        _ => layout_gap_route(home)?.into(),
+    };
+    Some(route.into_owned())
+}
+
+/// The route of the home `home` of the side panel's Theme row, a
+/// searchable `combo_box` ([`theme_picker`]): its text and line box, the
+/// field's height, chevron, padding, corners and outline width. `None` for
+/// a home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
+fn theme_row_route(home: &str) -> Option<&'static str> {
+    Some(match home {
+        "combo_box.label(NONE)" => "ComboBox size and font: combo_box.label(NONE)'s size and font",
+        "typography.line_height_multiplier" => {
+            "next_control_line: ComboBox::line_height, combo_box.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box), \
+             grown to fill combo_box.field(NONE).min_size[1] inside the padding"
+        }
+        "combo_box.field(NONE).min_size[1]" => {
+            "next_control_line: ComboBox::line_height, the line box that fills \
+             combo_box.field(NONE).min_size[1] inside the padding; combo_box.label(NONE)'s line \
+             box (next_line_box) where unstated"
+        }
+        "combo_box.chevron(NONE).size" => {
+            "theme_picker: the field's text_input::Icon, next_arrow_handle's chevron at \
+             combo_box.chevron(NONE).size, iced's own (the renderer's default text size) where \
+             unstated"
+        }
+        "combo_box.arrow_area_width" => {
+            "iced_next::combo_box_padding: the right padding holds half the column \
+             combo_box.arrow_area_width leaves the chevron"
+        }
+        "combo_box.field(NONE).padding.top"
+        | "combo_box.field(NONE).padding.right"
+        | "combo_box.field(NONE).padding.bottom"
+        | "combo_box.field(NONE).padding.left" => {
+            "next_combo_field_padding: ComboBox::padding, the side of \
+             combo_box.field(NONE).padding plus its stroke width \
+             (iced_next::combo_box_padding), iced's own (text_input::DEFAULT_PADDING) where \
+             unstated"
+        }
+        "combo_box.field(NONE).corners" => {
+            "theme_picker_style: styles::pick_list's border.radius, the field's, \
+             combo_box.field(NONE).corners"
+        }
+        "combo_box.field(NONE).stroke.width" => {
+            "theme_picker_style: styles::pick_list's border.width, the field's, \
+             combo_box.field(NONE).stroke.width"
+        }
+        "combo_box.field(NONE).shadows" => {
+            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+        }
+        _ => return None,
+    })
+}
+
 /// The route of the home `home` of the Basic page's separator, the page
 /// tabs' rule or the side panel's separator, each a `rule::horizontal` in
 /// `iced_next::styles::rule` ([`separator_line`]): its thickness. `None`
@@ -12221,7 +12496,13 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         return line;
     }
     if let Some(line) = colour_home_route(element, home, Shown::of(state), installed.as_deref()) {
-        return line;
+        // The side panel's Theme row draws the drop-down's look in a text
+        // field's style ([`theme_picker_style`]).
+        return if id == "chrome.side_panel.settings.theme" && line.starts_with("iced: ") {
+            format!("{line}; the field's text_input::Style (theme_picker_style)")
+        } else {
+            line
+        };
     }
     let under = |prefix: &str| id.starts_with(prefix);
     // The frame's corners and line are its container's; a row's, the
@@ -12278,6 +12559,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         card_route(home)
     } else if under("basic.typography.") {
         typography_route(id, home)
+    } else if chrome_element(id) {
+        chrome_route(r, id, home)
     } else {
         None
     };
@@ -24835,11 +25118,11 @@ mod tests {
     fn the_theme_rows_routes_name_its_combo_box() {
         let state = loaded("kde-breeze", false);
         for (leaf, named) in [
-            ("combo_box.font", "ComboBox size"),
-            ("combo_box.min_height_px", "ComboBox::line_height"),
-            ("combo_box.border.padding_left_px", "ComboBox::padding"),
-            ("combo_box.arrow_icon_size_px", "text_input::Icon"),
-            ("combo_box.background_color", "theme_picker_style"),
+            ("combo_box.label(NONE)", "ComboBox size"),
+            ("combo_box.field(NONE).min_size[1]", "ComboBox::line_height"),
+            ("combo_box.field(NONE).padding.left", "ComboBox::padding"),
+            ("combo_box.chevron(NONE).size", "text_input::Icon"),
+            ("combo_box.field(NONE).fill", "theme_picker_style"),
         ] {
             let theme = route_of(&state, "chrome.side_panel.settings.theme", leaf);
             assert!(theme.contains(named), "the Theme row's {leaf}: {theme}");
@@ -43245,15 +43528,15 @@ mod tests {
     #[test]
     fn the_chrome_info_names_what_an_unstated_padding_falls_back_on() {
         let state = loaded("macos-tahoe", false);
-        let toolbar = route_of(&state, "chrome.toolbar", "toolbar.border.padding_left_px");
+        let toolbar = route_of(&state, "chrome.toolbar", "toolbar.bar(NONE).padding.left");
         assert!(toolbar.contains("TOOLBAR_PADDING"), "{toolbar}");
-        let gap = route_of(&state, "chrome.toolbar", "toolbar.item_gap_px");
+        let gap = route_of(&state, "chrome.toolbar", "toolbar.item_gap");
         assert!(gap.contains("TOOLBAR_GAP"), "{gap}");
         let menu_bar = route_of(&state, "chrome.menu_bar", "layout.container_margin");
         assert!(menu_bar.contains("MENU_BAR_PADDING"), "{menu_bar}");
         for (leaf, upstream) in [
-            ("status_bar.border.padding_top_px", "py_1"),
-            ("status_bar.border.padding_left_px", "px_2"),
+            ("status_bar.bar.padding.top", "py_1"),
+            ("status_bar.bar.padding.left", "px_2"),
         ] {
             let status = route_of(&state, "chrome.status_bar", leaf);
             assert!(
@@ -43261,7 +43544,7 @@ mod tests {
                 "{leaf}: {status}"
             );
         }
-        let margin = route_of(&state, "chrome.status_bar", "layout.container_margin_px");
+        let margin = route_of(&state, "chrome.status_bar", "layout.container_margin");
         assert!(margin.starts_with("not drawn"), "{margin}");
         // The inspector's tab row takes the margin at its sides alone.
         let tabs = route_of(
@@ -43319,7 +43602,7 @@ mod tests {
         let route = route_of(
             &spliced.1,
             "chrome.side_panel",
-            "sidebar.border.padding_top_px",
+            "sidebar.container(NONE).padding.top",
         );
         assert!(
             !route.starts_with("not drawn")
@@ -43494,7 +43777,7 @@ mod tests {
             "the toolbar's first two items are {}px apart",
             reload.x - (palette.x + palette.width)
         );
-        let settings = route_of(&state, "chrome.side_panel.settings", "layout.widget_gap_px");
+        let settings = route_of(&state, "chrome.side_panel.settings", "layout.widget_gap");
         assert!(settings.contains("THEME_SETTINGS_GAP"), "{settings}");
     }
 
