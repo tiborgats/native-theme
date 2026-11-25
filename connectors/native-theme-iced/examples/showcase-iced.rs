@@ -8744,6 +8744,7 @@ fn home_keyed(id: &str) -> bool {
         || push_button_element(id)
         || id.starts_with("basic.checkboxes.")
         || id.starts_with("basic.radios.")
+        || id.starts_with("basic.switches.")
 }
 
 /// Whether the list's id `id` names the Basic page or one of its columns.
@@ -9367,7 +9368,8 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if (under("basic.switches.off")
             || under("basic.switches.on")
             || under("basic.switches.disabled"))
-            && (leaf == "defaults.disabled_text_color" || leaf == "defaults.font.color") =>
+            && leaf.starts_with("switch.label(")
+            && leaf.ends_with(").color") =>
         {
             return None;
         }
@@ -11569,6 +11571,86 @@ fn radio_route(home: &str) -> Option<String> {
     Some(route.to_owned())
 }
 
+/// The route of the home `home` of an element of the Basic page's
+/// switches: the label's text, line box and colour, the track's and the
+/// thumbs' sizes `next_switch` lays out (`iced_next::switch`), the corners
+/// and outline widths `styles::toggler` draws, and the disabled opacity.
+/// `None` for a home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
+fn switch_route(home: &str) -> Option<String> {
+    let route = match home {
+        "switch.label(NONE)" => {
+            "next_switch_label: the label's size and font, switch.label(state)'s where stated, \
+             iced's own where not; next_switch_row: on switch.label_side's side (after the \
+             switch where unstated), switch.label_gap from it, iced's own toggler gap \
+             (TOGGLER_LABEL_GAP) where unstated, the two at the ends of BASIC_WIDTH where \
+             switch.label_gap_stretches is true"
+        }
+        "typography.line_height_multiplier" => {
+            "next_switch_label: the label's line box, switch.label(state)'s line height, else \
+             its size by typography.line_height_multiplier where it states a size \
+             (next_line_box), else iced's own"
+        }
+        "switch.label(NONE).color" => {
+            "switch_label_colour: the label's colour, switch.label(NONE).color"
+        }
+        "switch.label(CHECKED).color" => {
+            "switch_label_colour: the label's colour, switch.label(CHECKED).color"
+        }
+        "switch.label(DISABLED|CHECKED).color" => {
+            "switch_label_colour: the label's colour, switch.label(DISABLED|CHECKED).color \
+             where a rule states switch.label(DISABLED).color, else switch.label(CHECKED).color \
+             times switch.disabled_opacity where stated"
+        }
+        "switch.track(NONE).min_size[0]" => {
+            "next_switch: iced_next::switch's track, switch.track(NONE).min_size[0] wide; iced's \
+             own toggler where the theme lacks a size it needs"
+        }
+        "switch.track(NONE).min_size[1]" => {
+            "next_switch: iced_next::switch's track, switch.track(NONE).min_size[1] tall; iced's \
+             own toggler where the theme lacks a size it needs"
+        }
+        "switch.track(NONE).max_size[0]" | "switch.track(NONE).max_size[1]" => {
+            "not reachable: iced_next::switch draws the track at switch.track(NONE).min_size, \
+             with no greatest size"
+        }
+        "switch.thumb(CHECKED).min_size[0]" => {
+            "next_switch: the thumb on, switch.thumb(CHECKED).min_size[0], inset by half the \
+             height difference; flush with the ends where it overhangs the track"
+        }
+        "switch.thumb(NONE).min_size[0]" => {
+            "next_switch: the thumb off, switch.thumb(NONE).min_size[0], inset by half the height \
+             difference"
+        }
+        "switch.thumb(CHECKED).min_size[1]"
+        | "switch.thumb(CHECKED).max_size[0]"
+        | "switch.thumb(CHECKED).max_size[1]"
+        | "switch.thumb(NONE).min_size[1]"
+        | "switch.thumb(NONE).max_size[0]"
+        | "switch.thumb(NONE).max_size[1]" => {
+            "not reachable: iced_next::switch draws a round thumb, its min_size[0] across"
+        }
+        "switch.track(NONE).corners" => {
+            "styles::toggler: border_radius of track and thumb, switch.track(NONE).corners"
+        }
+        "switch.track(NONE).stroke.width" => {
+            "styles::toggler: the track's background_border_width, \
+             switch.track(NONE).stroke.width"
+        }
+        "switch.thumb(NONE).stroke.width" => {
+            "styles::toggler: the thumb's foreground_border_width, \
+             switch.thumb(NONE).stroke.width"
+        }
+        "switch.disabled_opacity" => {
+            "styles::toggler: the Disabled colours' alpha times switch.disabled_opacity; \
+             switch_label_colour: the label faded alike where no rule states \
+             switch.label(DISABLED).color"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of the home `home` of the Basic page or one of its columns
 /// under `r`, the installed 0.8.0 theme: the gaps and margins
 /// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
@@ -11715,6 +11797,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         check_box_route(r, id, home)
     } else if under("basic.radios.") {
         radio_route(home)
+    } else if under("basic.switches.") {
+        switch_route(home)
     } else {
         None
     };
@@ -11862,51 +11946,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("text_area" | "combo_box" | "card", "border.shadow_enabled") => {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
-        }
-        // ---- switch ----
-        ("switch", "track_width_px") if under("basic.switches.") => {
-            "next_switch: iced_next::switch's track, switch.track(NONE).min_size[0] wide; iced's \
-             own toggler where the theme lacks a size it needs"
-                .into()
-        }
-        ("switch", "track_height_px") if under("basic.switches.") => {
-            "next_switch: iced_next::switch's track, switch.track(NONE).min_size[1] tall; iced's \
-             own toggler where the theme lacks a size it needs"
-                .into()
-        }
-        ("switch", "thumb_diameter_px") if under("basic.switches.") => {
-            "next_switch: the thumb on, switch.thumb(CHECKED).min_size[0], inset by half the \
-             height difference; flush with the ends where it overhangs the track"
-                .into()
-        }
-        ("switch", "unchecked_thumb_diameter_px") if under("basic.switches.") => {
-            "next_switch: the thumb off, switch.thumb(NONE).min_size[0], inset by half the height \
-             difference"
-                .into()
-        }
-        ("switch", "track_width_px" | "track_height_px") => {
-            "native_theme_iced::switch: the track's width and height".into()
-        }
-        ("switch", "thumb_diameter_px") => {
-            "native_theme_iced::switch: the thumb, inset by half the height difference; flush with the ends where it overhangs the track"
-                .into()
-        }
-        ("switch", "track_radius_px") => "styles::toggler: border_radius of track and thumb".into(),
-        ("switch", "unchecked_thumb_diameter_px") => {
-            "native_theme_iced::switch: the off thumb, thumb_diameter where unstated"
-                .into()
-        }
-        ("switch", "track_border_line_width_px") => {
-            "styles::toggler: the track's background_border_width, the track's border".into()
-        }
-        ("switch", "thumb_border_line_width_px") => {
-            "styles::toggler: the thumb's foreground_border_width, the thumb's border"
-                .into()
-        }
-        ("switch", "disabled_opacity") => {
-            "styles::toggler: the Disabled colours' alpha times it; switch_label_colour: the \
-             label faded alike where no rule states switch.label(DISABLED).color"
-                .into()
         }
         // ---- combo box (drop-down) ----
         // The side panel's Theme row is a `combo_box` (`theme_picker`).
@@ -12332,40 +12371,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              grown to fill combo_box.field(NONE).min_size[1] inside the padding"
                 .into()
         }
-        ("defaults", "line_height") if under("basic.switches.") => {
-            "next_switch_label: the label's line box, switch.label(state)'s line height, else \
-             its size by typography.line_height_multiplier where it states a size \
-             (next_line_box), else iced's own"
-                .into()
-        }
         ("defaults", "line_height") => {
             "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
-        }
-        ("defaults", "font") if under("basic.switches.") => {
-            "next_switch_label: the label's size and font, switch.label(state)'s where stated, \
-             iced's own where not; next_switch_row: on switch.label_side's side (after the \
-             switch where unstated), switch.label_gap from it, iced's own toggler gap \
-             (TOGGLER_LABEL_GAP) where unstated, the two at the ends of BASIC_WIDTH where \
-             switch.label_gap_stretches is true"
-                .into()
-        }
-        ("defaults", "font.color") if under("basic.switches.on") => {
-            "switch_label_colour: the label's colour, switch.label(CHECKED).color".into()
-        }
-        ("defaults", "font.color") if under("basic.switches.off") => {
-            "switch_label_colour: the label's colour, switch.label(NONE).color".into()
         }
         ("defaults", "font") => "the text's size and theme_font".into(),
         ("defaults", "font.family") => "theme_font: the role's family".into(),
         ("defaults", "mono_font") => "theme_mono_font: the text's size and family".into(),
         ("defaults", "muted_color") => {
             "info_inks: the muted text's colour, colors.window.foreground_muted".into()
-        }
-        ("defaults", "disabled_text_color") => {
-            "switch_label_colour: the label's colour, switch.label(DISABLED|CHECKED).color \
-             where a rule states switch.label(DISABLED).color, else switch.label(CHECKED).color \
-             times switch.disabled_opacity where stated"
-                .into()
         }
         ("defaults", "border.color") => {
             "swatch_frame: the swatch container's border.color, colors.window.border".into()
@@ -42391,7 +42404,7 @@ mod tests {
             }
         };
         for (id, leaf, label) in [
-            ("basic.switches.off", "defaults.font", &label),
+            ("basic.typography.body", "defaults.font", &label),
             ("basic.typography.monospace", "defaults.mono_font", &mono),
         ] {
             let font = value(id, leaf);
