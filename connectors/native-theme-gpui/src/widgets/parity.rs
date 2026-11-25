@@ -445,6 +445,17 @@ const FROM_HOME: &[Difference] = &[
                  tab.active_text_color, listed differences)",
     },
     Difference {
+        leaf: "TabLook::active",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey gives a selected tab the window's background and the \
+                 body text (uncited); the 0.8.0 preset states tab.tab(SELECTED).fill and \
+                 tab.label(SELECTED).color, NSTabView's measured selected tab on macOS 15, \
+                 #ffffff / #ffffff49 lettered #262626 / #ffffffd9 (os-probe run 45252258079, \
+                 Reduce Transparency off, `*.normal.tab_One` `fill`, `label`; \
+                 native-theme/tests/next_homes.toml, rows tab.active_background and \
+                 tab.active_text_color, listed differences)",
+    },
+    Difference {
         leaf: "CheckboxLook::of hover_fill",
         presets: &["macos-monterey"],
         reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \

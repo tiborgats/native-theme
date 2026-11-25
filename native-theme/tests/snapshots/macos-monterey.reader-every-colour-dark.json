@@ -1291,7 +1291,7 @@
             "selected"
           ],
           "tab": {
-            "fill": "#03cb06"
+            "fill": "#ffffff49"
           }
         }
       ]
@@ -1322,6 +1322,14 @@
           ],
           "label": {
             "color": "#01c902"
+          }
+        },
+        {
+          "states": [
+            "selected"
+          ],
+          "label": {
+            "color": "#ffffffd9"
           }
         }
       ]

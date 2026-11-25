@@ -903,6 +903,27 @@ const DIFFERENCES: &[Difference] = &[
                  the theme is equal",
     },
     Difference {
+        leaf: TAB_ACTIVE,
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey gives a selected tab the window's background \
+                 (uncited); the 0.8.0 preset states NSTabView's measured selected tab on macOS \
+                 15, #ffffff / #ffffff49 (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.tab_One` `fill`; native-theme/tests/next_homes.toml, row \
+                 tab.active_background, a listed difference), so the tab_active slot, its token \
+                 and its stored config string are tab.tab(SELECTED)'s fill; every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: TAB_ACTIVE_TEXT,
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey letters a selected tab in the body text (uncited); the \
+                 0.8.0 preset states it as macOS 15 draws it, #262626 / #ffffffd9 (os-probe run \
+                 45252258079, `*.normal.tab_One` `label`; native-theme/tests/next_homes.toml, \
+                 row tab.active_text_color, a listed difference), so the \
+                 tab_active_foreground slot, its token and its stored config string are \
+                 tab.label(SELECTED)'s colour; every other leaf of the theme is equal",
+    },
+    Difference {
         leaf: TAB_ACTIVE_TEXT,
         presets: &["macos-tahoe"],
         reason: "0.7.2's macos-tahoe letters a selected tab in the body text (uncited); the \

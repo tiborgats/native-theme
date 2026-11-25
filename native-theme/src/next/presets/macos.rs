@@ -324,6 +324,9 @@ struct SchemeColors {
     /// the generation does not draw it on the accent or another accent is
     /// laid over ([`drop_accent_measurements`]).
     tab_selected: Option<Color>,
+    /// A selected tab's fill and label, measured, where the generation does
+    /// not draw it on the accent; `None` where it does.
+    tab_selected_off_accent: Option<(Color, Color)>,
     sidebar_background: Color,
     sidebar_foreground: Option<Color>,
     /// A pressed source-list row's fill, measured on the default accent;
@@ -558,6 +561,10 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xf0f0_f0ff),
     tab_selected: None,
+    // `tab.tab(SELECTED).fill`, `tab.label(SELECTED).color`: the selected tab white, lettered
+    // #262626, a composite over the opaque fill (measured, os-probe run 45252258079, macOS 15,
+    // Reduce Transparency off, `aqua.normal.tab_One` `fill`, `label`)
+    tab_selected_off_accent: Some((srgb8(0xffff_ffff), srgb8(0x2626_26ff))),
     // `sidebar.background_color`: the source-list row at rest, #dddddd, NSVisualEffectView's
     // sidebar material behind it, opaque, and its label #424242 (measured, os-probe run
     // 45252258079, macOS 15, Reduce Transparency off, `*.normal.source_list_row` `fill`, `label`),
@@ -824,6 +831,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // os-probe run 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xffff_ff64),
     tab_selected: None,
+    // `tab.tab(SELECTED).fill`, `tab.label(SELECTED).color`: the selected tab white at alpha
+    // 73/255, lettered white at alpha 217/255 (measured, os-probe run 45252258079, macOS 15,
+    // Reduce Transparency off, `darkAqua.normal.tab_One` `fill`, `label`)
+    tab_selected_off_accent: Some((srgb8(0xffff_ff49), srgb8(0xffff_ffd9))),
     // `sidebar.background_color`: the source-list row at rest, #424242, the sidebar material behind
     // it, opaque, and its label #ececec (measured, os-probe run 45252258079, macOS 15, Reduce
     // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
@@ -1093,6 +1104,7 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `tab.tab(SELECTED).fill`: #0077f9, on the default accent, lettered white (measured, os-probe
     // run 45252258079, macOS 26, Reduce Transparency off, `aqua.normal.tab_One` `fill`, `label`)
     tab_selected: Some(srgb8(0x0077_f9ff)),
+    tab_selected_off_accent: None,
     // `sidebar.background_color`: the source-list row at rest, #dddddd, the sidebar material behind
     // it, opaque, and its label #000000 (measured, os-probe run 45252258079, macOS 26, Reduce
     // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
@@ -1358,6 +1370,7 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // run 45252258079, macOS 26, Reduce Transparency off, `darkAqua.normal.tab_One` `fill`,
     // `label`)
     tab_selected: Some(srgb8(0x077d_ffff)),
+    tab_selected_off_accent: None,
     // `sidebar.background_color`: the source-list row at rest, #424242, the sidebar material behind
     // it, opaque, and its label #ffffff (measured, os-probe run 45252258079, macOS 26, Reduce
     // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
@@ -3889,12 +3902,13 @@ fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
 /// The tab bar: the bar and the tabs in the window's background (0.7.2:
 /// `tab.bar_background` and `tab.background_color` are
 /// `defaults.background_color` where unstated), a tab of least sizes with
-/// `macos-monterey`'s padding and hover fill; the selected tab in the
-/// window's background again (`tab.active_background`:
+/// `macos-monterey`'s padding and hover fill; the selected tab in its
+/// measured fill and label ([`SchemeColors::tab_selected_off_accent`]), else
+/// in the window's background again (`tab.active_background`:
 /// `defaults.background_color` where unstated), or where the generation
 /// draws it on the accent, in its measured fill lettered in the accent's
 /// text; the UI font in the window's text, which a hovered tab keeps, and a
-/// selected one off the accent (0.7.2: `tab.font` is `defaults.font`,
+/// selected one off the accent without a measured label (0.7.2: `tab.font` is `defaults.font`,
 /// `hover_text_color` `tab.font.color` and `active_text_color`
 /// `defaults.text_color` where unstated).
 /// 0.7.2 states no outline, corners, shadow or indicator.
@@ -3924,7 +3938,10 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
             if g.tab_selected_on_accent {
                 Some(fill(c.tab_selected.unwrap_or(roles.accent.fill)))
             } else {
-                roles.window.background.map(fill)
+                c.tab_selected_off_accent
+                    .map(|(selected, _)| selected)
+                    .or(roles.window.background)
+                    .map(fill)
             },
         )
         .build();
@@ -3953,6 +3970,14 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
                 g.tab_selected_on_accent
                     .then(|| RuleSelector::on(WidgetState::SELECTED)),
                 [TextProp::Color(roles.accent.foreground)],
+            )
+            .rules(
+                c.tab_selected_off_accent
+                    .filter(|_| !g.tab_selected_on_accent)
+                    .map(|_| RuleSelector::on(WidgetState::SELECTED)),
+                c.tab_selected_off_accent
+                    .filter(|_| !g.tab_selected_on_accent)
+                    .map(|(_, label)| TextProp::Color(label)),
             )
             .build(),
         RuleBuilder::new(PartStyle::default()).build(),

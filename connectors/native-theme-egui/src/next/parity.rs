@@ -187,11 +187,6 @@ const STATE_RULE_0: &str = "the 0.8.0 theme states no rule for the state, and eg
      entries change the property between rest and the state: egui's own (spec §10, rule 0); \
      0.7.2's resolver gave the resting value or another state's";
 
-/// A state the role writes nothing into where the theme states no rule for it.
-const STATE_KEEPS_BASE: &str = "the 0.8.0 theme states no rule for the state, and the role \
-     writes nothing there: the cell keeps its base style's value (M4.E2c); 0.7.2's resolver \
-     gave the resting value";
-
 /// Rule 0 on the text-stroke width: the theme states none for any state, and egui's own
 /// entries widen it under the pointer and on a press.
 const WIDTH_RULE_0: &str = "the 0.8.0 theme states no text-stroke width, and egui's own \
@@ -1550,13 +1545,13 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Tab",
-        &[T],
+        &[M, T],
         ".visuals.selection.bg_fill",
         home!(tab.tab(SELECTED).fill),
     ),
     s(
         "Tab",
-        &[T],
+        &[M, T],
         ".visuals.selection.stroke.color",
         home!(tab.label(SELECTED).color),
     ),
@@ -1714,16 +1709,6 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
     ),
-    Gap {
-        diff: d(
-            "Tab",
-            &[M],
-            ".visuals.selection.stroke.color",
-            Cause::StateKeepsBase,
-            STATE_KEEPS_BASE,
-        ),
-        home: home!(tab.label(SELECTED).color),
-    },
     r0(
         "Splitter",
         &[I],

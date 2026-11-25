@@ -2827,20 +2827,12 @@ const DIFFERENCES: &[Difference] = &[
         &[TAB_STROKE, TAB_IDLE_STROKE],
     ),
     // the macOS presets state an unselected tab's measured fill (`tab.tab(NONE)`) and a hovered
-    // tab's as its rest one (`tab.tab(HOVER)`); macos-tahoe also the selected tab's measured fill
-    // and white label (`tab.tab(SELECTED)`, `tab.label(SELECTED)`), its icon in the label's colour.
+    // tab's as its rest one (`tab.tab(HOVER)`), and the selected tab's measured fill and label
+    // (`tab.tab(SELECTED)`, `tab.label(SELECTED)`; macos-tahoe's on the accent, lettered white),
+    // its icon in the label's colour.
     aw(
         "aw::tab_bar",
-        &["macos-monterey"],
-        LineAlign::Outside,
-        States::STATED,
-        (true, false),
-        &[TAB_STROKE, TAB_IDLE_STROKE],
-    )
-    .stating(&[&TAB_FILLS], &[TAB_STROKE, TAB_IDLE_STROKE, STATED]),
-    aw(
-        "aw::tab_bar",
-        &["macos-tahoe"],
+        MACOS,
         LineAlign::Outside,
         States::STATED,
         (true, false),
