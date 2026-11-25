@@ -10856,9 +10856,9 @@ fn menu_home_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) 
             if title { "title" } else { "row" },
         ),
         "layout.border_width" => {
-            "menu_row: the Hovered border's width, menu.item(HOVER).stroke.width, where a HOVER \
-             rule states the stroke, and the Pressed one's, menu.item(PRESSED).stroke.width, \
-             where a PRESSED rule states it"
+            "not drawn: no menu row reads layout.border_width: menu_row outlines the Hovered \
+             row menu.item(HOVER).stroke.width wide where a HOVER rule states the stroke, and \
+             the Pressed one menu.item(PRESSED).stroke.width wide where a PRESSED rule states it"
                 .to_owned()
         }
         "menu.icon_text_gap" => "not reachable: no iced menu draws an icon".to_owned(),
@@ -12459,8 +12459,10 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
                 .into()
         }
         (None, "layout.border_width") => {
-            "list_row_fill: the hovered row's outline width, list.highlight(HOVER).stroke.width, \
-             where a HOVER rule states the stroke (list_row's border)"
+            "not drawn: neither the list's frame nor its rows read layout.border_width: the \
+             frame's line is list.container(NONE).stroke.width (list_frame_border), a hovered \
+             row's outline list.highlight(HOVER).stroke.width where a HOVER rule states the \
+             stroke (list_lit, list_row_fill)"
                 .into()
         }
         (None, "list.container(NONE).corners") => {
@@ -42557,10 +42559,130 @@ mod tests {
         })
     }
 
+    /// `layout.border_width` reaches no list row nor menu row, which their
+    /// routes say: under kde-breeze light and windows-11 light, a hovered
+    /// and a pressed list row and menu row draw the same border with it
+    /// 3 px wider, and the Basic list's frame and rows and the Theme menu's
+    /// rows route it "not drawn".
+    #[test]
+    fn the_list_and_menu_rows_draw_no_layout_border_width() -> Result<(), String> {
+        for preset in ["kde-breeze", "windows-11"] {
+            let state = loaded(preset, false);
+            let r = state.next_shown();
+            let mut wider = r.clone();
+            wider.layout.border_width += 3.0;
+            let theme = &state.current_theme;
+            for status in [button::Status::Hovered, button::Status::Pressed] {
+                let list = |r: &native_theme::next::ResolvedTheme| {
+                    list_row(r, false, true)(theme, status).border
+                };
+                let menu =
+                    |r: &native_theme::next::ResolvedTheme| menu_row(r)(theme, status).border;
+                if list(r) != list(&wider) || menu(r) != menu(&wider) {
+                    return Err(format!("{preset} {status:?}: a row's border moved"));
+                }
+            }
+            for id in [
+                "basic.list.frame",
+                "basic.list.row_1",
+                "basic.list.row_3",
+                "chrome.menu.theme.reload",
+            ] {
+                let route = route_of(&state, id, "layout.border_width");
+                if !route.starts_with("not drawn: ") {
+                    return Err(format!("{preset} {id}: {route}"));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Widget Info's values are the shown scheme's: kde-breeze and
+    /// windows-11 in light and in dark, installed from the Theme row
+    /// ([`State::install_in_mode`]) and as [`loaded`] builds them, record
+    /// the preset and the scheme installed whatever the desktop's mode, and
+    /// the disabled push button's `button.body(DISABLED).fill` and
+    /// `button.label(DISABLED).color` rows show the preset's value in that
+    /// scheme (`next::values::home_value` of the preset resolved in it
+    /// alone), routed on that combination, not "(in a platform theme)"; the
+    /// two schemes' fills differ. Under a dark desktop the OS theme shows
+    /// kde-breeze's dark fill, #272a2e, which `loaded` showed under
+    /// "(in a platform theme)" for its light scheme too, never setting the
+    /// choice or the mode.
+    #[test]
+    fn widget_info_shows_the_installed_schemes_values() -> Result<(), String> {
+        let element = elements::element("basic.buttons.disabled")
+            .ok_or("basic.buttons.disabled is not listed")?;
+        let homes = ["button.body(DISABLED).fill", "button.label(DISABLED).color"];
+        let family = |_: &str, font: &StatedFont| font.family.clone();
+        let combinations = next_combinations();
+        for preset in ["kde-breeze", "windows-11"] {
+            let mut fills = Vec::new();
+            for (dark, scheme, mode) in [
+                (false, "light", AppColorMode::Light),
+                (true, "dark", AppColorMode::Dark),
+            ] {
+                let label = format!("{preset}/{scheme}");
+                let r = combinations
+                    .iter()
+                    .find(|(l, _)| *l == label)
+                    .map(|(_, r)| r)
+                    .ok_or(format!("{label} is no 0.8.0 combination"))?;
+                let json = next_theme_json(r);
+                let mut installed = State {
+                    accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                    ..State::default()
+                };
+                if !installed.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode) {
+                    return Err(format!("{label}: {:?}", installed.error_message));
+                }
+                for (how, state) in [("installed", installed), ("loaded", loaded(preset, dark))] {
+                    if state.installed_combination().as_deref() != Some(label.as_str())
+                        || state.is_dark != dark
+                    {
+                        return Err(format!(
+                            "{label} {how}: recorded as {:?}, dark {}",
+                            state.installed_combination(),
+                            state.is_dark
+                        ));
+                    }
+                    let info = element_info(&state, element);
+                    for home in homes {
+                        let row = info
+                            .rows
+                            .iter()
+                            .find(|row| row.leaf == home)
+                            .ok_or(format!("basic.buttons.disabled lists no {home}"))?;
+                        let want = native_theme_showcase_support::next::values::home_value(
+                            home, r, &json, &family,
+                        )?;
+                        if row.value != want.text || row.how.ends_with("(in a platform theme)") {
+                            return Err(format!(
+                                "{label} {how} {home}: {} ({}), the scheme's {}",
+                                row.value, row.how, want.text
+                            ));
+                        }
+                        if home.ends_with(".fill") && how == "installed" {
+                            fills.push(want.text);
+                        }
+                    }
+                }
+            }
+            if fills.first() == fills.get(1) {
+                return Err(format!(
+                    "{preset}: one disabled fill in both schemes: {fills:?}"
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// `preset` installed through `load_theme` in the mode `dark` names,
     /// under the default accessibility preferences, so every size is the
     /// theme's own; and, where the 0.8.0 model has the preset, its 0.8.0
-    /// theme in the same mode, which the chrome draws.
+    /// theme in the same mode, which the chrome draws, the preset the
+    /// choice installed and the mode its scheme, as
+    /// [`State::install_in_mode`] records them.
     fn loaded(preset: &str, dark: bool) -> State {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
@@ -42580,7 +42702,9 @@ mod tests {
                 next.err()
             );
             if let Ok(next) = next {
+                state.is_dark = next.resolved.is_dark();
                 state.keep_next(next);
+                state.current_choice = choice;
             }
         }
         state
