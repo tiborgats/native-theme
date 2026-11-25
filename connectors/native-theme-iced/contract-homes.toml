@@ -10,7 +10,7 @@
 # for the 0.7.2 model's colour leaves (those of a bundled preset's serialised ResolvedTheme),
 # and the state queries the 0.8.0 style functions ask that it names for none -- stated in
 # each of the 14 platform preset/scheme combinations in two opaque colours and a translucent
-# one in turn (a patch as the iced showcase's `home_patch_toml` writes it; the focus ring's
+# one in turn (a patch as showcase-support's `home_patch_toml` writes it; the focus ring's
 # and a text style's colour written into the resolved theme), is a [homes."<home>"] table:
 #   leaves: the 0.7.2 colour leaves next_homes.toml places at the home; absent for a state
 #           query it names for none;

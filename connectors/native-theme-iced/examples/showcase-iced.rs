@@ -2466,10 +2466,12 @@ impl State {
     /// export names it (`<preset>/<mode>`), where the installed theme is the
     /// one the export's walk resolved: the preset alone, with no palette
     /// laid over it, resolved in the walk's context, `ThemeContext::light()`
-    /// or `ThemeContext::dark()`. `None` under the OS theme, which is no
-    /// bundled combination, under a palette, and in any other context (a
-    /// desktop's, a preference set): a route then names what any platform
-    /// theme moves, as a claim names only what was resolved.
+    /// or `ThemeContext::dark()`, and the preset the 0.8.0 theme resolved.
+    /// `None` under the OS theme, which is no bundled combination, under a
+    /// palette, in any other context (a desktop's, a preference set), and
+    /// where the resolved theme is not the chosen preset's: a route then
+    /// names what any platform theme moves, as a claim names only what was
+    /// resolved.
     fn installed_combination(&self) -> Option<String> {
         let ThemeChoice::Preset(key) = &self.current_choice else {
             return None;
@@ -2479,8 +2481,10 @@ impl State {
         } else {
             ("light", ThemeContext::light())
         };
-        (self.theme_palette.is_none() && self.next_resolved.context == walked)
-            .then(|| format!("{key}/{mode}"))
+        (self.theme_palette.is_none()
+            && self.next_resolved.context == walked
+            && Preset::from_name(key) == Some(self.next_resolved.preset))
+        .then(|| format!("{key}/{mode}"))
     }
 
     /// Install `choice` in `mode`, with the palette chosen laid over it:
@@ -9969,8 +9973,9 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, home: &str) -> Option<String
 /// the function draws of the home, naming what it reads, or that it is
 /// unstated and what is drawn in its place. While the window is not active,
 /// `window_active` false, a selected row is drawn in the `UNFOCUSED_VIEW`
-/// pair where it differs ([`next_selection_pair`]). `None` for a home
-/// neither reads.
+/// pair where it differs ([`next_selection_pair`]), and a hovered row in
+/// the `HOVER|UNFOCUSED_VIEW` state's fill, outline and label where each
+/// differs ([`list_lit`]). `None` for a home neither reads.
 fn list_route(
     r: &native_theme::next::ResolvedTheme,
     home: &str,
@@ -9985,6 +9990,13 @@ fn list_route(
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
     let unfocused_fill = !window_active && inactive.0 != active.0;
     let unfocused_ink = !window_active && inactive.1 != active.1;
+    let (hovered, hovered_unfocused) = (
+        list_lit(l, hover),
+        list_lit(l, hover.union(WidgetState::UNFOCUSED_VIEW)),
+    );
+    let unfocused_hover_fill = !window_active && hovered_unfocused.0 != hovered.0;
+    let unfocused_hover_edge = !window_active && hovered_unfocused.1 != hovered.1;
+    let unfocused_hover_ink = !window_active && hovered_unfocused.2 != hovered.2;
     let unmapped = unmapped_fill_route(
         home,
         &[
@@ -10057,17 +10069,29 @@ fn list_route(
         "list.item_label(SELECTED).color" => {
             "list_row: the selected row's text_color, list.item_label(SELECTED).color"
         }
+        "list.highlight(HOVER).fill" if unfocused_hover_fill => {
+            "not drawn while the window is inactive: the Hovered fill is \
+             list.highlight(HOVER|UNFOCUSED_VIEW).fill"
+        }
         "list.highlight(HOVER).fill" if !fill(hover) => {
             "not drawn: list.highlight(HOVER).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
         "list.highlight(HOVER).fill" => "list_row: the Hovered fill, list.highlight(HOVER).fill",
+        "list.item_label(HOVER).color" if unfocused_hover_ink => {
+            "not drawn while the window is inactive: the Hovered label is \
+             list.item_label(HOVER|UNFOCUSED_VIEW).color"
+        }
         "list.item_label(HOVER).color" if !ink(hover) => {
             "not drawn: list.item_label(HOVER).color is unstated, so the Hovered label is iced's \
              own flat button's (button::text)"
         }
         "list.item_label(HOVER).color" => {
             "list_row: the Hovered text_color, list.item_label(HOVER).color"
+        }
+        "list.highlight(HOVER).stroke.color" if unfocused_hover_edge => {
+            "not drawn while the window is inactive: the Hovered border is \
+             list.highlight(HOVER|UNFOCUSED_VIEW).stroke"
         }
         "list.highlight(HOVER).stroke.color"
             if !l.highlight(hover).from_state.contains(PartStated::STROKE) =>
@@ -27316,44 +27340,14 @@ mod tests {
             "progress_bar",
         ),
         (
-            "basic.segmented.control",
+            "basic.segmented",
             "iced_next::styles::segmented_control(next, false)",
             "segmented_control",
         ),
         (
-            "basic.segmented.control",
+            "basic.segmented",
             "iced_next::styles::segment(next, i == state.basic_segment,",
             "segment",
-        ),
-        (
-            "basic.segmented.day",
-            "iced_next::styles::segment(next, i == state.basic_segment,",
-            "segment",
-        ),
-        (
-            "basic.segmented.day",
-            "iced_next::styles::segmented_control(next, false)",
-            "segmented_control",
-        ),
-        (
-            "basic.segmented.week",
-            "iced_next::styles::segment(next, i == state.basic_segment,",
-            "segment",
-        ),
-        (
-            "basic.segmented.week",
-            "iced_next::styles::segmented_control(next, false)",
-            "segmented_control",
-        ),
-        (
-            "basic.segmented.month",
-            "iced_next::styles::segment(next, i == state.basic_segment,",
-            "segment",
-        ),
-        (
-            "basic.segmented.month",
-            "iced_next::styles::segmented_control(next, false)",
-            "segmented_control",
         ),
         (
             "basic.segmented.divider_1",
@@ -27519,7 +27513,11 @@ mod tests {
     /// that call's function in every combination and colour home, and draws
     /// a row of it only in the statuses the call's flag argument gives (a
     /// literal `false` passed as `disabled` or `selected`: no status of the
-    /// other flag). Over every bundled combination.
+    /// other flag). Over every bundled combination. Its limit: an element
+    /// the page lays out as a `.part(..)` of a tagged one, by the layout's
+    /// geometry and not by a `tagged(..)` of its own (the segmented
+    /// control's segments and dividers), is held by [`PAGE_STYLE_CALLS`]
+    /// alone, not to a call inside a span of the page.
     #[test]
     fn a_drawing_names_the_style_call_the_page_draws_it_in() -> Result<(), String> {
         let export = contract_homes().ok_or("contract-homes.toml does not parse")?;
@@ -34989,9 +34987,9 @@ mod tests {
 
     /// The installed preset's name is the contract's for the same
     /// combination (`<preset>/<scheme>`, which the home export lists as
-    /// `combinations`): every bundled preset in both modes is named so, the
-    /// 14 platform combinations of the export are each a bundled preset's,
-    /// and the OS theme names none.
+    /// `combinations`): every 0.8.0 preset in both modes is named so, the
+    /// 14 platform combinations of the export are those, and the OS theme
+    /// and a resolved theme not the chosen preset's name none.
     #[test]
     fn the_installed_combination_is_named_as_the_contract_names_it() {
         let Some(export) = contract_homes() else {
@@ -35002,9 +35000,11 @@ mod tests {
             ..State::default()
         };
         let mut named = BTreeSet::new();
-        for info in native_theme::theme::Theme::list_presets() {
+        for preset in Preset::ALL {
+            let key = preset.as_str();
             for (is_dark, mode) in [(false, "light"), (true, "dark")] {
-                state.current_choice = ThemeChoice::Preset(info.key.to_owned());
+                state.current_choice = ThemeChoice::Preset(key.to_owned());
+                state.next_resolved.preset = *preset;
                 state.is_dark = is_dark;
                 // Resolved in the context the export's walk resolves in.
                 state.next_resolved.context = if is_dark {
@@ -35015,18 +35015,16 @@ mod tests {
                 let label = state.installed_combination();
                 assert_eq!(
                     label.as_deref(),
-                    Some(format!("{}/{mode}", info.key).as_str()),
-                    "{} (dark: {is_dark})",
-                    info.key
+                    Some(format!("{key}/{mode}").as_str()),
+                    "{key} (dark: {is_dark})"
                 );
                 named.extend(label);
             }
         }
         let listed: BTreeSet<String> = export.combinations.iter().cloned().collect();
-        assert!(
-            listed.is_subset(&named),
-            "the export names combinations no preset is installed as: {:?}",
-            listed.difference(&named).collect::<Vec<_>>()
+        assert_eq!(
+            listed, named,
+            "the export's combinations, the presets' installs"
         );
         assert_eq!(listed.len(), 14, "7 platform presets in both schemes");
         // RV-iced3 Q1: a combination is named only where the installed
@@ -35050,6 +35048,21 @@ mod tests {
         state.next_resolved.context.contrast = Contrast::High;
         assert_eq!(state.installed_combination(), None, "High contrast");
         state.next_resolved.context.contrast = Contrast::Normal;
+        assert!(state.installed_combination().is_some());
+        // RV-G4c20 n4: the chosen preset's name only over its own resolve.
+        let chosen = state.next_resolved.preset;
+        state.next_resolved.preset = Preset::ALL
+            .iter()
+            .copied()
+            .find(|other| *other != chosen)
+            .unwrap_or(chosen);
+        assert_ne!(state.next_resolved.preset, chosen, "a second preset");
+        assert_eq!(
+            state.installed_combination(),
+            None,
+            "a resolve of another preset than the chosen one"
+        );
+        state.next_resolved.preset = chosen;
         assert!(state.installed_combination().is_some());
         state.current_choice = ThemeChoice::OsTheme("default".to_owned());
         assert_eq!(
@@ -35242,40 +35255,81 @@ mod tests {
     /// window's focus, as [`list_row`] and [`basic_table`] draw them: while
     /// the window is inactive, where the `UNFOCUSED_VIEW` pair differs
     /// ([`next_selection_pair`]), the `SELECTED` fill and label are not
-    /// drawn, and while it is active they are routed as drawn. Over every
-    /// bundled combination, at least one of which states a differing pair.
+    /// drawn, and while it is active they are routed as drawn; RV-G4c20 SF1:
+    /// likewise a hovered list row's fill, outline and label where the
+    /// `HOVER|UNFOCUSED_VIEW` state's differ from `HOVER`'s ([`list_lit`];
+    /// the table's rows have no hover state). Over every bundled
+    /// combination, at least one of which states a differing selected pair
+    /// and one a differing hover part.
     #[test]
     fn a_selected_rows_route_follows_the_windows_focus() -> Result<(), String> {
         let mut failures = Vec::new();
-        let mut differing = 0usize;
+        let (mut differing, mut differing_hover) = (0usize, 0usize);
         for (label, r) in next_combinations() {
             let (active, inactive) = (
                 next_selection_pair(&r, true),
                 next_selection_pair(&r, false),
             );
-            for (home, differs) in [
-                ("list.highlight(SELECTED).fill", active.0 != inactive.0),
-                ("list.item_label(SELECTED).color", active.1 != inactive.1),
+            let (hovered, hovered_unfocused) = (
+                list_lit(&r.list, WidgetState::HOVER),
+                list_lit(
+                    &r.list,
+                    WidgetState::HOVER.union(WidgetState::UNFOCUSED_VIEW),
+                ),
+            );
+            for (home, differs, hover) in [
+                (
+                    "list.highlight(SELECTED).fill",
+                    active.0 != inactive.0,
+                    false,
+                ),
+                (
+                    "list.item_label(SELECTED).color",
+                    active.1 != inactive.1,
+                    false,
+                ),
+                (
+                    "list.highlight(HOVER).fill",
+                    hovered.0 != hovered_unfocused.0,
+                    true,
+                ),
+                (
+                    "list.highlight(HOVER).stroke.color",
+                    hovered.1 != hovered_unfocused.1,
+                    true,
+                ),
+                (
+                    "list.item_label(HOVER).color",
+                    hovered.2 != hovered_unfocused.2,
+                    true,
+                ),
             ] {
                 if !differs {
                     continue;
                 }
-                differing += 1;
-                for (what, route) in [
-                    ("list", list_route(&r, home, false, false)),
-                    ("table", table_route(&r, home, false, false)),
-                ] {
+                if hover {
+                    differing_hover += 1;
+                } else {
+                    differing += 1;
+                }
+                let routes = |window_active: bool| {
+                    let mut routes = vec![("list", list_route(&r, home, false, window_active))];
+                    if !hover {
+                        routes.push(("table", table_route(&r, home, false, window_active)));
+                    }
+                    routes
+                };
+                for (what, route) in routes(false) {
                     let route = route.unwrap_or_default();
                     if !route.starts_with("not drawn while the window is inactive: ") {
                         failures.push(format!("{label} {what} {home}, inactive: {route}"));
                     }
                 }
-                for (what, route) in [
-                    ("list", list_route(&r, home, false, true)),
-                    ("table", table_route(&r, home, false, true)),
-                ] {
+                for (what, route) in routes(true) {
                     let route = route.unwrap_or_default();
-                    if route.starts_with("not drawn while the window is inactive") {
+                    if route.is_empty()
+                        || route.starts_with("not drawn while the window is inactive")
+                    {
                         failures.push(format!("{label} {what} {home}, active: {route}"));
                     }
                 }
@@ -35283,6 +35337,9 @@ mod tests {
         }
         if differing == 0 {
             failures.push("no bundled combination states a differing unfocused pair".to_owned());
+        }
+        if differing_hover == 0 {
+            failures.push("no bundled combination states a differing unfocused hover".to_owned());
         }
         if failures.is_empty() {
             Ok(())
@@ -37427,7 +37484,8 @@ mod tests {
     /// what makes it so on the installed theme: the `CHECKED` state's stroke
     /// where a rule states it none (ios-13), else the stroke at rest, each
     /// reason holding at its home. Over every bundled 0.8.0 preset in both
-    /// modes, each installed; at least one draws no such border.
+    /// modes, each installed; at least one draws no such border on a check
+    /// box, and at least one on a radio.
     #[test]
     fn a_checked_border_not_drawn_names_what_makes_it_so() -> Result<(), String> {
         let mut state = State {
@@ -37435,37 +37493,44 @@ mod tests {
             ..State::default()
         };
         let mut failures = Vec::new();
-        let mut not_drawn = 0usize;
-        for preset in native_theme::theme::Theme::list_presets()
-            .iter()
-            .filter(|preset| Preset::from_name(preset.key).is_some())
-        {
+        let (mut box_not_drawn, mut radio_not_drawn) = (0usize, 0usize);
+        for preset in Preset::ALL {
+            let key = preset.as_str();
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
-                if !state.install_in_mode(ThemeChoice::Preset(preset.key.to_owned()), mode) {
-                    return Err(format!(
-                        "{} ({mode:?}): {:?}",
-                        preset.key, state.error_message
-                    ));
+                if !state.install_in_mode(ThemeChoice::Preset(key.to_owned()), mode) {
+                    return Err(format!("{key} ({mode:?}): {:?}", state.error_message));
                 }
-                for (info, role) in [
-                    (checkbox_info(&state), "checked border: "),
-                    (radio_info(&state), "selected border: "),
+                for (info, role, not_drawn) in [
+                    (
+                        checkbox_info(&state),
+                        "checked border: ",
+                        &mut box_not_drawn,
+                    ),
+                    (
+                        radio_info(&state),
+                        "selected border: ",
+                        &mut radio_not_drawn,
+                    ),
                 ] {
                     for line in info.lines().filter(|l| l.trim_start().starts_with(role)) {
                         let Some((_, reason)) = line.rsplit_once(", not drawn (") else {
                             continue;
                         };
-                        not_drawn += 1;
+                        *not_drawn += 1;
                         let reason = reason.strip_suffix(')').unwrap_or(reason);
                         if !zero_reason_holds(reason, state.next_shown()) {
-                            failures.push(format!("{} ({mode:?}): \"{line}\"", preset.key));
+                            failures.push(format!("{key} ({mode:?}): \"{line}\""));
                         }
                     }
                 }
             }
         }
-        if not_drawn == 0 {
-            failures.push("no bundled preset leaves a checked border undrawn".to_owned());
+        if box_not_drawn == 0 {
+            failures
+                .push("no bundled preset leaves a check box's checked border undrawn".to_owned());
+        }
+        if radio_not_drawn == 0 {
+            failures.push("no bundled preset leaves a radio's selected border undrawn".to_owned());
         }
         if failures.is_empty() {
             Ok(())
@@ -40974,18 +41039,19 @@ mod tests {
     /// `each` over every bundled preset the Theme row installs, the 0.8.0
     /// model's, in both modes, installed in a state as the Theme row
     /// installs it ([`State::install_in_mode`]): the state, its combination
-    /// (`<preset>/<mode>`) and the page widgets' infos its pages build. The
-    /// state starts on a fake read of the desktop ([`os_read_with`]) with the
-    /// default accessibility preferences as the OS's, so the context every
-    /// preset is resolved in is the same on every host.
+    /// (`<preset>/<mode>`, held to be the one the export's walk names: the
+    /// preset resolved in its context, `ThemeContext::light()` or
+    /// `ThemeContext::dark()`) and the page widgets' infos its pages build.
+    /// The state starts on a fake read of the desktop ([`os_read_with`])
+    /// with the default accessibility preferences as the OS's, so the
+    /// context every preset is resolved in is the same on every host.
     fn over_bundled_infos(mut each: impl FnMut(&State, &str, &[String])) {
         let mut state = State {
-            accessibility: native_theme_iced::AccessibilityPreferences::default(),
             os_accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..started_with_os("over_bundled_infos", || os_read_with(|_| {}))
         };
         for preset in Preset::ALL {
-            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+            for (mode, scheme) in [(AppColorMode::Light, "light"), (AppColorMode::Dark, "dark")] {
                 let choice = ThemeChoice::Preset(preset.as_str().to_owned());
                 assert!(
                     state.install_in_mode(choice, mode),
@@ -40995,6 +41061,11 @@ mod tests {
                 );
                 let infos = built_infos(&mut state);
                 let combination = state.installed_combination().unwrap_or_default();
+                assert_eq!(
+                    combination,
+                    format!("{}/{scheme}", preset.as_str()),
+                    "the walked combination installed"
+                );
                 each(&state, &combination, &infos);
             }
         }
@@ -42876,17 +42947,24 @@ mod tests {
     /// without a move: what the inspector shows and copies is what the same
     /// hover shows under the new theme from the start, its hexes the new
     /// theme's, where it kept the old theme's text. Each install is held to
-    /// have installed its preset: two bundled presets of the 0.8.0 model,
-    /// neither of them a startup theme on Linux.
+    /// have installed its preset, and without an error: two bundled presets
+    /// of the 0.8.0 model, neither of them the platform preset of Linux,
+    /// macOS or Windows, where the showcase runs ([`Preset::detect`]), so a
+    /// failed install's fallback to it does not pass as the install.
     #[test]
     fn widget_info_follows_an_install_under_a_still_pointer() {
-        let (from, to) = ("windows-11", "material-3");
+        let (from, to) = ("ios-13", "material-3");
         let settle = INFO_SETTLE;
         let holds = |state: &State, preset: &str| {
             assert_eq!(
                 Some(state.next_resolved.preset),
                 Preset::from_name(preset),
                 "{preset} was not installed: {:?}",
+                state.error_message
+            );
+            assert!(
+                state.error_message.is_none(),
+                "{preset}: {:?}",
                 state.error_message
             );
         };
