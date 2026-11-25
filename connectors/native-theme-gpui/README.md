@@ -944,6 +944,20 @@ platform does; no border colour can take the fill away. A per-side stroke
 (different widths or colours per side) is not drawn: the builder reports the
 part's stroke as unmapped.
 
+**Gradients and layered fills.** The connector hands gpui-component one colour
+per fill: its `ThemeColor` slots are `Hsla` (gpui-component 0.10.0
+`src/theme/theme_color.rs`, `ThemeColor`), and the builders set a part's fill
+as one colour. A fill the theme states as layers (`Paint::Complex`, a gradient
+among them) is drawn in the one colour the model gives in its place, its
+fallback colour (docs/v0.8.0-spec.md §10, rule 2), and as gpui-component's own
+fill where it gives none, layers that are all gradients. The fill readers
+`next::fill_of` and `next::state_fill_of` take the fill's home and return
+those layers as `Unmapped` at it (rule 4), not as the `None` of a fill the
+theme leaves unstated, and a builder that reads such a fill returns that
+`Unmapped`; the showcase's Widget Info names the home in a line,
+`gpui-component's own: the theme states no value gpui can take at <home>`, in
+place of the fill's swatch. No bundled preset states such a fill.
+
 **Corners are circular, one radius a part.** gpui rounds a quad with four
 circular radii (gpui-pre 0.3.12 `src/geometry.rs`, `Corners`), and
 gpui-component's theme and widgets take one radius each. A continuous corner

@@ -2759,11 +2759,12 @@ pub(crate) struct SegmentedLook {
     /// `HOVER`, an unselected segment's label under the pointer; else
     /// upstream's `tab_active_foreground` (tab/tab.rs, `TabVariant::hovered`).
     pub hover_text: Option<Hsla>,
-    /// `segmented_control.separator(NONE).fill`, the line before each
-    /// segment after the first; else no line, as upstream's segmented
-    /// `TabBar` draws none between its segments (tab/tab_bar.rs,
+    /// `segmented_control.separator(NONE).fill` as `next::fill_of` reads
+    /// it, the line before each segment after the first; where it is
+    /// unstated or `Unmapped` (spec §10, rule 4), no line, as upstream's
+    /// segmented `TabBar` draws none between its segments (tab/tab_bar.rs,
     /// `TabBar::render`).
-    pub separator: Option<Hsla>,
+    pub separator: next::Mapped<Option<Hsla>>,
     /// `segmented_control.separator_width`, the line's width where a line
     /// is drawn.
     pub separator_width: f32,
@@ -2787,7 +2788,10 @@ impl SegmentedLook {
             text: next::text_color_of(&s.label(WidgetState::NONE)),
             selected_text: next::text_color_of(&s.label(WidgetState::SELECTED)),
             hover_text: next::state_text_color_of(&s.label(WidgetState::HOVER)),
-            separator: drawn_fill(&s.separator(WidgetState::NONE)),
+            separator: next::fill_of(
+                &s.separator(WidgetState::NONE),
+                "segmented_control.separator(NONE).fill",
+            ),
             separator_width: s.separator_width,
         }
     }
@@ -2798,9 +2802,12 @@ impl SegmentedLook {
     }
 
     /// The line between segments, its colour and width; none where the
-    /// theme states no `separator(NONE).fill`, as upstream draws none.
+    /// theme states no `separator(NONE).fill` gpui can paint, as upstream
+    /// draws none.
     pub(crate) fn separator_line(&self) -> Option<(Hsla, f32)> {
         self.separator
+            .ok()
+            .flatten()
             .map(|colour| (colour, self.separator_width.max(0.0)))
     }
 }
@@ -4854,8 +4861,16 @@ fn surfaced_textarea(
         &mut textarea_info,
     );
     let surface = text_area_surface(cx);
-    if surface.is_none() && next_resolved(cx).is_some() {
-        textarea_info = textarea_info.config("surface", NO_TEXT_AREA_SURFACE);
+    if let (None, Some(r)) = (&surface, next_resolved(cx)) {
+        textarea_info = textarea_info
+            .config("surface", NO_TEXT_AREA_SURFACE)
+            .fill_read(
+                "surface",
+                &next::fill_of(
+                    &r.text_area.field(WidgetState::NONE),
+                    "text_area.field(NONE).fill",
+                ),
+            );
     }
     match height {
         Some(height) => textarea = Styled::h(textarea, height),

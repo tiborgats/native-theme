@@ -1440,6 +1440,79 @@ fn an_all_gradient_fill_is_named_in_widget_info() {
     );
 }
 
+/// The fill sites no builder of the connector reads, which an installed
+/// theme reaches, name a fill stated as layers that are all gradients at
+/// its home too (spec §10, rule 4): the segmented control's separator,
+/// whose line says upstream's none is drawn; the menus' panel, with the
+/// popup's own swatch beside the line (`FillClaim::or_own`); and the
+/// hovered menu item, which the info decides on (`WidgetInfo::fill_read`),
+/// its accent swatch not called unstated.
+#[test]
+fn an_all_gradient_fill_the_showcase_alone_reads_is_named_in_widget_info() {
+    use native_theme::next::{
+        BlendMode, MenuRule, Paint, PaintLayer, PartPatch, Preset, SegmentedControlRule,
+        Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let t = Theme::default();
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: Vec::new().into(),
+        blend: BlendMode::Normal,
+    }]);
+    let fill = PartPatch::new().fill(gradient);
+    let patch = ThemePatch::new()
+        .segmented_control(SegmentedControlRule::new().separator(fill.clone()))
+        .menu(MenuRule::new().panel(fill.clone()))
+        .menu(MenuRule::new().states(WidgetState::HOVER).item(fill));
+    let r = NextTheme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let unmapped = |home: &str| {
+        format!("gpui-component's own: the theme states no value gpui can take at {home}")
+    };
+
+    let segmented = crate::info::layout::segmented(&t, &["One", "Two"], 0, Some(&r)).to_text();
+    let home = "segmented_control.separator(NONE).fill";
+    assert!(
+        segmented.contains(&format!("fill: separators, {}", unmapped(home))),
+        "{segmented}"
+    );
+    assert!(
+        segmented.contains(&format!(
+            "none, as upstream's segmented TabBar draws no line between its segments: the theme states no value gpui can take at {home}"
+        )),
+        "{segmented}"
+    );
+    assert!(
+        !segmented.contains("the theme states no segmented_control.separator(NONE).fill"),
+        "a separator stated as gradients is called unstated: {segmented}"
+    );
+
+    let menus = crate::info::app_menus(&t, crate::info::MenuHost::Row, Some(&r)).to_text();
+    assert!(
+        menus.contains(&format!(
+            "fill: menu bg, {}",
+            unmapped("menu.panel(NONE).fill")
+        )),
+        "{menus}"
+    );
+    assert!(
+        menus.contains("menu bg, the popup's own: popover "),
+        "no swatch of the popup's own fill beside the line: {menus}"
+    );
+    assert!(
+        menus.contains(&format!(
+            "fill: hovered item, {}",
+            unmapped("menu.item(HOVER).fill")
+        )),
+        "{menus}"
+    );
+    assert!(
+        !menus.contains("hovered item, none stated"),
+        "a hover fill stated as gradients is called unstated: {menus}"
+    );
+}
+
 /// The Theme tab's Window section names the decorations the window was
 /// granted and what draws the frame under them (spec S8): the window
 /// manager's frame, with none of the facts of gpui-component's client frame,
@@ -19772,14 +19845,14 @@ fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
         text: None,
         selected_text: None,
         hover_text: None,
-        separator: None,
+        separator: Ok(None),
         separator_width: 1.,
     };
     let stated = SegmentedLook {
         frame: Some((t.border, 2.)),
         radius: Some(3.),
         segment_height: Some(30.),
-        separator: Some(t.border),
+        separator: Ok(Some(t.border)),
         font: r
             .segmented_control
             .label(native_theme::next::WidgetState::NONE),

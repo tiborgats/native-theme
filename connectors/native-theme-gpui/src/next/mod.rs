@@ -1403,18 +1403,37 @@ mod tests {
     #[test]
     fn an_all_gradient_fill_is_unmapped() -> Result<(), serde_json::Error> {
         use native_theme::next::{
-            BlendMode, ButtonRule, PaintLayer, PartPatch, Preset, Theme, ThemeContext, ThemePatch,
+            BlendMode, ButtonRule, InputRule, PaintLayer, PartPatch, Preset, Theme, ThemeContext,
+            ThemePatch, ToolbarRule,
         };
 
-        let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        let linear = PaintLayer::LinearGradient {
             angle_deg: 90.0,
             stops: Vec::new().into(),
             blend: BlendMode::Normal,
-        }]);
+        };
+        let radial = PaintLayer::RadialGradient {
+            center: [0.5, 0.5],
+            radius: 1.0,
+            stops: Vec::new().into(),
+            blend: BlendMode::Normal,
+        };
+        let solid = PaintLayer::Solid {
+            color: RED,
+            blend: BlendMode::Normal,
+        };
+        let gradient = Paint::layers(vec![linear.clone()]);
         let fill = PartPatch::new().fill(gradient);
         let patch = ThemePatch::new()
             .button(ButtonRule::new().body(fill.clone()))
-            .button(ButtonRule::new().states(WidgetState::HOVER).body(fill));
+            .button(ButtonRule::new().states(WidgetState::HOVER).body(fill))
+            .toolbar(
+                ToolbarRule::new()
+                    .bar(PartPatch::new().fill(Paint::layers(vec![linear.clone(), radial]))),
+            )
+            .input(
+                InputRule::new().field(PartPatch::new().fill(Paint::layers(vec![solid, linear]))),
+            );
         let r = Theme::preset(Preset::KdeBreeze)
             .with_patch(patch)
             .resolve(&ThemeContext::light());
@@ -1426,11 +1445,28 @@ mod tests {
             state_fill_of(&r.button.body(WidgetState::HOVER), "hovered"),
             Err(Unmapped("hovered"))
         );
-        assert!(to_theme(&r).is_err());
         assert_eq!(
-            unpaintable_fills(&serde_json::to_value(&r)?).len(),
-            2,
-            "the walk of no_bundled_preset_states_a_fill_gpui_cannot_paint misses a planted gradient"
+            fill_of(&r.toolbar.bar(WidgetState::NONE), "two gradients"),
+            Err(Unmapped("two gradients"))
+        );
+        assert_eq!(
+            fill_of(
+                &r.input.field(WidgetState::NONE),
+                "a solid under a gradient"
+            ),
+            Ok(Some(hsla(RED)))
+        );
+        assert!(to_theme(&r).is_err());
+        let found = unpaintable_fills(&serde_json::to_value(&r)?);
+        assert_eq!(
+            found.len(),
+            3,
+            "the walk of no_bundled_preset_states_a_fill_gpui_cannot_paint does not find the \
+             planted gradients, one layer and two, and only them: {found:#?}"
+        );
+        assert!(
+            found.iter().any(|path| path.starts_with(".toolbar.")),
+            "the walk misses the fill of two gradient layers: {found:#?}"
         );
         Ok(())
     }
@@ -1484,7 +1520,9 @@ mod tests {
     }
 
     /// No bundled preset, light or dark, in an active or an inactive
-    /// window, states a fill as layers that are all gradients, on any part,
+    /// window, at normal or high contrast, with transparency reduced or not
+    /// (the showcase's preferences), states a fill as layers that are all
+    /// gradients, on any part,
     /// at rest or by a state rule: where one did, [`fill_of`] and
     /// [`state_fill_of`], the readers the connector and the showcase take
     /// every fill through, would be `Unmapped` there and the widget
@@ -1499,14 +1537,24 @@ mod tests {
         for preset in Preset::ALL {
             for mut ctx in [ThemeContext::light(), ThemeContext::dark()] {
                 for active in [true, false] {
-                    ctx.window_active = active;
-                    let r = Theme::preset(*preset).resolve(&ctx);
-                    let at = format!("{preset:?} {:?}, active {active}", ctx.scheme);
-                    unpaintable.extend(
-                        unpaintable_fills(&serde_json::to_value(&r)?)
-                            .into_iter()
-                            .map(|fill| format!("{at}: {fill}")),
-                    );
+                    for contrast in [Contrast::Normal, Contrast::High] {
+                        for reduced in [false, true] {
+                            ctx.window_active = active;
+                            ctx.contrast = contrast;
+                            ctx.reduced_transparency = reduced;
+                            let r = Theme::preset(*preset).resolve(&ctx);
+                            let at = format!(
+                                "{preset:?} {:?}, active {active}, {contrast:?} contrast, \
+                                 reduced transparency {reduced}",
+                                ctx.scheme
+                            );
+                            unpaintable.extend(
+                                unpaintable_fills(&serde_json::to_value(&r)?)
+                                    .into_iter()
+                                    .map(|fill| format!("{at}: {fill}")),
+                            );
+                        }
+                    }
                 }
             }
         }
