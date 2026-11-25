@@ -8750,6 +8750,19 @@ fn home_keyed(id: &str) -> bool {
         || id.starts_with("basic.slider.")
         || id.starts_with("basic.progress_bar.")
         || id.starts_with("basic.spinner.")
+        || id.starts_with("basic.segmented.")
+        || id.starts_with("basic.expander.")
+        || separator_element(id)
+        || id.starts_with("basic.card.")
+        || id.starts_with("basic.typography.")
+}
+
+/// Whether the list's id `id` names a separator line: the Basic page's, the
+/// page tabs' rule or the side panel's separator ([`separator_line`]).
+fn separator_element(id: &str) -> bool {
+    id.starts_with("basic.separator.")
+        || id == "chrome.page_tabs.rule"
+        || id == "chrome.side_panel.separator"
 }
 
 /// Whether the list's id `id` names the Basic page or one of its columns.
@@ -11861,6 +11874,237 @@ fn spinner_route(state: &State, home: &str) -> Option<String> {
     Some(route.to_owned())
 }
 
+/// The route of the home `home` of an element of the Basic page's
+/// segmented control: the label's text and line box, a segment's height
+/// and padding, the separator's width, and the corners and outline width
+/// `styles::segmented_control` draws. `None` for a home none of them
+/// reads, the colours the export routes ([`colour_home_route`]) among them.
+fn segmented_route(home: &str) -> Option<String> {
+    let route = match home {
+        "segmented_control.label(NONE)" => {
+            "next_text: the label's size, line box and font, segmented_control.label(NONE)"
+        }
+        "typography.line_height_multiplier" => {
+            "next_text: the label's line box, segmented_control.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        "segmented_control.segment(NONE).min_size[1]" => {
+            "at_least(label, ..): each segment's outer height, \
+             segmented_control.segment(NONE).min_size[1], less its padding; no floor where \
+             unstated"
+        }
+        "segmented_control.separator_width" => {
+            "the width of the styles::segment_separator line between two segments, \
+             segmented_control.separator_width"
+        }
+        "segmented_control.track(NONE).corners" => {
+            "styles::segmented_control and styles::segment: the outer corners, \
+             segmented_control.track(NONE).corners"
+        }
+        "segmented_control.track(NONE).stroke.width" => {
+            "styles::segmented_control: the outline; the container's padding, \
+             segmented_control.track(NONE)'s stroke width (NextSegmented), none where unstated"
+        }
+        "segmented_control.segment(NONE).padding.top"
+        | "segmented_control.segment(NONE).padding.right"
+        | "segmented_control.segment(NONE).padding.bottom"
+        | "segmented_control.segment(NONE).padding.left" => {
+            "Button::padding of each segment, the side of segmented_control.segment(NONE).padding, \
+             iced's own (button::DEFAULT_PADDING) where unstated"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of the element of id `id` of the Basic
+/// page's expanders under `r`, the installed 0.8.0 theme: the title's and
+/// the body's text and line boxes, the header's height and padding, the
+/// arrow's size, side and gap, the body's indent, and the frame
+/// `styles::expander_frame` draws where `expander.frame_enabled` is true.
+/// `None` for a home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
+fn expander_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -> Option<String> {
+    let framed = r.expander.frame_enabled == Some(true);
+    let route = match home {
+        "expander.header_label(NONE)" => {
+            "next_text: the title's size, line box and font, expander.header_label(NONE)"
+        }
+        "typography.body" => {
+            "Typeset::next_body: the body text's size, line box and font, typography.body"
+        }
+        "typography.line_height_multiplier" if id.ends_with(".body") => {
+            "Typeset::next_body: the body text's line box, typography.body's size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        "typography.line_height_multiplier" if id == "basic.expander.details" => {
+            "next_text: the title's and the body's line boxes, expander.header_label(NONE)'s \
+             and typography.body's size by typography.line_height_multiplier where they state \
+             no line height (next_line_box); next_expander_header_height: the header grown to \
+             hold the title's"
+        }
+        "typography.line_height_multiplier" => {
+            "next_text: the title's line box, expander.header_label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box); \
+             next_expander_header_height: the header grown to hold it"
+        }
+        "expander.header(NONE).min_size[1]" => {
+            "next_expander_header_height: the header button's height, at least \
+             expander.header(NONE).min_size[1], grown to hold its title's line box and padding"
+        }
+        "expander.arrow(NONE).size" => {
+            "next_expander_arrow_size: the DisclosureArrow canvas's size, \
+             expander.arrow(NONE).size, iced's own (the renderer's default text size) where \
+             unstated"
+        }
+        "expander.arrow_side" => "the arrow before or after the title, expander.arrow_side",
+        "expander.arrow_gap" => {
+            "the header row's spacing, expander.arrow_gap; layout.widget_gap where unstated"
+        }
+        "expander.content_indent" => {
+            "the body's left padding, expander.content_indent; under the title where unstated"
+        }
+        "expander.frame_enabled" => {
+            "one frame round header and body where true (styles::expander_frame); none where \
+             false or unstated, the header outlined in neither case"
+        }
+        "expander.container(NONE).corners" if framed => {
+            "styles::expander_frame: border.radius, expander.container(NONE).corners; \
+             styles::expander: the hovered header's fill's"
+        }
+        "expander.container(NONE).corners" => {
+            "styles::expander: the hovered header's fill's radius, \
+             expander.container(NONE).corners"
+        }
+        "expander.container(NONE).stroke.width" if framed => {
+            "styles::expander_frame: border.width; the frame's padding, \
+             expander.container(NONE)'s stroke width"
+        }
+        "expander.container(NONE).stroke.width" => {
+            "not drawn: the expander is unframed (expander.frame_enabled false or unstated), \
+             and the header draws no outline"
+        }
+        "expander.header(NONE).padding.top"
+        | "expander.header(NONE).padding.right"
+        | "expander.header(NONE).padding.bottom"
+        | "expander.header(NONE).padding.left" => {
+            "next_expander_header_padding: the header's padding, the side of \
+             expander.header(NONE).padding; button::DEFAULT_PADDING's where unstated"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of the Basic page's separator, the page
+/// tabs' rule or the side panel's separator, each a `rule::horizontal` in
+/// `iced_next::styles::rule` ([`separator_line`]): its thickness. `None`
+/// for a home it does not read, its colour, which the export routes
+/// ([`colour_home_route`]), among them.
+fn separator_route(home: &str) -> Option<String> {
+    (home == "separator.thickness")
+        .then(|| "rule::horizontal's thickness, separator.thickness".to_owned())
+}
+
+/// The route of the home `home` of the Basic page's card: its corners and
+/// outline width `styles::container_card` draws, its padding
+/// ([`next_card_padding`]), and its text's size, line box and font. `None`
+/// for a home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
+fn card_route(home: &str) -> Option<String> {
+    let route = match home {
+        "card.container(NONE).corners" => {
+            "styles::container_card: container::Style::border.radius, \
+             card.container(NONE).corners"
+        }
+        "card.container(NONE).stroke.width" => {
+            "styles::container_card: container::Style::border.width, \
+             card.container(NONE).stroke.width; next_card_padding: the padding inside it"
+        }
+        "card.container(NONE).shadows" => {
+            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+        }
+        "card.container(NONE).padding.top"
+        | "card.container(NONE).padding.right"
+        | "card.container(NONE).padding.bottom"
+        | "card.container(NONE).padding.left" => {
+            "next_card_padding: the card container's padding, the side of \
+             card.container(NONE).padding plus its stroke width; layout.container_margin where \
+             unstated"
+        }
+        "layout.container_margin" => {
+            "next_card_padding: the padding on a side card.container(NONE).padding leaves \
+             unstated; a container's own, none, where that is unstated too"
+        }
+        "typography.body" => {
+            "Typeset::next_body: the text's size, line box and font, typography.body"
+        }
+        "typography.line_height_multiplier" => {
+            "Typeset::next_body: the text's line box, typography.body's size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of the element of id `id` of the Basic
+/// page's typography group: each line's text style, the roles
+/// `native_theme_iced::next::text_scale` lays over `typography.body`, the
+/// body, the link's label and the monospace text, with its line box and
+/// family. `None` for a home none of them reads, the colours the export
+/// routes ([`colour_home_route`]) among them.
+fn typography_route(id: &str, home: &str) -> Option<String> {
+    let role = match id {
+        "basic.typography.caption" => Some(("caption", "typography.caption")),
+        "basic.typography.section_heading" => Some(("section_heading", "typography.headline")),
+        "basic.typography.dialog_title" => Some(("dialog_title", "typography.title1")),
+        _ => None,
+    };
+    if let Some((name, style)) = role {
+        return match home {
+            _ if home == style => Some(format!(
+                "next_text: the line's size, line box and weight, {style} laid over \
+                 typography.body (native_theme_iced::next::text_scale's {name})"
+            )),
+            "typography.body.family" => Some(format!(
+                "next_text: the line's family, {style}'s where it states one, else \
+                 typography.body.family (Typography::over_body)"
+            )),
+            _ => None,
+        };
+    }
+    let route = match (id, home) {
+        ("basic.typography.body", "typography.body") => {
+            "Typeset::next_body: the text's size, line box and font, typography.body"
+        }
+        ("basic.typography.body", "typography.line_height_multiplier") => {
+            "Typeset::next_body: the text's line box, typography.body's size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        ("basic.typography.link", "link.label(NONE)") => {
+            "the span's size, line box (next_line_box) and font, link.label(NONE)"
+        }
+        ("basic.typography.link", "link.label(NONE).decoration") => {
+            "the span's underline, where link.label(NONE).decoration's kind is Underline"
+        }
+        ("basic.typography.link", "typography.line_height_multiplier") => {
+            "the span's line box, link.label(NONE)'s size by typography.line_height_multiplier \
+             where it states no line height (next_line_box)"
+        }
+        ("basic.typography.monospace", "typography.monospace") => {
+            "next_text: the text's size and line box, typography.monospace; \
+             next_theme_mono_font: its family, iced's own font where it gives none"
+        }
+        ("basic.typography.monospace", "typography.line_height_multiplier") => {
+            "next_text: the text's line box, typography.monospace's size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of the home `home` of the Basic page or one of its columns
 /// under `r`, the installed 0.8.0 theme: the gaps and margins
 /// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
@@ -12024,6 +12268,16 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         progress_bar_route(home)
     } else if id == "basic.spinner.indicator" {
         spinner_route(state, home)
+    } else if under("basic.segmented.") {
+        segmented_route(home)
+    } else if under("basic.expander.") {
+        expander_route(r, id, home)
+    } else if separator_element(id) {
+        separator_route(home)
+    } else if under("basic.card.") {
+        card_route(home)
+    } else if under("basic.typography.") {
+        typography_route(id, home)
     } else {
         None
     };
@@ -12137,7 +12391,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .find(|s| field == format!("border.padding_{s}_px"))
     };
     let line: Cow<'static, str> = match (table, field) {
-        ("combo_box" | "card", "border.shadow_enabled") => {
+        ("combo_box", "border.shadow_enabled") => {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
         }
         // ---- combo box (drop-down) ----
@@ -12276,144 +12530,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("splitter", "hover_color") => "splitter: the line's background under the pointer and \
                                         while dragged, splitter.handle(HOVER).fill"
             .into(),
-        ("separator", "line_width_px") if under("basic.separator.") => {
-            "rule::horizontal's thickness, separator.thickness".into()
-        }
-        ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
-        // ---- tabs ----
-        // A tab row's and a tab's are tab_home_route's.
-        // ---- segmented control ----
-        ("segmented_control", "font") if under("basic.segmented.") => {
-            "next_text: the label's size, line box and font, segmented_control.label(NONE)".into()
-        }
-        ("segmented_control", "segment_height_px") if under("basic.segmented.") => {
-            "at_least(label, ..): each segment's outer height, \
-             segmented_control.segment(NONE).min_size[1], less its padding; no floor where \
-             unstated"
-                .into()
-        }
-        ("segmented_control", "separator_width_px") if under("basic.segmented.") => {
-            "the width of the styles::segment_separator line between two segments, \
-             segmented_control.separator_width"
-                .into()
-        }
-        ("segmented_control", "border.line_width_px") if under("basic.segmented.") => {
-            "styles::segmented_control: the outline; the container's padding, \
-             segmented_control.track(NONE)'s stroke width (NextSegmented), none where unstated"
-                .into()
-        }
-        ("segmented_control", f) if side(f).is_some() && under("basic.segmented.") => {
-            "Button::padding of each segment, the side of segmented_control.segment(NONE).padding, \
-             iced's own (button::DEFAULT_PADDING) where unstated"
-                .into()
-        }
-        ("segmented_control", "font") => "the label's size and theme_font".into(),
-        ("segmented_control", "segment_height_px") => {
-            "at_least(label, ..): each segment's outer height less its padding".into()
-        }
-        ("segmented_control", "separator_width_px") => {
-            "the width of the styles::segment_separator line between two segments".into()
-        }
-        ("segmented_control", "border.corner_radius_px") => {
-            "styles::segmented_control and styles::segment: the outer corners".into()
-        }
-        ("segmented_control", "border.line_width_px") => {
-            "styles::segmented_control: the outline, the container's padding".into()
-        }
-        ("segmented_control", f) if side(f).is_some() => {
-            "Button::padding of each segment, iced's own on an unstated side".into()
-        }
-        // ---- expander ----
-        ("expander", "font") if under("basic.expander.") => {
-            "next_text: the title's size, line box and font, expander.header_label(NONE)".into()
-        }
-        ("expander", "header_height_px") if under("basic.expander.") => {
-            "next_expander_header_height: the header button's height, at least \
-             expander.header(NONE).min_size[1], grown to hold its title's line box and padding"
-                .into()
-        }
-        ("expander", "arrow_icon_size_px") if under("basic.expander.") => {
-            "next_expander_arrow_size: the DisclosureArrow canvas's size, \
-             expander.arrow(NONE).size, iced's own (the renderer's default text size) where \
-             unstated"
-                .into()
-        }
-        ("expander", "arrow_side") if under("basic.expander.") => {
-            "the arrow before or after the title, expander.arrow_side".into()
-        }
-        ("expander", "arrow_gap_px") if under("basic.expander.") => {
-            "the header row's spacing, expander.arrow_gap; layout.widget_gap where unstated".into()
-        }
-        ("expander", "content_indent_px") if under("basic.expander.") => {
-            "the body's left padding, expander.content_indent; under the title where unstated"
-                .into()
-        }
-        ("expander", "border.line_width_px")
-            if under("basic.expander.")
-                && state.next_shown().expander.frame_enabled == Some(true) =>
-        {
-            "styles::expander_frame: border.width; the frame's padding, \
-             expander.container(NONE)'s stroke width"
-                .into()
-        }
-        ("expander", f) if side(f).is_some() && under("basic.expander.") => {
-            "next_expander_header_padding: the header's padding, the side of \
-             expander.header(NONE).padding; button::DEFAULT_PADDING's where unstated"
-                .into()
-        }
-        ("expander", "font") => "the title's size and theme_font".into(),
-        ("expander", "header_height_px") => {
-            "the header button's height, grown above a text scale of 1 to hold its title's \
-             line and padding (rows::scaled_height)"
-                .into()
-        }
-        ("expander", "arrow_icon_size_px") => "the DisclosureArrow canvas's size".into(),
-        ("expander", "arrow_side") => "the arrow before or after the title".into(),
-        ("expander", "arrow_gap_px") => {
-            "the header row's spacing; layout.widget_gap where unstated".into()
-        }
-        ("expander", "content_indent_px") => {
-            "the body's left padding; under the title where unstated".into()
-        }
-        ("expander", "frame_enabled") => {
-            "one frame round header and body where true (styles::expander_frame); none where \
-             false or unstated, the header outlined in neither case"
-                .into()
-        }
-        ("expander", "border.corner_radius_px")
-            if state.next_shown().expander.frame_enabled == Some(true) =>
-        {
-            "styles::expander_frame: border.radius; styles::expander: the hovered header's \
-             fill's"
-                .into()
-        }
-        ("expander", "border.corner_radius_px") => {
-            "styles::expander: the hovered header's fill's radius".into()
-        }
-        ("expander", "border.line_width_px")
-            if state.next_shown().expander.frame_enabled == Some(true) =>
-        {
-            "styles::expander_frame: border.width".into()
-        }
-        ("expander", "border.line_width_px") => {
-            "not drawn: the expander is unframed (expander.frame_enabled false or unstated), \
-             and the header draws no outline"
-                .into()
-        }
-        ("expander", f) if side(f).is_some() => {
-            "padding_or: the header's padding, the stated side; button::DEFAULT_PADDING's where \
-             unstated"
-                .into()
-        }
-        // ---- card ----
-        ("card", "border.corner_radius_px") => "styles::container_card: border.radius".into(),
-        ("card", "border.line_width_px") => "styles::container_card: border.width".into(),
-        ("card", f) if side(f).is_some() => {
-            "the card container's padding; layout.container_margin where unstated".into()
-        }
-        // ---- link ----
-        ("link", "font") => "the span's size and theme_font".into(),
-        ("link", "underline_enabled") => "the span's underline".into(),
         // ---- window, layout ----
         ("window", "background_color") if id == "chrome.window" => {
             "surface: the window container's background, window.frame(normal).fill".into()
@@ -34080,7 +34196,7 @@ mod tests {
             "slider.thumb(NONE).stroke.width",
         )?;
         assert!(line.starts_with("not drawn"), "the handle's line: {line}");
-        let line = route("basic.expander.details", "expander.border.corner_radius_px")?;
+        let line = route("basic.expander.details", "expander.container(NONE).corners")?;
         assert!(
             line.contains("expander_frame"),
             "the framed expander's corners: {line}"
@@ -42459,52 +42575,42 @@ mod tests {
     }
 
     /// Widget Info's listed font rows name the family iced draws, as its own
-    /// font rows do: the family part of a leaf-listed element's
-    /// `defaults.font` is [`family_label`] of what iced draws the stated
-    /// family in, and `defaults.mono_font`'s of what it draws the monospace
-    /// font in ([`font_from_database`], as [`listed_family`]), under windows-11 set
-    /// directly. Conditioned on the host: where the system lacks "Segoe UI"
-    /// or "Cascadia Mono", the rows name what is drawn instead; where it has
-    /// them, the stated names alone.
+    /// font rows do: the family part of the Basic body text's
+    /// `typography.body` row is [`next_family_drawing`]'s label of what iced
+    /// draws the stated family in, and the monospace text's
+    /// `typography.monospace` row's of what it draws the monospace style in
+    /// ([`next_font_from_database`], as [`next_listed_family`]), under
+    /// windows-11 light. Conditioned on the host: where the system lacks
+    /// "Segoe UI" or "Cascadia Mono", the rows name what is drawn instead;
+    /// where it has them, the stated names alone.
     #[test]
     fn a_listed_font_row_names_the_family_iced_draws() {
-        let (theme, resolved) = match native_theme_iced::from_preset("windows-11", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("windows-11: {error}"),
+        let state = loaded("windows-11", false);
+        let t = &state.next_shown().typography;
+        let named = |style: &TextStyle, mono: bool| {
+            next_family_drawing(next_font_from_database(style, mono).as_ref()).label(&style.family)
         };
-        let layout = match native_theme::theme::Theme::preset("windows-11") {
-            Ok(preset) => preset.layout,
-            Err(error) => panic!("windows-11: {error}"),
-        };
-        let state = State {
-            current_theme: theme,
-            theme_json: theme_json(&resolved),
-            current_resolved: resolved.clone(),
-            layout,
-            ..State::default()
-        };
-        let d = &resolved.defaults;
-        let label = family_label(&d.font.family, &font_from_database(&d.font, false));
-        let mono = family_label(&d.mono_font.family, &font_from_database(&d.mono_font, true));
+        let label = named(&t.body, false);
+        let mono = named(&t.monospace, true);
         println!("windows-11's fonts are named {label:?} and {mono:?}");
-        let value = |id: &str, leaf: &str| {
+        let value = |id: &str, home: &str| {
             let Some(element) = elements::element(id) else {
                 panic!("{id} is not in the list");
             };
             let info = element_info(&state, element);
-            match info.rows.into_iter().find(|row| row.leaf == leaf) {
+            match info.rows.into_iter().find(|row| row.leaf == home) {
                 Some(row) => row.value,
-                None => panic!("{id} lists no {leaf}"),
+                None => panic!("{id} lists no {home}"),
             }
         };
-        for (id, leaf, label) in [
-            ("basic.typography.body", "defaults.font", &label),
-            ("basic.typography.monospace", "defaults.mono_font", &mono),
+        for (id, home, label) in [
+            ("basic.typography.body", "typography.body", &label),
+            ("basic.typography.monospace", "typography.monospace", &mono),
         ] {
-            let font = value(id, leaf);
+            let font = value(id, home);
             assert!(
                 font.starts_with(&format!("{label} ")),
-                "the {leaf} row does not name the drawn family {label:?}: {font}"
+                "the {home} row does not name the drawn family {label:?}: {font}"
             );
         }
     }
