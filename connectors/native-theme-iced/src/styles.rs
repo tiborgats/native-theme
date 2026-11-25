@@ -3133,6 +3133,11 @@ impl ScrollbarSource {
         };
         match listed.added {
             Added::Nothing | Added::CheckedButton => listed_self,
+            Added::ScrollerFills { hovered, dragged } => Self {
+                hovered_thumb: Some(hovered),
+                dragged_thumb: Some(dragged),
+                ..listed_self
+            },
             Added::ScrollerOutline {
                 width,
                 align,

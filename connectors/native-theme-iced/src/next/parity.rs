@@ -389,6 +389,13 @@ pub(crate) enum Added {
         hovered: iced_core::Color,
         dragged: iced_core::Color,
     },
+    /// A scroll bar handle's fill under the pointer and dragged, which the
+    /// 0.8.0 theme states (`scrollbar.thumb(HOVER)`, `(PRESSED)`) where
+    /// 0.7.2 gives another.
+    ScrollerFills {
+        hovered: iced_core::Color,
+        dragged: iced_core::Color,
+    },
     /// A checked button's fill and label, which 0.7.2 leaves unset
     /// (`button.checked_background`, `button.checked_text_color`): the ones
     /// the 0.8.0 theme states (`button.body(CHECKED)`,
@@ -557,14 +564,6 @@ const PRESSED_THUMB: &str = "the theme states no pressed thumb: 0.7.2's preset l
      thumb(PRESSED).fill), and the dragged scroller is iced's own for the status \
      (iced_widget 0.14.2 src/scrollable.rs, fn default; docs/v0.8.0-spec.md §2, from_state; \
      §10, rule 0)";
-
-/// The reason of a hovered scroll bar thumb 0.7.2's resolver fills in.
-const INHERITED_THUMB_HOVER: &str = "nor a hovered thumb: 0.7.2's preset leaves \
-     scrollbar.thumb_hover_color unset and its resolver fills it from defaults.muted_color \
-     (docs/inheritance-rules.toml, scrollbar.thumb_hover_color), a value the 0.8.0 model does \
-     not carry (docs/v0.8.0-spec.md §5, a value 0.7.2's resolver makes up is not carried); no \
-     rule for HOVER states scrollbar.thumb's fill, and the scroller under the pointer is \
-     iced's own for the status";
 
 /// An `iced_aw` style function's difference on `presets`: its strokes laid
 /// at `align`, the state options `states` names left to `iced_aw`, and, per
@@ -966,6 +965,28 @@ const fn breeze_scroller(presets: &'static [&'static str], rest: iced_core::Colo
         },
         stated: &[],
         reason: &[SCROLLER_OUTLINE],
+    }
+}
+
+/// The macOS scrollable on the scheme `presets` names: the measured overlay
+/// knob hovered and held, `knob` in both (os-probe run 45252258079,
+/// `*.hovered.scroller_knob_overlay`, `*.pressed.scroller_knob_overlay`
+/// `fill`; native-theme/tests/next_homes.toml, rows
+/// scrollbar.thumb_hover_color and scrollbar.thumb_active_color, listed
+/// differences).
+const fn macos_scroller(presets: &'static [&'static str], knob: iced_core::Color) -> Difference {
+    Difference {
+        leaf: "scrollable",
+        presets,
+        listed: Listed {
+            added: Added::ScrollerFills {
+                hovered: knob,
+                dragged: knob,
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[],
+        reason: &[STATED],
     }
 }
 
@@ -2599,23 +2620,24 @@ const DIFFERENCES: &[Difference] = &[
         stated: &[],
         reason: &[PRESSED_THUMB],
     },
-    Difference {
-        leaf: "scrollable",
-        presets: &["macos-tahoe"],
-        listed: Listed {
-            align: LineAlign::Outside,
-            states: States {
-                hover_fill: true,
-                pressed_fill: true,
-                ..States::STATED
-            },
-            iced_corners: false,
-            iced_stroke: false,
-            added: Added::Nothing,
-        },
-        stated: &[],
-        reason: &[PRESSED_THUMB, INHERITED_THUMB_HOVER],
-    },
+    // The measured overlay knob, #6a6a6adf / #f8f8f893 on macOS 15, #00000085 / #ffffff91 on
+    // macOS 26.
+    macos_scroller(
+        &["macos-monterey/light"],
+        iced_core::Color::from_rgba8(0x6a, 0x6a, 0x6a, 223.0 / 255.0),
+    ),
+    macos_scroller(
+        &["macos-monterey/dark"],
+        iced_core::Color::from_rgba8(0xf8, 0xf8, 0xf8, 147.0 / 255.0),
+    ),
+    macos_scroller(
+        &["macos-tahoe/light"],
+        iced_core::Color::from_rgba8(0x00, 0x00, 0x00, 133.0 / 255.0),
+    ),
+    macos_scroller(
+        &["macos-tahoe/dark"],
+        iced_core::Color::from_rgba8(0xff, 0xff, 0xff, 145.0 / 255.0),
+    ),
     // segmented_control.track(NONE).stroke over the group fill.
     inside("segmented_control", &["windows-11", "macos-monterey"]),
     // macos-tahoe states its track stroked as none (`track(NONE)`): no
@@ -3954,7 +3976,7 @@ fn compare_styles(
                 checked_primary: true,
                 ..s
             },
-            Added::Nothing | Added::ScrollerOutline { .. } => s,
+            Added::Nothing | Added::ScrollerOutline { .. } | Added::ScrollerFills { .. } => s,
         }
     };
     let none = WidgetState::NONE;

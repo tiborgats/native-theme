@@ -1117,6 +1117,10 @@ note = "kde-breeze: 0.7.2's value is the plain handle, the one in a view without
 [[row]]
 key = "scrollbar.thumb_hover_color"
 homes = ["scrollbar.thumb(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macos-monterey #60606080 / #a0a0a080 is platform-facts.md §2.8's macOS 14 (Sonoma) value in light, uncited in dark, and macos-tahoe states none (secondaryLabelColor); 0.8.0 states the measured hovered overlay knob (both presets' style), drawn alike held; the legacy knob's where the system's style is legacy"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.hovered.scroller_knob_overlay`, `*.hovered.scroller_knob_legacy` `fill`"
+difference_values = { "macos-monterey" = { light = "#6a6a6adf", dark = "#f8f8f893" }, "macos-tahoe" = { light = "#00000085", dark = "#ffffff91" } }
 
 [[row]]
 key = "scrollbar.groove_width"
@@ -1147,6 +1151,10 @@ homes = ["scrollbar.overlay_mode"]
 [[row]]
 key = "scrollbar.thumb_active_color"
 homes = ["scrollbar.thumb(PRESSED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macos-monterey #50505090 / #b0b0b090 is uncited, and macos-tahoe states none (the rest handle); 0.8.0 states the measured held overlay knob (both presets' style), drawn as hovered; the legacy knob's where the system's style is legacy"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.pressed.scroller_knob_overlay`, `*.pressed.scroller_knob_legacy` `fill`, the press tracked (`probe.toml` `wait_steps`)"
+difference_values = { "macos-monterey" = { light = "#6a6a6adf", dark = "#f8f8f893" }, "macos-tahoe" = { light = "#00000085", dark = "#ffffff91" } }
 
 # --- tooltip ---
 

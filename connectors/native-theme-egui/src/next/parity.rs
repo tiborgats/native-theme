@@ -1618,6 +1618,33 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.{inactive,open}.bg_fill",
         home!(checkbox.indicator(NONE).fill),
     ),
+    // the measured overlay knob hovered and held (os-probe run 45252258079,
+    // `*.scroller_knob_overlay` `fill`); the base style's and the Scrollbar cell's `bg_fill` is
+    // the scroll bar's thumb (`base_style_from`, §5.9)
+    s(
+        "base",
+        &[M, T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(scrollbar.thumb(HOVER).fill),
+    ),
+    s(
+        "base",
+        &[M, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(scrollbar.thumb(PRESSED).fill),
+    ),
+    s(
+        "Scrollbar",
+        &[M, T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(scrollbar.thumb(HOVER).fill),
+    ),
+    s(
+        "Scrollbar",
+        &[M, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(scrollbar.thumb(PRESSED).fill),
+    ),
 ];
 
 /// A pop-up button or a segmented control stroked as none at rest.
@@ -1647,13 +1674,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     // button's fill its `weak_bg_fill`
     r0(
         "base",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(scrollbar.thumb(HOVER).fill),
-    ),
-    r0(
-        "base",
-        &[W, T],
+        &[W],
         ".visuals.widgets.active.bg_fill",
         home!(scrollbar.thumb(PRESSED).fill),
     ),
@@ -1718,13 +1739,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     // the Scrollbar cell's thumb is the base style's `bg_fill` (`base_style_from`, §5.9)
     r0(
         "Scrollbar",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(scrollbar.thumb(HOVER).fill),
-    ),
-    r0(
-        "Scrollbar",
-        &[W, T],
+        &[W],
         ".visuals.widgets.active.bg_fill",
         home!(scrollbar.thumb(PRESSED).fill),
     ),

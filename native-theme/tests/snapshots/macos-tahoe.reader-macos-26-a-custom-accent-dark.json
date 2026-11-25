@@ -1225,6 +1225,22 @@
               7.0
             ]
           }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "thumb": {
+            "fill": "#ffffff91"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "thumb": {
+            "fill": "#ffffff91"
+          }
         }
       ]
     }

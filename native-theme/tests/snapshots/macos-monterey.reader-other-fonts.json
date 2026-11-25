@@ -1228,7 +1228,7 @@
             "hover"
           ],
           "thumb": {
-            "fill": "#60606080"
+            "fill": "#6a6a6adf"
           }
         },
         {
@@ -1236,7 +1236,7 @@
             "pressed"
           ],
           "thumb": {
-            "fill": "#50505090"
+            "fill": "#6a6a6adf"
           }
         }
       ]

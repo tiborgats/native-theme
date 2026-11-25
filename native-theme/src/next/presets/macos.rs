@@ -31,8 +31,8 @@
 //! in which the preset letters its widgets, the sidebar's items
 //! (`sidebar.font.color`, `labelColor`) and the tooltip's text, and the text
 //! of the eight surfaces (§7: one text colour); `foreground_muted` is
-//! `secondaryLabelColor`, so the scroll bar's handle and the progress bar's
-//! groove; `border` is `separatorColor`, so every outline drawn in the
+//! `secondaryLabelColor`, so the overlay scroll bar's handle at rest and the
+//! progress bar's groove; `border` is `separatorColor`, so every outline drawn in the
 //! default border and the separator; `link` is `linkColor`; `caret` is
 //! `textInsertionPointColor`; `error`, `warning`, `success` and `info` are
 //! the status fills; `accent` is written as given as an explicit accent is
@@ -295,8 +295,14 @@ struct SchemeColors {
     list_grid: Color,
     list_header_background: Color,
     list_header_foreground: Color,
-    scrollbar_thumb_pressed: Option<Color>,
-    scrollbar_thumb_hover: Option<Color>,
+    /// The legacy-style scroller's knob at rest.
+    scrollbar_thumb_legacy: Color,
+    /// The legacy-style scroller's knob hovered and held, which AppKit draws
+    /// alike.
+    scrollbar_thumb_legacy_active: Color,
+    /// The overlay-style scroller's knob hovered and held, which AppKit draws
+    /// alike; at rest it is not drawn.
+    scrollbar_thumb_overlay_active: Color,
     scrollbar_track: Color,
     tooltip_background: Color,
     tooltip_foreground: Color,
@@ -507,11 +513,18 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     list_header_background: srgb8(0xffff_ffff),
     // `list.header_font.color`: platform-facts.md (§2.15): headerTextColor, probe
     list_header_foreground: srgb8(0x0000_00d8),
-    // `scrollbar.thumb_active_color`: soft_option: pressed scrollbar thumb -- darker than hover
-    scrollbar_thumb_pressed: Some(srgb8(0x5050_5090)),
-    // `scrollbar.thumb_hover_color`: Interactive state colors (platform-facts.md section 2.8 macOS)
-    // measured Sonoma scrollbar thumb hover -- NOT defaults.muted_color
-    scrollbar_thumb_hover: Some(srgb8(0x6060_6080)),
+    // `scrollbar.thumb(NONE).fill`, legacy style: #c2c2c2, opaque over the opaque track #fafafa,
+    // so the knob's own alpha is not seen (measured, os-probe run 45252258079, macOS 15, Reduce
+    // Transparency off, `*.normal.scroller_knob_legacy` `fill`)
+    scrollbar_thumb_legacy: srgb8(0xc2c2_c2ff),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, legacy style: #7d7d7d, hovered and held
+    // alike (measured, the same run, `*.hovered.scroller_knob_legacy`,
+    // `*.pressed.scroller_knob_legacy` `fill`)
+    scrollbar_thumb_legacy_active: srgb8(0x7d7d_7dff),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, overlay style: #6a6a6adf, hovered and held
+    // alike, not drawn at rest (measured, the same run, `*.hovered.scroller_knob_overlay`,
+    // `*.pressed.scroller_knob_overlay` `fill`)
+    scrollbar_thumb_overlay_active: srgb8(0x6a6a_6adf),
     // `scrollbar.track_color`: platform-facts.md (§2.8): transparent in overlay mode
     scrollbar_track: srgb8(0x0000_0000),
     // `tooltip.background_color`: 0.7.2 macos-monterey.toml (uncited)
@@ -774,11 +787,18 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     list_header_background: srgb8(0x1e1e_1eff),
     // `list.header_font.color`: platform-facts.md (§2.15): headerTextColor, probe
     list_header_foreground: srgb8(0xffff_ffff),
-    // `scrollbar.thumb_active_color`: soft_option: pressed scrollbar thumb -- brighter than hover
-    scrollbar_thumb_pressed: Some(srgb8(0xb0b0_b090)),
-    // `scrollbar.thumb_hover_color`: Interactive state colors (platform-facts.md section 2.8 macOS)
-    // measured Sonoma scrollbar thumb hover -- NOT defaults.muted_color
-    scrollbar_thumb_hover: Some(srgb8(0xa0a0_a080)),
+    // `scrollbar.thumb(NONE).fill`, legacy style: #f7f7f75a over the translucent track #c9c9c913
+    // (measured, os-probe run 45252258079, macOS 15, Reduce Transparency off,
+    // `*.normal.scroller_knob_legacy` `fill`)
+    scrollbar_thumb_legacy: srgb8(0xf7f7_f75a),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, legacy style: #fbfbfb89, hovered and held
+    // alike (measured, the same run, `*.hovered.scroller_knob_legacy`,
+    // `*.pressed.scroller_knob_legacy` `fill`)
+    scrollbar_thumb_legacy_active: srgb8(0xfbfb_fb89),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, overlay style: #f8f8f893, hovered and held
+    // alike, not drawn at rest (measured, the same run, `*.hovered.scroller_knob_overlay`,
+    // `*.pressed.scroller_knob_overlay` `fill`)
+    scrollbar_thumb_overlay_active: srgb8(0xf8f8_f893),
     // `scrollbar.track_color`: platform-facts.md (§2.8): transparent in overlay mode
     scrollbar_track: srgb8(0x0000_0000),
     // `tooltip.background_color`: 0.7.2 macos-monterey.toml (uncited)
@@ -1052,8 +1072,18 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     list_header_background: srgb8(0xffff_ffff),
     // `list.header_font.color`: platform-facts.md (§2.15): headerTextColor, probe
     list_header_foreground: srgb8(0x0000_00d8),
-    scrollbar_thumb_pressed: None,
-    scrollbar_thumb_hover: None,
+    // `scrollbar.thumb(NONE).fill`, legacy style: #00000085 over the translucent track #0000000c
+    // (measured, os-probe run 45252258079, macOS 26, Reduce Transparency off,
+    // `*.normal.scroller_knob_legacy` `fill`)
+    scrollbar_thumb_legacy: srgb8(0x0000_0085),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, legacy style: as at rest, hovered and held
+    // (measured, the same run: `*.hovered.scroller_knob_legacy`, `*.pressed.scroller_knob_legacy`
+    // differ from the rest capture in 0 pixels, the press tracked)
+    scrollbar_thumb_legacy_active: srgb8(0x0000_0085),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, overlay style: #00000085, hovered and held
+    // alike, the legacy knob's colour, not drawn at rest (measured, the same run,
+    // `*.hovered.scroller_knob_overlay`, `*.pressed.scroller_knob_overlay` `fill`)
+    scrollbar_thumb_overlay_active: srgb8(0x0000_0085),
     // `scrollbar.track_color`: no macOS 26 source (platform-facts.md): macos-monterey's value, the
     // overlay mode's transparent track; the inherited window background would be the wrong kind
     scrollbar_track: srgb8(0x0000_0000),
@@ -1316,8 +1346,18 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     list_header_background: srgb8(0x1e1e_1eff),
     // `list.header_font.color`: platform-facts.md (§2.15): headerTextColor, probe
     list_header_foreground: srgb8(0xffff_ffff),
-    scrollbar_thumb_pressed: None,
-    scrollbar_thumb_hover: None,
+    // `scrollbar.thumb(NONE).fill`, legacy style: #ffffff91 over the translucent track #ffffff0c
+    // (measured, os-probe run 45252258079, macOS 26, Reduce Transparency off,
+    // `*.normal.scroller_knob_legacy` `fill`)
+    scrollbar_thumb_legacy: srgb8(0xffff_ff91),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, legacy style: as at rest, hovered and held
+    // (measured, the same run: `*.hovered.scroller_knob_legacy`, `*.pressed.scroller_knob_legacy`
+    // differ from the rest capture in 0 pixels, the press tracked)
+    scrollbar_thumb_legacy_active: srgb8(0xffff_ff91),
+    // `scrollbar.thumb(HOVER).fill`, `(PRESSED).fill`, overlay style: #ffffff91, hovered and held
+    // alike, the legacy knob's colour, not drawn at rest (measured, the same run,
+    // `*.hovered.scroller_knob_overlay`, `*.pressed.scroller_knob_overlay` `fill`)
+    scrollbar_thumb_overlay_active: srgb8(0xffff_ff91),
     // `scrollbar.track_color`: no macOS 26 source (platform-facts.md): macos-monterey's value, the
     // overlay mode's transparent track; the inherited window background would be the wrong kind
     scrollbar_track: srgb8(0x0000_0000),
@@ -3387,13 +3427,15 @@ fn list(
 }
 
 /// The scroll bar: a groove of an exact thickness in the track's colour and
-/// a handle of an exact thickness in the window's muted text (0.7.2:
-/// `scrollbar.thumb_color` is `defaults.muted_color` where unstated), with
-/// the hovered handle's fill (`macos-tahoe`: `thumb_hover_color` is
-/// `defaults.muted_color` where unstated, so no rule) and
-/// `macos-monterey`'s pressed one. The groove is `groove_width` thick and
-/// the bar overlays the content where `overlay` (the system's scroller
-/// width and style, else the preset's).
+/// a handle of an exact thickness in the knob's fills of the scroller's
+/// style: where `overlay`, at rest the window's muted text (0.7.2:
+/// `scrollbar.thumb_color` is `defaults.muted_color` where unstated; AppKit
+/// draws no overlay knob until the view scrolls, and the knob shown but not
+/// hovered is not measured) and the measured overlay knob hovered and
+/// pressed; else the measured legacy knob at rest and hovered and pressed.
+/// The groove is `groove_width` thick and the bar overlays the content
+/// where `overlay` (the system's scroller width and style, else the
+/// preset's).
 fn scrollbar(
     c: &SchemeColors,
     g: &Generation,
@@ -3406,19 +3448,24 @@ fn scrollbar(
         groove_width,
     )
     .build();
+    let (rest, active) = if overlay {
+        (
+            roles.window.foreground_muted,
+            c.scrollbar_thumb_overlay_active,
+        )
+    } else {
+        (
+            Some(c.scrollbar_thumb_legacy),
+            c.scrollbar_thumb_legacy_active,
+        )
+    };
     let thumb = across(
-        RuleBuilder::new(PartStyle::default()).base(roles.window.foreground_muted.map(fill)),
+        RuleBuilder::new(PartStyle::default()).base(rest.map(fill)),
         g.scrollbar_thumb_width,
     )
     .rules(
-        c.scrollbar_thumb_hover
-            .map(|_| RuleSelector::on(WidgetState::HOVER)),
-        c.scrollbar_thumb_hover.map(fill),
-    )
-    .rules(
-        c.scrollbar_thumb_pressed
-            .map(|_| RuleSelector::on(WidgetState::PRESSED)),
-        c.scrollbar_thumb_pressed.map(fill),
+        [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on),
+        [fill(active)],
     )
     .build();
     ScrollbarWidget::new(

@@ -934,6 +934,30 @@ const DIFFERENCES: &[Difference] = &[
                  tab.label(SELECTED)'s colour; every other leaf of the theme is equal",
     },
     Difference {
+        leaf: SCROLLBAR_THUMB_HOVER,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's hovered thumb is #60606080 / #a0a0a080 on macos-monterey and the \
+                 muted text on macos-tahoe; the 0.8.0 presets state the measured overlay knob \
+                 hovered, #6a6a6adf / #f8f8f893 on macOS 15, #00000085 / #ffffff91 on macOS 26 \
+                 (os-probe run 45252258079, `*.hovered.scroller_knob_overlay` `fill`; \
+                 native-theme/tests/next_homes.toml, row scrollbar.thumb_hover_color, a listed \
+                 difference), so the scrollbar_thumb_hover slot, its token and its stored config \
+                 string are scrollbar.thumb(HOVER)'s fill; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: SCROLLBAR_THUMB_STATES,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 presets state the measured overlay knob hovered and held alike \
+                 (os-probe run 45252258079, `*.hovered.scroller_knob_overlay`, \
+                 `*.pressed.scroller_knob_overlay` `fill`; native-theme/tests/next_homes.toml, \
+                 rows scrollbar.thumb_hover_color and scrollbar.thumb_active_color, listed \
+                 differences), where 0.7.2 gives #60606080 / #a0a0a080 and #50505090 / \
+                 #b0b0b090 on macos-monterey and the muted text on macos-tahoe; so the \
+                 geometry's thumb_hover and thumb_active are the fills of scrollbar.thumb(HOVER) \
+                 and scrollbar.thumb(PRESSED), in the compared ScrollbarGeometry and in the base \
+                 overrides alike",
+    },
+    Difference {
         leaf: SIDEBAR_FILL,
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "0.7.2's #f6f6f6 / #383838 is the sidebar material read with Reduce \
@@ -1003,6 +1027,28 @@ const INPUT_OUTLINE: &str = "to_theme: input";
 /// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
 const SLIDER_THUMB: &str = "to_theme: slider_thumb";
 
+/// The leaf of [`DIFFERENCES`]' entry for the hovered scroll bar thumb: the
+/// `ThemeColor` slot `scrollbar_thumb_hover`, its token and its stored
+/// config string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const SCROLLBAR_THUMB_HOVER: &str = "to_theme: scrollbar_thumb_hover";
+
+/// The leaf of [`DIFFERENCES`]' entry for the scroll bar's hovered and
+/// dragged thumb: `ScrollbarGeometry`'s `thumb_hover` and `thumb_active`,
+/// compared by [`thumb_states_of`], in the compared geometry and in the
+/// base overrides alike.
+const SCROLLBAR_THUMB_STATES: &str = "ScrollbarGeometry: the hovered and the dragged thumb";
+
+/// The scroll bar thumb's fills the theme states for HOVER and PRESSED, the
+/// form of [`SCROLLBAR_THUMB_STATES`]' entries; `None` where either is
+/// unstated.
+fn thumb_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
+    use native_theme::next::WidgetState;
+    Some((
+        super::state_fill_of(&new.scrollbar.thumb(WidgetState::HOVER))?,
+        super::state_fill_of(&new.scrollbar.thumb(WidgetState::PRESSED))?,
+    ))
+}
+
 /// The text field's outline as the connector reads it for the `input` slot
 /// (`to_theme`): `input.field(NONE)`'s stroke colour, the form of
 /// [`INPUT_OUTLINE`]'s entries; `None` where it is unstated.
@@ -1070,6 +1116,23 @@ struct StatedSlot {
 
 /// The slots [`DIFFERENCES`] lists as a colour stated at one home.
 const STATED_SLOTS: &[StatedSlot] = &[
+    StatedSlot {
+        leaf: SCROLLBAR_THUMB_HOVER,
+        what: "the hovered scroll bar thumb's stated fill",
+        of: |new| {
+            super::state_fill_of(&new.scrollbar.thumb(native_theme::next::WidgetState::HOVER))
+        },
+        color: |c| c.scrollbar_thumb_hover,
+        token: |t| t.scrollbar_thumb_hover,
+        config: |c| c.scrollbar_thumb_hover.clone(),
+        copy: |theme, from| {
+            theme.colors.scrollbar_thumb_hover = from.colors.scrollbar_thumb_hover;
+            theme.tokens.scrollbar_thumb_hover = from.tokens.scrollbar_thumb_hover;
+        },
+        copy_config: |config, from| {
+            config.scrollbar_thumb_hover = from.scrollbar_thumb_hover.clone();
+        },
+    },
     StatedSlot {
         leaf: INPUT_OUTLINE,
         what: "the text field's stated outline",
@@ -2010,16 +2073,38 @@ fn compare_scrollbar(
         n.track_active_border,
     );
     report.leaf("ScrollbarGeometry.thumb", o.thumb, n.thumb);
-    report.leaf(
-        "ScrollbarGeometry.thumb_hover",
-        o.thumb_hover,
-        n.thumb_hover,
-    );
-    report.leaf(
-        "ScrollbarGeometry.thumb_active",
-        o.thumb_active,
-        n.thumb_active,
-    );
+    match report.listed(SCROLLBAR_THUMB_STATES) {
+        Some(listed) => {
+            report.count(SCROLLBAR_THUMB_STATES);
+            if o.thumb_hover == n.thumb_hover
+                || o.thumb_active == n.thumb_active
+                || thumb_states_of(new) != Some((n.thumb_hover, n.thumb_active))
+            {
+                report.failures.push(format!(
+                    "{}: {SCROLLBAR_THUMB_STATES}: the listed difference ({}) no longer \
+                     describes it: 0.7.2 {:?} {:?}, 0.8.0 {:?} {:?}",
+                    report.label,
+                    listed.reason,
+                    o.thumb_hover,
+                    o.thumb_active,
+                    n.thumb_hover,
+                    n.thumb_active
+                ));
+            }
+        }
+        None => {
+            report.leaf(
+                "ScrollbarGeometry.thumb_hover",
+                o.thumb_hover,
+                n.thumb_hover,
+            );
+            report.leaf(
+                "ScrollbarGeometry.thumb_active",
+                o.thumb_active,
+                n.thumb_active,
+            );
+        }
+    }
 }
 
 /// Compare a leaf's two values, the 0.8.0 one where mapped.
@@ -3005,13 +3090,18 @@ fn every_listed_difference_names_a_covered_preset() {
 /// and of the base overrides are given as 0.7.2's of the same scheme, or as
 /// a failure where they are not the 0.8.0 preset's homes
 /// ([`resize_handles_of`], [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries) or
-/// are 0.7.2's. The styled theme itself is returned beside.
+/// are 0.7.2's. Where `thumbs` is given, the base overrides' hovered and
+/// dragged scroll bar thumb are given as 0.7.2's of the same scheme, or as a
+/// failure where they are not the 0.8.0 preset's ([`thumb_states_of`],
+/// [`DIFFERENCES`]' [`SCROLLBAR_THUMB_STATES`] entries) or are 0.7.2's. The
+/// styled theme itself is returned beside.
 fn installed(
     cx: &gpui::App,
     row_hover_listed: Option<[Option<Hsla>; 2]>,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
     stated: &[StatedPatch<'_>],
     handles: Option<SchemeHandles>,
+    thumbs: Option<SchemeThumbs>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
@@ -3056,9 +3146,25 @@ fn installed(
         }
     };
     let nt = cx.try_global::<crate::NativeTheme>();
+    let thumbs_as_old = |mut g: crate::base_layer::ScrollbarGeometry| match thumbs {
+        None => format!("{g:?}"),
+        Some([light, dark]) => {
+            let (old, homes) = if is_dark { dark } else { light };
+            let installed = (g.thumb_hover, g.thumb_active);
+            if installed != old && homes == Some(installed) {
+                (g.thumb_hover, g.thumb_active) = old;
+                format!("{g:?}")
+            } else {
+                format!(
+                    "{SCROLLBAR_THUMB_STATES}: {installed:?}, not the homes' {homes:?} beside \
+                     0.7.2's {old:?}"
+                )
+            }
+        }
+    };
     let overrides = nt
         .and_then(|nt| crate::base_overrides_for(nt, is_dark, Some(styled)))
-        .map(|(g, r)| format!("{g:?} {}", as_old(r.handle, r.active_handle)));
+        .map(|(g, r)| format!("{} {}", thumbs_as_old(g), as_old(r.handle, r.active_handle)));
     let band = nt
         .and_then(|nt| nt.source(is_dark))
         .map(crate::Variant::keyboard_focus_band);
@@ -3091,6 +3197,11 @@ type Installed = [(Vec<(&'static str, String)>, GpuiTheme); 2];
 /// (`crate::base_layer::resizable_theme`'s `handle` and `active_handle`)
 /// and the 0.8.0 preset's homes ([`resize_handles_of`]).
 type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
+
+/// The hovered and dragged scroll bar thumb of each scheme, light and dark:
+/// 0.7.2's (`crate::base_layer::scrollbar_geometry`'s `thumb_hover` and
+/// `thumb_active`) and the 0.8.0 preset's homes ([`thumb_states_of`]).
+type SchemeThumbs = [((Hsla, Hsla), Option<(Hsla, Hsla)>); 2];
 
 /// A slot of [`STATED_SLOTS`] to patch in what is installed ([`installed`]):
 /// the 0.7.2 side's styled theme at the same point and the 0.8.0 preset's
@@ -3198,11 +3309,50 @@ fn apply_both(
         Some(_) => return Err(format!("{key}: {RESIZE_HANDLES}: a scheme is missing")),
         None => None,
     };
-    let after =
-        cx.update(|cx| installed(cx, row_hover_listed, button_states(0), &stated(0), handles));
+    let thumbs = (next
+        && DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == SCROLLBAR_THUMB_STATES && d.presets.contains(&key)))
+    .then(|| {
+        let mut schemes = themes.iter().map(|(_, (old, _, _, new))| {
+            let g = crate::base_layer::scrollbar_geometry(old);
+            ((g.thumb_hover, g.thumb_active), thumb_states_of(new))
+        });
+        match [schemes.next(), schemes.next()] {
+            [Some(light), Some(dark)] => Some([light, dark]),
+            _ => None,
+        }
+    });
+    let thumbs = match thumbs {
+        Some(Some(both)) => Some(both),
+        Some(None) => {
+            return Err(format!(
+                "{key}: {SCROLLBAR_THUMB_STATES}: a scheme is missing"
+            ));
+        }
+        None => None,
+    };
+    let after = cx.update(|cx| {
+        installed(
+            cx,
+            row_hover_listed,
+            button_states(0),
+            &stated(0),
+            handles,
+            thumbs,
+        )
+    });
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
-    let switched =
-        cx.update(|cx| installed(cx, row_hover_listed, button_states(1), &stated(1), handles));
+    let switched = cx.update(|cx| {
+        installed(
+            cx,
+            row_hover_listed,
+            button_states(1),
+            &stated(1),
+            handles,
+            thumbs,
+        )
+    });
     Ok([after, switched])
 }
 

@@ -189,6 +189,50 @@ fn a_pressed_scroll_handle_wins_over_the_pointer() {
     }
 }
 
+/// The overlay knob is the window's muted text at rest and the measured one
+/// hovered and pressed; the legacy knob its measured rest fill, hovered and
+/// pressed its active one (os-probe run 45252258079, `*.scroller_knob_*`).
+#[test]
+fn the_scroll_handle_follows_the_scroller_s_style() {
+    for (preset, scheme) in every_scheme() {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(preset, scheme);
+        for (overlay, rest, active) in [
+            (true, Some(c.muted), c.scrollbar_thumb_overlay_active),
+            (
+                false,
+                Some(c.scrollbar_thumb_legacy),
+                c.scrollbar_thumb_legacy_active,
+            ),
+        ] {
+            let system = SystemOverrides {
+                overlay_scrollbars: Some(overlay),
+                ..SystemOverrides::default()
+            };
+            let theme = Theme::preset(preset)
+                .with_system_overrides(system)
+                .resolve(&ctx);
+            let at_rest = theme.scrollbar.thumb(WidgetState::NONE);
+            assert_eq!(
+                rest,
+                at_rest
+                    .stated
+                    .contains(PartStated::FILL)
+                    .then(|| solid(&at_rest.fill))
+                    .flatten(),
+                "{preset:?} {scheme:?} overlay {overlay}"
+            );
+            for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+                assert_eq!(
+                    solid(&theme.scrollbar.thumb(state).fill),
+                    Some(active),
+                    "{preset:?} {scheme:?} overlay {overlay} {state:?}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn a_selected_item_wins_over_the_pointer() {
     for (preset, theme) in every_theme() {
@@ -893,7 +937,7 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
             ),
             ("separator", Some(theme.separator.color), p.border),
             (
-                "scroll bar's handle",
+                "overlay scroll bar's handle",
                 solid(&theme.scrollbar.thumb(none).fill),
                 p.foreground_muted,
             ),
