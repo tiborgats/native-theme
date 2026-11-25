@@ -1886,13 +1886,11 @@ homes = [
 [[row]]
 key = "menu.active_background"
 homes = ["menu.item(PRESSED).fill"]
-null_reference = "HOVER"
 note = "0.7.2 doc: None = a pressed item keeps the hover look (spec §3, state combinations)"
 
 [[row]]
 key = "menu.active_text_color"
 homes = ["menu.item_label(PRESSED).color"]
-null_reference = "HOVER"
 note = "0.7.2 doc: None = hover_text_color"
 
 [[row]]

@@ -1,0 +1,16 @@
+ProductName:		macOS
+ProductVersion:		26.7.2
+BuildVersion:		25G332
+sw_vers: exit 0
+/Applications/Xcode_26.6.app/Contents/Developer
+xcode-select -p: exit 0
+Xcode 26.6
+Build version 17F113
+xcodebuild -version: exit 0
+xcrun SDK: 26.5 build 25F70
+/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/vtool error: /Users/runner/work/native-theme/native-theme/target/release/native-theme-os-probe: can't open file: No such file or directory
+vtool -show-build: exit 1
+rustc 1.100.0 (0ef1bc386 2026-11-09)
+system_profiler SPDisplaysDataType: exit 0
+grant kTCCServiceAccessibility to /Users/runner/work/native-theme/native-theme/target/release/native-theme-os-probe: exit 0
+grant kTCCServicePostEvent to /Users/runner/work/native-theme/native-theme/target/release/native-theme-os-probe: exit 0

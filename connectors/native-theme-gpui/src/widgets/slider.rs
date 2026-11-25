@@ -599,8 +599,6 @@ impl RenderOnce for Slider {
         let Some(ground) = self.backdrop.or_else(|| theme.background()) else {
             return self.fallback();
         };
-        let ring = theme.focus_ring();
-        let keyboard_only = theme.keyboard_only();
         let outline = theme
             .look(
                 |r| Some(ThumbOutline::of(r, disabled)),
@@ -636,12 +634,19 @@ impl RenderOnce for Slider {
             .read(cx)
             .clone();
         let focused = !disabled && focus_handle.is_focused(window);
-        let shows = super::ring_shows(
-            (id.clone(), "focus-visible"),
-            focused,
-            keyboard_only,
-            window,
-            cx,
+        // The thumb's own ring where the theme states one, else the global
+        // ring, round the thumb.
+        let at = super::checked_disabled(false, disabled);
+        let ring = super::focus_seen((id.clone(), "focus-visible"), focused, window, cx).and_then(
+            |by_key| {
+                // Read again: the keyed states took `cx` mutably.
+                ThemeSource::of(cx)?.ring(
+                    by_key,
+                    super::OwnTrigger::AnyFocus,
+                    move |r, focus| r.slider.thumb(focus | at),
+                    super::RingHomes::SLIDER,
+                )
+            },
         );
         let radius = px(f32::from(look.thumb) / 2.);
         let beyond = px(-f32::from(radius));
@@ -663,9 +668,7 @@ impl RenderOnce for Slider {
         )
         .debug_selector(|| "native-slider-thumb".into())
         .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))))
-        .when_some(ring.filter(|_| shows), |thumb, ring| {
-            ring.draw(thumb, window)
-        });
+        .when_some(ring, |thumb, ring| ring.draw(thumb, window));
         let start_thumb = range.then(|| {
             thumb(
                 &state,

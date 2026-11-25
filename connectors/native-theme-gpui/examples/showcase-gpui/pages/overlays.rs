@@ -3,12 +3,12 @@
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, prelude::*};
 use gpui_component::{IconName, Placement, WindowExt, h_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, Overlay, SheetSide};
-use crate::pages::page_root;
-use crate::support::with_gap;
+use crate::pages::next_page_root;
+use crate::support::{next_metric, with_gap};
 use crate::{
     OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
     OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PROBE_ALERT_DIALOG, probe,
@@ -33,12 +33,12 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        let widget_gap = geometry::widget_gap(&self.layout);
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
         // A dialog's icon is read as each frame builds it
         // (`Showcase::dialog_icons`), and is the one it opened with only
         // until the view has set one.
         let open_dialog = cx.listener(|this, _ev, window, cx| {
-            let (ui, gap) = (this.info_ui.clone(), this.overlay_gap.clone());
+            let ui = this.info_ui.clone();
             let (opened, icons) = (
                 this.sample_icon(IconName::CircleX),
                 this.dialog_icons.clone(),
@@ -47,7 +47,7 @@ impl Showcase {
                 let icon = icons
                     .get()
                     .map_or_else(|| opened.clone(), |icons| icons.dialog.clone());
-                demo::confirm_dialog(&ui, cx, dialog, gap.get(), &icon)
+                demo::confirm_dialog(&ui, cx, dialog, &icon)
             });
         });
         let open_alert_dialog = cx.listener(|this, _ev, window, cx| {
@@ -105,7 +105,7 @@ impl Showcase {
                 )
             });
         });
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             // Dialog
             .child(demo::heading(ui, cx, "overlays-heading-dialog", "Dialog"))

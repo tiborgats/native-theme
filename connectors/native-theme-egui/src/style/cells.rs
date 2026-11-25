@@ -87,7 +87,8 @@ pub(crate) struct CheckboxCell {
     pub outline: Outline,
     /// The hovered and the pressed box's outline.
     pub state_border: [Option<StateLine>; 2],
-    pub mark_width: Read<f32>,
+    /// The check mark's width at rest, hovered and pressed.
+    pub mark_width: [Read<f32>; 3],
     pub label: Text,
     pub indicator: Read<f32>,
     pub label_gap: Read<f32>,
@@ -472,9 +473,12 @@ impl CellSource {
                     align: LineAlign::Outside,
                 },
                 state_border: [StateLine::colour(k.hover_border_color); 2],
-                mark_width: k
-                    .check_mark_stroke_width
-                    .map(|v| (v, "checkbox.check_mark_stroke_width")),
+                mark_width: [
+                    k.check_mark_stroke_width
+                        .map(|v| (v, "checkbox.check_mark_stroke_width")),
+                    None,
+                    None,
+                ],
                 label: text(&k.font, "checkbox.font.size"),
                 indicator: Some((k.indicator_width, "checkbox.indicator_width")),
                 label_gap: Some((k.label_gap, "checkbox.label_gap")),

@@ -336,7 +336,7 @@ pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped
 
 /// A text style's colour where a rule states it for the queried state, as
 /// [`text_color`] reads it; `None` where none does.
-fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
     state_option(
         state_text_color_of(text),
         text.from_state.contains(TextStated::COLOR),
@@ -750,7 +750,7 @@ pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
 /// else gpui-component's own (spec §10, rule 0). A rule that names no variant
 /// is the flat button's too (spec §2), so a theme that states no flat rule
 /// gives it the push button's stated fills.
-fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
+pub(crate) fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
     let b = &r.button;
     let upstream = upstream_colors(r);
     let flat = ButtonQuery::flat();
@@ -1038,29 +1038,31 @@ pub fn icon_sizes(r: &ResolvedTheme) -> &IconSizes {
 }
 
 /// The four text roles of 0.7.2's `text_scale`, each the typography's style
-/// at its home, or the body's where the theme defines no such role (the
-/// table of homes, rows `text_scale.*`, `home_fallback`).
-#[derive(Clone, Copy, Debug)]
-pub struct TextScale<'a> {
+/// at its home laid over the body (`Typography::over_body`), or the body's
+/// where the theme defines no such role (the table of homes, rows
+/// `text_scale.*`, `home_fallback`).
+#[derive(Clone, Debug)]
+pub struct TextScale {
     /// `typography.caption`.
-    pub caption: &'a TextStyle,
+    pub caption: TextStyle,
     /// `typography.headline`.
-    pub section_heading: &'a TextStyle,
+    pub section_heading: TextStyle,
     /// `typography.title1`.
-    pub dialog_title: &'a TextStyle,
+    pub dialog_title: TextStyle,
     /// `typography.display`.
-    pub display: &'a TextStyle,
+    pub display: TextStyle,
 }
 
-/// [`crate::text_scale`]: the four text roles 0.7.2 names.
+/// [`crate::text_scale`]: the four text roles 0.7.2 names, in the body's
+/// family, colour and slant where a role states none.
 #[must_use]
-pub fn text_scale(r: &ResolvedTheme) -> TextScale<'_> {
+pub fn text_scale(r: &ResolvedTheme) -> TextScale {
     let t = &r.typography;
     TextScale {
-        caption: t.caption.as_ref().unwrap_or(&t.body),
-        section_heading: t.headline.as_ref().unwrap_or(&t.body),
-        dialog_title: t.title1.as_ref().unwrap_or(&t.body),
-        display: t.display.as_ref().unwrap_or(&t.body),
+        caption: t.over_body(t.caption.as_ref()),
+        section_heading: t.over_body(t.headline.as_ref()),
+        dialog_title: t.over_body(t.title1.as_ref()),
+        display: t.over_body(t.display.as_ref()),
     }
 }
 

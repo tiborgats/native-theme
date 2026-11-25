@@ -2,11 +2,11 @@
 
 use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
-use crate::scope;
+use crate::{next, scope};
 
 /// A determinate progress bar: egui's own, in the `Role::ProgressBar` scope, rounded
 /// `progress_bar.border.corner_radius` and outlined `progress_bar.border.line_width` wide in
@@ -28,7 +28,9 @@ use crate::scope;
 ///
 /// With no atlas installed, or a radius or width that is not finite, it adds
 /// `egui::ProgressBar` with no change but the width; with no atlas, or a `min_width` that is
-/// not finite, egui's floor stands.
+/// not finite, egui's floor stands. Under an atlas of the 0.8.0 model each of
+/// `progress_bar.track(NONE)`'s corners and stroke the theme leaves unstated, or states in a
+/// form egui cannot draw, is egui's own: half the bar's height, no outline.
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct ProgressBar {
     progress: f32,
@@ -69,13 +71,63 @@ impl ProgressBar {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `progress_bar.border.color`: the outline.
-    pub(crate) border_color: Rgba,
+    pub(crate) border_color: egui::Color32,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            border_color: t.progress_bar.border.color,
+            border_color: to_color32(t.progress_bar.border.color),
+        }
+    }
+}
+
+/// What a progress bar reads of a theme: its least width, its corner radius and its outline,
+/// each `None` where the theme states none egui can draw and egui's own stays.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Bar {
+    /// `progress_bar.min_width`.
+    pub(crate) min_width: Option<f32>,
+    /// `progress_bar.border.corner_radius`; `None`, egui's own, half the bar's height.
+    pub(crate) radius: Option<f32>,
+    /// The outline's width and colour where it has one wider than nothing; `None`, egui's own
+    /// bar, which has no outline.
+    pub(crate) outline: Option<(f32, egui::Color32)>,
+}
+
+impl Bar {
+    /// A radius or width that is not finite leaves both egui's own.
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let p = &t.progress_bar;
+        let frame = || {
+            let b = &p.border;
+            let radius = b.corner_radius.is_finite().then_some(b.corner_radius)?;
+            let width = scope::length(b.line_width)?;
+            let outline = (width > 0.0).then_some((width, Look::of(t).border_color));
+            Some((radius, outline))
+        };
+        let frame = frame();
+        Self {
+            min_width: scope::length(p.min_width),
+            radius: frame.map(|(radius, _)| radius),
+            outline: frame.and_then(|(_, outline)| outline),
+        }
+    }
+
+    /// What a progress bar of a 0.8.0 theme reads: `progress_bar.track(NONE)`'s minimum width,
+    /// its corners (a pill's on its minimum height) and its stroke, each where stated; a
+    /// stroke stated as none is no outline.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let track = r.progress_bar.track(WidgetState::NONE);
+        let [width, height] = track.min_size;
+        let outline = next::stroke_width_of(&track)
+            .and_then(scope::length)
+            .filter(|w| *w > 0.0)
+            .zip(next::stroke_color_of(&track));
+        Self {
+            min_width: width.and_then(scope::length),
+            radius: next::radius(&track, width, height).filter(|r| r.is_finite()),
+            outline,
         }
     }
 }
@@ -88,32 +140,36 @@ impl egui::Widget for ProgressBar {
             animate,
         } = self;
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
-        let resolved = atlas
-            .as_ref()
-            .and_then(|a| a.resolved_for(ui.ctx().theme()));
-        let theme = resolved.map(|t| (&t.progress_bar, Look::of(t)));
-        let min_width = theme.and_then(|(p, _)| scope::length(p.min_width));
+        let theme = ui.ctx().theme();
+        let read = atlas.as_ref().and_then(|a| match a.resolved_for(theme) {
+            Some(t) => Some(Bar::of(t)),
+            None => a.next_resolved_for(theme).map(Bar::next_of),
+        });
+        let min_width = read.and_then(|b| b.min_width);
         let still = atlas
             .as_ref()
             .is_some_and(|a| a.accessibility().reduce_motion);
         let bar = egui::ProgressBar::new(progress).animate(animate && !still);
-        let border = theme.and_then(|(p, look)| {
-            let b = &p.border;
-            let radius = b.corner_radius.is_finite().then_some(b.corner_radius)?;
-            let width = scope::length(b.line_width)?;
-            Some((radius, width, look.border_color))
-        });
-        let Some((radius, width, color)) = border else {
+        let Some(Bar {
+            radius, outline, ..
+        }) = read.filter(|b| b.radius.is_some() || b.outline.is_some())
+        else {
             let bar = sized(bar, ui, desired_width, min_width);
             return ui.add(bar);
         };
-        let radius = to_corner_radius(egui::CornerRadius::default(), radius);
+        let stated = radius.map(|r| to_corner_radius(egui::CornerRadius::default(), r));
         scope::open(ui, Role::ProgressBar, true, |ui| {
             let bar = sized(bar, ui, desired_width, min_width);
-            let response = ui.add(bar.corner_radius(radius));
+            let response = match stated {
+                Some(radius) => ui.add(bar.corner_radius(radius)),
+                None => ui.add(bar),
+            };
+            let outer = response.rect;
+            // egui's own radius where the theme states none: half the bar's height
+            // (`egui-0.37.0/src/widgets/progress_bar.rs`, `ProgressBar::ui`).
+            let radius = stated.unwrap_or_else(|| (0.5 * outer.height()).into());
             // egui's fill: from the bar's start, `progress` of its width, at least as wide as
             // its rounded ends (`egui/src/widgets/progress_bar.rs`).
-            let outer = response.rect;
             let rounded = f32::from(radius.sw.max(radius.nw)).min(0.5 * outer.height());
             let filled = (outer.width() * progress).max(rounded + rounded);
             let mut parts = Parts::default();
@@ -122,11 +178,13 @@ impl egui::Widget for ProgressBar {
                 egui::Rect::from_min_size(outer.min, egui::vec2(filled, outer.height())),
             );
             parts.store(ui.ctx(), response.id);
-            if width > 0.0 && ui.is_rect_visible(response.rect) {
+            if let Some((width, color)) = outline
+                && ui.is_rect_visible(response.rect)
+            {
                 ui.painter().rect_stroke(
                     response.rect,
                     radius,
-                    egui::Stroke::new(width, to_color32(color)),
+                    egui::Stroke::new(width, color),
                     egui::StrokeKind::Inside,
                 );
             }

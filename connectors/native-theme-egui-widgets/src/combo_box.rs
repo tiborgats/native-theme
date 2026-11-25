@@ -1,7 +1,9 @@
 //! [`ComboBox`]: egui's own drop-down, as tall as its text and padding make it.
 
 use native_theme_egui::egui;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
+use native_theme_egui::next::{padding_of, stroke_width_of};
+use native_theme_egui::{ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -160,23 +162,23 @@ impl ComboBox {
         };
         let popup_style =
             popup_style.unwrap_or_else(|| atlas.role_modifier(theme, Role::ComboBox, variant));
-        // Where the border's width is not finite, or the atlas holds no 0.7.2 theme, egui's own
-        // padding and arrow place stand.
-        let sides = atlas.resolved_for(theme).and_then(|t| {
-            let c = &t.combo_box;
-            scope::length(c.border.line_width).map(|border| Sides {
-                left: c.border.padding.left.and_then(scope::length),
-                right: c.border.padding.right.and_then(scope::length),
-                border,
-                column: c.arrow_area_width.and_then(scope::length),
-            })
-        });
+        // Where the border's stated width is not finite, egui's own padding and arrow place
+        // stand.
+        let sides = match atlas.resolved_for(theme) {
+            Some(t) => Sides::of(t),
+            None => atlas.next_resolved_for(theme).and_then(Sides::next_of),
+        };
         scope::open(ui, Role::ComboBox, enabled, |ui| {
+            // The border's width: the stated one, else the scope's resting outline's, the one
+            // egui draws.
+            let border = sides
+                .and_then(|s| s.border)
+                .unwrap_or(ui.visuals().widgets.inactive.bg_stroke.width);
             // The text `combo_box.border.padding.left` inside the border: egui pads its button by
             // one `button_padding.x` on both sides (`combo_box_dyn`), which the scope holds as
             // the pair's single value.
-            if let Some((left, sides)) = sides.and_then(|s| Some((s.left?, s))) {
-                ui.spacing_mut().button_padding.x = left + sides.border;
+            if let Some(left) = sides.and_then(|s| s.left) {
+                ui.spacing_mut().button_padding.x = left + border;
             }
             // The font egui draws the selected text in: `ButtonStyle`'s, the scope's
             // `override_font_id`, else Body (`egui-0.37.0/src/theme/default_style.rs`,
@@ -253,7 +255,7 @@ impl ComboBox {
             let arrow_box = std::rc::Rc::new(std::cell::Cell::new(None));
             let painted = std::rc::Rc::clone(&arrow_box);
             combo = combo.icon(move |ui, rect, visuals, _open| {
-                let centre = sides.and_then(|s| s.column_centre(rect, margin.right));
+                let centre = sides.and_then(|s| s.column_centre(rect, margin.right, border));
                 painted.set(Some(paint_chevron(ui, rect, visuals, grow, centre)));
             });
             let vertical = ui.layout().vertical_align();
@@ -293,25 +295,57 @@ impl ComboBox {
 }
 
 /// The drop-down's stated sides, from `combo_box`: its `border.padding` left and right, its
-/// border's width, and its arrow column's width (`arrow_area_width`).
-#[derive(Clone, Copy)]
-struct Sides {
-    left: Option<f32>,
-    right: Option<f32>,
-    border: f32,
-    column: Option<f32>,
+/// border's width, and its arrow column's width (`arrow_area_width`), each `None` where the
+/// theme states none and egui's own stays (the border's, the scope's resting outline's width).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Sides {
+    pub(crate) left: Option<f32>,
+    pub(crate) right: Option<f32>,
+    pub(crate) border: Option<f32>,
+    pub(crate) column: Option<f32>,
 }
 
 impl Sides {
+    /// `None` where the border's width is not finite.
+    pub(crate) fn of(t: &ResolvedTheme) -> Option<Self> {
+        let c = &t.combo_box;
+        Some(Self {
+            left: c.border.padding.left.and_then(scope::length),
+            right: c.border.padding.right.and_then(scope::length),
+            border: Some(scope::length(c.border.line_width)?),
+            column: c.arrow_area_width.and_then(scope::length),
+        })
+    }
+
+    /// The sides of a drop-down of a 0.8.0 theme: `combo_box.field(NONE)`'s left and right
+    /// padding and its stroke's width (none for a stroke stated as none), and
+    /// `combo_box.arrow_area_width`, each where stated and finite; a stroke unstated, or stated
+    /// per side, keeps egui's width. `None` where the field's stated stroke width is not finite.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
+        let c = &r.combo_box;
+        let field = c.field(WidgetState::NONE);
+        let [_, right, _, left] = padding_of(&field);
+        let border = match stroke_width_of(&field) {
+            Some(width) => Some(scope::length(width)?),
+            None => None,
+        };
+        Some(Self {
+            left: left.and_then(scope::length),
+            right: right.and_then(scope::length),
+            border,
+            column: c.arrow_area_width.and_then(scope::length),
+        })
+    }
+
     /// Where the arrow's column is centred: the column `arrow_area_width` wide, at the button's
     /// right edge inside its border and `border.padding.right` — Breeze centres its arrow in
     /// its `MenuButton_IndicatorWidth` column (`docs/platform-facts.md` §2.24). `icon` is the
     /// box egui hands the icon, flush right in the content, which ends `margin` (the frame's
-    /// total right margin) inside the button's edge (`combo_box_dyn`). `None` where the theme
-    /// states no right padding or column: egui's own place stands.
-    fn column_centre(self, icon: egui::Rect, margin: f32) -> Option<f32> {
+    /// total right margin) inside the button's edge (`combo_box_dyn`), and `border` the border's
+    /// width. `None` where the theme states no right padding or column: egui's own place stands.
+    fn column_centre(self, icon: egui::Rect, margin: f32, border: f32) -> Option<f32> {
         let (right, column) = (self.right?, self.column?);
-        Some(icon.right() + margin - self.border - right - 0.5 * column)
+        Some(icon.right() + margin - border - right - 0.5 * column)
     }
 }
 

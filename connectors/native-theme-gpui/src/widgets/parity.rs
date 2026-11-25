@@ -16,19 +16,21 @@
 //! (the control drawn as gpui-component's own) is a difference too, and
 //! fails where both sides give none, so no leaf passes by being absent from
 //! both. A difference is allowed only as an entry of [`DIFFERENCES`], with
-//! its reason; an entry that no longer differs fails.
+//! its reason, and the 0.8.0 answer of a listed leaf is the one its 0.8.0
+//! home gives ([`Report::moved`]); an entry that no longer differs fails.
 
 use std::fmt::Debug;
 
 use gpui::px;
 use gpui_component::Size;
-use native_theme::next::{PartStated, Preset, ThemeContext, WidgetState};
+use native_theme::next::{Preset, ThemeContext, WidgetState};
 
+use super::checkbox::DISABLED_INDICATOR_ALPHA;
 use super::{
     CheckboxLook, FocusRing, LabelFont, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook,
     SwitchLabelFont, SwitchLook, TabLook, ThemeSource, ThumbOutline, rgba,
 };
-use crate::next::{Mapped, Unmapped};
+use crate::next::{Mapped, Unmapped, fill, stroke_color};
 use crate::{ColorMode, Native, ResolvedTheme};
 
 /// The presets compared: the 0.7.2 key and the 0.8.0 preset.
@@ -120,10 +122,37 @@ const DIFFERENCES: &[Difference] = &[
                  checkbox/res/values/styles.xml:26-28, m3_primary_text_disable_only.xml:19, \
                  dimens.xml:21 at material-components-android 66c334b; \
                  native-theme/tests/next_homes.toml, row checkbox.disabled_text_color, a listed \
-                 difference); the disabled checked mark is surface where 0.7.2 draws it in \
-                 its disabled label colour (selected-disabled-icon-color, \
-                 _md-comp-checkbox.scss:50, v0_192 at material-web cbd34a8; the look reads \
+                 difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of mark disabled",
+        presets: &["material-3"],
+        reason: "the disabled checked mark is surface where 0.7.2 draws it in its disabled \
+                 label colour (selected-disabled-icon-color, _md-comp-checkbox.scss:50, v0_192 \
+                 at material-web cbd34a8; the look reads \
                  checkbox.checkmark(DISABLED|CHECKED).color, CheckboxLook::next_of)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of mark disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "these 0.8.0 presets state no checkbox.checkmark(DISABLED).color, so a \
+                 disabled box's mark keeps gpui-component's own treatment (spec §10, rule 0): \
+                 the enabled mark, checkbox.checkmark(CHECKED).color, at half alpha \
+                 (primary_foreground.opacity(0.5), gpui-component 0.10.0 checkbox.rs:230-234), \
+                 where the 0.7.2 look drew it in the label's disabled colour where a disabled \
+                 fill is stated, else as enabled; the 0.8.0 look is compared to that home at \
+                 half alpha (Report::moved)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio mark disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of mark disabled): these 0.8.0 presets state \
+                 no radio.dot(DISABLED).fill, and gpui-component's radio draws the same mark \
+                 through checkbox_check_icon, dimmed to half alpha when disabled \
+                 (gpui-component 0.10.0 radio.rs:249-256, checkbox.rs:230-234), so a \
+                 disabled radio's dot is radio.dot(CHECKED).fill at half alpha, where the \
+                 0.7.2 look drew it in the label's disabled colour where a disabled fill is \
+                 stated, else as enabled",
     },
     Difference {
         leaf: "CheckboxLook::radio label disabled",
@@ -215,7 +244,7 @@ const DIFFERENCES: &[Difference] = &[
                  indicator is the same part on these presets",
     },
     Difference {
-        leaf: "CheckboxLook::of",
+        leaf: "CheckboxLook::of outline",
         presets: &["ios-13"],
         reason: "0.7.2's ios-13 outlines the box in its uncited default line, 0.5 px in the \
                  separator, checked or not; 0.8.0's ios-13 states the outline WebKit strokes \
@@ -224,23 +253,151 @@ const DIFFERENCES: &[Difference] = &[
                  none round a checked one (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, \
                  :1502 at WebKit 31adf9d; native-theme/tests/next_homes.toml, rows \
                  checkbox.unchecked_border_color, checkbox.border.color and \
-                 checkbox.border.line_width, listed differences); the outline's colour is \
-                 compared apart (CheckboxLook::of border), its width here; and an empty box \
-                 at rest in WebKit's -webkit-control-background, systemBackground #ffffff / \
-                 #000000, in place of 0.7.2's uncited #ffffff / #1c1c1e \
-                 (checkboxRadioBackgroundColor, RenderThemeIOS.mm:1391, :1395, :1027 at WebKit \
-                 31adf9d; system-color-for-css-value-expected.txt:7, :9 at WebKit de320ba; \
-                 native-theme/tests/next_homes.toml, row \
-                 checkbox.unchecked_background, a listed difference)",
+                 checkbox.border.line_width, listed differences); the mark, inset by the \
+                 outline where no padding is stated, is 19 px where 0.7.2's is 21 px",
     },
     Difference {
-        leaf: "CheckboxLook::radio",
+        leaf: "CheckboxLook::of fill",
         presets: &["ios-13"],
-        reason: "as the check box's (CheckboxLook::of): the radio button's indicator is the \
+        reason: "0.8.0's ios-13 fills an empty box at rest in WebKit's \
+                 -webkit-control-background, systemBackground #ffffff / #000000, in place of \
+                 0.7.2's uncited #ffffff / #1c1c1e (checkboxRadioBackgroundColor, \
+                 RenderThemeIOS.mm:1391, :1395, :1027 at WebKit 31adf9d; \
+                 system-color-for-css-value-expected.txt:7, :9 at WebKit de320ba; \
+                 native-theme/tests/next_homes.toml, row checkbox.unchecked_background, a \
+                 listed difference); the look reads it at checkbox.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of fill): the radio button's indicator is \
+                 the same part on ios-13; the look reads it at radio.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::of opacity",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 fades a disabled box by its uncited defaults.disabled_opacity \
+                 0.3 (ios-13.toml); 0.8.0's draws it at full opacity, as WebKit's iOS style \
+                 sheet resets a disabled check box's and radio button's opacity 0.4 with \
+                 `opacity: initial` (html.css:962-963, :1031-1034, :1040-1047 at WebKit \
+                 31adf9d), their disabled colours the theme's own; the look reads \
+                 checkbox.disabled_opacity, 1",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio opacity",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of opacity): the same rule of the iOS style \
+                 sheet covers the radio button (html.css:1040-1047 at WebKit 31adf9d); the \
+                 look reads radio.disabled_opacity, 1",
+    },
+    Difference {
+        leaf: "CheckboxLook::of fill disabled",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 fills a disabled box, checked or not, in its uncited \
+                 checkbox.disabled_background #e5e5ea80 / #2c2c2e80 (ios-13.toml); 0.8.0's \
+                 states WebKit's: empty, -webkit-control-background, systemBackground #ffffff \
+                 / #000000 (checkboxRadioBackgroundColor, RenderThemeIOS.mm:1387-1388, :1027 \
+                 at WebKit 31adf9d), checked, opaqueTertiaryFill #eeeeef / #1c1c1e \
+                 (RenderThemeIOS.mm:1372, :1387-1388; ios-18 expected.txt:90-91, :93); the look \
+                 reads them at checkbox.indicator(DISABLED).fill and \
+                 checkbox.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of fill disabled): WebKit fills a disabled \
+                 radio button's circle as the box, checked in opaqueTertiaryFill \
+                 (RenderThemeIOS.mm:1561-1563 at WebKit 31adf9d); the look reads \
+                 radio.indicator(DISABLED).fill and radio.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["kde-breeze", "adwaita", "material-3"],
+        reason: "these 0.8.0 presets state no checkbox.indicator(DISABLED).stroke, so a \
+                 disabled box keeps gpui-component's own treatment (spec §10, rule 0): its \
+                 enabled border, checkbox.indicator(CHECKED).stroke.color checked and \
+                 checkbox.indicator(NONE).stroke.color unchecked, at half alpha \
+                 (disabled_indicator_color, gpui-component 0.10.0 checkbox.rs:286-290, \
+                 :359-361), where the 0.7.2 look kept the enabled border; the 0.8.0 look is \
+                 compared to that home at half alpha (Report::moved)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["windows-11"],
+        reason: "the 0.8.0 windows-11 states WinUI's disabled box's outline, \
+                 CheckBoxCheckBackgroundStrokeUncheckedDisabled and …StrokeCheckedDisabled = \
+                 ControlStrongStrokeColorDisabled, #37000000 / #28ffffff \
+                 (CheckBox_themeresources.xaml:220, :44, :224, set at :465-468 at \
+                 microsoft-ui-xaml 8463f45), where the 0.7.2 look kept the enabled border; \
+                 gpui-component's half alpha of the rest border would give #00000039 in \
+                 light; the look reads checkbox.indicator(DISABLED).stroke.color and \
+                 checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 macOS presets state the measured disabled box's edge, checked or not: \
+                 macos-monterey #d1d1d180 on the sides and the bottom in light and none in \
+                 dark (every edge pixel within 6 alpha levels of the fill), macos-tahoe none \
+                 (every edge pixel the fill) (os-probe run 45345116763, macOS 15 and 26, \
+                 `*.normal.checkbox_disabled_{off,on}` `edge_*`), where the 0.7.2 look kept \
+                 the enabled border; the look reads checkbox.indicator(DISABLED).stroke.color \
+                 and checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["ios-13"],
+        reason: "the 0.8.0 ios-13 states WebKit's disabled box's outline: empty, \
+                 checkboxRadioBorderColor secondaryLabel at checkboxRadioBorderDisabledOpacity \
+                 0.3 (RenderThemeIOS.mm:1355, :1359-1362 at WebKit 31adf9d), checked, none \
+                 (:1502), where the 0.7.2 look kept the enabled border; the look reads checkbox.indicator(DISABLED).stroke.color and \
+                 checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["kde-breeze", "adwaita"],
+        reason: "as the check box's (CheckboxLook::of border disabled): these 0.8.0 presets \
+                 state no radio.indicator(DISABLED).stroke, and gpui-component dims a disabled \
+                 radio's border_color, radio.indicator(CHECKED).stroke.color checked and \
+                 radio.indicator(NONE).stroke.color unchecked, to half alpha \
+                 (gpui-component 0.10.0 radio.rs:193-200)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["windows-11"],
+        reason: "the 0.8.0 windows-11 states WinUI's disabled circle's outline, \
+                 RadioButtonOuterEllipseStrokeDisabled = ControlStrongStrokeColorDisabled \
+                 (RadioButton_themeresources.xaml:137, :21 at microsoft-ui-xaml 8463f45), \
+                 checked …CheckedStrokeDisabled = AccentFillColorDisabled (set at :326-330), \
+                 #37000000 / #28ffffff both, where the 0.7.2 look kept the enabled border; the \
+                 look reads radio.indicator(DISABLED).stroke.color and \
+                 radio.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        reason: "as the check box's (CheckboxLook::of border disabled): the radio button's \
+                 indicator is the same part on these presets (macos-monterey's light circle \
+                 measured #d0d0d07c, the same run, `*.normal.radio_disabled_off` `edge_*`, the \
+                 preset stating the box's #d1d1d180 for both)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["material-3"],
+        reason: "the 0.8.0 material-3 states material-web's disabled radio's ring, \
+                 disabled-unselected-icon-color and disabled-selected-icon-color on-surface at \
+                 0.38 (_radio.scss:163-166, :180-183, _md-comp-radio-button.scss:28-33, v0_192 \
+                 at material-web cbd34a8), where the 0.7.2 look kept the enabled border; the \
+                 look reads radio.indicator(DISABLED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio outline",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of outline): the radio button's indicator is the \
                  same part on ios-13",
     },
     Difference {
-        leaf: "CheckboxLook::of",
+        leaf: "CheckboxLook::of fill disabled",
         presets: &["kde-breeze", "windows-11"],
         reason: "0.7.2 has one disabled fill for a checked and an unchecked box; 0.8.0 states \
                  the disabled checked box's own (native-theme/tests/next_homes.toml, row \
@@ -252,15 +409,15 @@ const DIFFERENCES: &[Difference] = &[
                  8463f45); the look reads it at checkbox.indicator(DISABLED|CHECKED).fill",
     },
     Difference {
-        leaf: "CheckboxLook::radio",
+        leaf: "CheckboxLook::radio fill disabled",
         presets: &["kde-breeze", "windows-11"],
-        reason: "as the check box's (CheckboxLook::of): the disabled checked radio's circle \
+        reason: "as the check box's (CheckboxLook::of fill disabled): the disabled checked radio's circle \
                  is filled as the box (breezehelper.cpp:1012-1019; \
                  RadioButtonOuterEllipseCheckedFillDisabled, RadioButton_themeresources.xaml:149, \
                  :33)",
     },
     Difference {
-        leaf: "CheckboxLook::of",
+        leaf: "CheckboxLook::of fill disabled",
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "0.7.2 states no disabled fill, so a disabled box keeps its rest or checked \
                  fill; 0.8.0 states the measured disabled box (os-probe run 45345116763, macOS \
@@ -272,25 +429,44 @@ const DIFFERENCES: &[Difference] = &[
                  checkbox.indicator(DISABLED|CHECKED).fill",
     },
     Difference {
-        leaf: "CheckboxLook::radio",
+        leaf: "CheckboxLook::radio fill disabled",
         presets: &["macos-monterey", "macos-tahoe"],
-        reason: "as the check box's (CheckboxLook::of): the disabled radio button's circle is \
+        reason: "as the check box's (CheckboxLook::of fill disabled): the disabled radio button's circle is \
                  filled as the box (the same run, `*.normal.radio_disabled_{off,on}` `fill`)",
     },
     Difference {
-        leaf: "CheckboxLook::radio",
+        leaf: "CheckboxLook::radio fill",
         presets: &["material-3"],
-        reason: "0.7.2 fills a checked or disabled radio button as its check box and draws \
-                 the dot in on-primary; 0.8.0's material-3 states material-web's radio, a ring \
-                 and a dot in primary with nothing between them in any state, disabled and \
-                 checked both on-surface at 0.38 (radio/internal/radio.ts:108-120, \
-                 _radio.scss:126-127, :180-183, _md-comp-radio-button.scss:28-29, :45, v0_192 \
-                 at material-web cbd34a8; native-theme/tests/next_homes.toml, rows \
-                 checkbox.checked_background, checkbox.indicator_color and \
-                 checkbox.disabled_background, listed differences)",
+        reason: "0.7.2 fills a checked radio button as its check box, in primary; 0.8.0's \
+                 material-3 states material-web's radio, a ring and a dot with nothing between \
+                 them in any state (radio/internal/radio.ts:108-120, _radio.scss:109-113 at \
+                 material-web cbd34a8; native-theme/tests/next_homes.toml, row \
+                 checkbox.checked_background, a listed difference); the look reads \
+                 radio.indicator(CHECKED).fill, transparent",
     },
     Difference {
-        leaf: "SliderLook::hover_thumb",
+        leaf: "CheckboxLook::radio mark",
+        presets: &["material-3"],
+        reason: "0.7.2 draws the radio button's dot in on-primary, over the check box's fill; \
+                 0.8.0's material-3 states material-web's dot, in selected-icon-color primary \
+                 (radio/internal/radio.ts:119, _radio.scss:126-127, \
+                 _md-comp-radio-button.scss:45, v0_192 at material-web cbd34a8; \
+                 native-theme/tests/next_homes.toml, row checkbox.indicator_color, a listed \
+                 difference); the look reads radio.dot(CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["material-3"],
+        reason: "0.7.2 fills a disabled radio button as its check box, on-surface at 0.38; \
+                 0.8.0's material-3 states material-web's disabled radio, the ring and the dot \
+                 in on-surface at 0.38 with nothing between them (_radio.scss:163-166, \
+                 :180-183, _md-comp-radio-button.scss:28-33 at material-web cbd34a8; \
+                 native-theme/tests/next_homes.toml, row checkbox.disabled_background, a \
+                 listed difference); the look reads radio.indicator(DISABLED).fill, \
+                 transparent",
+    },
+    Difference {
+        leaf: "SliderLook hover_thumb",
         presets: &["adwaita"],
         reason: "0.7.2's adwaita states an uncited slider.thumb_hover_color (#ebebeb / \
                  #3a3a3e); 0.8.0's adwaita states libadwaita's $slider_hover_color, white in \
@@ -299,7 +475,7 @@ const DIFFERENCES: &[Difference] = &[
                  difference), so the look's hovered thumb is white",
     },
     Difference {
-        leaf: "SwitchLabelFont",
+        leaf: "SwitchLabelFont family and style",
         presets: &[
             "kde-breeze",
             "adwaita",
@@ -318,14 +494,6 @@ const DIFFERENCES: &[Difference] = &[
                  and left the family and slant to the window's (SwitchTheme states no label \
                  font); the size and weight are the same",
     },
-];
-
-/// The listed differences whose 0.8.0 value the test computes from the
-/// home the reason names: the 0.7.2 look's leaf set to the home's value
-/// through the conversion the 0.8.0 constructor applies to it, without
-/// calling that constructor ([`Report::home_leaf`]). The leaf must differ
-/// from 0.7.2's and equal that value; a home left unstated fails.
-const FROM_HOME: &[Difference] = &[
     Difference {
         leaf: "CheckboxLook::of hover_border",
         presets: &["adwaita", "windows-11"],
@@ -343,8 +511,8 @@ const FROM_HOME: &[Difference] = &[
                  checkbox.indicator(HOVER|CHECKED).stroke.color",
     },
     Difference {
-        leaf: "CheckboxLook::of border",
-        presets: &["adwaita", "windows-11", "ios-13"],
+        leaf: "CheckboxLook::of outline",
+        presets: &["adwaita", "windows-11"],
         reason: "0.7.2's adwaita and windows-11 outline a checked box in the default border \
                  colour, ios-13 every box in its uncited default line (the separator); 0.8.0's \
                  adwaita states none round a checked box, as libadwaita draws a checked or mixed \
@@ -359,9 +527,9 @@ const FROM_HOME: &[Difference] = &[
                  checkbox.indicator(CHECKED).stroke.color and checkbox.indicator(NONE).stroke.color",
     },
     Difference {
-        leaf: "CheckboxLook::radio border",
-        presets: &["adwaita", "windows-11", "ios-13"],
-        reason: "as the check box's (CheckboxLook::of border): libadwaita's rule covers the \
+        leaf: "CheckboxLook::radio outline",
+        presets: &["adwaita", "windows-11"],
+        reason: "as the check box's (CheckboxLook::of outline): libadwaita's rule covers the \
                  radio (_checks.scss:52-56), WinUI's RadioButtonOuterEllipseCheckedStroke is \
                  AccentFillColorDefaultBrush (RadioButton_themeresources.xaml:142, :26), and \
                  WebKit strokes the iOS radio as the box; the look reads \
@@ -382,7 +550,7 @@ const FROM_HOME: &[Difference] = &[
                  radio.indicator(HOVER|CHECKED).stroke.color",
     },
     Difference {
-        leaf: "CheckboxLook::of label disabled",
+        leaf: "CheckboxLook::of mark disabled",
         presets: &["kde-breeze", "windows-11", "ios-13"],
         reason: "0.7.2 draws a disabled box's mark in its disabled label colour (where a \
                  disabled fill is stated); the 0.8.0 presets state the disabled checked or \
@@ -393,31 +561,17 @@ const FROM_HOME: &[Difference] = &[
                  §2.1.6); windows-11 TextOnAccentFillColorDisabled #FFFFFF / #87FFFFFF \
                  (CheckBox_themeresources.xaml:248, :72, :471 at microsoft-ui-xaml 8463f45); \
                  ios-13 WebKit's tertiaryLabel (RenderThemeIOS.mm:1410-1413, :1541-1542 at \
-                 WebKit 31adf9d); the label as before",
+                 WebKit 31adf9d)",
     },
     Difference {
-        leaf: "CheckboxLook::radio label disabled",
+        leaf: "CheckboxLook::radio mark disabled",
         presets: &["kde-breeze", "windows-11", "ios-13"],
-        reason: "as the check box's (CheckboxLook::of label disabled), the dot at \
+        reason: "as the check box's (CheckboxLook::of mark disabled), the dot at \
                  radio.dot(DISABLED|CHECKED).fill: kde-breeze palette.text() in the Disabled \
                  group (breezehelper.cpp:1059); windows-11 RadioButtonCheckGlyphFillDisabled, \
                  the rest's TextOnAccentFillColorPrimary as the source names it \
                  (RadioButton_themeresources.xaml:153, :37, :333; the Color-for-a-Brush key's \
                  drawn result not measured); ios-13 tertiaryLabel (RenderThemeIOS.mm:1578-1579)",
-    },
-    Difference {
-        leaf: "CheckboxLook::of label disabled",
-        presets: &["macos-monterey", "macos-tahoe"],
-        reason: "the macOS presets state no disabled mark (no measurement of AppKit's disabled \
-                 checked box yet), so the look draws gpui-component's own disabled mark, the \
-                 checked mark at half its opacity (gpui-component 0.10.0 src/checkbox.rs:230-234; \
-                 docs/v0.8.0-spec.md §10, rule 0), where 0.7.2 draws the checked mark",
-    },
-    Difference {
-        leaf: "CheckboxLook::radio label disabled",
-        presets: &["macos-monterey", "macos-tahoe"],
-        reason: "as the check box's (CheckboxLook::of label disabled): gpui-component's radio \
-                 draws the same mark (src/radio.rs:249)",
     },
     Difference {
         leaf: "SwitchLook::label_gap",
@@ -532,7 +686,7 @@ const FROM_HOME: &[Difference] = &[
                  same for `check, radio`, so radio.indicator(HOVER).fill is the rest fill",
     },
     Difference {
-        leaf: "SliderLook::thumb_color",
+        leaf: "SliderLook thumb_color",
         presets: &["ios-13"],
         reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
                  defaults.surface_color, #f2f2f7 / #1c1c1e; the 0.8.0 preset states UISlider's \
@@ -565,7 +719,7 @@ const FROM_HOME: &[Difference] = &[
                  row switch.hover_checked_background, a listed difference)",
     },
     Difference {
-        leaf: "SliderLook::hover_thumb",
+        leaf: "SliderLook hover_thumb",
         presets: &["macos-monterey"],
         reason: "0.7.2's macos-monterey states slider.thumb_hover_color #e0e0e0 (light), \
                  uncited; the 0.8.0 preset states slider.thumb(HOVER).fill, the knob's rest \
@@ -574,6 +728,16 @@ const FROM_HOME: &[Difference] = &[
                  pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
                  native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
                  difference)",
+    },
+    Difference {
+        leaf: "ThemeSource::focus_ring inner",
+        presets: &["windows-11"],
+        reason: "0.7.2 states no second ring; the 0.8.0 windows-11 states WinUI's focus visual \
+                 with its 1 px inner ring in FocusStrokeColorInner, #b3ffffff / #b3000000 \
+                 (platform-facts.md §2.1.5, focus_ring_color and focus_ring_offset; \
+                 FocusVisualSecondaryThickness 1, ListViewItem_themeresources.xaml:252 at \
+                 microsoft-ui-xaml 8463f45), which the ring reads at \
+                 focus_ring.inner_stroke",
     },
 ];
 
@@ -600,37 +764,15 @@ impl Report {
     }
 
     /// Compare one leaf: the 0.7.2 constructor's answer and the 0.8.0 one's.
+    /// A leaf [`DIFFERENCES`] lists for this preset fails here: a listed
+    /// difference is compared to the value its 0.8.0 home gives, through
+    /// [`Report::moved`].
     fn leaf<T: PartialEq + Debug>(
         &mut self,
         leaf: &'static str,
         state: &str,
         old: Option<T>,
         new: Mapped<T>,
-    ) {
-        self.compare(leaf, state, old, new, None);
-    }
-
-    /// Compare one leaf as [`Report::leaf`] does, and where a [`FROM_HOME`]
-    /// entry lists it on this preset, the 0.8.0 answer with `expected`, the
-    /// value computed from the entry's home (`None` where it is unstated).
-    fn home_leaf<T: PartialEq + Debug>(
-        &mut self,
-        leaf: &'static str,
-        state: &str,
-        old: Option<T>,
-        new: Mapped<T>,
-        expected: Option<T>,
-    ) {
-        self.compare(leaf, state, old, new, Some(expected));
-    }
-
-    fn compare<T: PartialEq + Debug>(
-        &mut self,
-        leaf: &'static str,
-        state: &str,
-        old: Option<T>,
-        new: Mapped<T>,
-        expected: Option<Option<T>>,
     ) {
         self.compared += 1;
         let differs = match (&old, &new) {
@@ -640,137 +782,60 @@ impl Report {
         if !differs {
             return;
         }
-        let computed = FROM_HOME
+        if DIFFERENCES
             .iter()
-            .find(|d| d.leaf == leaf && d.presets.contains(&self.preset));
-        let described = match (computed, &expected, &new) {
-            (None, _, _) => DIFFERENCES
-                .iter()
-                .any(|d| d.leaf == leaf && d.presets.contains(&self.preset)),
-            (Some(_), Some(Some(expected)), Ok(new)) => expected == new,
-            (Some(_), _, _) => false,
-        };
-        if described {
-            self.listed.push(leaf);
+            .any(|d| d.leaf == leaf && d.presets.contains(&self.preset))
+        {
+            self.failures.push(format!(
+                "{}: {leaf}{state}: listed as a difference but compared to no home: compare it \
+                 through Report::moved",
+                self.label
+            ));
             return;
         }
         let new = match new {
             Ok(new) => format!("{new:?}"),
             Err(Unmapped(home)) => format!("unmapped at {home}"),
         };
-        let listed = match (computed, expected) {
-            (Some(d), Some(expected)) => format!(
-                ", from its home {expected:?}: the listed difference ({}) no longer \
-                 describes it",
-                d.reason
-            ),
-            (Some(d), None) => format!(
-                ": listed ({}) as computed from its home, but compared without it",
-                d.reason
-            ),
-            (None, _) => String::new(),
-        };
         self.failures.push(format!(
-            "{}: {leaf}{state}: 0.7.2 {old:?}, 0.8.0 {new}{listed}",
+            "{}: {leaf}{state}: 0.7.2 {old:?}, 0.8.0 {new}",
             self.label
         ));
     }
-}
 
-/// The mark and the label of a disabled check box (`radio` false) or radio
-/// button, from their homes as `CheckboxLook::next_of` converts them: the
-/// mark at `checkbox.checkmark(DISABLED|CHECKED).color`
-/// (`radio.dot(DISABLED|CHECKED).fill`) where a rule states it for
-/// `DISABLED`, else the checked mark at gpui-component's own disabled
-/// opacity (spec §10, rule 0); the label at `checkbox.label(DISABLED).color`
-/// (`radio.label`). `None` where `disabled` is false or a home is unstated.
-fn disabled_text_of(
-    new: &native_theme::next::ResolvedTheme,
-    radio: bool,
-    disabled: bool,
-) -> Option<(gpui::Hsla, gpui::Hsla)> {
-    use native_theme::next::IconStated;
-    if !disabled {
-        return None;
+    /// Compare one leaf a listed difference moves to the value `expected`
+    /// computes from its 0.8.0 home: where [`DIFFERENCES`] lists the leaf for
+    /// this preset, the 0.8.0 constructor's answer is `expected` and differs
+    /// from the 0.7.2 one's; elsewhere the leaf is compared as [`Report::leaf`]
+    /// compares it.
+    fn moved<T: PartialEq + Debug>(
+        &mut self,
+        leaf: &'static str,
+        state: &str,
+        old: Option<T>,
+        new: Mapped<T>,
+        expected: Mapped<T>,
+    ) {
+        if !DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == leaf && d.presets.contains(&self.preset))
+        {
+            self.leaf(leaf, state, old, new);
+            return;
+        }
+        self.compared += 1;
+        match (&old, &new, &expected) {
+            (_, Ok(new), Ok(expected)) if new == expected => {
+                if old.as_ref() != Some(new) {
+                    self.listed.push(leaf);
+                }
+            }
+            _ => self.failures.push(format!(
+                "{}: {leaf}{state}: listed as moved to {expected:?}, 0.7.2 {old:?}, 0.8.0 {new:?}",
+                self.label
+            )),
+        }
     }
-    let checked_disabled = WidgetState::DISABLED | WidgetState::CHECKED;
-    let (stated, mark) = if radio {
-        let stated = new
-            .radio
-            .dot(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::FILL);
-        let at = if stated {
-            checked_disabled
-        } else {
-            WidgetState::CHECKED
-        };
-        (stated, crate::next::fill_of(&new.radio.dot(at))?)
-    } else {
-        let stated = new
-            .checkbox
-            .checkmark(WidgetState::DISABLED)
-            .from_state
-            .contains(IconStated::COLOR);
-        let at = if stated {
-            checked_disabled
-        } else {
-            WidgetState::CHECKED
-        };
-        let mark = new.checkbox.checkmark(at);
-        if !mark.stated.contains(IconStated::COLOR) {
-            return None;
-        }
-        (stated, crate::next::hsla(mark.color))
-    };
-    let mark = if stated {
-        mark
-    } else {
-        mark.opacity(super::checkbox::UPSTREAM_DISABLED_MARK_OPACITY)
-    };
-    let label = if radio {
-        new.radio.label(WidgetState::DISABLED)
-    } else {
-        new.checkbox.label(WidgetState::DISABLED)
-    };
-    let label = crate::next::text_color(&label, "checkbox.label(DISABLED).color").ok()?;
-    Some((mark, label))
-}
-
-/// The outline of a check box (`radio` false) or radio button, from its homes as
-/// `CheckboxLook::next_of` converts them: at rest the stroke colour of `indicator(CHECKED)`
-/// where `checked`, else of `indicator(NONE)`; under the pointer, where a rule states a stroke
-/// for `HOVER` and the control is enabled, the stroke colour of `indicator(HOVER|CHECKED)` or
-/// `indicator(HOVER)`, else none. `None` where a home is unstated.
-fn outline_of(
-    new: &native_theme::next::ResolvedTheme,
-    radio: bool,
-    checked: bool,
-    disabled: bool,
-) -> Option<(gpui::Hsla, Option<gpui::Hsla>)> {
-    let indicator = |state: WidgetState| {
-        if radio {
-            new.radio.indicator(state)
-        } else {
-            new.checkbox.indicator(state)
-        }
-    };
-    let shown = if checked {
-        WidgetState::CHECKED
-    } else {
-        WidgetState::NONE
-    };
-    let color = |state: WidgetState| crate::next::stroke_color(&indicator(state), "").ok();
-    let hovers = !disabled
-        && indicator(WidgetState::HOVER)
-            .from_state
-            .contains(PartStated::STROKE);
-    let hover = if hovers {
-        Some(color(WidgetState::HOVER | shown)?)
-    } else {
-        None
-    };
-    Some((color(shown)?, hover))
 }
 
 /// The two resolved themes of `preset` for `is_dark`.
@@ -794,6 +859,239 @@ fn resolve(
 /// `Some` of a value both models always give, as the 0.8.0 side's `Ok`.
 fn given<T>(v: Option<T>) -> Mapped<T> {
     v.ok_or(Unmapped("(a value the 0.8.0 side gives as `None`)"))
+}
+
+/// The state a control shows, `checked` or not, apart from its disabled bit.
+fn shown(checked: bool) -> WidgetState {
+    if checked {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    }
+}
+
+/// A colour of the window's colours, `home` its path.
+fn window_colour(
+    colour: Option<native_theme::next::Color>,
+    home: &'static str,
+) -> Mapped<gpui::Hsla> {
+    crate::next::stated(colour, home).map(crate::next::hsla)
+}
+
+/// A hovered unselected tab's fill from its 0.8.0 homes: the fill a rule
+/// states for `HOVER`, over the bar; else the tab at rest.
+fn tab_hover_home(n: &native_theme::next::ResolvedTheme) -> Mapped<gpui::Hsla> {
+    let t = &n.tab;
+    match crate::next::state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")? {
+        Some(hover) => Ok(crate::colors::over(
+            fill(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
+            hover,
+        )),
+        None => fill(&t.tab(WidgetState::NONE), "tab.tab(NONE).fill"),
+    }
+}
+
+/// An enabled slider's thumb under the pointer from its 0.8.0 homes: the
+/// fill a rule states for `HOVER`, else the thumb at rest; `None` disabled.
+fn slider_hover_home(
+    n: &native_theme::next::ResolvedTheme,
+    disabled: bool,
+) -> Mapped<Option<gpui::Hsla>> {
+    if disabled {
+        return Ok(None);
+    }
+    let s = &n.slider;
+    match crate::next::state_fill(&s.thumb(WidgetState::HOVER), "slider.thumb(HOVER).fill")? {
+        Some(hover) => Ok(Some(hover)),
+        None => fill(&s.thumb(WidgetState::NONE), "slider.thumb(NONE).fill").map(Some),
+    }
+}
+
+/// An enabled switch's track under the pointer from its 0.8.0 homes: the
+/// fill a rule states for `HOVER` (at the checked state where checked), else
+/// the track at rest; `None` disabled.
+fn switch_hover_home(
+    n: &native_theme::next::ResolvedTheme,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<Option<gpui::Hsla>> {
+    if disabled {
+        return Ok(None);
+    }
+    let s = &n.switch;
+    let ruled = s
+        .track(WidgetState::HOVER)
+        .from_state
+        .contains(native_theme::next::PartStated::FILL);
+    if ruled {
+        fill(
+            &s.track(WidgetState::HOVER | shown(checked)),
+            "switch.track(HOVER|shown).fill",
+        )
+        .map(Some)
+    } else {
+        fill(&s.track(shown(checked)), "switch.track(shown).fill").map(Some)
+    }
+}
+
+/// A switch's label colour from its 0.8.0 homes: disabled, the one a rule
+/// states for `DISABLED`, else gpui-component's muted_foreground,
+/// `colors.window.foreground_muted`; enabled, the stated one at its state,
+/// else gpui-component's foreground, `colors.window.foreground`.
+fn switch_label_home(
+    n: &native_theme::next::ResolvedTheme,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<gpui::Hsla> {
+    use native_theme::next::TextStated;
+    let s = &n.switch;
+    if disabled {
+        if s.label(WidgetState::DISABLED)
+            .from_state
+            .contains(TextStated::COLOR)
+        {
+            crate::next::text_color(
+                &s.label(WidgetState::DISABLED | shown(checked)),
+                "switch.label(DISABLED|shown).color",
+            )
+        } else {
+            window_colour(
+                n.colors.window.foreground_muted,
+                "colors.window.foreground_muted",
+            )
+        }
+    } else {
+        match crate::next::text_color_of(&s.label(shown(checked))) {
+            Some(colour) => Ok(colour),
+            None => window_colour(n.colors.window.foreground, "colors.window.foreground"),
+        }
+    }
+}
+
+/// A check box's or radio's label colour from its 0.8.0 homes, `label` the
+/// label at a state: disabled, the one a rule states for `DISABLED`, else
+/// gpui-component's muted_foreground, `colors.window.foreground_muted`;
+/// enabled, the label at rest.
+fn indicator_label_home(
+    n: &native_theme::next::ResolvedTheme,
+    label: &dyn Fn(WidgetState) -> native_theme::next::TextStyle,
+    disabled: bool,
+) -> Mapped<gpui::Hsla> {
+    use native_theme::next::TextStated;
+    if !disabled {
+        return crate::next::text_color(&label(WidgetState::NONE), "label(NONE).color");
+    }
+    let off = label(WidgetState::DISABLED);
+    if off.from_state.contains(TextStated::COLOR) {
+        crate::next::text_color(&off, "label(DISABLED).color")
+    } else {
+        window_colour(
+            n.colors.window.foreground_muted,
+            "colors.window.foreground_muted",
+        )
+    }
+}
+
+/// A check box's or radio's hover outline from its 0.8.0 homes, `indicator`
+/// the indicator at a state: where a rule states the stroke for `HOVER`, its
+/// colour at the shown state; `None` where none does, or disabled.
+fn hover_border_home(
+    indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<Option<gpui::Hsla>> {
+    let ruled = indicator(WidgetState::HOVER)
+        .from_state
+        .contains(native_theme::next::PartStated::STROKE);
+    if disabled || !ruled {
+        return Ok(None);
+    }
+    stroke_color(
+        &indicator(WidgetState::HOVER | shown(checked)),
+        "indicator(HOVER|shown).stroke.color",
+    )
+    .map(Some)
+}
+
+/// An enabled check box's or radio's fill under the pointer from its 0.8.0
+/// homes: the fill resolved at `HOVER` and the shown state where a rule
+/// states one; else unchecked the fill at rest, checked none; checked, none
+/// too where it is the checked fill; `None` disabled.
+fn hover_fill_home(
+    indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<Option<gpui::Hsla>> {
+    if disabled {
+        return Ok(None);
+    }
+    let hover = crate::next::state_fill(
+        &indicator(WidgetState::HOVER | shown(checked)),
+        "indicator(HOVER|shown).fill",
+    )?;
+    if checked {
+        let on = fill(&indicator(WidgetState::CHECKED), "indicator(CHECKED).fill")?;
+        return Ok(hover.filter(|hover| *hover != on));
+    }
+    match hover {
+        Some(hover) => Ok(Some(hover)),
+        None => fill(&indicator(WidgetState::NONE), "indicator(NONE).fill").map(Some),
+    }
+}
+
+/// A check box's or radio's outline from its 0.8.0 homes, `indicator` the
+/// indicator at a state: enabled, the stroke's colour at the shown state
+/// (disabled, compared on its own); the width at rest; and the mark's size
+/// it leaves, the indicator's width less, on each side, the padding the
+/// indicator states there, else the outline's width.
+fn outline_home(
+    indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<(gpui::Hsla, gpui::Pixels, gpui::Pixels)> {
+    let colour = if disabled {
+        gpui::transparent_black()
+    } else {
+        stroke_color(&indicator(shown(checked)), "indicator(shown).stroke.color")?
+    };
+    let rest = indicator(WidgetState::NONE);
+    let width = crate::next::stroke_width(&rest, "indicator(NONE).stroke.width")?;
+    let side = crate::next::stated(rest.min_size[0], "indicator(NONE).min_size[0]")?;
+    let [top, right, bottom, left] = crate::next::padding_of(&rest);
+    let inset = |pad: Option<f32>| pad.filter(|v| v.is_finite() && *v >= 0.0).unwrap_or(width);
+    let mark = (side - inset(left) - inset(right)).min(side - inset(top) - inset(bottom));
+    let length = |v: f32, home| super::length(v).ok_or(Unmapped(home));
+    Ok((
+        colour,
+        length(width, "indicator(NONE).stroke.width")?,
+        length(mark.max(0.0), "indicator(NONE).padding")?,
+    ))
+}
+
+/// A switch's label font from its 0.8.0 home, `switch.label(NONE)`: each
+/// property where it states it, else `None`, gpui-component's own.
+fn switch_font_home(n: &native_theme::next::ResolvedTheme) -> Mapped<SwitchLabelFont> {
+    use native_theme::next::TextStated;
+    let text = n.switch.label(WidgetState::NONE);
+    let has = |bit: TextStated| text.stated.contains(bit);
+    Ok(SwitchLabelFont {
+        family: has(TextStated::FAMILY).then(|| crate::font_family(&text.family)),
+        size: if has(TextStated::SIZE_PX) {
+            Some(super::length(text.size_px).ok_or(Unmapped("switch.label(NONE).size_px"))?)
+        } else {
+            None
+        },
+        weight: has(TextStated::WEIGHT).then(|| gpui::FontWeight(f32::from(text.weight))),
+        style: if has(TextStated::STYLE) {
+            Some(crate::next::stated(
+                crate::next::font_style(text.style),
+                "switch.label(NONE).style",
+            )?)
+        } else {
+            None
+        },
+        line_height: n.typography.line_height_multiplier,
+    })
 }
 
 /// Every look and every value beside one, of `preset` for `is_dark`.
@@ -843,14 +1141,22 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         active_text: gpui::transparent_black(),
         ..look
     };
-    r.home_leaf(
+    r.moved(
         "TabLook::active",
         "",
         old_tab.map(|look| (look.active, look.active_text)),
         new_tab.map(|look| (look.active, look.active_text)),
-        crate::next::fill_of(&new.tab.tab(WidgetState::SELECTED)).zip(crate::next::text_color_of(
-            &new.tab.label(WidgetState::SELECTED),
-        )),
+        fill(
+            &new.tab.tab(WidgetState::SELECTED),
+            "tab.tab(SELECTED).fill",
+        )
+        .and_then(|fill| {
+            crate::next::text_color(
+                &new.tab.label(WidgetState::SELECTED),
+                "tab.label(SELECTED).color",
+            )
+            .map(|text| (fill, text))
+        }),
     );
     r.leaf(
         "TabLook",
@@ -858,23 +1164,19 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         old_tab.map(unhovered),
         new_tab.map(unhovered),
     );
-    r.home_leaf(
+    r.moved(
         "TabLook::idle",
         "",
         old_tab.map(|look| look.idle),
         new_tab.map(|look| look.idle),
-        crate::next::fill_of(&new.tab.tab(WidgetState::NONE)),
+        fill(&new.tab.tab(WidgetState::NONE), "tab.tab(NONE).fill"),
     );
-    // `TabLook::next_of`: the hovered tab's stated fill over the bar.
-    let tab_hover = crate::next::state_fill_of(&new.tab.tab(WidgetState::HOVER))
-        .zip(old_tab)
-        .map(|(hover, look)| super::over(look.bar, hover));
-    r.home_leaf(
+    r.moved(
         "TabLook::hover",
         "",
         old_tab.map(|look| look.hover),
         new_tab.map(|look| look.hover),
-        tab_hover,
+        tab_hover_home(&new),
     );
     for disabled in [false, true] {
         let state = format!(" disabled={disabled}");
@@ -902,23 +1204,19 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         } else {
             WidgetState::NONE
         };
-        r.home_leaf(
-            "SliderLook::thumb_color",
+        r.moved(
+            "SliderLook thumb_color",
             &state,
             old_slider.map(|look| look.thumb_color),
             new_slider.map(|look| look.thumb_color),
-            crate::next::fill_of(&new.slider.thumb(thumb_state)),
+            fill(&new.slider.thumb(thumb_state), "slider.thumb(shown).fill"),
         );
-        // `SliderLook::next_of`: the hovered thumb's stated fill, whole,
-        // where the slider is enabled.
-        let thumb_hover = crate::next::state_fill_of(&new.slider.thumb(WidgetState::HOVER))
-            .map(|hover| (!disabled).then_some(hover));
-        r.home_leaf(
-            "SliderLook::hover_thumb",
+        r.moved(
+            "SliderLook hover_thumb",
             &state,
             old_slider.map(|look| look.hover_thumb),
             new_slider.map(|look| look.hover_thumb),
-            thumb_hover,
+            slider_hover_home(&new, disabled),
         );
         r.leaf(
             "ThumbOutline",
@@ -934,18 +1232,56 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             );
             // The label apart, so a listed difference of the disabled label
             // leaves the rest of the look compared.
+            // Disabled, the track apart too, which the 0.8.0 look dims as gpui-component does
+            // where no rule states the disabled track's fill.
             let unlabelled = |look: SwitchLook| SwitchLook {
                 label: gpui::transparent_black(),
                 label_gap: None,
                 hover_track: None,
+                track: if disabled {
+                    gpui::transparent_black()
+                } else {
+                    look.track
+                },
                 ..look
             };
-            r.home_leaf(
+            if disabled {
+                let shown = if checked {
+                    WidgetState::CHECKED
+                } else {
+                    WidgetState::NONE
+                };
+                let track = |s: WidgetState, home| fill(&new.switch.track(s), home);
+                r.moved(
+                    "SwitchLook track disabled",
+                    &state,
+                    old_switch.map(|look| look.track),
+                    new_switch.map(|look| look.track),
+                    if new
+                        .switch
+                        .track(WidgetState::DISABLED)
+                        .from_state
+                        .contains(native_theme::next::PartStated::FILL)
+                    {
+                        track(
+                            WidgetState::DISABLED | shown,
+                            "switch.track(DISABLED|shown).fill",
+                        )
+                    } else {
+                        track(shown, "switch.track(shown).fill")
+                            .map(|c| c.opacity(super::switch::DISABLED_TRACK_ALPHA))
+                    },
+                );
+            }
+            r.moved(
                 "SwitchLook::label_gap",
                 &state,
                 old_switch.map(|look| look.label_gap),
                 new_switch.map(|look| look.label_gap),
-                new.switch.label_gap.and_then(super::length).map(Some),
+                new.switch
+                    .label_gap
+                    .map(|gap| super::length(gap).ok_or(Unmapped("switch.label_gap")))
+                    .transpose(),
             );
             r.leaf(
                 "SwitchLook",
@@ -953,31 +1289,14 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_switch.map(unlabelled),
                 new_switch.map(unlabelled),
             );
-            // `SwitchLook::next_of`: the hovered track's stated fill, whole
-            // (on, at `HOVER|CHECKED` where a rule states it for `HOVER`),
-            // where the switch is enabled.
-            let hovered = new.switch.track(WidgetState::HOVER);
-            let track_hover = if checked {
-                hovered
-                    .from_state
-                    .contains(PartStated::FILL)
-                    .then(|| {
-                        crate::next::fill_of(
-                            &new.switch.track(WidgetState::HOVER | WidgetState::CHECKED),
-                        )
-                    })
-                    .flatten()
-            } else {
-                crate::next::state_fill_of(&hovered)
-            };
-            r.home_leaf(
+            r.moved(
                 "SwitchLook hover_track",
                 &state,
                 old_switch.map(|look| look.hover_track),
                 new_switch.map(|look| look.hover_track),
-                track_hover.map(|hover| (!disabled).then_some(hover)),
+                switch_hover_home(&new, checked, disabled),
             );
-            r.leaf(
+            r.moved(
                 if disabled {
                     "SwitchLook::label disabled"
                 } else {
@@ -986,130 +1305,297 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_switch.map(|look| look.label),
                 new_switch.map(|look| look.label),
+                switch_label_home(&new, checked, disabled),
             );
-            // The outline, the hover outline and the hover fill apart, so a listed difference of
-            // any leaves the rest of the look compared.
+            // The hover outline and the hover fill apart, so a listed difference of either leaves
+            // the rest of the look compared.
             // The label apart too, so a listed difference of the disabled label leaves the rest
-            // of the look compared; disabled with it the mark, which the look reads at its own
-            // disabled home, else draws as gpui-component does (`CheckboxLook::next_of`).
+            // of the look compared.
+            // Disabled, the fill and the mark apart too, which the 0.8.0 look dims as
+            // gpui-component does where no rule states the disabled fill or mark.
+            // The outline, its colour and width and the mark's size it insets, apart too, so a
+            // listed difference of it leaves the rest of the look compared; disabled its colour
+            // on its own, which the 0.8.0
+            // look dims where no rule states the disabled stroke.
+            // Enabled, the fill and the mark apart too, and the whole control's opacity, so a
+            // listed difference of one leaves the rest of the look compared.
             let unframed = |look: CheckboxLook| CheckboxLook {
-                border: gpui::transparent_black(),
                 hover_border: None,
                 hover_fill: None,
                 label: gpui::transparent_black(),
-                mark: if disabled {
-                    gpui::transparent_black()
-                } else {
-                    look.mark
-                },
+                mark: gpui::transparent_black(),
+                border: gpui::transparent_black(),
+                border_width: px(0.),
+                mark_size: px(0.),
+                fill: gpui::transparent_black(),
+                opacity: 1.,
                 ..look
             };
-            let text = |look: CheckboxLook| {
+            let outline = |look: CheckboxLook| {
                 (
                     if disabled {
-                        look.mark
-                    } else {
                         gpui::transparent_black()
+                    } else {
+                        look.border
                     },
-                    look.label,
+                    look.border_width,
+                    look.mark_size,
                 )
             };
+            let text = |look: CheckboxLook| look.label;
+            let boxed = |s| new.checkbox.indicator(s);
+            let round = |s| new.radio.indicator(s);
+            for (look, radio) in [("CheckboxLook::of", false), ("CheckboxLook::radio", true)] {
+                let (old_look, new_look) = if radio {
+                    (
+                        CheckboxLook::radio(&old, checked, disabled),
+                        CheckboxLook::next_radio(&new, checked, disabled),
+                    )
+                } else {
+                    (
+                        CheckboxLook::of(&old, checked, disabled),
+                        CheckboxLook::next_of(&new, checked, disabled),
+                    )
+                };
+                let indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle =
+                    if radio { &round } else { &boxed };
+                let label = |s| {
+                    if radio {
+                        new.radio.label(s)
+                    } else {
+                        new.checkbox.label(s)
+                    }
+                };
+                let leaf = |name: &'static str, radio_name: &'static str| {
+                    if radio { radio_name } else { name }
+                };
+                r.leaf(look, &state, old_look.map(unframed), new_look.map(unframed));
+                if !disabled {
+                    r.moved(
+                        leaf("CheckboxLook::of fill", "CheckboxLook::radio fill"),
+                        &state,
+                        old_look.map(|look| look.fill),
+                        new_look.map(|look| look.fill),
+                        fill(&indicator(shown(checked)), "indicator(shown).fill"),
+                    );
+                    r.moved(
+                        leaf("CheckboxLook::of mark", "CheckboxLook::radio mark"),
+                        &state,
+                        old_look.map(|look| look.mark),
+                        new_look.map(|look| look.mark),
+                        if radio {
+                            fill(
+                                &new.radio.dot(WidgetState::CHECKED),
+                                "radio.dot(CHECKED).fill",
+                            )
+                        } else {
+                            Ok(crate::next::hsla(
+                                new.checkbox.checkmark(WidgetState::CHECKED).color,
+                            ))
+                        },
+                    );
+                }
+                r.moved(
+                    leaf("CheckboxLook::of opacity", "CheckboxLook::radio opacity"),
+                    &state,
+                    old_look.map(|look| look.opacity),
+                    new_look.map(|look| look.opacity),
+                    Ok(super::next_disabled_opacity(
+                        disabled,
+                        if radio {
+                            new.radio.disabled_opacity
+                        } else {
+                            new.checkbox.disabled_opacity
+                        },
+                    )),
+                );
+                r.moved(
+                    leaf("CheckboxLook::of outline", "CheckboxLook::radio outline"),
+                    &state,
+                    old_look.map(outline),
+                    new_look.map(outline),
+                    outline_home(indicator, checked, disabled),
+                );
+                r.moved(
+                    match (radio, disabled) {
+                        (false, true) => "CheckboxLook::of label disabled",
+                        (false, false) => "CheckboxLook::of label",
+                        (true, true) => "CheckboxLook::radio label disabled",
+                        (true, false) => "CheckboxLook::radio label",
+                    },
+                    &state,
+                    old_look.map(text),
+                    new_look.map(text),
+                    indicator_label_home(&new, &label, disabled),
+                );
+                r.moved(
+                    leaf(
+                        "CheckboxLook::of hover_border",
+                        "CheckboxLook::radio hover_border",
+                    ),
+                    &state,
+                    old_look.map(|look| look.hover_border),
+                    new_look.map(|look| look.hover_border),
+                    hover_border_home(indicator, checked, disabled),
+                );
+                r.moved(
+                    leaf(
+                        "CheckboxLook::of hover_fill",
+                        "CheckboxLook::radio hover_fill",
+                    ),
+                    &state,
+                    old_look.map(|look| look.hover_fill),
+                    new_look.map(|look| look.hover_fill),
+                    hover_fill_home(indicator, checked, disabled),
+                );
+            }
             let (old_box, new_box) = (
                 CheckboxLook::of(&old, checked, disabled),
                 CheckboxLook::next_of(&new, checked, disabled),
-            );
-            r.leaf(
-                "CheckboxLook::of",
-                &state,
-                old_box.map(unframed),
-                new_box.map(unframed),
-            );
-            r.home_leaf(
-                if disabled {
-                    "CheckboxLook::of label disabled"
-                } else {
-                    "CheckboxLook::of label"
-                },
-                &state,
-                old_box.map(text),
-                new_box.map(text),
-                disabled_text_of(&new, false, disabled),
-            );
-            let outline = outline_of(&new, false, checked, disabled);
-            r.home_leaf(
-                "CheckboxLook::of border",
-                &state,
-                old_box.map(|look| look.border),
-                new_box.map(|look| look.border),
-                outline.map(|(border, _)| border),
-            );
-            r.home_leaf(
-                "CheckboxLook::of hover_border",
-                &state,
-                old_box.map(|look| look.hover_border),
-                new_box.map(|look| look.hover_border),
-                outline.map(|(_, hover)| hover),
-            );
-            // `CheckboxLook::next_of`: the hovered box's stated fill, whole,
-            // else the rest fill, where it is enabled and unchecked.
-            let indicator = |at| new.checkbox.indicator(at);
-            r.home_leaf(
-                "CheckboxLook::of hover_fill",
-                &state,
-                old_box.map(|look| look.hover_fill),
-                new_box.map(|look| look.hover_fill),
-                crate::next::state_fill_of(&indicator(WidgetState::HOVER))
-                    .or_else(|| crate::next::fill_of(&indicator(WidgetState::NONE)))
-                    .map(|hover| (!checked && !disabled).then_some(hover)),
             );
             let (old_radio, new_radio) = (
                 CheckboxLook::radio(&old, checked, disabled),
                 CheckboxLook::next_radio(&new, checked, disabled),
             );
-            r.leaf(
-                "CheckboxLook::radio",
-                &state,
-                old_radio.map(unframed),
-                new_radio.map(unframed),
-            );
-            r.home_leaf(
-                if disabled {
-                    "CheckboxLook::radio label disabled"
+            if disabled {
+                let shown = if checked {
+                    WidgetState::CHECKED
                 } else {
-                    "CheckboxLook::radio label"
-                },
-                &state,
-                old_radio.map(text),
-                new_radio.map(text),
-                disabled_text_of(&new, true, disabled),
-            );
-            let outline = outline_of(&new, true, checked, disabled);
-            r.home_leaf(
-                "CheckboxLook::radio border",
-                &state,
-                old_radio.map(|look| look.border),
-                new_radio.map(|look| look.border),
-                outline.map(|(border, _)| border),
-            );
-            r.home_leaf(
-                "CheckboxLook::radio hover_border",
-                &state,
-                old_radio.map(|look| look.hover_border),
-                new_radio.map(|look| look.hover_border),
-                outline.map(|(_, hover)| hover),
-            );
-            // `CheckboxLook::next_radio`: the hovered fill a rule states,
-            // else the rest fill, where the radio is enabled and unchecked.
-            let radio = |at| new.radio.indicator(at);
-            r.home_leaf(
-                "CheckboxLook::radio hover_fill",
-                &state,
-                old_radio.map(|look| look.hover_fill),
-                new_radio.map(|look| look.hover_fill),
-                crate::next::state_fill_of(&radio(WidgetState::HOVER))
-                    .or_else(|| crate::next::fill_of(&radio(WidgetState::NONE)))
-                    .map(|hover| (!checked && !disabled).then_some(hover)),
-            );
+                    WidgetState::NONE
+                };
+                let dimmed = |stroke: Mapped<gpui::Hsla>| {
+                    stroke.map(|colour| colour.opacity(DISABLED_INDICATOR_ALPHA))
+                };
+                // The fill disabled: the one a rule states for `DISABLED` (at the checked
+                // state), else the enabled one, dimmed where gpui-component dims it (a checked
+                // box, a radio checked or not).
+                let disabled_fill =
+                    |indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+                     radio: bool,
+                     home: &'static str,
+                     stated_home: &'static str| {
+                        if indicator(WidgetState::DISABLED)
+                            .from_state
+                            .contains(native_theme::next::PartStated::FILL)
+                        {
+                            fill(&indicator(WidgetState::DISABLED | shown), stated_home)
+                        } else if checked || radio {
+                            dimmed(fill(&indicator(shown), home))
+                        } else {
+                            fill(&indicator(shown), home)
+                        }
+                    };
+                r.moved(
+                    "CheckboxLook::of fill disabled",
+                    &state,
+                    old_box.map(|look| look.fill),
+                    new_box.map(|look| look.fill),
+                    disabled_fill(
+                        &|s| new.checkbox.indicator(s),
+                        false,
+                        "checkbox.indicator(shown).fill",
+                        "checkbox.indicator(DISABLED|shown).fill",
+                    ),
+                );
+                r.moved(
+                    "CheckboxLook::radio fill disabled",
+                    &state,
+                    old_radio.map(|look| look.fill),
+                    new_radio.map(|look| look.fill),
+                    disabled_fill(
+                        &|s| new.radio.indicator(s),
+                        true,
+                        "radio.indicator(shown).fill",
+                        "radio.indicator(DISABLED|shown).fill",
+                    ),
+                );
+                // The border disabled: the stroke a rule states for `DISABLED` (at the checked
+                // state), else the enabled one at half alpha, as gpui-component dims it.
+                let disabled_border =
+                    |indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+                     home: &'static str,
+                     stated_home: &'static str| {
+                        if indicator(WidgetState::DISABLED)
+                            .from_state
+                            .contains(native_theme::next::PartStated::STROKE)
+                        {
+                            stroke_color(&indicator(WidgetState::DISABLED | shown), stated_home)
+                        } else {
+                            dimmed(stroke_color(&indicator(shown), home))
+                        }
+                    };
+                r.moved(
+                    "CheckboxLook::of border disabled",
+                    &state,
+                    old_box.map(|look| look.border),
+                    new_box.map(|look| look.border),
+                    disabled_border(
+                        &|s| new.checkbox.indicator(s),
+                        "checkbox.indicator(shown).stroke.color",
+                        "checkbox.indicator(DISABLED|shown).stroke.color",
+                    ),
+                );
+                r.moved(
+                    "CheckboxLook::radio border disabled",
+                    &state,
+                    old_radio.map(|look| look.border),
+                    new_radio.map(|look| look.border),
+                    disabled_border(
+                        &|s| new.radio.indicator(s),
+                        "radio.indicator(shown).stroke.color",
+                        "radio.indicator(DISABLED|shown).stroke.color",
+                    ),
+                );
+                // The mark disabled: the one a rule states for `DISABLED`, else the
+                // enabled one at half alpha, as gpui-component dims a disabled mark.
+                let mark_ruled = new
+                    .checkbox
+                    .checkmark(WidgetState::DISABLED)
+                    .from_state
+                    .contains(native_theme::next::IconStated::COLOR);
+                let box_mark = new
+                    .checkbox
+                    .checkmark(if mark_ruled {
+                        WidgetState::DISABLED | WidgetState::CHECKED
+                    } else {
+                        WidgetState::CHECKED
+                    })
+                    .color;
+                let box_mark = Ok(crate::next::hsla(box_mark));
+                r.moved(
+                    "CheckboxLook::of mark disabled",
+                    &state,
+                    old_box.map(|look| look.mark),
+                    new_box.map(|look| look.mark),
+                    if mark_ruled {
+                        box_mark
+                    } else {
+                        dimmed(box_mark)
+                    },
+                );
+                let dot_ruled = new
+                    .radio
+                    .dot(WidgetState::DISABLED)
+                    .from_state
+                    .contains(native_theme::next::PartStated::FILL);
+                r.moved(
+                    "CheckboxLook::radio mark disabled",
+                    &state,
+                    old_radio.map(|look| look.mark),
+                    new_radio.map(|look| look.mark),
+                    if dot_ruled {
+                        fill(
+                            &new.radio.dot(WidgetState::DISABLED | WidgetState::CHECKED),
+                            "radio.dot(DISABLED|CHECKED).fill",
+                        )
+                    } else {
+                        dimmed(fill(
+                            &new.radio.dot(WidgetState::CHECKED),
+                            "radio.dot(CHECKED).fill",
+                        ))
+                    },
+                );
+            }
         }
     }
     let (o, n) = (
@@ -1122,11 +1608,32 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         o.background(),
         given(n.background()),
     );
+    // The second ring apart, so a listed difference of it leaves the rest of the ring compared.
+    let (old_ring, new_ring) = (
+        FocusRing::of(&old),
+        FocusRing::next_of(&new).and_then(given),
+    );
+    let outer = |ring: FocusRing| FocusRing {
+        inner: None,
+        ..ring
+    };
     r.leaf(
         "ThemeSource::focus_ring",
         "",
-        FocusRing::of(&old),
-        given(FocusRing::next_of(&new)),
+        old_ring.map(outer),
+        new_ring.map(outer),
+    );
+    r.moved(
+        "ThemeSource::focus_ring inner",
+        "",
+        old_ring.map(|ring| ring.inner),
+        new_ring.map(|ring| ring.inner),
+        match &new.focus_ring.inner_stroke {
+            native_theme::next::Stroke::Uniform { width, color, .. } => {
+                Ok(Some((crate::next::hsla(*color), *width)))
+            }
+            _ => Ok(None),
+        },
     );
     r.leaf(
         "ThemeSource::keyboard_only",
@@ -1140,18 +1647,33 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         o.body_text(),
         given(n.body_text()),
     );
-    r.leaf(
+    // The family and the slant apart from the size, weight and line height,
+    // so a listed difference of either leaves the other compared.
+    let old_font = o
+        .body_text()
+        .map(|(size, line_height, weight)| SwitchLabelFont {
+            family: None,
+            size: Some(size),
+            weight: Some(weight),
+            style: None,
+            line_height,
+        });
+    let (new_font, font_home) = (SwitchLabelFont::next_of(&new), switch_font_home(&new));
+    let sized = |font: &SwitchLabelFont| (font.size, font.weight, font.line_height);
+    let faced = |font: &SwitchLabelFont| (font.family.clone(), font.style);
+    r.moved(
         "SwitchLabelFont",
         "",
-        o.body_text()
-            .map(|(size, line_height, weight)| SwitchLabelFont {
-                family: None,
-                size: Some(size),
-                weight: Some(weight),
-                style: None,
-                line_height,
-            }),
-        SwitchLabelFont::next_of(&new),
+        old_font.as_ref().map(sized),
+        new_font.as_ref().map(sized).map_err(|e| *e),
+        font_home.as_ref().map(sized).map_err(|e| *e),
+    );
+    r.moved(
+        "SwitchLabelFont family and style",
+        "",
+        old_font.as_ref().map(faced),
+        new_font.as_ref().map(faced).map_err(|e| *e),
+        font_home.as_ref().map(faced).map_err(|e| *e),
     );
     r.leaf(
         "LabelFont checkbox",
@@ -1230,7 +1752,7 @@ fn every_look_is_the_same_from_both_models() -> crate::Result<()> {
             listed.extend(report.listed.into_iter().map(|leaf| (key, leaf)));
         }
     }
-    for d in DIFFERENCES.iter().chain(FROM_HOME) {
+    for d in DIFFERENCES {
         for preset in d.presets {
             if !listed.contains(&(*preset, d.leaf)) {
                 failures.push(format!(

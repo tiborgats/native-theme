@@ -1,0 +1,24 @@
+ProductName:		macOS
+ProductVersion:		15.8.2
+BuildVersion:		24H232
+sw_vers: exit 0
+/Applications/Xcode_16.4.app/Contents/Developer
+xcode-select -p: exit 0
+Xcode 16.4
+Build version 16F6
+xcodebuild -version: exit 0
+xcrun SDK: 15.5 build 24F74
+swift-driver version: 1.120.5 Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
+Target: arm64-apple-macosx15.0
+swiftc --version: exit 0
+swiftc: exit 0
+grant kTCCServiceScreenCapture to /bin/bash: exit 0
+grant kTCCServiceScreenCapture to /bin/zsh: exit 0
+grant kTCCServiceScreenCapture to /Users/runner/work/_temp/switch-label: exit 0
+grant kTCCServiceAccessibility to /bin/bash: exit 0
+grant kTCCServiceAccessibility to /bin/zsh: exit 0
+grant kTCCServiceAccessibility to /Users/runner/work/_temp/switch-label: exit 0
+grant kTCCServicePostEvent to /bin/bash: exit 0
+grant kTCCServicePostEvent to /bin/zsh: exit 0
+grant kTCCServicePostEvent to /Users/runner/work/_temp/switch-label: exit 0
+switch-label: exit 0

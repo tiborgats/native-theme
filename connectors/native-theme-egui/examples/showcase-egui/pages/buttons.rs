@@ -4,7 +4,8 @@
 use egui::Button;
 use native_theme::icons::IconRole;
 use native_theme::icons::IconSet;
-use native_theme_egui::icons::{IconContext, icon_size};
+use native_theme_egui::icons::IconContext;
+use native_theme_egui::next::icon_size;
 use native_theme_egui::{Role, RoleVariant};
 use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::switch::Switch;
@@ -20,18 +21,22 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let (set, icon_theme) = chosen;
-    let size = icon_size(t, IconContext::Small);
+    // `icons.sizes.small`; where the theme states none, the icon is not drawn and its button
+    // says so.
+    let size = r.and_then(|r| icon_size(r, IconContext::Small).ok());
     let normal = RoleVariant::Normal;
-    let min = button_min_size(t);
+    let min = button_min_size(r);
 
     caption(reg, ui, "Button (Role::Button)");
     ui.horizontal_wrapped(|ui| {
         demo::scoped(reg, ui, Role::Button, normal, "button (enabled)", |ui| {
             ui.add(Button::new("Button").min_size(min))
         });
-        let image = demo::role_image(ui, IconRole::ActionSave, *set, icon_theme.as_deref(), size);
+        let image = size.map(|size| {
+            demo::role_image(ui, IconRole::ActionSave, *set, icon_theme.as_deref(), size)
+        });
         demo::scoped(
             reg,
             ui,
@@ -39,8 +44,9 @@ pub(crate) fn show(
             normal,
             "button (icon and text)",
             |ui| match image {
-                Some(image) => ui.add(Button::new((image, "Save")).min_size(min)),
-                None => ui.add(Button::new("Save (icon not in this set)").min_size(min)),
+                Some(Some(image)) => ui.add(Button::new((image, "Save")).min_size(min)),
+                Some(None) => ui.add(Button::new("Save (icon not in this set)").min_size(min)),
+                None => ui.add(Button::new("Save (no icons.sizes.small stated)").min_size(min)),
             },
         );
         demo::scoped(reg, ui, Role::Button, normal, "button (small)", |ui| {
@@ -50,14 +56,22 @@ pub(crate) fn show(
         reg.note_last(
             "Button::small",
             "egui's own size, its label's with the button padding at the sides \
-             (button.border.padding's left and right, egui's own 8 where the theme states \
+             (button.body(NONE).padding's left and right, egui's own 8 where the theme states \
              neither, egui-0.37.0 src/style.rs:1568) and none above and below \
-             (src/theme/default_style.rs:56-60, :98-102); button.min_width and \
-             button.min_height are not applied",
+             (src/theme/default_style.rs:56-60, :98-102); button.body(NONE).min_size is not \
+             applied",
         );
+        // A flat button: unframed at rest, in the flat button's states (`demo::flat`).
+        let mut flat = Vec::new();
         demo::scoped(reg, ui, Role::Button, normal, "button (frameless)", |ui| {
-            ui.add(Button::new("Frameless").frame(false).min_size(min))
+            flat = demo::flat(ui);
+            ui.add(
+                Button::new("Frameless")
+                    .frame_when_inactive(false)
+                    .min_size(min),
+            )
         });
+        reg.flat_last(&flat);
         let shortcut = ui.ctx().format_shortcut(&egui::KeyboardShortcut::new(
             egui::Modifiers::COMMAND,
             egui::Key::S,
@@ -96,7 +110,7 @@ pub(crate) fn show(
         });
         reg.note_last(
             "ui.button",
-            "egui's own width, its label's and padding; button.min_width is not applied",
+            "egui's own width, its label's and padding; button.body(NONE).min_size[0] is not applied",
         );
         demo::scoped(reg, ui, Role::Button, normal, "ui.small_button", |ui| {
             ui.small_button("ui.small_button")
@@ -104,16 +118,15 @@ pub(crate) fn show(
         reg.note_last(
             "ui.small_button",
             "egui's own size, its label's with the button padding at the sides \
-             (button.border.padding's left and right, egui's own 8 where the theme states \
-             neither) and none above and below; button.min_width and button.min_height are \
-             not applied",
+             (button.body(NONE).padding's left and right, egui's own 8 where the theme states \
+             neither) and none above and below; button.body(NONE).min_size is not applied",
         );
         demo::scoped(reg, ui, Role::Button, normal, "ui.toggle_value", |ui| {
             ui.toggle_value(&mut state.toggle, "ui.toggle_value")
         });
         reg.note_last(
             "ui.toggle_value",
-            "egui's own width, its label's and padding; button.min_width is not applied",
+            "egui's own width, its label's and padding; button.body(NONE).min_size[0] is not applied",
         );
     });
 
@@ -166,9 +179,11 @@ pub(crate) fn show(
         demo::widget(reg, ui, Role::Switch, normal, "switch (off)", |ui| {
             ui.add(Switch::new(&mut false).label("Off"))
         });
+        super::basic::note_switch(reg, r);
         demo::widget(reg, ui, Role::Switch, normal, "switch", |ui| {
             ui.add(Switch::new(&mut state.switch).label("Switch"))
         });
+        super::basic::note_switch(reg, r);
         demo::widget(
             reg,
             ui,
@@ -177,5 +192,6 @@ pub(crate) fn show(
             "switch (disabled)",
             |ui| ui.add(Switch::new(&mut true).label("Disabled").enabled(false)),
         );
+        super::basic::note_switch(reg, r);
     });
 }

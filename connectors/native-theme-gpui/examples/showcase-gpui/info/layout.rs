@@ -5,20 +5,23 @@ use gpui_component::theme::Theme;
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 #[cfg(feature = "widgets")]
 use native_theme::theme::TabIndicatorSide;
-use native_theme::theme::{ArrowSide, ResolvedExpanderTheme, ResolvedPadding};
-use native_theme_gpui::ResolvedTheme;
-use native_theme_gpui::next::{fill_of, padding_of};
+use native_theme_gpui::next::{
+    fill_of, padding_of, state_fill_of, state_text_color_of, text_color_of,
+};
+#[cfg(feature = "widgets")]
+use native_theme_gpui::widgets::ring_stroke_color_of;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{SeparatorLook, TabLook};
 
 use super::{
     WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours},
-    claim, drawn_font, edge_claim, px_text, stated, stated_claim, stroke_color_of, stroke_width_of,
+    claim, edge_claim, icon_color_of, px_text, stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::Page;
 use crate::demo::{
-    FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox, StepperKind,
+    ExpanderLook, FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SegmentedLook, SeparatorKind,
+    SpacingBox, StepperKind,
 };
 use crate::support::{ChromeIcon, GRID_LAYOUT_ITEMS, SampleIcon, layout_value};
 
@@ -89,7 +92,7 @@ pub fn native_separator(t: &Theme, look: &SeparatorLook, room: bool) -> WidgetIn
             "line",
             "separator.color",
             look.color,
-            "native-theme-gpui/widgets/separator.rs:36",
+            "native-theme-gpui/widgets/separator.rs:45",
         ))
         .config(
             "thickness",
@@ -163,49 +166,7 @@ pub fn separator(
 }
 
 /// Each side of a GroupBox's content padding, named by where it comes from:
-/// the side `card.border.padding` states (`geometry::group_box_content`),
-/// else `margin`, the installed layout's `container_margin`, which the
-/// showcase pads an unstated side with where a native theme is installed
-/// (`demo::padded`), else `own`, the variant's own.
-fn content_padding(native: Option<&ResolvedTheme>, margin: Option<Pixels>, own: &str) -> String {
-    let side = |name: &str, stated: Option<f32>| match (native, stated, margin) {
-        (Some(_), Some(v), _) => format!("{name} {}px, card.border's", px_text(v)),
-        (Some(_), None, Some(m)) => {
-            format!("{name} {}px, layout.container_margin", px_text(m.as_f32()))
-        }
-        _ => format!("{name} {own}"),
-    };
-    let p = native.map(|r| r.card.border.padding).unwrap_or_default();
-    format!(
-        "{}; {}; {}; {}. A side card.border.padding leaves unstated takes layout.container_margin, the padding inside containers (platform-facts §2.20), where a native theme is installed and its layout states one, else the variant's own (group_box.rs, GroupBox)",
-        side("top", p.top),
-        side("right", p.right),
-        side("bottom", p.bottom),
-        side("left", p.left),
-    )
-}
-
-/// `info` with the edge `geometry::group_box_content` draws on a GroupBox's
-/// content, `card.border.color` at `card.border.line_width`, and its line:
-/// none where that is 0, which an `outline` box's own edge gives way to.
-fn card_edge(info: WidgetInfo, r: &ResolvedTheme, outline: bool) -> WidgetInfo {
-    let width = r.card.border.line_width;
-    info.colors(edge_claim(
-        "edge",
-        "border",
-        Some(r.card.border.color),
-        Some(width),
-        "native-theme-gpui/geometry.rs:1108",
-    ))
-    .config("edge", match (width > 0.0, outline) {
-        (true, _) => format!("card.border.color at card.border.line_width, {}px, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own", px_text(width)),
-        (false, true) => "none: card.border.line_width is 0, and geometry::group_box_content sets that width on the content, which the GroupBox refines last, so the Outline box's own border_1 gives way to it (group_box.rs, GroupBox)".to_string(),
-        (false, false) => "none: card.border.line_width is 0, so geometry::group_box_content draws no edge on the content, and a Normal or Fill box draws none of its own (group_box.rs, GroupBox)".to_string(),
-    })
-}
-
-/// [`content_padding`] on the 0.8.0 model: each side of a GroupBox's
-/// content padding, named by where it comes from: the side
+/// the side
 /// `card.container(NONE)` states (`next::geometry::group_box_content`),
 /// else `margin`, the installed theme's `layout.container_margin`, which the
 /// showcase pads an unstated side with (`demo::next_padded`), else `own`, the
@@ -230,7 +191,7 @@ fn next_content_padding(native: Option<&NextTheme>, margin: Option<Pixels>, own:
     )
 }
 
-/// [`card_edge`] on the 0.8.0 model: `info` with the edge
+/// `info` with the edge
 /// `next::geometry::group_box_content` draws on a GroupBox's content of
 /// `kind`, `card.container(NONE)`'s stroke, and its line: none where the
 /// stroke is 0 wide, which an Outline box's own edge gives way to; where the
@@ -500,29 +461,29 @@ fn upstream_accordion(
         })
 }
 
-/// A card: a Fill `GroupBox` with no title, its content filled with
-/// `native`'s `card.background_color` where a native theme is installed
-/// (`geometry::group_box_content`). Its geometry line is recorded where the
-/// helper applies the builder.
-pub fn card(
-    t: &Theme,
-    native: Option<&ResolvedTheme>,
-    container_margin: Option<Pixels>,
-) -> WidgetInfo {
+/// A card: a Fill `GroupBox` with no title, on the 0.8.0 model. `native` is
+/// the installed 0.8.0 theme `next::geometry::group_box_content` refined its
+/// content from, where it did (`demo::card`): the content then takes
+/// `card.container(NONE)`'s fill and edge. `container_margin` is that
+/// theme's `layout.container_margin`, which pads the sides the theme leaves
+/// unstated. Its geometry line is recorded where the helper applies the
+/// builder.
+pub fn card(t: &Theme, native: Option<&NextTheme>, container_margin: Option<Pixels>) -> WidgetInfo {
     // No content text: the content is a Label, which paints foreground on
     // its own element over the group box's colour (label.rs:213) and
     // reports itself.
     let info = WidgetInfo::new("GroupBox").variant("Fill, a card");
     let info = match native {
-        Some(r) => card_edge(
-            info.color(claim(
+        Some(r) => next_card_edge(
+            info.colors(stated_claim(
                 "fill",
-                "background_color",
-                stated(r.card.background_color),
-                "showcase",
+                "card.container(NONE).fill",
+                fill_of(&r.card.container(WidgetState::NONE)),
+                "native-theme-gpui/next/builders.rs:750",
             )),
+            t,
             r,
-            false,
+            GroupBoxKind::Fill,
         ),
         None => info.color(claim(
             "fill",
@@ -533,8 +494,11 @@ pub fn card(
     };
     let own = "p_4, the Fill variant's own";
     let info = match native {
-        Some(_) => info.config("padding", content_padding(native, container_margin, own)),
-        None => info.not_themeable("padding", content_padding(None, None, own)),
+        Some(_) => info.config(
+            "padding",
+            next_content_padding(native, container_margin, own),
+        ),
+        None => info.not_themeable("padding", next_content_padding(None, None, own)),
     };
     info.instance("content", "a body-text Label, which reports itself")
 }
@@ -544,16 +508,39 @@ pub fn card(
 const UPSTREAM_TAB_RING: &str = "on keyboard focus only: ring, the theme's focus ring colour (without its alpha where the theme says keyboard only or its ring has no width), as an inset shadow 2px wide inside the tab, a literal the theme's defaults.focus_ring_width and focus_ring_offset do not reach (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)";
 
 /// A `TabBar` of the Tab variant over `labels`, the one at `selected`
-/// shown, its per-call seams taken from `native` where a native theme is
-/// installed (`demo::tab_row`).
+/// shown, its per-call seams taken from `native` where a 0.8.0 theme is
+/// installed (`demo::tab_row`, `demo::next_tab`).
 pub fn tab_row(
     t: &Theme,
     labels: &[&'static str],
     selected: usize,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
-    let info = WidgetInfo::new("TabBar")
-        .variant("Tab")
+    let info = match native {
+        Some(r) => upstream_tab_row(t, WidgetInfo::new("TabBar").variant("Tab"))
+            .config(
+                "font",
+                folder_tab_font(&r.typography, &r.tab.label(WidgetState::NONE)),
+            )
+            .config(
+                "size",
+                folder_tab_size(r.tab.tab(WidgetState::NONE).min_size),
+            ),
+        None => upstream_tab_row(t, WidgetInfo::new("TabBar").variant("Tab")).not_themeable(
+            "font",
+            "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)",
+        ),
+    };
+    let shown = labels.get(selected).copied().unwrap_or("none");
+    info.instance("tabs", labels.join(", "))
+        .instance("selected", shown)
+        .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled into view, the next one peeking past it (tab/tab_bar.rs, TabReveal)")
+}
+
+/// `info` with what gpui-component's `TabBar` of the Tab variant paints on
+/// `t` and what of it no theme reaches.
+fn upstream_tab_row(t: &Theme, info: WidgetInfo) -> WidgetInfo {
+    info
         .color(claim(
                 "bar",
                 "tab_bar",
@@ -593,17 +580,7 @@ pub fn tab_row(
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
             .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied")
-            .not_themeable("focus ring", UPSTREAM_TAB_RING);
-    let info = match native {
-        Some(r) => info
-            .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
-            .config("size", format!("at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
-        None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
-    };
-    let shown = labels.get(selected).copied().unwrap_or("none");
-    info.instance("tabs", labels.join(", "))
-        .instance("selected", shown)
-        .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled into view, the next one peeking past it (tab/tab_bar.rs, TabReveal)")
+            .not_themeable("focus ring", UPSTREAM_TAB_RING)
 }
 
 /// A `TabBar` of the Folder variant over `labels`, the one at `selected`
@@ -723,7 +700,7 @@ pub fn folder_tab_font(
     match native_theme_gpui::next::label_font_unmapped(label, "tab.label(NONE)") {
         None => format!(
             "tab.label(NONE): {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)",
-            super::typography::text_style_font(typography, label)
+            super::next_drawn_font(label, &super::typography::line_box_text(typography, label))
         ),
         Some(unstated) => format!(
             "text_sm, the Tab's own: the theme states no value gpui can take at {}, so each label is upstream's (tab/tab.rs, RenderOnce for Tab; spec §10, rule 0)",
@@ -750,48 +727,74 @@ pub fn folder_tab_size(min_size: [Option<f32>; 2]) -> String {
 }
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them
-/// (`demo::native_expander`), reading `titles`, each `open` or not, their
-/// arrow `arrow`, of the chosen icon theme -- `turned`, the chevron an open
-/// item shows where the set gives `arrow` as pixels, or as an SVG in
-/// several colours, drawn as an image, which does not turn -- and `gap`, the
-/// `layout.widget_gap` that parts the items where the theme states the
-/// frame.
+/// (`demo::native_expander`, `demo::ExpanderLook`), on `t`, the
+/// gpui-component theme whose own values stand where `r` states none,
+/// reading `titles`, each `open` or not, their arrow `arrow`, of the chosen
+/// icon theme -- `turned`, the chevron an open item shows where the set
+/// gives `arrow` as pixels, or as an SVG in several colours, drawn as an
+/// image, which does not turn -- and `gap`, the `layout.widget_gap` that
+/// parts the items where the theme states the frame.
 pub fn native_expander(
-    r: &ResolvedTheme,
+    r: &NextTheme,
+    t: &Theme,
     titles: [&'static str; 2],
     open: [bool; 2],
-    arrow: &SampleIcon,
-    turned: &SampleIcon,
+    [arrow, turned]: [&SampleIcon; 2],
     gap: Option<Pixels>,
 ) -> WidgetInfo {
-    let e = &r.expander;
-    // The frame is drawn at expander.border.line_width unless
-    // frame_enabled is false: KDE's expander draws none (§2.27).
+    let look = ExpanderLook::next_of(r);
+    let e = &look;
+    // The frame is drawn at the stated stroke's width, upstream's border_1
+    // where it states none, unless frame_enabled is false: KDE's expander
+    // draws none (§2.27).
     let frame_width = Some(match e.frame_enabled {
         Some(false) => 0.0,
-        _ => e.border.line_width,
+        _ => e
+            .line_width
+            .unwrap_or(f32::from(crate::demo::EXPANDER_LINE_WIDTH)),
     });
-    let edge = match e.frame_enabled {
-        Some(true) => edge_claim(
+    let edge = match (e.frame_enabled == Some(true), e.line.is_some()) {
+        (true, true) => edge_claim(
             "each item's frame",
-            "border",
-            Some(e.border.color),
+            "expander.container(NONE).stroke.color",
+            stroke_color_of(&r.expander.container(WidgetState::NONE)),
             frame_width,
             "showcase",
         ),
-        _ => edge_claim(
+        (true, false) => edge_claim(
+            "each item's frame",
+            "border",
+            Some(t.border),
+            frame_width,
+            "showcase",
+        ),
+        (false, true) => edge_claim(
+            "frame and the line between items",
+            "expander.container(NONE).stroke.color",
+            stroke_color_of(&r.expander.container(WidgetState::NONE)),
+            frame_width,
+            "showcase",
+        ),
+        (false, false) => edge_claim(
             "frame and the line between items",
             "border",
-            Some(e.border.color),
+            Some(t.border),
             frame_width,
             "showcase",
         ),
     };
+    let title = stated_claim(
+        "title",
+        "expander.header_label(NONE).color",
+        text_color_of(&r.expander.header_label(WidgetState::NONE)),
+        "showcase",
+    )
+    .unwrap_or_else(|| claim("open title", "foreground", t.foreground, "showcase"));
     let info = WidgetInfo::new("Expander")
         .variant("drawn by the showcase")
         .colors(edge)
-        .color(claim("title", "font", stated(e.font.color), "showcase"));
-    let leading = e.arrow_side == Some(ArrowSide::Leading);
+        .color(title);
+    let leading = e.arrow_side == Some(native_theme::next::ArrowSide::Leading);
     let glyph = match (leading, arrow.is_raster()) {
         (true, false) => {
             "ChevronRight, before the title and turned down while open, as Breeze and the HIG draw a leading arrow"
@@ -826,14 +829,22 @@ pub fn native_expander(
         let info = if arrow.is_raster() {
             info
         } else {
-            info.color(claim(
-                "arrow",
-                "arrow_color",
-                stated(e.arrow_color.unwrap_or(e.font.color)),
-                "showcase",
-            ))
+            info.color(
+                stated_claim(
+                    "arrow",
+                    "expander.arrow(NONE).color",
+                    icon_color_of(&r.expander.arrow(WidgetState::NONE)),
+                    "showcase",
+                )
+                .unwrap_or_else(|| {
+                    claim("arrow", "muted_foreground", t.muted_foreground, "showcase")
+                }),
+            )
         };
-        info.config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
+        info.config("arrow", match e.arrow_size {
+            Some(size) => format!("expander.arrow(NONE).size, {}px", px_text(size)),
+            None => "not stated: upstream's xsmall arrow (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
+        })
         .config("arrow side", match e.arrow_side {
             Some(side) => format!("expander.arrow_side, {side:?}"),
             None => "not stated: upstream's Accordion's, after the title (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
@@ -847,14 +858,14 @@ pub fn native_expander(
     };
     let info = match stated_claim(
         "hovered title",
-        "hover_background",
-        e.hover_background,
+        "expander.header(HOVER).fill",
+        state_fill_of(&r.expander.header(WidgetState::HOVER)),
         "showcase",
     ) {
         Some(hover) => info.color(hover),
         None => info.not_themeable(
             "hover",
-            "none: the theme states no expander.hover_background",
+            "none: no rule states expander.header(HOVER).fill, and upstream's title row has no hover style of its own (gpui-component/accordion.rs, AccordionItem::hover)",
         ),
     };
     let shown: Vec<&str> = titles
@@ -863,15 +874,13 @@ pub fn native_expander(
         .filter(|(_, open)| *open)
         .map(|(title, _)| *title)
         .collect();
-    info.config(
-        "title row",
-        format!(
-            "expander.header_height, {}px, the title in expander.font: {}",
-            px_text(e.header_height),
-            drawn_font(&e.font)
-        ),
-    )
-    .config("edge", expander_edge(e, gap))
+    let info = super::own_ring_not_drawn(
+        info,
+        &r.expander.header(WidgetState::FOCUSED),
+        "expander.header(FOCUSED).focus",
+    );
+    info.config("title row", expander_title_row(e, &r.typography, t))
+    .config("edge", expander_edge(e, t, gap))
     .config(
         "body indent",
         match e.content_indent {
@@ -902,52 +911,103 @@ pub fn native_expander(
     )
 }
 
+/// The title row line of the theme-drawn expander `e`, lettered over
+/// `typography`, on `t`: its height, `expander.header(NONE).min_size[1]`
+/// where stated, else upstream's, which sets none; and its title's font,
+/// `expander.header_label(NONE)` where it gives one gpui can letter it in,
+/// else upstream's.
+pub(crate) fn expander_title_row(
+    e: &ExpanderLook,
+    typography: &native_theme::next::Typography,
+    t: &Theme,
+) -> String {
+    let height = match e.header_height {
+        Some(height) => format!("expander.header(NONE).min_size[1], {}px", px_text(height)),
+        None => "as tall as its content and padding: the theme states no expander.header(NONE).min_size[1], and upstream's sets no height (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
+    };
+    let font = match native_theme_gpui::next::label_font_unmapped(
+        &e.font,
+        "expander.header_label(NONE)",
+    ) {
+        None => format!(
+            "the title in expander.header_label(NONE): {}",
+            super::next_drawn_font(
+                &e.font,
+                &super::typography::line_box_text(typography, &e.font)
+            )
+        ),
+        Some(unstated) => format!(
+            "the title upstream's, font_medium at {}: the theme states no value gpui can take at {} (gpui-component/accordion.rs, AccordionItem::render; spec §10, rule 0)",
+            super::rems_text(crate::demo::EXPANDER_TITLE_SIZE, t),
+            unstated.home()
+        ),
+    };
+    format!("{height}, {font}")
+}
+
 /// What frames the theme-drawn expander `e` and parts its items, the
 /// items `gap` (`layout.widget_gap`) apart where each is framed on its own.
-fn expander_edge(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
-    let b = &e.border;
+pub(crate) fn expander_edge(e: &ExpanderLook, t: &Theme, gap: Option<Pixels>) -> String {
+    let colour = match e.line {
+        Some(_) => "expander.container(NONE).stroke.color",
+        None => "upstream's border, as the theme states no expander.container(NONE).stroke.color",
+    };
+    let width = match e.line_width {
+        Some(width) => format!(
+            "expander.container(NONE).stroke.width, {}px",
+            px_text(width)
+        ),
+        None => format!(
+            "upstream's border_1, {}px, as the theme states no expander.container(NONE).stroke.width",
+            px_text(f32::from(crate::demo::EXPANDER_LINE_WIDTH))
+        ),
+    };
+    let radius = match e.radius {
+        Some(radius) => format!(
+            "expander.container(NONE).corners, {}px",
+            px_text(radius.max(0.0))
+        ),
+        None => format!(
+            "upstream's radius_lg, {}px, as the theme states no expander.container(NONE).corners",
+            px_text(t.radius_lg.as_f32())
+        ),
+    };
     match e.frame_enabled {
         Some(false) => {
             "none: expander.frame_enabled is false, no frame and no line between the items"
                 .to_string()
         }
-        _ if b.line_width <= 0.0 => format!(
-            "none: expander.border.line_width is 0; the items are still rounded by its corner_radius, {}px",
-            px_text(b.corner_radius)
+        _ if e.line_width.is_some_and(|width| width <= 0.0) => format!(
+            "none: expander.container(NONE).stroke.width is 0; the items are still rounded by {radius}"
         ),
         Some(true) => {
             let apart = match gap {
                 Some(gap) => format!("layout.widget_gap, {}px, apart", px_text(gap.as_f32())),
                 None => "with no gap between them: layout.widget_gap is unstated".to_string(),
             };
-            format!(
-                "each item framed on its own by expander.border.color at expander.border.line_width, {}px, radius {}px, {apart}",
-                px_text(b.line_width),
-                px_text(b.corner_radius)
-            )
+            format!("each item framed on its own by {colour} at {width}, radius {radius}, {apart}")
         }
         None => format!(
-            "expander.border.color at expander.border.line_width, {}px, radius {}px, round the whole and between the items, as upstream's bordered Accordion frames them: expander.frame_enabled is unstated",
-            px_text(b.line_width),
-            px_text(b.corner_radius)
+            "{colour} at {width}, radius {radius}, round the whole and between the items, as upstream's bordered Accordion frames them: expander.frame_enabled is unstated"
         ),
     }
 }
 
 /// How the theme-drawn expander `e` pads its title rows, side by side, and
-/// its body: a stated `expander.border.padding` side as it states it, an
-/// unstated left or right by upstream's px_3, an unstated top or bottom by
-/// none (`demo::native_expander`, through `demo::padded`); the body right
+/// its body: a stated `expander.header(NONE)` padding side as it states it,
+/// an unstated left or right by upstream's px_3, an unstated top or bottom
+/// by upstream's py_2 (`demo::native_expander`, through
+/// `demo::next_padded`); the body right
 /// and below as upstream's AccordionItem pads it wherever no `gap`
 /// (`layout.widget_gap`) parts it from its title: inside the frame
 /// upstream's draws, where `frame_enabled` is unstated, and where the
 /// layout states no gap.
-fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
-    let p = &e.border.padding;
+pub(crate) fn expander_padding(e: &ExpanderLook, gap: Option<Pixels>) -> String {
+    let [top, right, bottom, left] = e.padding;
     let side = |name: &str, value: Option<f32>, across: bool| match (value, across) {
         (Some(v), _) => format!("{name} {}px", px_text(v)),
         (None, true) => format!("{name} upstream's px_3 (EXPANDER_PADDING_X)"),
-        (None, false) => format!("{name} none"),
+        (None, false) => format!("{name} upstream's py_2 (EXPANDER_PADDING_Y)"),
     };
     let body = match (e.frame_enabled, gap) {
         (Some(_), Some(_)) => {
@@ -961,230 +1021,475 @@ fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
         }
     };
     format!(
-        "expander.border.padding on each title row: {}, {}, {}, {}; {body}",
-        side("top", p.top, false),
-        side("right", p.right, true),
-        side("bottom", p.bottom, false),
-        side("left", p.left, true),
+        "expander.header(NONE).padding on each title row: {}, {}, {}, {}; {body}",
+        side("top", top, false),
+        side("right", right, true),
+        side("bottom", bottom, false),
+        side("left", left, true),
     )
 }
 
-/// A row of tabs `native_theme_gpui::widgets::TabBar` draws as `r`'s
-/// `tab.*` states a tab (`demo::native_tab_strip`), under `variant`: the
-/// page tabs, the inspector's and the Basic page's, wherever a native theme
-/// is installed.
+/// A row of tabs `native_theme_gpui::widgets::TabBar` draws as the
+/// installed 0.8.0 theme `r`'s `tab.*` states a tab, as `TabLook::next_of`
+/// reads it (`demo::native_tab_strip`), under `variant`: the page tabs, the
+/// inspector's and the Basic page's. Each claim names the home the look
+/// reads and cites the line of `widgets/tab_bar.rs` that spells it. Where
+/// the look or the label's font cannot be built, `widgets::TabBar` draws
+/// gpui-component's Tab-variant `TabBar` on `t` in its place
+/// (`TabBar::fallback`), and the info is upstream's, with the reason.
 #[cfg(feature = "widgets")]
-pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
-    let t = &r.tab;
-    // What widgets::TabBar draws from: None where a length the theme states
-    // is not finite, and the bar is then gpui-component's.
-    let look = TabLook::of(r);
-    // The line that marks the selected tab, as widgets::TabBar draws it.
-    let indicator = look.and_then(|look| look.indicator);
-    // The selected tab's outward corners, as widgets::TabBar draws them.
-    let outward = look.and_then(|look| look.outward_radius);
+pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> WidgetInfo {
+    let label = r.tab.label(WidgetState::NONE);
+    let drawn = TabLook::next_of(r).and_then(|look| {
+        match native_theme_gpui::next::label_font_unmapped(&label, "tab.label(NONE)") {
+            None => Ok(look),
+            Some(unstated) => Err(unstated),
+        }
+    });
+    let look = match drawn {
+        Ok(look) => look,
+        Err(unstated) => {
+            let reason = format!(
+                "{unstated}, so widgets::TabBar draws gpui-component's TabBar of the Tab variant in its place (native-theme-gpui/widgets/tab_bar.rs, TabLook::next_of, TabBar::fallback)"
+            );
+            return upstream_tab_row(t, WidgetInfo::new("TabBar").variant(variant))
+                .config("drawn by", reason.clone())
+                .config("selection mark", format!("upstream's: {reason}"))
+                .config("gap", format!("upstream's: {reason}"))
+                .not_themeable("font", "text_sm, the Tab's own: widgets::TabBar draws upstream's TabBar (tab/tab.rs, RenderOnce for Tab)");
+        }
+    };
+    let selected = r.tab.tab(WidgetState::SELECTED);
+    // Each value the helper reads at its home, which TabLook::next_of read
+    // there too: the look built, every one of them is stated.
     let info = WidgetInfo::new("TabBar")
         .variant(variant)
-        .color(claim(
+        .colors(stated_claim(
             "bar",
-            "bar_background",
-            stated(t.bar_background),
-            "native-theme-gpui/widgets/tab_bar.rs:217",
+            "tab.bar(NONE).fill",
+            fill_of(&r.tab.bar(WidgetState::NONE)),
+            "native-theme-gpui/widgets/tab_bar.rs:282",
         ))
-        .color(claim(
+        .colors(stated_claim(
             "unselected tab",
-            "background_color",
-            stated(t.background_color),
-            "native-theme-gpui/widgets/tab_bar.rs:218",
+            "tab.tab(NONE).fill",
+            fill_of(&r.tab.tab(WidgetState::NONE)),
+            "native-theme-gpui/widgets/tab_bar.rs:283",
         ))
-        .color(claim(
+        .colors(stated_claim(
             "label",
-            "font",
-            stated(t.font.color),
-            "native-theme-gpui/widgets/tab_bar.rs:223",
+            "tab.label(NONE).color",
+            text_color_of(&r.tab.label(WidgetState::NONE)),
+            "native-theme-gpui/widgets/tab_bar.rs:284",
         ))
-        .color(claim(
+        .colors(stated_claim(
             "selected tab",
-            "active_background",
-            stated(t.active_background),
-            "native-theme-gpui/widgets/tab_bar.rs:226",
+            "tab.tab(SELECTED).fill",
+            fill_of(&r.tab.tab(WidgetState::SELECTED)),
+            "native-theme-gpui/widgets/tab_bar.rs:287",
         ))
-        .color(claim(
+        .colors(stated_claim(
             "selected label",
-            "active_text_color",
-            stated(t.active_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:227",
+            "tab.label(SELECTED).color",
+            text_color_of(&r.tab.label(WidgetState::SELECTED)),
+            "native-theme-gpui/widgets/tab_bar.rs:290",
         ))
         .colors(edge_claim(
             "selected tab's outline",
-            "border",
-            Some(t.border.color),
-            Some(t.border.line_width),
-            "native-theme-gpui/widgets/tab_bar.rs:228",
+            "tab.tab(SELECTED).stroke.color",
+            stroke_color_of(&r.tab.tab(WidgetState::SELECTED)),
+            Some(f32::from(look.border_width)),
+            "native-theme-gpui/widgets/tab_bar.rs:403",
         ))
         .color(claim(
             "rule under the bar",
-            "line_color",
-            stated(r.separator.line_color),
+            "separator.color",
+            super::next_stated(r.separator.color),
             "showcase",
-        ));
-    let info = info
+        ))
         .colors(stated_claim(
             "hovered unselected tab, in place of its fill, over the bar",
-            "hover_background",
-            t.hover_background,
-            "native-theme-gpui/widgets/tab_bar.rs:224",
+            "tab.tab(HOVER).fill",
+            state_fill_of(&r.tab.tab(WidgetState::HOVER)),
+            "native-theme-gpui/widgets/tab_bar.rs:285",
         ))
-        .color(claim(
-            "hovered label",
-            "hover_text_color",
-            stated(t.hover_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:225",
-        ))
+        .colors(
+            // With no rule for HOVER, gpui-component's own hovered label,
+            // the selected tab's (TabLook::next_of).
+            match state_text_color_of(&r.tab.label(WidgetState::HOVER)) {
+                Some(_) => stated_claim(
+                    "hovered label",
+                    "tab.label(HOVER).color",
+                    state_text_color_of(&r.tab.label(WidgetState::HOVER)),
+                    "native-theme-gpui/widgets/tab_bar.rs:286",
+                ),
+                None => stated_claim(
+                    "hovered label, none stated: the selected tab's, gpui-component's own",
+                    "tab.label(SELECTED).color",
+                    text_color_of(&r.tab.label(WidgetState::SELECTED)),
+                    "native-theme-gpui/widgets/tab_bar.rs:419",
+                ),
+            },
+        )
         // Only where the look has the line: TabBar draws none otherwise.
         .colors(stated_claim(
             "selected tab's line",
-            "active_indicator_color",
-            indicator.and(t.active_indicator_color),
-            "native-theme-gpui/widgets/tab_bar.rs:239",
+            "tab.indicator(SELECTED).fill",
+            look.indicator
+                .and(fill_of(&r.tab.indicator(WidgetState::SELECTED))),
+            "native-theme-gpui/widgets/tab_bar.rs:306",
         ));
-    let padding = t.border.padding;
-    let side = |v: Option<f32>| {
-        v.map_or(
-            "upstream's 12px (tab/tab.rs, TabVariant::inner_paddings)".to_string(),
-            |v| format!("{}px", px_text(v)),
+    let [top, right, bottom, left] = padding_of(&r.tab.tab(WidgetState::NONE));
+    let across = |stated: Option<f32>, drawn: Pixels| match stated {
+        Some(v) => format!("{}px", px_text(v)),
+        None => format!(
+            "upstream's {}px (tab/tab.rs, TabVariant::inner_paddings)",
+            px_text(drawn.as_f32())
+        ),
+    };
+    let up_down = |stated: Option<f32>| match stated {
+        Some(v) => format!("{}px", px_text(v)),
+        None => "unstated".to_string(),
+    };
+    let radius = if selected
+        .stated
+        .contains(native_theme::next::PartStated::CORNERS)
+    {
+        format!(
+            "tab.tab(SELECTED).corners, {}px",
+            px_text(look.radius.as_f32())
+        )
+    } else {
+        "square, gpui-component's own for its Tab variant, as the theme states no tab.tab(SELECTED).corners (tab/tab.rs, TabVariant::radius)".to_string()
+    };
+    let outline = if look.border_width.as_f32() > 0.0 {
+        format!(
+            "tab.tab(SELECTED).stroke on the selected tab only: {}px, on its top corners {radius}, as Breeze and Windows draw it (docs/platform-facts.md §2.11){}",
+            px_text(look.border_width.as_f32()),
+            if look.outward_radius.is_some() {
+                "; no bottom edge: it runs on down the outward corners instead"
+            } else {
+                ""
+            }
+        )
+    } else {
+        format!(
+            "none: the theme states no tab.tab(SELECTED).stroke, or states it has none; the selected tab's top corners {radius}"
         )
     };
-    let info = info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
-        .config("font", format!("tab.font: {}", drawn_font(&t.font)))
-        .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
-        .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11){}", px_text(t.border.line_width), px_text(t.border.corner_radius), if outward.is_some() { "; no bottom edge: it runs on down the outward corners instead" } else { "" }))
-        .config("outward corners", match (look, outward) {
-            (_, Some(r)) => format!(
-                "tab.active_outward_corner_radius, {}px: the selected tab curves out into the bar's bottom edge at both feet, its outline following, with no bottom edge (native-theme-gpui/widgets/tab_bar.rs, TabLook::outward_radius)",
-                px_text(f32::from(r))
+    let info = info
+        .config(
+            "size",
+            format!(
+                "each tab at least tab.tab(NONE).min_size[0], {}px, by tab.tab(NONE).min_size[1], {}px",
+                px_text(look.min_width.as_f32()),
+                px_text(look.min_height.as_f32())
             ),
-            (Some(_), None) => "none: the theme states no outward corners, so the selected tab's feet are square".to_string(),
-            (None, None) => "none: a tab length the theme states is not finite, so widgets::TabBar draws gpui-component's TabBar in its place (native-theme-gpui/widgets/tab_bar.rs, TabLook::of)".to_string(),
+        )
+        .config(
+            "font",
+            format!(
+                "tab.label(NONE): {}",
+                super::next_drawn_font(
+                    &label,
+                    &super::typography::line_box_text(&r.typography, &label)
+                )
+            ),
+        )
+        .config(
+            "padding",
+            format!(
+                "tab.tab(NONE).padding: left {}, right {}; top and bottom {} and {}",
+                across(left, look.padding_left),
+                across(right, look.padding_right),
+                up_down(top),
+                up_down(bottom)
+            ),
+        )
+        .config("outline", outline)
+        .config("outward corners", match look.outward_radius {
+            Some(radius) => format!(
+                "tab.active_outward_corner_radius, {}px: the selected tab curves out into the bar's bottom edge at both feet, its outline following, with no bottom edge (native-theme-gpui/widgets/tab_bar.rs, TabLook::outward_radius)",
+                px_text(radius.as_f32())
+            ),
+            None => "none: the theme states no outward corners, so the selected tab's feet are square".to_string(),
         })
-        .config("selection mark", match (look, indicator) {
-            (_, Some(line)) => format!(
-                "a line tab.active_indicator_width, {}px, thick along the selected tab's {} edge, tab.active_indicator_side, in tab.active_indicator_color, over its outline (native-theme-gpui/widgets/tab_bar.rs, TabIndicator)",
-                px_text(f32::from(line.width)),
+        .config("selection mark", match look.indicator {
+            Some(line) => format!(
+                "a line tab.indicator(SELECTED).min_size[1], {}px, thick along the selected tab's {} edge, tab.indicator_side, in tab.indicator(SELECTED).fill, over its outline (native-theme-gpui/widgets/tab_bar.rs, TabIndicator)",
+                px_text(line.width.as_f32()),
                 match line.side {
                     TabIndicatorSide::Top => "top",
                     TabIndicatorSide::Bottom => "bottom",
                 }
             ),
-            (Some(_), None) => "none: the theme states no indicator -- widgets::TabBar draws one only where tab.active_indicator_color, tab.active_indicator_width and tab.active_indicator_side are all stated -- so the selected tab is marked by its fill, label and outline alone".to_string(),
-            (None, None) => "none: a tab length the theme states is not finite, so widgets::TabBar draws gpui-component's TabBar in its place (native-theme-gpui/widgets/tab_bar.rs, TabLook::of)".to_string(),
+            None => "none: the theme states no indicator -- widgets::TabBar draws one only where tab.indicator(SELECTED).fill, tab.indicator(SELECTED).min_size[1] and tab.indicator_side are all stated -- so the selected tab is marked by its fill, label and outline alone".to_string(),
         })
-        .config("gap", match (look, t.item_gap.is_some()) {
-            (Some(look), true) => format!("{}px between neighbouring tabs, tab.item_gap", px_text(f32::from(look.gap))),
-            (Some(_), false) => "none: tab.item_gap is unstated, and widgets::TabBar lays its tabs with none, as gpui-component lays its default variant's (tab/tab_bar.rs, TabBar::render)".to_string(),
-            (None, _) => "not widgets::TabBar's: a tab length the theme states is not finite, so gpui-component's TabBar lays the tabs out".to_string(),
+        .config("gap", match r.tab.item_gap {
+            Some(_) => format!("{}px between neighbouring tabs, tab.item_gap", px_text(look.gap.as_f32())),
+            None => "none: tab.item_gap is unstated, and widgets::TabBar lays its tabs with none, as gpui-component lays its default variant's (tab/tab_bar.rs, TabBar::render)".to_string(),
         })
         .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own");
-    match look {
-        Some(_) => tab_bar_ring(info, r),
-        None => info.not_themeable("focus ring", UPSTREAM_TAB_RING),
-    }
+    tab_bar_ring(info, r)
 }
 
-/// `info` with the focus ring `widgets::TabBar` draws round a tab under `r`:
-/// the theme's colour and width, inside the tab.
+/// `info` with the focus ring `widgets::TabBar` draws round a tab under the
+/// 0.8.0 theme `r`, as `FocusRing::next_indicator` reads it
+/// (native-theme-gpui/widgets/mod.rs): the tab's own where the theme states
+/// one (`tab.tab(FOCUSED).focus`, `widgets::part_focus`), else the global
+/// ring; its stroke's colour, its width wide, inside the tab, and its second
+/// ring inward from it where stated. A ring the bar cannot draw
+/// (`widgets::part_ring_unmapped`) is named at its home, and what the inset
+/// draws other than stated (`TabLook::next_ring_unmapped`) is not mapped.
 #[cfg(feature = "widgets")]
-fn tab_bar_ring(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    let d = &r.defaults;
-    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
-    if !(width.is_finite() && offset.is_finite() && width > 0.0) {
+fn tab_bar_ring(info: WidgetInfo, r: &NextTheme) -> WidgetInfo {
+    use native_theme::next::{FocusTrigger, Stroke};
+    use native_theme_gpui::widgets::{RingHomes, part_focus, part_ring_unmapped};
+    let part = r.tab.tab(WidgetState::FOCUSED);
+    let Some((f, homes)) = part_focus(r, &part, RingHomes::TAB) else {
         return info.config(
             "focus ring",
-            "none: the theme states no ring, its focus_ring_width not finite or not positive, or its focus_ring_offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::of)",
+            "none: the theme states tab.tab(FOCUSED).focus with no indicator, so the tab has none (native-theme-gpui/widgets/mod.rs, part_focus)",
+        );
+    };
+    if let Some(unmapped) = part_ring_unmapped(r, &part, RingHomes::TAB) {
+        return info.config(
+            "focus ring",
+            format!(
+                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)",
+                unmapped.home()
+            ),
         );
     }
-    info.color(claim(
-        "focus ring",
-        "focus_ring_color",
-        stated(d.focus_ring_color),
-        "native-theme-gpui/widgets/mod.rs:349",
-    ))
-    .config(
+    let at = homes.kind.strip_suffix(".kind").unwrap_or(homes.kind);
+    let offset = f.offset;
+    let stroke = match &f.stroke {
+        Stroke::Uniform { width, .. }
+            if width.is_finite() && offset.is_finite() && *width > 0.0 =>
+        {
+            Some(*width)
+        }
+        _ => None,
+    };
+    let Some(width) = stroke else {
+        return info.config(
+            "focus ring",
+            format!(
+                "none: the theme states no ring, its {at}.stroke.width not positive, or its {at}.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)"
+            ),
+        );
+    };
+    let inner = match &f.inner_stroke {
+        Stroke::Uniform { width, .. } if width.is_finite() && *width > 0.0 => Some(*width),
+        _ => None,
+    };
+    let info = if homes == RingHomes::GLOBAL {
+        info.colors(stated_claim(
+            "focus ring",
+            "focus_ring.stroke.color",
+            ring_stroke_color_of(&r.focus_ring.stroke),
+            "native-theme-gpui/widgets/mod.rs:523",
+        ))
+        .colors(inner.and_then(|_| {
+            stated_claim(
+                "focus ring inner",
+                "focus_ring.inner_stroke.color",
+                ring_stroke_color_of(&r.focus_ring.inner_stroke),
+                "native-theme-gpui/widgets/mod.rs:524",
+            )
+        }))
+    } else {
+        info.config(
+            "focus ring",
+            format!(
+                "the tab's own ring in place of the global one: {} and, where stated, {}, as stated (native-theme-gpui/widgets/mod.rs, part_focus, FocusRing::next_indicator)",
+                homes.stroke, homes.inner_stroke
+            ),
+        )
+    };
+    let info = info.config(
         "focus ring",
         format!(
-            "{} an inset shadow defaults.focus_ring_width, {}px, wide inside the tab (native-theme-gpui/widgets/tab_bar.rs, TabBar). defaults.focus_ring_offset, {}px, is not reached: the tabs' row scrolls and clips what lies outside it, so a ring outside the tab would lose a band",
-            if d.focus_ring_keyboard_only == Some(true) {
-                "on the focused tab, for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):"
-            } else {
-                "on the focused tab:"
+            "{} an inset shadow {at}.stroke.width, {}px, wide inside the tab against its edge, in the tab's corners{} (native-theme-gpui/widgets/tab_bar.rs, TabBar)",
+            match f.trigger {
+                Some(FocusTrigger::KeyboardOnly) => {
+                    "on the focused tab, for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):"
+                }
+                None => {
+                    "on the focused tab, for a focus that followed a key press only: the theme states no trigger, and gpui-component's own tab rings a keyboard focus only (gpui-component/tab/tab.rs:965, focus_visible; native-theme-gpui/widgets/mod.rs, OwnTrigger):"
+                }
+                Some(_) => "on the focused tab:",
             },
             px_text(width),
-            px_text(offset)
+            match inner {
+                Some(inner) => format!(
+                    ", and {at}.inner_stroke {}px wide inward from it, a band in the shadow's inner corners",
+                    px_text(inner)
+                ),
+                None => String::new(),
+            }
         ),
-    )
+    );
+    TabLook::next_ring_unmapped(r, &part)
+        .into_iter()
+        .fold(info, |info, unmapped| {
+            let note = if unmapped.home() == homes.offset {
+                format!(
+                    "not mapped: {}, {}px: the inset lies against the tab's edge, the offset minus the stroke's width, -{}px; the tabs' row scrolls sideways and clips what lies left of the first tab and right of the last, so a ring placed outside a tab would lose a band there (native-theme-gpui/widgets/tab_bar.rs, TabLook::next_ring_unmapped; gpui-pre/style.rs, overflow_mask)",
+                    unmapped.home(),
+                    px_text(offset),
+                    px_text(width)
+                )
+            } else {
+                format!(
+                    "not mapped: {}: the inset shadow takes the tab's own corners (native-theme-gpui/widgets/tab_bar.rs, TabLook::next_ring_unmapped; gpui-pre/window.rs, paint_inset_shadows)",
+                    unmapped.home()
+                )
+            };
+            info.config("focus ring", note)
+        })
 }
 
 /// Each side of a segment's padding as `demo::segmented` draws it: a side
-/// `segmented_control.border.padding` states by its value, an unstated left
+/// `segmented_control.segment(NONE)` states by its value, an unstated left
 /// or right by `SEGMENT_PADDING`, upstream's own, and an unstated top or
-/// bottom by none.
-fn segment_padding(p: &ResolvedPadding) -> String {
+/// bottom by none, upstream's too.
+pub(crate) fn segment_padding(padding: [Option<f32>; 4]) -> String {
+    let [top, right, bottom, left] = padding;
     let side = |name: &str, stated: Option<f32>, across: bool| match (stated, across) {
         (Some(v), _) => format!("{name} {}px", px_text(v)),
         (None, true) => format!("{name} {}px, unstated", px_text(SEGMENT_PADDING.as_f32())),
         (None, false) => format!("{name} none, unstated"),
     };
     format!(
-        "segmented_control.border.padding per side: {}; {}; {}; {}. An unstated left or right side takes {}px and an unstated top or bottom none, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)",
-        side("top", p.top, false),
-        side("right", p.right, true),
-        side("bottom", p.bottom, false),
-        side("left", p.left, true),
+        "segmented_control.segment(NONE).padding per side: {}; {}; {}; {}. An unstated left or right side takes {}px and an unstated top or bottom none, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)",
+        side("top", top, false),
+        side("right", right, true),
+        side("bottom", bottom, false),
+        side("left", left, true),
         px_text(SEGMENT_PADDING.as_f32()),
     )
 }
 
+/// The size, font, border and separator lines of the theme-drawn segmented
+/// control `s`, in that order, its labels lettered over `typography`, on
+/// `t`: each the stated value where `s` gives one, else upstream's own,
+/// named.
+pub(crate) fn segmented_lines(
+    s: &SegmentedLook,
+    typography: &native_theme::next::Typography,
+    t: &Theme,
+) -> [String; 4] {
+    let size = match s.segment_height {
+        Some(height) => format!(
+            "each segment at least segmented_control.segment(NONE).min_size[1], {}px, tall",
+            px_text(height)
+        ),
+        None => format!(
+            "each segment at least {}px tall, upstream's own for a segmented tab at the default Size: the theme states no segmented_control.segment(NONE).min_size[1] (tab/tab.rs, TabVariant::height)",
+            px_text(crate::demo::SEGMENT_HEIGHT.as_f32())
+        ),
+    };
+    let font = match native_theme_gpui::next::label_font_unmapped(
+        &s.font,
+        "segmented_control.label(NONE)",
+    ) {
+        None => format!(
+            "segmented_control.label(NONE): {}",
+            super::next_drawn_font(
+                &s.font,
+                &super::typography::line_box_text(typography, &s.font)
+            )
+        ),
+        Some(unstated) => format!(
+            "upstream's text_sm, {}: the theme states no value gpui can take at {} (tab/tab.rs, RenderOnce for Tab; spec §10, rule 0)",
+            super::rems_text(crate::demo::SEGMENT_LABEL_SIZE, t),
+            unstated.home()
+        ),
+    };
+    let radius = match s.radius {
+        Some(radius) => format!(
+            "segmented_control.track(NONE).corners, {}px",
+            px_text(radius.max(0.0))
+        ),
+        None => format!(
+            "upstream's radius_lg, {}px, as the theme states no segmented_control.track(NONE).corners (tab/tab.rs, TabVariant::tab_bar_radius)",
+            px_text(t.radius_lg.as_f32())
+        ),
+    };
+    let border = match s.frame_width() {
+        Some(width) if width > 0.0 => format!(
+            "segmented_control.track(NONE).stroke: {}px, radius {radius}",
+            px_text(width)
+        ),
+        Some(_) => format!(
+            "none: segmented_control.track(NONE).stroke.width is 0; the track is still rounded by {radius}"
+        ),
+        None => format!(
+            "none, as upstream's segmented TabBar draws none: the theme states no segmented_control.track(NONE).stroke gpui can draw (tab/tab_bar.rs, TabBar::render); the track is rounded by {radius}"
+        ),
+    };
+    let separators = match s.separator_line() {
+        None => "none, as upstream's segmented TabBar draws no line between its segments: the theme states no segmented_control.separator(NONE).fill (tab/tab_bar.rs, TabBar::render)".to_string(),
+        Some((_, width)) if width > 0.0 => format!(
+            "segmented_control.separator_width, {}px, in segmented_control.separator(NONE).fill between segments",
+            px_text(width)
+        ),
+        Some(_) => "none: segmented_control.separator_width is 0".to_string(),
+    };
+    [size, font, border, separators]
+}
+
 /// The segmented control over `labels`, the one at `selected` shown: drawn
-/// by the showcase from `native`'s `segmented_control` where a native theme
-/// is installed, upstream's segmented `TabBar` where none is
+/// by the showcase from `native`'s `segmented_control` where a 0.8.0 theme
+/// is installed (`demo::SegmentedLook`), each value it leaves unstated
+/// upstream's own, read on `t`; upstream's segmented `TabBar` where none is
 /// (`demo::segmented`).
 pub fn segmented(
     t: &Theme,
     labels: &[&'static str],
     selected: usize,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let shown = labels.get(selected).copied().unwrap_or("none");
     let info = match native {
         Some(r) => {
-            let s = &r.segmented_control;
+            let s = SegmentedLook::next_of(r);
+            let track = stated_claim("track", "segmented_control.track(NONE).fill", fill_of(&r.segmented_control.track(WidgetState::NONE)), "showcase")
+                .unwrap_or_else(|| claim("track", "tab_bar_segmented", t.tab_bar_segmented, "showcase"));
+            let label = stated_claim("label", "segmented_control.label(NONE).color", text_color_of(&r.segmented_control.label(WidgetState::NONE)), "showcase")
+                .unwrap_or_else(|| claim("label", "tab_foreground", t.tab_foreground, "showcase"));
+            let selected_fill = stated_claim("selected segment", "segmented_control.segment(SELECTED).fill", fill_of(&r.segmented_control.segment(WidgetState::SELECTED)), "showcase")
+                .unwrap_or_else(|| claim("selected segment", "background", t.background, "showcase"));
+            let selected_label = stated_claim("selected label", "segmented_control.label(SELECTED).color", text_color_of(&r.segmented_control.label(WidgetState::SELECTED)), "showcase")
+                .unwrap_or_else(|| claim("selected label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
+            let hovered_label = stated_claim("hovered label", "segmented_control.label(HOVER).color", state_text_color_of(&r.segmented_control.label(WidgetState::HOVER)), "showcase")
+                .unwrap_or_else(|| claim("hovered label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
+            // The line left of every segment but the first, where one is drawn.
+            let separators = s.separator_line().map(|(_, width)| {
+                let lines = (labels.len() > 1).then_some(width);
+                edge_claim("separators", "segmented_control.separator(NONE).fill", fill_of(&r.segmented_control.separator(WidgetState::NONE)), lines, "showcase")
+            });
             let info = WidgetInfo::new("Segmented control")
                 .variant("drawn by the showcase")
-                .color(claim("track", "background_color", stated(s.background_color), "showcase"))
-                .color(claim("label", "color", stated(s.font.color), "showcase"))
-                .color(claim("selected segment", "active_background", stated(s.active_background), "showcase"))
-                .color(claim("selected label", "active_text_color", stated(s.active_text_color), "showcase"))
-                .colors(edge_claim("border", "border", Some(s.border.color), Some(s.border.line_width), "showcase"))
-                // The line left of every segment but the first.
-                .colors(edge_claim("separators", "border", Some(s.border.color), (labels.len() > 1).then_some(s.separator_width), "showcase"));
-            let info = match stated_claim("hovered segment", "hover_background", s.hover_background, "showcase") {
+                .color(track)
+                .color(label)
+                .color(selected_fill)
+                .color(selected_label)
+                .color(hovered_label)
+                .colors(edge_claim("border", "segmented_control.track(NONE).stroke.color", stroke_color_of(&r.segmented_control.track(WidgetState::NONE)), s.frame_width(), "showcase"))
+                .colors(separators.flatten());
+            let info = match stated_claim("hovered segment", "segmented_control.segment(HOVER).fill", state_fill_of(&r.segmented_control.segment(WidgetState::HOVER)), "showcase") {
                 Some(hover) => info.color(hover),
-                None => info.not_themeable("hover", "none: the theme states no segmented_control.hover_background"),
+                None => info.not_themeable("hover", "none: no rule states segmented_control.segment(HOVER).fill, and upstream's unselected segment keeps a transparent fill under the pointer (tab/tab.rs, TabVariant::hovered)"),
             };
-            info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.active_background, hover_background, font.color and active_text_color would have no receiver there")
-                .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall", px_text(s.segment_height)))
-                .config("padding", segment_padding(&s.border.padding))
-                .config("font", format!("segmented_control.font: {}", drawn_font(&s.font)))
-                .config("border", if s.border.line_width > 0.0 {
-                    format!("segmented_control.border: {}px, radius {}px", px_text(s.border.line_width), px_text(s.border.corner_radius))
-                } else {
-                    format!("none: segmented_control.border.line_width is 0; the track is still rounded by its corner_radius, {}px", px_text(s.border.corner_radius))
-                })
-                .config("separators", if s.separator_width > 0.0 {
-                    format!("segmented_control.separator_width, {}px, in border.color between segments", px_text(s.separator_width))
-                } else {
-                    "none: segmented_control.separator_width is 0".to_string()
-                })
+            let [size, font, border, separators] = segmented_lines(&s, &r.typography, t);
+            info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.segment(SELECTED).fill, segment(HOVER).fill and the labels' colours would have no receiver there")
+                .config("size", size)
+                .config("padding", segment_padding(s.padding))
+                .config("font", font)
+                .config("border", border)
+                .config("separators", separators)
         }
         None => WidgetInfo::new("TabBar")
             .variant("Segmented")
@@ -1213,6 +1518,14 @@ pub fn segmented(
                 "gpui-component/tab/tab.rs:300",
             ))
             .not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+    };
+    let info = match native {
+        Some(r) => super::own_ring_not_drawn(
+            info,
+            &r.segmented_control.segment(WidgetState::FOCUSED),
+            "segmented_control.segment(FOCUSED).focus",
+        ),
+        None => info,
     };
     info.instance("segments", labels.join(", "))
         .instance("selected", shown)

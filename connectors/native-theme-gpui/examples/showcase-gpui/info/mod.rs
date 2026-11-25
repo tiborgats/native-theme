@@ -2,7 +2,6 @@
 
 use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
 use gpui_component::theme::Theme;
-use native_theme_gpui::Native;
 use native_theme_gpui::next::{Mapped, Unmapped};
 /// The reads a claim in the 0.8.0 form makes of its home's property: the
 /// connector's own (`native_theme_gpui::next`), each `None` where the theme
@@ -12,7 +11,7 @@ pub use native_theme_gpui::next::{
     radius_of, state_stroke_color_of, stroke_color_of, stroke_width_of,
 };
 
-use crate::support::{native_geometry, next_value, refined};
+use crate::support::{next_value, refined};
 
 pub mod buttons;
 pub mod charts;
@@ -103,6 +102,24 @@ pub fn edge_claim(
     stated_claim(role, field, colour.filter(|_| drawn), cited_at)
 }
 
+/// The line saying that a rule states `part`'s stroke, `home`, for the
+/// `state` state in a form gpui cannot draw (`demo::state_stroke_unmapped`):
+/// the home is not mapped, not unstated, and the widget draws `drawn` in its
+/// place; `None` where the stroke is stated in a form gpui draws, or not for
+/// the state.
+pub fn state_stroke_unmapped(
+    part: &native_theme::next::PartStyle,
+    home: &str,
+    state: &str,
+    drawn: &str,
+) -> Option<String> {
+    crate::demo::state_stroke_unmapped(part).then(|| {
+        format!(
+            "not mapped: a rule states {home} for the {state} state in a form gpui cannot draw (not one stroke of one colour, nor none), so {drawn}"
+        )
+    })
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Note {
     pub what: &'static str,
@@ -169,18 +186,8 @@ impl WidgetInfo {
         });
         self
     }
-    /// The "geometry" line for the `geometry::` builder named `builder`,
-    /// from [`GEOMETRY_NOTES`]; the only way such a line is written.
-    pub fn geometry(self, builder: &'static str) -> Self {
-        let what = GEOMETRY_NOTES
-            .iter()
-            .find(|(name, _)| *name == builder)
-            .map_or("(no GEOMETRY_NOTES entry)", |(_, what)| *what);
-        self.config("geometry", format!("geometry::{builder}: {what}"))
-    }
     /// The "geometry" line for the `next::geometry` builder named `builder`,
-    /// from [`NEXT_GEOMETRY_NOTES`]; the only way such a line is written on
-    /// the 0.8.0 model.
+    /// from [`NEXT_GEOMETRY_NOTES`]; the only way such a line is written.
     pub fn next_geometry(self, builder: &'static str) -> Self {
         let what = NEXT_GEOMETRY_NOTES
             .iter()
@@ -197,6 +204,19 @@ impl WidgetInfo {
             "geometry",
             format!(
                 "gpui-component's own: the theme states no value gpui can take at {}, which geometry::{builder} needs",
+                unstated.home()
+            ),
+        )
+    }
+    /// The "variant" line for the `next::variants` builder named `builder`
+    /// where the installed 0.8.0 theme states the value at `unstated`'s home
+    /// in a form gpui cannot take, which the builder needs: the widget takes
+    /// `variants::ghost_button`, the variant the builder starts from.
+    pub fn next_variant_unmapped(self, builder: &'static str, unstated: Unmapped) -> Self {
+        self.config(
+            "variant",
+            format!(
+                "native_theme_gpui::variants::ghost_button: the theme states no value gpui can take at {}, which next::variants::{builder} needs",
                 unstated.home()
             ),
         )
@@ -238,135 +258,10 @@ impl WidgetInfo {
     }
 }
 
-/// What each `geometry::` builder carries, one entry per `pub fn` of
-/// `native-theme-gpui/src/geometry.rs` in its order, the value builders
-/// included, but for those whose every caller is on the 0.8.0 model, which
-/// [`NEXT_GEOMETRY_NOTES`] alone describes: `WidgetInfo::geometry` prints
-/// `geometry::<name>: <what>`. `every_geometry_builder_has_a_note` holds the
-/// two tables to geometry.rs.
-pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
-    (
-        "button",
-        "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
-    ),
-    (
-        "menu_item",
-        "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.min_row_height as a least height the content grows past, the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
-    ),
-    (
-        "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.border.line_width wide in place of upstream's border_1, and shadow_md's two layers in defaults.shadow_color where tooltip.border.shadow_enabled holds, no shadow where it does not, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
-    ),
-    (
-        "tooltip_content",
-        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
-    ),
-    (
-        "status_bar",
-        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style) — and defaults.line_height as the line height",
-    ),
-    (
-        "dialog",
-        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_width as the least width, which the width upstream sets after the refinement keeps, min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
-    ),
-    (
-        "dialog_entrance",
-        "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for both styles the model has. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
-    ),
-    (
-        "dialog_title",
-        "dialog.title_font including its colour, which displaces nothing, upstream setting none on the title, and defaults.line_height as the line height, which replaces upstream's relative(1.25) (dialog/title.rs, RenderOnce for DialogTitle: line_height then refine_style)",
-    ),
-    (
-        "dialog_description",
-        "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render), and defaults.line_height as the line height",
-    ),
-    (
-        "group_box_content",
-        "the card.border.padding sides the theme states, corner_radius, line_width, color, and card.background_color -- refined last, so the radius, the edge and the fill drawn are the card's, not upstream's radius or the Fill variant's group_box token (group_box.rs, GroupBox)",
-    ),
-    (
-        "accordion_title",
-        "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
-    ),
-    (
-        "select",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui/geometry.rs, select)",
-    ),
-    (
-        "combobox",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font (native-theme-gpui/geometry.rs, combobox)",
-    ),
-    (
-        "title_bar",
-        "window.title_bar_font's family, size, weight and style, and its colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
-    ),
-    (
-        "title_bar_inactive",
-        "window.inactive_title_bar_background, drawn as upstream's gradient is from title_bar, and window.inactive_title_bar_text_color over geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
-    ),
-    (
-        "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, toolbar.font's family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
-    ),
-    (
-        "list_header_height",
-        "list.header_height, the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height, upstream's own cell padding and the header row's 1px bottom border (table/state.rs, border_b_1): a Size::Size header cell sets no text size and inherits the container's, which geometry::table gives list.item_font (sizing.rs, table_cell_size)",
-    ),
-    (
-        "icon_size_toolbar",
-        "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
-    ),
-    ("icon_size_small", "defaults.icon_sizes.small"),
-    ("icon_size_large", "defaults.icon_sizes.large"),
-    ("icon_size_dialog", "defaults.icon_sizes.dialog"),
-    ("icon_size_panel", "defaults.icon_sizes.panel"),
-    (
-        "scrollbar_gutter",
-        "scrollbar.groove_width as right padding where scrollbar.overlay_mode is false, and nothing where it is true, because gpui-component overlays the bar on the scroll area instead of putting it beside the content",
-    ),
-    (
-        "dialog_max_width",
-        "dialog.max_width, which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render)",
-    ),
-    (
-        "toolbar_button_rest",
-        "where the theme states toolbar.button_hover_border_color, a transparent fill and a transparent border button.border.line_width wide, and each stated side of button.border.padding less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where the theme states no outline",
-    ),
-    (
-        "toolbar_button_checked",
-        "toolbar.button_checked_background and button.checked_text_color (button.active_text_color where that is unset) on a selected toolbar Button built on variants::toolbar_button; where the theme states no checked fill, toolbar.button_active_background, else button.active_background, with no text colour; nothing where it states none of the three: a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style. Its border colour is toolbar.button_checked_border_color where stated, at toolbar_button_rest's width, and stays under the pointer and pressed, where a selected Button takes no hover or press style",
-    ),
-    (
-        "default_button_rest",
-        "button.default_button_background as the fill and button.default_button_border_color (button.border.color where unstated) as the border colour of a dialog's default Button at rest, over variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where the theme states no fill, and the Button is .primary()",
-    ),
-    (
-        "link",
-        "link.font's family, size, weight and style, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
-    ),
-    (
-        "widget_gap",
-        "layout.widget_gap, the space between adjacent widgets; none where the platform specifies none (platform-facts §2.20)",
-    ),
-    (
-        "container_margin",
-        "layout.container_margin, the padding inside containers; none where the platform specifies none (platform-facts §2.20)",
-    ),
-    (
-        "window_margin",
-        "layout.window_margin, the padding inside the main window; none where the platform specifies none (platform-facts §2.20)",
-    ),
-    (
-        "section_gap",
-        "layout.section_gap, the space between major content sections; none where the platform specifies none (platform-facts §2.20)",
-    ),
-];
-
-/// [`GEOMETRY_NOTES`] for the builders of `native_theme_gpui::next::geometry`
-/// a widget on the 0.8.0 model records, each naming the homes its builder
-/// reads: `WidgetInfo::next_geometry` prints `geometry::<name>: <what>`. A
-/// builder whose every caller is on the 0.8.0 model has its entry here alone.
+/// What each builder of `native_theme_gpui::next::geometry` a widget records
+/// carries, the value builders included, each naming the homes its builder
+/// reads: `WidgetInfo::next_geometry` prints `geometry::<name>: <what>`.
+/// `every_geometry_builder_has_a_note` holds the table to the builders.
 pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "widget_gap",
@@ -409,6 +304,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
         "window.title(normal)'s family, size, weight and style, and its colour, and typography.line_height_multiplier as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
     (
+        "title_bar_inactive",
+        "window.title_bar(normal).fill of the theme resolved for an inactive window, drawn as upstream's gradient is from title_bar and the background, window.frame(normal).fill here, and its window.title(normal).color over next::geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
+    ),
+    (
         "editor",
         "typography.line_height_multiplier as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size, typography.monospace's family and size (native-theme-gpui next/mod.rs, theme_scalars)",
     ),
@@ -436,12 +335,32 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button_checked",
         "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, the pressed pair (button.body(PRESSED).fill, button.label(PRESSED).color) where no rule states them for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where neither fill is stated the refinement sets none, and upstream's selected fill stands",
     ),
+    (
+        "default_button_rest",
+        "button.body(DEFAULT).fill as the fill and button.body(DEFAULT).stroke.color (button.body(NONE).stroke.color where no rule states it for DEFAULT) as the border colour of a dialog's default Button at rest, over next::variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where no rule states the default body's fill, and the Button is .primary()",
+    ),
     ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
+    (
+        "toolbar_button_rest",
+        "where a rule states toolbar.button(HOVER).stroke.color, a transparent fill and a transparent border button.body(NONE).stroke.width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline",
+    ),
+    (
+        "toolbar_button_checked",
+        "toolbar.button(CHECKED).fill and button.label(CHECKED).color (button.label(PRESSED).color where no rule states that for the checked state) on a selected toolbar Button built on next::variants::toolbar_button; where no rule states the checked fill, gpui-component's own selected ghost's, secondary_active (button/button.rs, ButtonVariant::selected, Ghost arm), with no text colour, not a pressed fill of the theme's (spec §10, rule 0a): a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style. Its border colour is toolbar.button(CHECKED).stroke.color where a rule states it, at toolbar_button_rest's width, and stays under the pointer and pressed, where a selected Button takes no hover or press style",
+    ),
     ("icon_size_small", "icons.sizes.small"),
     ("icon_size_dialog", "icons.sizes.dialog"),
     (
         "menu_item",
         "menu.item(NONE).max_size[1], where the theme states one, by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.item(NONE).min_size[1] as a least height the content grows past, the padding sides menu.item(NONE) states, menu.icon_text_gap, and menu.item_label(NONE)'s family, size, weight and style but not its colour",
+    ),
+    (
+        "status_bar",
+        "the padding sides status_bar.bar states, and status_bar.label's family, size, weight and style, and its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style), and typography.line_height_multiplier as the line height",
+    ),
+    (
+        "toolbar",
+        "toolbar.bar(NONE).min_size[1] as the minimum height where the theme states one, toolbar.item_gap where it states one, the padding sides toolbar.bar(NONE) states, its fill, the bottom edge in its stroke, toolbar.button_label(NONE)'s family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and typography.line_height_multiplier as the line height",
     ),
     (
         "popover",
@@ -477,6 +396,7 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     ("spinner_size", "spinner.diameter"),
     ("icon_size_large", "icons.sizes.large"),
+    ("icon_size_panel", "icons.sizes.panel"),
     (
         "tooltip",
         "the padding sides tooltip.panel states, its corner radius, tooltip.text's font — including its colour, which upstream would otherwise paint with popover_foreground —, typography.line_height_multiplier as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.panel.fill and tooltip.panel.stroke.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.panel.stroke.width wide in place of upstream's border_1, and shadow_md's two layers in colors.shadow where tooltip.panel states no shadows, no shadow where it states none, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
@@ -542,33 +462,19 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
         "combo_box.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1; upstream's height where the theme states none), combo_box.field(NONE).min_size[0] as the least width, the padding sides combo_box.field(NONE) states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, its corner radius and stroke width, and combo_box.label(NONE)'s font -- and, unlike geometry::combobox, its colour as well (native-theme-gpui/geometry.rs, select)",
     ),
     (
+        "combobox",
+        "combo_box.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1; upstream's height where the theme states none), combo_box.field(NONE).min_size[0] as the least width, the padding sides combo_box.field(NONE) states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, its corner radius and stroke width, and combo_box.label(NONE)'s family, size, weight and style but not its colour (native-theme-gpui/geometry.rs, combobox)",
+    ),
+    (
         "combo_box_fill",
         "combo_box.field(NONE).fill, or for a disabled trigger combo_box.field(DISABLED).fill (the fill at rest where no rule states one for the state) and combo_box.label(DISABLED).color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
 ];
 
-/// `w` with the `build` refinement applied and `info` given `build`'s
-/// geometry line, both only when a native theme is installed; before `apply`
-/// ran the widget keeps upstream's geometry and `info` names no builder.
-/// `name` is `build`'s name, which `native_info_names_the_builder_it_applies`
-/// holds to it.
-pub fn native_info<W: Styled>(
-    w: W,
-    cx: &App,
-    build: fn(Native<'_>) -> StyleRefinement,
-    name: &'static str,
-    info: &mut WidgetInfo,
-) -> W {
-    let style = native_geometry(cx, build);
-    if style.is_some() {
-        *info = std::mem::take(info).geometry(name);
-    }
-    refined(w, style.as_ref())
-}
-
-/// [`native_info`] on the 0.8.0 model: `w` with the refinement a builder of
+/// `w` with the refinement a builder of
 /// `native_theme_gpui::next::geometry` gives for the installed 0.8.0 theme,
-/// and `info` given `build`'s geometry line. Where the theme states no value
+/// and `info` given `build`'s geometry line; `name` is `build`'s name, which
+/// `native_info_names_the_builder_it_applies` holds to it. Where the theme states no value
 /// gpui can take at a home the builder reads (unstated, or in a form gpui
 /// cannot draw), the widget keeps upstream's geometry and `info` names that
 /// home (spec §10, rule 0); before `apply` ran it names no builder.
@@ -594,16 +500,60 @@ pub fn next_native_value<T>(
     name: &'static str,
     info: &mut WidgetInfo,
 ) -> Option<T> {
-    match next_value(cx, build) {
-        Some(Ok(value)) => {
-            *info = std::mem::take(info).next_geometry(name);
-            Some(value)
+    next_built(cx, build, name).record(info)
+}
+
+/// The value `build`, a builder of `native_theme_gpui::next::geometry`
+/// named `name`, gives for the installed 0.8.0 theme, evaluated once for a
+/// widget that reads it before its info is made and records it there after
+/// ([`NextBuilt::record`]).
+pub fn next_built<T>(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<T>,
+    name: &'static str,
+) -> NextBuilt<T> {
+    NextBuilt {
+        built: next_value(cx, build),
+        name,
+    }
+}
+
+/// A builder's value as [`next_built`] evaluated it: `None` before `apply`
+/// ran.
+pub struct NextBuilt<T> {
+    built: Option<Mapped<T>>,
+    name: &'static str,
+}
+
+impl<T> NextBuilt<T> {
+    /// The value, `None` where the theme leaves a value the builder needs
+    /// without a value gpui can take, and before `apply` ran.
+    pub fn value(&self) -> Option<&T> {
+        self.built.as_ref().and_then(|built| built.as_ref().ok())
+    }
+
+    /// Whether the builder applies: a theme is installed and states every
+    /// value it reads.
+    pub fn applies(&self) -> bool {
+        self.value().is_some()
+    }
+
+    /// What [`next_native_value`] applies: the value, and `info` given the
+    /// builder's geometry line; where the theme leaves a value the builder
+    /// needs without a value gpui can take, `None`, and `info` says at which
+    /// home (spec §10, rule 0); `None` before `apply` ran, naming no builder.
+    pub fn record(self, info: &mut WidgetInfo) -> Option<T> {
+        match self.built {
+            Some(Ok(value)) => {
+                *info = std::mem::take(info).next_geometry(self.name);
+                Some(value)
+            }
+            Some(Err(unstated)) => {
+                *info = std::mem::take(info).next_unmapped(self.name, unstated);
+                None
+            }
+            None => None,
         }
-        Some(Err(unstated)) => {
-            *info = std::mem::take(info).next_unmapped(name, unstated);
-            None
-        }
-        None => None,
     }
 }
 
@@ -640,6 +590,30 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
     Hsla::from(gpui::Rgba { r, g, b, a })
 }
 
+/// `info` with the note, where the 0.8.0 theme states a focus ring of its
+/// own for `part`, a part gpui-component draws, at `home` (spec §2,
+/// `FocusIndicator`: `PartStyle.focus`), that it is not mapped:
+/// gpui-component draws its own ring round the widget, from `ThemeColor`
+/// ring, the global ring's colour, and takes no ring of a part's
+/// (gpui-component/styled.rs:179-184, focus_ring_style; :250-298,
+/// focus_style), so the part's own is drawn nowhere (spec §10, rule 0).
+/// `info` as it is where the part states none.
+pub fn own_ring_not_drawn(
+    info: WidgetInfo,
+    part: &native_theme::next::PartStyle,
+    home: &str,
+) -> WidgetInfo {
+    if !part.stated.contains(native_theme::next::PartStated::FOCUS) {
+        return info;
+    }
+    info.config(
+        "focus ring",
+        format!(
+            "not mapped: the theme states {home}, a focus ring of the part's own, which gpui cannot hand to gpui-component: the widget draws its own ring, ThemeColor ring 3px wide at alpha 0.5, the global ring's colour (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style), so the part's own ring is drawn nowhere (spec §10, rule 0)"
+        ),
+    )
+}
+
 /// A colour of the installed 0.8.0 theme as gpui paints it, each channel
 /// clamped to [0, 1] as the connector converts one (native-theme-gpui
 /// colors.rs, `channels_to_hsla`): the value of a claim on a global colour
@@ -662,24 +636,38 @@ pub fn px_text(v: f32) -> String {
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
-/// `font` as `demo::text_in`, the connector's `with_text` (geometry.rs) and
-/// its widgets' labels (widgets/mod.rs, `font_text`) draw text in it, for a
-/// font line of the showcase's own Widget Info: the family as `status::family_label` names what gpui is asked for
-/// (`native_theme_gpui::font_family`), the stated size the text-scaling
-/// factor scales, the weight, the style where it is not normal, and the line
-/// box.
-pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
-    let drawn = native_theme_gpui::font_family(&font.family);
-    let style = match font.style {
-        native_theme::theme::FontStyle::Normal => "",
-        native_theme::theme::FontStyle::Italic => ", italic",
-        native_theme::theme::FontStyle::Oblique => ", oblique",
+/// An icon's colour of the installed 0.8.0 theme as gpui paints it
+/// ([`next_stated`]), `None` where the theme states none and the widget
+/// keeps the toolkit's own (spec §10, rule 0).
+pub fn icon_color_of(icon: &native_theme::next::IconStyle) -> Option<Hsla> {
+    icon.stated
+        .contains(native_theme::next::IconStated::COLOR)
+        .then(|| next_stated(icon.color))
+}
+
+/// The line box of a font line where a theme-drawn widget's label draws the
+/// font (native-theme-gpui/widgets/mod.rs, `LabelFont::next`) or a 0.8.0
+/// builder sets it; text the showcase letters itself takes
+/// [`typography::line_box_text`].
+pub const LINE_AT_THE_MULTIPLIER: &str = "at typography.line_height_multiplier";
+
+/// A font of the installed 0.8.0 theme for its info's font line: the family
+/// as `status::family_label` names what gpui is asked for, the size the
+/// theme's text scale has already scaled, the weight, the slant where it is
+/// not upright, then `line`, how its line box is set
+/// ([`LINE_AT_THE_MULTIPLIER`] or [`typography::line_box_text`]).
+pub fn next_drawn_font(text: &native_theme::next::TextStyle, line: &str) -> String {
+    let drawn = native_theme_gpui::font_family(&text.family);
+    let style = match text.style {
+        native_theme::next::FontStyle::Italic => ", italic",
+        native_theme::next::FontStyle::Oblique => ", oblique",
+        _ => "",
     };
     format!(
-        "{}, {}px scaled by the text-scaling factor, weight {}{style}, at defaults.line_height",
-        native_theme_showcase_support::status::family_label(&font.family, Some(&drawn)),
-        px_text(font.size),
-        font.weight
+        "{}, {}px, weight {}{style}, {line}",
+        native_theme_showcase_support::status::family_label(&text.family, Some(&drawn)),
+        px_text(text.size_px),
+        text.weight
     )
 }
 

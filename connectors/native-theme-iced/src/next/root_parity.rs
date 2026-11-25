@@ -415,14 +415,18 @@ fn accessors(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next
     );
     let (ot, nt) = (crate::text_scale(old), super::text_scale(new));
     for (role, o, n) in [
-        ("text_scale.caption", &ot.caption, nt.caption),
+        ("text_scale.caption", &ot.caption, &nt.caption),
         (
             "text_scale.section_heading",
             &ot.section_heading,
-            nt.section_heading,
+            &nt.section_heading,
         ),
-        ("text_scale.dialog_title", &ot.dialog_title, nt.dialog_title),
-        ("text_scale.display", &ot.display, nt.display),
+        (
+            "text_scale.dialog_title",
+            &ot.dialog_title,
+            &nt.dialog_title,
+        ),
+        ("text_scale.display", &ot.display, &nt.display),
     ] {
         p.pair(
             role,
@@ -705,6 +709,29 @@ fn fonts(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::Re
             ok(crate::system_font_family(o)),
             super::system_font_family(n),
         );
+    }
+    // 0.7.2's consumers drew a role in `defaults.font`'s family and slant at
+    // the role's weight.
+    let (ot, nt) = (crate::text_scale(old), super::text_scale(new));
+    for (role, o, n) in [
+        ("text_scale.caption font", &ot.caption, &nt.caption),
+        (
+            "text_scale.section_heading font",
+            &ot.section_heading,
+            &nt.section_heading,
+        ),
+        (
+            "text_scale.dialog_title font",
+            &ot.dialog_title,
+            &nt.dialog_title,
+        ),
+        ("text_scale.display font", &ot.display, &nt.display),
+    ] {
+        let drawn = native_theme::theme::ResolvedFontSpec {
+            weight: o.weight,
+            ..d.font.clone()
+        };
+        p.pair(role, ok(crate::font(&drawn)), super::font(n));
     }
 }
 

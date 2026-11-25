@@ -40,10 +40,9 @@ impl SeparatorLook {
     ///
     /// [`Unmapped`](crate::next::Unmapped) where the thickness is not finite.
     pub fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Self> {
-        let s = &r.separator;
         finite(
-            length(s.thickness).map(|width| Self {
-                color: hsla(s.color),
+            length(r.separator.thickness).map(|width| Self {
+                color: hsla(r.separator.color),
                 width,
             }),
             "separator.thickness",

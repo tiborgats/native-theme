@@ -18,6 +18,10 @@
 # sub_tag + upstream: required exactly on an unmappable row.
 # note: optional, on any row: a fact about the leaf's route the sinks cannot carry (an egui
 #   limit, a reader, egui's own value where the theme states none), in the note column.
+# homes: where the leaf's value lives on the 0.8.0 model, the homes its row of
+#   native-theme/tests/next_homes.toml gives it, in that row's order; homes_by_preset beside it
+#   where that row names a preset's homes in place of them. Widget Info routes by them; the leaf
+#   key stays for the 0.7.2 contract until the 0.8.0 cut.
 # [unwritten]: sink path → why egui's own value stands there (T10b).
 # An egui-family line cited without a version, written before 0.7.2, is egui 0.36.2's.
 
@@ -25,10 +29,12 @@
 
 ["defaults.font.family"]
 verdict   = "derived"
+homes = ["typography.body.family"]
 tested_by = "T6(d)"
 
 ["defaults.font.size"]
 verdict = "direct"
+homes = ["typography.body.size_px"]
 sinks   = [
   { path = "text_styles[Body].size" },
   { path = "spacing.extra_text_line_spacing", when = "the theme's line box is taller than epaint's row, §6.15" },
@@ -41,26 +47,31 @@ sinks   = [
 
 ["defaults.font.defined_size"]
 verdict  = "unmappable"
+homes = ["typography.body.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["defaults.font.weight"]
 verdict   = "derived"
+homes = ["typography.body.weight"]
 tested_by = "T6(d)"
 probe     = 700
 
 ["defaults.font.style"]
 verdict   = "derived"
+homes = ["typography.body.style"]
 tested_by = "T6(d)"
 probe     = "italic"
 
 ["defaults.font.color"]
 verdict  = "unmappable"
+homes = ["typography.body.color"]
 sub_tag  = "egui-limited"
 upstream = "egui: a text colour per role (§14 item 40)"
 
 ["defaults.line_height"]
 verdict = "derived"
+homes = ["typography.line_height_multiplier"]
 sinks   = [
   { path = "spacing.extra_text_line_spacing", when = "the theme's line box is taller than epaint's row, §6.15" },
   { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
@@ -70,38 +81,46 @@ sinks   = [
 
 ["defaults.font_whole_pixels"]
 verdict  = "unmappable"
+homes = ["typography.font_whole_pixels"]
 sub_tag  = "source-void"
 upstream = "none: the model rounds every font size where it is true"
 
 ["defaults.mono_font.family"]
 verdict   = "derived"
+homes = ["typography.monospace.family"]
 tested_by = "T6(d)"
 
 ["defaults.mono_font.size"]
 verdict = "direct"
+homes = ["typography.monospace.size_px"]
 sinks   = [{ path = "text_styles[Monospace].size" }]
 
 ["defaults.mono_font.defined_size"]
 verdict  = "unmappable"
+homes = ["typography.monospace.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["defaults.mono_font.weight"]
 verdict   = "derived"
+homes = ["typography.monospace.weight"]
 tested_by = "T6(d)"
 probe     = 700
 
 ["defaults.mono_font.style"]
 verdict   = "derived"
+homes = ["typography.monospace.style"]
 tested_by = "T6(d)"
 probe     = "italic"
 
 ["defaults.mono_font.color"]
 verdict   = "derived"
+homes = ["typography.monospace.color"]
 tested_by = "T18(a)"
 
 ["defaults.background_color"]
 verdict = "direct"
+homes = ["colors.window.background"]
 sinks   = [
   { path = "visuals.panel_fill" },
   { path = "visuals.widgets.noninteractive.bg_fill" },
@@ -110,6 +129,7 @@ sinks   = [
 
 ["defaults.text_color"]
 verdict = "direct"
+homes = ["colors.window.foreground"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color" },
   { path = "visuals.widgets.active.fg_stroke.color" },
@@ -117,25 +137,30 @@ sinks   = [
 
 ["defaults.accent_color"]
 verdict  = "unmappable"
+homes = ["colors.accent.fill"]
 sub_tag  = "egui-limited"
 upstream = "egui: an accent field in Visuals"
 
 ["defaults.accent_text_color"]
 verdict  = "unmappable"
+homes = ["colors.accent.foreground"]
 sub_tag  = "egui-limited"
 upstream = "egui: an accent field in Visuals"
 
 ["defaults.surface_color"]
 verdict  = "unmappable"
+homes = ["colors.view.background"]
 sub_tag  = "egui-limited"
 upstream = "egui: a content-surface fill in Visuals"
 
 ["defaults.muted_color"]
 verdict = "direct"
+homes = ["colors.window.foreground_muted"]
 sinks   = [{ path = "visuals.weak_text_color" }]
 
 ["defaults.shadow_color"]
 verdict = "direct"
+homes = ["colors.shadow"]
 sinks   = [
   { path = "visuals.window_shadow.color", when = "window.border.shadow_enabled, §6.14" },
   { path = "visuals.popup_shadow.color", when = "defaults.border.shadow_enabled, §6.14" },
@@ -146,73 +171,90 @@ sinks   = [
 
 ["defaults.link_color"]
 verdict = "direct"
+homes = ["colors.link"]
 sinks   = [{ path = "visuals.hyperlink_color" }]
 
 ["defaults.selection_background"]
 verdict = "direct"
+homes = ["colors.selection.background"]
 sinks   = [{ path = "visuals.selection.bg_fill" }]
 
 ["defaults.selection_text_color"]
 verdict = "direct"
+homes = ["colors.selection.foreground"]
 sinks   = [{ path = "visuals.selection.stroke.color" }]
 
 ["defaults.selection_inactive_background"]
 verdict   = "derived"
+homes = ["colors.selection.unfocused_background"]
 tested_by = "T18(a)"
 
 ["defaults.selection_inactive_text_color"]
 verdict   = "derived"
+homes = ["colors.selection.unfocused_foreground"]
 tested_by = "T18(a)"
 
 ["defaults.text_selection_background"]
 verdict  = "unmappable"
+homes = ["colors.text_selection.background"]
 sub_tag  = "egui-limited"
 upstream = "egui: a text-selection pair apart from Visuals::selection"
 
 ["defaults.text_selection_color"]
 verdict  = "unmappable"
+homes = ["colors.text_selection.foreground"]
 sub_tag  = "egui-limited"
 upstream = "egui: a text-selection pair apart from Visuals::selection"
 
 ["defaults.disabled_text_color"]
 verdict  = "unmappable"
+homes = ["colors.disabled_text"]
 sub_tag  = "egui-limited"
 upstream = "egui: a sixth Widgets entry, or a WidgetState::Disabled (§14 item 6)"
 
 ["defaults.danger_color"]
 verdict = "direct"
+homes = ["colors.error.fill"]
 sinks   = [{ path = "visuals.error_fg_color" }]
 
 ["defaults.danger_text_color"]
 verdict   = "derived"
+homes = ["colors.error.foreground"]
 tested_by = "T18(a)"
 
 ["defaults.warning_color"]
 verdict = "direct"
+homes = ["colors.warning.fill"]
 sinks   = [{ path = "visuals.warn_fg_color" }]
 
 ["defaults.warning_text_color"]
 verdict   = "derived"
+homes = ["colors.warning.foreground"]
 tested_by = "T18(a)"
 
 ["defaults.success_color"]
 verdict   = "derived"
+homes = ["colors.success.fill"]
 tested_by = "T18(a)"
 
 ["defaults.success_text_color"]
 verdict   = "derived"
+homes = ["colors.success.foreground"]
 tested_by = "T18(a)"
 
 ["defaults.info_color"]
 verdict   = "derived"
+homes = ["colors.info.fill"]
 tested_by = "T18(a)"
 
 ["defaults.info_text_color"]
 verdict   = "derived"
+homes = ["colors.info.foreground"]
 tested_by = "T18(a)"
 
 ["defaults.border.color"]
 verdict = "direct"
+homes = ["colors.window.border"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color" },
   { path = "visuals.window_stroke.color" },
@@ -220,6 +262,7 @@ sinks   = [
 
 ["defaults.border.corner_radius"]
 verdict = "direct"
+homes = ["layout.corner_radius"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "scrollbar" },
@@ -230,10 +273,12 @@ sinks   = [
 
 ["defaults.border.corner_radius_lg"]
 verdict = "direct"
+homes = ["layout.corner_radius_lg"]
 sinks   = [{ path = "visuals.menu_corner_radius" }]
 
 ["defaults.border.line_width"]
 verdict = "direct"
+homes = ["layout.border_width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width" },
   { path = "visuals.window_stroke.width" },
@@ -247,11 +292,13 @@ sinks   = [
 # DefaultsBorderSpec::opacity; docs/platform-facts.md §2.1.6).
 ["defaults.border.opacity"]
 verdict  = "unmappable"
+homes = ["layout.border_opacity"]
 sub_tag  = "source-void"
 upstream = "none: the model folds it into every border colour it states, so it carries nothing to apply"
 
 ["defaults.border.shadow_enabled"]
 verdict = "derived"
+homes = ["layout.shadow_enabled"]
 sinks   = [
   { path = "visuals.popup_shadow.offset" },
   { path = "visuals.popup_shadow.blur" },
@@ -262,96 +309,119 @@ probe   = false
 
 ["defaults.disabled_opacity"]
 verdict = "direct"
+homes = ["colors.disabled_opacity"]
 sinks   = [{ path = "visuals.disabled_alpha" }]
 
 ["defaults.focus_ring_color"]
 verdict   = "derived"
+homes = ["colors.focus_ring", "focus_ring.stroke.color"]
 tested_by = "T14(b)"
 
 ["defaults.focus_ring_width"]
 verdict   = "derived"
+homes = ["focus_ring.stroke.width"]
 tested_by = "T14(b)"
 
 ["defaults.focus_ring_offset"]
 verdict   = "derived"
+homes = ["focus_ring.offset"]
 tested_by = "T14(b)"
 
 ["defaults.focus_ring_keyboard_only"]
 verdict   = "derived"
+homes = ["focus_ring.trigger"]
 tested_by = "T14(b)"
 
 ["defaults.icon_sizes.toolbar"]
 verdict   = "derived"
+homes = ["icons.sizes.toolbar"]
 tested_by = "T18(e)"
 
 ["defaults.icon_sizes.small"]
 verdict   = "derived"
+homes = ["icons.sizes.small"]
 tested_by = "T18(e)"
 probe     = 20.0
 
 ["defaults.icon_sizes.large"]
 verdict   = "derived"
+homes = ["icons.sizes.large"]
 tested_by = "T18(e)"
 
 ["defaults.icon_sizes.dialog"]
 verdict   = "derived"
+homes = ["icons.sizes.dialog"]
 tested_by = "T18(e)"
 
 ["defaults.icon_sizes.panel"]
 verdict   = "derived"
+homes = ["icons.sizes.panel"]
 tested_by = "T18(e)"
 
 ["text_scale.caption.size"]
 verdict = "direct"
+homes = ["typography.caption.size_px"]
 sinks   = [{ path = "text_styles[Small].size" }]
 
 ["text_scale.caption.weight"]
 verdict   = "derived"
+homes = ["typography.caption.weight"]
 tested_by = "T18(e)"
 probe     = 700
 
 ["text_scale.caption.line_height"]
 verdict   = "derived"
+homes = ["typography.caption.line_height"]
 tested_by = "T18(e)"
 
 ["text_scale.section_heading.size"]
 verdict = "direct"
+homes = ["typography.headline.size_px"]
 sinks   = [{ path = "text_styles[Heading].size" }]
 
 ["text_scale.section_heading.weight"]
 verdict   = "derived"
+homes = ["typography.headline.weight"]
 tested_by = "T18(e)"
 
 ["text_scale.section_heading.line_height"]
 verdict   = "derived"
+homes = ["typography.headline.line_height"]
 tested_by = "T18(e)"
 
 ["text_scale.dialog_title.size"]
 verdict   = "derived"
+homes = ["typography.title1.size_px"]
 tested_by = "T18(e)"
 
 ["text_scale.dialog_title.weight"]
 verdict   = "derived"
+homes = ["typography.title1.weight"]
 tested_by = "T18(e)"
 
 ["text_scale.dialog_title.line_height"]
 verdict   = "derived"
+homes = ["typography.title1.line_height"]
 tested_by = "T18(e)"
 
 ["text_scale.display.size"]
 verdict   = "derived"
+homes = ["typography.display.size_px"]
 tested_by = "T18(e)"
 
 ["text_scale.display.weight"]
 verdict   = "derived"
+homes = ["typography.display.weight"]
 tested_by = "T18(e)"
 
 ["text_scale.display.line_height"]
 verdict   = "derived"
+homes = ["typography.display.line_height"]
 tested_by = "T18(e)"
 
 ["layout.widget_gap"]
 verdict = "derived"
+homes = ["layout.widget_gap"]
 sinks   = [
   { path = "spacing.item_spacing.x" },
   { path = "spacing.item_spacing.y" },
@@ -360,10 +430,12 @@ probe   = 11.0
 
 ["layout.container_margin"]
 verdict   = "derived"
+homes = ["layout.container_margin"]
 tested_by = "T18(a)"
 
 ["layout.window_margin"]
 verdict = "scoped"
+homes = ["layout.window_margin"]
 sinks   = [
   { path = "inner_margin.top", surface = "central_panel" },
   { path = "inner_margin.right", surface = "central_panel" },
@@ -373,67 +445,82 @@ sinks   = [
 
 ["layout.section_gap"]
 verdict   = "derived"
+homes = ["layout.section_gap"]
 tested_by = "T18(a)"
 
 # ---- §5.2 Surfaces — window, dialog, popover, card, tooltip, menu
 
 ["window.background_color"]
 verdict = "scoped"
+homes = ["window.frame(normal).fill"]
 sinks   = [{ path = "fill", surface = "window" }]
 
 ["window.title_bar_background"]
 verdict = "direct"
+homes = ["window.title_bar(normal).fill"]
 sinks   = [{ path = "visuals.widgets.open.weak_bg_fill" }]
 
 ["window.inactive_title_bar_background"]
 verdict = "scoped"
+homes = ["window.title_bar(normal).fill"]
 sinks   = [{ path = "fill", surface = "window_title_bar" }]
 
 ["window.inactive_title_bar_text_color"]
 verdict   = "derived"
+homes = ["window.title(normal).color"]
 tested_by = "T18(e)"
 
 ["window.title_bar_font.family"]
 verdict  = "unmappable"
+homes = ["window.title(normal).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["window.title_bar_font.size"]
 verdict   = "derived"
+homes = ["window.title(normal).size_px"]
 tested_by = "T18(e)"
 
 ["window.title_bar_font.defined_size"]
 verdict  = "unmappable"
+homes = ["window.title(normal).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["window.title_bar_font.weight"]
 verdict   = "derived"
+homes = ["window.title(normal).weight"]
 tested_by = "T18(c)"
 
 ["window.title_bar_font.style"]
 verdict   = "derived"
+homes = ["window.title(normal).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["window.title_bar_font.color"]
 verdict   = "derived"
+homes = ["window.title(normal).color"]
 tested_by = "T18(e)"
 
 ["window.border.color"]
 verdict = "scoped"
+homes = ["window.frame(normal).stroke.color"]
 sinks   = [{ path = "stroke.color", surface = "window" }]
 
 ["window.border.corner_radius"]
 verdict = "direct"
+homes = ["window.frame(normal).corners"]
 sinks   = [{ path = "visuals.window_corner_radius" }]
 
 ["window.border.line_width"]
 verdict = "scoped"
+homes = ["window.frame(normal).stroke.width"]
 sinks   = [{ path = "stroke.width", surface = "window" }]
 
 ["window.border.shadow_enabled"]
 verdict = "derived"
+homes = ["window.frame(normal).shadows"]
 sinks   = [
   { path = "visuals.window_shadow.offset" },
   { path = "visuals.window_shadow.blur" },
@@ -444,130 +531,159 @@ probe   = false
 
 ["window.border.padding.top"]
 verdict = "direct"
+homes = ["window.frame(normal).padding.top"]
 sinks   = [{ path = "spacing.window_margin.top" }]
 probe   = 5.0
 
 ["window.border.padding.right"]
 verdict = "direct"
+homes = ["window.frame(normal).padding.right"]
 sinks   = [{ path = "spacing.window_margin.right" }]
 probe   = 5.0
 
 ["window.border.padding.bottom"]
 verdict = "direct"
+homes = ["window.frame(normal).padding.bottom"]
 sinks   = [{ path = "spacing.window_margin.bottom" }]
 probe   = 5.0
 
 ["window.border.padding.left"]
 verdict = "direct"
+homes = ["window.frame(normal).padding.left"]
 sinks   = [{ path = "spacing.window_margin.left" }]
 probe   = 5.0
 
 ["dialog.background_color"]
 verdict = "scoped"
+homes = ["dialog.panel.fill"]
 sinks   = [{ path = "fill", surface = "dialog" }]
 
 ["dialog.min_width"]
 verdict   = "derived"
+homes = ["dialog.panel.min_size[0]"]
 tested_by = "T18(a)"
 
 ["dialog.max_width"]
 verdict   = "derived"
+homes = ["dialog.panel.max_size[0]"]
 tested_by = "T18(a)"
 
 ["dialog.min_height"]
 verdict   = "derived"
+homes = ["dialog.panel.min_size[1]"]
 tested_by = "T18(a)"
 
 ["dialog.max_height"]
 verdict   = "derived"
+homes = ["dialog.panel.max_size[1]"]
 tested_by = "T18(a)"
 
 ["dialog.button_gap"]
 verdict = "scoped"
+homes = ["dialog.button_gap"]
 sinks   = [{ path = "spacing.item_spacing.x", scope = "dialog" }]
 
 ["dialog.icon_size"]
 verdict   = "derived"
+homes = ["dialog.icon.size"]
 tested_by = "T18(a)"
 
 ["dialog.button_order"]
 verdict   = "derived"
+homes = ["dialog.button_order"]
 tested_by = "T18(e)"
 
 ["dialog.entrance"]
 verdict  = "unmappable"
+homes = ["dialog.entrance"]
 sub_tag  = "egui-limited"
 upstream = "egui: a scaling or rising entrance for Window and Modal, whose Area only fades in (containers/area.rs:347-354, :632-641)"
 
 ["dialog.title_font.family"]
 verdict  = "unmappable"
+homes = ["dialog.title.family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["dialog.title_font.size"]
 verdict = "scoped"
+homes = ["dialog.title.size_px"]
 sinks   = [{ path = "text_styles[Heading].size", scope = "dialog" }]
 
 ["dialog.title_font.defined_size"]
 verdict  = "unmappable"
+homes = ["dialog.title.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["dialog.title_font.weight"]
 verdict   = "derived"
+homes = ["dialog.title.weight"]
 tested_by = "T18(a)"
 
 ["dialog.title_font.style"]
 verdict   = "derived"
+homes = ["dialog.title.style"]
 tested_by = "T18(a)"
 probe     = "italic"
 
 ["dialog.title_font.color"]
 verdict   = "derived"
+homes = ["dialog.title.color"]
 tested_by = "T18(a)"
 
 ["dialog.body_font.family"]
 verdict  = "unmappable"
+homes = ["dialog.body.family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["dialog.body_font.size"]
 verdict = "scoped"
+homes = ["dialog.body.size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "dialog" }]
 
 ["dialog.body_font.defined_size"]
 verdict  = "unmappable"
+homes = ["dialog.body.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["dialog.body_font.weight"]
 verdict   = "derived"
+homes = ["dialog.body.weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["dialog.body_font.style"]
 verdict   = "derived"
+homes = ["dialog.body.style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["dialog.body_font.color"]
 verdict = "scoped"
+homes = ["dialog.body.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "dialog" }]
 
 ["dialog.border.color"]
 verdict = "scoped"
+homes = ["dialog.panel.stroke.color"]
 sinks   = [{ path = "stroke.color", surface = "dialog" }]
 
 ["dialog.border.corner_radius"]
 verdict = "scoped"
+homes = ["dialog.panel.corners"]
 sinks   = [{ path = "corner_radius", surface = "dialog" }]
 
 ["dialog.border.line_width"]
 verdict = "scoped"
+homes = ["dialog.panel.stroke.width"]
 sinks   = [{ path = "stroke.width", surface = "dialog" }]
 
 ["dialog.border.shadow_enabled"]
 verdict = "derived"
+homes = ["dialog.panel.shadows"]
 sinks   = [
   { path = "shadow.offset", surface = "dialog" },
   { path = "shadow.blur", surface = "dialog" },
@@ -578,66 +694,81 @@ probe   = false
 
 ["dialog.border.padding.top"]
 verdict = "scoped"
+homes = ["dialog.panel.padding.top"]
 sinks   = [{ path = "inner_margin.top", surface = "dialog" }]
 
 ["dialog.border.padding.right"]
 verdict = "scoped"
+homes = ["dialog.panel.padding.right"]
 sinks   = [{ path = "inner_margin.right", surface = "dialog" }]
 
 ["dialog.border.padding.bottom"]
 verdict = "scoped"
+homes = ["dialog.panel.padding.bottom"]
 sinks   = [{ path = "inner_margin.bottom", surface = "dialog" }]
 
 ["dialog.border.padding.left"]
 verdict = "scoped"
+homes = ["dialog.panel.padding.left"]
 sinks   = [{ path = "inner_margin.left", surface = "dialog" }]
 
 ["popover.background_color"]
 verdict = "scoped"
+homes = ["popover.panel.fill"]
 sinks   = [{ path = "fill", surface = "popover" }]
 
 ["popover.font.family"]
 verdict  = "unmappable"
+homes = ["popover.text.family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["popover.font.size"]
 verdict = "scoped"
+homes = ["popover.text.size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "popover" }]
 
 ["popover.font.defined_size"]
 verdict  = "unmappable"
+homes = ["popover.text.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["popover.font.weight"]
 verdict   = "derived"
+homes = ["popover.text.weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["popover.font.style"]
 verdict   = "derived"
+homes = ["popover.text.style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["popover.font.color"]
 verdict = "scoped"
+homes = ["popover.text.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "popover" }]
 
 ["popover.border.color"]
 verdict = "scoped"
+homes = ["popover.panel.stroke.color"]
 sinks   = [{ path = "stroke.color", surface = "popover" }]
 
 ["popover.border.corner_radius"]
 verdict = "scoped"
+homes = ["popover.panel.corners"]
 sinks   = [{ path = "corner_radius", surface = "popover" }]
 
 ["popover.border.line_width"]
 verdict = "scoped"
+homes = ["popover.panel.stroke.width"]
 sinks   = [{ path = "stroke.width", surface = "popover" }]
 
 ["popover.border.shadow_enabled"]
 verdict = "derived"
+homes = ["popover.panel.shadows"]
 sinks   = [
   { path = "shadow.offset", surface = "popover" },
   { path = "shadow.blur", surface = "popover" },
@@ -648,113 +779,139 @@ probe   = false
 
 ["popover.border.padding.top"]
 verdict = "scoped"
+homes = ["popover.panel.padding.top"]
 sinks   = [{ path = "inner_margin.top", surface = "popover" }]
 
 ["popover.border.padding.right"]
 verdict = "scoped"
+homes = ["popover.panel.padding.right"]
 sinks   = [{ path = "inner_margin.right", surface = "popover" }]
 
 ["popover.border.padding.bottom"]
 verdict = "scoped"
+homes = ["popover.panel.padding.bottom"]
 sinks   = [{ path = "inner_margin.bottom", surface = "popover" }]
 
 ["popover.border.padding.left"]
 verdict = "scoped"
+homes = ["popover.panel.padding.left"]
 sinks   = [{ path = "inner_margin.left", surface = "popover" }]
 
 ["card.background_color"]
 verdict = "scoped"
+homes = ["card.container(NONE).fill"]
 sinks   = [{ path = "fill", surface = "card" }]
 
 ["card.border.color"]
 verdict = "scoped"
+homes = ["card.container(NONE).stroke.color"]
 sinks   = [{ path = "stroke.color", surface = "card" }]
 probe   = "#ff000080"
 
 ["card.border.corner_radius"]
 verdict = "scoped"
+homes = ["card.container(NONE).corners"]
 sinks   = [{ path = "corner_radius", surface = "card" }]
 
 ["card.border.line_width"]
 verdict = "scoped"
+homes = ["card.container(NONE).stroke.width"]
 sinks   = [{ path = "stroke.width", surface = "card" }]
 probe   = 2.0
 
 ["card.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["card.container(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["card.border.padding.top"]
 verdict = "scoped"
+homes = ["card.container(NONE).padding.top"]
 sinks   = [{ path = "inner_margin.top", surface = "card" }]
 
 ["card.border.padding.right"]
 verdict = "scoped"
+homes = ["card.container(NONE).padding.right"]
 sinks   = [{ path = "inner_margin.right", surface = "card" }]
 
 ["card.border.padding.bottom"]
 verdict = "scoped"
+homes = ["card.container(NONE).padding.bottom"]
 sinks   = [{ path = "inner_margin.bottom", surface = "card" }]
 
 ["card.border.padding.left"]
 verdict = "scoped"
+homes = ["card.container(NONE).padding.left"]
 sinks   = [{ path = "inner_margin.left", surface = "card" }]
 
 ["tooltip.background_color"]
 verdict = "scoped"
+homes = ["tooltip.panel.fill"]
 sinks   = [{ path = "fill", surface = "tooltip" }]
 
 ["tooltip.max_width"]
 verdict = "direct"
+homes = ["tooltip.panel.max_size[0]"]
 sinks   = [{ path = "spacing.tooltip_width" }]
 
 ["tooltip.show_delay"]
 verdict = "derived"
+homes = ["timings.tooltip_show_ms"]
 sinks   = [{ path = "interaction.tooltip_delay" }]
 
 ["tooltip.font.family"]
 verdict  = "unmappable"
+homes = ["tooltip.text.family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["tooltip.font.size"]
 verdict = "scoped"
+homes = ["tooltip.text.size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "tooltip" }]
 
 ["tooltip.font.defined_size"]
 verdict  = "unmappable"
+homes = ["tooltip.text.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["tooltip.font.weight"]
 verdict   = "derived"
+homes = ["tooltip.text.weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["tooltip.font.style"]
 verdict   = "derived"
+homes = ["tooltip.text.style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["tooltip.font.color"]
 verdict = "scoped"
+homes = ["tooltip.text.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "tooltip" }]
 
 ["tooltip.border.color"]
 verdict = "scoped"
+homes = ["tooltip.panel.stroke.color"]
 sinks   = [{ path = "stroke.color", surface = "tooltip" }]
 
 ["tooltip.border.corner_radius"]
 verdict = "scoped"
+homes = ["tooltip.panel.corners"]
 sinks   = [{ path = "corner_radius", surface = "tooltip" }]
 
 ["tooltip.border.line_width"]
 verdict = "scoped"
+homes = ["tooltip.panel.stroke.width"]
 sinks   = [{ path = "stroke.width", surface = "tooltip" }]
 
 ["tooltip.border.shadow_enabled"]
 verdict = "derived"
+homes = ["tooltip.panel.shadows"]
 sinks   = [
   { path = "shadow.offset", surface = "tooltip" },
   { path = "shadow.blur", surface = "tooltip" },
@@ -765,30 +922,37 @@ probe   = false
 
 ["tooltip.border.padding.top"]
 verdict = "scoped"
+homes = ["tooltip.panel.padding.top"]
 sinks   = [{ path = "inner_margin.top", surface = "tooltip" }]
 
 ["tooltip.border.padding.right"]
 verdict = "scoped"
+homes = ["tooltip.panel.padding.right"]
 sinks   = [{ path = "inner_margin.right", surface = "tooltip" }]
 
 ["tooltip.border.padding.bottom"]
 verdict = "scoped"
+homes = ["tooltip.panel.padding.bottom"]
 sinks   = [{ path = "inner_margin.bottom", surface = "tooltip" }]
 
 ["tooltip.border.padding.left"]
 verdict = "scoped"
+homes = ["tooltip.panel.padding.left"]
 sinks   = [{ path = "inner_margin.left", surface = "tooltip" }]
 
 ["menu.background_color"]
 verdict = "direct"
+homes = ["menu.panel(NONE).fill"]
 sinks   = [{ path = "visuals.window_fill" }]
 
 ["menu.separator_color"]
 verdict = "scoped"
+homes = ["menu.separator(NONE).fill"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "menu" }]
 
 ["menu.row_height"]
 verdict = "scoped"
+homes = ["menu.item(NONE).max_size[1]"]
 sinks   = [
   { path = "spacing.interact_size.y", scope = "menu" },
   { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
@@ -796,20 +960,24 @@ sinks   = [
 
 ["menu.min_row_height"]
 verdict = "scoped"
+homes = ["menu.item(NONE).min_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "menu", when = "menu.row_height is None" }]
 note    = "a least height, which egui's Button grows past (egui-0.37.0/src/theme/default_style.rs:97-101, src/widgets/button.rs:351); a stated menu.row_height is drawn instead"
 
 ["menu.icon_text_gap"]
 verdict = "scoped"
+homes = ["menu.icon_text_gap"]
 sinks   = [{ path = "spacing.icon_spacing", scope = "menu" }]
 
 ["menu.icon_size"]
 verdict   = "derived"
+homes = ["menu.icon(NONE).size"]
 tested_by = "T18(a)"
 probe     = 20.0
 
 ["menu.hover_background"]
 verdict = "scoped"
+homes = ["menu.item(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "menu" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "menu" },
@@ -818,6 +986,7 @@ sinks   = [
 
 ["menu.hover_text_color"]
 verdict = "scoped"
+homes = ["menu.item_label(HOVER).color"]
 sinks   = [
   { path = "visuals.widgets.hovered.fg_stroke.color", scope = "menu" },
   { path = "visuals.widgets.active.fg_stroke.color", scope = "menu" },
@@ -826,6 +995,7 @@ sinks   = [
 
 ["menu.disabled_text_color"]
 verdict = "scoped"
+homes = ["menu.item_label(DISABLED).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "menu", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "menu", variant = "disabled" },
@@ -833,6 +1003,7 @@ sinks   = [
 
 ["menu.hover_border_color"]
 verdict = "scoped"
+homes = ["menu.item(HOVER).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "menu" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "menu" },
@@ -841,47 +1012,55 @@ sinks   = [
   { path = "visuals.widgets.open.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
   { path = "visuals.widgets.active.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
 ]
-note    = "at defaults.border.line_width, inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown, and active, which is also egui's keyboard-focused item, stays the hover look"
+note    = "at defaults.border.line_width (0.7.2), at the width a rule states for menu.item(HOVER) on the 0.8.0 model (menu.item(HOVER).stroke.width), inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown, and active, which is also egui's keyboard-focused item, stays the hover look"
 
 ["menu.bar_hover_background"]
 verdict   = "derived"
+homes = ["menu_bar.item(HOVER).fill"]
 tested_by = "T18(a)"
 note      = "per call: menu_bar_modifier, a menu-bar title's hovered and active weak_bg_fill over the «menu» cell"
 
 ["menu.bar_open_background"]
 verdict   = "derived"
+homes = ["menu_bar.item(OPEN).fill"]
 tested_by = "T18(a)"
 note      = "per call: menu_bar_modifier, a menu-bar title's open weak_bg_fill, else menu.bar_hover_background; egui's MenuButton has no open state (egui-0.37.0/src/containers/menu.rs:430), so it shows where the application swaps widgets.open in while the title's menu is open"
 
 ["menu.bar_hover_text_color"]
 verdict   = "derived"
+homes = ["menu_bar.item_label(HOVER).color", "menu_bar.item_label(OPEN).color"]
 tested_by = "T18(a)"
 note      = "per call: menu_bar_modifier, a menu-bar title's hovered, active and open fg_stroke.color"
 
 ["menu.bar_padding_horizontal"]
 verdict   = "derived"
+homes = ["menu_bar.item(NONE).padding.left", "menu_bar.item(NONE).padding.right"]
 tested_by = "T18(a)"
 note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.x"
 
 ["menu.bar_padding_vertical"]
 verdict   = "derived"
+homes = ["menu_bar.item(NONE).padding.top", "menu_bar.item(NONE).padding.bottom"]
 tested_by = "T18(a)"
 note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.y"
 
 ["menu.active_background"]
 verdict  = "unmappable"
+homes = ["menu.item(PRESSED).fill"]
 sub_tag  = "egui-limited"
 upstream = "egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active)"
 note     = "egui draws a keyboard-focused item in widgets.active (egui-0.37.0/src/widget_style/mod.rs:212-222) and moves the focus along a menu's items with the arrow keys (src/containers/menu.rs:233-288): the pressed look would stay on every keyboard-selected item, so a pressed item keeps the hover look"
 
 ["menu.active_text_color"]
 verdict  = "unmappable"
+homes = ["menu.item_label(PRESSED).color"]
 sub_tag  = "egui-limited"
 upstream = "egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active)"
 note     = "as menu.active_background: a pressed item keeps menu.hover_text_color"
 
 ["menu.panel_padding_horizontal"]
 verdict = "scoped"
+homes = ["menu.panel(NONE).padding.left", "menu.panel(NONE).padding.right"]
 sinks   = [
   { path = "spacing.menu_margin.left", scope = "menu" },
   { path = "spacing.menu_margin.right", scope = "menu" },
@@ -890,6 +1069,7 @@ note    = "MenuConfig::style styles a menu's and a submenu's popup (egui-0.37.0/
 
 ["menu.panel_padding_vertical"]
 verdict = "scoped"
+homes = ["menu.panel(NONE).padding.top", "menu.panel(NONE).padding.bottom"]
 sinks   = [
   { path = "spacing.menu_margin.top", scope = "menu" },
   { path = "spacing.menu_margin.bottom", scope = "menu" },
@@ -898,11 +1078,13 @@ note    = "as menu.panel_padding_horizontal"
 
 ["menu.font.family"]
 verdict  = "unmappable"
+homes = ["menu.item_label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["menu.font.size"]
 verdict = "scoped"
+homes = ["menu.item_label(NONE).size_px"]
 sinks   = [
   { path = "text_styles[Body].size", scope = "menu" },
   { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
@@ -910,21 +1092,25 @@ sinks   = [
 
 ["menu.font.defined_size"]
 verdict  = "unmappable"
+homes = ["menu.item_label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["menu.font.weight"]
 verdict   = "derived"
+homes = ["menu.item_label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["menu.font.style"]
 verdict   = "derived"
+homes = ["menu.item_label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["menu.font.color"]
 verdict = "scoped"
+homes = ["menu.item_label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "menu" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "menu" },
@@ -932,6 +1118,7 @@ sinks   = [
 
 ["menu.border.color"]
 verdict = "scoped"
+homes = ["menu.item(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "menu" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "menu", when = "menu.hover_border_color is None" },
@@ -942,6 +1129,8 @@ probe   = "#ff000080"
 
 ["menu.border.corner_radius"]
 verdict = "scoped"
+homes = ["menu.item(NONE).corners"]
+homes_by_preset = { "material-3" = ["menu.panel(NONE).corners"] }
 sinks   = [
   { path = "visuals.widgets.inactive.corner_radius", scope = "menu" },
   { path = "visuals.widgets.hovered.corner_radius", scope = "menu" },
@@ -952,6 +1141,7 @@ probe   = 4.0
 
 ["menu.border.line_width"]
 verdict = "scoped"
+homes = ["menu.item(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "menu" },
   { path = "visuals.widgets.hovered.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is None" },
@@ -964,29 +1154,35 @@ probe   = 2.0
 
 ["menu.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["menu.panel(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["menu.border.padding.top"]
 verdict = "derived"
+homes = ["menu.item(NONE).padding.top"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "menu", when = "no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["menu.border.padding.right"]
 verdict = "derived"
+homes = ["menu.item(NONE).padding.right"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "menu", when = "menu.border.padding.left is None" }]
 
 ["menu.border.padding.bottom"]
 verdict = "derived"
+homes = ["menu.item(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "menu", when = "no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["menu.border.padding.left"]
 verdict = "derived"
+homes = ["menu.item(NONE).padding.left"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "menu" }]
 
 # ---- §5.3 Buttons and selection controls
 
 ["button.background_color"]
 verdict = "direct"
+homes = ["button.body(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill" },
   { path = "visuals.widgets.hovered.weak_bg_fill", when = "button.hover_background is translucent, §6.1" },
@@ -1000,6 +1196,7 @@ sinks   = [
 
 ["button.primary_background"]
 verdict = "scoped"
+homes = ["button.body(NONE; variant=Primary).fill"]
 sinks   = [
   { path = "visuals.selection.bg_fill", scope = "button" },
   { path = "visuals.selection.bg_fill", scope = "button", variant = "disabled", when = "button.disabled_background is None: the platform dims by opacity alone, §6.3" },
@@ -1007,6 +1204,7 @@ sinks   = [
 
 ["button.primary_text_color"]
 verdict = "scoped"
+homes = ["button.label(NONE; variant=Primary).color"]
 sinks   = [
   { path = "visuals.selection.stroke.color", scope = "button" },
   { path = "visuals.selection.stroke.color", scope = "button", variant = "disabled", when = "button.disabled_background is None: the platform dims by opacity alone, §6.3" },
@@ -1014,10 +1212,12 @@ sinks   = [
 
 ["button.min_width"]
 verdict   = "derived"
+homes = ["button.body(NONE).min_size[0]"]
 tested_by = "T18(a)"
 
 ["button.min_height"]
 verdict = "direct"
+homes = ["button.body(NONE).min_size[1]"]
 note    = "egui 0.37's own interact_size.y, 20 (egui-0.37.0/src/style.rs:1570), stands where the theme states none; where menu.row_height, list.row_height and toolbar.bar_height are unstated, the «menu», «list» and «toolbar» cells take egui's 20, not button.min_height (roles::row_height)"
 sinks   = [
   { path = "spacing.interact_size.y" },
@@ -1026,10 +1226,12 @@ sinks   = [
 
 ["button.icon_text_gap"]
 verdict = "scoped"
+homes = ["button.icon_text_gap"]
 sinks   = [{ path = "spacing.icon_spacing", scope = "button" }]
 
 ["button.disabled_opacity"]
 verdict = "scoped"
+homes = ["button.disabled_opacity"]
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "button" },
   { path = "visuals.disabled_alpha", scope = "button", variant = "disabled" },
@@ -1037,6 +1239,7 @@ sinks   = [
 
 ["button.hover_background"]
 verdict = "direct"
+homes = ["button.body(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill" },
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "button" },
@@ -1046,6 +1249,7 @@ sinks   = [
 
 ["button.hover_text_color"]
 verdict = "direct"
+homes = ["button.label(HOVER).color"]
 sinks   = [
   { path = "visuals.widgets.hovered.fg_stroke.color" },
   { path = "visuals.widgets.hovered.fg_stroke.color", scope = "button" },
@@ -1053,10 +1257,12 @@ sinks   = [
 
 ["button.active_text_color"]
 verdict = "scoped"
+homes = ["button.label(PRESSED).color"]
 sinks   = [{ path = "visuals.widgets.active.fg_stroke.color", scope = "button" }]
 
 ["button.disabled_text_color"]
 verdict = "scoped"
+homes = ["button.label(DISABLED).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "button", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "button", variant = "disabled" },
@@ -1065,6 +1271,7 @@ sinks   = [
 
 ["button.active_background"]
 verdict = "direct"
+homes = ["button.body(PRESSED).fill"]
 sinks   = [
   { path = "visuals.widgets.active.weak_bg_fill", when = "stated; None copies button.hover_background, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "button", when = "stated; None copies button.hover_background, §6.4" },
@@ -1072,6 +1279,7 @@ sinks   = [
 
 ["button.disabled_background"]
 verdict = "scoped"
+homes = ["button.body(DISABLED).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "button", variant = "disabled", when = "stated; None copies button.background_color, §6.4" },
   { path = "visuals.selection.bg_fill", scope = "button", variant = "disabled", when = "stated; None keeps button.primary_background, §6.3" },
@@ -1080,26 +1288,32 @@ sinks   = [
 
 ["button.checked_background"]
 verdict   = "derived"
+homes = ["button.body(CHECKED).fill"]
 tested_by = "T18(a)"
 
 ["button.checked_text_color"]
 verdict   = "derived"
+homes = ["button.label(CHECKED).color"]
 tested_by = "T18(a)"
 
 ["button.default_button_background"]
 verdict   = "derived"
+homes = ["button.body(DEFAULT).fill"]
 tested_by = "T18(a)"
 
 ["button.default_button_text_color"]
 verdict   = "derived"
+homes = ["button.label(DEFAULT).color"]
 tested_by = "T18(a)"
 
 ["button.default_button_border_color"]
 verdict   = "derived"
+homes = ["button.body(DEFAULT).stroke.color"]
 tested_by = "T18(a)"
 
 ["button.hover_border_color"]
 verdict = "direct"
+homes = ["button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", when = "stated; None keeps button.border.color" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "button", when = "stated; None keeps button.border.color" },
@@ -1109,18 +1323,22 @@ sinks   = [
 
 ["button.focus_border_color"]
 verdict = "direct"
+homes = ["button.body(FOCUS_VISIBLE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.active.bg_stroke.color", when = "stated; None takes button.hover_border_color, else button.border.color" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "button", when = "stated; None takes button.hover_border_color, else button.border.color" },
 ]
+note    = "egui draws a focused button, push or flat, in its one active entry, the pressed look (egui-0.37.0/src/widget_style/mod.rs:212-222): a focused button takes the pressed fill and label, outlined in this colour"
 
 ["button.font.family"]
 verdict  = "unmappable"
+homes = ["button.label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["button.font.size"]
 verdict = "scoped"
+homes = ["button.label(NONE).size_px"]
 sinks   = [
   { path = "override_font_id.size", scope = "button" },
   { path = "text_styles[Button].size" },
@@ -1128,21 +1346,25 @@ sinks   = [
 
 ["button.font.defined_size"]
 verdict  = "unmappable"
+homes = ["button.label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["button.font.weight"]
 verdict   = "derived"
+homes = ["button.label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["button.font.style"]
 verdict   = "derived"
+homes = ["button.label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["button.font.color"]
 verdict = "direct"
+homes = ["button.label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.inactive.fg_stroke.color" },
   { path = "visuals.widgets.open.fg_stroke.color" },
@@ -1153,6 +1375,7 @@ sinks   = [
 
 ["button.border.color"]
 verdict = "direct"
+homes = ["button.body(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.color" },
   { path = "visuals.widgets.hovered.bg_stroke.color", when = "button.hover_border_color is None" },
@@ -1181,6 +1404,7 @@ sinks   = [
 
 ["button.border.corner_radius"]
 verdict = "direct"
+homes = ["button.body(NONE).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "button" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "button" },
@@ -1195,6 +1419,7 @@ sinks   = [
 
 ["button.border.line_width"]
 verdict = "direct"
+homes = ["button.body(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "button" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "button" },
@@ -1213,11 +1438,13 @@ sinks   = [
 
 ["button.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["button.body(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["button.border.padding.top"]
 verdict = "derived"
+homes = ["button.body(NONE).padding.top"]
 note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.y" },
@@ -1226,6 +1453,7 @@ sinks   = [
 
 ["button.border.padding.right"]
 verdict = "derived"
+homes = ["button.body(NONE).padding.right"]
 note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.x" },
@@ -1234,6 +1462,7 @@ sinks   = [
 
 ["button.border.padding.bottom"]
 verdict = "derived"
+homes = ["button.body(NONE).padding.bottom"]
 note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.y" },
@@ -1242,6 +1471,7 @@ sinks   = [
 
 ["button.border.padding.left"]
 verdict = "derived"
+homes = ["button.body(NONE).padding.left"]
 note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.x" },
@@ -1250,63 +1480,77 @@ sinks   = [
 
 ["link.visited_text_color"]
 verdict   = "derived"
+homes = ["link.label(VISITED).color"]
 tested_by = "T18(a)"
 
 ["link.underline_enabled"]
 verdict   = "derived"
+homes = ["link.label(NONE).decoration"]
 tested_by = "T18(a)"
 
 ["link.background_color"]
 verdict   = "derived"
+homes = ["link.container(NONE).fill"]
 tested_by = "T18(a)"
 probe     = "#ff000080"
 
 ["link.hover_background"]
 verdict   = "derived"
+homes = ["link.container(HOVER).fill"]
 tested_by = "T18(a)"
 
 ["link.hover_text_color"]
 verdict   = "derived"
+homes = ["link.label(HOVER).color"]
 tested_by = "T18(a)"
 
 ["link.active_text_color"]
 verdict   = "derived"
+homes = ["link.label(PRESSED).color"]
 tested_by = "T18(a)"
 
 ["link.disabled_text_color"]
 verdict = "scoped"
+homes = ["link.label(DISABLED).color"]
 sinks   = [{ path = "visuals.hyperlink_color", scope = "link", variant = "disabled" }]
 
 ["link.font.family"]
 verdict  = "unmappable"
+homes = ["link.label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["link.font.size"]
 verdict = "scoped"
+homes = ["link.label(NONE).size_px"]
 sinks   = [{ path = "override_font_id.size", scope = "link" }]
 
 ["link.font.defined_size"]
 verdict  = "unmappable"
+homes = ["link.label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["link.font.weight"]
 verdict   = "derived"
+homes = ["link.label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["link.font.style"]
 verdict   = "derived"
+homes = ["link.label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["link.font.color"]
 verdict = "scoped"
+homes = ["link.label(NONE).color"]
 sinks   = [{ path = "visuals.hyperlink_color", scope = "link" }]
 
 ["switch.checked_background"]
 verdict = "scoped"
+homes = ["switch.track(CHECKED).fill"]
 sinks   = [
   { path = "visuals.selection.bg_fill", scope = "switch" },
   { path = "visuals.selection.bg_fill", scope = "switch", variant = "disabled", when = "switch.disabled_checked_background is None, §6.4" },
@@ -1314,6 +1558,7 @@ sinks   = [
 
 ["switch.unchecked_background"]
 verdict = "scoped"
+homes = ["switch.track(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "switch" },
   { path = "visuals.widgets.open.weak_bg_fill", scope = "switch" },
@@ -1324,34 +1569,41 @@ sinks   = [
 
 ["switch.thumb_background"]
 verdict  = "unmappable"
+homes = ["switch.thumb(CHECKED).fill"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
 ["switch.unchecked_thumb_background"]
 verdict  = "unmappable"
+homes = ["switch.thumb(NONE).fill"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's colour"
 
 ["switch.track_width"]
 verdict   = "derived"
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]"]
 tested_by = "T18(a)"
 
 ["switch.track_height"]
 verdict = "scoped"
+homes = ["switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "switch" }]
 
 ["switch.thumb_diameter"]
 verdict  = "unmappable"
+homes = ["switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
 ["switch.unchecked_thumb_diameter"]
 verdict  = "unmappable"
+homes = ["switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off thumb's size"
 
 ["switch.track_radius"]
 verdict = "scoped"
+homes = ["switch.track(NONE).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "switch" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "switch" },
@@ -1362,6 +1614,7 @@ sinks   = [
 
 ["switch.disabled_opacity"]
 verdict = "scoped"
+homes = ["switch.disabled_opacity"]
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "switch" },
   { path = "visuals.disabled_alpha", scope = "switch", variant = "disabled" },
@@ -1369,10 +1622,12 @@ sinks   = [
 
 ["switch.hover_checked_background"]
 verdict   = "derived"
+homes = ["switch.track(HOVER|CHECKED).fill"]
 tested_by = "T18(a)"
 
 ["switch.hover_unchecked_background"]
 verdict = "scoped"
+homes = ["switch.track(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "switch", when = "stated; None copies switch.unchecked_background, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "switch", when = "stated; None copies switch.unchecked_background, §6.4" },
@@ -1380,54 +1635,65 @@ sinks   = [
 
 ["switch.disabled_checked_background"]
 verdict = "scoped"
+homes = ["switch.track(DISABLED|CHECKED).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "switch", variant = "disabled", when = "stated; None copies switch.checked_background, §6.4" }]
 
 ["switch.disabled_unchecked_background"]
 verdict = "scoped"
+homes = ["switch.track(DISABLED).fill"]
 sinks   = [{ path = "visuals.widgets.inactive.weak_bg_fill", scope = "switch", variant = "disabled", when = "stated; None copies switch.unchecked_background, §6.4" }]
 
 ["switch.disabled_thumb_color"]
 verdict  = "unmappable"
+homes = ["switch.thumb(DISABLED).fill", "switch.thumb(DISABLED|CHECKED).fill"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1)"
 
 ["switch.unchecked_track_border_color"]
 verdict  = "unmappable"
+homes = ["switch.track(NONE).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the off track's outline"
 
 ["switch.checked_track_border_color"]
 verdict  = "unmappable"
+homes = ["switch.track(CHECKED).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the on track's outline"
 
 ["switch.disabled_unchecked_track_border_color"]
 verdict  = "unmappable"
+homes = ["switch.track(DISABLED).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): a disabled off track's outline"
 
 ["switch.disabled_checked_track_border_color"]
 verdict  = "unmappable"
+homes = ["switch.track(DISABLED|CHECKED).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): a disabled on track's outline"
 
 ["switch.track_border_line_width"]
 verdict  = "unmappable"
+homes = ["switch.track(NONE).stroke.width"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the track outline's width"
 
 ["switch.thumb_border_color"]
 verdict  = "unmappable"
+homes = ["switch.thumb(NONE).stroke.color", "switch.thumb(CHECKED).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the thumb's outline"
 
 ["switch.thumb_border_line_width"]
 verdict  = "unmappable"
+homes = ["switch.thumb(NONE).stroke.width"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Switch (docs/archive/todo_egui-widgets-spec.md §4.1): the thumb outline's width"
 
 ["checkbox.background_color"]
 verdict = "scoped"
+homes = ["checkbox.indicator(NONE).fill", "radio.indicator(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", when = "checkbox.unchecked_background is None, §6.4" },
   { path = "visuals.widgets.open.bg_fill", scope = "checkbox", when = "checkbox.unchecked_background is None, §6.4" },
@@ -1438,6 +1704,7 @@ sinks   = [
 
 ["checkbox.checked_background"]
 verdict = "scoped"
+homes = ["checkbox.indicator(CHECKED).fill", "radio.indicator(CHECKED).fill"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_fill", scope = "checkbox", variant = "selected" },
   { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "selected" },
@@ -1449,6 +1716,7 @@ sinks   = [
 
 ["checkbox.indicator_color"]
 verdict = "scoped"
+homes = ["checkbox.checkmark(CHECKED).color", "radio.dot(CHECKED).fill"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "checkbox" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "checkbox" },
@@ -1460,6 +1728,7 @@ sinks   = [
 
 ["checkbox.indicator_width"]
 verdict = "direct"
+homes = ["checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]"]
 note    = "spacing.icon_width is read by the submenu arrow too (egui-0.37.0/src/containers/menu.rs:492-505, `SubMenuButton::arrow_atom`), so a submenu's arrow is drawn at checkbox.indicator_width; menu.icon_size stays DERIVED"
 sinks   = [
   { path = "spacing.icon_width" },
@@ -1470,16 +1739,19 @@ sinks   = [
 
 ["checkbox.radio_dot_diameter"]
 verdict  = "unmappable"
+homes = ["radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8)"
 
 ["checkbox.radio_indicator_width"]
 verdict  = "unmappable"
+homes = ["radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width"
 
 ["checkbox.check_mark_stroke_width"]
 verdict = "scoped"
+homes = ["checkbox.checkmark(NONE).stroke_width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.width", scope = "checkbox" },
   { path = "visuals.widgets.inactive.fg_stroke.width", scope = "checkbox" },
@@ -1490,6 +1762,7 @@ sinks   = [
 
 ["checkbox.label_gap"]
 verdict = "direct"
+homes = ["checkbox.label_gap", "radio.label_gap"]
 sinks   = [
   { path = "spacing.icon_spacing" },
   { path = "spacing.icon_spacing", scope = "checkbox" },
@@ -1497,6 +1770,7 @@ sinks   = [
 
 ["checkbox.disabled_opacity"]
 verdict = "scoped"
+homes = ["checkbox.disabled_opacity", "radio.disabled_opacity"]
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "checkbox" },
   { path = "visuals.disabled_alpha", scope = "checkbox", variant = "disabled" },
@@ -1505,6 +1779,7 @@ sinks   = [
 
 ["checkbox.disabled_text_color"]
 verdict = "scoped"
+homes = ["checkbox.label(DISABLED).color", "radio.label(DISABLED).color"]
 sinks   = [
   { path = "visuals.override_text_color", scope = "checkbox", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "checkbox", variant = "disabled" },
@@ -1514,6 +1789,7 @@ sinks   = [
 
 ["checkbox.hover_background"]
 verdict = "scoped"
+homes = ["checkbox.indicator(HOVER).fill", "radio.indicator(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_fill", scope = "checkbox", when = "stated; None copies the idle fill, §6.4" },
   { path = "visuals.widgets.active.bg_fill", scope = "checkbox", when = "stated; None copies the idle fill, §6.4" },
@@ -1521,6 +1797,7 @@ sinks   = [
 
 ["checkbox.hover_border_color"]
 verdict = "scoped"
+homes = ["checkbox.indicator(HOVER).stroke.color", "radio.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(HOVER|CHECKED).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", when = "stated; None copies the unchecked border, §6.4" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", when = "stated; None copies the unchecked border, §6.4; egui's active is also the keyboard-focused state, so a box reached by Tab shows it, where Breeze draws it under the pointer only" },
@@ -1530,6 +1807,7 @@ sinks   = [
 
 ["checkbox.disabled_background"]
 verdict = "scoped"
+homes = ["checkbox.indicator(DISABLED).fill", "radio.indicator(DISABLED).fill", "checkbox.indicator(DISABLED|CHECKED).fill", "radio.indicator(DISABLED|CHECKED).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "disabled", when = "stated; None copies the idle fill, §6.4" },
   { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", variant = "selected_disabled", when = "stated; None keeps checkbox.checked_background, §6.3" },
@@ -1538,6 +1816,7 @@ sinks   = [
 
 ["checkbox.unchecked_background"]
 verdict = "scoped"
+homes = ["checkbox.indicator(NONE).fill", "radio.indicator(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_fill", scope = "checkbox", when = "stated; None copies checkbox.background_color, §6.4" },
   { path = "visuals.widgets.open.bg_fill", scope = "checkbox", when = "stated; None copies checkbox.background_color, §6.4" },
@@ -1548,6 +1827,7 @@ sinks   = [
 
 ["checkbox.unchecked_border_color"]
 verdict = "scoped"
+homes = ["checkbox.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
@@ -1558,34 +1838,42 @@ sinks   = [
 
 ["checkbox.font.family"]
 verdict  = "unmappable"
+homes = ["checkbox.label(NONE).family", "radio.label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["checkbox.font.size"]
 verdict = "scoped"
+homes = ["checkbox.label(NONE).size_px", "radio.label(NONE).size_px"]
 sinks   = [{ path = "override_font_id.size", scope = "checkbox" }]
 
 ["checkbox.font.defined_size"]
 verdict  = "unmappable"
+homes = ["checkbox.label(NONE).defined_size", "radio.label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["checkbox.font.weight"]
 verdict   = "derived"
+homes = ["checkbox.label(NONE).weight", "radio.label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["checkbox.font.style"]
 verdict   = "derived"
+homes = ["checkbox.label(NONE).style", "radio.label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["checkbox.font.color"]
 verdict = "scoped"
+homes = ["checkbox.label(NONE).color", "radio.label(NONE).color"]
 sinks   = [{ path = "visuals.override_text_color", scope = "checkbox" }]
+note    = "egui letters a label in override_text_color whatever the pointer does (egui-0.37.0/src/widget_text.rs:831-835), so where the label's colour is stated a hovered or pressed check box or radio button keeps it, neither a hovered label colour a rule states nor egui's own (widgets.hovered.fg_stroke, src/theme/default_style.rs:172-186) is drawn"
 
 ["checkbox.border.color"]
 verdict = "scoped"
+homes = ["checkbox.indicator(CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "checkbox", variant = "selected" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "checkbox", variant = "selected" },
@@ -1601,6 +1889,7 @@ sinks   = [
 
 ["checkbox.border.corner_radius"]
 verdict = "scoped"
+homes = ["checkbox.indicator(NONE).corners"]
 note    = "egui-limited above round(0.3 × spacing.icon_width): egui draws the box's corners at most that (egui-0.37.0/src/theme/default_style.rs:194-197), so the ten community presets draw 5 where they state 8, ios-13 7 for 10, macos-monterey 4 for 5 and macos-tahoe 5 for 6; adwaita's 6, kde-breeze's, windows-11's and material-3's are within the cap"
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "checkbox" },
@@ -1612,6 +1901,7 @@ sinks   = [
 
 ["checkbox.border.line_width"]
 verdict = "scoped"
+homes = ["checkbox.indicator(NONE).stroke.width", "radio.indicator(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "checkbox" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "checkbox" },
@@ -1622,27 +1912,33 @@ sinks   = [
 
 ["checkbox.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["checkbox.indicator(NONE).shadows", "radio.indicator(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["checkbox.border.padding.top"]
 verdict = "derived"
+homes = ["checkbox.indicator(NONE).padding.top", "radio.indicator(NONE).padding.top"]
 sinks   = [{ path = "spacing.icon_width_inner", scope = "checkbox", when = "all four checkbox.border.padding sides are stated, §6.11" }]
 
 ["checkbox.border.padding.right"]
 verdict = "derived"
+homes = ["checkbox.indicator(NONE).padding.right", "radio.indicator(NONE).padding.right"]
 sinks   = [{ path = "spacing.icon_width_inner", scope = "checkbox", when = "all four checkbox.border.padding sides are stated, §6.11" }]
 
 ["checkbox.border.padding.bottom"]
 verdict = "derived"
+homes = ["checkbox.indicator(NONE).padding.bottom", "radio.indicator(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.icon_width_inner", scope = "checkbox", when = "all four checkbox.border.padding sides are stated, §6.11" }]
 
 ["checkbox.border.padding.left"]
 verdict = "derived"
+homes = ["checkbox.indicator(NONE).padding.left", "radio.indicator(NONE).padding.left"]
 sinks   = [{ path = "spacing.icon_width_inner", scope = "checkbox", when = "all four checkbox.border.padding sides are stated, §6.11" }]
 
 ["segmented_control.background_color"]
 verdict = "scoped"
+homes = ["segmented_control.track(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "segmented_control" },
   { path = "visuals.widgets.open.weak_bg_fill", scope = "segmented_control" },
@@ -1652,27 +1948,33 @@ sinks   = [
 
 ["segmented_control.active_background"]
 verdict = "scoped"
+homes = ["segmented_control.segment(SELECTED).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "segmented_control" }]
 
 ["segmented_control.active_text_color"]
 verdict = "scoped"
+homes = ["segmented_control.label(SELECTED).color"]
 sinks   = [{ path = "visuals.selection.stroke.color", scope = "segmented_control" }]
 
 ["segmented_control.segment_height"]
 verdict = "scoped"
+homes = ["segmented_control.segment(NONE).min_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "segmented_control" }]
 
 ["segmented_control.separator_width"]
 verdict = "scoped"
+homes = ["segmented_control.separator_width"]
 sinks   = [{ path = "spacing.item_spacing.x", scope = "segmented_control" }]
 probe   = 2.0
 
 ["segmented_control.disabled_opacity"]
 verdict = "scoped"
+homes = ["segmented_control.disabled_opacity"]
 sinks   = [{ path = "visuals.disabled_alpha", scope = "segmented_control" }]
 
 ["segmented_control.hover_background"]
 verdict = "scoped"
+homes = ["segmented_control.segment(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "segmented_control", when = "stated; None copies segmented_control.background_color, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "segmented_control", when = "stated; None copies segmented_control.background_color, §6.4" },
@@ -1680,30 +1982,36 @@ sinks   = [
 
 ["segmented_control.font.family"]
 verdict  = "unmappable"
+homes = ["segmented_control.label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["segmented_control.font.size"]
 verdict = "scoped"
+homes = ["segmented_control.label(NONE).size_px"]
 sinks   = [{ path = "override_font_id.size", scope = "segmented_control" }]
 
 ["segmented_control.font.defined_size"]
 verdict  = "unmappable"
+homes = ["segmented_control.label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["segmented_control.font.weight"]
 verdict   = "derived"
+homes = ["segmented_control.label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["segmented_control.font.style"]
 verdict   = "derived"
+homes = ["segmented_control.label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["segmented_control.font.color"]
 verdict = "scoped"
+homes = ["segmented_control.label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "segmented_control" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "segmented_control" },
@@ -1714,6 +2022,7 @@ sinks   = [
 
 ["segmented_control.border.color"]
 verdict = "scoped"
+homes = ["segmented_control.track(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "segmented_control" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "segmented_control" },
@@ -1724,6 +2033,7 @@ sinks   = [
 
 ["segmented_control.border.corner_radius"]
 verdict = "scoped"
+homes = ["segmented_control.track(NONE).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "segmented_control" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "segmented_control" },
@@ -1734,6 +2044,7 @@ sinks   = [
 
 ["segmented_control.border.line_width"]
 verdict = "scoped"
+homes = ["segmented_control.track(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "segmented_control" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "segmented_control" },
@@ -1746,24 +2057,29 @@ sinks   = [
 
 ["segmented_control.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["segmented_control.track(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["segmented_control.border.padding.top"]
 verdict = "derived"
+homes = ["segmented_control.segment(NONE).padding.top"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "segmented_control" }]
 
 ["segmented_control.border.padding.right"]
 verdict = "derived"
+homes = ["segmented_control.segment(NONE).padding.right"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "segmented_control" }]
 probe   = 5.0
 
 ["segmented_control.border.padding.bottom"]
 verdict = "derived"
+homes = ["segmented_control.segment(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "segmented_control" }]
 
 ["segmented_control.border.padding.left"]
 verdict = "derived"
+homes = ["segmented_control.segment(NONE).padding.left"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "segmented_control" }]
 probe   = 5.0
 
@@ -1771,6 +2087,7 @@ probe   = 5.0
 
 ["input.background_color"]
 verdict = "direct"
+homes = ["input.field(NONE).fill", "text_area.field(NONE).fill"]
 sinks   = [
   { path = "visuals.text_edit_bg_color" },
   { path = "visuals.text_edit_bg_color", scope = "input", variant = "disabled", when = "input.disabled_background is None, §6.4" },
@@ -1779,18 +2096,22 @@ sinks   = [
 
 ["input.placeholder_color"]
 verdict = "scoped"
+homes = ["input.placeholder(NONE).color", "text_area.placeholder(NONE).color"]
 sinks   = [{ path = "visuals.weak_text_color", scope = "input" }]
 
 ["input.caret_color"]
 verdict = "direct"
+homes = ["colors.caret"]
 sinks   = [{ path = "visuals.text_cursor.stroke.color" }]
 
 ["input.caret_blink_on"]
 verdict = "derived"
+homes = ["caret.blink_on_ms"]
 sinks   = [{ path = "visuals.text_cursor.on_duration", when = "input.caret_blink_off is stated; a theme that states no blink leaves egui's own" }]
 
 ["input.caret_blink_off"]
 verdict = "derived"
+homes = ["caret.blink_off_ms"]
 probe   = 0
 sinks   = [
   { path = "visuals.text_cursor.blink", when = "a change between two stated values above 0 holds it at true" },
@@ -1800,23 +2121,28 @@ sinks   = [
 
 ["input.caret_blink_timeout"]
 verdict  = "unmappable"
+homes = ["caret.blink_timeout_ms"]
 sub_tag  = "egui-limited"
 upstream = "egui: a time-out after which TextCursorStyle stops blinking, the caret shown"
 
 ["input.selection_background"]
 verdict = "scoped"
+homes = ["colors.text_selection.background"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "input" }]
 
 ["input.selection_text_color"]
 verdict = "scoped"
+homes = ["colors.text_selection.foreground"]
 sinks   = [{ path = "visuals.selection.stroke.color", scope = "input" }]
 
 ["input.min_height"]
 verdict   = "derived"
+homes = ["input.field(NONE).min_size[1]"]
 tested_by = "T18(a)"
 
 ["input.disabled_opacity"]
 verdict = "scoped"
+homes = ["input.disabled_opacity", "text_area.disabled_opacity"]
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "input" },
   { path = "visuals.disabled_alpha", scope = "input", variant = "disabled" },
@@ -1824,6 +2150,7 @@ sinks   = [
 
 ["input.disabled_text_color"]
 verdict = "scoped"
+homes = ["input.text(DISABLED).color", "text_area.text(DISABLED).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "input", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "input", variant = "disabled" },
@@ -1831,6 +2158,7 @@ sinks   = [
 
 ["input.hover_border_color"]
 verdict = "scoped"
+homes = ["input.field(HOVER).stroke.color", "text_area.field(HOVER).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "input", when = "stated; None copies input.border.color, §6.4" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "input", when = "stated; None copies input.border.color, §6.4" },
@@ -1838,38 +2166,46 @@ sinks   = [
 
 ["input.focus_border_color"]
 verdict   = "derived"
+homes = ["input.field(FOCUSED).stroke.color", "text_area.field(FOCUSED).stroke.color"]
 tested_by = "T18(h)"
 
 ["input.disabled_background"]
 verdict = "scoped"
+homes = ["input.field(DISABLED).fill", "text_area.field(DISABLED).fill"]
 sinks   = [{ path = "visuals.text_edit_bg_color", scope = "input", variant = "disabled", when = "stated; None copies input.background_color, §6.4" }]
 
 ["input.font.family"]
 verdict  = "unmappable"
+homes = ["input.text(NONE).family", "text_area.text(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["input.font.size"]
 verdict = "scoped"
+homes = ["input.text(NONE).size_px", "text_area.text(NONE).size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "input" }]
 
 ["input.font.defined_size"]
 verdict  = "unmappable"
+homes = ["input.text(NONE).defined_size", "text_area.text(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["input.font.weight"]
 verdict   = "derived"
+homes = ["input.text(NONE).weight", "text_area.text(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["input.font.style"]
 verdict   = "derived"
+homes = ["input.text(NONE).style", "text_area.text(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["input.font.color"]
 verdict = "scoped"
+homes = ["input.text(NONE).color", "text_area.text(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "input" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "input" },
@@ -1880,6 +2216,7 @@ sinks   = [
 
 ["input.border.color"]
 verdict = "scoped"
+homes = ["input.field(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "input" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "input" },
@@ -1890,6 +2227,7 @@ sinks   = [
 
 ["input.border.corner_radius"]
 verdict = "scoped"
+homes = ["input.field(NONE).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "input" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "input" },
@@ -1900,6 +2238,7 @@ sinks   = [
 
 ["input.border.line_width"]
 verdict = "scoped"
+homes = ["input.field(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "input" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "input" },
@@ -1912,60 +2251,74 @@ sinks   = [
 
 ["input.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["input.field(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["input.border.padding.top"]
 verdict = "scoped"
+homes = ["input.field(NONE).padding.top"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "input" }]
 
 ["input.border.padding.right"]
 verdict = "scoped"
+homes = ["input.field(NONE).padding.right"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "input" }]
 
 ["input.border.padding.bottom"]
 verdict = "scoped"
+homes = ["input.field(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "input" }]
 
 ["input.border.padding.left"]
 verdict = "scoped"
+homes = ["input.field(NONE).padding.left"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "input" }]
 
 ["text_area.border.color"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).stroke.color"]
 tested_by = "T18(b)"
 
 ["text_area.border.corner_radius"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).corners"]
 tested_by = "T18(b)"
 
 ["text_area.border.line_width"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).stroke.width"]
 tested_by = "T18(b)"
 
 ["text_area.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["text_area.field(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["text_area.border.padding.top"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).padding.top"]
 tested_by = "T18(b)"
 
 ["text_area.border.padding.right"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).padding.right"]
 tested_by = "T18(b)"
 
 ["text_area.border.padding.bottom"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).padding.bottom"]
 tested_by = "T18(b)"
 
 ["text_area.border.padding.left"]
 verdict   = "derived"
+homes = ["text_area.field(NONE).padding.left"]
 tested_by = "T18(b)"
 
 ["combo_box.background_color"]
 verdict = "scoped"
+homes = ["combo_box.field(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "combo_box" },
   { path = "visuals.widgets.open.weak_bg_fill", scope = "combo_box", when = "combo_box.open_background is translucent or None, §6.1, §6.4" },
@@ -1976,14 +2329,17 @@ sinks   = [
 
 ["combo_box.min_height"]
 verdict = "scoped"
+homes = ["combo_box.field(NONE).min_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "combo_box" }]
 
 ["combo_box.min_width"]
 verdict = "direct"
+homes = ["combo_box.field(NONE).min_size[0]"]
 sinks   = [{ path = "spacing.combo_width" }]
 
 ["combo_box.arrow_icon_size"]
 verdict = "scoped"
+homes = ["combo_box.chevron(NONE).size"]
 sinks   = [
   { path = "spacing.icon_width", scope = "combo_box" },
   { path = "spacing.icon_spacing", scope = "combo_box", when = "combo_box.arrow_area_width is stated, §6.12" },
@@ -1991,10 +2347,12 @@ sinks   = [
 
 ["combo_box.arrow_area_width"]
 verdict = "derived"
+homes = ["combo_box.arrow_area_width"]
 sinks   = [{ path = "spacing.icon_spacing", scope = "combo_box" }]
 
 ["combo_box.disabled_opacity"]
 verdict = "scoped"
+homes = ["combo_box.disabled_opacity"]
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "combo_box" },
   { path = "visuals.disabled_alpha", scope = "combo_box", variant = "disabled" },
@@ -2002,6 +2360,7 @@ sinks   = [
 
 ["combo_box.disabled_text_color"]
 verdict = "scoped"
+homes = ["combo_box.label(DISABLED).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "combo_box", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "combo_box", variant = "disabled" },
@@ -2009,6 +2368,7 @@ sinks   = [
 
 ["combo_box.hover_background"]
 verdict = "scoped"
+homes = ["combo_box.field(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "combo_box", when = "stated; None copies combo_box.background_color, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "combo_box", when = "stated; None copies combo_box.background_color, §6.4" },
@@ -2016,6 +2376,7 @@ sinks   = [
 
 ["combo_box.hover_border_color"]
 verdict = "scoped"
+homes = ["combo_box.field(HOVER).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state, combo_box.open_border_color's" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state, combo_box.open_border_color's" },
@@ -2023,44 +2384,53 @@ sinks   = [
 
 ["combo_box.disabled_background"]
 verdict = "scoped"
+homes = ["combo_box.field(DISABLED).fill"]
 sinks   = [{ path = "visuals.widgets.inactive.weak_bg_fill", scope = "combo_box", variant = "disabled", when = "stated; None copies combo_box.background_color, §6.4" }]
 
 ["combo_box.open_background"]
 verdict = "scoped"
+homes = ["combo_box.field(OPEN).fill", "combo_box.field(OPEN|HOVER).fill"]
 sinks   = [{ path = "visuals.widgets.open.weak_bg_fill", scope = "combo_box", when = "stated; None copies combo_box.background_color, §6.4" }]
 note    = "a state layer over combo_box.background_color; egui draws an open combo box from widgets.open under ComboBox::CLASS_OPEN whatever the pointer does (egui-0.37.0/src/theme/default_style.rs:41-45), as Breeze draws it"
 
 ["combo_box.open_border_color"]
 verdict = "scoped"
+homes = ["combo_box.field(OPEN).stroke.color", "combo_box.field(OPEN|HOVER).stroke.color"]
 sinks   = [{ path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4" }]
-note    = "at combo_box.border.line_width, whatever the pointer does, as combo_box.open_background"
+note    = "at combo_box.border.line_width (combo_box.field(NONE).stroke.width on the 0.8.0 model), whatever the pointer does, as combo_box.open_background"
 
 ["combo_box.font.family"]
 verdict  = "unmappable"
+homes = ["combo_box.label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["combo_box.font.size"]
 verdict = "scoped"
+homes = ["combo_box.label(NONE).size_px"]
 sinks   = [{ path = "override_font_id.size", scope = "combo_box" }]
 
 ["combo_box.font.defined_size"]
 verdict  = "unmappable"
+homes = ["combo_box.label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["combo_box.font.weight"]
 verdict   = "derived"
+homes = ["combo_box.label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["combo_box.font.style"]
 verdict   = "derived"
+homes = ["combo_box.label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["combo_box.font.color"]
 verdict = "scoped"
+homes = ["combo_box.label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "combo_box" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "combo_box" },
@@ -2071,6 +2441,7 @@ sinks   = [
 
 ["combo_box.border.color"]
 verdict = "scoped"
+homes = ["combo_box.field(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "combo_box" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "combo_box" },
@@ -2081,6 +2452,7 @@ sinks   = [
 
 ["combo_box.border.corner_radius"]
 verdict = "scoped"
+homes = ["combo_box.field(NONE).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "combo_box" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "combo_box" },
@@ -2091,6 +2463,7 @@ sinks   = [
 
 ["combo_box.border.line_width"]
 verdict = "scoped"
+homes = ["combo_box.field(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "combo_box" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "combo_box" },
@@ -2103,51 +2476,63 @@ sinks   = [
 
 ["combo_box.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["combo_box.field(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["combo_box.border.padding.top"]
 verdict = "derived"
+homes = ["combo_box.field(NONE).padding.top"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "combo_box" }]
 
 ["combo_box.border.padding.right"]
 verdict = "derived"
+homes = ["combo_box.field(NONE).padding.right"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "combo_box" }]
 
 ["combo_box.border.padding.bottom"]
 verdict = "derived"
+homes = ["combo_box.field(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "combo_box" }]
 
 ["combo_box.border.padding.left"]
 verdict = "derived"
+homes = ["combo_box.field(NONE).padding.left"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "combo_box" }]
 
 ["list.background_color"]
 verdict   = "derived"
+homes = ["list.container(NONE).fill"]
 tested_by = "T18(a)"
 
 ["list.alternate_row_background"]
 verdict = "direct"
+homes = ["list.row(NONE; alternate=true).fill"]
 sinks   = [{ path = "visuals.faint_bg_color" }]
 
 ["list.selection_background"]
 verdict = "scoped"
+homes = ["list.highlight(SELECTED).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "list" }]
 
 ["list.selection_text_color"]
 verdict = "scoped"
+homes = ["list.item_label(SELECTED).color"]
 sinks   = [{ path = "visuals.selection.stroke.color", scope = "list" }]
 
 ["list.header_background"]
 verdict   = "derived"
+homes = ["list.header(NONE).fill"]
 tested_by = "T18(a)"
 
 ["list.grid_color"]
 verdict = "scoped"
+homes = ["list.grid_color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "list" }]
 
 ["list.row_height"]
 verdict = "scoped"
+homes = ["list.row(NONE).min_size[1]"]
 sinks   = [
   { path = "spacing.interact_size.y", scope = "list" },
   { path = "spacing.button_padding.y", scope = "list", when = "a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
@@ -2155,25 +2540,30 @@ sinks   = [
 
 ["list.header_height"]
 verdict   = "derived"
+homes = ["list.header(NONE).min_size[1]"]
 tested_by = "T18(e)"
 
 ["list.header_hover_background"]
 verdict   = "derived"
+homes = ["list.header(HOVER).fill"]
 tested_by = "T18(a)"
 note      = "hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills"
 
 ["list.header_active_background"]
 verdict   = "derived"
+homes = ["list.header(PRESSED).fill"]
 tested_by = "T18(a)"
 note      = "hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills"
 
 ["list.header_separator_color"]
 verdict   = "derived"
+homes = ["list.header_separator(NONE).fill"]
 tested_by = "T18(a)"
 note      = "per call: the showcase draws the Basic table's line under the header and its column line over the header in it, laid over the header's fill, the column line below in list.grid_color; egui_extras' TableBuilder draws one column line through header and body in noninteractive.bg_stroke (egui_extras-0.37.0/src/table.rs:891-900)"
 
 ["list.hover_background"]
 verdict = "scoped"
+homes = ["list.highlight(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_fill", scope = "list" },
   { path = "visuals.widgets.active.bg_fill", scope = "list" },
@@ -2181,24 +2571,29 @@ sinks   = [
 
 ["list.hover_text_color"]
 verdict   = "derived"
+homes = ["list.item_label(HOVER).color"]
 tested_by = "T18(a)"
 
 ["list.hover_border_color"]
 verdict   = "derived"
+homes = ["list.highlight(HOVER).stroke.color"]
 tested_by = "T18(a)"
-note      = "per call: the showcase outlines a hovered, unselected list row and command-palette row at defaults.border.line_width, inside the row's fill (StrokeKind::Inside); egui_extras' TableBuilder fills a hovered row per cell with no stroke (egui_extras-0.37.0/src/layout.rs:145-151)"
+note      = "per call: the showcase outlines a hovered, unselected list row and command-palette row in the pen a rule states for list.highlight(HOVER), at the width it states (list.highlight(HOVER).stroke.width), inside the row's fill (StrokeKind::Inside); egui_extras' TableBuilder fills a hovered row per cell with no stroke (egui_extras-0.37.0/src/layout.rs:145-151)"
 
 ["list.disabled_text_color"]
 verdict = "scoped"
+homes = ["list.item_label(DISABLED).color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "list", variant = "disabled" }]
 
 ["list.item_font.family"]
 verdict  = "unmappable"
+homes = ["list.item_label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["list.item_font.size"]
 verdict = "scoped"
+homes = ["list.item_label(NONE).size_px"]
 sinks   = [
   { path = "text_styles[Body].size", scope = "list" },
   { path = "spacing.button_padding.y", scope = "list", when = "a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
@@ -2206,88 +2601,111 @@ sinks   = [
 
 ["list.item_font.defined_size"]
 verdict  = "unmappable"
+homes = ["list.item_label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["list.item_font.weight"]
 verdict   = "derived"
+homes = ["list.item_label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["list.item_font.style"]
 verdict   = "derived"
+homes = ["list.item_label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["list.item_font.color"]
 verdict = "scoped"
+homes = ["list.item_label(NONE).color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "list" }]
 
 ["list.header_font.family"]
 verdict  = "unmappable"
+homes = ["list.header_label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["list.header_font.size"]
 verdict   = "derived"
+homes = ["list.header_label(NONE).size_px"]
 tested_by = "T18(e)"
 
 ["list.header_font.defined_size"]
 verdict  = "unmappable"
+homes = ["list.header_label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["list.header_font.weight"]
 verdict   = "derived"
+homes = ["list.header_label(NONE).weight"]
 tested_by = "T18(a)"
 probe     = 700
 
 ["list.header_font.style"]
 verdict   = "derived"
+homes = ["list.header_label(NONE).style"]
 tested_by = "T18(a)"
 probe     = "italic"
 
 ["list.header_font.color"]
 verdict = "scoped"
+homes = ["list.header_label(NONE).color"]
 sinks   = [{ path = "visuals.widgets.active.fg_stroke.color", scope = "list" }]
 
 ["list.border.color"]
 verdict   = "derived"
+homes = ["list.container(NONE).stroke.color"]
 tested_by = "T18(a)"
 
 ["list.border.corner_radius"]
 verdict = "scoped"
+homes = ["list.container(NONE).corners"]
 sinks   = [{ path = "visuals.widgets.noninteractive.corner_radius", scope = "list" }]
 
 ["list.border.line_width"]
 verdict = "scoped"
+homes = ["list.container(NONE).stroke.width"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "list" }]
 
 ["list.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["list.container(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["list.border.padding.top"]
 verdict   = "derived"
+homes = ["list.row(NONE).padding.top"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.top"] }
 tested_by = "T18(a)"
 
 ["list.border.padding.right"]
 verdict   = "derived"
+homes = ["list.row(NONE).padding.right"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.right"] }
 tested_by = "T18(a)"
 
 ["list.border.padding.bottom"]
 verdict   = "derived"
+homes = ["list.row(NONE).padding.bottom"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.bottom"] }
 tested_by = "T18(a)"
 
 ["list.border.padding.left"]
 verdict   = "derived"
+homes = ["list.row(NONE).padding.left"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.left"] }
 tested_by = "T18(a)"
 
 # ---- §5.5 Indicators
 
 ["scrollbar.track_color"]
 verdict = "derived"
+homes = ["scrollbar.track(NONE).fill"]
 sinks   = [
   { path = "visuals.extreme_bg_color", when = "not an overlay bar with a fully transparent track, which has no groove" },
   { path = "visuals.extreme_bg_color", scope = "scrollbar" },
@@ -2298,6 +2716,8 @@ sinks   = [
 
 ["scrollbar.thumb_color"]
 verdict = "direct"
+homes = ["scrollbar.thumb(NONE).fill"]
+homes_by_preset = { "kde-breeze" = ["scrollbar.thumb(UNFOCUSED_VIEW).fill"] }
 sinks   = [
   { path = "visuals.widgets.inactive.bg_fill" },
   { path = "visuals.widgets.open.bg_fill" },
@@ -2308,6 +2728,7 @@ sinks   = [
 
 ["scrollbar.thumb_hover_color"]
 verdict = "direct"
+homes = ["scrollbar.thumb(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_fill" },
   { path = "visuals.widgets.hovered.bg_fill", scope = "scrollbar" },
@@ -2317,6 +2738,7 @@ sinks   = [
 
 ["scrollbar.groove_width"]
 verdict = "derived"
+homes = ["scrollbar.track(NONE; orientation=Vertical).min_size[0]", "scrollbar.track(NONE; orientation=Vertical).max_size[0]", "scrollbar.track(NONE; orientation=Horizontal).min_size[1]", "scrollbar.track(NONE; orientation=Horizontal).max_size[1]"]
 sinks   = [
   { path = "spacing.scroll.bar_width", when = "overlay mode, or a thumb wider than the groove, §6.5" },
   { path = "spacing.scroll.bar_inner_margin", when = "not overlay mode, §6.5" },
@@ -2325,10 +2747,12 @@ sinks   = [
 
 ["scrollbar.min_thumb_length"]
 verdict = "direct"
+homes = ["scrollbar.min_thumb_length"]
 sinks   = [{ path = "spacing.scroll.handle_min_length" }]
 
 ["scrollbar.thumb_width"]
 verdict = "derived"
+homes = ["scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]", "scrollbar.thumb(NONE; orientation=Horizontal).min_size[1]", "scrollbar.thumb(NONE; orientation=Horizontal).max_size[1]"]
 sinks   = [
   { path = "spacing.scroll.bar_width", when = "not overlay mode, §6.5" },
   { path = "spacing.scroll.floating_width", when = "overlay mode, §6.5" },
@@ -2338,6 +2762,7 @@ sinks   = [
 
 ["scrollbar.overlay_mode"]
 verdict = "derived"
+homes = ["scrollbar.overlay_mode"]
 sinks   = [
   { path = "spacing.scroll.floating" },
   { path = "spacing.scroll.floating_allocated_width", when = "egui's own value is not 0.0, §6.5" },
@@ -2353,6 +2778,7 @@ sinks   = [
 
 ["scrollbar.thumb_active_color"]
 verdict = "direct"
+homes = ["scrollbar.thumb(PRESSED).fill"]
 sinks   = [
   { path = "visuals.widgets.active.bg_fill", when = "stated; None copies scrollbar.thumb_hover_color, §6.9" },
   { path = "visuals.widgets.active.bg_fill", scope = "scrollbar", when = "stated; None copies scrollbar.thumb_hover_color, §6.9" },
@@ -2360,6 +2786,7 @@ sinks   = [
 
 ["slider.fill_color"]
 verdict = "scoped"
+homes = ["slider.active_track(NONE).fill"]
 sinks   = [
   { path = "visuals.selection.bg_fill", scope = "slider" },
   { path = "visuals.slider_trailing_fill", when = "never: written true in the base style, which every cell inherits, §5.9" },
@@ -2368,6 +2795,7 @@ sinks   = [
 
 ["slider.track_color"]
 verdict = "scoped"
+homes = ["slider.track(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.bg_fill", scope = "slider" },
   { path = "visuals.widgets.open.bg_fill", scope = "slider" },
@@ -2376,6 +2804,7 @@ sinks   = [
 
 ["slider.thumb_color"]
 verdict = "scoped"
+homes = ["slider.thumb(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_fill", scope = "slider", when = "slider.thumb_hover_color is None, §6.9" },
   { path = "visuals.widgets.active.bg_fill", scope = "slider", when = "slider.thumb_hover_color is None, §6.9" },
@@ -2383,6 +2812,7 @@ sinks   = [
 
 ["slider.track_height"]
 verdict = "direct"
+homes = ["slider.track(NONE; orientation=Horizontal).min_size[1]", "slider.track(NONE; orientation=Horizontal).max_size[1]", "slider.track(NONE; orientation=Vertical).min_size[0]", "slider.track(NONE; orientation=Vertical).max_size[0]"]
 sinks   = [
   { path = "spacing.slider_rail_height" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "slider", when = "defaults.border.corner_radius exceeds half the rail height, §6.8" },
@@ -2390,6 +2820,7 @@ sinks   = [
 
 ["slider.thumb_diameter"]
 verdict = "derived"
+homes = ["slider.thumb(NONE).min_size[0]", "slider.thumb(NONE).max_size[0]", "slider.thumb(NONE).min_size[1]", "slider.thumb(NONE).max_size[1]"]
 sinks   = [
   { path = "spacing.interact_size.y", scope = "slider" },
   { path = "visuals.widgets.noninteractive.expansion", scope = "slider", when = "Body row > 1.25 · thumb_diameter, §6.6" },
@@ -2402,11 +2833,13 @@ sinks   = [
 
 ["slider.tick_mark_length"]
 verdict  = "unmappable"
+homes = ["slider.tick_length"]
 sub_tag  = "egui-limited"
 upstream = "egui: tick marks on Slider"
 
 ["slider.disabled_opacity"]
 verdict = "scoped"
+homes = ["slider.disabled_opacity"]
 sinks   = [
   { path = "visuals.disabled_alpha", scope = "slider" },
   { path = "visuals.disabled_alpha", scope = "slider", variant = "disabled" },
@@ -2414,6 +2847,7 @@ sinks   = [
 
 ["slider.thumb_hover_color"]
 verdict = "scoped"
+homes = ["slider.thumb(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_fill", scope = "slider", when = "stated; None copies slider.thumb_color, §6.9" },
   { path = "visuals.widgets.active.bg_fill", scope = "slider", when = "stated; None copies slider.thumb_color, §6.9" },
@@ -2421,94 +2855,114 @@ sinks   = [
 
 ["slider.disabled_fill_color"]
 verdict = "scoped"
+homes = ["slider.active_track(DISABLED).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "slider", variant = "disabled", when = "stated; None copies slider.fill_color, §6.4" }]
 
 ["slider.disabled_track_color"]
 verdict = "scoped"
+homes = ["slider.track(DISABLED).fill"]
 sinks   = [{ path = "visuals.widgets.inactive.bg_fill", scope = "slider", variant = "disabled", when = "stated; None copies slider.track_color, §6.4" }]
 
 ["slider.disabled_thumb_color"]
 verdict  = "unmappable"
+homes = ["slider.thumb(DISABLED).fill"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Slider (docs/archive/todo_egui-widgets-spec.md §4.2)"
 
 ["slider.thumb_border_color"]
 verdict  = "unmappable"
+homes = ["slider.thumb(NONE).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
 
 ["slider.thumb_border_line_width"]
 verdict  = "unmappable"
+homes = ["slider.thumb(NONE).stroke.width"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
 
 ["slider.thumb_hover_border_color"]
 verdict  = "unmappable"
+homes = ["slider.thumb(HOVER).stroke.color", "slider.thumb(PRESSED).stroke.color", "slider.thumb(HOVER|FOCUSED).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
 
 ["slider.thumb_focus_border_color"]
 verdict  = "unmappable"
+homes = ["slider.thumb(FOCUSED).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
 
 ["progress_bar.fill_color"]
 verdict = "scoped"
+homes = ["progress_bar.fill(NONE).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "progress_bar" }]
 
 ["progress_bar.track_color"]
 verdict = "scoped"
+homes = ["progress_bar.track(NONE).fill"]
 sinks   = [{ path = "visuals.extreme_bg_color", scope = "progress_bar" }]
 
 ["progress_bar.track_height"]
 verdict = "scoped"
+homes = ["progress_bar.track(NONE).min_size[1]", "progress_bar.track(NONE).max_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "progress_bar" }]
 
 ["progress_bar.min_width"]
 verdict   = "derived"
+homes = ["progress_bar.track(NONE).min_size[0]"]
 tested_by = "T18(a)"
 
 ["progress_bar.border.color"]
 verdict  = "unmappable"
+homes = ["progress_bar.track(NONE).stroke.color"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: ProgressBar (docs/archive/todo_egui-widgets-spec.md §4.9)"
 
 ["progress_bar.border.corner_radius"]
 verdict   = "derived"
+homes = ["progress_bar.track(NONE).corners"]
 tested_by = "T18(a)"
 
 ["progress_bar.border.line_width"]
 verdict  = "unmappable"
+homes = ["progress_bar.track(NONE).stroke.width"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: ProgressBar (docs/archive/todo_egui-widgets-spec.md §4.9)"
 
 ["progress_bar.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["progress_bar.track(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["progress_bar.border.padding.top"]
 verdict  = "unmappable"
+homes = ["progress_bar.track(NONE).padding.top"]
 sub_tag  = "egui-limited"
 upstream = "egui: a progress-bar style (§14 item 36)"
 
 ["progress_bar.border.padding.right"]
 verdict  = "unmappable"
+homes = ["progress_bar.track(NONE).padding.right"]
 sub_tag  = "egui-limited"
 upstream = "egui: a progress-bar style (§14 item 36)"
 
 ["progress_bar.border.padding.bottom"]
 verdict  = "unmappable"
+homes = ["progress_bar.track(NONE).padding.bottom"]
 sub_tag  = "egui-limited"
 upstream = "egui: a progress-bar style (§14 item 36)"
 
 ["progress_bar.border.padding.left"]
 verdict = "scoped"
+homes = ["progress_bar.track(NONE).padding.left"]
 sinks   = [{ path = "spacing.item_spacing.x", scope = "progress_bar" }]
 probe   = 5.0
 
 ["splitter.divider_width"]
 verdict = "scoped"
+homes = ["splitter.divider_width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "splitter" },
   { path = "visuals.widgets.hovered.fg_stroke.width", scope = "splitter" },
@@ -2517,10 +2971,12 @@ sinks   = [
 
 ["splitter.divider_color"]
 verdict = "scoped"
+homes = ["splitter.handle(NONE).fill"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "splitter" }]
 
 ["splitter.hover_color"]
 verdict = "scoped"
+homes = ["splitter.handle(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.fg_stroke.color", scope = "splitter" },
   { path = "visuals.widgets.active.fg_stroke.color", scope = "splitter" },
@@ -2528,26 +2984,32 @@ sinks   = [
 
 ["separator.line_color"]
 verdict = "scoped"
+homes = ["separator.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "separator" }]
 
 ["separator.line_width"]
 verdict = "scoped"
+homes = ["separator.thickness"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "separator" }]
 
 ["spinner.fill_color"]
 verdict = "scoped"
+homes = ["spinner.color"]
 sinks   = [{ path = "visuals.widgets.active.fg_stroke.color", scope = "spinner" }]
 
 ["spinner.diameter"]
 verdict = "derived"
+homes = ["spinner.diameter"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "spinner", when = "spinner.diameter is at least spinner.min_diameter, §6.7" }]
 
 ["spinner.min_diameter"]
 verdict = "derived"
+homes = ["spinner.min_diameter"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "spinner", when = "spinner.min_diameter exceeds spinner.diameter, §6.7" }]
 
 ["spinner.stroke_width"]
 verdict  = "unmappable"
+homes = ["spinner.stroke_width"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Spinner (docs/archive/todo_egui-widgets-spec.md §4.3)"
 
@@ -2555,6 +3017,7 @@ upstream = "native-theme-egui-widgets: Spinner (docs/archive/todo_egui-widgets-s
 
 ["tab.background_color"]
 verdict = "scoped"
+homes = ["tab.tab(NONE).fill"]
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "tab" },
   { path = "visuals.widgets.open.weak_bg_fill", scope = "tab" },
@@ -2564,46 +3027,57 @@ sinks   = [
 
 ["tab.active_background"]
 verdict = "scoped"
+homes = ["tab.tab(SELECTED).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "tab" }]
 
 ["tab.active_text_color"]
 verdict = "scoped"
+homes = ["tab.label(SELECTED).color"]
 sinks   = [{ path = "visuals.selection.stroke.color", scope = "tab" }]
 
 ["tab.bar_background"]
 verdict = "scoped"
+homes = ["tab.bar(NONE).fill"]
 sinks   = [{ path = "visuals.panel_fill", scope = "tab" }]
 
 ["tab.min_width"]
 verdict   = "derived"
+homes = ["tab.tab(NONE).min_size[0]"]
 tested_by = "T18(a)"
 
 ["tab.active_indicator_color"]
 verdict   = "derived"
+homes = ["tab.indicator(SELECTED).fill"]
 tested_by = "T18(a)"
 
 ["tab.active_indicator_width"]
 verdict   = "derived"
+homes = ["tab.indicator(SELECTED).min_size[1]", "tab.indicator(SELECTED).max_size[1]"]
 tested_by = "T18(a)"
 
 ["tab.active_indicator_side"]
 verdict   = "derived"
+homes = ["tab.indicator_side"]
 tested_by = "T18(a)"
 
 ["tab.active_outward_corner_radius"]
 verdict   = "derived"
+homes = ["tab.active_outward_corner_radius"]
 tested_by = "T18(a)"
 
 ["tab.min_height"]
 verdict = "scoped"
+homes = ["tab.tab(NONE).min_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "tab" }]
 
 ["tab.item_gap"]
 verdict = "scoped"
+homes = ["tab.item_gap"]
 sinks   = [{ path = "spacing.item_spacing.x", scope = "tab" }]
 
 ["tab.hover_text_color"]
 verdict = "scoped"
+homes = ["tab.label(HOVER).color"]
 sinks   = [
   { path = "visuals.widgets.hovered.fg_stroke.color", scope = "tab" },
   { path = "visuals.widgets.active.fg_stroke.color", scope = "tab" },
@@ -2611,6 +3085,7 @@ sinks   = [
 
 ["tab.hover_background"]
 verdict = "scoped"
+homes = ["tab.tab(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "tab", when = "stated; None copies tab.background_color, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "tab", when = "stated; None copies tab.background_color, §6.4" },
@@ -2618,30 +3093,36 @@ sinks   = [
 
 ["tab.font.family"]
 verdict  = "unmappable"
+homes = ["tab.label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["tab.font.size"]
 verdict = "scoped"
+homes = ["tab.label(NONE).size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "tab" }]
 
 ["tab.font.defined_size"]
 verdict  = "unmappable"
+homes = ["tab.label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["tab.font.weight"]
 verdict   = "derived"
+homes = ["tab.label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["tab.font.style"]
 verdict   = "derived"
+homes = ["tab.label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["tab.font.color"]
 verdict = "scoped"
+homes = ["tab.label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "tab" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "tab" },
@@ -2650,6 +3131,7 @@ sinks   = [
 
 ["tab.border.color"]
 verdict = "scoped"
+homes = ["tab.tab(SELECTED).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "tab" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "tab" },
@@ -2661,6 +3143,7 @@ probe   = "#ff000080"
 
 ["tab.border.corner_radius"]
 verdict = "scoped"
+homes = ["tab.tab(SELECTED).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "tab" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "tab" },
@@ -2672,6 +3155,7 @@ probe   = 4.0
 
 ["tab.border.line_width"]
 verdict = "scoped"
+homes = ["tab.tab(SELECTED).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "tab" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "tab" },
@@ -2685,27 +3169,33 @@ probe   = 2.0
 
 ["tab.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["tab.tab(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["tab.border.padding.top"]
 verdict = "derived"
+homes = ["tab.tab(NONE).padding.top"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "tab" }]
 
 ["tab.border.padding.right"]
 verdict = "derived"
+homes = ["tab.tab(NONE).padding.right"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "tab" }]
 
 ["tab.border.padding.bottom"]
 verdict = "derived"
+homes = ["tab.tab(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "tab" }]
 
 ["tab.border.padding.left"]
 verdict = "derived"
+homes = ["tab.tab(NONE).padding.left"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "tab" }]
 
 ["sidebar.background_color"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).fill"]
 sinks   = [
   { path = "fill", surface = "panel_left" },
   { path = "fill", surface = "panel_right" },
@@ -2714,14 +3204,17 @@ sinks   = [
 
 ["sidebar.selection_background"]
 verdict = "scoped"
+homes = ["sidebar.item(SELECTED).fill"]
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "sidebar" }]
 
 ["sidebar.selection_text_color"]
 verdict = "scoped"
+homes = ["sidebar.item_label(SELECTED).color"]
 sinks   = [{ path = "visuals.selection.stroke.color", scope = "sidebar" }]
 
 ["sidebar.hover_background"]
 verdict = "scoped"
+homes = ["sidebar.item(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "sidebar" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "sidebar" },
@@ -2729,30 +3222,36 @@ sinks   = [
 
 ["sidebar.font.family"]
 verdict  = "unmappable"
+homes = ["sidebar.item_label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["sidebar.font.size"]
 verdict = "scoped"
+homes = ["sidebar.item_label(NONE).size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "sidebar" }]
 
 ["sidebar.font.defined_size"]
 verdict  = "unmappable"
+homes = ["sidebar.item_label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["sidebar.font.weight"]
 verdict   = "derived"
+homes = ["sidebar.item_label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["sidebar.font.style"]
 verdict   = "derived"
+homes = ["sidebar.item_label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["sidebar.font.color"]
 verdict = "scoped"
+homes = ["sidebar.item_label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "sidebar" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "sidebar" },
@@ -2763,10 +3262,12 @@ sinks   = [
 
 ["sidebar.border.color"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).stroke.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "sidebar" }]
 
 ["sidebar.border.corner_radius"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).corners"]
 sinks   = [
   { path = "corner_radius", surface = "panel_left" },
   { path = "corner_radius", surface = "panel_right" },
@@ -2775,15 +3276,18 @@ probe   = 4.0
 
 ["sidebar.border.line_width"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).stroke.width"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "sidebar" }]
 
 ["sidebar.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["sidebar.container(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["sidebar.border.padding.top"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).padding.top"]
 sinks   = [
   { path = "inner_margin.top", surface = "panel_left" },
   { path = "inner_margin.top", surface = "panel_right" },
@@ -2792,6 +3296,7 @@ probe   = 5.0
 
 ["sidebar.border.padding.right"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).padding.right"]
 sinks   = [
   { path = "inner_margin.right", surface = "panel_left" },
   { path = "inner_margin.right", surface = "panel_right" },
@@ -2800,6 +3305,7 @@ probe   = 5.0
 
 ["sidebar.border.padding.bottom"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).padding.bottom"]
 sinks   = [
   { path = "inner_margin.bottom", surface = "panel_left" },
   { path = "inner_margin.bottom", surface = "panel_right" },
@@ -2808,6 +3314,7 @@ probe   = 5.0
 
 ["sidebar.border.padding.left"]
 verdict = "scoped"
+homes = ["sidebar.container(NONE).padding.left"]
 sinks   = [
   { path = "inner_margin.left", surface = "panel_left" },
   { path = "inner_margin.left", surface = "panel_right" },
@@ -2816,6 +3323,7 @@ probe   = 5.0
 
 ["toolbar.background_color"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).fill", "menu_bar.bar(NONE).fill"]
 sinks   = [
   { path = "fill", surface = "panel_top" },
   { path = "visuals.panel_fill", scope = "toolbar" },
@@ -2823,22 +3331,27 @@ sinks   = [
 
 ["toolbar.bar_height"]
 verdict = "derived"
+homes = ["toolbar.bar(NONE).min_size[1]"]
 sinks   = [{ path = "spacing.interact_size.y", scope = "toolbar" }]
 
 ["toolbar.item_gap"]
 verdict = "scoped"
+homes = ["toolbar.item_gap"]
 sinks   = [{ path = "spacing.item_spacing.x", scope = "toolbar" }]
 
 ["toolbar.icon_size"]
 verdict   = "derived"
+homes = ["toolbar.button_icon(NONE).size"]
 tested_by = "T18(a)"
 
 ["toolbar.button_hover_background"]
 verdict = "scoped"
+homes = ["toolbar.button(HOVER).fill"]
 sinks   = [{ path = "visuals.widgets.hovered.weak_bg_fill", scope = "toolbar" }]
 
 ["toolbar.button_hover_border_color"]
 verdict = "scoped"
+homes = ["toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(HOVER|CHECKED).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "toolbar" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "toolbar" },
@@ -2846,42 +3359,51 @@ sinks   = [
 
 ["toolbar.button_active_background"]
 verdict = "scoped"
+homes = ["toolbar.button(PRESSED).fill"]
 sinks   = [{ path = "visuals.widgets.active.weak_bg_fill", scope = "toolbar" }]
 
 ["toolbar.button_checked_background"]
 verdict   = "derived"
+homes = ["toolbar.button(CHECKED).fill"]
 tested_by = "T18(a)"
 
 ["toolbar.button_checked_border_color"]
 verdict   = "derived"
+homes = ["toolbar.button(CHECKED).stroke.color"]
 tested_by = "T18(a)"
 
 ["toolbar.font.family"]
 verdict  = "unmappable"
+homes = ["toolbar.button_label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["toolbar.font.size"]
 verdict = "scoped"
+homes = ["toolbar.button_label(NONE).size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "toolbar" }]
 
 ["toolbar.font.defined_size"]
 verdict  = "unmappable"
+homes = ["toolbar.button_label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["toolbar.font.weight"]
 verdict   = "derived"
+homes = ["toolbar.button_label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["toolbar.font.style"]
 verdict   = "derived"
+homes = ["toolbar.button_label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["toolbar.font.color"]
 verdict = "scoped"
+homes = ["toolbar.button_label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "toolbar" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "toolbar" },
@@ -2892,14 +3414,17 @@ sinks   = [
 
 ["toolbar.border.color"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).stroke.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "toolbar" }]
 
 ["toolbar.border.corner_radius"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).corners"]
 sinks   = [{ path = "corner_radius", surface = "panel_top" }]
 
 ["toolbar.border.line_width"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "toolbar" },
   { path = "spacing.interact_size.y", scope = "toolbar", when = "toolbar.bar_height is stated, §6.10" },
@@ -2907,11 +3432,13 @@ sinks   = [
 
 ["toolbar.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["toolbar.bar(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["toolbar.border.padding.top"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).padding.top"]
 sinks   = [
   { path = "inner_margin.top", surface = "panel_top" },
   { path = "spacing.interact_size.y", scope = "toolbar", when = "toolbar.bar_height is stated, §6.10" },
@@ -2919,10 +3446,12 @@ sinks   = [
 
 ["toolbar.border.padding.right"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).padding.right"]
 sinks   = [{ path = "inner_margin.right", surface = "panel_top" }]
 
 ["toolbar.border.padding.bottom"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).padding.bottom"]
 sinks   = [
   { path = "inner_margin.bottom", surface = "panel_top" },
   { path = "spacing.interact_size.y", scope = "toolbar", when = "toolbar.bar_height is stated, §6.10" },
@@ -2930,10 +3459,12 @@ sinks   = [
 
 ["toolbar.border.padding.left"]
 verdict = "scoped"
+homes = ["toolbar.bar(NONE).padding.left"]
 sinks   = [{ path = "inner_margin.left", surface = "panel_top" }]
 
 ["status_bar.background_color"]
 verdict = "scoped"
+homes = ["status_bar.bar.fill"]
 sinks   = [
   { path = "fill", surface = "panel_bottom" },
   { path = "visuals.panel_fill", scope = "status_bar" },
@@ -2941,30 +3472,36 @@ sinks   = [
 
 ["status_bar.font.family"]
 verdict  = "unmappable"
+homes = ["status_bar.label.family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["status_bar.font.size"]
 verdict = "scoped"
+homes = ["status_bar.label.size_px"]
 sinks   = [{ path = "text_styles[Body].size", scope = "status_bar" }]
 
 ["status_bar.font.defined_size"]
 verdict  = "unmappable"
+homes = ["status_bar.label.defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["status_bar.font.weight"]
 verdict   = "derived"
+homes = ["status_bar.label.weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["status_bar.font.style"]
 verdict   = "derived"
+homes = ["status_bar.label.style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["status_bar.font.color"]
 verdict = "scoped"
+homes = ["status_bar.label.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "status_bar" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "status_bar" },
@@ -2975,40 +3512,49 @@ sinks   = [
 
 ["status_bar.border.color"]
 verdict = "scoped"
+homes = ["status_bar.bar.stroke.color"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "status_bar" }]
 
 ["status_bar.border.corner_radius"]
 verdict = "scoped"
+homes = ["status_bar.bar.corners"]
 sinks   = [{ path = "corner_radius", surface = "panel_bottom" }]
 probe   = 4.0
 
 ["status_bar.border.line_width"]
 verdict = "scoped"
+homes = ["status_bar.bar.stroke.width"]
 sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "status_bar" }]
 
 ["status_bar.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["status_bar.bar.shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["status_bar.border.padding.top"]
 verdict = "scoped"
+homes = ["status_bar.bar.padding.top"]
 sinks   = [{ path = "inner_margin.top", surface = "panel_bottom" }]
 
 ["status_bar.border.padding.right"]
 verdict = "scoped"
+homes = ["status_bar.bar.padding.right"]
 sinks   = [{ path = "inner_margin.right", surface = "panel_bottom" }]
 
 ["status_bar.border.padding.bottom"]
 verdict = "scoped"
+homes = ["status_bar.bar.padding.bottom"]
 sinks   = [{ path = "inner_margin.bottom", surface = "panel_bottom" }]
 
 ["status_bar.border.padding.left"]
 verdict = "scoped"
+homes = ["status_bar.bar.padding.left"]
 sinks   = [{ path = "inner_margin.left", surface = "panel_bottom" }]
 
 ["expander.header_height"]
 verdict = "scoped"
+homes = ["expander.header(NONE).min_size[1]"]
 sinks   = [
   { path = "spacing.interact_size.y", scope = "expander" },
   { path = "spacing.button_padding.y", scope = "expander", when = "a one-line title and the padding overrun the stated expander.header_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a title alone taller than the stated height is drawn whole, its padding 0 and the header its height, since egui takes the stated height as the header's least (egui/src/containers/collapsing_header.rs:531-532)" },
@@ -3016,6 +3562,7 @@ sinks   = [
 
 ["expander.arrow_icon_size"]
 verdict = "derived"
+homes = ["expander.arrow(NONE).size"]
 sinks   = [
   { path = "spacing.icon_width_inner", scope = "expander" },
   { path = "spacing.indent", scope = "expander", when = "expander.border.padding.left is stated" },
@@ -3023,6 +3570,7 @@ sinks   = [
 
 ["expander.hover_background"]
 verdict = "scoped"
+homes = ["expander.header(HOVER).fill"]
 sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "expander", when = "stated; None leaves no highlight, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "expander", when = "stated; None leaves no highlight, §6.4" },
@@ -3031,35 +3579,42 @@ sinks   = [
 
 ["expander.arrow_color"]
 verdict   = "derived"
+homes = ["expander.arrow(NONE).color"]
 tested_by = "T18(f)"
 
 ["expander.arrow_side"]
 verdict  = "unmappable"
+homes = ["expander.arrow_side"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589)"
 
 ["expander.arrow_gap"]
 verdict  = "unmappable"
+homes = ["expander.arrow_gap"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589)"
 
 ["expander.content_indent"]
 verdict  = "unmappable"
+homes = ["expander.content_indent"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516)"
 
 ["expander.frame_enabled"]
 verdict  = "unmappable"
+homes = ["expander.frame_enabled"]
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Expander (docs/archive/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568)"
 
 ["expander.font.family"]
 verdict  = "unmappable"
+homes = ["expander.header_label(NONE).family"]
 sub_tag  = "egui-limited"
 upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["expander.font.size"]
 verdict = "scoped"
+homes = ["expander.header_label(NONE).size_px"]
 sinks   = [
   { path = "text_styles[Button].size", scope = "expander" },
   { path = "spacing.button_padding.y", scope = "expander", when = "a one-line title and the padding overrun the stated expander.header_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a title alone taller than the stated height is drawn whole, its padding 0 and the header its height, since egui takes the stated height as the header's least (egui/src/containers/collapsing_header.rs:531-532)" },
@@ -3067,21 +3622,25 @@ sinks   = [
 
 ["expander.font.defined_size"]
 verdict  = "unmappable"
+homes = ["expander.header_label(NONE).defined_size"]
 sub_tag  = "egui-limited"
 upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 
 ["expander.font.weight"]
 verdict   = "derived"
+homes = ["expander.header_label(NONE).weight"]
 tested_by = "T18(c)"
 probe     = 700
 
 ["expander.font.style"]
 verdict   = "derived"
+homes = ["expander.header_label(NONE).style"]
 tested_by = "T18(d)"
 probe     = "italic"
 
 ["expander.font.color"]
 verdict = "scoped"
+homes = ["expander.header_label(NONE).color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "expander" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "expander" },
@@ -3092,6 +3651,7 @@ sinks   = [
 
 ["expander.border.color"]
 verdict = "scoped"
+homes = ["expander.container(NONE).stroke.color"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "expander" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "expander" },
@@ -3102,6 +3662,7 @@ sinks   = [
 
 ["expander.border.corner_radius"]
 verdict = "scoped"
+homes = ["expander.container(NONE).corners"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "expander" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "expander" },
@@ -3112,6 +3673,7 @@ sinks   = [
 
 ["expander.border.line_width"]
 verdict = "scoped"
+homes = ["expander.container(NONE).stroke.width"]
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "expander" },
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "expander", when = "never: written 0 in every expander cell, as egui strokes a header alone, its body outside, which no platform draws; a stated frame holds header and body, the companion crate drawing it in the noninteractive stroke, §6.1" },
@@ -3125,23 +3687,28 @@ sinks   = [
 
 ["expander.border.shadow_enabled"]
 verdict  = "unmappable"
+homes = ["expander.container(NONE).shadows"]
 sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["expander.border.padding.top"]
 verdict = "derived"
+homes = ["expander.header(NONE).padding.top"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "expander", when = "no stated expander.header_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["expander.border.padding.right"]
 verdict = "derived"
+homes = ["expander.header(NONE).padding.right"]
 sinks   = [{ path = "spacing.button_padding.x", scope = "expander" }]
 
 ["expander.border.padding.bottom"]
 verdict = "derived"
+homes = ["expander.header(NONE).padding.bottom"]
 sinks   = [{ path = "spacing.button_padding.y", scope = "expander", when = "no stated expander.header_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["expander.border.padding.left"]
 verdict = "derived"
+homes = ["expander.header(NONE).padding.left"]
 sinks   = [{ path = "spacing.indent", scope = "expander" }]
 
 # Sinks no row writes, with the reason egui's own value stands (T10b): every path style_diff

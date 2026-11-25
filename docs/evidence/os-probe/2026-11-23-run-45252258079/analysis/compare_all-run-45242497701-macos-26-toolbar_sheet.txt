@@ -1,0 +1,2 @@
+darkAqua.pressed.toolbar_button
+    diff_from_normal: {'differing_pixels': 1832, 'max_byte_delta': 22} -> {'differing_pixels': 1834, 'max_byte_delta': 22}

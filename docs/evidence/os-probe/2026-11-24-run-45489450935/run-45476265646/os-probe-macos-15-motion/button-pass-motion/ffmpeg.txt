@@ -1,0 +1,124 @@
+==> Downloading bottle manifests
+✔︎ Bottle Manifest ffmpeg (9.0.2_1)
+==> Would install 1 formula:
+ffmpeg 9.0.2_1
+==> Would install 11 dependencies for ffmpeg:
+dav1d        1.5.5
+mpg123       1.33.7
+lame         4.0
+libvmaf      3.2.1
+libvpx       1.17.0
+opus         1.6.1
+sdl3         3.4.20
+sdl2-compat  2.32.74
+svt-av1      4.3.0
+x264         r3222
+x265         4.3
+==> Fetching downloads for: ffmpeg
+✔︎ Bottle Manifest dav1d (1.5.5)
+✔︎ Bottle Manifest mpg123 (1.33.7)
+✔︎ Bottle Manifest lame (4.0)
+✔︎ Bottle Manifest libvmaf (3.2.1)
+✔︎ Bottle Manifest libvpx (1.17.0)
+✔︎ Bottle Manifest opus (1.6.1)
+✔︎ Bottle dav1d (1.5.5)
+✔︎ Bottle Manifest sdl3 (3.4.20)
+✔︎ Bottle mpg123 (1.33.7)
+✔︎ Bottle Manifest sdl2-compat (2.32.74)
+✔︎ Bottle libvmaf (3.2.1)
+✔︎ Bottle Manifest svt-av1 (4.3.0)
+✔︎ Bottle lame (4.0)
+✔︎ Bottle Manifest x265 (4.3)
+✔︎ Bottle ffmpeg (9.0.2_1)
+✔︎ Bottle libvpx (1.17.0)
+✔︎ Bottle opus (1.6.1)
+✔︎ Bottle Manifest x264 (r3222)
+✔︎ Bottle sdl2-compat (2.32.74)
+✔︎ Bottle svt-av1 (4.3.0)
+✔︎ Bottle sdl3 (3.4.20)
+✔︎ Bottle x264 (r3222)
+✔︎ Bottle x265 (4.3)
+==> Installing dependencies for ffmpeg: dav1d, mpg123, lame, libvmaf, libvpx, opus, sdl3, sdl2-compat, svt-av1, x264 and x265
+==> Installing ffmpeg dependency: dav1d (1.5.5)
+==> Pouring dav1d--1.5.5.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/dav1d/1.5.5: 16 files, 978.3KB
+==> Installing ffmpeg dependency: mpg123 (1.33.7)
+==> Pouring mpg123--1.33.7.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/mpg123/1.33.7: 34 files, 1.9MB
+==> Installing ffmpeg dependency: lame (4.0)
+==> Pouring lame--4.0.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/lame/4.0: 29 files, 1.9MB
+==> Installing ffmpeg dependency: libvmaf (3.2.1)
+==> Pouring libvmaf--3.2.1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/libvmaf/3.2.1: 243 files, 8.2MB
+==> Installing ffmpeg dependency: libvpx (1.17.0)
+==> Pouring libvpx--1.17.0.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/libvpx/1.17.0: 22 files, 4.4MB
+==> Installing ffmpeg dependency: opus (1.6.1)
+==> Pouring opus--1.6.1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/opus/1.6.1: 16 files, 1.1MB
+==> Installing ffmpeg dependency: sdl3 (3.4.20)
+==> Pouring sdl3--3.4.20.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/sdl3/3.4.20: 103 files, 6.3MB
+==> Installing ffmpeg dependency: sdl2-compat (2.32.74)
+==> Pouring sdl2-compat--2.32.74.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/sdl2-compat/2.32.74: 117 files, 3.3MB
+==> Installing ffmpeg dependency: svt-av1 (4.3.0)
+==> Pouring svt-av1--4.3.0.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/svt-av1/4.3.0: 23 files, 3.4MB
+==> Installing ffmpeg dependency: x264 (r3222)
+==> Pouring x264--r3222.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/x264/r3222: 12 files, 4.4MB
+==> Installing ffmpeg dependency: x265 (4.3)
+==> Pouring x265--4.3.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/x265/4.3: 12 files, 17.4MB
+==> Installing ffmpeg
+==> Pouring ffmpeg--9.0.2_1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/ffmpeg/9.0.2_1: 290 files, 54.4MB
+==> Caveats
+==> ffmpeg
+ffmpeg-full includes additional tools and libraries that are not included in the regular ffmpeg formula.
+brew install ffmpeg: exit 0
+ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers
+ffmpeg os-probe-out/button-pass-motion/aqua/caret-long.mov crop=104:54:208:436: exit 0,     2385 frames
+ffprobe os-probe-out/button-pass-motion/aqua/caret-long.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/caret-mixed.mov crop=144:54:328:436: exit 0,      460 frames
+ffprobe os-probe-out/button-pass-motion/aqua/caret-mixed.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/caret-read-only.mov crop=104:54:488:436: exit 0,      470 frames
+ffprobe os-probe-out/button-pass-motion/aqua/caret-read-only.mov: exit 0
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 518
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 519
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 520
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 521
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 522
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 523
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 524
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 525
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 526
+[image2 @ 0x1418048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 527 >= 527
+ffmpeg os-probe-out/button-pass-motion/aqua/focus-deactivate.mov crop=99:56:208:274: exit 0,      529 frames
+ffprobe os-probe-out/button-pass-motion/aqua/focus-deactivate.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/focus-interrupt.mov crop=99:56:208:274: exit 0,      702 frames
+ffprobe os-probe-out/button-pass-motion/aqua/focus-interrupt.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/press-push.mov crop=99:56:208:274: exit 0,      682 frames
+ffprobe os-probe-out/button-pass-motion/aqua/press-push.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/radio.mov crop=175:42:208:338: exit 0,      527 frames
+ffprobe os-probe-out/button-pass-motion/aqua/radio.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/search-cancel.mov crop=204:46:208:384: exit 0,      584 frames
+ffprobe os-probe-out/button-pass-motion/aqua/search-cancel.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/caret-long.mov crop=104:54:208:436: exit 0,     2391 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/caret-long.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/caret-mixed.mov crop=144:54:328:436: exit 0,      471 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/caret-mixed.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/caret-read-only.mov crop=104:54:488:436: exit 0,      470 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/caret-read-only.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/focus-deactivate.mov crop=99:56:208:274: exit 0,      528 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/focus-deactivate.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/focus-interrupt.mov crop=99:56:208:274: exit 0,      709 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/focus-interrupt.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/press-push.mov crop=99:56:208:274: exit 0,      710 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/press-push.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/radio.mov crop=175:42:208:338: exit 0,      531 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/radio.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/search-cancel.mov crop=204:46:208:384: exit 0,      587 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/search-cancel.mov: exit 0

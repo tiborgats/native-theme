@@ -2,13 +2,11 @@
 
 use native_theme::icons::IconSet;
 use native_theme::icons::{IconRole, IconSetChoice};
-use native_theme_egui::{
-    DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
-    window_title_bar_font, window_title_bar_text_color,
-};
+use native_theme::next::{DialogButtonOrder, WidgetState};
+use native_theme_egui::{PanelSide, Role, RoleVariant, Surface, next};
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::switch::Switch;
-use native_theme_showcase_support::{rows, status};
+use native_theme_showcase_support::{cli, rows, status};
 
 use crate::{
     LEFT_PANEL_WIDTH,
@@ -110,7 +108,7 @@ const NO_MINIMUM: f32 = 0.0;
 pub(crate) const MENU_BAR_PADDING: f32 = 8.0;
 
 /// The toolbar's padding on a side the theme leaves unstated twice over, neither
-/// `toolbar.border.padding` nor `layout.container_margin` stating it (spec §3.1): the gpui
+/// `toolbar.bar(NONE).padding` nor `layout.container_margin` stating it (spec §3.1): the gpui
 /// showcase's `TOOLBAR_PADDING` (`showcase-gpui/demo.rs`), the showcases' own choice, which the
 /// toolbar's Widget Info names.
 pub(crate) const TOOLBAR_PADDING: f32 = 8.0;
@@ -187,31 +185,26 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         toolbar_role,
         toolbar_role,
     );
-    // A side of `toolbar.border.padding` the theme leaves unstated is `layout.container_margin`,
-    // and `TOOLBAR_PADDING` where that is unstated too, as the other two showcases pad their
-    // toolbars, where the panel frame would keep egui's own (8 across, 2 down).
+    // A side of `toolbar.bar(NONE).padding` the theme leaves unstated is
+    // `layout.container_margin`, and `TOOLBAR_PADDING` where that is unstated too, as the other
+    // two showcases pad their toolbars, where the panel frame would keep egui's own (8 across, 2
+    // down).
     let own_margin = seams.frame.inner_margin;
-    let margin = app.atlas.layout().container_margin;
-    let stated = app
-        .atlas
-        .old_resolved(ui.ctx().theme())
-        .toolbar
-        .border
-        .padding;
-    seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+    let margin = demo::next_metric(ui, |l| l.container_margin);
+    let bar = demo::next_value(ui, |r| r.toolbar.bar(WidgetState::NONE));
+    let stated = bar
+        .as_ref()
+        .map_or([None; 4], native_theme_egui::next::padding_of);
+    seams.frame.inner_margin = demo::pad_unstated(
         seams.frame.inner_margin,
-        &demo::unstated_as(&stated, margin.unwrap_or(TOOLBAR_PADDING)),
+        stated,
+        [margin.unwrap_or(TOOLBAR_PADDING); 4],
     );
-    // Where the theme states `toolbar.bar_height`, the bar stays that tall: the toolbar scope's
-    // row (`interact_size.y`) is the stated height less the frame egui's own panel preset would
-    // pad it by, so the room the margin above grew by comes off the row, as the other two
-    // showcases lay their padding inside the stated height.
-    let stated_height = app
-        .atlas
-        .old_resolved(ui.ctx().theme())
-        .toolbar
-        .bar_height
-        .is_some();
+    // Where the theme states the bar's height, `toolbar.bar(NONE).min_size[1]`, the bar stays
+    // that tall: the toolbar scope's row (`interact_size.y`) is the stated height less the frame
+    // egui's own panel preset would pad it by, so the room the margin above grew by comes off
+    // the row, as the other two showcases lay their padding inside the stated height.
+    let stated_height = bar.is_some_and(|bar| bar.min_size[1].is_some());
     let shrink = if stated_height {
         seams.frame.inner_margin.sum().y - own_margin.sum().y
     } else {
@@ -220,9 +213,9 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     // The panel's own height, `interact_size.y` of the `Ui` it is shown in plus its frame
     // (`egui/src/containers/panel.rs:1068-1073`).
     fit_row(ui, shrink);
-    // The line under the bar is the panel's own, in `toolbar.border`'s colour and width (the
-    // toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`), as
-    // the status bar's line above it is `status_bar.border`'s.
+    // The line under the bar is the panel's own, in `toolbar.bar(NONE).stroke`'s colour and
+    // width (the toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`),
+    // as the status bar's line above it is `status_bar.bar.stroke`'s.
     let out = egui::Panel::top("chrome-bar")
         .frame(seams.frame)
         .show(ui, |ui| {
@@ -232,7 +225,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         });
     seams.record(&mut app.registry, &out.response, "Toolbar");
     app.registry.tag("chrome.toolbar", &out.response);
-    if let Some(sides) = demo::unstated_sides(&stated) {
+    if let Some(sides) = demo::unstated_sides(stated) {
         let note = match margin {
             Some(margin) => format!(
                 "not stated by the theme on {sides}: layout.container_margin, {margin}px, as \
@@ -247,8 +240,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         app.registry
             .note_element("chrome.toolbar", "padding", &note);
     }
-    let t = app.atlas.old_resolved(ui.ctx().theme());
-    if t.toolbar.item_gap.is_none() && app.atlas.layout().widget_gap.is_none() {
+    if toolbar_gap_unstated(ui) {
         app.registry.note_element(
             "chrome.toolbar",
             "the gap between items",
@@ -260,6 +252,16 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
+/// Whether the installed 0.8.0 theme leaves the gap between the toolbar's items unstated twice
+/// over, neither `toolbar.item_gap` nor `layout.widget_gap` stating it, as without one: the
+/// toolbar's items are then [`TOOLBAR_GAP`] apart.
+fn toolbar_gap_unstated(ui: &egui::Ui) -> bool {
+    demo::next_value(ui, |r| {
+        r.toolbar.item_gap.is_none() && r.layout.widget_gap.is_none()
+    })
+    .unwrap_or(true)
+}
+
 /// A toolbar row `shrink` less tall than its scope's `interact_size.y` makes it.
 fn fit_row(ui: &mut egui::Ui, shrink: f32) {
     let row = &mut ui.spacing_mut().interact_size.y;
@@ -267,15 +269,18 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 }
 
 /// The menu bar, a strip of its own above the toolbar, as a desktop application's is: on the
-/// toolbar's background (`toolbar.background_color`, the menu bar's in
-/// `docs/showcase-elements.toml`: Breeze fills the menu bar and the toolbars as one tools area,
-/// docs/platform-facts.md §2.13; elsewhere than kde-breeze it is the window's), its menus
-/// `layout.container_margin` in from the window's sides, and [`MENU_BAR_PADDING`] where the
-/// theme states no such margin, as the gpui showcase's menu bar; no line under it.
+/// menu bar's own fill, `menu_bar.bar(NONE).fill` (Breeze fills the menu bar and the toolbars as
+/// one tools area, docs/platform-facts.md §2.13; elsewhere than kde-breeze it is the window's),
+/// egui's own top panel's `panel_fill` where the theme states none (`Frame::side_top_panel`,
+/// egui-0.37.0 `src/containers/frame.rs:185-189`), its menus `layout.container_margin` in from
+/// the window's sides, and [`MENU_BAR_PADDING`] where the theme states no such margin, as the
+/// gpui showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
-    let t = app.atlas.old_resolved(ui.ctx().theme());
-    let margin = app.atlas.layout().container_margin;
+    let fill = demo::next_value(ui, |r| next::fill_of(&r.menu_bar.bar(WidgetState::NONE)))
+        .flatten()
+        .unwrap_or(ui.visuals().panel_fill);
+    let margin = demo::next_metric(ui, |l| l.container_margin);
     let side = Some(margin.unwrap_or(MENU_BAR_PADDING));
     let sides = native_theme::theme::ResolvedPadding {
         left: side,
@@ -284,9 +289,7 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
         bottom: None,
     };
     let frame = egui::Frame::NONE
-        .fill(native_theme_egui::convert::to_color32(
-            t.toolbar.background_color,
-        ))
+        .fill(fill)
         .inner_margin(native_theme_egui::convert::to_margin(
             egui::Margin::ZERO,
             &sides,
@@ -339,7 +342,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
             bar.ui(ui, |ui| {
                 for (menu, items) in Action::MENUS {
                     let key = menu.to_lowercase();
-                    let title = demo::lined(ui, *menu, egui::TextStyle::Button);
+                    let title = demo::next_lined(ui, *menu, egui::TextStyle::Button);
                     // The title of the open menu is the bar's current item, drawn in the bar's
                     // open look — `menu.bar_open_background` (else `bar_hover_background`)
                     // under `menu.bar_hover_text_color` where the theme states them
@@ -388,8 +391,9 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                                 Some(action) => {
                                     // Label and shortcut each one line box tall, as the menu
                                     // bar's titles are.
-                                    let lined =
-                                        |text: &str| demo::lined(ui, text, egui::TextStyle::Button);
+                                    let lined = |text: &str| {
+                                        demo::next_lined(ui, text, egui::TextStyle::Button)
+                                    };
                                     let mut button = egui::Button::new(lined(action.label()));
                                     let shortcut = action
                                         .shortcut()
@@ -498,12 +502,13 @@ fn chrome_button_image(
 }
 
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
-/// for a `Ui` made Ghost with `demo::ghost`: transparent at rest and filled on hover; while
-/// `selected`, filled with the pressed fill of that `Ui` — in `Role::Button`,
-/// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
-/// `active` colour (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the
-/// selected button's accent. Its icon where the set has one, else its tooltip's text as its
-/// label, as gpui's (`showcase-gpui/demo.rs:1367-1370`).
+/// for a `Ui` made Ghost with `demo::ghost`: unframed at rest (`frame_when_inactive(false)`) and
+/// filled on hover; while `selected`, filled with the pressed fill of that `Ui` — in a flat
+/// button's scope (`demo::flat`), `button.body(PRESSED; variant=Flat).fill` — as
+/// native-theme-gpui's `ghost_button` fills with its `active` colour
+/// (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the selected button's
+/// accent. Its icon where the set has one, else its tooltip's text as its label, as gpui's
+/// (`showcase-gpui/demo.rs:1367-1370`).
 fn ghost_button(
     ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
@@ -513,7 +518,8 @@ fn ghost_button(
     let button = match image {
         Some(image) => egui::Button::image(image),
         None => egui::Button::new(label),
-    };
+    }
+    .frame_when_inactive(false);
     if selected {
         button.fill(ui.visuals().widgets.active.weak_bg_fill)
     } else {
@@ -535,18 +541,19 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
 /// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:191-248`): three tool buttons in its
 /// order — the command palette, a theme reload, Preferences — each with a tooltip naming it
 /// and its shortcut. Each is a toolbar item, drawn in the toolbar's own scope: its icon at
-/// `toolbar.icon_size` (a required size, `f32` on the resolved theme), a missing icon's label in
-/// `toolbar.font`, the items `toolbar.item_gap` apart (the scope's `item_spacing.x`), the row as
-/// tall as the scope's `interact_size.y` — `toolbar.bar_height` less the bar's padding where
-/// the theme states a bar height (connector spec §6.10), less `shrink`, the room the panel's
-/// margin grew by in [`chrome_bar`]. The theme states no tool button
-/// geometry or fill, so each is Ghost, transparent at rest, and hovered and pressed in the
-/// scope's own fills and padding. The icons are gpui's: `SquareTerminal` and `RotateCw` by
-/// their names in the chosen set, Settings by its role, loaded as the Icons page loads them — a
-/// freedesktop icon from the chosen theme in the text colour, a bundled key tinted it (§9.2,
-/// §10.4).
+/// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme (`demo::tool_icon_size`; where
+/// it states none, the button's label in place of its icon, which its Widget Info names), a
+/// label in the scope's `Button` text, the items the scope's `item_spacing.x` apart
+/// (`toolbar.item_gap`, else the connector's `layout.widget_gap`, else [`TOOLBAR_GAP`]), the
+/// row as tall as the scope's `interact_size.y` — `toolbar.bar(NONE).min_size[1]` less the
+/// bar's padding where the theme states a bar height (connector spec §6.10), less `shrink`, the
+/// room the panel's margin grew by in [`chrome_bar`]. Each is a tool button
+/// (`demo::next_tool_button`): Ghost, transparent at rest, padded by
+/// `button.body(NONE).padding`, and hovered and pressed in the scope's own fills and outlines.
+/// The icons are gpui's: `SquareTerminal` and `RotateCw` by their names in the chosen set,
+/// Settings by its role, loaded as the Icons page loads them — a freedesktop icon from the
+/// chosen theme in the text colour, a bundled key tinted it (§9.2, §10.4).
 fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
-    let theme = ui.ctx().theme();
     let chosen = app.chosen_icons();
     let App {
         registry,
@@ -555,16 +562,16 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
         icon_cache,
         ..
     } = app;
-    let t = atlas.old_resolved(theme);
-    let icon_size = t.toolbar.icon_size;
-    let layout = atlas.layout();
+    let r = atlas.next_shown(ui.ctx());
+    let icon_size = demo::tool_icon_size(r);
+    let padding = demo::tool_padding(r);
+    let gap_unstated = toolbar_gap_unstated(ui);
     let toolbar_row = |ui: &mut egui::Ui, bar: demo::Applied, registry: &mut Registry| {
         fit_row(ui, shrink);
         ui.horizontal(|ui| {
-            demo::toolbar_gap(ui, t, layout);
             // `TOOLBAR_GAP` where the theme states neither gap, at the chrome's toolbar alone:
-            // the Basic page's icon row keeps `toolbar_gap`, as gpui's has no constant.
-            if t.toolbar.item_gap.is_none() && layout.widget_gap.is_none() {
+            // the Basic page's icon row keeps the scope's own, as gpui's has no constant.
+            if gap_unstated {
                 ui.spacing_mut().item_spacing.x = TOOLBAR_GAP;
             }
             for (icon, label, action, id) in [
@@ -587,12 +594,13 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     "chrome.toolbar.preferences",
                 ),
             ] {
-                let image = chrome_button_image(icon_cache, ui, icon, &chosen, icon_size);
-                let drawn = image.is_some();
-                let kind = ghost_kind(drawn, false);
+                let image = icon_size
+                    .and_then(|size| chrome_button_image(icon_cache, ui, icon, &chosen, size));
+                let kind = ghost_kind(image.is_some(), false);
+                let drawn = image.is_some().then_some(icon_size).flatten();
                 let response = ui
                     .scope(|ui| {
-                        demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
+                        demo::next_tool_button(ui, padding);
                         bar.add(registry, ui, kind, |ui| {
                             let r = ui.add(ghost_button(ui, image, label, false));
                             r.widget_info(|| {
@@ -603,9 +611,16 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     })
                     .inner;
                 registry.ghost_last();
+                if icon_size.is_none() {
+                    registry.note_last(
+                        "icon size",
+                        "not stated by the theme (toolbar.button_icon(NONE).size): the button's \
+                         label in place of its icon",
+                    );
+                }
                 registry.tag(id, &response);
-                if drawn {
-                    place_icon(registry, ui, id, &response, icon_size);
+                if let Some(size) = drawn {
+                    place_icon(registry, ui, id, &response, size);
                 }
                 tooltip(registry, ui, &response, label, action.shortcut());
                 if response.clicked() {
@@ -696,10 +711,10 @@ fn tooltip(
 
 /// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:325-365`,
 /// `showcase-gpui/demo.rs:1123-1202`, `:1552-1605`): the side-panel toggle, a small Ghost button
-/// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
-/// then the environment as one line joined by " · ", cut short in the room the title leaves; the
-/// shown Widget Info's title flush right.
-/// A side `status_bar.border.padding` leaves unstated is padded as gpui-component pads its
+/// with gpui's `PanelLeft` icon at `icons.sizes.small` (its label where the theme states no such
+/// size), selected while the panel shows; then the environment as one line joined by " · ", cut
+/// short in the room the title leaves; the shown Widget Info's title flush right.
+/// A side `status_bar.bar.padding` leaves unstated is padded as gpui-component pads its
 /// `StatusBar`, which the gpui showcase's keeps ([`status_bar_padding`]), where the panel frame
 /// would keep egui's own (8 across, 2 down).
 pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
@@ -710,22 +725,12 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
         status_role,
         status_role,
     );
-    let stated = app
-        .atlas
-        .old_resolved(ui.ctx().theme())
-        .status_bar
-        .border
-        .padding;
-    let (vertical, horizontal) = status_bar_padding(&app.atlas, ui.ctx().theme());
-    let unstated = |side: Option<f32>, fill: f32| side.is_none().then_some(fill);
-    seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+    let stated = demo::next_value(ui, |r| next::padding_of(&r.status_bar.bar)).unwrap_or([None; 4]);
+    let (vertical, horizontal) = status_bar_padding(ui);
+    seams.frame.inner_margin = demo::pad_unstated(
         seams.frame.inner_margin,
-        &native_theme::theme::ResolvedPadding {
-            top: unstated(stated.top, vertical),
-            right: unstated(stated.right, horizontal),
-            bottom: unstated(stated.bottom, vertical),
-            left: unstated(stated.left, horizontal),
-        },
+        stated,
+        [vertical, horizontal, vertical, horizontal],
     );
     let chosen = app.chosen_icons();
     let out = egui::Panel::bottom("status-bar")
@@ -734,35 +739,41 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             let bar = seams.enter(ui);
             let environment = environment(app, ui.ctx()).join(" · ");
             let title = app.status_title();
-            let t = app.atlas.old_resolved(ui.ctx().theme());
-            let icon_size = t.defaults.icon_sizes.small;
-            let padding = t.button.border.padding;
+            let icon_size = demo::small_icon_size(ui);
+            let padding = demo::tool_padding(app.atlas.next_shown(ui.ctx()));
             // The model states no status-bar height: the bar sizes to its content, one line of
-            // `status_bar.font` (`Body` in the bar's scope) and the side-panel toggle, a tool
-            // button (`demo::tool_button`), and its padding. `ui.horizontal` makes its row
+            // `status_bar.label` (`Body` in the bar's scope) and the side-panel toggle, a tool
+            // button (`demo::next_tool_button`), and its padding. `ui.horizontal` makes its row
             // `interact_size.y` tall and centres what it holds on that height
             // (`egui/src/ui.rs:2376-2379`), so the row is set to the taller of the two.
+            // The toggle's icon, where the theme states its size and the set has it; without
+            // one the toggle is its label, whose button egui sizes itself.
+            let image = icon_size.and_then(|size| {
+                chrome_button_image(
+                    &mut app.icon_cache,
+                    ui,
+                    ChromeButtonIcon::Named(demo::ChromeIcon::PanelLeft),
+                    &chosen,
+                    size,
+                )
+            });
             let line = ui.text_style_height(&egui::TextStyle::Body);
-            let toggle = icon_size + 2.0 * padding.top.unwrap_or(ui.spacing().button_padding.y);
+            let [top, ..] = padding;
+            let toggle = icon_size
+                .filter(|_| image.is_some())
+                .map_or(line, |size| demo::tool_button_height(ui, size, top));
             ui.spacing_mut().interact_size.y = line.max(toggle);
             ui.horizontal(|ui| {
                 let App {
                     registry,
                     side_panel_visible,
-                    icon_cache,
                     ..
                 } = app;
                 let label = "Toggle Side Panel";
                 let open = *side_panel_visible;
-                let image = chrome_button_image(
-                    icon_cache,
-                    ui,
-                    ChromeButtonIcon::Named(demo::ChromeIcon::PanelLeft),
-                    &chosen,
-                    icon_size,
-                );
-                let drawn = image.is_some();
-                let kind = ghost_kind(drawn, open);
+                let kind = ghost_kind(image.is_some(), open);
+                let drawn = image.is_some().then_some(icon_size).flatten();
+                let mut flat = Vec::new();
                 let toggle = demo::scoped(
                     registry,
                     ui,
@@ -770,7 +781,8 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
-                        demo::tool_button(ui, &padding, None);
+                        demo::next_tool_button(ui, padding);
+                        flat = demo::flat(ui);
                         let r = ui.add(ghost_button(ui, image, label, open));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
@@ -779,9 +791,17 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     },
                 );
                 registry.ghost_last();
+                registry.flat_last(&flat);
+                if icon_size.is_none() {
+                    registry.note_last(
+                        "icon size",
+                        "not stated by the theme (icons.sizes.small): the button's label in \
+                         place of its icon",
+                    );
+                }
                 registry.tag("chrome.status_bar.toggle", &toggle);
-                if drawn {
-                    place_icon(registry, ui, "chrome.status_bar.toggle", &toggle, icon_size);
+                if let Some(size) = drawn {
+                    place_icon(registry, ui, "chrome.status_bar.toggle", &toggle, size);
                 }
                 tooltip(
                     registry,
@@ -804,13 +824,13 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if !title.is_empty() {
                         let label = bar.add(registry, ui, "Label · shown info", |ui| {
-                            ui.label(demo::lined(ui, title, egui::TextStyle::Body))
+                            ui.label(demo::next_lined(ui, title, egui::TextStyle::Body))
                         });
                         registry.tag("chrome.status_bar.shown", &label);
                     }
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         let label = bar.add(registry, ui, "Label · environment", |ui| {
-                            let text = demo::lined(ui, environment, egui::TextStyle::Body);
+                            let text = demo::next_lined(ui, environment, egui::TextStyle::Body);
                             ui.add(egui::Label::new(text).truncate())
                         });
                         registry.tag("chrome.status_bar.environment", &label);
@@ -820,14 +840,14 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
         });
     seams.record(&mut app.registry, &out.response, "Status bar");
     app.registry.tag("chrome.status_bar", &out.response);
-    if let Some(sides) = demo::unstated_sides(&stated) {
+    if let Some(sides) = demo::unstated_sides(stated) {
         app.registry.note_element(
             "chrome.status_bar",
             "padding",
             &format!(
                 "not stated by the theme on {sides}: gpui-component's StatusBar padding, which \
-                 the gpui showcase's status bar keeps (py_1 / px_2: a quarter of the scaled \
-                 defaults.font.size above and below, {vertical}px, and a half at the sides, \
+                 the gpui showcase's status bar keeps (py_1 / px_2: a quarter of \
+                 typography.body.size_px above and below, {vertical}px, and a half at the sides, \
                  {horizontal}px, each rounded to a whole point with a half toward zero, as gpui \
                  rounds a padding)"
             ),
@@ -839,27 +859,32 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
 /// `src/status_bar.rs:89-90`, `StatusBar`'s `render`): `rems(0.25)` above and below and
 /// `rems(0.5)` at the sides, at the rem gpui-component sets to the theme's font size
 /// (`src/root.rs:714`, `window.set_rem_size(cx.theme().font_size)`), which the gpui connector
-/// fills with the scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding
-/// the gpui showcase's status bar keeps where the theme states none, as `(vertical, horizontal)`
-/// in logical pixels. egui's frame margin is whole points, so each side is rounded to one as gpui
-/// rounds a padding before layout, a half toward zero (gpui-pre 0.3.12 `src/taffy.rs:534-538`,
-/// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`): at a scale of 1
-/// the two bars are padded alike, 3 px above and below a 14 px font, a quarter of it 3.5.
-fn status_bar_padding(atlas: &crate::app::OldAtlas, theme: egui::Theme) -> (f32, f32) {
-    let rem = atlas
-        .accessibility()
-        .scaled(atlas.old_resolved(theme).defaults.font.size);
+/// fills with the body text's size, on the 0.8.0 model `typography.body.size_px`, which the
+/// theme's resolve has scaled already (`next::font_size`; egui's own `Body` size without an
+/// installed 0.8.0 theme); the padding the gpui showcase's status bar keeps where the theme
+/// states none, as `(vertical, horizontal)` in logical pixels. egui's frame margin is whole
+/// points, so each side is rounded to one as gpui rounds a padding before layout, a half toward
+/// zero (gpui-pre 0.3.12 `src/taffy.rs:534-538`, `round_to_device_pixel`; `src/util.rs:130-133`,
+/// `round_half_toward_zero`): at a scale of 1 the two bars are padded alike, 3 px above and
+/// below a 14 px font, a quarter of it 3.5.
+fn status_bar_padding(ui: &egui::Ui) -> (f32, f32) {
+    let rem = demo::next_value(ui, next::font_size)
+        .unwrap_or_else(|| egui::TextStyle::Body.resolve(ui.style()).size);
     let whole = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
     (whole(rem / 4.0), whole(rem / 2.0))
 }
 
 /// The status bar's environment items (`status::environment_drawn`, the three showcases'
-/// text): the desktop, the preset by its key (`default` by the preset it builds on) and the
-/// mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
-/// the text-scaling factor and the flags that are set.
+/// text): the desktop, the preset by its key (`default` by the preset it builds on), with the
+/// palette laid over it, and the mode, then, of the installed 0.8.0 theme the window shows
+/// (`OldAtlas::next_shown`), the body text's font by the family egui draws
+/// (`demo::DrawnFamilies`) in its defined unit (§8.7), and the context it was resolved in: its
+/// text scale and the preferences it sets (`next::status::environment_drawn`), where a level the
+/// user asked for is held back the one used (`OldAtlas::contrast_held`), as Widget Info states
+/// what is drawn and as the iced showcase's `status_environment`. Without a 0.8.0 theme, the
+/// desktop and the preset and mode alone.
 pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
-    let t = app.atlas.old_resolved(theme);
     let mode = if theme == egui::Theme::Dark {
         "dark"
     } else {
@@ -869,13 +894,25 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         ThemeChoice::Default => rows::default_label(&app.default_preset),
         ThemeChoice::Preset(key) => key.clone(),
     };
-    let families = crate::demo::DrawnFamilies::of(ctx, &app.atlas);
-    status::environment_drawn(
+    // The palette laid over it, as the gpui showcase's status bar names it (`kde-breeze +
+    // dracula`).
+    let preset = match app.settings.palette {
+        Some(palette) => format!("{preset} + {palette}"),
+        None => preset,
+    };
+    let (Some(t), Some(families)) = (
+        app.atlas.next_shown(ctx),
+        crate::demo::DrawnFamilies::of(ctx, &app.atlas),
+    ) else {
+        return vec![status::desktop(), format!("{preset} {mode}")];
+    };
+    let body = &t.typography.body;
+    native_theme_showcase_support::next::status::environment_drawn(
         &preset,
         mode,
-        &t.defaults.font,
-        families.drawn_at(&t.defaults.font.family, false),
-        Some(app.atlas.accessibility()),
+        body,
+        families.drawn_at(&body.family, false),
+        Some(&t.context),
     )
 }
 
@@ -883,25 +920,21 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
 /// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note). As the gpui
 /// showcase's (`showcase-gpui/demo.rs:1686-1720`): the settings padded by `container_margin`,
 /// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
-/// Where the theme states the side panel's own padding (`sidebar.border.padding`, the left
-/// panel surface's inner margin) on any side, the panel keeps the stated sides, a side it
+/// Where the theme states the side panel's own padding (`sidebar.container(NONE).padding`, the
+/// left panel surface's inner margin) on any side, the panel keeps the stated sides, a side it
 /// leaves unstated takes `container_margin` (none where that is unstated too), as the gpui
 /// showcase's panel, where the panel frame would keep egui's own (8 across, 2 down), and its
 /// content adds none. The settings' rows, and each label and its control, are
 /// `layout.widget_gap` apart (the panel's `item_spacing`), or [`THEME_SETTINGS_GAP`] where the
 /// theme states none.
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
-    let padding = app
-        .atlas
-        .old_resolved(ui.ctx().theme())
-        .sidebar
-        .border
-        .padding;
-    let stated = [padding.top, padding.right, padding.bottom, padding.left]
-        .iter()
-        .any(Option::is_some);
-    let container_margin = app.atlas.layout().container_margin;
-    let widget_gap = app.atlas.layout().widget_gap;
+    let padding = demo::next_value(ui, |r| {
+        next::padding_of(&r.sidebar.container(WidgetState::NONE))
+    })
+    .unwrap_or([None; 4]);
+    let stated = padding.iter().any(Option::is_some);
+    let container_margin = demo::next_metric(ui, |l| l.container_margin);
+    let widget_gap = demo::next_metric(ui, |l| l.widget_gap);
     let mut seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Left),
@@ -909,9 +942,10 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         Some((Role::Sidebar, RoleVariant::Normal)),
     );
     let (seams, margin) = if stated {
-        seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+        seams.frame.inner_margin = demo::pad_unstated(
             seams.frame.inner_margin,
-            &demo::unstated_as(&padding, container_margin.unwrap_or_default()),
+            padding,
+            [container_margin.unwrap_or_default(); 4],
         );
         (seams, None)
     } else {
@@ -1018,7 +1052,7 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     if let Some(out) = out {
         seams.record(&mut app.registry, &out.response, "Side panel");
         app.registry.name("chrome.side_panel", &out.response);
-        if let Some(sides) = demo::unstated_sides(&padding).filter(|_| stated) {
+        if let Some(sides) = demo::unstated_sides(padding).filter(|_| stated) {
             let note = match container_margin {
                 Some(margin) => format!(
                     "not stated by the theme on {sides}: layout.container_margin, {margin}px, as \
@@ -1084,9 +1118,9 @@ fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui:
 }
 
 /// A theme setting's label, above its control and as wide as its text, as the gpui showcase's
-/// (`showcase-gpui/demo.rs:1652-1671`), in the side panel's font (`sidebar.font`, `Body` in the
-/// sidebar scope), recorded with the side panel body's role; the control names it as its
-/// AccessKit label.
+/// (`showcase-gpui/demo.rs:1652-1671`), in the side panel's font (`sidebar.item_label(NONE)`,
+/// `Body` in the sidebar scope), recorded with the side panel body's role; the control names it
+/// as its AccessKit label.
 fn setting_label(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -1094,13 +1128,17 @@ fn setting_label(
     text: &'static str,
 ) -> egui::Response {
     body.add(reg, ui, "Label · theme setting", |ui| {
-        ui.label(demo::lined(ui, text, egui::TextStyle::Body))
+        ui.label(demo::next_lined(ui, text, egui::TextStyle::Body))
     })
 }
 
-/// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
-/// Light and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the
-/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1620-1645`, `chrome.rs:254-299`).
+/// Theme (`ComboBox` of `default` and the platform's presets), Palette (`ComboBox` of `none`
+/// and the bundled palettes, [`crate::app::palette_rows`]), Mode (`ComboBox` of System, Light
+/// and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the gpui
+/// showcase's theme settings (`showcase-gpui/demo.rs:1620-1645`, `chrome.rs:254-299`), the
+/// Palette row between Theme and Mode as there. The Palette row is no element of the list,
+/// which has no palette row; its label's hover text says what the pages still on the 0.7.2
+/// model show under a palette ([`crate::app::PALETTE_TOOLTIP`]).
 fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
@@ -1110,6 +1148,20 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         .find(|(choice, _)| *choice == app.settings.theme)
         .map(|(_, label)| label.clone())
         .unwrap_or_default();
+    let palette_rows = crate::app::palette_rows();
+    let current_palette = app.settings.palette.unwrap_or(cli::NO_PALETTE).to_owned();
+    // Where High contrast resolved the theme without the palette chosen (spec §6, resolution
+    // step 1), the hover text says that too.
+    let mut palette_hover = crate::app::PALETTE_TOOLTIP.to_owned();
+    if let Some(held) = app
+        .atlas
+        .contrast_held(theme)
+        .filter(|held| held.by_palette)
+    {
+        palette_hover.push(' ');
+        palette_hover.push_str(&held.sentence());
+        palette_hover.push('.');
+    }
     let current_mode = app.settings.mode;
     // The shared crate's icon-theme rows (`rows::icon_rows`): `default` where the theme names an
     // available icon theme, `system`, the installed themes, Lucide, Material; the gpui
@@ -1138,7 +1190,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Theme",
-            element: "chrome.side_panel.settings.theme",
+            element: Some("chrome.side_panel.settings.theme"),
             kind: "ComboBox · Theme",
             row_kind: "Theme row",
             rows: &theme_rows,
@@ -1147,13 +1199,28 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
             hover: None,
         },
     );
+    let picked_palette = setting(
+        registry,
+        ui,
+        body,
+        Setting {
+            label: "Palette",
+            element: None,
+            kind: "ComboBox · Palette",
+            row_kind: "Palette row",
+            rows: &palette_rows,
+            current: &app.settings.palette,
+            current_text: current_palette,
+            hover: Some(palette_hover),
+        },
+    );
     let picked_mode = setting(
         registry,
         ui,
         body,
         Setting {
             label: "Mode",
-            element: "chrome.side_panel.settings.mode",
+            element: Some("chrome.side_panel.settings.mode"),
             kind: "ComboBox · Mode",
             row_kind: "Mode row",
             current_text: Action::SetMode(current_mode).label().to_string(),
@@ -1168,7 +1235,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Icon theme",
-            element: "chrome.side_panel.settings.icon_theme",
+            element: Some("chrome.side_panel.settings.icon_theme"),
             kind: "ComboBox · Icon theme",
             row_kind: "Icon theme row",
             current_text: current_icon.to_string(),
@@ -1186,6 +1253,9 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         app.settings.theme = choice;
         app.install(&ctx);
     }
+    if let Some(palette) = picked_palette {
+        app.choose_palette(palette, &ctx);
+    }
     if let Some(mode) = picked_mode {
         app.set_mode(mode, &ctx);
     }
@@ -1201,7 +1271,8 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
 struct Setting<'a, T> {
     label: &'static str,
     /// The drop-down's element in `docs/showcase-elements.toml`; its label's is `<element>_label`.
-    element: &'static str,
+    /// `None` for a row the list has no element of.
+    element: Option<&'static str>,
     kind: &'static str,
     row_kind: &'static str,
     rows: &'a [(T, String)],
@@ -1222,7 +1293,9 @@ fn setting<T: Clone + PartialEq>(
     setting: Setting<'_, T>,
 ) -> Option<T> {
     let label = setting_label(registry, ui, body, setting.label);
-    registry.tag(&format!("{}_label", setting.element), &label);
+    if let Some(element) = setting.element {
+        registry.tag(&format!("{element}_label"), &label);
+    }
     let label = label.id;
     let mut picked = None;
     let element = setting.element;
@@ -1240,7 +1313,7 @@ fn setting<T: Clone + PartialEq>(
             let mut combo = ComboBox::from_id_salt(setting.label)
                 .width(ui.available_width())
                 .truncate()
-                .selected_text(demo::lined(
+                .selected_text(demo::next_lined(
                     ui,
                     setting.current_text,
                     egui::TextStyle::Button,
@@ -1274,7 +1347,9 @@ fn setting<T: Clone + PartialEq>(
             }
         },
     );
-    registry.tag(element, &combo);
+    if let Some(element) = element {
+        registry.tag(element, &combo);
+    }
     picked
 }
 
@@ -1282,11 +1357,11 @@ fn setting<T: Clone + PartialEq>(
 /// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
 /// (`showcase-gpui/inspector.rs:958-973`).
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
-    let t = app.atlas.old_resolved(ui.ctx().theme());
+    let look = demo::TabLook::next(app.atlas.next_shown(ui.ctx()));
     let picked = demo::tab_bar(
         &mut app.registry,
         ui,
-        t,
+        &look,
         demo::TabBar {
             kind: "TabBar · Inspector",
             tab_kind: "Tab · Inspector",
@@ -1313,14 +1388,13 @@ fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
 
 /// The inspector's content below the tabs: the Widget tab or the Theme tab (§10.4).
 fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
-    let theme = ui.ctx().theme();
     match app.inspector_tab {
         InspectorTab::Widget => {
             let view = app.registry.shown().map(|shown| {
                 match (
                     &app.elements,
                     &app.manifest,
-                    app.json.get(&app.atlas, theme),
+                    app.json.get(&app.atlas, ui.ctx()),
                 ) {
                     (Ok(elements), Ok(manifest), Ok(json)) => Ok(crate::info::InfoView::of(
                         shown,
@@ -1334,13 +1408,8 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                     }
                 }
             });
-            crate::info::widget_tab(
-                ui,
-                app.atlas.old_resolved(theme),
-                app.atlas.layout(),
-                view,
-                &mut app.registry,
-            );
+            let r = app.atlas.next_shown(ui.ctx());
+            crate::info::widget_tab(ui, r, view, &mut app.registry);
         }
         InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.semibold, &app.manifest),
     }
@@ -1352,12 +1421,12 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
 /// row's right end a Ghost menu button listing every page, the current one selected, as
 /// gpui-component's tab-bar menu does (gpui-component 0.9.1 `src/tab/tab_bar.rs:699-732`,
 /// `TabBar::render`'s Ghost `menu` button, the selected tab's item `checked`). Its caret is the
-/// chosen icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the
-/// button reads "Pages" (§10.4's icon rule).
+/// chosen icon theme's `NavDown` at `icons.sizes.small`; where the icon theme has none, or the
+/// theme states no such size, the button reads "Pages" (§10.4's icon rule). The tabs and the
+/// button are of the installed 0.8.0 theme (`demo::TabLook::next`, `demo::next_tool_button`).
 pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
-    let theme = ui.ctx().theme();
     let (set, icon_theme) = app.chosen_icons();
-    let margin = app.atlas.layout().container_margin;
+    let margin = demo::next_metric(ui, |l| l.container_margin);
     let App {
         registry,
         settings,
@@ -1365,15 +1434,16 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
         atlas,
         ..
     } = app;
-    let t = atlas.old_resolved(theme);
-    let caret_size = t.defaults.icon_sizes.small;
+    let r = atlas.next_shown(ui.ctx());
+    let caret_size = demo::small_icon_size(ui);
+    let padding = demo::tool_padding(r);
     let tabs: Vec<(Page, &'static str)> = Page::ALL.map(|page| (page, page.label())).to_vec();
     let current = settings.page;
     let mut from_menu = None;
     let picked = demo::tab_bar(
         registry,
         ui,
-        t,
+        &demo::TabLook::next(r),
         demo::TabBar {
             kind: "TabBar · Pages",
             tab_kind: "Tab · Page",
@@ -1386,19 +1456,17 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
             tab_elements: &["chrome.page_tabs.basic", "chrome.page_tabs.buttons"],
         },
         |ui, tab, registry| {
-            let caret = demo::role_image(
-                ui,
-                IconRole::NavDown,
-                set,
-                icon_theme.as_deref(),
-                caret_size,
-            );
-            let drawn = caret.is_some();
-            demo::tool_button(ui, &t.button.border.padding, None);
+            let caret = caret_size.and_then(|size| {
+                demo::role_image(ui, IconRole::NavDown, set, icon_theme.as_deref(), size)
+            });
+            let drawn = caret.is_some().then_some(caret_size).flatten();
+            demo::next_tool_button(ui, padding);
+            let flat = demo::flat(ui);
             let button = match caret {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Pages"),
-            };
+            }
+            .frame_when_inactive(false);
             let response = demo::menu_button(
                 registry,
                 ui,
@@ -1420,9 +1488,10 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                 },
             );
             registry.ghost_last();
+            registry.flat_last(&flat);
             registry.tag("chrome.page_tabs.menu", &response);
-            if drawn {
-                place_icon(registry, ui, "chrome.page_tabs.menu", &response, caret_size);
+            if let Some(size) = drawn {
+                place_icon(registry, ui, "chrome.page_tabs.menu", &response, size);
             }
             response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Pages"));
         },
@@ -1432,20 +1501,27 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// The rule under the page tabs, across the content: a separator line, `separator.line_width`
-/// tall in `separator.line_color`, between the tab row and the page.
+/// The rule under the page tabs, across the content: a separator line, `separator.thickness`
+/// tall in `separator.color` of the installed 0.8.0 theme, between the tab row and the page;
+/// without one, egui's own separator's line, the `noninteractive.bg_stroke` (egui-0.37.0
+/// `src/theme/default_style.rs:207-215`).
 fn page_rule(app: &mut App, ui: &mut egui::Ui) {
-    let t = app.atlas.old_resolved(ui.ctx().theme());
-    let width = t.separator.line_width;
+    let (width, colour) = demo::next_value(ui, |r| {
+        (
+            r.separator.thickness,
+            native_theme_egui::next::to_color32(r.separator.color),
+        )
+    })
+    .unwrap_or_else(|| {
+        let own = ui.visuals().widgets.noninteractive.bg_stroke;
+        (own.width, own.color)
+    });
     let (rect, response) = ui.allocate_exact_size(
         egui::vec2(ui.available_width(), width),
         egui::Sense::hover(),
     );
-    ui.painter().rect_filled(
-        rect,
-        egui::CornerRadius::ZERO,
-        native_theme_egui::convert::to_color32(t.separator.line_color),
-    );
+    ui.painter()
+        .rect_filled(rect, egui::CornerRadius::ZERO, colour);
     app.registry
         .place_on(ui.ctx(), response.layer_id, "chrome.page_tabs.rule", rect);
 }
@@ -1502,14 +1578,9 @@ fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
     // across the content, the chosen icon theme's error icon first, where it
     // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
     // (`showcase-gpui/support.rs:515-526`, `role_for_gpui_icon`) — at
-    // `defaults.icon_sizes.small`.
+    // `icons.sizes.small`; where the theme states no such size, the text alone.
     let (set, icon_theme) = app.chosen_icons();
-    let size = app
-        .atlas
-        .old_resolved(ui.ctx().theme())
-        .defaults
-        .icon_sizes
-        .small;
+    let size = demo::small_icon_size(ui);
     demo::framed(
         &mut app.registry,
         ui,
@@ -1519,8 +1590,9 @@ fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
         |ui, reg| {
             ui.set_min_width(ui.available_width());
             ui.horizontal(|ui| {
-                let icon =
-                    demo::role_image(ui, IconRole::DialogError, set, icon_theme.as_deref(), size);
+                let icon = size.and_then(|size| {
+                    demo::role_image(ui, IconRole::DialogError, set, icon_theme.as_deref(), size)
+                });
                 if let Some(icon) = icon {
                     demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
                 }
@@ -1551,39 +1623,43 @@ fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
 /// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.9.1
 /// `src/dialog/dialog.rs:806-813`, the `DialogTitle`, and `:846-862`, the Ghost close button) and
 /// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2758`, `:2800`): the
-/// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
-/// read from the theme — and flush right a Ghost close button, the chosen icon theme's
-/// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
-/// icon rule). Added through the dialog body's seam; returns whether the button was clicked.
+/// title in `dialog.title` of the installed 0.8.0 theme — its size is the dialog role's
+/// `Heading` slot (§5), its colour read from the theme, egui's own heading's where it states
+/// none — and flush right a Ghost close button, the chosen icon theme's `WindowClose` at
+/// `icons.sizes.small`, or "Close" where the icon theme has none or the theme states no such
+/// size (§10.4's icon rule). Added through the dialog body's seam; returns whether the button
+/// was clicked.
 fn dialog_title(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     body: demo::Applied,
-    t: &native_theme::theme::ResolvedTheme,
     (set, icon_theme): &(IconSet, Option<String>),
     title: &'static str,
 ) -> bool {
-    let colour = native_theme_egui::convert::to_color32(t.dialog.title_font.color);
-    let image = demo::role_image(
-        ui,
-        IconRole::WindowClose,
-        *set,
-        icon_theme.as_deref(),
-        t.defaults.icon_sizes.small,
-    );
+    let colour = demo::next_value(ui, |r| next::text_color_of(&r.dialog.title)).flatten();
+    let image = demo::small_icon_size(ui).and_then(|size| {
+        demo::role_image(ui, IconRole::WindowClose, *set, icon_theme.as_deref(), size)
+    });
     let mut clicked = false;
     ui.horizontal(|ui| {
         body.add(reg, ui, "Label · dialog title", |ui| {
-            ui.label(egui::RichText::new(title).heading().color(colour))
+            let text = egui::RichText::new(title).heading();
+            ui.label(match colour {
+                Some(colour) => text.color(colour),
+                None => text,
+            })
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             demo::ghost(ui);
+            let flat = demo::flat(ui);
             let button = match image {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Close"),
-            };
+            }
+            .frame_when_inactive(false);
             let r = body.add(reg, ui, "Button · dialog close", |ui| ui.add(button));
             reg.ghost_last();
+            reg.flat_last(&flat);
             r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Close"));
             clicked = r.clicked();
         });
@@ -1660,14 +1736,20 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
     };
-    let t = app.atlas.old_resolved(ui.ctx().theme());
-    // The four dialog extents are required sizes (`f32` on the resolved theme).
-    let extents = [
-        t.dialog.min_width,
-        t.dialog.max_width,
-        t.dialog.min_height,
-        t.dialog.max_height,
-    ];
+    // The four dialog extents, `dialog.panel.min_size` and `max_size` of the installed 0.8.0
+    // theme, as the Overlays page's modal takes them; one the theme states not, egui's own, none.
+    let ([min_w, min_h], [max_w, max_h]) =
+        demo::next_value(ui, |r| (r.dialog.panel.min_size, r.dialog.panel.max_size))
+            .unwrap_or(([None; 2], [None; 2]));
+    // A hovered row's outline, the pen a rule states for `list.highlight(HOVER)`
+    // (`demo::state_pen`).
+    let hover_pen = demo::next_value(ui, |r| {
+        demo::state_pen(
+            &r.list
+                .highlight(native_theme::next::ListQuery::new(WidgetState::HOVER)),
+        )
+    })
+    .flatten();
     let groups = palette_groups(app, ui.ctx());
     let chosen_icons = app.chosen_icons();
     let mut query = palette.query.clone();
@@ -1678,12 +1760,8 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let mut should_close = false;
     let mut close_clicked = false;
     let App {
-        registry,
-        settings,
-        atlas,
-        ..
+        registry, settings, ..
     } = app;
-    let t = atlas.old_resolved(ui.ctx().theme());
     demo::surfaced(
         registry,
         ui,
@@ -1692,11 +1770,11 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
         None,
         "command palette backdrop",
         |ui, chrome, registry| {
-            let [min_w, max_w, min_h, max_h] = extents;
-            let min_w = inner_extent(min_w, &chrome.frame, true);
-            let max_w = inner_extent(max_w, &chrome.frame, true);
-            let min_h = inner_extent(min_h, &chrome.frame, false);
-            let max_h = inner_extent(max_h, &chrome.frame, false);
+            let inner = |stated: Option<f32>, horizontal| {
+                stated.and_then(|s| inner_extent(s, &chrome.frame, horizontal))
+            };
+            let (min_w, max_w) = (inner(min_w, true), inner(max_w, true));
+            let (min_h, max_h) = (inner(min_h, false), inner(max_h, false));
             let out = egui::Modal::new(egui::Id::unique("command-palette"))
                 .frame(chrome.frame)
                 .show(ui.ctx(), |ui| {
@@ -1720,7 +1798,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                         ui.set_max_height(h);
                     }
                     close_clicked =
-                        dialog_title(registry, ui, dialog, t, &chosen_icons, "Command Palette");
+                        dialog_title(registry, ui, dialog, &chosen_icons, "Command Palette");
                     // Escape: clear the query first; only an empty query lets it close the modal
                     // (§10.4). It is consumed before the field, so the cleared query is a changed
                     // one below, and `should_close` sees it only when the query was already
@@ -1829,20 +1907,14 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                                                     // in, inside it, where the theme states the
                                                     // line (egui-0.37.0
                                                     // `src/theme/default_style.rs:62-72`).
-                                                    if let Some(edge) = t
-                                                        .list
-                                                        .hover_border_color
+                                                    if let Some(pen) = hover_pen
                                                         .filter(|_| r.hovered() && !highlighted)
                                                     {
                                                         let v = ui.visuals().widgets.hovered;
                                                         ui.painter().rect_stroke(
                                                             r.rect.expand(v.expansion),
                                                             v.corner_radius,
-                                                            native_theme_egui::convert::to_stroke(
-                                                                egui::Stroke::NONE,
-                                                                edge,
-                                                                t.defaults.border.line_width,
-                                                            ),
+                                                            pen,
                                                             egui::StrokeKind::Inside,
                                                         );
                                                     }
@@ -1925,25 +1997,35 @@ fn preference_row(
 
 /// Preferences: a `Window` in the window surfaces, its body `Role::Window`, its
 /// title in the title-bar font and colour (§4.7, §14 item 2b); a change
-/// rebuilds with `Builder::accessibility` through `App::install` (§4.3).
+/// resolves the 0.8.0 theme again in the context the preferences give, and builds the 0.7.2
+/// atlas with `Builder::accessibility`, through `App::install` (§4.3).
 pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
     if !app.preferences_open {
         return;
     }
     let ctx = ui.ctx().clone();
-    let t = app.atlas.old_resolved(ctx.theme());
-    let title = egui::RichText::new("Preferences")
-        .font(window_title_bar_font(t, app.atlas.accessibility()))
-        .color(window_title_bar_text_color(t, true));
-    // `dialog.max_width`, a required size (`f32` on the resolved theme).
-    let dialog_width = t.dialog.max_width;
-    // The user's request: the atlas's preferences are the effective ones, which carry the OS's
-    // Reduce motion request, so with no request of the user's the switch starts off.
+    // The title in an active window's title font and colour of the installed 0.8.0 theme
+    // (`window.title(normal)`), each egui's own window title's where the theme states none.
+    let r = app.atlas.next_resolved(ctx.theme());
+    let mut title = egui::RichText::new("Preferences");
+    if let Some(font) = r.and_then(|r| next::window_title_bar_font(r).ok()) {
+        title = title.font(font);
+    }
+    if let Some(colour) = r.and_then(|r| next::window_title_bar_text_color(r).ok()) {
+        title = title.color(colour);
+    }
+    // `dialog.panel.max_size[0]`, where the theme states it.
+    let dialog_width = r.and_then(|r| r.dialog.panel.max_size[0]);
+    // The user's request: the preferences the install asked for are the effective ones, which
+    // carry the OS's Reduce motion request, so with no request of the user's the switch starts
+    // off. Not the installed theme's context, which holds back a contrast level the theme does
+    // not define (`OldAtlas::contrast_held`).
     let mut prefs = app.settings.prefs.clone().unwrap_or_else(|| {
-        let mut prefs = app.atlas.accessibility().clone();
+        let mut prefs = app.atlas.asked().clone();
         prefs.reduce_motion = false;
         prefs
     });
+    let high_contrast = high_contrast_text(app.atlas.contrast_held(ctx.theme()));
     let before = prefs.clone();
     // Whether the text-scaling field is still being dragged, or was just let go of.
     let mut scale_dragged = false;
@@ -1958,12 +2040,15 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         "preferences window",
         |_, chrome, registry| {
             // As wide as the theme lets a dialog be: the gpui showcase's sheet is its own 600px
-            // (`PREFERENCES_WIDTH`), which the model states nothing of.
+            // (`PREFERENCES_WIDTH`), which the model states nothing of; egui's own default width
+            // where the theme states no dialog width.
             let mut window = egui::Window::new(title)
                 .id(egui::Id::unique("preferences"))
                 .open(&mut open)
-                .default_width(dialog_width)
                 .frame(chrome.frame);
+            if let Some(width) = dialog_width {
+                window = window.default_width(width);
+            }
             if let Some(title_frame) = chrome.title_frame {
                 window = window.title_frame(title_frame);
             }
@@ -1986,7 +2071,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                     body.add(registry, ui, "Label · description", |ui| {
                         ui.label(
                             egui::RichText::new(
-                                "Installed with native_theme_egui's Builder::accessibility",
+                                "Resolved into the 0.8.0 theme's context, installed with ThemeAtlas::next_builder",
                             )
                             .small()
                             .weak(),
@@ -2039,13 +2124,13 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                                 (
                                     "switch · high contrast",
                                     "High contrast",
-                                    "high_contrast: stored with the atlas, which builds no differently for it",
+                                    high_contrast.as_str(),
                                     &mut prefs.high_contrast,
                                 ),
                                 (
                                     "switch · reduce transparency",
                                     "Reduce transparency",
-                                    "reduce_transparency: stored with the atlas, which builds no differently for it",
+                                    "reduce_transparency: the context the 0.8.0 theme is resolved in carries it",
                                     &mut prefs.reduce_transparency,
                                 ),
                             ] {
@@ -2089,9 +2174,22 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         .settings
         .prefs
         .as_ref()
-        .is_some_and(|p| p != app.atlas.accessibility());
+        .is_some_and(|p| p != app.atlas.asked());
     if differs && !scale_dragged && (changed || scale_settled) {
         app.install(&ctx);
+    }
+}
+
+/// What the Preferences dialog's High contrast row says: the switch shows the preference asked
+/// for, and the 0.8.0 theme, which the installed styles are built from, is resolved at High
+/// contrast where it defines that level; where it is resolved at a lower one, why
+/// ([`crate::app::ContrastHeld::sentence`]), as the iced showcase's `high_contrast_text`.
+fn high_contrast_text(held: Option<&crate::app::ContrastHeld>) -> String {
+    let asked = "high_contrast: the 0.8.0 theme, which the installed styles are built from, is \
+                 resolved at High contrast where its preset or the desktop defines that level";
+    match held {
+        Some(held) => format!("{asked}; {}", held.sentence()),
+        None => asked.to_string(),
     }
 }
 
@@ -2112,12 +2210,16 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         return;
     }
     let ctx = ui.ctx().clone();
-    let t = app.atlas.old_resolved(ctx.theme());
-    // The primary button is Close: at the trailing end on PrimaryRight, the leading on PrimaryLeft.
-    let labels = match dialog_button_order(t) {
-        DialogButtonOrder::PrimaryRight => ["Copy version", "Close"],
-        DialogButtonOrder::PrimaryLeft => ["Close", "Copy version"],
+    let r = app.atlas.next_shown(&ctx);
+    // The primary button is Close: at the trailing end on PrimaryRight, the leading on
+    // PrimaryLeft; where the theme states no `dialog.button_order`, egui having none of its own,
+    // in the order the Overlays page's modal writes its buttons where unstated, the primary
+    // first (`pages::overlays::modal_buttons`).
+    let labels = match r.and_then(|r| next::dialog_button_order(r).ok()) {
+        Some(DialogButtonOrder::PrimaryRight) => ["Copy version", "Close"],
+        Some(DialogButtonOrder::PrimaryLeft) | None => ["Close", "Copy version"],
     };
+    let max_width = r.and_then(|r| r.dialog.panel.max_size[0]);
     let version = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
     let chosen_icons = app.chosen_icons();
     let mut close = false;
@@ -2129,7 +2231,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         None,
         "about",
         |_, chrome, registry| {
-            let max_w = inner_extent(t.dialog.max_width, &chrome.frame, true);
+            let max_w = max_width.and_then(|w| inner_extent(w, &chrome.frame, true));
             let response = egui::Modal::new(egui::Id::unique("about")).frame(chrome.frame).show(&ctx, |ui| {
         let body = demo::styled(registry, ui, Role::Dialog, RoleVariant::Normal, "about body");
         if let Some(w) = max_w {
@@ -2139,7 +2241,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         // and version, then the description in `dialog.body_font` — the dialog role's `Body`
         // slot and text colour (§5) — ending in the link to the Compatibility table at this
         // version's tag.
-        close |= dialog_title(registry, ui, body, t, &chosen_icons, "About");
+        close |= dialog_title(registry, ui, body, &chosen_icons, "About");
         body.add(registry, ui, "about version", |ui| ui.label(version));
         // The link on a line of its own: a widget in a role scope of its own sits in a child
         // `Ui` a wrapping row cannot carry on to its next line (`demo::Applied`).

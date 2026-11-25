@@ -1,0 +1,2 @@
+./index.toml
+./screen/light/tab_bar/default/black/normal.png

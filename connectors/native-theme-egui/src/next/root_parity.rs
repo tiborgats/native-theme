@@ -397,7 +397,7 @@ fn parts(p: &mut Pairs, old: &ResolvedTheme, new: &native_theme::next::ResolvedT
             frames.push((
                 "text_area_frame",
                 ok(crate::text_area_frame(ui, id, old)),
-                super::text_area_frame(ui, id, new),
+                super::text_area_frame(ui, id, new).map(|(frame, _)| frame),
             ));
         });
         for (name, o, n) in frames {
