@@ -1314,9 +1314,7 @@
       ]
     },
     "thumb": {
-      "base": {
-        "fill": "#ffffff8c"
-      },
+      "base": {},
       "rules": [
         {
           "orientation": "vertical",

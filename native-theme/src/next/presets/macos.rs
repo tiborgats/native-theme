@@ -32,8 +32,7 @@
 //! in which the preset letters its widgets, the sidebar's items
 //! (`sidebar.font.color`, `labelColor`) and the tooltip's text, and the text
 //! of the eight surfaces (§7: one text colour); `foreground_muted` is
-//! `secondaryLabelColor`, so the overlay scroll bar's handle at rest and the
-//! progress bar's groove; `border` is `separatorColor`, so every outline drawn in the
+//! `secondaryLabelColor`, so the progress bar's groove; `border` is `separatorColor`, so every outline drawn in the
 //! default border and the separator; `link` is `linkColor`; `caret` is
 //! `textInsertionPointColor`; `error`, `warning`, `success` and `info` are
 //! the status fills; `accent` is written as given as an explicit accent is
@@ -2638,7 +2637,6 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
         scrollbar: scrollbar(
             c,
             g,
-            &colors,
             system
                 .and_then(|s| s.scrollbar_width_px)
                 .unwrap_or(g.scrollbar_groove_width),
@@ -3731,18 +3729,16 @@ fn list(
 
 /// The scroll bar: a groove of an exact thickness in the track's colour of
 /// the scroller's style and a handle of an exact thickness in the knob's
-/// fills of that style: where `overlay`, at rest the window's muted text (0.7.2:
-/// `scrollbar.thumb_color` is `defaults.muted_color` where unstated; AppKit
-/// draws no overlay knob until the view scrolls, and the knob shown but not
-/// hovered is not measured) and the measured overlay knob hovered and
-/// pressed; else the measured legacy knob at rest and hovered and pressed.
-/// The groove is `groove_width` thick and the bar overlays the content
-/// where `overlay` (the system's scroller width and style, else the
+/// fills of that style: where `overlay`, no fill at rest (AppKit draws no
+/// overlay knob until the view scrolls, and the knob shown but not hovered
+/// is not measured, so no source states it) and the measured overlay knob
+/// hovered and pressed; else the measured legacy knob at rest and hovered
+/// and pressed. The groove is `groove_width` thick and the bar overlays the
+/// content where `overlay` (the system's scroller width and style, else the
 /// preset's).
 fn scrollbar(
     c: &SchemeColors,
     g: &Generation,
-    roles: &ColorRoles,
     groove_width: f32,
     overlay: bool,
 ) -> ScrollbarWidget {
@@ -3757,10 +3753,7 @@ fn scrollbar(
     )
     .build();
     let (rest, active) = if overlay {
-        (
-            roles.window.foreground_muted,
-            c.scrollbar_thumb_overlay_active,
-        )
+        (None, c.scrollbar_thumb_overlay_active)
     } else {
         (
             Some(c.scrollbar_thumb_legacy),

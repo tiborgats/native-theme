@@ -1168,6 +1168,10 @@ key = "scrollbar.thumb_color"
 homes = ["scrollbar.thumb(NONE).fill"]
 homes_by_preset = { "kde-breeze" = ["scrollbar.thumb(UNFOCUSED_VIEW).fill"] }
 note = "kde-breeze: 0.7.2's value is the plain handle, the one in a view without the focus (spec §5, S3)"
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 takes defaults.muted_color where unstated (both presets state none); the overlay style of both presets draws no knob until the view scrolls, and the knob shown but not hovered is not measured, so no source states the rest fill and 0.8.0 states none (spec §1, Crate-Wide Invariants: a preset writes a value only where a source states it); the toolkit's own knob stays (spec §10, rule 0); the hovered and held knob stays measured"
+difference_citation = "docs/v0.8.0-spec.md §1 (Crate-Wide Invariants, stated and unstated values); os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c) measures `*.hovered.scroller_knob_overlay` and `*.pressed.scroller_knob_overlay` only"
+difference_values = { "macos-monterey" = "unstated", "macos-tahoe" = "unstated" }
 
 [[row]]
 key = "scrollbar.thumb_hover_color"
