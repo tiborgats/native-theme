@@ -467,8 +467,28 @@ enum Route {
     Lost(String),
 }
 
+/// The `visuals.widgets` entry egui draws a home's state in, where its state names one: an open
+/// state the `open` entry, a press the `active` one, a hover the `hovered` one, in that order
+/// (an open combo box under the pointer is drawn open); `None` for a home of no such state.
+fn widget_entry(home: &str) -> Option<&'static str> {
+    let (_, query) = home.split_once('(')?;
+    let state = query.split([')', ';']).next()?;
+    let flags: Vec<&str> = state.split('|').collect();
+    [
+        ("OPEN", "open"),
+        ("PRESSED", "active"),
+        ("HOVER", "hovered"),
+    ]
+    .into_iter()
+    .find(|(flag, _)| flags.contains(flag))
+    .map(|(_, entry)| entry)
+}
+
 impl Route {
-    fn of(row: &Row, seams: &[Seam]) -> Self {
+    /// How egui applies `row` to `home`, one of its homes, on an instance drawn with `seams`.
+    /// Where the row's homes are drawn in different `visuals.widgets` entries
+    /// ([`widget_entry`]), only the sinks of `home`'s entry are its route.
+    fn of(row: &Row, home: &str, seams: &[Seam]) -> Self {
         if row.verdict == Verdict::Unmappable {
             let upstream = row.upstream.as_deref().unwrap_or_default();
             if let Some(widget) = upstream.strip_prefix("native-theme-egui-widgets: ") {
@@ -489,21 +509,41 @@ impl Route {
         if let Some(check) = &row.checked_by {
             return Route::PerCall(check.clone());
         }
+        let mut entries: Vec<&str> = row.homes.iter().filter_map(|h| widget_entry(h)).collect();
+        entries.sort_unstable();
+        entries.dedup();
+        let sinks: Vec<&Sink> = match widget_entry(home) {
+            Some(entry) if entries.len() > 1 => {
+                let infix = format!(".widgets.{entry}.");
+                let own: Vec<&Sink> = row
+                    .sinks
+                    .iter()
+                    .filter(|s| s.path.contains(&infix))
+                    .collect();
+                if own.is_empty() {
+                    row.sinks.iter().collect()
+                } else {
+                    own
+                }
+            }
+            _ => row.sinks.iter().collect(),
+        };
         // The instance's own cells and frames first; a role's cell carries what the role does
         // not write from the base style (§3.4).
         let mut on: Vec<(&Seam, &Sink)> = seams
             .iter()
             .flat_map(|seam| {
-                row.sinks
+                sinks
                     .iter()
+                    .copied()
                     .filter(move |s| sink_on(s, seam))
                     .map(move |s| (seam, s))
             })
             .collect();
         if on.is_empty() {
-            on = row
-                .sinks
+            on = sinks
                 .iter()
+                .copied()
                 .filter(|s| sink_on(s, &Seam::Base))
                 .map(|s| (&Seam::Base, s))
                 .collect();
@@ -518,7 +558,7 @@ impl Route {
                 };
                 Route::Sink(format!("{}, {}{more}", seam_place(seam), sink.path))
             }
-            None => match row.sinks.first() {
+            None => match sinks.first() {
                 Some(sink) => Route::Sink(sink_text(sink)),
                 None => Route::PerCall("no test named".to_string()),
             },
@@ -567,7 +607,7 @@ fn how_line_with(
         return "egui: the showcase loads its icons from it (demo::role_image)".to_string();
     }
     if let Some(row) = manifest.rows.iter().find(|r| r.holds(home)) {
-        return Route::of(row, seams).line();
+        return Route::of(row, home, seams).line();
     }
     let part = |name: &'static str| {
         let field = format!("{home}.{name}");
@@ -576,7 +616,7 @@ fn how_line_with(
             return Some((name, format!("egui: {short}"), short));
         }
         manifest.rows.iter().find(|r| r.holds(&field)).map(|row| {
-            let route = Route::of(row, seams);
+            let route = Route::of(row, &field, seams);
             (name, route.line(), route.short())
         })
     };
@@ -1031,7 +1071,6 @@ pub(crate) fn manifest_rows(
     family: &dyn Fn(&str, &StatedFont) -> String,
     seams: &[Seam],
 ) -> Vec<InfoRow<Color>> {
-    let how = Route::of(row, seams).line();
     row.homes_on(preset)
         .iter()
         .map(|home| {
@@ -1040,7 +1079,7 @@ pub(crate) fn manifest_rows(
                 leaf: home.clone(),
                 value,
                 colour,
-                how: how.clone(),
+                how: Route::of(row, home, seams).line(),
             }
         })
         .collect()

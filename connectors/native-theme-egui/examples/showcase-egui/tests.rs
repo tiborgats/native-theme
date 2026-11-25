@@ -1034,6 +1034,56 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
     Ok(())
 }
 
+/// A `mapping.toml` row whose homes egui draws in different `visuals.widgets` entries routes
+/// each home to its own entry's sink: `button.hover_border_color`'s pressed home to the
+/// `active` stroke, its hovered one to the `hovered` stroke, in Widget Info's listed rows as in
+/// its route line.
+#[test]
+fn a_rows_route_is_the_sink_of_the_home_asked() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let row = manifest
+        .rows
+        .iter()
+        .find(|r| r.leaf == "button.hover_border_color")
+        .ok_or("mapping.toml has no button.hover_border_color row")?;
+    for (home, sink) in [
+        (
+            "button.body(HOVER).stroke.color",
+            "visuals.widgets.hovered.bg_stroke.color",
+        ),
+        (
+            "button.body(PRESSED).stroke.color",
+            "visuals.widgets.active.bg_stroke.color",
+        ),
+    ] {
+        let how = crate::info::how_line(&manifest, home, &seams);
+        assert!(how.contains(sink), "{home}: {how}");
+        let listed = crate::info::manifest_rows(
+            row,
+            (
+                &crate::info::InfoTheme::new(
+                    native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+                        .resolve(&native_theme::next::ThemeContext::light()),
+                )?,
+                "kde-breeze",
+            ),
+            &crate::info::as_stated,
+            &seams,
+        );
+        let line = listed
+            .iter()
+            .find(|r| r.leaf == home)
+            .map(|r| r.how.clone())
+            .ok_or_else(|| format!("{home} is not listed"))?;
+        assert!(line.contains(sink), "{home}: {line}");
+    }
+    Ok(())
+}
+
 /// The fills of the frames painted on the side-panel toggle's rect.
 fn toggle_frame_fills(harness: &Harness<'_, App>) -> Result<Vec<egui::Color32>, String> {
     let rect = harness
