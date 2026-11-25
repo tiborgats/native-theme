@@ -1159,7 +1159,9 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 t.scrollbar_thumb,
                 "native-theme-gpui/colors.rs:733",
             ),
-            |i| i.config("model", "scrollbar.thumb(UNFOCUSED_VIEW).fill"),
+            |i| {
+                i.config("model", "scrollbar.thumb(UNFOCUSED_VIEW).fill").config("derived", "scrollbar.thumb(UNFOCUSED_VIEW).fill where the theme states it; where it does not, gpui-component's own scrollbar_thumb (native-theme-gpui next/mod.rs, thumb_at_rest)")
+            },
         ),
         ThemeToken::ScrollbarThumbHover => (
             claim(

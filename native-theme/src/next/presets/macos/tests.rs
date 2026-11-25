@@ -305,10 +305,10 @@ fn a_pressed_scroll_handle_wins_over_the_pointer() {
     }
 }
 
-/// The overlay knob is the window's muted text at rest and the measured one
-/// hovered and pressed; the legacy knob its measured rest fill, hovered and
-/// pressed its active one, and the track each style's (os-probe run
-/// 45252258079, `*.scroller_knob_*`).
+/// The overlay knob states no fill at rest (no source states one) and the
+/// measured one hovered and pressed; the legacy knob its measured rest fill,
+/// hovered and pressed its active one, and the track each style's (os-probe
+/// run 45252258079, `*.scroller_knob_*`).
 #[test]
 fn the_scroll_handle_follows_the_scroller_s_style() {
     for (preset, scheme) in every_scheme() {
@@ -317,7 +317,7 @@ fn the_scroll_handle_follows_the_scroller_s_style() {
         for (overlay, rest, active, track) in [
             (
                 true,
-                Some(c.muted),
+                None,
                 c.scrollbar_thumb_overlay_active,
                 c.scrollbar_track,
             ),
@@ -1065,11 +1065,6 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
             ),
             ("separator", Some(theme.separator.color), p.border),
             (
-                "overlay scroll bar's handle",
-                solid(&theme.scrollbar.thumb(none).fill),
-                p.foreground_muted,
-            ),
-            (
                 "progress bar's groove",
                 solid(&theme.progress_bar.track(none).fill),
                 p.foreground_muted,
@@ -1150,6 +1145,12 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
                 Some(t.spinner.color),
                 Some(t.colors.disabled_text),
                 Some(t.colors.shadow),
+                t.scrollbar
+                    .thumb(none)
+                    .stated
+                    .contains(PartStated::FILL)
+                    .then(|| solid(&t.scrollbar.thumb(none).fill))
+                    .flatten(),
                 t.colors.selection.unfocused_background,
                 t.colors.selection.unfocused_foreground,
             ]

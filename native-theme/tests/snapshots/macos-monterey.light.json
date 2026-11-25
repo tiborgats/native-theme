@@ -1332,9 +1332,7 @@
       ]
     },
     "thumb": {
-      "base": {
-        "fill": "#0000007f"
-      },
+      "base": {},
       "rules": [
         {
           "orientation": "vertical",

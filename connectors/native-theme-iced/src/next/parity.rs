@@ -434,10 +434,12 @@ pub(crate) enum Added {
     },
     /// A scroll bar handle's fill under the pointer and dragged, which the
     /// 0.8.0 theme states (`scrollbar.thumb(HOVER)`, `(PRESSED)`) where
-    /// 0.7.2 gives another.
+    /// 0.7.2 gives another, and whether it leaves the handle's fill at rest
+    /// (`scrollbar.thumb(NONE)`) to iced where 0.7.2 states one.
     ScrollerFills {
         hovered: iced_core::Color,
         dragged: iced_core::Color,
+        iced_rest: bool,
     },
     /// A checked button's fill and label, which 0.7.2 leaves unset
     /// (`button.checked_background`, `button.checked_text_color`): the ones
@@ -1095,7 +1097,7 @@ const fn breeze_scroller(presets: &'static [&'static str], thumb: iced_core::Col
 /// `*.hovered.scroller_knob_overlay`, `*.pressed.scroller_knob_overlay`
 /// `fill`; native-theme/tests/next_homes.toml, rows
 /// scrollbar.thumb_hover_color and scrollbar.thumb_active_color, listed
-/// differences).
+/// differences), and at rest iced's own ([`OVERLAY_KNOB_AT_REST`]).
 const fn macos_scroller(presets: &'static [&'static str], knob: iced_core::Color) -> Difference {
     Difference {
         leaf: "scrollable",
@@ -1104,13 +1106,21 @@ const fn macos_scroller(presets: &'static [&'static str], knob: iced_core::Color
             added: Added::ScrollerFills {
                 hovered: knob,
                 dragged: knob,
+                iced_rest: true,
             },
             ..Listed::aligned(LineAlign::Outside)
         },
         stated: &[],
-        reason: &[STATED],
+        reason: &[STATED, OVERLAY_KNOB_AT_REST],
     }
 }
+
+/// The reason of the macOS scroller at rest.
+const OVERLAY_KNOB_AT_REST: &str = "the 0.8.0 macOS presets state no fill for the overlay \
+     scroller's knob at rest (scrollbar.thumb(NONE).fill), which AppKit does not draw until the \
+     view scrolls and no source states (docs/v0.8.0-spec.md §1, stated and unstated values; \
+     native-theme/tests/next_homes.toml, row scrollbar.thumb_color, a listed difference), so \
+     the scroller at rest is iced's own (spec §10, rule 0), where 0.7.2 gives the muted text";
 
 /// The reason of a `Style` field the 0.8.0 preset states at a home where
 /// 0.7.2's resolver gave another value.

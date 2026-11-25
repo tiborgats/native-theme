@@ -3383,8 +3383,9 @@ impl ScrollbarSource {
         }
     }
 
-    /// The state options `listed` names unset, and the scroller's outline
-    /// where it names one the 0.8.0 theme states, for the parity test's
+    /// The state options `listed` names unset, the scroller's outline or
+    /// fills where it names ones the 0.8.0 theme states, and the scroller at
+    /// rest unset where it names it left to iced, for the parity test's
     /// expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
@@ -3397,7 +3398,12 @@ impl ScrollbarSource {
         };
         match listed.added {
             Added::Nothing | Added::CheckedButton => listed_self,
-            Added::ScrollerFills { hovered, dragged } => Self {
+            Added::ScrollerFills {
+                hovered,
+                dragged,
+                iced_rest,
+            } => Self {
+                thumb: listed_self.thumb.filter(|_| !iced_rest),
                 hovered_thumb: Some(hovered),
                 dragged_thumb: Some(dragged),
                 ..listed_self
