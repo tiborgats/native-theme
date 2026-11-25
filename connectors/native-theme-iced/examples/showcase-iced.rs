@@ -394,15 +394,10 @@ const TEXT_INPUT_ID: &str = "showcase-text-input";
 const TAB_STRIP_ID: &str = "showcase-tab-strip";
 const INSPECTOR_TABS_ID: &str = "showcase-inspector-tabs";
 
-/// The four layout distances the platform itself states.
+/// The four layout distances the platform itself states, the installed
+/// 0.8.0 theme's `layout` (`LayoutMetrics`).
 ///
-/// `LayoutTheme` is the one theme struct that is not per-variant, so it lives
-/// on the native `Theme` and on `SystemTheme` rather than on `ResolvedTheme`
-/// (`native-theme/src/model/widgets/mod.rs:1094`). The showcase therefore keeps
-/// a copy of it beside the resolved theme and refreshes it whenever the theme
-/// is rebuilt.
-///
-/// Every field of `LayoutTheme` is an `Option`: `None` is the platform saying
+/// Each of the four is an `Option` there: `None` is the platform saying
 /// it states no such distance, and nothing is invented for it: none is drawn,
 /// as the gpui showcase draws none (`geometry::section_gap` and the others,
 /// `None` through `with_gap`), and the inspector's Theme tab says the
@@ -424,18 +419,8 @@ struct Gaps {
 }
 
 impl Gaps {
-    #[cfg(test)]
-    fn from_layout(layout: &LayoutTheme) -> Self {
-        Self::stated(
-            layout.widget_gap,
-            layout.container_margin,
-            layout.window_margin,
-            layout.section_gap,
-        )
-    }
-
-    /// [`Gaps::from_layout`] of the installed 0.8.0 theme's
-    /// `layout`, the same four distances (`LayoutMetrics`).
+    /// The four distances of the installed 0.8.0 theme's `layout`
+    /// (`LayoutMetrics`).
     fn from_next(layout: &native_theme::next::LayoutMetrics) -> Self {
         Self::stated(
             layout.widget_gap,
@@ -28226,7 +28211,7 @@ mod tests {
             for (delay, opens) in [(None, true), (Some(1_u32), true), (Some(60_000), false)] {
                 let mut state = State {
                     active_tab: Tab::Basic,
-                    ..loaded("catppuccin-mocha", false)
+                    ..loaded("kde-breeze", false)
                 };
                 splice_next(&mut state, |r| r.timings.tooltip_show_ms = delay);
                 let theme = super::theme(&state);
@@ -28271,7 +28256,7 @@ mod tests {
         OnElement(&'static str),
     }
 
-    /// The Display page drawn under catppuccin-mocha with the installed
+    /// The Display page drawn under kde-breeze with the installed
     /// 0.8.0 theme's `timings.tooltip_show_ms` set to `delay`, the side panel
     /// hidden, with the pointer resting at `rest` past three frames, as
     /// [`the_basic_tooltip_waits_the_themes_show_delay`] rests it.
@@ -28280,7 +28265,7 @@ mod tests {
             let mut state = State {
                 active_tab: Tab::Display,
                 side_panel_visible: false,
-                ..loaded("catppuccin-mocha", false)
+                ..loaded("kde-breeze", false)
             };
             splice_next(&mut state, |r| r.timings.tooltip_show_ms = delay);
             let theme = super::theme(&state);
@@ -30511,8 +30496,9 @@ mod tests {
 
     /// M9b Step 8 I1 (theme-data): every surface the pages draw as a card
     /// (`styles::container_card`) is padded by one rule, the Basic card's,
-    /// so nothing inside a filled card touches its edge: under material-3
-    /// and catppuccin-mocha, whose cards state no padding, in both modes,
+    /// so nothing inside a filled card touches its edge: under every bundled
+    /// preset whose card states no padding on the 0.8.0 model
+    /// (`card.container(NONE).padding`, read at test time), in both modes,
     /// every text and the pane controls inside the Basic card, the Display
     /// page's Styled Containers, Theme Information and Spacing & Layout box,
     /// the Graphics page's Markdown view, the Layout page's first two panes
@@ -30546,12 +30532,25 @@ mod tests {
         .chain(extra)
         .collect();
         let mut faults = Vec::new();
-        for (preset, dark) in [
-            ("material-3", false),
-            ("material-3", true),
-            ("catppuccin-mocha", false),
-            ("catppuccin-mocha", true),
-        ] {
+        let unpadded: Vec<(&str, bool)> = Preset::ALL
+            .iter()
+            .filter(|preset| {
+                iced_next::padding_of(
+                    &native_theme::next::Theme::preset(**preset)
+                        .resolve(&ThemeContext::default())
+                        .card
+                        .container(WidgetState::NONE),
+                )
+                .iter()
+                .all(Option::is_none)
+            })
+            .flat_map(|preset| [(preset.as_str(), false), (preset.as_str(), true)])
+            .collect();
+        assert!(
+            !unpadded.is_empty(),
+            "every bundled preset states a card padding: this test proves nothing"
+        );
+        for (preset, dark) in unpadded {
             for (tab, cards) in &pages {
                 let mut state = loaded(preset, dark);
                 state.side_panel_visible = false;
@@ -38644,8 +38643,14 @@ mod tests {
             rescaled,
             "a view after the new scale shaped a label again"
         );
-        let loaded = state.load_theme(&ThemeChoice::Preset("adwaita".to_owned()), false);
-        assert!(loaded.is_ok(), "adwaita: {loaded:?}");
+        assert!(
+            state.install_in_mode(
+                ThemeChoice::Preset("adwaita".to_owned()),
+                AppColorMode::Light
+            ),
+            "adwaita: {:?}",
+            state.error_message
+        );
         drop(view(&state));
         let installed = shapes() - before;
         assert!(installed > rescaled, "a new install shaped no label");
@@ -43010,35 +43015,28 @@ mod tests {
         Ok(())
     }
 
-    /// `preset` installed through `load_theme` in the mode `dark` names,
+    /// The 0.8.0 theme of `preset` installed in the mode `dark` names,
     /// under the default accessibility preferences, so every size is the
-    /// theme's own; and, where the 0.8.0 model has the preset, its 0.8.0
-    /// theme in the same mode, which the chrome draws, the preset the
-    /// choice installed and the mode its scheme, as
-    /// [`State::install_in_mode`] records them.
+    /// theme's own: the preset the choice installed and the mode its scheme,
+    /// as [`State::install_in_mode`] records them, the labels shaped again.
     fn loaded(preset: &str, dark: bool) -> State {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..State::default()
         };
         let choice = ThemeChoice::Preset(preset.to_string());
-        let loaded = state.load_theme(&choice, dark);
-        assert!(loaded.is_ok(), "{preset}: {loaded:?}");
-        // The chrome on the 0.8.0 model draws the 0.8.0 theme of the same
-        // preset, where the 0.8.0 model has it, in the same mode.
-        if Preset::from_name(preset).is_some() {
-            let prefs = state.accessibility.clone();
-            let next = state.next_install(&choice, dark, &prefs);
-            assert!(
-                next.is_ok(),
-                "{preset} on the 0.8.0 model: {:?}",
-                next.err()
-            );
-            if let Ok(next) = next {
-                state.is_dark = next.resolved.is_dark();
-                state.keep_next(next);
-                state.current_choice = choice;
-            }
+        let prefs = state.accessibility.clone();
+        let next = state.next_install(&choice, dark, &prefs);
+        assert!(
+            next.is_ok(),
+            "{preset} on the 0.8.0 model: {:?}",
+            next.err()
+        );
+        if let Ok(next) = next {
+            state.is_dark = next.resolved.is_dark();
+            state.keep_next(next);
+            state.current_choice = choice;
+            state.label_widths.clear();
         }
         state
     }
@@ -43062,11 +43060,12 @@ mod tests {
         }
     }
 
-    /// Every bundled preset, in light and in dark.
+    /// Every bundled preset the Theme row installs, the 0.8.0 model's
+    /// (`Preset::ALL`), in light and in dark.
     fn every_preset_in_both_modes() -> impl Iterator<Item = (&'static str, bool)> {
-        native_theme::theme::Theme::list_presets()
+        Preset::ALL
             .iter()
-            .flat_map(|info| [(info.key, false), (info.key, true)])
+            .flat_map(|preset| [(preset.as_str(), false), (preset.as_str(), true)])
     }
 
     /// The rectangles and the texts of the frame `state`'s window draws at
@@ -43105,23 +43104,22 @@ mod tests {
     /// gives those two and no section gap or container margin.
     #[test]
     fn the_gaps_are_the_stated_distances_or_none() {
-        let none = Gaps::from_layout(&LayoutTheme::default());
+        let none = Gaps::stated(None, None, None, None);
         assert_eq!(
             [none.widget, none.container, none.window, none.section],
             [0.0; 4],
             "a layout that states nothing"
         );
-        let layout = match native_theme::theme::Theme::preset("macos-tahoe") {
-            Ok(theme) => theme.layout,
-            Err(error) => panic!("macos-tahoe: {error}"),
-        };
+        let layout = native_theme::next::Theme::preset(Preset::MacosTahoe)
+            .resolve(&ThemeContext::default())
+            .layout;
         assert_eq!(
             (layout.section_gap, layout.container_margin),
             (None, None),
             "macos-tahoe states a section gap or a container margin: this test needs a preset \
              that leaves both unstated"
         );
-        let tahoe = Gaps::from_layout(&layout);
+        let tahoe = Gaps::from_next(&layout);
         assert_eq!(
             Some(tahoe.widget),
             layout.widget_gap,
@@ -43161,7 +43159,7 @@ mod tests {
         let gpui_rounds = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
         for (preset, dark) in every_preset_in_both_modes() {
             let state = loaded(preset, dark);
-            let margin = state.layout.container_margin;
+            let margin = state.next_shown().layout.container_margin;
             let (drawn, _) = drawn_frame(&state);
             let rect = |id: &str| match drawn.get(id) {
                 Some(rect) => *rect,
@@ -43610,7 +43608,6 @@ mod tests {
             state.next_resolved.layout.widget_gap.is_some(),
             "macos-tahoe states no widget gap on the 0.8.0 model: the splice proves nothing"
         );
-        state.layout.widget_gap = None;
         state.next_resolved.layout.widget_gap = None;
         assert_eq!(
             state.next_resolved.toolbar.item_gap, None,
@@ -43658,7 +43655,7 @@ mod tests {
         for preset in ["macos-tahoe", "kde-breeze"] {
             let mut state = loaded(preset, false);
             state.inspector_tab = InspectorTab::Theme;
-            let layout = state.layout.clone();
+            let layout = state.next_shown().layout.clone();
             let mut ui = interface(&state);
             let found = texts(&mut ui);
             for (name, stated) in [
@@ -45071,8 +45068,8 @@ mod tests {
     /// preset, as the gpui showcase's: the tabs scroll sideways and the
     /// Pages menu reaches every page, and the strip shows whole tabs alone,
     /// so no tab label is drawn in part. In the window at its default size,
-    /// the side panel shown, under kde-breeze, material-3 and
-    /// catppuccin-mocha, each tab's label lies whole inside the strip or
+    /// the side panel shown, under kde-breeze and material-3 light and
+    /// adwaita dark, each tab's label lies whole inside the strip or
     /// whole outside it, and under one of them at least a tab lies outside.
     #[test]
     fn the_page_tabs_cut_no_label() {
@@ -45081,7 +45078,7 @@ mod tests {
         for (preset, dark) in [
             ("kde-breeze", false),
             ("material-3", false),
-            ("catppuccin-mocha", true),
+            ("adwaita", true),
         ] {
             let state = loaded(preset, dark);
             let mut ui: Simulator<'_, Message> =
@@ -45126,8 +45123,8 @@ mod tests {
 
     /// M9b Step 8 round 4, B1 (ux): the page tab strip scrolls so the open
     /// tab shows whole, as the gpui showcase's strip scrolls a clicked tab
-    /// into view, and still shows whole tabs alone: under kde-breeze,
-    /// material-3 and catppuccin-mocha, with the side panel shown, at the
+    /// into view, and still shows whole tabs alone: under kde-breeze and
+    /// material-3 light and adwaita dark, with the side panel shown, at the
     /// window's default size, the Theme Map and the Icons pages open, once
     /// the strip has been laid out and scrolled where [`reveal_open_tab`]
     /// asks, the open tab's label lies whole inside the strip and every
@@ -45139,7 +45136,7 @@ mod tests {
         for (preset, dark) in [
             ("kde-breeze", false),
             ("material-3", false),
-            ("catppuccin-mocha", true),
+            ("adwaita", true),
         ] {
             for open in [Tab::ThemeMap, Tab::Icons, Tab::Basic] {
                 let mut state = loaded(preset, dark);
