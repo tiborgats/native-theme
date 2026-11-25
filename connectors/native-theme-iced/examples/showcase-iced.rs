@@ -8741,6 +8741,7 @@ fn home_keyed(id: &str) -> bool {
         || single_line_field(id)
         || button_element(id)
         || page_element(id)
+        || push_button_element(id)
 }
 
 /// Whether the list's id `id` names the Basic page or one of its columns.
@@ -9328,7 +9329,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // rows do not cover.
         _ if under("basic.buttons.dialog_default")
             && drawn_state_fill(&resolved.button.body(WidgetState::DEFAULT)).is_some()
-            && (leaf == "button.active_background" || leaf == "button.active_text_color") =>
+            && (leaf == "button.body(PRESSED).fill" || leaf == "button.label(PRESSED).color") =>
         {
             Drawing::only(BUTTON, &["Pressed"], &[])
         }
@@ -11330,6 +11331,110 @@ fn layout_gap_route(home: &str) -> Option<&'static str> {
     })
 }
 
+/// Whether the list's id `id` names an element of the Basic page's push
+/// buttons' group, the tooltip's bubble among them.
+fn push_button_element(id: &str) -> bool {
+    id.starts_with("basic.buttons.")
+}
+
+/// The route of the home `home` of a [`push_button_element`] of the list's
+/// id `id`: a push button's label, floor, padding, corners and outline
+/// width in the style class the page draws it in, and the tooltip's bubble's
+/// text, width, delay, padding, corners and outline width. `None` for a
+/// home none of them reads, the colours among them, whose routes are the
+/// export's ([`colour_home_route`]).
+fn push_button_route(id: &str, home: &str) -> Option<String> {
+    let under = |prefix: &str| id.starts_with(prefix);
+    let bubble = under("basic.buttons.tooltip.bubble");
+    let class = if under("basic.buttons.toggle_on") {
+        "styles::button_toggle"
+    } else if under("basic.buttons.primary") {
+        "styles::button_primary"
+    } else if under("basic.buttons.dialog_default") {
+        "styles::button_default"
+    } else {
+        "styles::button"
+    };
+    // The primary button is outlined in its own variant's
+    // (`ButtonSource::primary`).
+    let outline = if under("basic.buttons.primary") {
+        "button.body(NONE; variant=Primary)"
+    } else {
+        "button.body(NONE)"
+    };
+    let route = match home {
+        "button.label(NONE)" => {
+            "next_text: the label's size, line box and font, button.label(NONE)".to_owned()
+        }
+        "typography.line_height_multiplier" if bubble => {
+            "next_text: the tip's line box, tooltip.text's size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .to_owned()
+        }
+        "typography.line_height_multiplier" => {
+            "next_text: the label's line box, button.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .to_owned()
+        }
+        "button.body(NONE).min_size[0]" | "button.body(NONE).min_size[1]" => {
+            "next_button_floor: at_least(label, ..), button.body(NONE).min_size less \
+             iced_next::button_padding; no floor on an axis it leaves unstated"
+                .to_owned()
+        }
+        "button.body(NONE).padding.top"
+        | "button.body(NONE).padding.right"
+        | "button.body(NONE).padding.bottom"
+        | "button.body(NONE).padding.left" => {
+            "iced_next::button_padding: Button::padding, the side of button.body(NONE).padding \
+             plus its stroke width, iced's own (button::DEFAULT_PADDING) where unstated"
+                .to_owned()
+        }
+        "button.body(NONE).corners" => {
+            format!("{class}: button::Style::border.radius, {outline}.corners")
+        }
+        "button.body(NONE).stroke.width" => format!(
+            "{class}: button::Style::border.width, {outline}.stroke.width, painted over the \
+             padding"
+        ),
+        "button.disabled_opacity" => {
+            "styles::button: the Disabled colours' alpha times button.disabled_opacity (iced \
+             has no widget opacity)"
+                .to_owned()
+        }
+        "button.body(NONE).shadows" | "tooltip.panel.shadows" => {
+            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+                .to_owned()
+        }
+        "tooltip.text" => "next_text: the tip's size, line box and font, tooltip.text".to_owned(),
+        "tooltip.panel.max_size[0]" => {
+            "showcase_tooltip: the tip container's max_width, tooltip.panel.max_size's width; \
+             no bound where unstated"
+                .to_owned()
+        }
+        "timings.tooltip_show_ms" => {
+            "showcase_tooltip: Tooltip::delay, timings.tooltip_show_ms; iced's own, none, where \
+             unstated"
+                .to_owned()
+        }
+        "tooltip.panel.corners" => {
+            "styles::tooltip: container::Style::border.radius, tooltip.panel.corners".to_owned()
+        }
+        "tooltip.panel.stroke.width" => {
+            "styles::tooltip: container::Style::border.width, tooltip.panel.stroke.width".to_owned()
+        }
+        "tooltip.panel.padding.top"
+        | "tooltip.panel.padding.right"
+        | "tooltip.panel.padding.bottom"
+        | "tooltip.panel.padding.left" => {
+            "next_tooltip_padding: Tooltip::padding, the side of tooltip.panel.padding plus \
+             tooltip.panel.stroke.width where all four sides are equal; iced's own otherwise"
+                .to_owned()
+        }
+        _ => return None,
+    };
+    Some(route)
+}
+
 /// The route of the home `home` of the Basic page or one of its columns
 /// under `r`, the installed 0.8.0 theme: the gaps and margins
 /// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
@@ -11470,6 +11575,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         button_home_route(state, id, home)
     } else if page_element(id) {
         page_home_route(r, home)
+    } else if push_button_element(id) {
+        push_button_route(id, home)
     } else {
         None
     };
@@ -11593,15 +11700,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     // `checkbox.checkmark(NONE).stroke_width`; the Selection page's check
     // boxes draw iced's own glyph.
     let mark = under("basic.") && next_check_stroke(state.next_shown()).is_some();
-    let class = if under("basic.buttons.toggle_on") {
-        "styles::button_toggle"
-    } else if under("basic.buttons.primary") {
-        "styles::button_primary"
-    } else if under("basic.buttons.dialog_default") {
-        "styles::button_default"
-    } else {
-        "styles::button"
-    };
     let (table, field) = leaf.split_once('.').unwrap_or((leaf, ""));
     let side = |field: &str| {
         ["top", "right", "bottom", "left"]
@@ -11609,37 +11707,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .find(|s| field == format!("border.padding_{s}_px"))
     };
     let line: Cow<'static, str> = match (table, field) {
-        // ---- button ----
-        ("button", "font") if under("basic.buttons.") => {
-            "next_text: the label's size, line box and font, button.label(NONE)".into()
-        }
-        ("button", "min_width_px" | "min_height_px") if under("basic.buttons.") => {
-            "next_button_floor: at_least(label, ..), button.body(NONE).min_size less \
-             iced_next::button_padding; no floor on an axis it leaves unstated"
-                .into()
-        }
-        ("button", f) if side(f).is_some() && under("basic.buttons.") => {
-            "iced_next::button_padding: Button::padding, the side of button.body(NONE).padding \
-             plus its stroke width, iced's own (button::DEFAULT_PADDING) where unstated"
-                .into()
-        }
-        ("button", "font") => "the label's Text::size and theme_font (family, weight)".into(),
-        ("button", "min_width_px" | "min_height_px") => {
-            "at_least(label, button_content_min_size): the minimum less button_padding".into()
-        }
-        ("button", "disabled_opacity") => {
-            "styles::button: the Disabled colours' alpha times it (iced has no widget opacity)"
-                .into()
-        }
-        ("button", "border.corner_radius_px") => {
-            format!("{class}: button::Style::border.radius").into()
-        }
-        ("button", "border.line_width_px") => {
-            format!("{class}: button::Style::border.width, painted over the padding").into()
-        }
-        ("button", f) if side(f).is_some() => {
-            "button_padding: Button::padding, the side plus button.border.line_width".into()
-        }
         // ---- input, text area ----
         ("input", "font") if under("basic.text_area.") => {
             "TextEditor size, line height and font: text_area.text(NONE)'s size, line box \
@@ -11660,10 +11727,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("text_area", f) if side(f).is_some() => {
             "text_area_padding: TextEditor::padding, the side plus the line width".into()
         }
-        (
-            "button" | "text_area" | "combo_box" | "tooltip" | "card",
-            "border.shadow_enabled",
-        ) => {
+        ("text_area" | "combo_box" | "card", "border.shadow_enabled") => {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
         }
         // ---- checkbox and radio ----
@@ -12160,25 +12224,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("card", f) if side(f).is_some() => {
             "the card container's padding; layout.container_margin where unstated".into()
         }
-        // ---- tooltip ----
-        ("tooltip", "font") => "the tip's text size and theme_font".into(),
-        ("tooltip", "max_width_px") => {
-            "showcase_tooltip: the tip container's max_width, tooltip.panel.max_size's width; \
-             no bound where unstated"
-                .into()
-        }
-        ("tooltip", "show_delay_ms") => {
-            "showcase_tooltip: Tooltip::delay, timings.tooltip_show_ms; iced's own, none, where \
-             unstated"
-                .into()
-        }
-        ("tooltip", "border.corner_radius_px") => "styles::tooltip: border.radius".into(),
-        ("tooltip", "border.line_width_px") => "styles::tooltip: border.width".into(),
-        ("tooltip", f) if side(f).is_some() => {
-            "next_tooltip_padding: Tooltip::padding, the side of tooltip.panel.padding plus \
-             tooltip.panel.stroke.width where all four sides are equal; iced's own otherwise"
-                .into()
-        }
         // ---- link ----
         ("link", "font") => "the span's size and theme_font".into(),
         ("link", "underline_enabled") => "the span's underline".into(),
@@ -12231,11 +12276,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "status_line_box: the text's LineHeight, status_bar.label's line box \
              (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
              (gpui-pre style.rs:553-556)"
-                .into()
-        }
-        ("defaults", "line_height") if under("basic.buttons.") && !under("basic.buttons.tooltip.bubble") => {
-            "next_text: the label's line box, button.label(NONE)'s size by \
-             typography.line_height_multiplier where it states no line height (next_line_box)"
                 .into()
         }
         ("defaults", "line_height") if under("basic.checkboxes.") || under("basic.radios.") => {
@@ -42275,8 +42315,8 @@ mod tests {
     }
 
     /// Widget Info's listed font rows name the family iced draws, as its own
-    /// font rows do: `defaults.font.family` and the family part of
-    /// `defaults.font` are [`family_label`] of what iced draws the stated
+    /// font rows do: the family part of a leaf-listed element's
+    /// `defaults.font` is [`family_label`] of what iced draws the stated
     /// family in, and `defaults.mono_font`'s of what it draws the monospace
     /// font in ([`font_from_database`], as [`listed_family`]), under windows-11 set
     /// directly. Conditioned on the host: where the system lacks "Segoe UI"
@@ -42313,10 +42353,6 @@ mod tests {
                 None => panic!("{id} lists no {leaf}"),
             }
         };
-        assert_eq!(
-            value("basic.buttons.heading", "defaults.font.family"),
-            label
-        );
         for (id, leaf, label) in [
             ("basic.switches.off", "defaults.font", &label),
             ("basic.typography.monospace", "defaults.mono_font", &mono),
