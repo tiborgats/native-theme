@@ -189,6 +189,60 @@ fn a_stroke_is_read_as_stated_and_a_per_side_one_not_at_all() {
     assert_eq!(super::stroke_width_of(&part), None);
 }
 
+/// A stroke read is handed to egui over the fill under it by its alignment: windows-11's primary
+/// button outline, `#0000000f` laid `Inside`, composited over the primary fill; the same colour
+/// laid `Outside`, or over no fill, as stated.
+#[test]
+fn a_translucent_inside_stroke_is_handed_over_the_fill() -> Result<(), String> {
+    let r = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    let part = r
+        .button
+        .body(native_theme::next::ButtonQuery::primary().with_state(WidgetState::NONE));
+    let (Some(color), Some(fill)) = (super::stroke_color_of(&part), super::fill_color(&part))
+    else {
+        return Err(format!(
+            "windows-11 states no primary button outline and fill: {part:?}"
+        ));
+    };
+    assert!(
+        matches!(
+            part.stroke,
+            Stroke::Uniform {
+                align: StrokeAlign::Inside,
+                ..
+            }
+        ) && color.a() < u8::MAX,
+        "{part:?}"
+    );
+    assert_eq!(
+        super::stroke_color_over(&part, color, Some(fill)),
+        fill.blend(color)
+    );
+    assert_ne!(fill.blend(color), color);
+    assert_eq!(super::stroke_color_over(&part, color, None), color);
+    let patch = ThemePatch::new().button(
+        native_theme::next::ButtonRule::new()
+            .variant(native_theme::next::ButtonVariant::Primary)
+            .body(PartPatch::new().stroke(Stroke::uniform_aligned(
+                1.0,
+                STROKE,
+                StrokeAlign::Outside,
+            ))),
+    );
+    let r = Theme::preset(Preset::Windows11)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let part = r
+        .button
+        .body(native_theme::next::ButtonQuery::primary().with_state(WidgetState::NONE));
+    let outside = super::to_color32(STROKE);
+    assert_eq!(
+        super::stroke_color_over(&part, outside, Some(fill)),
+        outside
+    );
+    Ok(())
+}
+
 /// Layers that are all gradients have no single colour: the fill reads
 /// report them `Unmapped` at the home they are given (spec §10, rule 4),
 /// never `None`, egui's own fill, in their place.

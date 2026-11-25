@@ -663,10 +663,21 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      it for that state (pages::basic::RowLook::of)";
 
 /// The route of the primary button's own outline, which the Basic page hands its button per call.
-const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline at \
-     rest, hovered and pressed, button.body(<state>; variant=Primary).stroke.color in \
-     button.body(NONE; variant=Primary).stroke.width where stated, else the button scope's own; \
+const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline, \
+     button.body(<state>; variant=Primary).stroke, its width and colour, at rest where stated, \
+     hovered and pressed where a rule states it for the state, a translucent one laid inside \
+     composited over the button's fill; else the button scope's own entry for the state; \
      focused, the scope's own (pages::basic, primary_pen)";
+/// The route of the dialog's default button's outline: its own look where the theme gives it
+/// one, else the primary button's outline, both per call.
+const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the state of the \
+     button's previous response: where a rule states button.body(DEFAULT).fill, the default \
+     button's own frame (native-theme-egui next::default_button: button.body(DEFAULT).stroke, \
+     hovered and pressed button.body(HOVER).stroke, focused button.body(FOCUS_VISIBLE).stroke \
+     where a rule states each, else egui's own); else it is the primary button, filled as it is and outlined in \
+     button.body(<state>; variant=Primary).stroke at rest where stated, hovered and pressed \
+     where a rule states it for the state, else in the button scope's own entry for the state, \
+     which this home gives; focused, the scope's own (pages::basic, primary_pen)";
 /// The route of the primary button's own corners: egui reads them nowhere.
 const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
      the button scope (pages::basic, primary), rounded as the push button, by \
@@ -689,9 +700,9 @@ const SEGMENT_DIVIDER: &str = "egui: native-theme-egui-widgets SegmentedControl 
      segmented_control.track(NONE).stroke.color (native-theme-egui-widgets segmented_control.rs, \
      Look::next_of, Outline::paint_lines)";
 
-/// The route of a flat button's hovered outline (the side-panel toggle, the Pages menu button,
-/// the Copy box), which `next::flat_button` lays over the scope's hovered entry per call, not
-/// the atlas's push button row.
+/// The route of a flat button's hovered outline (the Pages menu button, the Copy box, the
+/// side-panel toggle while closed), which `next::flat_button` lays over the scope's hovered
+/// entry per call, not the atlas's push button row.
 const FLAT_HOVER_EDGE: &str = "egui: per call, the flat button's outline under the pointer, \
      button.body(HOVER; variant=Flat).stroke.color where a rule states it for HOVER, else egui's \
      own treatment of the hover (native-theme-egui next::flat_button; demo::flat)";
@@ -701,6 +712,26 @@ const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline press
      egui's one active entry: button.body(FOCUS_VISIBLE; variant=Flat).stroke.color, else \
      button.body(PRESSED; variant=Flat).stroke.color, where a rule states it for the state, else \
      egui's own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+/// The route of the side-panel toggle's hovered outline: the flat button's while the panel is
+/// closed ([`FLAT_HOVER_EDGE`]), the checked state's while it is open.
+const TOGGLE_HOVER_EDGE: &str = "egui: per call, the toggle's outline under the pointer: \
+     closed, the flat button's, button.body(HOVER; variant=Flat).stroke.color where a rule \
+     states it for HOVER, else egui's own treatment of the hover (native-theme-egui \
+     next::flat_button; demo::flat); open, where a rule states \
+     button.body(CHECKED; variant=Flat).stroke, its pen at rest and under the pointer \
+     button.body(CHECKED|HOVER; variant=Flat).stroke where a rule states it, else the closed \
+     one's (chrome::toggle_checked_pens)";
+/// The route of the side-panel toggle's pressed outline, as [`TOGGLE_HOVER_EDGE`]: egui draws
+/// pressed and focused alike, in its one `active` entry.
+const TOGGLE_PRESSED_EDGE: &str = "egui: per call, the toggle's outline pressed or focused, \
+     egui's one active entry: closed, the flat button's, button.body(FOCUS_VISIBLE; \
+     variant=Flat).stroke.color, else button.body(PRESSED; variant=Flat).stroke.color, where a \
+     rule states it for the state, else egui's own treatment of the press (native-theme-egui \
+     next::flat_button; demo::flat); open, where a rule states \
+     button.body(CHECKED; variant=Flat).stroke, button.body(CHECKED|FOCUS_VISIBLE; \
+     variant=Flat).stroke where a rule states the flat button's FOCUS_VISIBLE stroke, else \
+     button.body(CHECKED|PRESSED; variant=Flat).stroke, where a rule states it, else the \
+     closed one's (chrome::toggle_checked_pens)";
 
 /// The homes a page applies per call where `mapping.toml`'s row names a style field the
 /// connector writes, or none, by element id (a prefix, for the rows) and home: the List's and
@@ -712,7 +743,8 @@ const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline press
 /// lays over egui's selected button, the Basic page's edit switch's checked fill and label, which
 /// `pages::basic::edit_look_at` hands it per state, the flat buttons' hovered and pressed outlines, which
 /// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
-/// primary button's own outline, which `pages::basic` hands its button, the segmented control's
+/// primary button's own outline and the dialog's default button's, which `pages::basic` hands
+/// each button, the segmented control's
 /// separator colour, which the companion crate's control paints its dividers in, the primary
 /// button's own corners, which egui reads none of, and
 /// the text selection the Theme row's `ComboBox` has none of.
@@ -884,12 +916,32 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.body(HOVER).stroke.color",
-        FLAT_HOVER_EDGE,
+        TOGGLE_HOVER_EDGE,
     ),
     (
         "chrome.status_bar.toggle",
         "button.body(PRESSED).stroke.color",
-        FLAT_PRESSED_EDGE,
+        TOGGLE_PRESSED_EDGE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(NONE).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(NONE).stroke.width",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(HOVER).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(PRESSED).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
     ),
     (
         "chrome.page_tabs.menu",

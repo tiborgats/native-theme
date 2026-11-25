@@ -518,9 +518,13 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
 /// then under the pointer `(CHECKED | HOVER)`'s and, egui's `active` being press and keyboard
 /// focus alike, `(CHECKED | FOCUS_VISIBLE)`'s where a rule states the flat button's
 /// `FOCUS_VISIBLE` stroke, else `(CHECKED | PRESSED)`'s, as `next::flat_button` lines the flat
-/// button, each the theme's answer for that state (spec §10, rule 0); all `None` where no rule
-/// states it for `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
-fn toggle_checked_pens(r: Option<&native_theme::next::ResolvedTheme>) -> [Option<egui::Stroke>; 3] {
+/// button, each the theme's answer for that state (spec §10, rule 0), on the button egui fills
+/// in `fill`, a translucent pen laid inside composited over it ([`demo::pen_over`]); all `None`
+/// where no rule states it for `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
+pub(crate) fn toggle_checked_pens(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    fill: egui::Color32,
+) -> [Option<egui::Stroke>; 3] {
     let Some(r) = r else {
         return [None; 3];
     };
@@ -528,7 +532,11 @@ fn toggle_checked_pens(r: Option<&native_theme::next::ResolvedTheme>) -> [Option
         r.button
             .body(native_theme::next::ButtonQuery::flat().with_state(state))
     };
-    let Some(rest) = demo::state_pen(&at(WidgetState::CHECKED)) else {
+    let pen = |state| {
+        let part = at(state);
+        demo::state_pen(&part).map(|pen| demo::pen_over(&part, pen, fill))
+    };
+    let Some(rest) = pen(WidgetState::CHECKED) else {
         return [None; 3];
     };
     let active = if demo::state_pen(&at(WidgetState::FOCUS_VISIBLE)).is_some() {
@@ -538,8 +546,8 @@ fn toggle_checked_pens(r: Option<&native_theme::next::ResolvedTheme>) -> [Option
     };
     [
         Some(rest),
-        demo::state_pen(&at(WidgetState::CHECKED | WidgetState::HOVER)),
-        demo::state_pen(&at(WidgetState::CHECKED | active)),
+        pen(WidgetState::CHECKED | WidgetState::HOVER),
+        pen(WidgetState::CHECKED | active),
     ]
 }
 
@@ -564,15 +572,15 @@ pub(crate) fn toggle_icon_colour(
         .then(|| next::to_color32(icon.color))
 }
 
-/// The notes naming the checked colours `r` states for the side-panel toggle while on, `[fill,
-/// text]`, each `None` where no rule states it for the state: at the flat button's own homes,
-/// with the theme's values, which the Widget Info rows, at the push button's homes, do not show,
-/// as the gpui showcase names them (`info::buttons::native_ghost_checked`).
+/// The notes naming the checked colours and outline `r` states for the side-panel toggle while
+/// on, `[fill, text, outline]`, each `None` where no rule states it for the state: at the flat
+/// button's own homes, with the theme's values, which the Widget Info rows, at the push button's
+/// homes, do not show, as the gpui showcase names them (`info::buttons::native_ghost_checked`).
 fn toggle_stated_notes(
     r: Option<&native_theme::next::ResolvedTheme>,
-) -> [Option<(&'static str, String)>; 2] {
+) -> [Option<(&'static str, String)>; 3] {
     let Some(r) = r else {
-        return [None, None];
+        return [None, None, None];
     };
     let at = native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED);
     let on = toggle_checked(Some(r));
@@ -598,7 +606,25 @@ fn toggle_stated_notes(
             ),
         )
     });
-    [fill, text]
+    let body = r.button.body(at);
+    let outline = demo::state_pen(&body).map(|_| {
+        let value = match &body.stroke {
+            native_theme::next::Stroke::Uniform { width, color, .. } => {
+                format!(" {width} px {color}")
+            }
+            _ => " none".to_owned(),
+        };
+        (
+            "outline while on",
+            format!(
+                "button.body(CHECKED; variant=Flat).stroke{value}, at rest; under the pointer \
+                 (CHECKED|HOVER)'s and pressed or focused (CHECKED|FOCUS_VISIBLE)'s, else \
+                 (CHECKED|PRESSED)'s, where a rule states each, laid over the scope's entries \
+                 (chrome::toggle_checked_pens)"
+            ),
+        )
+    });
+    [fill, text, outline]
 }
 
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
@@ -894,11 +920,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 let open = app.side_panel_visible;
                 let checked = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
                 let stated = open.then(|| toggle_stated_notes(app.atlas.next_shown(ui.ctx())));
-                let pens = if open {
-                    toggle_checked_pens(app.atlas.next_shown(ui.ctx()))
-                } else {
-                    [None; 3]
-                };
+                let theme = app.atlas.next_shown(ui.ctx()).filter(|_| open);
                 let App {
                     registry,
                     side_panel_visible,
@@ -916,8 +938,14 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     |ui| {
                         demo::next_tool_button(ui, padding);
                         flat = demo::flat(ui);
-                        // While on, the outline the theme states for the checked state; the
-                        // selected button takes its pen from the entry of its state.
+                        // While on, the outline the theme states for the checked state, over
+                        // the fill egui paints the button in: the checked fill where stated,
+                        // else egui's selected button's in every state; the selected button
+                        // takes its pen from the entry of its state.
+                        let fill = checked
+                            .and_then(|on| on.fill)
+                            .unwrap_or(ui.visuals().selection.bg_fill);
+                        let pens = toggle_checked_pens(theme, fill);
                         let w = &mut ui.visuals_mut().widgets;
                         for (entry, pen) in [&mut w.inactive, &mut w.hovered, &mut w.active]
                             .into_iter()
@@ -949,7 +977,8 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     registry.note_last(what, &note);
                 }
                 // Where it states them, the checked colours drawn, at their own homes.
-                let stated = stated.map(|[fill, text]| [fill, text.filter(|_| drawn.is_none())]);
+                let stated = stated
+                    .map(|[fill, text, outline]| [fill, text.filter(|_| drawn.is_none()), outline]);
                 for (what, note) in stated.into_iter().flatten().flatten() {
                     registry.note_last(what, &note);
                 }

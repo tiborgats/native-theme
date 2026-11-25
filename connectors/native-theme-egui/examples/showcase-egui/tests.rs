@@ -15547,3 +15547,395 @@ fn the_theme_tab_lists_an_all_gradient_fill_at_its_home() -> Result<(), String> 
     }
     Ok(())
 }
+
+/// The showcase on the Basic page under `preset` light, with `patch` over its 0.8.0 themes where
+/// given (`OldAtlas::patched`), and the pointer held at `point`, pressed or not, for sixteen
+/// passes.
+fn held_at(
+    preset: &str,
+    patch: Option<&native_theme::next::ThemePatch>,
+    point: egui::Pos2,
+    press: bool,
+) -> Result<Harness<'static, App>, String> {
+    let mut args = cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]);
+    args.pointer = Some((point.x as u16, point.y as u16));
+    args.press = press;
+    let mut harness = open(egui::Theme::Light, args);
+    install_under(&mut harness, egui::Theme::Light, preset);
+    if let Some(patch) = patch {
+        let patched = harness.state().atlas.patched(patch)?;
+        let ctx = harness.ctx.clone();
+        harness.state_mut().adopt_pair(&ctx, patched);
+    }
+    for step in 0..16u32 {
+        let ctx = harness.ctx.clone();
+        let mut input = std::mem::take(harness.input_mut());
+        input.time = Some(f64::from(step) * 0.5);
+        eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+        *harness.input_mut() = input;
+        harness.step();
+    }
+    Ok(harness)
+}
+
+/// The rect the element `id` records.
+fn element_rect(harness: &Harness<'_, App>, id: &str) -> Result<egui::Rect, String> {
+    harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some(id))
+        .map(|record| record.rect)
+        .ok_or_else(|| format!("{id} records nothing"))
+}
+
+/// The fills and outlines of the filled frames egui painted over the centre of `rect` and
+/// within a few points of it: a button's frame, whose edge a pen of another width than the
+/// scope's moves (`egui-0.37.0/src/containers/frame.rs`,
+/// `apply_stroke_and_expansion_without_layout_shift`).
+fn frames_at(harness: &Harness<'_, App>, rect: egui::Rect) -> Vec<(egui::Color32, egui::Stroke)> {
+    harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape)
+                if shape.fill != egui::Color32::TRANSPARENT
+                    && shape.brush.is_none()
+                    && rect.expand(4.0).contains_rect(shape.rect)
+                    && shape.rect.contains_rect(rect.shrink(4.0)) =>
+            {
+                Some((shape.fill, shape.stroke))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// Under windows-11 light, which states the primary button's outline at rest
+/// (`button.body(NONE; variant=Primary).stroke`, `#0000000f` laid inside) and no rule for its
+/// hovered or pressed state, the primary button is outlined at rest in that pen composited over
+/// its fill, as egui ends the fill at the stroke's inner edge, and hovered and pressed in the
+/// button scope's own hovered and active entries, egui's treatment of those states, never the
+/// resting pen (spec §10, rule 0).
+#[test]
+fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, PartStated, WidgetState};
+    const ID: &str = "basic.buttons.primary";
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
+    probe.run_steps(SETTLE);
+    let rect = element_rect(&probe, ID)?;
+    let widgets = scope_widgets(&probe, native_theme_egui::Role::Button)?;
+    let r = probe
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("windows-11: no 0.8.0 theme installed")?;
+    let at = |state| r.button.body(ButtonQuery::primary().with_state(state));
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert!(
+            !at(state).from_state.contains(PartStated::STROKE),
+            "windows-11 states the primary's {state:?} outline, so the test proves nothing"
+        );
+    }
+    let rest = at(WidgetState::NONE);
+    let pen = crate::demo::stated_pen(&rest).ok_or("windows-11 states no primary outline")?;
+    let [(fill, drawn)] = frames_at(&probe, rect)[..] else {
+        return Err(format!(
+            "the primary's frame: {:?}",
+            frames_at(&probe, rect)
+        ));
+    };
+    assert!(pen.color.a() < u8::MAX, "{pen:?} is opaque");
+    let over = egui::Stroke::new(pen.width, fill.blend(pen.color));
+    assert_ne!(over, pen, "the pen composites to itself");
+    assert_eq!(drawn, over, "at rest: the stated pen over the fill");
+    for (press, own, what) in [
+        (false, widgets.hovered.bg_stroke, "hovered"),
+        (true, widgets.active.bg_stroke, "pressed"),
+    ] {
+        assert_ne!(own, over, "{what}: the scope's entry is the resting pen");
+        let held = held_at("windows-11", None, rect.center(), press)?;
+        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
+        assert_eq!(strokes, [own], "{what}: the scope's own entry");
+    }
+    Ok(())
+}
+
+/// Under kde-breeze light with the primary button's hovered and pressed outlines patched in
+/// (`button.body(HOVER; variant=Primary).stroke` 3 px magenta, `(PRESSED; variant=Primary)`
+/// 2 px green), the hovered primary is drawn in the first and the pressed in the second, each
+/// state's whole pen, its width too, not the resting one's; focused, in the button scope's own
+/// active entry.
+#[test]
+fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::next;
+    const ID: &str = "basic.buttons.primary";
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let rule = |state, width, colour| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Primary)
+            .states(state)
+            .body(PartPatch::new().stroke(Stroke::uniform(width, colour)))
+    };
+    let patch = ThemePatch::new()
+        .button(rule(WidgetState::HOVER, 3.0, magenta))
+        .button(rule(WidgetState::PRESSED, 2.0, green));
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    probe.run_steps(SETTLE);
+    let rect = element_rect(&probe, ID)?;
+    for (press, want, what) in [
+        (
+            false,
+            egui::Stroke::new(3.0, next::to_color32(magenta)),
+            "hovered",
+        ),
+        (
+            true,
+            egui::Stroke::new(2.0, next::to_color32(green)),
+            "pressed",
+        ),
+    ] {
+        let held = held_at("kde-breeze", Some(&patch), rect.center(), press)?;
+        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
+        assert_eq!(strokes, [want], "{what}");
+    }
+
+    let patch_for = patch.clone();
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(patch_for)
+    })?;
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let own = scope_widgets(&harness, native_theme_egui::Role::Button)?
+        .active
+        .bg_stroke;
+    harness
+        .query_all_by_label("Primary")
+        .next()
+        .ok_or("no node labelled Primary")?
+        .focus();
+    harness.run_steps(4);
+    let rect = element_rect(&harness, ID)?;
+    let strokes: Vec<egui::Stroke> = frames_at(&harness, rect).iter().map(|f| f.1).collect();
+    assert_eq!(strokes, [own], "focused: the scope's own active entry");
+    Ok(())
+}
+
+/// The open side-panel toggle's pens (`chrome::toggle_checked_pens`): under kde-breeze light,
+/// which states the flat button's `FOCUS_VISIBLE` outline, the active entry, press and focus
+/// alike, takes `(CHECKED | FOCUS_VISIBLE)`'s pen, never a patched `(CHECKED | PRESSED)` one;
+/// under macos-monterey light, which states none for `FOCUS_VISIBLE`, with a checked and a
+/// checked-pressed outline patched in, it takes `(CHECKED | PRESSED)`'s, and the hovered entry
+/// `(CHECKED | HOVER)`'s. A translucent checked pen laid inside is composited over the fill.
+#[test]
+fn the_open_toggles_pens_follow_the_stated_states() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, Color, PartPatch, Preset, Stroke, StrokeAlign,
+        Theme, ThemeContext, ThemePatch, WidgetState as S,
+    };
+    use native_theme_egui::next;
+    let fill = egui::Color32::from_rgb(200, 100, 50);
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let flat = |state: S, stroke: Stroke| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .body(PartPatch::new().stroke(stroke))
+    };
+    let pen = |r: &native_theme::next::ResolvedTheme, state| {
+        crate::demo::state_pen(&r.button.body(ButtonQuery::flat().with_state(state)))
+    };
+    let pressed =
+        ThemePatch::new().button(flat(S::CHECKED | S::PRESSED, Stroke::uniform(3.0, magenta)));
+    let breeze = Theme::preset(Preset::KdeBreeze)
+        .with_patch(pressed)
+        .resolve(&ThemeContext::light());
+    let [rest, hovered, active] = crate::chrome::toggle_checked_pens(Some(&breeze), fill);
+    let magenta_pen = egui::Stroke::new(3.0, next::to_color32(magenta));
+    assert_eq!(rest, pen(&breeze, S::CHECKED));
+    assert_eq!(hovered, pen(&breeze, S::CHECKED | S::HOVER));
+    assert_eq!(active, pen(&breeze, S::CHECKED | S::FOCUS_VISIBLE));
+    assert!(
+        active.is_some() && active != Some(magenta_pen),
+        "{active:?}"
+    );
+
+    let monterey = Theme::preset(Preset::MacosMonterey)
+        .with_patch(
+            // a later rule is laid over an earlier one: the checked state's first
+            ThemePatch::new()
+                .button(flat(S::CHECKED, Stroke::uniform(2.0, green)))
+                .button(flat(S::CHECKED | S::HOVER, Stroke::uniform(4.0, green)))
+                .button(flat(S::CHECKED | S::PRESSED, Stroke::uniform(3.0, magenta))),
+        )
+        .resolve(&ThemeContext::light());
+    assert_eq!(pen(&monterey, S::FOCUS_VISIBLE), None);
+    let [rest, hovered, active] = crate::chrome::toggle_checked_pens(Some(&monterey), fill);
+    let green = next::to_color32(green);
+    assert_eq!(rest, Some(egui::Stroke::new(2.0, green)));
+    assert_eq!(hovered, Some(egui::Stroke::new(4.0, green)));
+    assert_eq!(active, Some(magenta_pen));
+
+    let half = Color::new(0.0, 0.0, 0.0, 0.5);
+    let inside = Theme::preset(Preset::KdeBreeze)
+        .with_patch(ThemePatch::new().button(flat(
+            S::CHECKED,
+            Stroke::uniform_aligned(1.0, half, StrokeAlign::Inside),
+        )))
+        .resolve(&ThemeContext::light());
+    let [rest, ..] = crate::chrome::toggle_checked_pens(Some(&inside), fill);
+    assert_eq!(
+        rest,
+        Some(egui::Stroke::new(1.0, fill.blend(next::to_color32(half))))
+    );
+    assert_eq!(crate::chrome::toggle_checked_pens(None, fill), [None; 3]);
+    Ok(())
+}
+
+/// The open side-panel toggle under kde-breeze light with `(CHECKED | HOVER; variant=Flat)`'s
+/// outline patched to 3 px magenta and `(CHECKED | FOCUS_VISIBLE; variant=Flat)`'s to 2 px
+/// green: hovered it is drawn in the first and pressed in the second, the pens
+/// `chrome::toggle_checked_pens` lays over egui's hovered and active entries.
+#[test]
+fn the_open_toggle_is_outlined_in_its_hovered_and_active_pens() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState as S,
+    };
+    use native_theme_egui::next;
+    const ID: &str = "chrome.status_bar.toggle";
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let flat = |state: S, width, colour| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .body(PartPatch::new().stroke(Stroke::uniform(width, colour)))
+    };
+    let patch = ThemePatch::new()
+        .button(flat(S::CHECKED | S::HOVER, 3.0, magenta))
+        .button(flat(S::CHECKED | S::FOCUS_VISIBLE, 2.0, green));
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    probe.run_steps(SETTLE);
+    assert!(
+        probe.state().side_panel_visible,
+        "the side panel starts open"
+    );
+    let rect = element_rect(&probe, ID)?;
+    for (press, want, what) in [
+        (
+            false,
+            egui::Stroke::new(3.0, next::to_color32(magenta)),
+            "hovered",
+        ),
+        (
+            true,
+            egui::Stroke::new(2.0, next::to_color32(green)),
+            "pressed",
+        ),
+    ] {
+        let held = held_at("kde-breeze", Some(&patch), rect.center(), press)?;
+        assert!(
+            held.state().side_panel_visible,
+            "{what}: the panel stays open"
+        );
+        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
+        assert_eq!(strokes, [want], "{what}");
+    }
+    Ok(())
+}
+
+/// N6's wiring: the status bar loads the side-panel toggle's freedesktop icon in the colour the
+/// theme states for the flat button's icon in the state it is in (`button.icon(CHECKED;
+/// variant=Flat).color` while open, `(NONE; variant=Flat)` while closed, patched in), its icon
+/// cache key tinted in it. The icon theme is a fixture in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour() -> Result<(), String> {
+    use crate::demo::IconLoad;
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::next;
+    const NAME: &str = "tests::the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour";
+    if native_theme_test_fixtures::in_child() {
+        let [on, off] = [
+            Color::new(1.0, 0.0, 1.0, 1.0),
+            Color::new(0.0, 1.0, 0.0, 1.0),
+        ];
+        let rule = |state: WidgetState, colour: Color| {
+            ButtonRule::new()
+                .variant(ButtonVariant::Flat)
+                .states(state)
+                .icon(IconPatch::new().color(colour))
+        };
+        let patch = ThemePatch::new()
+            .button(rule(WidgetState::NONE, off))
+            .button(rule(WidgetState::CHECKED, on));
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[
+                ("--theme", TEST_PRESET),
+                ("--variant", "light"),
+                ("--icon-set", "named"),
+            ]),
+        );
+        let patched = harness.state().atlas.patched(&patch)?;
+        let ctx = harness.ctx.clone();
+        harness.state_mut().adopt_pair(&ctx, patched);
+        // The toggle's icon keys loaded since `from`, the last one.
+        let last_toggle = |harness: &Harness<'_, App>, from: usize| {
+            icon_loads_since(harness, from)
+                .into_iter()
+                .filter_map(|load| match load {
+                    IconLoad::Named(key) if format!("{key:?}").contains("panel-left") => Some(key),
+                    _ => None,
+                })
+                .next_back()
+        };
+        let from = harness.state().icon_cache.loads.len();
+        harness.run_steps(4);
+        assert!(
+            harness.state().side_panel_visible,
+            "the side panel starts open"
+        );
+        let open_key = last_toggle(&harness, from).ok_or("the open toggle loads no icon")?;
+        let on = next::to_color32(on);
+        assert_eq!(open_key.clone().tint(on), open_key, "open: tinted {on:?}");
+        let from = harness.state().icon_cache.loads.len();
+        harness.state_mut().side_panel_visible = false;
+        harness.run_steps(4);
+        let closed_key = last_toggle(&harness, from).ok_or("the closed toggle loads no icon")?;
+        let off = next::to_color32(off);
+        assert_eq!(
+            closed_key.clone().tint(off),
+            closed_key,
+            "closed: tinted {off:?}"
+        );
+        return Ok(());
+    }
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    let child = native_theme_test_fixtures::Child {
+        desktop: "sway",
+        icon_theme: None,
+    };
+    native_theme_test_fixtures::run(NAME, child, |icons| {
+        native_theme_test_fixtures::write_scalable_theme(
+            icons,
+            "named",
+            &[
+                ("utilities-terminal", SVG),
+                ("object-rotate-right", SVG),
+                ("sidebar-show", SVG),
+            ],
+        )
+    })
+    .map_err(|e| e.to_string())
+}

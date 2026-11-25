@@ -880,3 +880,15 @@ connector = "iced"
 name = "next::toolbar_button_checked"
 kind = "absent"
 reason = "egui's checked toolbar button: egui fills and letters a `Button::selected` from `visuals.selection` in every state (egui 0.37.0 src/theme/default_style.rs, `StyleProvider<ButtonStyle>`), so no scope gives it a hovered or pressed look, and the function returns `toolbar.button(CHECKED)`, `(HOVER|CHECKED)` and `(PRESSED|CHECKED)`'s fills and labels for the application to hand `Button::fill` per call from the button's previous response (connectors/native-theme-egui/src/next/mod.rs, `toolbar_button_checked`'s doc). iced hands the style function a button's status, so its checked toolbar button's look per status is the style function's (connectors/native-theme-iced/src/next/styles.rs, `toolbar_button`)"
+
+[[exception]]
+connector = "gpui"
+name = "next::stroke_color_over"
+kind = "absent"
+reason = "egui's per-call stroke: egui ends a rect's fill at the stroke's inner edge (epaint 0.37.0 src/tessellator.rs, `stroke_and_fill_path`), so a translucent stroke an application hands `Button::stroke` per call is composited over the fill as the atlas composites its own (connectors/native-theme-egui/src/next/mod.rs, `stroke_color_over`'s doc). gpui paints a quad's border over its background, inside its bounds, so the fill runs under the whole border and a stroke laid inside is drawn from the stated colour (connectors/native-theme-gpui/src/next/mod.rs, the stroke readers' doc): there is nothing to composite"
+
+[[exception]]
+connector = "iced"
+name = "next::stroke_color_over"
+kind = "absent"
+reason = "egui's per-call stroke: egui ends a rect's fill at the stroke's inner edge (epaint 0.37.0 src/tessellator.rs, `stroke_and_fill_path`), so a translucent stroke an application hands `Button::stroke` per call is composited over the fill as the atlas composites its own (connectors/native-theme-egui/src/next/mod.rs, `stroke_color_over`'s doc). iced's style functions take a stroke with its alignment and composite it over the fill each state paints themselves (connectors/native-theme-iced/src/next/borders.rs, the module's doc, `Line::over`), and an iced application hands a style function, not a stroke, per call"

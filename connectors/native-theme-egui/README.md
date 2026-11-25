@@ -822,7 +822,9 @@ listed here, and a value the theme leaves unstated is egui's own
   `Center`ed on the edge is composited over that fill at half its alpha, so
   the whole band is drawn in the band's mean colour where the platform shows
   the fill under its inner half only (src/style/line.rs). An opaque stroke
-  is drawn exactly in every alignment.
+  is drawn exactly in every alignment. An application that hands a stroke
+  per call (`Button::stroke`) composites it the same way with
+  `next::stroke_color_over`.
 - **A checked toolbar button hovered or pressed.** egui fills and letters
   a selected `Button` from `visuals.selection` in every state
   (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`),

@@ -396,14 +396,38 @@ pub(crate) fn state_pen(part: &native_theme::next::PartStyle) -> Option<egui::St
     {
         return None;
     }
+    stated_pen(part)
+}
+
+/// The pen the installed 0.8.0 theme states for `part` (its stroke, by any rule), one stroke of
+/// one colour; none where its width is not positive; `None` where it states none, or in a form
+/// egui cannot draw (`next::stroke_width_of`, `next::stroke_color_of`).
+pub(crate) fn stated_pen(part: &native_theme::next::PartStyle) -> Option<egui::Stroke> {
     match (
         native_theme_egui::next::stroke_width_of(part),
-        native_theme_egui::next::state_stroke_color_of(part),
+        native_theme_egui::next::stroke_color_of(part),
     ) {
         (Some(width), _) if width <= 0.0 => Some(egui::Stroke::NONE),
         (Some(width), Some(colour)) => Some(egui::Stroke::new(width, colour)),
         _ => None,
     }
+}
+
+/// `pen`, `part`'s, as egui is handed it on a box it paints `fill` under: a translucent colour
+/// laid inside the box or across its edge composited over the fill, as the connector's own
+/// styles hand a stroke (`next::stroke_color_over`); no pen stays none.
+pub(crate) fn pen_over(
+    part: &native_theme::next::PartStyle,
+    pen: egui::Stroke,
+    fill: egui::Color32,
+) -> egui::Stroke {
+    if pen.width <= 0.0 {
+        return pen;
+    }
+    egui::Stroke::new(
+        pen.width,
+        native_theme_egui::next::stroke_color_over(part, pen.color, Some(fill)),
+    )
 }
 
 /// The sides of `padding`, top, right, bottom and left (`next::padding_of`'s order), the theme
@@ -2001,24 +2025,45 @@ pub(crate) fn next_toolbar_button(
     rest.is_some()
 }
 
-/// The hovered and pressed state of the widget `key` names in its previous response, as
-/// [`remember_state`] kept it in the page's memory; neither before its first response.
-pub(crate) fn previous_state(ui: &egui::Ui, key: egui::Id) -> (bool, bool) {
-    ui.ctx()
-        .data(|d| d.get_temp::<(bool, bool)>(key))
-        .unwrap_or_default()
+/// A widget's state in a response, as a look drawn from its previous response keeps it:
+/// `(hovered, pressed)`, or `(hovered, pressed, focused)` for a widget whose focused look is
+/// its own.
+pub(crate) trait ResponseState: Copy + Default + PartialEq + Send + Sync + 'static {
+    /// The state `response` is in.
+    fn of(response: &egui::Response) -> Self;
 }
 
-/// Keep `response`'s hovered and pressed state under `key` for the next pass, `was` the one
-/// [`previous_state`] gave this pass; where it changed, one more pass, which draws the look of the
-/// state it is in now.
-pub(crate) fn remember_state(
+impl ResponseState for (bool, bool) {
+    fn of(response: &egui::Response) -> Self {
+        (response.hovered(), response.is_pointer_button_down_on())
+    }
+}
+
+impl ResponseState for (bool, bool, bool) {
+    fn of(response: &egui::Response) -> Self {
+        (
+            response.hovered(),
+            response.is_pointer_button_down_on(),
+            response.has_focus(),
+        )
+    }
+}
+
+/// The state of the widget `key` names in its previous response, as [`remember_state`] kept it
+/// in the page's memory; none of its flags before its first response.
+pub(crate) fn previous_state<S: ResponseState>(ui: &egui::Ui, key: egui::Id) -> S {
+    ui.ctx().data(|d| d.get_temp::<S>(key)).unwrap_or_default()
+}
+
+/// Keep `response`'s state under `key` for the next pass, `was` the one [`previous_state`] gave
+/// this pass; where it changed, one more pass, which draws the look of the state it is in now.
+pub(crate) fn remember_state<S: ResponseState>(
     ui: &egui::Ui,
     key: egui::Id,
-    was: (bool, bool),
+    was: S,
     response: &egui::Response,
 ) {
-    let now = (response.hovered(), response.is_pointer_button_down_on());
+    let now = S::of(response);
     if now != was {
         ui.ctx().request_repaint();
     }

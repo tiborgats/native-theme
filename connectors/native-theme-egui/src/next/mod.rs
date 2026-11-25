@@ -229,6 +229,19 @@ pub fn state_stroke_color_of(part: &PartStyle) -> Option<Color32> {
     reads::state_stroke(part).map(to_color32)
 }
 
+/// `color`, a part's stroke colour as [`stroke_color_of`] or
+/// [`state_stroke_color_of`] reads it, as the connector hands it to egui on
+/// a box egui paints `fill` under: egui ends the fill at the stroke's inner
+/// edge, so a translucent stroke the theme lays inside the box is
+/// composited over the fill, and one centred on its edge over the fill at
+/// half its alpha; one that is opaque, lies outside the box, or lies over
+/// no fill (`None`) is as stated.
+#[must_use]
+pub fn stroke_color_over(part: &PartStyle, color: Color32, fill: Option<Color32>) -> Color32 {
+    let (_, align) = build::edge(part);
+    crate::style::line::Line { color, align }.over(fill)
+}
+
 /// A part's stroke width, where stated as one stroke, in any alignment, or
 /// as none, which is no width; `None` where it is not stated, or stated in
 /// a form egui cannot draw (a per-side stroke).
