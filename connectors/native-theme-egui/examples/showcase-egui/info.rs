@@ -1409,7 +1409,8 @@ pub(crate) fn widget_tab(
     }
 }
 
-/// The Theme tab: `name()`, `os_mode()`, `accessibility()`, every `Note` and each face the
+/// The Theme tab: `name()`, `os_mode()`, `accessibility()`, every `Note`, the atlas's and the
+/// companion crate's widgets' (`native_theme_egui_widgets::next_fills_unmapped`), and each face the
 /// showcase did not add at another weight (`demo::Semibold::invalid`), the
 /// fonts of the installed 0.8.0 theme, `typography.body` and `typography.monospace`, by the
 /// families egui draws (`demo::DrawnFamilies`) in their defined units (§8.7), the window-frame
@@ -1449,10 +1450,14 @@ pub(crate) fn theme_tab(
         prefs.reduce_transparency.to_string(),
     );
     section(ui, "Notes");
-    if atlas.notes().is_empty() && semibold.invalid().is_empty() {
+    // The companion crate's widgets report a fill they draw egui's own in place of on the
+    // atlas's channel (`native_theme_egui_widgets::next_fills_unmapped`).
+    let widget_notes = r.map(native_theme_egui_widgets::next_fills_unmapped);
+    let widget_notes = widget_notes.as_deref().unwrap_or_default();
+    if atlas.notes().is_empty() && widget_notes.is_empty() && semibold.invalid().is_empty() {
         note(ui, "none", true);
     }
-    for note in atlas.notes() {
+    for note in atlas.notes().iter().chain(widget_notes) {
         let kind: String = format!("{note:?}")
             .chars()
             .take_while(|c| c.is_alphanumeric())

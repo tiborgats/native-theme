@@ -7,7 +7,9 @@
 //! ([`native_theme_egui::next`]), so the widgets draw a stated value as the connector hands it
 //! to egui: each gives a value where the theme states it, `None` where it does not, so the
 //! widget keeps egui's own there (spec §10, rule 0); a fill stated as none is transparent and a
-//! stroke stated as none is no outline (spec §10, rule 2). Kept here are only the reads the
+//! stroke stated as none is no outline (spec §10, rule 2); a fill stated as layers that are all
+//! gradients is egui's own too, and a [`Note::Unmapped`] at its home ([`fill`],
+//! [`crate::next_fills_unmapped`]; spec §10, rule 4). Kept here are only the reads the
 //! connector has no reader for: a state's value read where a rule for the state states it, the
 //! corners of a pill, and the colours no part's `stated` bits govern.
 
@@ -19,20 +21,44 @@ pub(crate) use native_theme_egui::next::{
     text_color_of, to_color32,
 };
 
+use native_theme_egui::Note;
 use native_theme_egui::egui::Color32;
 use native_theme_egui::native_theme::next::{
     CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme,
 };
 
-/// [`fill_of`] `part` where `ruled`, the part queried with the state's flag alone, has its
-/// fill from a rule for that state (spec §2, `from_state`): a state's fill laid over another
-/// state (`HOVER|CHECKED`), read only where the theme states one for the state.
-pub(crate) fn ruled_fill(ruled: &PartStyle, part: &PartStyle) -> Option<Color32> {
-    ruled
-        .from_state
-        .contains(PartStated::FILL)
-        .then(|| fill_of(part))
-        .flatten()
+/// [`fill_of`] `part` at `home`: the fill where the theme states it, `None` where it does not,
+/// egui's own there (spec §10, rule 0); where it states the fill as layers that are all
+/// gradients, which egui cannot paint as one colour, `None` too, egui's own drawn there, and a
+/// [`Note::Unmapped`] at `home` in `unmapped` (spec §10, rule 4).
+pub(crate) fn fill(
+    part: &PartStyle,
+    home: &'static str,
+    unmapped: &mut Vec<Note>,
+) -> Option<Color32> {
+    fill_of(part, home).unwrap_or_else(|e| {
+        let note = Note::unmapped(e.home());
+        if !unmapped.contains(&note) {
+            unmapped.push(note);
+        }
+        None
+    })
+}
+
+/// [`fill`] `part` at `home` where `ruled`, the part queried with the state's flag alone, has
+/// its fill from a rule for that state (spec §2, `from_state`): a state's fill laid over
+/// another state (`HOVER|CHECKED`), read only where the theme states one for the state.
+pub(crate) fn ruled_fill(
+    ruled: &PartStyle,
+    part: &PartStyle,
+    home: &'static str,
+    unmapped: &mut Vec<Note>,
+) -> Option<Color32> {
+    if ruled.from_state.contains(PartStated::FILL) {
+        fill(part, home, unmapped)
+    } else {
+        None
+    }
 }
 
 /// [`stroke_color_of`] `part` where `ruled`, the part queried with the state's flag alone, has

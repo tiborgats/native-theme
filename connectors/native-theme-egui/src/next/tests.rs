@@ -28,10 +28,14 @@ fn the_public_part_reads_are_the_mappings_own() {
                 let part = r.button.body(state);
                 let text = r.button.label(state);
                 let at = format!("{key} {state:?}");
-                assert_eq!(super::fill_of(&part), super::fill(&part, "h").ok(), "{at}");
                 assert_eq!(
-                    super::state_fill_of(&part),
-                    super::state_fill(&part, "h").ok().flatten(),
+                    super::fill_of(&part, "h"),
+                    Ok(super::build::fill(&part).map(crate::convert::to_color32)),
+                    "{at}"
+                );
+                assert_eq!(
+                    super::state_fill_of(&part, "h"),
+                    Ok(super::build::state_fill(&part).map(crate::convert::to_color32)),
                     "{at}"
                 );
                 assert_eq!(
@@ -96,6 +100,43 @@ fn a_stroke_is_read_as_stated_and_a_per_side_one_not_at_all() {
     let part = r.button.body(WidgetState::NONE);
     assert_eq!(super::stroke_color_of(&part), None);
     assert_eq!(super::stroke_width_of(&part), None);
+}
+
+/// Layers that are all gradients have no single colour: the fill reads
+/// report them `Unmapped` at the home they are given (spec §10, rule 4),
+/// never `None`, egui's own fill, in their place.
+#[test]
+fn an_all_gradient_fill_is_unmapped_at_its_home() {
+    use native_theme::next::{ButtonRule, GradientStop, PaintLayer};
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: STROKE,
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let fill = PartPatch::new().fill(gradient);
+    let patch = ThemePatch::new()
+        .button(ButtonRule::new().body(fill.clone()))
+        .button(ButtonRule::new().states(WidgetState::HOVER).body(fill));
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::fill_of(&r.button.body(WidgetState::NONE), "at rest"),
+        Err(super::Unmapped("at rest"))
+    );
+    assert_eq!(
+        super::state_fill_of(&r.button.body(WidgetState::HOVER), "hovered"),
+        Err(super::Unmapped("hovered"))
+    );
 }
 
 /// `to_theme` builds each scheme from its own theme, which the atlas then holds
@@ -918,7 +959,7 @@ fn the_mixed_box_under_the_pointer_asks_the_state_alone() -> Result<(), Box<dyn 
                 let combined = r.checkbox.indicator(state | WidgetState::INDETERMINATE);
                 assert_eq!(
                     Some(m.bg_fill),
-                    super::fill_of(&combined),
+                    super::fill_of(&combined, "combined")?,
                     "{key}: the {name} fill stated for the state"
                 );
             } else {

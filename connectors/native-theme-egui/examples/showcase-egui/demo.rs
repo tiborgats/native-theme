@@ -1741,6 +1741,29 @@ pub(crate) fn next_grown(
     stated.max(line.ceil() + padding + rule)
 }
 
+/// The home a drawing site hands the connector's fill readers. A drawing site draws egui's own
+/// where the reader is `Unmapped` and shows no error, so the home is not read there, as the iced
+/// showcase's `DRAWN_FILL`.
+const DRAWN_FILL: &str = "a fill a showcase drawing site reads";
+
+/// A part's fill as the page draws it: `next::fill_of`'s colour where the theme states one,
+/// `None` where it is unstated, or stated as layers that are all gradients (`Unmapped`, spec §10
+/// rule 4), egui's own then drawn there.
+pub(crate) fn drawn_fill(part: &native_theme::next::PartStyle) -> Option<egui::Color32> {
+    native_theme_egui::next::fill_of(part, DRAWN_FILL)
+        .ok()
+        .flatten()
+}
+
+/// A part's fill as the page draws it in a state a rule states it for,
+/// `next::state_fill_of`'s colour; `None` where no rule states it, or it is `Unmapped` (spec §10
+/// rule 4), egui's own then drawn there.
+pub(crate) fn drawn_state_fill(part: &native_theme::next::PartStyle) -> Option<egui::Color32> {
+    native_theme_egui::next::state_fill_of(part, DRAWN_FILL)
+        .ok()
+        .flatten()
+}
+
 /// The value `build` gives for the installed 0.8.0 theme the window shows
 /// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while it is not
 /// focused), as the gpui showcase's `support::next_value`; `None` without an installed 0.8.0
@@ -1948,7 +1971,7 @@ impl TabLook {
 /// the theme states all three; else no line, as egui's `Button` draws none.
 pub(crate) fn next_indicator_line(r: &native_theme::next::ResolvedTheme) -> Option<TabLine> {
     let indicator = r.tab.indicator(native_theme::next::WidgetState::SELECTED);
-    let colour = native_theme_egui::next::fill_of(&indicator)?;
+    let colour = drawn_fill(&indicator)?;
     let width = indicator.min_size[1].filter(|w| w.is_finite() && *w > 0.0)?;
     let side = r.tab.indicator_side?;
     Some(TabLine {

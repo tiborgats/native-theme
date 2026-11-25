@@ -8,7 +8,7 @@ use native_theme::icons::IconSet;
 use native_theme::icons::{IconRole, TransformAnimation};
 use native_theme::next::{ResolvedTheme, WidgetState};
 use native_theme_egui::icons::{self, IconContext};
-use native_theme_egui::next::{border_color, border_corner_radius, fill_of, icon_size};
+use native_theme_egui::next::{border_color, border_corner_radius, icon_size};
 use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
@@ -140,7 +140,7 @@ pub(crate) fn show(
     };
     let own = &ui.visuals().widgets.inactive;
     let skeleton = r
-        .and_then(|r| fill_of(&r.button.body(WidgetState::NONE)))
+        .and_then(|r| demo::drawn_fill(&r.button.body(WidgetState::NONE)))
         .unwrap_or(own.weak_bg_fill);
     let radius = r.map_or(own.corner_radius, |r| {
         egui::CornerRadius::from(border_corner_radius(r))

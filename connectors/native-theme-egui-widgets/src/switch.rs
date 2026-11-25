@@ -3,7 +3,7 @@
 use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui::{self, AtomExt as _, accesskit};
 use native_theme_egui::native_theme::next::{
-    LabelSide, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
+    LabelSide, PartStyle, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
 };
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
 use native_theme_egui::{Note, ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
@@ -321,6 +321,12 @@ impl Look {
     /// where the theme states no track fill or checked thumb fill, which sends the switch to
     /// egui's own counterpart.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
+        Self::next_noted(r, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at each fill's home the
+    /// theme states as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(r: &NextResolvedTheme, unmapped: &mut Vec<Note>) -> Option<Self> {
         let sw = &r.switch;
         let track = |s: WidgetState| sw.track(s);
         let thumb = |s: WidgetState| sw.thumb(s);
@@ -336,20 +342,36 @@ impl Look {
             next::body_text(r),
             next::disabled_text_color(r),
         );
+        let mut fill = |part: &PartStyle, home: &'static str| next::fill(part, home, unmapped);
+        let checked_background = fill(&track(on), "switch.track(CHECKED).fill");
+        let unchecked_background = fill(&track(WidgetState::NONE), "switch.track(NONE).fill");
+        let disabled_checked_background =
+            fill(&track(off_on), "switch.track(DISABLED|CHECKED).fill");
+        let disabled_unchecked_background = fill(&track(off), "switch.track(DISABLED).fill");
+        let thumb_background = fill(&thumb(on), "switch.thumb(CHECKED).fill");
+        let unchecked_thumb_background = fill(&thumb(WidgetState::NONE), "switch.thumb(NONE).fill");
+        let disabled_thumb_color = fill(&thumb(off), "switch.thumb(DISABLED).fill");
+        let disabled_checked_thumb_color =
+            fill(&thumb(off_on), "switch.thumb(DISABLED|CHECKED).fill");
+        let hover_checked_background = next::ruled_fill(
+            &hover,
+            &track(WidgetState::HOVER | WidgetState::CHECKED),
+            "switch.track(HOVER|CHECKED).fill",
+            unmapped,
+        );
+        let hover_unchecked_background =
+            next::ruled_fill(&hover, &hover, "switch.track(HOVER).fill", unmapped);
         Some(Self {
-            checked_background: next::fill_of(&track(on))?,
-            hover_checked_background: next::ruled_fill(
-                &hover,
-                &track(WidgetState::HOVER | WidgetState::CHECKED),
-            ),
-            unchecked_background: next::fill_of(&track(WidgetState::NONE))?,
-            hover_unchecked_background: next::ruled_fill(&hover, &hover),
-            disabled_checked_background: next::fill_of(&track(off_on)),
-            disabled_unchecked_background: next::fill_of(&track(off)),
-            thumb_background: next::fill_of(&thumb(on))?,
-            unchecked_thumb_background: next::fill_of(&thumb(WidgetState::NONE)),
-            disabled_thumb_color: next::fill_of(&thumb(off)),
-            disabled_checked_thumb_color: next::fill_of(&thumb(off_on)),
+            checked_background: checked_background?,
+            hover_checked_background,
+            unchecked_background: unchecked_background?,
+            hover_unchecked_background,
+            disabled_checked_background,
+            disabled_unchecked_background,
+            thumb_background: thumb_background?,
+            unchecked_thumb_background,
+            disabled_thumb_color,
+            disabled_checked_thumb_color,
             unchecked_track_border_color: next::stroke_color_of(&track(WidgetState::NONE)),
             checked_track_border_color: next::stroke_color_of(&track(on)),
             disabled_unchecked_track_border_color: next::stroke_color_of(&track(off)),

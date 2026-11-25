@@ -2322,8 +2322,8 @@ fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() -> Result<(), Str
         on, primary,
         "{key}: the toggle while on is the selected button"
     );
-    let pressed = native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::PRESSED));
-    let hovered = native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::HOVER));
+    let pressed = crate::demo::drawn_state_fill(&r.button.body(WidgetState::PRESSED));
+    let hovered = crate::demo::drawn_state_fill(&r.button.body(WidgetState::HOVER));
     assert!(
         pressed != Some(on.0) && hovered != Some(on.0),
         "{key}: the toggle while on takes another state's fill: {on:?}"
@@ -4057,13 +4057,13 @@ fn the_icons_placeholder_takes_the_08_button_fill() -> Result<(), String> {
     })?;
     harness.state_mut().settings.icon = IconSetChoice::Freedesktop(ABSENT_ICON_THEME.to_owned());
     harness.run_steps(SETTLE);
-    let fill = native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE))
+    let fill = crate::demo::drawn_fill(&r.button.body(WidgetState::NONE))
         .ok_or("the patch states no button.body(NONE).fill")?;
     let unpatched = open_page_under(Page::Icons, egui::Theme::Light, TEST_PRESET)
         .state()
         .atlas
         .next_resolved(egui::Theme::Light)
-        .map(|r| native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE)))
+        .map(|r| crate::demo::drawn_fill(&r.button.body(WidgetState::NONE)))
         .ok_or("no 0.8.0 theme installed")?;
     assert_ne!(
         Some(fill),
@@ -4436,8 +4436,8 @@ fn a_pill_list_frames_inside_is_a_pill() -> Result<(), String> {
 /// underlined, at rest, exactly where `link.label(NONE)` states an underline decoration.
 #[test]
 fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
+    use crate::demo::{drawn_fill, drawn_state_fill};
     use native_theme::next::{DecorationKind, TextStated, WidgetState};
-    use native_theme_egui::next::{fill_of, state_fill_of};
     // whether a preset states `button.body(NONE).min_size`'s width, its height and
     // `input.field(NONE).min_size[1]`, so no check below passes on an unstated value alone
     let mut stated = [false; 3];
@@ -4499,8 +4499,8 @@ fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
             .input
             .disabled_opacity
             .ok_or_else(|| format!("{preset} states no input.disabled_opacity"))?;
-        let fill = state_fill_of(&r.input.field(WidgetState::DISABLED))
-            .or_else(|| fill_of(&r.input.field(WidgetState::NONE)))
+        let fill = drawn_state_fill(&r.input.field(WidgetState::DISABLED))
+            .or_else(|| drawn_fill(&r.input.field(WidgetState::NONE)))
             .map(|fill| fill.gamma_multiply(opacity));
         let shapes = harness.output().shapes.clone();
         let filled = shapes.iter().any(|clipped| match &clipped.shape {
@@ -4997,8 +4997,9 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
 /// rounded by its corners.
 #[test]
 fn the_inputs_page_frames_its_fields_in_their_own_border() -> Result<(), String> {
+    use crate::demo::drawn_fill;
     use native_theme::next::WidgetState;
-    use native_theme_egui::next::{fill_of, radius_of, stroke_width_of};
+    use native_theme_egui::next::{radius_of, stroke_width_of};
     let harness = open_page_under(Page::Inputs, egui::Theme::Light, "material-3");
     let r = harness
         .state()
@@ -5014,7 +5015,7 @@ fn the_inputs_page_frames_its_fields_in_their_own_border() -> Result<(), String>
         stroke_width_of(&r.button.body(WidgetState::NONE)),
         "the case this covers: a field's line that is not the button's"
     );
-    let fill = fill_of(&input).ok_or("no input.field(NONE).fill")?;
+    let fill = drawn_fill(&input).ok_or("no input.field(NONE).fill")?;
     for (kind, field) in [
         ("TextEdit (single line)", &input),
         ("TextEdit (password)", &input),
@@ -6200,9 +6201,10 @@ fn the_basic_list_labels_are_placed_as_painted_centred_down_their_rows() {
 /// `Shape::Rect` at its element's place in its colour.
 #[test]
 fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
+    use crate::demo::drawn_fill;
     use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED, header_section_fill};
     use native_theme::next::{ListKind, ListQuery, ListVariant, PartStated, WidgetState};
-    use native_theme_egui::next::{fill_of, radius_of, stroke_width_of};
+    use native_theme_egui::next::{radius_of, stroke_width_of};
 
     /// The corners of the one filled rectangle at `place`, in `fill` where given.
     fn corners_of(
@@ -6288,7 +6290,7 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
         let places = harness.state().registry.places().clone();
 
         let table_rest = query(ListVariant::Table, WidgetState::NONE);
-        if fill_of(&l.header(table_rest)).is_some() {
+        if drawn_fill(&l.header(table_rest)).is_some() {
             assert_eq!(
                 corners_of(&harness, places["basic.table.header"], None),
                 corners(table_inner, table_inner, 0, 0),
@@ -6408,7 +6410,7 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
             preset == "kde-breeze",
             "{preset}: which preset states the outline"
         );
-        let hover_fill = native_theme_egui::next::state_fill_of(&hover);
+        let hover_fill = crate::demo::drawn_state_fill(&hover);
         let stroked = |r: &egui::epaint::RectShape| r.stroke.width > 0.0 && r.stroke.color.a() > 0;
         let outline = native_theme_egui::next::state_stroke_color_of(&hover).map(|colour| {
             let width =
@@ -6590,8 +6592,9 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
         }
         most
     }
+    use crate::demo::drawn_state_fill;
     use native_theme::next::WidgetState;
-    use native_theme_egui::next::{state_fill_of, state_stroke_color_of, stroke_width_of};
+    use native_theme_egui::next::{state_stroke_color_of, stroke_width_of};
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     let r = harness
         .state()
@@ -6604,7 +6607,7 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
     let parts = (
         stroke_width_of(&hover),
         state_stroke_color_of(&hover),
-        state_fill_of(&hover),
+        drawn_state_fill(&hover),
     );
     assert!(
         parts.0.is_some() && parts.1.is_some() && parts.2.is_some(),
@@ -6706,8 +6709,8 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
 /// `menu_bar.bar(NONE).fill` is not, the bar is filled in magenta.
 #[test]
 fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Result<(), String> {
+    use crate::demo::{drawn_fill, drawn_state_fill};
     use native_theme::next::{MenuBarRule, Paint, PartPatch, ThemePatch, WidgetState};
-    use native_theme_egui::next::{fill_of, state_fill_of};
     fn check(harness: &mut Harness<'static, App>, want: egui::Color32) -> Result<(), String> {
         harness.state_mut().open_menu = Some("theme".to_string());
         harness.run_steps(4);
@@ -6716,7 +6719,7 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Res
             .atlas
             .next_resolved(egui::Theme::Light)
             .ok_or("no 0.8.0 theme installed")?;
-        let open = state_fill_of(&r.menu_bar.item(WidgetState::OPEN))
+        let open = drawn_state_fill(&r.menu_bar.item(WidgetState::OPEN))
             .ok_or("kde-breeze states no open title fill")?;
         let rects: Vec<egui::epaint::RectShape> = harness
             .output()
@@ -6754,7 +6757,7 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Res
         .next_resolved(egui::Theme::Light)
         .ok_or("no 0.8.0 theme installed")?;
     let fill =
-        fill_of(&r.menu_bar.bar(WidgetState::NONE)).ok_or("kde-breeze states no bar fill")?;
+        drawn_fill(&r.menu_bar.bar(WidgetState::NONE)).ok_or("kde-breeze states no bar fill")?;
     assert_eq!(fill, egui::Color32::from_rgb(0xde, 0xe0, 0xe2));
     assert_ne!(
         fill,
@@ -6790,11 +6793,12 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Res
 /// popover's line.
 #[test]
 fn the_open_menu_insets_its_first_item_by_the_panel_padding() -> Result<(), String> {
+    use crate::demo::drawn_fill;
     use native_theme::next::{
         Edges, MenuRule, PartPatch, PopoverPatch, ResolvedTheme, Stroke, ThemePatch,
         WidgetPatchMap, WidgetState,
     };
-    use native_theme_egui::next::{fill_of, padding_of, stroke_color_of, stroke_width_of};
+    use native_theme_egui::next::{padding_of, stroke_color_of, stroke_width_of};
     fn walk(shape: &egui::Shape, out: &mut Vec<egui::epaint::RectShape>) {
         match shape {
             egui::Shape::Vec(inner) => inner.iter().for_each(|s| walk(s, out)),
@@ -6817,7 +6821,7 @@ fn the_open_menu_insets_its_first_item_by_the_panel_padding() -> Result<(), Stri
                 .ok_or(format!("{preset} states no popover.panel stroke width"))?,
             stroke_color_of(panel).ok_or(format!("{preset} states no popover.panel stroke"))?,
         );
-        let fill = fill_of(&r.menu.panel(WidgetState::NONE))
+        let fill = drawn_fill(&r.menu.panel(WidgetState::NONE))
             .ok_or(format!("{preset} states no menu.panel(NONE).fill"))?;
         let item = place_of(harness, "chrome.menu.theme.reload");
         let mut rects = Vec::new();
@@ -6945,7 +6949,7 @@ fn the_table_headers_lines_take_the_header_separator_colour() {
         assert!(r.is_some(), "{preset}'s 0.8.0 theme is installed");
         let Some(r) = r else { continue };
         let grid = native_theme_egui::next::to_color32(r.list.grid_color);
-        let stated = native_theme_egui::next::fill_of(
+        let stated = crate::demo::drawn_fill(
             &r.list
                 .header_separator(native_theme::next::ListQuery::from(ListVariant::Table)),
         );
@@ -7039,7 +7043,7 @@ fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() -> Result<(), 
             variant: ListVariant::Table,
             alternate: false,
         });
-        native_theme_egui::next::state_fill_of(&r.list.header(q))
+        crate::demo::drawn_state_fill(&r.list.header(q))
     };
     let hovered = table(WidgetState::HOVER);
     let pressed = table(WidgetState::HOVER.union(WidgetState::PRESSED));
@@ -7072,19 +7076,19 @@ fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() -> Result<(), 
 /// it, over it; the stripe stays the preset's.
 #[test]
 fn a_list_row_is_filled_in_its_stated_fill_under_its_highlight() -> Result<(), String> {
+    use crate::demo::{drawn_fill, drawn_state_fill};
     use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED};
     use native_theme::next::{
         ListKind, ListQuery, ListRule, ListVariant, Paint, PartPatch, Preset, Theme, ThemeContext,
         ThemePatch, WidgetState,
     };
-    use native_theme_egui::next::{fill_of, state_fill_of};
 
     let row_of = |r: &native_theme::next::ResolvedTheme, alternate: bool| {
         let q = ListQuery::new(WidgetState::NONE).variant(ListKind {
             variant: ListVariant::Plain,
             alternate,
         });
-        fill_of(&r.list.row(q))
+        drawn_fill(&r.list.row(q))
     };
     let own = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
     if row_of(&own, false).is_some() || row_of(&own, true).is_none() {
@@ -7161,7 +7165,7 @@ fn a_list_row_is_filled_in_its_stated_fill_under_its_highlight() -> Result<(), S
                 variant,
                 alternate: false,
             });
-            let lit = state_fill_of(&r.list.highlight(q));
+            let lit = drawn_state_fill(&r.list.highlight(q));
             assert!(
                 lit.is_some() && lit != fill,
                 "{id}: kde-breeze states the highlight"
@@ -7186,9 +7190,10 @@ fn a_list_row_is_filled_in_its_stated_fill_under_its_highlight() -> Result<(), S
 /// the one filled rectangle inside its row's place, the highlight inset by its margin.
 #[test]
 fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
+    use crate::demo::drawn_state_fill;
     use crate::pages::basic::TABLE_SELECTED;
     use native_theme::next::{ListKind, ListQuery, ListVariant, WidgetState};
-    use native_theme_egui::next::{state_fill_of, state_text_color_of};
+    use native_theme_egui::next::state_text_color_of;
 
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     let r = harness
@@ -7204,7 +7209,7 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
             alternate: false,
         });
         (
-            state_fill_of(&r.list.highlight(q)),
+            drawn_state_fill(&r.list.highlight(q)),
             state_text_color_of(&r.list.item_label(q)),
         )
     };
@@ -9572,7 +9577,7 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() -> Result<(), String
         .cloned()
         .ok_or("no 0.8.0 theme installed")?;
     let fill = |state| {
-        native_theme_egui::next::state_fill_of(&r.button.body(state))
+        crate::demo::drawn_state_fill(&r.button.body(state))
             .ok_or_else(|| format!("kde-breeze states no button fill for {state:?}"))
     };
     let (hovered, pressed) = (fill(WidgetState::HOVER)?, fill(WidgetState::PRESSED)?);
@@ -9690,7 +9695,7 @@ fn the_dialog_default_button_is_drawn_in_its_state() -> Result<(), String> {
         .state()
         .atlas
         .next_resolved(egui::Theme::Light)
-        .and_then(|r| native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::PRESSED)))
+        .and_then(|r| crate::demo::drawn_state_fill(&r.button.body(WidgetState::PRESSED)))
         .ok_or("kde-breeze light states no button.body(PRESSED).fill")?;
     assert_ne!(active, d.fill, "the pressed fill is not told apart");
     assert_eq!(
@@ -9742,11 +9747,11 @@ fn the_dialog_default_button_is_drawn_in_its_state() -> Result<(), String> {
         .next_resolved(egui::Theme::Light)
         .ok_or("adwaita: no 0.8.0 theme installed")?;
     assert_eq!(native_theme_egui::next::default_button(r), Ok(None));
-    let primary = native_theme_egui::next::fill_of(&r.button.body(ButtonQuery::primary()))
+    let primary = crate::demo::drawn_fill(&r.button.body(ButtonQuery::primary()))
         .ok_or("adwaita states no primary fill")?;
     assert_ne!(
         Some(primary),
-        native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE)),
+        crate::demo::drawn_fill(&r.button.body(WidgetState::NONE)),
         "the primary fill is not told apart"
     );
     let fill = adwaita
@@ -14692,4 +14697,89 @@ fn the_tables_draw_a_stated_horizontal_cell_padding() -> Result<(), String> {
         );
     }
     Ok(())
+}
+
+/// No bundled preset, light or dark, in an active or an inactive window, states a fill the
+/// showcase's own drawing sites read (`demo::drawn_fill`, `demo::drawn_state_fill`) in a form
+/// egui cannot paint, layers that are all gradients: where one did, the site would draw egui's
+/// own with no line naming the home. Each part is asked at rest and in a state a rule states,
+/// the lists' in every variant and in every state the pages draw a row or a header in.
+#[test]
+fn no_bundled_preset_leaves_a_drawn_fill_unmapped() {
+    use native_theme::next::{
+        ListKind, ListQuery, ListVariant, PartStyle, Preset, Theme, ThemeContext, WidgetState,
+    };
+    use native_theme_egui::next::{fill_of, state_fill_of};
+    let variants = [
+        ListVariant::Plain,
+        ListVariant::InsetGrouped,
+        ListVariant::Sidebar,
+        ListVariant::Table,
+    ];
+    let flags = [
+        WidgetState::SELECTED,
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::UNFOCUSED_VIEW,
+    ];
+    let mut unmapped = Vec::new();
+    for preset in Preset::ALL {
+        for (scheme, ctx) in [
+            ("light", ThemeContext::light()),
+            ("dark", ThemeContext::dark()),
+        ] {
+            for active in [true, false] {
+                let r = Theme::preset(*preset).resolve(&ctx.clone().with_window_active(active));
+                let mut parts: Vec<(String, PartStyle)> = vec![
+                    (
+                        "menu_bar.bar(NONE)".into(),
+                        r.menu_bar.bar(WidgetState::NONE),
+                    ),
+                    (
+                        "tab.indicator(SELECTED)".into(),
+                        r.tab.indicator(WidgetState::SELECTED),
+                    ),
+                    ("button.body(NONE)".into(), r.button.body(WidgetState::NONE)),
+                    (
+                        "button.body(CHECKED)".into(),
+                        r.button.body(WidgetState::CHECKED),
+                    ),
+                    (
+                        "toolbar.button(CHECKED)".into(),
+                        r.toolbar.button(WidgetState::CHECKED),
+                    ),
+                ];
+                for variant in variants {
+                    for bits in 0..(1_usize << flags.len()) {
+                        let state = flags
+                            .iter()
+                            .enumerate()
+                            .filter(|(i, _)| bits & (1 << i) != 0)
+                            .fold(WidgetState::NONE, |s, (_, f)| s.union(*f));
+                        let q = ListQuery::new(state).variant(ListKind {
+                            variant,
+                            alternate: false,
+                        });
+                        let l = &r.list;
+                        parts.extend([
+                            (format!("list.container({q:?})"), l.container(q)),
+                            (format!("list.row({q:?})"), l.row(q)),
+                            (format!("list.highlight({q:?})"), l.highlight(q)),
+                            (format!("list.header({q:?})"), l.header(q)),
+                            (
+                                format!("list.header_separator({q:?})"),
+                                l.header_separator(q),
+                            ),
+                        ]);
+                    }
+                }
+                for (name, part) in &parts {
+                    if fill_of(part, "at rest").is_err() || state_fill_of(part, "ruled").is_err() {
+                        unmapped.push(format!("{preset:?} {scheme}, active {active}: {name}"));
+                    }
+                }
+            }
+        }
+    }
+    assert!(unmapped.is_empty(), "{unmapped:#?}");
 }

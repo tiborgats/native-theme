@@ -277,7 +277,7 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 /// gpui showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
-    let fill = demo::next_value(ui, |r| next::fill_of(&r.menu_bar.bar(WidgetState::NONE)))
+    let fill = demo::next_value(ui, |r| demo::drawn_fill(&r.menu_bar.bar(WidgetState::NONE)))
         .flatten()
         .unwrap_or(ui.visuals().panel_fill);
     let margin = demo::next_metric(ui, |l| l.container_margin);

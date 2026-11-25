@@ -1718,6 +1718,77 @@ fn a_switch_stating_state_glyphs_reports_them_unmapped() -> TestResult {
     Ok(())
 }
 
+/// A fill a widget reads that the theme states as layers that are all gradients has no single
+/// colour for egui to paint: the widget draws egui's own there, as for a fill the theme leaves
+/// unstated, and [`crate::next_fills_unmapped`] reports it at its home (spec §10, rule 4); a
+/// switch whose checked track fill is one is egui's own `Checkbox`.
+#[test]
+fn a_widgets_all_gradient_fill_is_reported_at_its_home() -> TestResult {
+    use native_theme_egui::Note;
+    use native_theme_egui::native_theme::next::{
+        Color, GradientStop, Paint, PaintLayer, PartPatch, SliderRule, SwitchRule, ThemePatch,
+        WidgetState,
+    };
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let fill = PartPatch::new().fill(gradient);
+    let patch = ThemePatch::new()
+        .switch(
+            SwitchRule::new()
+                .states(WidgetState::CHECKED)
+                .track(fill.clone()),
+        )
+        .slider(SliderRule::new().thumb(fill));
+    let stock = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let r = NextTheme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    assert!(crate::switch::Look::next_of(&stock).is_some());
+    assert_eq!(crate::switch::Look::next_of(&r), None);
+    assert!(crate::slider::Look::next_of(&stock).thumb_color.is_some());
+    assert_eq!(crate::slider::Look::next_of(&r).thumb_color, None);
+    assert_eq!(crate::next_fills_unmapped(&stock), Vec::new());
+    let notes = crate::next_fills_unmapped(&r);
+    for home in ["switch.track(CHECKED).fill", "slider.thumb(NONE).fill"] {
+        assert!(notes.contains(&Note::unmapped(home)), "{home}: {notes:?}");
+    }
+    Ok(())
+}
+
+/// No bundled preset, light or dark, in an active or an inactive window, states a fill the
+/// crate's widgets read in a form egui cannot paint: where one did, the widget would draw
+/// egui's own with only [`crate::next_fills_unmapped`]'s note naming the home.
+#[test]
+fn no_bundled_preset_leaves_a_widgets_fill_unmapped() {
+    let mut unmapped = Vec::new();
+    for preset in Preset::ALL {
+        for (scheme, ctx) in [
+            ("light", ThemeContext::light()),
+            ("dark", ThemeContext::dark()),
+        ] {
+            for active in [true, false] {
+                let r = NextTheme::preset(*preset).resolve(&ctx.clone().with_window_active(active));
+                for note in crate::next_fills_unmapped(&r) {
+                    unmapped.push(format!("{preset:?} {scheme}, active {active}: {note:?}"));
+                }
+            }
+        }
+    }
+    assert!(unmapped.is_empty(), "{unmapped:#?}");
+}
+
 /// A hovered and a pressed switch letter the label in `switch.label(HOVER)`'s and
 /// `switch.label(PRESSED)`'s colour where a rule for the state states one, here colours
 /// kde-breeze does not state; at rest it keeps its own.
