@@ -319,7 +319,10 @@ struct SchemeColors {
     /// The overlay-style scroller's knob hovered and held, which AppKit draws
     /// alike; at rest it is not drawn.
     scrollbar_thumb_overlay_active: Color,
+    /// The overlay-style scroller's track.
     scrollbar_track: Color,
+    /// The legacy-style scroller's track.
+    scrollbar_track_legacy: Color,
     tooltip_background: Color,
     tooltip_foreground: Color,
     title_bar_background: Color,
@@ -560,6 +563,10 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     scrollbar_thumb_overlay_active: srgb8(0x6a6a_6adf),
     // `scrollbar.track_color`: platform-facts.md (§2.8): transparent in overlay mode
     scrollbar_track: srgb8(0x0000_0000),
+    // `scrollbar.track(NONE).fill`, legacy style: #fafafa, the opaque track round the knob (measured,
+    // os-probe run 45252258079, macOS 15, Reduce Transparency off, `*.normal.scroller_knob_legacy`
+    // `common`, the commonest colour after the knob's)
+    scrollbar_track_legacy: srgb8(0xfafa_faff),
     // `tooltip.background_color`: 0.7.2 macos-monterey.toml (uncited)
     tooltip_background: srgb8(0x2c2c_2eff),
     // `tooltip.font.color`: 0.7.2 macos-monterey.toml (uncited)
@@ -850,6 +857,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     scrollbar_thumb_overlay_active: srgb8(0xf8f8_f893),
     // `scrollbar.track_color`: platform-facts.md (§2.8): transparent in overlay mode
     scrollbar_track: srgb8(0x0000_0000),
+    // `scrollbar.track(NONE).fill`, legacy style: #c9c9c913, the translucent track round the knob
+    // (measured, os-probe run 45252258079, macOS 15, Reduce Transparency off,
+    // `*.normal.scroller_knob_legacy` `common`, the commonest colour after the knob's)
+    scrollbar_track_legacy: srgb8(0xc9c9_c913),
     // `tooltip.background_color`: 0.7.2 macos-monterey.toml (uncited)
     tooltip_background: srgb8(0x3a3a_3cff),
     // `tooltip.font.color`: 0.7.2 macos-monterey.toml (uncited)
@@ -1151,6 +1162,10 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `scrollbar.track_color`: no macOS 26 source (platform-facts.md): macos-monterey's value, the
     // overlay mode's transparent track; the inherited window background would be the wrong kind
     scrollbar_track: srgb8(0x0000_0000),
+    // `scrollbar.track(NONE).fill`, legacy style: #0000000c, the translucent track round the knob
+    // (measured, os-probe run 45252258079, macOS 26, Reduce Transparency off,
+    // `*.normal.scroller_knob_legacy` `common`, the commonest colour after the knob's)
+    scrollbar_track_legacy: srgb8(0x0000_000c),
     // `tooltip.background_color`: no macOS 26 source (platform-facts.md): macos-monterey's value;
     // the inherited window background would be the wrong kind
     tooltip_background: srgb8(0x2c2c_2eff),
@@ -1440,6 +1455,10 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `scrollbar.track_color`: no macOS 26 source (platform-facts.md): macos-monterey's value, the
     // overlay mode's transparent track; the inherited window background would be the wrong kind
     scrollbar_track: srgb8(0x0000_0000),
+    // `scrollbar.track(NONE).fill`, legacy style: #ffffff0c, the translucent track round the knob
+    // (measured, os-probe run 45252258079, macOS 26, Reduce Transparency off,
+    // `*.normal.scroller_knob_legacy` `common`, the commonest colour after the knob's)
+    scrollbar_track_legacy: srgb8(0xffff_ff0c),
     // `tooltip.background_color`: no macOS 26 source (platform-facts.md): macos-monterey's value;
     // the inherited window background would be the wrong kind
     tooltip_background: srgb8(0x3a3a_3cff),
@@ -2798,9 +2817,15 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// the default accent the first two equal, within one level, the pressed
 /// checked button's mix of the accent by [`BUTTON_CHECKED_PRESSED_MIX`]
 /// (#006be1 light; #1f8aff and #1e8aff dark), the row's does not (#0069ee /
-/// #219bff); whether any of them follows that mix, or another function of
-/// the accent, under another accent is not measured, so they are dropped,
-/// not derived: the checked box and the slider keep their rest fill pressed
+/// #219bff). Under one other accent, the red one, macOS 26's checked box and
+/// slider follow that mix again (#c53236 / #ff676b and #c53136 / #ff676a,
+/// within one level of it), the row's does not (os-probe run 45345116763,
+/// `controls-accent`, `*.pressed.checkbox_on`, `*.pressed.slider_knob`,
+/// `*.pressed.source_list_row` `fill`); macOS 15's are not measured under
+/// another accent (its checked box a gradient, its filled track not read).
+/// One accent besides the default does not show the function for every
+/// accent, so they are dropped, not derived: the checked box and the slider
+/// keep their rest fill pressed
 /// and the row takes the selection's. Once dropped, they stay dropped: a
 /// later layer that lays the preset's accent back (a palette's or the
 /// explicit accent over a system accent) compares it with the accent then in
@@ -3546,9 +3571,9 @@ fn list(
     )
 }
 
-/// The scroll bar: a groove of an exact thickness in the track's colour and
-/// a handle of an exact thickness in the knob's fills of the scroller's
-/// style: where `overlay`, at rest the window's muted text (0.7.2:
+/// The scroll bar: a groove of an exact thickness in the track's colour of
+/// the scroller's style and a handle of an exact thickness in the knob's
+/// fills of that style: where `overlay`, at rest the window's muted text (0.7.2:
 /// `scrollbar.thumb_color` is `defaults.muted_color` where unstated; AppKit
 /// draws no overlay knob until the view scrolls, and the knob shown but not
 /// hovered is not measured) and the measured overlay knob hovered and
@@ -3563,8 +3588,13 @@ fn scrollbar(
     groove_width: f32,
     overlay: bool,
 ) -> ScrollbarWidget {
+    let track_fill = if overlay {
+        c.scrollbar_track
+    } else {
+        c.scrollbar_track_legacy
+    };
     let track = across(
-        RuleBuilder::new(PartStyle::default()).base([fill(c.scrollbar_track)]),
+        RuleBuilder::new(PartStyle::default()).base([fill(track_fill)]),
         groove_width,
     )
     .build();

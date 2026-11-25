@@ -1264,7 +1264,7 @@
     "overlay_mode": false,
     "track": {
       "base": {
-        "fill": "#00000000"
+        "fill": "#0000000c"
       },
       "rules": [
         {

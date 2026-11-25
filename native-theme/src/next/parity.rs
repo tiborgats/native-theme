@@ -3537,13 +3537,16 @@ pub(crate) fn macos_cases() -> Vec<(
     // M2.FS4: the scroll bar's handle is the measured knob of the scroller's style; the table's
     // listed difference gives the overlay knob, the presets' style, and the legacy style draws the
     // legacy knob, a fill at rest (os-probe run 45252258079, `*.scroller_knob_legacy` `fill`),
-    // hovered and held on macOS 15 a colour of its own, on macOS 26 the overlay knob's.
+    // hovered and held on macOS 15 a colour of its own, on macOS 26 the overlay knob's; and the
+    // legacy track, which 0.7.2 leaves transparent, the measured one round the knob (the same
+    // run, `*.normal.scroller_knob_legacy` `common`).
     const LEGACY_SCROLLER: &[&str] = &[
+        "scrollbar.track_color",
         "scrollbar.thumb_color",
         "scrollbar.thumb_hover_color",
         "scrollbar.thumb_active_color",
     ];
-    const TAHOE_LEGACY_SCROLLER: &[&str] = &["scrollbar.thumb_color"];
+    const TAHOE_LEGACY_SCROLLER: &[&str] = &["scrollbar.track_color", "scrollbar.thumb_color"];
     // M2.FS3 (spec §8, "The macOS part", *Derived by the macOS builders*): `macos-tahoe`'s checked
     // button fill is the accent in force mixed by the measured weight; the table's listed difference
     // gives it under the default accent alone. M2.FS4: so is its selected tab, on the accent in force

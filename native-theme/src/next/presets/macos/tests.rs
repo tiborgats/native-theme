@@ -201,18 +201,25 @@ fn a_pressed_scroll_handle_wins_over_the_pointer() {
 
 /// The overlay knob is the window's muted text at rest and the measured one
 /// hovered and pressed; the legacy knob its measured rest fill, hovered and
-/// pressed its active one (os-probe run 45252258079, `*.scroller_knob_*`).
+/// pressed its active one, and the track each style's (os-probe run
+/// 45252258079, `*.scroller_knob_*`).
 #[test]
 fn the_scroll_handle_follows_the_scroller_s_style() {
     for (preset, scheme) in every_scheme() {
         let ctx = ThemeContext::default().with_scheme(scheme);
         let c = constants(preset, scheme);
-        for (overlay, rest, active) in [
-            (true, Some(c.muted), c.scrollbar_thumb_overlay_active),
+        for (overlay, rest, active, track) in [
+            (
+                true,
+                Some(c.muted),
+                c.scrollbar_thumb_overlay_active,
+                c.scrollbar_track,
+            ),
             (
                 false,
                 Some(c.scrollbar_thumb_legacy),
                 c.scrollbar_thumb_legacy_active,
+                c.scrollbar_track_legacy,
             ),
         ] {
             let system = SystemOverrides {
@@ -222,6 +229,11 @@ fn the_scroll_handle_follows_the_scroller_s_style() {
             let theme = Theme::preset(preset)
                 .with_system_overrides(system)
                 .resolve(&ctx);
+            assert_eq!(
+                solid(&theme.scrollbar.track(WidgetState::NONE).fill),
+                Some(track),
+                "{preset:?} {scheme:?} overlay {overlay}"
+            );
             let at_rest = theme.scrollbar.thumb(WidgetState::NONE);
             assert_eq!(
                 rest,
