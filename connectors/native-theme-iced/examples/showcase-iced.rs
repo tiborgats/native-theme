@@ -8722,9 +8722,9 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_t
 
 /// Whether Widget Info lists the element of id `id` by its 0.8.0 homes, a
 /// row per home routed by [`home_route`], rather than by its 0.7.2 leaves:
-/// the Basic list's elements.
+/// the Basic list's and the Basic table's elements.
 fn home_keyed(id: &str) -> bool {
-    id.starts_with("basic.list.")
+    id.starts_with("basic.list.") || id.starts_with("basic.table.")
 }
 
 /// The keys of `element`'s Widget Info rows, which [`iced_route`] routes:
@@ -10126,38 +10126,38 @@ fn list_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) ->
     Some(route.to_owned())
 }
 
-/// The route of a colour leaf `leaf` of the Basic table under `r`, the
+/// The route of a colour home `home` of the Basic table under `r`, the
 /// installed 0.8.0 theme, of its frame where `frame` ([`list_frame`]), else
 /// of its rows and header ([`basic_table`], [`TableColours`],
-/// [`header_section_style`]): what is drawn of the leaf's 0.8.0 home,
-/// naming it, or that the home is unstated and what is drawn in its place.
-/// `None` for a leaf none of them reads.
-fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -> Option<String> {
+/// [`header_section_style`]): what is drawn of the home, naming what it
+/// reads, or that it is unstated and what is drawn in its place. `None` for
+/// a home none of them reads.
+fn table_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -> Option<String> {
     let l = &r.list;
     let none = WidgetState::NONE;
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
     let hovered = iced_next::list_header_hover_background(r).ok().flatten();
     let pressed = iced_next::list_header_active_background(r).ok().flatten();
     let unmapped = unmapped_fill_route(
-        leaf,
+        home,
         &[
             (
-                "list.header_background",
+                "list.header(NONE).fill",
                 iced_next::fill_of(&l.header(none), "list.header(NONE).fill"),
             ),
             (
-                "list.header_separator_color",
+                "list.header_separator(NONE).fill",
                 iced_next::fill_of(
                     &l.header_separator(none),
                     "list.header_separator(NONE).fill",
                 ),
             ),
             (
-                "list.header_hover_background",
+                "list.header(HOVER).fill",
                 iced_next::list_header_hover_background(r),
             ),
             (
-                "list.header_active_background",
+                "list.header(PRESSED).fill",
                 iced_next::list_header_active_background(r),
             ),
         ],
@@ -10165,92 +10165,185 @@ fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -
     if unmapped.is_some() {
         return unmapped;
     }
-    let route = match leaf {
-        "list.background_color" => {
-            return list_route(r, "list.container(NONE).fill", frame);
+    let route = match home {
+        "list.container(NONE).fill" | "list.container(NONE).stroke.color" => {
+            return list_route(r, home, frame);
         }
-        "list.border.color" => {
-            return list_route(r, "list.container(NONE).stroke.color", frame);
-        }
-        "list.item_font.color" if iced_next::text_color_of(&l.item_label(none)).is_none() => {
+        "list.item_label(NONE).color"
+            if iced_next::text_color_of(&l.item_label(none)).is_none() =>
+        {
             "not drawn: list.item_label(NONE).color is unstated, so a cell's text is iced's own \
              text colour"
         }
-        "list.item_font.color" => "basic_table: a cell's text colour, list.item_label(NONE).color",
-        "list.selection_background" if active.0.is_none() => {
+        "list.item_label(NONE).color" => {
+            "basic_table: a cell's text colour, list.item_label(NONE).color"
+        }
+        "list.highlight(SELECTED).fill" if active.0.is_none() => {
             "not drawn: list.highlight(SELECTED).fill is unstated, so the selected row is not \
              filled"
         }
-        "list.selection_background" => {
+        "list.highlight(SELECTED).fill" => {
             "basic_table: the selected row container's background, list.highlight(SELECTED).fill \
              (table_row_style)"
         }
-        "list.selection_text_color" if active.1.is_none() => {
+        "list.item_label(SELECTED).color" if active.1.is_none() => {
             "not drawn: list.item_label(SELECTED).color is unstated, so the selected row's text \
              is a row's"
         }
-        "list.selection_text_color" => {
+        "list.item_label(SELECTED).color" => {
             "basic_table: the selected row's text colour, list.item_label(SELECTED).color"
         }
-        "defaults.selection_inactive_background" if inactive.0 == active.0 => {
+        "colors.selection.unfocused_background" if inactive.0 == active.0 => {
             "not drawn: list.highlight(SELECTED|UNFOCUSED_VIEW).fill is unstated, or stated as \
              list.highlight(SELECTED).fill, so the selected row keeps its fill while the window \
              is not active"
         }
-        "defaults.selection_inactive_background" => {
+        "colors.selection.unfocused_background" => {
             "basic_table: the selected row's fill while the window is not active, \
              list.highlight(SELECTED|UNFOCUSED_VIEW).fill (table_row_style)"
         }
-        "defaults.selection_inactive_text_color" if inactive.1 == active.1 => {
+        "colors.selection.unfocused_foreground" if inactive.1 == active.1 => {
             "not drawn: list.item_label(SELECTED|UNFOCUSED_VIEW).color is unstated, or stated as \
              list.item_label(SELECTED).color, so the selected row keeps its text colour while \
              the window is not active"
         }
-        "defaults.selection_inactive_text_color" => {
+        "colors.selection.unfocused_foreground" => {
             "basic_table: the selected row's text colour while the window is not active, \
              list.item_label(SELECTED|UNFOCUSED_VIEW).color"
         }
-        "list.header_font.color" if iced_next::text_color_of(&l.header_label(none)).is_none() => {
+        "list.header_label(NONE).color"
+            if iced_next::text_color_of(&l.header_label(none)).is_none() =>
+        {
             "not drawn: list.header_label(NONE).color is unstated, so the header cells' text is \
              iced's own text colour"
         }
-        "list.header_font.color" => {
+        "list.header_label(NONE).color" => {
             "basic_table: the header cells' text colour, list.header_label(NONE).color"
         }
-        "list.header_background" if drawn_fill(&l.header(none)).is_none() => {
+        "list.header(NONE).fill" if drawn_fill(&l.header(none)).is_none() => {
             "not drawn: list.header(NONE).fill is unstated, so the header row is not filled"
         }
-        "list.header_background" => {
+        "list.header(NONE).fill" => {
             "basic_table: the header row container's background, list.header(NONE).fill \
              (table_row_style)"
         }
-        "list.header_hover_background" if hovered.is_none() => {
+        "list.header(HOVER).fill" if hovered.is_none() => {
             "not drawn: list.header(HOVER).fill is unstated, so a hovered header section is not \
              filled"
         }
-        "list.header_hover_background" => {
+        "list.header(HOVER).fill" => {
             "header_section_style: a header section's Hovered fill, and its Pressed fill where \
              it states none of its own, list.header(HOVER).fill; iced's table has no header \
              state, so the showcase draws it"
         }
-        "list.header_active_background" if pressed.is_none() => {
+        "list.header(PRESSED).fill" if pressed.is_none() => {
             "not drawn: list.header(PRESSED).fill is unstated, so a pressed header section takes \
              its hovered fill (header_section_fill)"
         }
-        "list.header_active_background" => {
+        "list.header(PRESSED).fill" => {
             "header_section_style: a header section's Pressed fill, list.header(PRESSED).fill; \
              iced's table has no header state, so the showcase draws it"
         }
         "list.grid_color" => {
             "basic_table: the grid lines' colour (rules between the cells), list.grid_color"
         }
-        "list.header_separator_color" if drawn_fill(&l.header_separator(none)).is_none() => {
+        "list.header_separator(NONE).fill" if drawn_fill(&l.header_separator(none)).is_none() => {
             "not drawn: list.header_separator(NONE).fill is unstated; basic_table draws the \
              header's lines in list.grid_color"
         }
-        "list.header_separator_color" => {
+        "list.header_separator(NONE).fill" => {
             "basic_table: the header's lines, its first section's trailing edge and its bottom, \
              laid over the header's fill, list.header_separator(NONE).fill"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of a Basic table's font, length or hover home `home` on the
+/// element of id `id` under `r`, the installed 0.8.0 theme: what
+/// [`basic_table`] or [`table_row_style`] lays out of it, or why it is not
+/// drawn. `None` for a home neither reads, the frame's corners and line
+/// among them, which are its container's.
+fn table_layout_route(
+    r: &native_theme::next::ResolvedTheme,
+    id: &str,
+    home: &str,
+) -> Option<String> {
+    let under = |prefix: &str| id.starts_with(prefix);
+    let header = under("basic.table.header");
+    let sides = ["top", "right", "bottom", "left"];
+    if let Some(side) = sides
+        .iter()
+        .find(|side| home == format!("list.row(NONE).padding.{side}"))
+    {
+        return Some(format!(
+            "basic_table: a cell's padding, list.row(NONE).padding.{side}; none where unstated"
+        ));
+    }
+    if let Some(side) = sides
+        .iter()
+        .find(|side| home == format!("list.highlight(NONE).margin.{side}"))
+    {
+        return Some(format!(
+            "not drawn: basic_table fills a row's whole container (table_row_style), so it \
+             insets no fill by list.highlight(NONE).margin.{side}"
+        ));
+    }
+    let route = match home {
+        "list.item_label(NONE)" => {
+            "next_text: a cell's size, line box and font, list.item_label(NONE)"
+        }
+        "list.header_label(NONE)" => {
+            "next_text: the header cells' size, line box and font, list.header_label(NONE)"
+        }
+        "list.header(NONE).min_size[1]" if iced_next::list_header_height(r).is_none() => {
+            "not drawn: list.header(NONE).min_size[1] is unstated; basic_table lays the header \
+             out as a row"
+        }
+        "list.header(NONE).min_size[1]" => {
+            "basic_table: the header row's height, at least list.header(NONE).min_size[1] \
+             (iced_next::list_header_height), grown to hold its label's line box \
+             (next_line_box), padding and line"
+        }
+        "list.row(NONE).min_size[1]" if header => {
+            "basic_table: the header row's height where list.header(NONE).min_size[1] is \
+             unstated, at least list.row(NONE).min_size[1], grown to hold its label's line box \
+             (next_line_box), padding and line; the line box and padding, the line within \
+             them, where both are unstated"
+        }
+        "list.row(NONE).min_size[1]" => {
+            "basic_table: a row's height, at least list.row(NONE).min_size[1], grown to hold \
+             its label's line box, list.item_label(NONE) (next_line_box), and its padding; \
+             that content where no minimum is stated"
+        }
+        "list.highlight(HOVER).fill"
+        | "list.item_label(HOVER).color"
+        | "list.highlight(HOVER).stroke.color"
+        | "layout.border_width" => "not reachable: the table's rows are containers, not hoverable",
+        "list.container(NONE).corners" if header => {
+            "table_row_style: the header's fill rounded at its top corners by the frame's \
+             inner radius, list.container(NONE).corners less its stroke's width \
+             (next_inner_radius); header_section_style: a section's fill rounded so at the \
+             corner it meets the frame at"
+        }
+        "list.container(NONE).corners" if under("basic.table.row_") => {
+            "table_row_style: the last row's fill rounded at its bottom corners by the \
+             frame's inner radius, list.container(NONE).corners less its stroke's width \
+             (next_inner_radius)"
+        }
+        "list.container(NONE).stroke.width" if header || under("basic.table.row_") => {
+            "table_row_style: taken from list.container(NONE).stroke.width, less which \
+             list.container(NONE).corners rounds the fill's corners (next_inner_radius)"
+        }
+        "separator.thickness" => {
+            "basic_table: the grid lines' thickness, separator.thickness: the column line's \
+             width and the header line's height"
+        }
+        "typography.line_height_multiplier" => {
+            "next_text: a cell's line box, its label's size (list.header_label(NONE)'s, \
+             list.item_label(NONE)'s) by typography.line_height_multiplier where it states no \
+             line height (next_line_box); basic_table: the row grown to hold it"
         }
         _ => return None,
     };
@@ -10849,7 +10942,9 @@ fn colour_home_route(
 /// reaches, or why it cannot. A colour home the connector draws is routed
 /// from the contract's export ([`colour_home_route`]); the Basic list's
 /// own colours are [`list_route`]'s, its rows' corners, lines and insets
-/// [`list_shape_route`]'s. One muted line of Widget Info.
+/// [`list_shape_route`]'s; the Basic table's colours are [`table_route`]'s,
+/// its fonts, lengths and hover homes [`table_layout_route`]'s. One muted
+/// line of Widget Info.
 fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     let id = element.id.as_str();
     let r = state.next_shown();
@@ -10872,6 +10967,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
                 .then(|| list_shape_route(r, home, under("basic.list.row_2")))
                 .flatten()
         })
+    } else if under("basic.table.") {
+        table_route(r, home, id == "basic.table.frame").or_else(|| table_layout_route(r, id, home))
     } else {
         None
     };
@@ -11062,15 +11159,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     };
     if table == "tab"
         && let Some(route) = tab_route(state.next_shown(), leaf)
-    {
-        return if route.starts_with("not drawn") {
-            route
-        } else {
-            format!("iced: {route}")
-        };
-    }
-    if under("basic.table.")
-        && let Some(route) = table_route(state.next_shown(), leaf, under("basic.table.frame"))
     {
         return if route.starts_with("not drawn") {
             route
@@ -11653,11 +11741,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("splitter", "hover_color") => "splitter: the line's background under the pointer and \
                                         while dragged, splitter.handle(HOVER).fill"
             .into(),
-        ("separator", "line_width_px") if under("basic.table.") => {
-            "basic_table: the grid lines' thickness, separator.thickness: the column line's \
-             width and the header line's height"
-                .into()
-        }
         ("separator", "line_width_px") if under("basic.separator.") => {
             "rule::horizontal's thickness, separator.thickness".into()
         }
@@ -11841,96 +11924,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("segmented_control", f) if side(f).is_some() => {
             "Button::padding of each segment, iced's own on an unstated side".into()
-        }
-        // ---- list and table ----
-        // The colours are list_route's and table_route's.
-        ("list", "item_font") if under("basic.table.") => {
-            "next_text: a cell's size, line box and font, list.item_label(NONE)".into()
-        }
-        ("list", "item_font") => "the row label's size and theme_font".into(),
-        ("list", "header_font") => {
-            "next_text: the header cells' size, line box and font, list.header_label(NONE)".into()
-        }
-        ("list", "header_height_px")
-            if iced_next::list_header_height(state.next_shown()).is_none() =>
-        {
-            "not drawn: list.header(NONE).min_size[1] is unstated; basic_table lays the header \
-             out as a row"
-                .into()
-        }
-        ("list", "header_height_px") => {
-            "basic_table: the header row's height, at least list.header(NONE).min_size[1] \
-             (iced_next::list_header_height), grown to hold its label's line box \
-             (next_line_box), padding and line"
-                .into()
-        }
-        ("list", "row_height_px") if under("basic.table.header") => {
-            "basic_table: the header row's height where list.header(NONE).min_size[1] is \
-             unstated, at least list.row(NONE).min_size[1], grown to hold its label's line box \
-             (next_line_box), padding and line; the line box and padding, the line within \
-             them, where both are unstated"
-                .into()
-        }
-        ("list", "row_height_px") if under("basic.table.") => {
-            "basic_table: a row's height, at least list.row(NONE).min_size[1], grown to hold \
-             its label's line box, list.item_label(NONE) (next_line_box), and its padding; \
-             that content where no minimum is stated"
-                .into()
-        }
-        ("list", "row_height_px") => {
-            "a row's height, grown above a text scale of 1 to hold its label and padding \
-             (rows::scaled_height); the label's line box and padding where unstated"
-                .into()
-        }
-        ("list", "hover_background") if under("basic.table.") => {
-            "not reachable: the table's rows are containers, not hoverable".into()
-        }
-        ("list", "hover_text_color") if under("basic.table.") => {
-            "not reachable: the table's rows are containers, not hoverable".into()
-        }
-        ("list", "hover_border_color") | ("defaults", "border.line_width_px")
-            if under("basic.table.") =>
-        {
-            "not reachable: the table's rows are containers, not hoverable".into()
-        }
-        ("list", "border.corner_radius_px") if under("basic.table.header") => {
-            "table_row_style: the header's fill rounded at its top corners by the frame's \
-             inner radius, list.container(NONE).corners less its stroke's width \
-             (next_inner_radius); header_section_style: a section's fill rounded so at the \
-             corner it meets the frame at"
-                .into()
-        }
-        ("list", "border.corner_radius_px") if under("basic.table.row_") => {
-            "table_row_style: the last row's fill rounded at its bottom corners by the \
-             frame's inner radius, list.container(NONE).corners less its stroke's width \
-             (next_inner_radius)"
-                .into()
-        }
-        ("list", "border.line_width_px")
-            if under("basic.table.header") || under("basic.table.row_") =>
-        {
-            "table_row_style: taken from list.container(NONE).stroke.width, less which \
-             list.container(NONE).corners rounds the fill's corners (next_inner_radius)"
-                .into()
-        }
-        ("list", "border.corner_radius_px") => {
-            "the frame container's border.radius, list.container(NONE).corners (list_frame)"
-                .into()
-        }
-        ("list", "border.line_width_px") => {
-            "the frame container's border.width and padding, list.container(NONE).stroke.width \
-             (list_frame_border)"
-                .into()
-        }
-        ("list", f) if side(f).is_some() && under("basic.table.") => {
-            side(f)
-                .map_or_else(String::new, |s| {
-                    format!(
-                        "basic_table: a cell's padding, list.row(NONE).padding.{s}; none where \
-                         unstated"
-                    )
-                })
-                .into()
         }
         // ---- scrollbar ----
         ("scrollbar", "groove_width_px") => page_bar_width_route(state.next_shown()).into(),
@@ -12150,12 +12143,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "next_control_line: the label's line box, combo_box.label(NONE)'s size by \
              typography.line_height_multiplier where it states no line height (next_line_box), \
              grown to fill combo_box.field(NONE).min_size[1] inside the padding"
-                .into()
-        }
-        ("defaults", "line_height") if under("basic.table.") => {
-            "next_text: a cell's line box, its label's size (list.header_label(NONE)'s, \
-             list.item_label(NONE)'s) by typography.line_height_multiplier where it states no \
-             line height (next_line_box); basic_table: the row grown to hold it"
                 .into()
         }
         ("defaults", "line_height") if under("basic.switches.") => {
@@ -33491,10 +33478,10 @@ mod tests {
 
     /// The Basic table's header and last row and the list's rows round their
     /// fills by the frame's inner radius (`table_row_style`,
-    /// `list_row_fill`), so their routes for `list.border.corner_radius_px`
-    /// and `list.border.line_width_px` name what rounds them, not the frame
-    /// container that the frames' own routes name; the header's
-    /// `list.border.corner_radius_px` names its sections' style
+    /// `list_row_fill`), so their routes for `list.container(NONE).corners`
+    /// and `list.container(NONE).stroke.width` name what rounds them, not
+    /// the frame container that the frames' own routes name; the header's
+    /// `list.container(NONE).corners` names its sections' style
     /// (`header_section_style`) as well.
     #[test]
     fn the_row_fill_corner_routes_name_what_rounds_them() {
@@ -33503,17 +33490,11 @@ mod tests {
             Some(element) => iced_route(&state, element, leaf),
             None => panic!("{id} is not listed"),
         };
-        // The 0.7.2 leaves, or the list's homes of them where Widget Info
-        // lists it by its homes.
-        let leaves = |id: &str| {
-            if home_keyed(id) {
-                [
-                    "list.container(NONE).corners",
-                    "list.container(NONE).stroke.width",
-                ]
-            } else {
-                ["list.border.corner_radius_px", "list.border.line_width_px"]
-            }
+        let leaves = |_: &str| {
+            [
+                "list.container(NONE).corners",
+                "list.container(NONE).stroke.width",
+            ]
         };
         for (id, names) in [
             ("basic.table.header", "table_row_style"),
@@ -33537,30 +33518,36 @@ mod tests {
             }
         }
         // The header's sections round by the same inner radius.
-        let line = route("basic.table.header", "list.border.corner_radius_px");
+        let line = route("basic.table.header", "list.container(NONE).corners");
         assert_eq!(
             route_functions(&line),
             ["table_row_style", "header_section_style"],
-            "basic.table.header list.border.corner_radius_px: {line:?}"
+            "basic.table.header list.container(NONE).corners: {line:?}"
         );
     }
 
-    /// The Basic list's elements are listed by their 0.8.0 homes
-    /// (`home_keyed`): a row per home in the list's order, each value read
-    /// from the installed 0.8.0 theme (`next::values::home_value`), the row
-    /// label's family by what iced draws it in (`next_listed_family`); a
-    /// row's padding and its fill's inset, one 0.7.2 leaf, are routed apart,
-    /// each naming what reads its home.
+    /// The elements Widget Info lists by their 0.8.0 homes (`home_keyed`):
+    /// a row per home in the list's order, each value read from the
+    /// installed 0.8.0 theme (`next::values::home_value`), the Basic list's
+    /// row label's family by what iced draws it in (`next_listed_family`); a
+    /// list row's padding and its fill's inset, one 0.7.2 leaf, are routed
+    /// apart, each naming what reads its home, and a table row's inset,
+    /// which `basic_table` does not draw, is said not drawn.
     #[test]
-    fn the_basic_list_is_listed_by_its_homes() -> Result<(), String> {
+    fn the_home_keyed_elements_are_listed_by_their_homes() -> Result<(), String> {
         let state = route_states().swap_remove(0);
         let r = state.next_shown();
         let json = next_theme_json(r);
         let family = |path: &str, font: &StatedFont| next_listed_family(r, path, font);
-        for element in elements::elements()
+        let by_homes: Vec<_> = elements::elements()
             .iter()
-            .filter(|e| e.id.starts_with("basic.list."))
-        {
+            .filter(|e| home_keyed(&e.id))
+            .collect();
+        assert!(
+            by_homes.iter().any(|e| e.id.starts_with("basic.table.")),
+            "the table is listed by its homes"
+        );
+        for element in by_homes {
             let info = element_info(&state, element);
             let keys: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
             let homes: Vec<&str> = element.homes.iter().map(String::as_str).collect();
@@ -33595,6 +33582,18 @@ mod tests {
         let inset = route("list.highlight(NONE).margin.left");
         assert!(
             inset.starts_with("iced: list_row_fill") && !inset.contains("padding"),
+            "{inset}"
+        );
+        let element = elements::element("basic.table.row_1").ok_or("basic.table.row_1")?;
+        let route = |home: &str| iced_route(&state, element, home);
+        let padding = route("list.row(NONE).padding.left");
+        assert!(
+            padding.starts_with("iced: basic_table: a cell's padding"),
+            "{padding}"
+        );
+        let inset = route("list.highlight(NONE).margin.left");
+        assert!(
+            inset.starts_with("not drawn: basic_table") && !inset.contains("padding"),
             "{inset}"
         );
         Ok(())
@@ -33656,7 +33655,7 @@ mod tests {
                 "list.highlight(HOVER).fill",
             ),
             (
-                table_route(&patched, "list.header_background", false),
+                table_route(&patched, "list.header(NONE).fill", false),
                 "list.header(NONE).fill",
             ),
             (
@@ -34399,26 +34398,28 @@ mod tests {
         })
     }
 
-    /// The home of the Basic table's colour leaf `leaf` that [`basic_table`]
-    /// ([`TableColours`]) or [`header_section_style`] reads: `None` for a
-    /// leaf neither reads (the frame's are [`list_home`]'s).
-    fn table_home(leaf: &str) -> Option<&'static str> {
-        Some(match leaf {
-            "list.item_font.color" => "list.item_label(NONE).color",
-            "list.selection_background" => "list.highlight(SELECTED).fill",
-            "list.selection_text_color" => "list.item_label(SELECTED).color",
-            "defaults.selection_inactive_background" => {
+    /// The home that the Basic table's colour row `home` draws, which
+    /// [`basic_table`] ([`TableColours`]) or [`header_section_style`] reads:
+    /// the row's own home, but for the unfocused selection's, whose colours
+    /// a row draws from its `SELECTED|UNFOCUSED_VIEW` state; `None` for a
+    /// home neither reads (the frame's are [`list_home`]'s).
+    fn table_home(home: &str) -> Option<&'static str> {
+        Some(match home {
+            "list.item_label(NONE).color" => "list.item_label(NONE).color",
+            "list.highlight(SELECTED).fill" => "list.highlight(SELECTED).fill",
+            "list.item_label(SELECTED).color" => "list.item_label(SELECTED).color",
+            "colors.selection.unfocused_background" => {
                 "list.highlight(SELECTED|UNFOCUSED_VIEW).fill"
             }
-            "defaults.selection_inactive_text_color" => {
+            "colors.selection.unfocused_foreground" => {
                 "list.item_label(SELECTED|UNFOCUSED_VIEW).color"
             }
-            "list.header_font.color" => "list.header_label(NONE).color",
-            "list.header_background" => "list.header(NONE).fill",
-            "list.header_hover_background" => "list.header(HOVER).fill",
-            "list.header_active_background" => "list.header(PRESSED).fill",
+            "list.header_label(NONE).color" => "list.header_label(NONE).color",
+            "list.header(NONE).fill" => "list.header(NONE).fill",
+            "list.header(HOVER).fill" => "list.header(HOVER).fill",
+            "list.header(PRESSED).fill" => "list.header(PRESSED).fill",
             "list.grid_color" => "list.grid_color",
-            "list.header_separator_color" => "list.header_separator(NONE).fill",
+            "list.header_separator(NONE).fill" => "list.header_separator(NONE).fill",
             _ => return None,
         })
     }
