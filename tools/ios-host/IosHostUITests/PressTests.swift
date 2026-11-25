@@ -5,7 +5,10 @@
 // … (a button, a bar item, or the list set's marker over a list cell, a
 // segmented control, a tab bar item, a switch: any element type), by a real
 // touch at its centre held for `holdSeconds`, until the app shows
-// `press-done`.
+// `press-done`. Where the run's name starts with `hover` (the app's hover
+// mode, on an iPad), each element is hovered instead: the pointer moved to
+// the window's corner, then to the element's centre (`XCUICoordinate.hover()`,
+// iOS 15+), left there until the app arms the next one.
 
 import XCTest
 
@@ -19,7 +22,9 @@ final class PressTests: XCTestCase {
     func testPress() throws {
         let environment = ProcessInfo.processInfo.environment
         let app = XCUIApplication()
-        var arguments = [environment["IOS_HOST_RUN"] ?? "press"]
+        let run = environment["IOS_HOST_RUN"] ?? "press"
+        let hover = run.hasPrefix("hover")
+        var arguments = [run]
         if environment["IOS_HOST_QUICK"] == "1" { arguments.append("quick") }
         if let set = environment["IOS_HOST_SET"], !set.isEmpty { arguments.append("set=\(set)") }
         app.launchArguments = arguments
@@ -46,7 +51,19 @@ final class PressTests: XCTestCase {
             // At the element's centre as a coordinate: the list set's
             // identifier is on a marker that takes no touch, over the view
             // pressed (IosHost.swift, armNext).
-            target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: holdSeconds)
+            let centre = target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            if hover {
+                guard #available(iOS 15.0, *) else {
+                    XCTFail("XCUICoordinate.hover() needs iOS 15")
+                    break
+                }
+                // From the page's margin, so the pointer moves onto the
+                // target even where it already lies there (a retake).
+                app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(CGVector(dx: 4, dy: 4)).hover()
+                centre.hover()
+            } else {
+                centre.press(forDuration: holdSeconds)
+            }
             index += 1
         }
         app.terminate()

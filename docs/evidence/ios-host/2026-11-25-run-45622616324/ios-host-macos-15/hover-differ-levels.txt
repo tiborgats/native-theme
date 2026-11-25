@@ -1,0 +1,21 @@
+./index.toml:44: press_number = 3 | press_number = 2
+./index.toml:50: press_number = 4 | press_number = 3
+./index.toml:56: press_number = 5 | press_number = 4
+./index.toml:62: press_number = 6 | press_number = 5
+./index.toml:68: press_number = 7 | press_number = 6
+./index.toml:74: press_number = 8 | press_number = 7
+./index.toml:80: press_number = 9 | press_number = 8
+./index.toml:86: press_number = 11 | press_number = 9
+./index.toml:92: press_number = 12 | press_number = 10
+./index.toml:98: press_number = 13 | press_number = 11
+./index.toml:104: press_number = 14 | press_number = 12
+./index.toml:110: press_number = 15 | press_number = 13
+./index.toml:116: press_number = 16 | press_number = 14
+./index.toml:122: press_number = 17 | press_number = 15
+./index.toml:128: press_number = 18 | press_number = 16
+./index.toml:134: press_number = 19 | press_number = 17
+./index.toml:140: press_number = 20 | press_number = 18
+./index.toml:146: press_number = 21 | press_number = 19
+./index.toml:152: press_number = 22 | press_number = 20
+./index.toml:158: press_number = 23 | press_number = 21
+./index.toml: differs (382 and 340 lines)

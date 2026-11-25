@@ -44,3 +44,22 @@ are read from the layers only.
   `ink` is #0000008c / #ffffff8c; the script's `ink` key reads #ffffff3f / #ffffff1a
   on macOS 15 and #000000ff on macOS 26 (67 px, both appearances), which are not the glyph colour: so the disabled
   label and icon colour is read here only as those commonest pixels, not as a fitted label read.
+
+## The fitted reads (M2.FS4c11)
+
+`analysis/fit_toolbar_items.py` (its docstring gives the method) reads the same artifacts again (downloaded from the
+run; the PNGs `CAPTURES.sha256` names), writing `os-probe-macos-{15,26}-controls/toolbar_items_fitted.toml`:
+
+- **The disabled item's label** (the lowest run of ink rows in the capture over the window, the label "Disabled"):
+  #00000040 / #ffffff40 on macOS 15 and macOS 26, from every backdrop pair alike (black and white, black and grey,
+  grey and white), each layer composited over the third backdrop within 1.1 levels and over the window's background
+  within 0.6; so it is one fixed layer. (The commonest-pixel read above, #00000040 / #ffffff40, is the same value.)
+  The enabled unselected item's label read the same way: #0000008c / #ffffff80 (macOS 15), #0000008d / #fefefe81
+  (macOS 26), within 1.3 levels; the `ink` key's #ffffff8c in darkAqua is not the label's.
+- **macOS 26, the selected item:** a rounded rect of the item view's width, 65 x 58 px (from 4 px below the view's
+  top), corner radius 7 px (`edge_radius`: [6.75, 7.0] and [7.25, 8.0] at the four corners, rms 0), a lighter top rim
+  and a soft shadow outside it. Its interior, the commonest colour of the rect inset by 3 px (81-83 % of it), is not
+  one layer: over black #131313 in both appearances, over grey #c3c3c3 / #4d4d4d, over white #fcfcfc / #707070, over
+  the window's own background #fcfcfc (over #ffffff) / #1a1a1a (over #1b1b1b); the rim's outermost pixel there
+  #ffffff (2 px) / #313131 (1 px). The black-and-white solve (#dcdcdc16 / #1e1e1ea2) misses the interior over grey by 59 / 11 levels,
+  so the composite over the window's background is the only read that holds where the toolbar lies.

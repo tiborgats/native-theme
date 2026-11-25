@@ -15,8 +15,10 @@
 # sync/screen-<n>-<attempt>.png (tools/ios-host/IosHost/IosHost.swift).
 # IOS_HOST_QUICK=1 runs a few specimens at medium only. IOS_HOST_PASSES (a
 # comma-separated list, default render,press,focus) chooses the passes:
-# render (run<N>), press (press<N>), focus (focus1, on the iPad) and measure
-# (measure<N>, twice, after the press pass: the app's measure mode,
+# render (run<N>), press (press<N>), hover (hover<N>, twice, after the press
+# pass: the UI test hovering the app's hover set with the pointer, on an
+# iPad: IOS_HOST_DEVICE=ipad), focus (focus1, on the iPad) and measure
+# (measure<N>, twice, after the hover pass: the app's measure mode,
 # tools/ios-host/IosHost/Measure.swift, given IOS_HOST_MEASURE, its own
 # comma-separated list of passes, default roles,fonts,symbols). IOS_HOST_SET
 # (base, the default, campaign, popup: the campaign set's pop-up buttons, or
@@ -34,14 +36,14 @@
 # the focus pass's iPad; the app's index
 # records what UIAccessibility then reports, [motion] in run<N>/index.toml,
 # [environment] in measure<N>/index.toml). Writes into $1:
-#   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once), measure<N>/
+#   run<N>/, press<N>/, hover<N>/, focus1/ (the iPad's focus pass, once),
+#                 measure<N>/
 #                 the app's draw/ (not measure), screen/ and pages/ PNGs,
 #                 index.toml;
 #                 sync/ (the handshake, outside the comparison): done (ok or
 #                 the app's failures), retakes (screenshots retaken)
-#   solved/run1/, solved/press1/, solved/measure1/  the solved layers;
-#                 solved/run1.toml, solved/press1.toml, solved/measure1.toml
-#                 their summaries
+#   solved/run1/, solved/press1/, solved/hover1/, solved/measure1/  the
+#                 solved layers; solved/<folder>.toml their summaries
 #   headers/      the UIKit (and AVRoutePickerView) headers and UIKit's Swift
 #                 interfaces of the iphoneos and iphonesimulator SDKs, with
 #                 README.txt: the Xcode, each SDK's path, version and build,
@@ -50,10 +52,12 @@
 #                 UIInterface.h, which the app resolves
 #   environment.txt (the OS, Xcode and its SDKs, the runtime and device chosen,
 #   the SDK's UIButton.Configuration styles and sizes), build.log,
-#   press<N>-test.log and press<N>.xcresult, run.txt (each step's exit
-#   status), run<N>.sha256 and press<N>.sha256, differ.txt and
-#   press-differ.txt (the files that differ between the runs),
-#   differ-levels.txt and press-differ-levels.txt (by how much),
+#   press<N>-test.log and press<N>.xcresult (hover<N>-test.log and
+#   hover<N>.xcresult), run.txt (each step's exit status), run<N>.sha256,
+#   press<N>.sha256 and hover<N>.sha256, differ.txt, press-differ.txt and
+#   hover-differ.txt (the files that differ between the runs),
+#   differ-levels.txt, press-differ-levels.txt and hover-differ-levels.txt
+#   (by how much),
 #   measure-differ.txt and measure-differ-levels.txt (listed, failing
 #   nothing), sha256.txt
 set -u
@@ -347,6 +351,22 @@ for run in 1 2; do
   xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
   [ -n "$sync" ] && { keep "press $run" "press$run" || failed=1; }
 done
+# The hover pass: the press pass's UI test, which hovers where the run's name
+# starts with hover (IosHostUITests/PressTests.swift).
+for run in 1 2; do
+  has hover || break
+  TEST_RUNNER_IOS_HOST_RUN="hover$run" TEST_RUNNER_IOS_HOST_QUICK="$quick" xcodebuild test-without-building \
+    -xctestrun "$xctestrun" -destination "id=$udid" -resultBundlePath "$out/hover$run.xcresult" \
+    >"$out/hover$run-test.log" 2>&1 &
+  pid=$!
+  serve "hover $run" "hover$run" "$pid" || failed=1
+  wait "$pid"
+  status=$?
+  note "hover $run xcodebuild test-without-building: exit $status"
+  if [ $status -ne 0 ]; then failed=1; grep -E 'error|failed|Fail' "$out/hover$run-test.log" | head -n 40; fi
+  xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+  [ -n "$sync" ] && { keep "hover $run" "hover$run" || failed=1; }
+done
 for run in 1 2; do
   has measure || break
   # simctl launch prints "<bundle>: <pid>", the app's process on the host:
@@ -463,6 +483,14 @@ elif [ -d "$out/press1" ] && [ -d "$out/press2" ]; then
 else
   failed=1
 fi
+# The hover pass's, as the press pass's.
+if ! has hover; then
+  :
+elif [ -d "$out/hover1" ] && [ -d "$out/hover2" ]; then
+  compare hover1 hover2 hover-differ.txt hover-differ-levels.txt --list-only './pages/*' || failed=1
+else
+  failed=1
+fi
 # The measure pass's differences are listed and fail nothing: its scenes
 # hold text views, presentations and lists whose drawing a run can settle
 # differently; the facts read a crop only where both runs agree.
@@ -475,7 +503,7 @@ else
 fi
 
 mkdir -p "$out/solved"
-for folder in run1 press1 measure1; do
+for folder in run1 press1 hover1 measure1; do
   [ -d "$out/$folder" ] || continue
   xcrun swift tools/ios-host/solve.swift "$out/$folder" "$out/solved/$folder" "$out/solved/$folder.toml" 2>&1 | tee -a "$log"
   status=${PIPESTATUS[0]}

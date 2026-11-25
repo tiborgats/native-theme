@@ -1,0 +1,339 @@
+[environment]
+mode = "hover"
+specimen_set = "base"
+quick = false
+simulator_runtime_version = "18.6"
+simulator_runtime_build = "22G86"
+simulator_device_name = "ios-host"
+simulator_model_identifier = "iPad8,5"
+system_version = "18.6"
+operating_system_version = "Version 18.6 (Build 22G86)"
+xcode = "1640"
+xcode_build = "16F6"
+sdk = "iphonesimulator18.5"
+sdk_build = "22F76"
+platform_version = "18.5"
+platform_build = "22F76"
+compiler = "com.apple.compilers.llvm.clang.1_0"
+styles = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent"]
+specimens = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent", "system", "info_light", "info_dark", "detail_disclosure", "contact_add", "close", "plain+role_destructive", "plain+role_cancel", "plain+role_primary", "gray+role_destructive", "gray+role_cancel", "gray+role_primary", "tinted+role_destructive", "tinted+role_cancel", "tinted+role_primary", "filled+role_destructive", "filled+role_cancel", "filled+role_primary", "borderless+role_destructive", "borderless+role_cancel", "borderless+role_primary", "bordered+role_destructive", "bordered+role_cancel", "bordered+role_primary", "bordered_tinted+role_destructive", "bordered_tinted+role_cancel", "bordered_tinted+role_primary", "bordered_prominent+role_destructive", "bordered_prominent+role_cancel", "bordered_prominent+role_primary", "gray+corner_style_fixed", "gray+corner_style_dynamic", "gray+corner_style_small", "gray+corner_style_medium", "gray+corner_style_large", "gray+corner_style_capsule", "filled+corner_style_fixed", "filled+corner_style_dynamic", "filled+corner_style_small", "filled+corner_style_medium", "filled+corner_style_large", "filled+corner_style_capsule", "plain+image_star", "plain+image_star+title_none", "plain+subtitle_Subtitle", "plain+activity_indicator_shown", "gray+image_star", "gray+image_star+title_none", "gray+subtitle_Subtitle", "gray+activity_indicator_shown", "tinted+image_star", "tinted+image_star+title_none", "tinted+subtitle_Subtitle", "tinted+activity_indicator_shown", "filled+image_star", "filled+image_star+title_none", "filled+subtitle_Subtitle", "filled+activity_indicator_shown", "borderless+image_star", "borderless+image_star+title_none", "borderless+subtitle_Subtitle", "borderless+activity_indicator_shown", "bordered+image_star", "bordered+image_star+title_none", "bordered+subtitle_Subtitle", "bordered+activity_indicator_shown", "bordered_tinted+image_star", "bordered_tinted+image_star+title_none", "bordered_tinted+subtitle_Subtitle", "bordered_tinted+activity_indicator_shown", "bordered_prominent+image_star", "bordered_prominent+image_star+title_none", "bordered_prominent+subtitle_Subtitle", "bordered_prominent+activity_indicator_shown", "filled+image_star+image_placement_trailing", "filled+image_star+image_placement_top", "filled+image_star+image_placement_bottom", "plain+menu_primary_action", "plain+menu_primary_action+indicator_popup", "plain+menu_primary_action+indicator_none", "plain+menu_on_hold", "gray+menu_primary_action", "gray+menu_primary_action+indicator_popup", "gray+menu_primary_action+indicator_none", "gray+menu_on_hold", "filled+menu_primary_action", "filled+menu_primary_action+indicator_popup", "filled+menu_primary_action+indicator_none", "filled+menu_on_hold", "bar_plain", "bar_done", "bar_system_done", "bar_system_cancel", "bar_system_close", "bar_system_action", "bar_system_add", "bar_image", "back_default", "back_generic", "back_minimal", "paste_control", "paste_control+icon_and_label", "paste_control+icon_only", "paste_control+label_only", "route_picker"]
+sizes = ["mini", "small", "medium", "large"]
+pages = 8
+title = "Button"
+render_draw = "drawHierarchy(in:afterScreenUpdates: true), UIGraphicsImageRenderer, standard range"
+render_screen = "xcrun simctl io screenshot, cropped to the cell"
+settle_seconds = 2.0
+press_settle_seconds = 1.5
+animations = "enabled"
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "system/hovered"
+press_number = 0
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "black/hovered"
+press_number = 1
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 2
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "system/hovered"
+press_number = 3
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 4
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "white/hovered"
+press_number = 5
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "system/hovered"
+press_number = 6
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "black/hovered"
+press_number = 7
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "white/hovered"
+press_number = 8
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 9
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "black/hovered"
+press_number = 10
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "white/hovered"
+press_number = 11
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "system/hovered"
+press_number = 12
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "black/hovered"
+press_number = 13
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "white/hovered"
+press_number = 14
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "system/hovered"
+press_number = 15
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "black/hovered"
+press_number = 16
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "white/hovered"
+press_number = 17
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "system/hovered"
+press_number = 18
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "black/hovered"
+press_number = 19
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 20
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "system/hovered"
+press_number = 21
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "black/hovered"
+press_number = 22
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 23
+wait_seconds = 30.0
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "system/hovered"
+press_number = 0
+phase = "rest"
+samples = [{ t = 0.016573, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "black/hovered"
+press_number = 1
+phase = "rest"
+samples = [{ t = 0.012534, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 2
+phase = "rest"
+samples = [{ t = 0.080116, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "system/hovered"
+press_number = 3
+phase = "rest"
+samples = [{ t = 0.026942, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 4
+phase = "rest"
+samples = [{ t = 0.053050, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "white/hovered"
+press_number = 5
+phase = "rest"
+samples = [{ t = 0.058290, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "system/hovered"
+press_number = 6
+phase = "rest"
+samples = [{ t = 0.000456, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "black/hovered"
+press_number = 7
+phase = "rest"
+samples = [{ t = 0.000436, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "white/hovered"
+press_number = 8
+phase = "rest"
+samples = [{ t = 0.075100, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 9
+phase = "rest"
+samples = [{ t = 0.002735, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "black/hovered"
+press_number = 10
+phase = "rest"
+samples = [{ t = 0.000721, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "white/hovered"
+press_number = 11
+phase = "rest"
+samples = [{ t = 0.000679, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "system/hovered"
+press_number = 12
+phase = "rest"
+samples = [{ t = 0.000333, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "black/hovered"
+press_number = 13
+phase = "rest"
+samples = [{ t = 0.000914, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "white/hovered"
+press_number = 14
+phase = "rest"
+samples = [{ t = 0.000540, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "system/hovered"
+press_number = 15
+phase = "rest"
+samples = [{ t = 0.045811, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "black/hovered"
+press_number = 16
+phase = "rest"
+samples = [{ t = 0.000415, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "white/hovered"
+press_number = 17
+phase = "rest"
+samples = [{ t = 0.000379, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "system/hovered"
+press_number = 18
+phase = "rest"
+samples = [{ t = 0.034181, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "black/hovered"
+press_number = 19
+phase = "rest"
+samples = [{ t = 0.000424, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 20
+phase = "rest"
+samples = [{ t = 0.000461, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "system/hovered"
+press_number = 21
+phase = "rest"
+samples = [{ t = 0.000624, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "black/hovered"
+press_number = 22
+phase = "rest"
+samples = [{ t = 0.000071, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 23
+phase = "rest"
+samples = [{ t = 0.000815, highlighted = false, animations = [], layers = [] }]

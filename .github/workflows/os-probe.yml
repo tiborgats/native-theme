@@ -33,7 +33,7 @@ on:
         required: false
         default: '["macos-15", "macos-26", "windows-11-arm"]'
       ios_host_passes:
-        description: "The ios-host job's passes (tools/ios-host/run.sh's IOS_HOST_PASSES: render, press, focus, measure), comma-separated"
+        description: "The ios-host job's passes (tools/ios-host/run.sh's IOS_HOST_PASSES: render, press, hover (on the ipad device), focus, measure), comma-separated"
         required: false
         default: "render,press,focus"
       ios_host_measure:

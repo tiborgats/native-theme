@@ -46,6 +46,18 @@
 // second of the touch and over the half second after its release, as
 // [[motion]] tables.
 //
+// `hover<N>` (launched by the UI test on an iPad, run.sh's hover pass): the
+// press mode's machinery with a pointer in place of the touch, on the hover
+// set (hoverSpecimens: the list set's segment, `.sidebar` row and
+// outline-disclosure header, and a titled bar button item in a UIToolbar),
+// each hovered over every solve backdrop beside its rest. The UI test moves
+// the pointer to the window's corner, then hovers the armed target's centre
+// (`XCUICoordinate.hover()`, iOS 15+); a UIHoverGestureRecognizer on the
+// specimen's view reports the pointer, the capture follows as the press
+// mode's (`held_until_screenshot`: the pointer still over the view when the
+// screenshot arrived), and a target whose view saw no hover within
+// `hoverWaitSeconds` is recorded as `[[hover_not_seen]]` and is a failure.
+//
 // `focus<N>` (run.sh, `simctl launch` on an iPad): the styles at medium and the
 // system type, normal and focused, as the `run` mode draws them: whether
 // UIKit has a focus system there and focuses a button is recorded.
@@ -141,6 +153,8 @@ let noSize: SizeChoice = ("default", .medium)
 let settleSeconds = 2.0
 let pressSettleSeconds = 1.5
 let pressRearmSeconds = 0.5
+// The hover mode's wait for the pointer to reach an armed target's view.
+let hoverWaitSeconds = 30.0
 
 // A screenshot whose margins hold more than `overlayPixels` pixels differing
 // from the system background by more than `overlayLevels` in a channel, or
@@ -200,6 +214,8 @@ enum ButtonState: String {
     case focused
     case pressed
     case pressedSelected = "pressed_selected"
+    /// The pointer over the specimen (the hover mode).
+    case hovered
     /// A toggle on and disabled; a highlighted button disabled (the
     /// campaign set).
     case disabledSelected = "disabled_selected"
@@ -1123,6 +1139,17 @@ func listSpecimens() -> [Specimen] {
     return list
 }
 
+/// The hover set (the hover mode; the 0.8.0 M2.FS4 iPad pointer hover,
+/// U113): the list set's segment, `.sidebar` row and outline-disclosure
+/// header, and a titled bar button item ("Button") in a UIToolbar, as the
+/// base set's `bar_plain`.
+@MainActor
+func hoverSpecimens() -> [Specimen] {
+    let names = ["segmented_control", "sidebar_row", "outline_header"]
+    let toolbar = barItem("bar_plain") { UIBarButtonItem(primaryAction: UIAction(title: "Button") { _ in }) }
+    return listSpecimens().filter { names.contains($0.name) } + [toolbar]
+}
+
 typealias Slot = (state: ButtonState, backdrop: Backdrop)
 
 /// The cells of the states (rows) over the backdrops (columns).
@@ -1354,6 +1381,8 @@ let symbolNames = ["star", "circle", "square.and.arrow.up", "chevron.backward"]
 
 final class HostViewController: UIViewController {
     private let pressMode: Bool
+    /// The hover mode: the press mode with a pointer in place of the touch.
+    private let hoverMode: Bool
     private let focusMode: Bool
     private let quick: Bool
     private let specimenSet: String
@@ -1403,11 +1432,13 @@ final class HostViewController: UIViewController {
         let arguments = Array(CommandLine.arguments.dropFirst())
         let argument = arguments.first ?? "run"
         let runName = argument.allSatisfy { $0.isLetter || $0.isNumber } ? argument : "run"
-        let press = runName.hasPrefix("press")
+        let hover = runName.hasPrefix("hover")
+        let press = runName.hasPrefix("press") || hover
         let focus = runName.hasPrefix("focus")
         let quickRun = arguments.contains("quick")
         run = runName
         pressMode = press
+        hoverMode = hover
         focusMode = focus
         quick = quickRun
         let set = arguments.first { $0.hasPrefix("set=") }.map { String($0.dropFirst("set=".count)) } ?? "base"
@@ -1419,6 +1450,19 @@ final class HostViewController: UIViewController {
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         out = documents.appendingPathComponent(runName, isDirectory: true)
         var pages: [Page] = []
+        if hover {
+            // As the list set's press pages: the specimen hovered over each
+            // solve backdrop, then at rest over each.
+            for appearance in appearances {
+                for specimen in hoverSpecimens() {
+                    let slots = grid([.hovered], solveBackdrops) + grid([.normal], solveBackdrops)
+                    pages += roomyPages(appearance, specimen, noSize, slots, columns: 1, rows: 6)
+                }
+            }
+            self.pages = pages
+            super.init(nibName: nil, bundle: nil)
+            return
+        }
         if set == "lists" && !focus {
             // One column of the screen's width: a list row or a bar is wider
             // than a third of it. The press pages: the specimen pressed over
@@ -1643,6 +1687,7 @@ final class HostViewController: UIViewController {
             if self.pressMode {
                 self.pressQueue = self.cells.filter { cell in
                     guard let sample = cell.sample else { return false }
+                    if self.hoverMode { return cell.state == .hovered }
                     if sample.pressView != nil { return cell.state == .pressed }
                     return sample.button != nil || sample.barItem != nil
                 }
@@ -1677,10 +1722,10 @@ final class HostViewController: UIViewController {
     /// Sets a state on a sample; false where the sample cannot take it.
     private func apply(_ state: ButtonState, to sample: Sample) -> Bool {
         if let applyState = sample.applyState { return applyState(state) }
-        if sample.pressView != nil { return state == .normal || state == .pressed }
+        if sample.pressView != nil { return state == .normal || state == .pressed || state == .hovered }
         if let item = sample.barItem {
             switch state {
-            case .normal, .pressed: return true
+            case .normal, .pressed, .hovered: return true
             case .disabled: item.isEnabled = false
             case .toggleOff: item.changesSelectionAsPrimaryAction = true
             case .selected:
@@ -1692,7 +1737,7 @@ final class HostViewController: UIViewController {
         }
         guard let control = sample.control else { return state == .normal }
         switch state {
-        case .normal, .focused, .pressed: return true
+        case .normal, .focused, .pressed, .hovered: return true
         case .highlighted: control.isHighlighted = true
         case .disabled: control.isEnabled = false
         case .toggleOff:
@@ -1973,14 +2018,7 @@ final class HostViewController: UIViewController {
             for old in touched.gestureRecognizers ?? [] where old.name == "press" {
                 touched.removeGestureRecognizer(old)
             }
-            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(barPress(_:)))
-            recognizer.name = "press"
-            recognizer.minimumPressDuration = 0
-            recognizer.cancelsTouchesInView = false
-            recognizer.delaysTouchesBegan = false
-            recognizer.delaysTouchesEnded = false
-            recognizer.delegate = self
-            touched.addGestureRecognizer(recognizer)
+            touched.addGestureRecognizer(pressRecognizer())
             recordMotion(touched, phase: "rest", times: [0])
             // The identifier goes on a marker over the target, not on the
             // target: a tab bar item's (outside a tab bar controller) and a
@@ -2000,18 +2038,55 @@ final class HostViewController: UIViewController {
             for old in sample.view.gestureRecognizers ?? [] where old.name == "press" {
                 sample.view.removeGestureRecognizer(old)
             }
-            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(barPress(_:)))
-            recognizer.name = "press"
-            recognizer.minimumPressDuration = 0
-            recognizer.cancelsTouchesInView = false
-            recognizer.delaysTouchesBegan = false
-            recognizer.delaysTouchesEnded = false
-            recognizer.delegate = self
-            sample.view.addGestureRecognizer(recognizer)
+            sample.view.addGestureRecognizer(pressRecognizer())
             recordMotion(sample.view, phase: "rest", times: [0])
             item.accessibilityIdentifier = "press-\(armedNumber)"
         }
         pressNumber += 1
+        if hoverMode {
+            let number = armedNumber
+            DispatchQueue.main.asyncAfter(deadline: .now() + hoverWaitSeconds) { [weak self] in
+                self?.hoverNotSeen(number)
+            }
+        }
+    }
+
+    /// The recognizer that reports the armed target's touch (a long press of
+    /// no minimum duration) or, in the hover mode, the pointer over it.
+    private func pressRecognizer() -> UIGestureRecognizer {
+        let recognizer: UIGestureRecognizer
+        if hoverMode {
+            recognizer = UIHoverGestureRecognizer(target: self, action: #selector(barPress(_:)))
+        } else {
+            let press = UILongPressGestureRecognizer(target: self, action: #selector(barPress(_:)))
+            press.minimumPressDuration = 0
+            recognizer = press
+        }
+        recognizer.name = "press"
+        recognizer.cancelsTouchesInView = false
+        recognizer.delaysTouchesBegan = false
+        recognizer.delaysTouchesEnded = false
+        recognizer.delegate = self
+        return recognizer
+    }
+
+    /// The hover mode: the target armed as `number` saw no pointer within
+    /// `hoverWaitSeconds`; recorded, a failure, and the next one armed.
+    private func hoverNotSeen(_ number: Int) {
+        guard !finished, let cell = armed, armedNumber == number, !touchDown, !captured else { return }
+        entries.append(
+            """
+            [[hover_not_seen]]
+            page = \(quoted(pages[pageIndex].path))
+            cell = \(quoted(cell.name))
+            press_number = \(number)
+            wait_seconds = \(hoverWaitSeconds)
+
+            """)
+        failures.append("\(pages[pageIndex].path)/\(cell.name): no hover within \(hoverWaitSeconds) s")
+        if !pressQueue.isEmpty { pressQueue.removeFirst() }
+        pressRetakes = 0
+        scheduleArm()
     }
 
     /// Records a button's layers at `phase` (rest, press, release): their
@@ -2056,7 +2131,7 @@ final class HostViewController: UIViewController {
         touchEnded(sender)
     }
 
-    @objc private func barPress(_ recognizer: UILongPressGestureRecognizer) {
+    @objc private func barPress(_ recognizer: UIGestureRecognizer) {
         guard let cell = armed, let sample = cell.sample, let view = recognizer.view,
             sample.pressView != nil ? view === sample.pressView?() : view === sample.view && sample.barItem != nil
         else { return }
@@ -2127,7 +2202,9 @@ final class HostViewController: UIViewController {
             if !pressQueue.isEmpty { pressQueue.removeFirst() }
             pressRetakes = 0
         }
-        if touchDown {
+        // A pointer stays where the UI test left it: the hover mode re-arms
+        // at once, and the UI test hovers the new identifier.
+        if touchDown && !hoverMode {
             rearm = true
         } else {
             scheduleArm()
@@ -2194,6 +2271,13 @@ final class HostViewController: UIViewController {
             entries.insert(screenEntry(source: source), at: 0)
         }
         captured = true
+        if hoverMode {
+            // The pointer leaves only when the UI test moves it for the next
+            // target: the next one is armed now.
+            if !pressQueue.isEmpty { pressQueue.removeFirst() }
+            pressRetakes = 0
+            scheduleArm()
+        }
     }
 
     // MARK: the index
@@ -2674,7 +2758,7 @@ final class HostViewController: UIViewController {
         }.joined(separator: ", ")
         return """
             [environment]
-            mode = \(quoted(pressMode ? "press" : focusMode ? "focus" : "render"))
+            mode = \(quoted(hoverMode ? "hover" : pressMode ? "press" : focusMode ? "focus" : "render"))
             specimen_set = \(quoted(specimenSet))
             quick = \(quick)
             simulator_runtime_version = \(value("SIMULATOR_RUNTIME_VERSION"))
