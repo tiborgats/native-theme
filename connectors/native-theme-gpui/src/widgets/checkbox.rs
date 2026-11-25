@@ -814,7 +814,7 @@ fn hovered_fill(
     checked: bool,
     disabled: bool,
 ) -> Mapped<Option<Hsla>> {
-    let hover = crate::next::state_fill(
+    let hover = crate::next::state_fill_of(
         hovered,
         match (radio, checked) {
             (false, false) => "checkbox.indicator(HOVER).fill",
@@ -1552,7 +1552,7 @@ impl CheckboxLook {
                     "checkbox.indicator(INDETERMINATE).fill",
                 )?),
             };
-            let hovered = crate::next::state_fill(
+            let hovered = crate::next::state_fill_of(
                 &indicator(WidgetState::HOVER | MIXED),
                 "checkbox.indicator(HOVER|INDETERMINATE).fill",
             )?;

@@ -14,7 +14,7 @@ use native_theme::theme::ResolvedTheme;
 
 use super::{Part, PartBounds, ThemeSource, color, faded, finite, length, over, part_bounds};
 use crate::next::{
-    Mapped, Unmapped, fill, hsla, radius, state_fill, stated, text_color, text_color_of,
+    Mapped, Unmapped, fill, hsla, radius, state_fill_of, stated, text_color, text_color_of,
 };
 
 /// The space between the track and the label, which `SwitchTheme` does not
@@ -244,7 +244,7 @@ impl SwitchLook {
                 None
             }
         } else {
-            state_fill(&s.track(WidgetState::HOVER), "switch.track(HOVER).fill")?
+            state_fill_of(&s.track(WidgetState::HOVER), "switch.track(HOVER).fill")?
         };
         let track = s.track(WidgetState::NONE);
         let thumb = s.thumb(rest);

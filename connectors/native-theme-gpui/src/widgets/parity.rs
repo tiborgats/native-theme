@@ -930,7 +930,7 @@ fn window_colour(
 /// states for `HOVER`, over the bar; else the tab at rest.
 fn tab_hover_home(n: &native_theme::next::ResolvedTheme) -> Mapped<gpui::Hsla> {
     let t = &n.tab;
-    match crate::next::state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")? {
+    match crate::next::state_fill_of(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")? {
         Some(hover) => Ok(crate::colors::over(
             fill(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
             hover,
@@ -949,7 +949,7 @@ fn slider_hover_home(
         return Ok(None);
     }
     let s = &n.slider;
-    match crate::next::state_fill(&s.thumb(WidgetState::HOVER), "slider.thumb(HOVER).fill")? {
+    match crate::next::state_fill_of(&s.thumb(WidgetState::HOVER), "slider.thumb(HOVER).fill")? {
         Some(hover) => Ok(Some(hover)),
         None => fill(&s.thumb(WidgetState::NONE), "slider.thumb(NONE).fill").map(Some),
     }
@@ -1073,7 +1073,7 @@ fn hover_fill_home(
     if disabled {
         return Ok(None);
     }
-    let hover = crate::next::state_fill(
+    let hover = crate::next::state_fill_of(
         &indicator(WidgetState::HOVER | shown(checked)),
         "indicator(HOVER|shown).fill",
     )?;

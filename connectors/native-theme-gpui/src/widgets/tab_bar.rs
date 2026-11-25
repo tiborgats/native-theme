@@ -15,7 +15,7 @@ use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
 use super::{Part, PartBounds, ThemeSource, color, length, outer_edge, over, part_bounds_above};
-use crate::next::{Mapped, Unmapped, fill, radius, state_fill, stated, text_color};
+use crate::next::{Mapped, Unmapped, fill, radius, state_fill_of, stated, text_color};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:112-118,
@@ -282,7 +282,7 @@ impl TabLook {
                 bar: fill(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
                 idle: fill(&tab, "tab.tab(NONE).fill")?,
                 idle_text: text_color(&t.label(WidgetState::NONE), "tab.label(NONE).color")?,
-                hover: state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
+                hover: state_fill_of(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
                 hover_text: hover_label(t, "tab.label(HOVER).color")?,
                 active: fill(&selected, "tab.tab(SELECTED).fill")?,
                 active_text: text_color(

@@ -18,7 +18,7 @@ use native_theme::next::{
 
 use super::{
     Mapped, Unmapped, fill, flat_button_states, font, hsla, normal_window, padding_of, radius,
-    scrollbar_geometry, state_fill, state_stroke_color, state_text_color, stated, stroke_color,
+    scrollbar_geometry, state_fill_of, state_stroke_color, state_text_color, stated, stroke_color,
     stroke_width, text_color, text_size, uncoloured_font,
 };
 use crate::geometry;
@@ -99,8 +99,8 @@ pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
             &b.label(WidgetState::PRESSED),
             "button.label(PRESSED).color",
         )?,
-        state_fill(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
-        state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
+        state_fill_of(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
+        state_fill_of(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
     ))
 }
 
@@ -109,7 +109,7 @@ pub(crate) fn default_button_rest(r: &ResolvedTheme) -> Mapped<Option<StyleRefin
     let b = &r.button;
     let default = b.body(WidgetState::DEFAULT);
     Ok(geometry::default_button_rest_from(
-        state_fill(&default, "button.body(DEFAULT).fill")?,
+        state_fill_of(&default, "button.body(DEFAULT).fill")?,
         state_stroke_color(&default, "button.body(DEFAULT).stroke.color")?,
         stroke_color(&b.body(WidgetState::NONE), "button.body(NONE).stroke.color")?,
     ))
@@ -395,7 +395,7 @@ pub(crate) fn input_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefin
     Ok(geometry::field_fill(
         &geometry::FieldFill {
             rest: fill(&i.field(WidgetState::NONE), "input.field(NONE).fill")?,
-            disabled_fill: state_fill(
+            disabled_fill: state_fill_of(
                 &i.field(WidgetState::DISABLED),
                 "input.field(DISABLED).fill",
             )?,
@@ -459,7 +459,7 @@ pub(crate) fn combo_box_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleR
     Ok(geometry::field_fill(
         &geometry::FieldFill {
             rest: fill(&c.field(WidgetState::NONE), "combo_box.field(NONE).fill")?,
-            disabled_fill: state_fill(
+            disabled_fill: state_fill_of(
                 &c.field(WidgetState::DISABLED),
                 "combo_box.field(DISABLED).fill",
             )?,
@@ -682,7 +682,7 @@ pub(crate) fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinemen
     let (_, own_selected) = flat_button_states(r)?;
     Ok(geometry::toolbar_button_checked_from(
         &geometry::ToolbarChecked {
-            button_checked_background: state_fill(&checked, "toolbar.button(CHECKED).fill")?,
+            button_checked_background: state_fill_of(&checked, "toolbar.button(CHECKED).fill")?,
             button_active_background: None,
             button_checked_border_color: state_stroke_color(
                 &checked,
@@ -709,9 +709,9 @@ pub(crate) fn toolbar_button_states(r: &ResolvedTheme) -> Mapped<ToolbarButtonSt
     let t = &r.toolbar;
     let hovered = t.button(WidgetState::HOVER);
     Ok(ToolbarButtonStates {
-        hover: state_fill(&hovered, "toolbar.button(HOVER).fill")?,
+        hover: state_fill_of(&hovered, "toolbar.button(HOVER).fill")?,
         hover_border: state_stroke_color(&hovered, "toolbar.button(HOVER).stroke.color")?,
-        active: state_fill(
+        active: state_fill_of(
             &t.button(WidgetState::PRESSED),
             "toolbar.button(PRESSED).fill",
         )?,
@@ -785,7 +785,7 @@ pub(crate) fn accordion(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// option, where a rule states it for `HOVER` (module doc of `next`), else
 /// unset.
 pub(crate) fn accordion_hover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
-    Ok(geometry::accordion_hover_from(state_fill(
+    Ok(geometry::accordion_hover_from(state_fill_of(
         &r.expander.header(WidgetState::HOVER),
         "expander.header(HOVER).fill",
     )?))
@@ -859,7 +859,7 @@ fn default_hover_frame(hovered: &PartStyle, default: &PartStyle) -> Mapped<Hsla>
 pub(crate) fn default_button_states(r: &ResolvedTheme) -> Mapped<Option<DefaultButtonStates>> {
     let b = &r.button;
     let default = b.body(WidgetState::DEFAULT);
-    let Some(hover) = state_fill(&default, "button.body(DEFAULT).fill")? else {
+    let Some(hover) = state_fill_of(&default, "button.body(DEFAULT).fill")? else {
         return Ok(None);
     };
     Ok(Some(DefaultButtonStates {

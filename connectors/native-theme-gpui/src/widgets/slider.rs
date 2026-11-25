@@ -16,7 +16,7 @@ use native_theme::theme::ResolvedTheme;
 
 use super::{A11yDisabled, Part, PartBounds, ThemeSource, color, faded, length, over, part_bounds};
 use crate::next::{
-    Mapped, Unmapped, fill, state_fill, state_stroke_color, stated, stroke_color, stroke_width,
+    Mapped, Unmapped, fill, state_fill_of, state_stroke_color, stated, stroke_color, stroke_width,
 };
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
@@ -304,7 +304,7 @@ impl SliderLook {
                         at("slider.thumb(NONE).fill", "slider.thumb(DISABLED).fill"),
                     )?,
                     rest_thumb: fill(&rest_thumb, "slider.thumb(NONE).fill")?,
-                    hover: state_fill(&s.thumb(WidgetState::HOVER), "slider.thumb(HOVER).fill")?,
+                    hover: state_fill_of(&s.thumb(WidgetState::HOVER), "slider.thumb(HOVER).fill")?,
                     track_height: stated(
                         s.track(WidgetState::NONE).min_size[1],
                         "slider.track(NONE).min_size[1]",

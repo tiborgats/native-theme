@@ -7257,14 +7257,16 @@ fn a_hovered_checked_box_draws_the_fill_resolved_for_its_state() -> crate::next:
                 } else {
                     CheckboxLook::next_of(&r, true, false)?
                 };
-                let resolved = state_fill_of(&indicator(HOVERED_ON));
+                let resolved = state_fill_of(&indicator(HOVERED_ON), "indicator(HOVER|CHECKED)")?;
                 let on = crate::next::fill(&indicator(WidgetState::CHECKED), "indicator(CHECKED)")?;
                 assert_eq!(
                     look.hover_fill,
                     resolved.filter(|hover| *hover != on),
                     "{name}"
                 );
-                if let Some(unchecked) = state_fill_of(&indicator(WidgetState::HOVER)) {
+                if let Some(unchecked) =
+                    state_fill_of(&indicator(WidgetState::HOVER), "indicator(HOVER)")?
+                {
                     assert_ne!(
                         resolved,
                         Some(unchecked),
