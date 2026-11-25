@@ -564,8 +564,8 @@ fn a_stated_no_fill_for_a_state_paints_nothing() -> TestResult {
 /// nothing pressed), and keeps the theme's value at rest for the rest; a
 /// checked toggle that states no checked look is the primary button in the
 /// same status (spec §10, rule 0a), and a toolbar button with no hovered or
-/// pressed look of its own or of the button's is flat where iced makes no
-/// change.
+/// pressed look of its own or of the button's keeps its fill at rest where
+/// iced makes no change.
 #[test]
 fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
     use iced_widget::button::Status;
@@ -622,22 +622,14 @@ fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
 
         let style = toolbar(&theme, Status::Hovered);
         let expected = if iced_changes {
-            background_color(hovered.background)
+            hovered.background
         } else {
-            Some(IcedColor::TRANSPARENT)
+            fill
         };
-        assert_eq!(
-            background_color(style.background),
-            expected,
-            "{preset:?} toolbar"
-        );
+        assert_eq!(style.background, expected, "{preset:?} toolbar");
         assert_eq!(style.text_color, label, "{preset:?} toolbar");
         let style = toolbar(&theme, Status::Pressed);
-        assert_eq!(
-            background_color(style.background),
-            Some(IcedColor::TRANSPARENT),
-            "{preset:?} toolbar"
-        );
+        assert_eq!(style.background, fill, "{preset:?} toolbar");
         assert_eq!(style.text_color, label, "{preset:?} toolbar");
 
         let primary = super::button_primary(&r)?;
