@@ -8747,6 +8747,9 @@ fn home_keyed(id: &str) -> bool {
         || id.starts_with("basic.switches.")
         || id.starts_with("basic.drop_down.")
         || id.starts_with("basic.text_area.")
+        || id.starts_with("basic.slider.")
+        || id.starts_with("basic.progress_bar.")
+        || id.starts_with("basic.spinner.")
 }
 
 /// Whether the list's id `id` names the Basic page or one of its columns.
@@ -11745,6 +11748,119 @@ fn text_area_route(home: &str) -> Option<String> {
     Some(route.to_owned())
 }
 
+/// The route of the home `home` of an element of the Basic page's slider
+/// under `r`, the installed 0.8.0 theme: the rail's thickness, the thumb's
+/// size and its outline width. `None` for a home none of them reads, the
+/// colours the export routes ([`colour_home_route`]) among them.
+fn slider_route(r: &native_theme::next::ResolvedTheme, home: &str) -> Option<String> {
+    let route = match home {
+        "slider.track(NONE; orientation=Horizontal).min_size[1]" => {
+            "styles::slider: the rail's width; next_slider_sizes: the rail the parts lay out, \
+             slider.track(NONE; orientation=Horizontal).min_size[1], iced's own 4 \
+             (ICED_SLIDER_RAIL) where unstated"
+        }
+        "slider.track(NONE; orientation=Horizontal).max_size[1]" => {
+            "not reachable: iced_next::styles::slider draws the rail at \
+             slider.track(NONE; orientation=Horizontal).min_size[1], with no greatest width"
+        }
+        "slider.thumb(NONE).min_size[0]" => {
+            "styles::slider: a circle handle of half of it; next_slider_sizes: Slider::height and \
+             the thumb the parts lay out, slider.thumb(NONE).min_size[0], iced's own 14 \
+             (ICED_SLIDER_HANDLE) where unstated"
+        }
+        "slider.thumb(NONE).min_size[1]"
+        | "slider.thumb(NONE).max_size[0]"
+        | "slider.thumb(NONE).max_size[1]" => {
+            "not reachable: iced_next::styles::slider draws a circle handle, \
+             slider.thumb(NONE).min_size[0] across"
+        }
+        "slider.thumb(NONE).stroke.width"
+            if iced_next::stroke_color_of(&r.slider.thumb(WidgetState::NONE)).is_none() =>
+        {
+            "not drawn: slider.thumb(NONE).stroke is unstated or none; \
+             iced_next::styles::slider keeps iced's handle border, none"
+        }
+        "slider.thumb(NONE).stroke.width" => {
+            "iced_next::styles::slider: the handle's border_width, \
+             slider.thumb(NONE).stroke.width, where the status's outline colour is stated"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of an element of the Basic page's progress
+/// bar: the girth, the width, the corners and the outline width
+/// `styles::progress_bar` draws. `None` for a home none of them reads, the
+/// colours the export routes ([`colour_home_route`]) among them.
+fn progress_bar_route(home: &str) -> Option<String> {
+    let route = match home {
+        "progress_bar.track(NONE).min_size[1]" => {
+            "next_progress_girth: ProgressBar::girth, progress_bar.track(NONE).min_size[1], iced's \
+             own (ProgressBar::DEFAULT_GIRTH) where unstated"
+        }
+        "progress_bar.track(NONE).max_size[1]" => {
+            "not reachable: ProgressBar takes one girth, progress_bar.track(NONE).min_size[1], \
+             with no greatest one"
+        }
+        "progress_bar.track(NONE).min_size[0]" => {
+            "not reachable: ProgressBar takes a length, not a minimum; the page's own width"
+        }
+        "progress_bar.track(NONE).corners" => {
+            "styles::progress_bar: progress_bar::Style::border.radius, \
+             progress_bar.track(NONE).corners"
+        }
+        "progress_bar.track(NONE).stroke.width" => {
+            "styles::progress_bar: progress_bar::Style::border.width, \
+             progress_bar.track(NONE).stroke.width"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// Why the Basic page's spinner does not draw its home `home` under
+/// `state`: none is drawn ([`State::basic_spinner`]), or the icon theme's
+/// indicator keeps its own colours ([`spinner_keeps_its_colours`]). `None`
+/// where it is drawn, or for a home that is not the spinner's own.
+fn spinner_not_drawn(state: &State, home: &str) -> Option<&'static str> {
+    if !home.starts_with("spinner.") {
+        return None;
+    }
+    if state.basic_spinner.is_none() {
+        return Some(SPINNER_NOT_DRAWN);
+    }
+    (home == "spinner.color" && spinner_keeps_its_colours(state)).then_some(
+        "not drawn: the icon theme's indicator keeps its own colours, its currentColor, where \
+         it sets none, in colors.window.foreground (native_theme_iced::next::spinner)",
+    )
+}
+
+/// The route of the home `home` of the Basic page's spinner under `state`,
+/// where it is drawn ([`spinner_not_drawn`]): its diameter, the arc's
+/// stroke, and the icon set and theme its indicator loads from. `None` for
+/// a home none of them reads, its colour, which the export routes
+/// ([`colour_home_route`]), among them.
+fn spinner_route(state: &State, home: &str) -> Option<String> {
+    let route = match home {
+        "spinner.diameter" => {
+            "native_theme_iced::next::spinner: its width and height, spinner.diameter"
+        }
+        "spinner.min_diameter" => "not reachable: the spinner is drawn at spinner.diameter",
+        "spinner.stroke_width" if basic_indicator(state) => {
+            "not drawn: the icon set's indicator is drawn, not the arc"
+        }
+        "spinner.stroke_width" => {
+            "native_theme_iced::next::spinner: the arc's stroke, spinner.stroke_width, the icon \
+             set having no indicator"
+        }
+        "icons.theme" => "the icon loaders' theme: native_theme's FreedesktopLoader",
+        "icons.set" => "the icon loader of the set: IconSetChoice::effective_icon_set",
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of the home `home` of the Basic page or one of its columns
 /// under `r`, the installed 0.8.0 theme: the gaps and margins
 /// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
@@ -11839,6 +11955,11 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
             format!("iced: {line}")
         };
     }
+    if id == "basic.spinner.indicator"
+        && let Some(line) = spinner_not_drawn(state, home)
+    {
+        return line.to_owned();
+    }
     let installed = state.installed_combination();
     // Edit, the edit-mode switch, while it is on, which
     // `iced_next::styles::toolbar_button` draws checked.
@@ -11897,6 +12018,12 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         drop_down_route(home)
     } else if under("basic.text_area.") {
         text_area_route(home)
+    } else if under("basic.slider.") {
+        slider_route(r, home)
+    } else if under("basic.progress_bar.") {
+        progress_bar_route(home)
+    } else if id == "basic.spinner.indicator" {
+        spinner_route(state, home)
     } else {
         None
     };
@@ -11993,18 +12120,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         return home_route(state, element, leaf);
     }
     let id = element.id.as_str();
-    if id == "basic.spinner.indicator"
-        && leaf.starts_with("spinner.")
-        && state.basic_spinner.is_none()
-    {
-        return SPINNER_NOT_DRAWN.to_owned();
-    }
-    if leaf == "spinner.fill_color" && spinner_keeps_its_colours(state) {
-        return "not drawn: the icon theme's indicator keeps its own colours, its \
-                currentColor, where it sets none, in colors.window.foreground \
-                (native_theme_iced::next::spinner)"
-            .to_owned();
-    }
     let theme_row = id == "chrome.side_panel.settings.theme";
     let installed = state.installed_combination();
     if let Some(line) = colour_route(element, leaf, Shown::of(state), installed.as_deref()) {
@@ -12167,61 +12282,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
         // A tab row's and a tab's are tab_home_route's.
-        // ---- slider, progress bar, spinner ----
-        ("slider", "track_height_px") if under("basic.slider.") => {
-            "styles::slider: the rail's width; next_slider_sizes: the rail the parts lay out, \
-             slider.track(NONE; orientation=Horizontal).min_size[1], iced's own 4 \
-             (ICED_SLIDER_RAIL) where unstated"
-                .into()
-        }
-        ("slider", "thumb_diameter_px") if under("basic.slider.") => {
-            "styles::slider: a circle handle of half of it; next_slider_sizes: Slider::height and \
-             the thumb the parts lay out, slider.thumb(NONE).min_size[0], iced's own 14 \
-             (ICED_SLIDER_HANDLE) where unstated"
-                .into()
-        }
-        ("progress_bar", "track_height_px") if under("basic.progress_bar.") => {
-            "next_progress_girth: ProgressBar::girth, progress_bar.track(NONE).min_size[1], iced's \
-             own (ProgressBar::DEFAULT_GIRTH) where unstated"
-                .into()
-        }
-        ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
-        ("slider", "thumb_border_line_width_px")
-            if iced_next::stroke_color_of(&state.next_shown().slider.thumb(WidgetState::NONE))
-                .is_none() =>
-        {
-            "not drawn: slider.thumb(NONE).stroke is unstated or none; \
-             iced_next::styles::slider keeps iced's handle border, none"
-                .into()
-        }
-        ("slider", "thumb_border_line_width_px") => {
-            "iced_next::styles::slider: the handle's border_width, \
-             slider.thumb(NONE).stroke.width, where the status's outline colour is stated"
-                .into()
-        }
-        ("slider", "thumb_diameter_px") => {
-            "styles::slider: a circle handle of half of it; Slider::height".into()
-        }
-        ("progress_bar", "track_height_px") => "ProgressBar::girth".into(),
-        ("progress_bar", "min_width_px") => {
-            "not reachable: ProgressBar takes a length, not a minimum; the page's own width".into()
-        }
-        ("progress_bar", "border.corner_radius_px") => "styles::progress_bar: border.radius".into(),
-        ("progress_bar", "border.line_width_px") => "styles::progress_bar: border.width".into(),
-        ("spinner", "diameter_px") => {
-            "native_theme_iced::next::spinner: its width and height, spinner.diameter".into()
-        }
-        ("spinner", "min_diameter_px") => {
-            "not reachable: the spinner is drawn at spinner.diameter".into()
-        }
-        ("spinner", "stroke_width_px") if basic_indicator(state) => {
-            "not drawn: the icon set's indicator is drawn, not the arc".into()
-        }
-        ("spinner", "stroke_width_px") => {
-            "native_theme_iced::next::spinner: the arc's stroke, spinner.stroke_width, the icon \
-             set having no indicator"
-                .into()
-        }
         // ---- segmented control ----
         ("segmented_control", "font") if under("basic.segmented.") => {
             "next_text: the label's size, line box and font, segmented_control.label(NONE)".into()
@@ -33441,10 +33501,10 @@ mod tests {
         let element = elements::element("basic.spinner.indicator")
             .ok_or("basic.spinner.indicator is not listed")?;
         let drawn: Vec<String> = element
-            .leaves
+            .homes
             .iter()
-            .filter(|leaf| leaf.starts_with("spinner."))
-            .map(|leaf| iced_route(&state, element, leaf))
+            .filter(|home| home.starts_with("spinner."))
+            .map(|home| iced_route(&state, element, home))
             .filter(|route| route != SPINNER_NOT_DRAWN)
             .collect();
         if drawn.is_empty() {
@@ -34017,7 +34077,7 @@ mod tests {
         };
         let line = route(
             "basic.slider.control.thumb",
-            "slider.thumb_border_line_width_px",
+            "slider.thumb(NONE).stroke.width",
         )?;
         assert!(line.starts_with("not drawn"), "the handle's line: {line}");
         let line = route("basic.expander.details", "expander.border.corner_radius_px")?;
@@ -35700,7 +35760,7 @@ mod tests {
                 None if route.contains("CheckMark") => fault("no CheckMark is drawn"),
                 Some(_)
                     if id.ends_with(".mark")
-                        && leaf == "checkbox.check_mark_stroke_width_px"
+                        && leaf == "checkbox.checkmark(NONE).stroke_width"
                         && !route.contains("CheckMark") =>
                 {
                     fault("the CheckMark draws it")
@@ -35833,10 +35893,10 @@ mod tests {
                 .icon_set_choice
                 .effective_icon_set(state.current_icon_set)
                 == IconSet::Freedesktop;
-            if leaf == "spinner.stroke_width_px" && !not_drawn {
+            if leaf == "spinner.stroke_width" && !not_drawn {
                 fault("the set's indicator is drawn, not the arc");
             }
-            if leaf == "spinner.fill_color" && own_colours != not_drawn {
+            if leaf == "spinner.color" && own_colours != not_drawn {
                 fault("a freedesktop indicator keeps its own colours");
             }
         }
@@ -36177,7 +36237,7 @@ mod tests {
                 Message::IconSetSelected(IconSetChoice::Freedesktop("styled".to_owned())),
             );
             assert!(basic_indicator(&state), "the fixture's indicator is drawn");
-            let route = iced_route(&state, element, "spinner.fill_color");
+            let route = iced_route(&state, element, "spinner.color");
             assert!(
                 route.starts_with("not drawn: ") && !route.contains("bundled tint"),
                 "{route}"
