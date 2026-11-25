@@ -793,11 +793,15 @@ const STATED: &str = "the 0.8.0 preset states the value at the home, from the so
      comment there cites (M2.FS4); 0.7.2's resolver gave the resting value, another state's, or \
      a layer laid over the resting fill";
 
-const TOOL_REST_FILL: &str = "the toolbar cell fills a resting tool button with the rest capsule \
-     macos-tahoe states for the toolbar-bezel button, #ffffff light, #252525 dark (measured, \
-     os-probe run 45634379188, macOS 26, toolbar states sheet, `*.normal.toolbar_button` `fill`; \
-     native-theme/src/next/presets/macos.rs, `toolbar_button_rest`); 0.7.2 states no tool button \
-     at rest, and its cell kept the base style's resting fill";
+const TOOL_REST_FILL: &str = "the toolbar cell fills a resting tool button with the fill the macOS \
+     preset states for the toolbar-bezel button: on macos-monterey none, transparent, the title \
+     bar inside the rest ring and the image-only button with no ring (measured, os-probe run \
+     45634379188, macOS 15, `toolbar_bezel_fitted-toolbar_states_sheet.toml`, \
+     `*.normal.toolbar_button`, `*.normal.toolbar_image` `fill`), on macos-tahoe the rest capsule, \
+     #ffffff light, #252525 dark (the same run, macOS 26, toolbar states sheet, \
+     `*.normal.toolbar_button` `fill`) (native-theme/src/next/presets/macos.rs, \
+     `toolbar_button_rest`); 0.7.2 states no tool button at rest, and its cell kept the base \
+     style's resting fill";
 
 const TOOL_CORNERS: &str = "the toolbar cell rounds a tool button by the corners macos-tahoe states \
      for the toolbar-bezel button, a capsule, egui's largest radius (measured, os-probe run \
@@ -1709,7 +1713,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     d(
         "Toolbar",
-        &[T],
+        &[M, T],
         ".visuals.widgets.inactive.weak_bg_fill",
         Cause::Stated(home!(toolbar.button(NONE).fill)),
         TOOL_REST_FILL,

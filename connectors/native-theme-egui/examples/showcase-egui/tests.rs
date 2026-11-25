@@ -13785,12 +13785,13 @@ fn a_toolbar_button_at_rest_is_the_stated_capsule() -> Result<(), String> {
 /// states it, in the state of its previous response: macos-monterey light's #676767 at rest and
 /// #666666 hovered (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
 /// `aqua.{normal,hovered}.toolbar_image` `ink`; native-theme/src/next/presets/macos.rs,
-/// `toolbar_icon`). Checked, in no stated colour where no rule states one for `CHECKED`, as
-/// neither macOS preset does: the resting colour is not the checked state's (spec §2,
-/// `from_state`), so macos-tahoe's checked icon is never loaded in its resting #4d4d4d, in any
-/// state. kde-breeze states none, and the icon keeps the colour it is loaded in. So the Basic
-/// page's Copy, a bundled Material icon, is painted from another texture under the pointer than
-/// at rest.
+/// `toolbar_icon`). Checked, in the colour a rule states for `CHECKED` in the state: macos-monterey
+/// light's #4b4b4b at rest, #3b3b3b hovered and pressed, macos-tahoe's #ffffff in each (os-probe
+/// run 45663039135, `controls-toolbar_states_sheet.toml`,
+/// `aqua.{normal,hovered,pressed}.toolbar_image_on` `icon`; macos.rs, `toolbar_checked_icon`), so
+/// macos-tahoe's checked icon is never loaded in its resting #4d4d4d, in any state. kde-breeze
+/// states none, and the icon keeps the colour it is loaded in. So the Basic page's Copy, a
+/// bundled Material icon, is painted from another texture under the pointer than at rest.
 #[test]
 fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     use crate::demo::tool_icon_color;
@@ -13800,14 +13801,20 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     let r = Some(&monterey);
     assert_eq!(tool_icon_color(r, (false, false), false), grey(0x67));
     assert_eq!(tool_icon_color(r, (true, false), false), grey(0x66));
-    assert_eq!(tool_icon_color(r, (false, false), true), None);
+    assert_eq!(tool_icon_color(r, (false, false), true), grey(0x4b));
+    assert_eq!(tool_icon_color(r, (true, false), true), grey(0x3b));
+    assert_eq!(tool_icon_color(r, (false, true), true), grey(0x3b));
     let tahoe = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
     assert_eq!(
         tool_icon_color(Some(&tahoe), (false, false), false),
         grey(0x4d)
     );
     for was in [(false, false), (true, false), (false, true)] {
-        assert_eq!(tool_icon_color(Some(&tahoe), was, true), None, "{was:?}");
+        assert_eq!(
+            tool_icon_color(Some(&tahoe), was, true),
+            grey(0xff),
+            "{was:?}"
+        );
     }
     let breeze = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
     assert_eq!(tool_icon_color(Some(&breeze), (true, false), false), None);
@@ -13857,7 +13864,8 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
 
 /// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
 /// icon is not the texture it is painted from unchecked at rest, loaded in the resting
-/// `toolbar.button_icon(NONE).color` #4d4d4d, since no rule states a colour for `CHECKED`.
+/// `toolbar.button_icon(NONE).color` #4d4d4d: it takes the colour the rule for `CHECKED`
+/// states, #ffffff (os-probe run 45663039135; macos.rs, `toolbar_checked_icon`).
 #[test]
 fn the_checked_edit_icon_is_not_loaded_in_the_resting_icon_colour() -> Result<(), String> {
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
