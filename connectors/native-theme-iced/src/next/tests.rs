@@ -764,3 +764,42 @@ fn a_flare_radius_that_is_not_positive_and_finite_draws_none() -> TestResult {
     }
     Ok(())
 }
+
+/// A checked toolbar button on either macOS preset is filled with the
+/// checked fill the preset states, `toolbar.button(CHECKED).fill`, the
+/// toolbar-bezel button's as an on toggle: macos-monterey #dfdfdf /
+/// #414141, macos-tahoe the accent, #007aff (os-probe run 45634379188,
+/// toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`), at rest.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() -> TestResult {
+    use iced_core::Background;
+    use iced_core::theme::Theme as IcedTheme;
+    use iced_widget::button::Status;
+    for (preset, light, dark) in [
+        (
+            Preset::MacosMonterey,
+            [0xdf, 0xdf, 0xdf],
+            [0x41, 0x41, 0x41],
+        ),
+        (Preset::MacosTahoe, [0x00, 0x7a, 0xff], [0x00, 0x7a, 0xff]),
+    ] {
+        for (ctx, [r, g, b]) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+            let theme = Theme::preset(preset).resolve(&ctx);
+            let style =
+                super::styles::toolbar_button(&theme, true)?(&IcedTheme::Light, Status::Active);
+            assert_eq!(
+                style.background,
+                Some(Background::Color(super::to_color(Color::from_srgb8(
+                    r,
+                    g,
+                    b,
+                    u8::MAX
+                )))),
+                "{preset:?} {:?}",
+                ctx.scheme
+            );
+        }
+    }
+    Ok(())
+}

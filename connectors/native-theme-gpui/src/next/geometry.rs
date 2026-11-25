@@ -155,12 +155,49 @@ mod tests {
 
     use super::*;
 
-    /// A checked toolbar button whose checked fill no rule states
-    /// (macos-tahoe states none) is filled as gpui-component's own selected
-    /// ghost, with `tokens.secondary_active` as `apply` installs it, not with
-    /// a pressed fill of the theme's: the flat button's pressed fill is
-    /// patched to one of its own, which `apply` gives `secondary_active`, so
-    /// it differs from the push button's and the toolbar's pressed fills.
+    /// A checked toolbar button on either macOS preset is filled with the
+    /// checked fill the preset states, `toolbar.button(CHECKED).fill`, the
+    /// toolbar-bezel button's as an on toggle: macos-monterey #dfdfdf /
+    /// #414141, macos-tahoe the accent, #007aff (os-probe run 45634379188,
+    /// toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`), not with
+    /// gpui-component's own selected ghost's.
+    #[test]
+    fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() {
+        use gpui::Styled as _;
+        use native_theme::next::{Color, WidgetState};
+        for (preset, light, dark) in [
+            (Preset::MacosMonterey, 0xdfdfdf_u32, 0x414141_u32),
+            (Preset::MacosTahoe, 0x007aff, 0x007aff),
+        ] {
+            for (ctx, rgb) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+                let r = Theme::preset(preset).resolve(&ctx);
+                let [_, red, green, blue] = rgb.to_be_bytes();
+                let want = super::super::hsla(Color::from_srgb8(red, green, blue, u8::MAX));
+                assert_eq!(
+                    super::super::state_fill_of(
+                        &r.toolbar.button(WidgetState::CHECKED),
+                        "toolbar.button(CHECKED).fill"
+                    ),
+                    Ok(Some(want)),
+                    "{preset:?} {:?}",
+                    ctx.scheme
+                );
+                assert_eq!(
+                    toolbar_button_checked(&r).map(|c| c.background),
+                    Ok(StyleRefinement::default().bg(want).background),
+                    "{preset:?} {:?}",
+                    ctx.scheme
+                );
+            }
+        }
+    }
+
+    /// A checked toolbar button whose checked fill no rule states (ios-13
+    /// states none) is filled as gpui-component's own selected ghost, with
+    /// `tokens.secondary_active` as `apply` installs it, not with a pressed
+    /// fill of the theme's: the flat button's pressed fill is patched to one
+    /// of its own, which `apply` gives `secondary_active`, so it differs from
+    /// the push button's and the toolbar's pressed fills.
     #[gpui::test]
     fn an_unstated_checked_toolbar_fill_is_the_selected_ghosts(cx: &mut gpui::TestAppContext) {
         use gpui::{Hsla, Styled as _};
@@ -171,7 +208,7 @@ mod tests {
         cx.update(|cx| {
             gpui_component::init(cx);
             for ctx in [ThemeContext::light(), ThemeContext::dark()] {
-                let mut r = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+                let mut r = Theme::preset(Preset::Ios13).resolve(&ctx);
                 r.apply_patch(
                     &ThemePatch::new().button(
                         ButtonRule::new()
@@ -187,7 +224,7 @@ mod tests {
                         "toolbar.button(CHECKED).fill"
                     ),
                     Ok(None),
-                    "macos-tahoe {:?} states a checked toolbar fill",
+                    "ios-13 {:?} states a checked toolbar fill",
                     ctx.scheme
                 );
                 assert_eq!(super::super::apply(&r, cx), Ok(()));
@@ -204,14 +241,14 @@ mod tests {
                 ];
                 assert!(
                     !pressed.contains(&Ok(Some(own))),
-                    "macos-tahoe {:?}: a pressed fill is the selected ghost's, so this proves \
+                    "ios-13 {:?}: a pressed fill is the selected ghost's, so this proves \
                      nothing",
                     ctx.scheme
                 );
                 assert_eq!(
                     toolbar_button_checked(&r).map(|c| c.background),
                     Ok(StyleRefinement::default().bg(own).background),
-                    "macos-tahoe {:?}",
+                    "ios-13 {:?}",
                     ctx.scheme
                 );
             }

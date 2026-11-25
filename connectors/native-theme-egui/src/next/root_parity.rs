@@ -40,7 +40,35 @@ struct Difference {
     reason: &'static str,
 }
 
-const DIFFERENCES: &[Difference] = &[];
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        name: "toolbar_button_checked_background",
+        preset: "macos-monterey",
+        new: "Ok(Some(#DF_DF_DF_FF))",
+        reason: TOOLBAR_CHECKED,
+    },
+    Difference {
+        name: "toolbar_button_checked_background",
+        preset: "macos-monterey",
+        new: "Ok(Some(#41_41_41_FF))",
+        reason: TOOLBAR_CHECKED,
+    },
+    Difference {
+        name: "toolbar_button_checked_background",
+        preset: "macos-tahoe",
+        new: "Ok(Some(#00_7A_FF_FF))",
+        reason: TOOLBAR_CHECKED,
+    },
+];
+
+/// The macOS checked toolbar button's fill, which 0.7.2 does not state.
+const TOOLBAR_CHECKED: &str = "0.7.2's macOS toolbar states no checked button fill; the 0.8.0 \
+     macOS presets state the real toolbar's toolbar-bezel button as an on \
+     NSButtonTypePushOnPushOff toggle, toolbar.button(CHECKED).fill: macos-monterey #dfdfdf / \
+     #414141, macos-tahoe the accent, #007aff (os-probe run 45634379188, macOS 15 and 26, \
+     toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`; \
+     native-theme/tests/next_homes.toml, row toolbar.button_checked_background, a listed \
+     difference)";
 
 /// A field's frame the 0.8.0 preset outlines in a border of its own: the
 /// function, the preset's key, the field's part and its homes, and why. The
