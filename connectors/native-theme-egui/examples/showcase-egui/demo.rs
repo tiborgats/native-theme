@@ -1774,7 +1774,7 @@ type DrawnPart = (
 
 /// Every fill the showcase's own drawing sites read ([`DrawnPart`]): the menu bar
 /// (`chrome::menu_panel`), the selected tab's line (`next_indicator_line`), the Icons page's
-/// skeleton, the toggle's and the edit switch's checked fills (`pages::basic::toggle_on`,
+/// skeleton, the toggle's and the edit switch's checked fills (`pages::basic::toggle_on_at`,
 /// `edit_look`), the Basic list's and the table's frames (`list_frame`), their rows and
 /// highlights in each state the page draws them in (`RowLook::of`: the window focused or not,
 /// selected or not, and the list's hovered or not; the table's rows are never hovered), and the
