@@ -757,8 +757,9 @@ const DIFFERENCES: &[Difference] = &[
                  v0.8.0-rc1 at 78ee0efd, row W1-021); macos-monterey, macos-tahoe and ios-13 no \
                  outline, a transparent edge of no width (os-probe run 41006842699, \
                  `*-flat.stroke` and `*-plain.stroke` absent; iOS host run 41020880059, \
-                 `cells.<scheme>.plain.<size>.normal.stroke` absent); material-3 states no \
-                 hovered stroke, so no edge, as 0.7.2",
+                 `cells.<scheme>.plain.<size>.normal.stroke` absent); material-3 states it as \
+                 none (the flat query matches the push button's HOVER rule, Stroke::None), so \
+                 no edge, as 0.7.2",
     },
     Difference {
         leaf: "geometry::button_checked",

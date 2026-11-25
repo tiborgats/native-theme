@@ -1225,7 +1225,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // the checked box's outline, which the disabled checked cell keeps, over its disabled fill
     s(
         "Checkbox/SelectedDisabled",
-        &[A, I],
+        &[A],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
@@ -1234,10 +1234,12 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // CheckBoxCheckBackgroundStrokeCheckedDisabled = ControlStrongStrokeColorDisabled
     // (CheckBox_themeresources.xaml:465-468 at microsoft-ui-xaml 8463f45), macos-monterey's
     // measured edge, checked or not, macos-tahoe's none (os-probe run 45345116763,
-    // `*.normal.checkbox_disabled_{off,on}` `edge_*`)
+    // `*.normal.checkbox_disabled_{off,on}` `edge_*`), ios-13's none round a checked box, its
+    // rule for `DISABLED` stating WebKit's disabled outline (RenderThemeIOS.mm:1355, :1359-1362,
+    // :1502 at WebKit 31adf9d)
     s(
         "Checkbox/SelectedDisabled",
-        &[W, M, T],
+        &[W, M, T, I],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(DISABLED | CHECKED).stroke.color),
     ),
