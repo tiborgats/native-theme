@@ -584,6 +584,49 @@ fn a_checked_button_has_the_selected_toggle_s_colours() {
     }
 }
 
+/// The plain button draws no fill and no outline at rest, hovered, pressed
+/// and disabled, each stated for its state; checked, the toggle's selected
+/// fill, and checked and pressed, its pressed one.
+#[test]
+fn a_flat_button_has_no_fill_but_the_checked_one() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes().iter().zip([LIGHT, DARK]) {
+        let flat = |state| theme.button.body(ButtonQuery::flat().state(state));
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+        ] {
+            let body = flat(state);
+            assert_eq!(
+                (&body.fill, &body.stroke),
+                (&Paint::None, &Stroke::None),
+                "{state:?}"
+            );
+            assert!(body.stated.contains(PartStated::FILL), "{state:?}");
+            if state != WidgetState::NONE {
+                assert!(body.from_state.contains(PartStated::FILL), "{state:?}");
+            }
+        }
+        for state in [
+            WidgetState::CHECKED,
+            WidgetState::CHECKED | WidgetState::HOVER,
+        ] {
+            assert_eq!(
+                flat(state).fill,
+                Paint::Solid(c.button_checked),
+                "{state:?}"
+            );
+        }
+        assert_eq!(
+            flat(WidgetState::CHECKED | WidgetState::PRESSED).fill,
+            Paint::Solid(c.button_checked_pressed)
+        );
+    }
+}
+
 /// The card's corners are the `.insetGrouped` cell's: 10 pt on the
 /// continuous curve the measured view reads (ios-host run 45230061151,
 /// `run1/index.toml` the card render, view `0.1`).

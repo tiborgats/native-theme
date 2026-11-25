@@ -2167,9 +2167,9 @@ homes = ["sidebar.item_label(NONE).style"]
 key = "sidebar.font.color"
 homes = ["sidebar.item_label(NONE).color"]
 difference_presets = ["macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2's labelColor (#000000d8 / #ffffffd8) is the system colour, not what the sidebar draws; 0.8.0 states the source-list row's measured rest label under the default conditions, opaque over the opaque material"
-difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.source_list_row` `label`"
-difference_values = { "macos-monterey" = { light = "#424242", dark = "#ececec" }, "macos-tahoe" = { light = "#000000", dark = "#ffffff" } }
+difference_reason = "0.7.2's labelColor (#000000d8 / #ffffffd8) is the system colour, not what the sidebar draws; 0.8.0 states the source-list row's measured rest label over the material's Reduce Transparency rendering, the sidebar's fill"
+difference_citation = "os-probe run 45231684209 (macOS 15, macOS 26, Reduce Transparency on; docs/evidence/os-probe/2026-11-23-run-45231684209/), `*.normal.source_list_row` `label`, `ink`, over `fill` #f6f6f6 / #383838"
+difference_values = { "macos-monterey" = { light = "#494949", dark = "#ebebeb" }, "macos-tahoe" = { light = "#000000", dark = "#ffffff" } }
 
 [[row]]
 key = "sidebar.border.color"

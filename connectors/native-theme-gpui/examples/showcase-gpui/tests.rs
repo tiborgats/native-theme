@@ -21520,9 +21520,11 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 /// moved off it paints no fill (the rest fill is transparent), and its info
 /// claims the text, hover and pressed fills its neighbours claim and no
 /// checked colour; a second click checks it again. Under ios-13 light,
-/// which states no checked or pressed toolbar fill, its fill is the custom variant's selected
-/// fill, `secondary_active`, and its info claims only that fill and the
-/// variant's text.
+/// which states no checked or pressed toolbar fill, its fill is the push
+/// button's pressed fill, `button.body(PRESSED)`, where
+/// `geometry::toolbar_button_checked` falls back (the flat button's own,
+/// `secondary_active`, is transparent), and its info claims only that fill
+/// and the variant's text.
 #[gpui::test]
 fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     use crate::info::stated;
@@ -21647,14 +21649,22 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         }),
         "ios-13 now states a toolbar fill toolbar_button_checked takes, so this part proves nothing"
     );
+    let pressed = next.as_ref().and_then(|r| {
+        native_theme_gpui::next::state_fill_of(
+            &r.button.body(native_theme::next::WidgetState::PRESSED),
+        )
+    });
+    assert!(
+        pressed.is_some(),
+        "ios-13 no longer states the push button's pressed fill, so this part proves nothing"
+    );
     assert!(read(&mut cx, &showcase, |this, _| this.basic_edit));
     hover(&mut cx, away);
     draw(&mut cx);
-    let selected = cx.update(|_, cx| Theme::global(cx).secondary_active);
     assert_eq!(
         painted_fill(&mut cx, button),
-        Some(selected),
-        "ios-13: the checked edit button is not filled with the variant's selected fill"
+        pressed,
+        "ios-13: the checked edit button is not filled with the push button's pressed fill"
     );
     let info = settle_on(&mut cx, &showcase, button);
     let mut roles: Vec<&str> = info

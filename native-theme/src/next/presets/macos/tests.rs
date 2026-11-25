@@ -126,6 +126,39 @@ fn a_flat_button_has_no_fill_and_no_outline() {
     }
 }
 
+/// The borderless button's label on macos-tahoe is the measured one, at
+/// rest and hovered, pressed and disabled, each stated for its state.
+#[test]
+fn tahoe_s_flat_button_takes_its_measured_labels() {
+    use crate::next::style::TextStated;
+    for (scheme, [rest, pressed, disabled]) in [
+        (Scheme::Light, [0x0000_0080_u32, 0x0000_00d9, 0x0000_0040]),
+        (Scheme::Dark, [0xffff_ff8c, 0xffff_ffd9, 0xffff_ff40]),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+        for (state, want) in [
+            (WidgetState::NONE, rest),
+            (WidgetState::HOVER, rest),
+            (WidgetState::PRESSED, pressed),
+            (WidgetState::DISABLED, disabled),
+        ] {
+            let label = theme.button.label(ButtonQuery::flat().state(state));
+            assert_eq!(
+                label.color.to_srgb8(),
+                want.to_be_bytes(),
+                "{scheme:?} {state:?}"
+            );
+            if state != WidgetState::NONE {
+                assert!(
+                    label.from_state.contains(TextStated::COLOR),
+                    "{scheme:?} {state:?}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
     for (preset, theme) in every_theme() {
@@ -1363,6 +1396,57 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
                 "{scheme:?} {how}"
             );
             assert_ne!(pressed(&theme), measured, "{scheme:?} {how}");
+        }
+    }
+}
+
+/// The selected tab: on macos-tahoe its fill measured on the default accent
+/// stands under that accent and drops to the accent's fill under another,
+/// given explicitly or by a palette; on macos-monterey, off the accent, the
+/// measured fill and label stand under every accent.
+#[test]
+fn the_selected_tab_s_fill_follows_the_accent_where_it_is_drawn_on_it() {
+    let selected = WidgetState::SELECTED;
+    for (preset, scheme) in every_scheme() {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(preset, scheme);
+        let theme = || Theme::preset(preset);
+        let alone = theme().resolve(&ctx);
+        let red = theme().with_accent(hex(RED)).resolve(&ctx);
+        let palette = theme().with_palette(distinct_palette(scheme)).resolve(&ctx);
+        match preset {
+            Preset::MacosTahoe => {
+                assert!(c.tab_selected.is_some(), "{scheme:?}");
+                assert_eq!(
+                    solid(&alone.tab.tab(selected).fill),
+                    c.tab_selected,
+                    "{scheme:?}"
+                );
+                for (how, other) in [("explicit", &red), ("palette", &palette)] {
+                    assert_eq!(
+                        solid(&other.tab.tab(selected).fill),
+                        Some(other.colors.accent.fill),
+                        "{scheme:?} {how}"
+                    );
+                    assert_ne!(
+                        solid(&other.tab.tab(selected).fill),
+                        c.tab_selected,
+                        "{scheme:?} {how}"
+                    );
+                }
+            }
+            _ => {
+                let measured = c.tab_selected_off_accent;
+                assert!(measured.is_some(), "{preset:?} {scheme:?}");
+                for (how, other) in [("alone", &alone), ("explicit", &red), ("palette", &palette)] {
+                    assert_eq!(
+                        solid(&other.tab.tab(selected).fill)
+                            .zip(Some(other.tab.label(selected).color)),
+                        measured,
+                        "{preset:?} {scheme:?} {how}"
+                    );
+                }
+            }
         }
     }
 }

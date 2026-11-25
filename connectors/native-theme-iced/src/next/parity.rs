@@ -2949,8 +2949,9 @@ const DIFFERENCES: &[Difference] = &[
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
     // the macOS presets state a hovered source-list row's fill transparent (`sidebar.item(HOVER)`),
-    // and its items' label as the source-list row's measured rest label (os-probe run
-    // 45252258079, `*.normal.source_list_row`), where 0.7.2 read labelColor.
+    // and its items' label as the source-list row's measured rest label over the material's
+    // Reduce Transparency rendering (os-probe run 45231684209, `*.normal.source_list_row`), where
+    // 0.7.2 read labelColor; the panel's fill is 0.7.2's, that rendering.
     aw(
         "aw::sidebar",
         MACOS,
@@ -2963,11 +2964,6 @@ const DIFFERENCES: &[Difference] = &[
         &[
             &SIDEBAR_PANEL,
             &[
-                set(
-                    at!(NONE),
-                    Field::Background,
-                    home!(fill, sidebar.container(NONE)),
-                ),
                 set(
                     at!(NONE),
                     Field::TextColor,

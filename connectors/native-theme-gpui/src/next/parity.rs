@@ -596,6 +596,40 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "variants::ghost_button",
+        presets: &["ios-13"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 ios-13 \
+                 states as UIKit's plain button draws it, with no fill, transparent \
+                 (docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat] absent at rest and pressed, iOS host run 41020880059; hovered \
+                 as at rest), where 0.7.2 gives the push button's hovered and pressed fills to \
+                 every variant; secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["ios-13"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 ios-13 states the plain button's \
+                 own, no fill, as at rest (docs/facts/ios/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, `button.body.fill` variants [flat] absent at rest; no hovered plain \
+                 button measured), so the secondary_hover slot, its token and its stored config \
+                 string are button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other \
+                 leaf of the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["ios-13"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 ios-13 states the plain button's \
+                 own, no fill (docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, \
+                 `button.body.fill` states [pressed] variants [flat] absent, iOS host run \
+                 41020880059), so the secondary_active slot, its token and its stored config \
+                 string are button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every \
+                 other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
         presets: &["adwaita"],
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
                  secondary_foreground, the flat button's home (button.body(HOVER; \
@@ -962,8 +996,9 @@ const DIFFERENCES: &[Difference] = &[
         leaf: SIDEBAR_TEXT,
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "0.7.2's sidebar text is labelColor; the 0.8.0 presets state the source-list \
-                 row's measured rest label, #424242 / #ececec on macos-monterey, #000000 / \
-                 #ffffff on macos-tahoe (os-probe run 45252258079, Reduce Transparency off, \
+                 row's measured rest label over the material's Reduce Transparency rendering, \
+                 #494949 / #ebebeb on macos-monterey, #000000 / #ffffff on macos-tahoe \
+                 (os-probe run 45231684209, Reduce Transparency on, \
                  `*.normal.source_list_row` `label`; native-theme/tests/next_homes.toml, row \
                  sidebar.font.color, a listed difference), so the sidebar_foreground slot, its \
                  token and its stored config string are sidebar.item_label(NONE)'s colour; \

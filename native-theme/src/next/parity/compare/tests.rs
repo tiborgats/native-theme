@@ -909,6 +909,38 @@ fn a_difference_listed_as_continuous_corners_matches_only_them() -> TestResult {
     Ok(())
 }
 
+const LISTED_UNSTATED_WITHOUT_A_BIT: &str = r#"
+[[row]]
+key = "s.hover_size"
+homes = ["button.label(HOVER).defined_size"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+"#;
+
+#[test]
+fn a_difference_listed_as_unstated_under_a_state_at_a_property_without_a_bit_is_an_error()
+-> TestResult {
+    // `defined_size` has no `from_state` bit: "unstated" under a state cannot be tested there.
+    let old = json!({ "s": { "hover_size": 13.0 } });
+    let result = compare_rows(
+        &rows(LISTED_UNSTATED_WITHOUT_A_BIT)?,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+    );
+    let Err(e) = result else {
+        return Err(format!("no error: {result:?}").into());
+    };
+    assert!(
+        e.contains("s.hover_size") && e.contains("no `from_state` bit"),
+        "{e}"
+    );
+    Ok(())
+}
+
 #[test]
 fn a_difference_listed_as_unstated_under_a_state_needs_no_from_state_bit() -> TestResult {
     // The unresolved theme states the key, but the listed difference says 0.8.0 states nothing

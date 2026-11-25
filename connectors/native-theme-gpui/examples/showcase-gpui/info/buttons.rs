@@ -926,9 +926,10 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 /// `info` with what a checked tool Button paints, in place of what
 /// [`native_toolbar`] claims for an unchecked one:
 /// `geometry::toolbar_button_checked`'s fill and text where `native` states
-/// the toolbar's checked fill; else, as [`native_ghost_selected`] says, the
-/// variant's active colour as the selected fill, which that builder sets
-/// too, under the variant's one foreground; and its pen,
+/// the toolbar's checked fill; else the toolbar's pressed fill, else the push
+/// button's, as that builder falls back, else, as [`native_ghost_selected`]
+/// says, the variant's active colour as the selected fill, each under the
+/// variant's one foreground; and its pen,
 /// `toolbar.button_checked_border_color`, where `native` states it. Upstream
 /// draws no hover or press style on a selected Button, so it claims no hover
 /// or pressed fill, and the edge stays the rest one under the pointer.
@@ -963,7 +964,15 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 "button_active_background",
                 native.and_then(|r| r.toolbar.button_active_background),
                 "native-theme-gpui/variants.rs:173",
-            ) {
+            )
+            .or_else(|| {
+                stated_claim(
+                    "selected bg",
+                    "active_background",
+                    native.and_then(|r| r.button.active_background),
+                    "native-theme-gpui/geometry.rs:2074",
+                )
+            }) {
                 Some(active) => info.color(active),
                 None => info.color(claim(
                     "selected bg",

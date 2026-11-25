@@ -116,7 +116,10 @@
 //!   and 42272240639, `layers-key-styles_b.toml` and
 //!   `layers-key-image_b.toml` `*-flat.fill`, `*-flat.stroke` absent), and on
 //!   `macos-tahoe` the checked fills over its absent fill, as no checked
-//!   borderless button was measured;
+//!   borderless button was measured; on `macos-tahoe` the borderless
+//!   button's measured labels over the push button's, at rest, hovered,
+//!   pressed and disabled (`layers-key-styles_b.toml` `*-flat.label`), the
+//!   checked labels over them as over its fill;
 //! - the check box's and the radio button's indicator: the checked fill and
 //!   outline over the hovered fill, as 0.7.2's egui widgets draw a checked
 //!   box or circle in its checked look whatever the pointer does (the
@@ -291,6 +294,9 @@ struct SchemeColors {
     /// A disabled checked toggle's label; `None` where the generation states
     /// none.
     button_checked_disabled_foreground: Option<Color>,
+    /// The borderless button's labels at rest (and hovered), pressed and
+    /// disabled; `None` where it takes the push button's.
+    button_flat_foreground: Option<(Color, Color, Color)>,
     checkbox_unchecked: Color,
     checkbox_unchecked_border: Color,
     /// The unchecked box's edge pressed; `None` where it is the rest one.
@@ -501,6 +507,7 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     button_checked_mix_with: None,
     button_checked_foreground: None,
     button_checked_disabled_foreground: None,
+    button_flat_foreground: None,
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, the unchecked
     // box measured white on macOS 14 and 15 (os-probe run 40348854007,
     // renders/aqua/checkbox-regular-off@2x.png; the radio's the same)
@@ -648,9 +655,11 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // desktop, os-probe run 45252258079, macOS 15, Reduce Transparency off,
     // `*.normal.source_list_row` `fill`), stated in its opaque rendering with Reduce Transparency
     // on, #f6f6f6 (measured, os-probe run 40320895749), as the model has no material form whose
-    // blur and tint a source states; its label #424242 (run 45252258079, `label`)
+    // blur and tint a source states; its label over that rendering #494949 (measured, os-probe
+    // run 45231684209, macOS 15, Reduce Transparency on, `aqua.normal.source_list_row` `fill`
+    // #f6f6f6, `label`, `ink`)
     sidebar_background: srgb8(0xf6f6_f6ff),
-    sidebar_foreground: srgb8(0x4242_42ff),
+    sidebar_foreground: srgb8(0x4949_49ff),
     // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent, over the sidebar's material on
     // the runners' black desktop (measured, os-probe run 45252258079, macOS 15, Reduce
     // Transparency off, `*.pressed.source_list_row` `fill`)
@@ -808,6 +817,7 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     button_checked_mix_with: None,
     button_checked_foreground: None,
     button_checked_disabled_foreground: None,
+    button_flat_foreground: None,
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, white at alpha
     // 55/255 at the box's centre, a gradient from 40/255 at its top to 71/255 at its bottom, not
     // controlBackgroundColor (measured, os-probe run 40348854007,
@@ -954,9 +964,11 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // what lies behind the window (#424242 over the runners' black desktop, os-probe run
     // 45252258079, macOS 15, Reduce Transparency off, `*.normal.source_list_row` `fill`), stated
     // in its opaque rendering with Reduce Transparency on, #383838 (measured, os-probe run
-    // 40320895749); its label #ececec (run 45252258079, `label`)
+    // 40320895749); its label over that rendering #ebebeb (measured, os-probe run 45231684209,
+    // macOS 15, Reduce Transparency on, `darkAqua.normal.source_list_row` `fill` #383838,
+    // `label`, `ink`)
     sidebar_background: srgb8(0x3838_38ff),
-    sidebar_foreground: srgb8(0xecec_ecff),
+    sidebar_foreground: srgb8(0xebeb_ebff),
     // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent, over the sidebar's material on
     // the runners' black desktop (measured, os-probe run 45252258079, macOS 15, Reduce
     // Transparency off, `*.pressed.source_list_row` `fill`)
@@ -1125,6 +1137,12 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `os-probe-macos-26/layers-key-push.toml`, `key.push.aqua.disabled.*-toggle_on.label`; under
     // the red accent too, `tiebreak-derivations.toml`, `derivation.checked_disabled_label_light_*`)
     button_checked_disabled_foreground: Some(srgb8(0xffff_ff20)),
+    // the borderless button's labels: #00000080 at rest, #000000d9 pressed, #00000040 disabled
+    // (measured, os-probe run 41006842699, `os-probe-macos-26/layers-key-styles_b.toml`,
+    // `key.styles_b.aqua.{normal,pressed,disabled}.*-flat.label`; `docs/facts/macos/button.toml`
+    // on `v0.8.0-rc1` at `78ee0efd`, `button.label.text.fill` preset:macos-tahoe scheme:light
+    // variants [flat], row MAC-B01)
+    button_flat_foreground: Some((srgb8(0x0000_0080), srgb8(0x0000_00d9), srgb8(0x0000_0040))),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #00000019 (measured, renders/aqua/checkbox-regular-off@2x.png;
     // probe); the probe's window is never ordered front, so this is the box of a window that is not
@@ -1261,7 +1279,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // what lies behind the window (#dddddd over the runners' black desktop, os-probe run
     // 45252258079, macOS 26, Reduce Transparency off, `*.normal.source_list_row` `fill`), stated
     // in its opaque rendering with Reduce Transparency on, #f6f6f6 (measured, os-probe run
-    // 40320895749, macOS 26); its label #000000 (run 45252258079, `label`)
+    // 40320895749, macOS 26); its label over that rendering #000000 (measured, os-probe run
+    // 45231684209, macOS 26, Reduce Transparency on, `aqua.normal.source_list_row` `fill`
+    // #f6f6f6, `label`, `ink`)
     sidebar_background: srgb8(0xf6f6_f6ff),
     sidebar_foreground: srgb8(0x0000_00ff),
     // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent, over the sidebar's material on
@@ -1426,6 +1446,12 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // facts' tolerance of 2 levels; under the red accent too, `tiebreak-derivations.toml`,
     // `derivation.checked_disabled_label_dark_*`)
     button_checked_disabled_foreground: Some(srgb8(0xffff_ff20)),
+    // the borderless button's labels: #ffffff8c at rest, #ffffffd9 pressed, #ffffff40 disabled
+    // (measured, os-probe run 41006842699, `os-probe-macos-26/layers-key-styles_b.toml`,
+    // `key.styles_b.darkAqua.{normal,pressed,disabled}.*-flat.label`;
+    // `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`, `button.label.text.fill`
+    // preset:macos-tahoe scheme:dark variants [flat], row MAC-B01)
+    button_flat_foreground: Some((srgb8(0xffff_ff8c), srgb8(0xffff_ffd9), srgb8(0xffff_ff40))),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #ffffff19 (measured,
     // renders/darkAqua/checkbox-regular-off@2x.png; probe); the probe's window is never ordered
@@ -1564,7 +1590,9 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // what lies behind the window (#424242 over the runners' black desktop, os-probe run
     // 45252258079, macOS 26, Reduce Transparency off, `*.normal.source_list_row` `fill`), stated
     // in its opaque rendering with Reduce Transparency on, #383838 (measured, os-probe run
-    // 40320895749, macOS 26); its label #ffffff (run 45252258079, `label`)
+    // 40320895749, macOS 26); its label over that rendering #ffffff (measured, os-probe run
+    // 45231684209, macOS 26, Reduce Transparency on, `darkAqua.normal.source_list_row` `fill`
+    // #383838, `label`, `ink`)
     sidebar_background: srgb8(0x3838_38ff),
     sidebar_foreground: srgb8(0xffff_ffff),
     // `sidebar.item(PRESSED).fill`: #219bff, on the default accent, over the sidebar's material on
@@ -3176,7 +3204,9 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// keeps its colour hovered, takes
 /// [`SchemeColors::button_pressed_foreground`] pressed where stated, and is
 /// the disabled text when disabled (`defaults.disabled_text_color`). The flat
-/// variant is AppKit's borderless button, with no outline in any state.
+/// variant is AppKit's borderless button, with no outline in any state and
+/// no fill but the checked one, lettered in its measured labels where the
+/// generation states them ([`SchemeColors::button_flat_foreground`]).
 fn button(
     c: &SchemeColors,
     g: &Generation,
@@ -3312,6 +3342,21 @@ fn button(
                 c.button_pressed_foreground.unwrap_or(c.button_foreground),
             )],
         )
+        // The borderless button's own labels where the generation states them, at rest and
+        // hovered, pressed, and disabled (below); before the checked rules, as no checked
+        // borderless button was measured, as for its fill.
+        .rules(
+            c.button_flat_foreground
+                .into_iter()
+                .flat_map(|_| [flat(WidgetState::NONE), flat(WidgetState::HOVER)]),
+            c.button_flat_foreground
+                .map(|(rest, _, _)| TextProp::Color(rest)),
+        )
+        .rules(
+            c.button_flat_foreground.map(|_| flat(WidgetState::PRESSED)),
+            c.button_flat_foreground
+                .map(|(_, pressed, _)| TextProp::Color(pressed)),
+        )
         .rules(
             c.button_checked_foreground
                 .map(|_| RuleSelector::on(WidgetState::CHECKED)),
@@ -3321,6 +3366,12 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
+        )
+        .rules(
+            c.button_flat_foreground
+                .map(|_| flat(WidgetState::DISABLED)),
+            c.button_flat_foreground
+                .map(|(_, _, disabled)| TextProp::Color(disabled)),
         )
         .rules(
             c.button_checked_disabled_foreground

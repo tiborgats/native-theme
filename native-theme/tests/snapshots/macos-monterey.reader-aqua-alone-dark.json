@@ -1720,7 +1720,7 @@
     "item_label": {
       "base": {
         "family": "SF Pro",
-        "color": "#ececec",
+        "color": "#ebebeb",
         "size_px": 13.0,
         "weight": 400,
         "style": "normal",
@@ -1734,7 +1734,7 @@
             "hover"
           ],
           "item_label": {
-            "color": "#ececec"
+            "color": "#ebebeb"
           }
         },
         {

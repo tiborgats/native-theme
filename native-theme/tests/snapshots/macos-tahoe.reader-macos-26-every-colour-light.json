@@ -473,6 +473,30 @@
           }
         },
         {
+          "variant": "flat",
+          "label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#000000d9"
+          }
+        },
+        {
           "states": [
             "checked"
           ],
@@ -492,6 +516,15 @@
           ],
           "label": {
             "color": "#127624"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#00000040"
           }
         },
         {

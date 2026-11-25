@@ -278,6 +278,86 @@ fn the_segments_are_parted_by_the_separator_s_line() {
     }
 }
 
+/// The flat button: at rest no fill and no shadow; hovered, pressed and
+/// checked the window text at libadwaita's 7, 16 and 10 %, the toolbar's
+/// buttons' fills; checked and hovered or pressed at 13 and 19 %; each
+/// stated for its state.
+#[test]
+fn a_flat_button_lays_the_window_text_s_layers() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
+        let flat = |state| theme.button.body(ButtonQuery::flat().state(state));
+        let rest = flat(WidgetState::NONE);
+        assert_eq!(rest.fill, Paint::None);
+        assert_eq!(rest.shadows, None);
+        assert!(rest.stated.contains(PartStated::FILL));
+        let text = c.row_foreground;
+        for (state, alpha) in [
+            (WidgetState::HOVER, TOOLBAR_BUTTON_HOVER_ALPHA),
+            (WidgetState::PRESSED, TOOLBAR_BUTTON_PRESSED_ALPHA),
+            (WidgetState::CHECKED, TOOLBAR_BUTTON_CHECKED_ALPHA),
+            (
+                WidgetState::CHECKED | WidgetState::HOVER,
+                FLAT_CHECKED_HOVER_ALPHA,
+            ),
+            (
+                WidgetState::CHECKED | WidgetState::PRESSED,
+                FLAT_CHECKED_PRESSED_ALPHA,
+            ),
+        ] {
+            let body = flat(state);
+            assert_eq!(
+                solid(&body.fill).map(Color::to_srgb8),
+                Some(text.mul_alpha(alpha).to_srgb8()),
+                "{state:?}"
+            );
+            assert!(body.from_state.contains(PartStated::FILL), "{state:?}");
+        }
+        for state in [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+        ] {
+            assert_eq!(
+                flat(state).fill,
+                theme.toolbar.button(state).fill,
+                "{state:?}"
+            );
+        }
+    }
+}
+
+/// A disabled check, radio and off switch state their rest fill for
+/// `DISABLED`, the fade alone changing them; checked, each keeps its checked
+/// fill, the accent.
+#[test]
+fn a_disabled_control_states_its_rest_fill_and_a_checked_one_keeps_the_accent() {
+    use crate::next::style::PartStated;
+    for theme in both_schemes() {
+        let disabled = WidgetState::DISABLED;
+        let checked = WidgetState::CHECKED;
+        let parts: [(&str, &dyn Fn(WidgetState) -> PartStyle); 3] = [
+            ("check", &|s| theme.checkbox.indicator(s)),
+            ("radio", &|s| theme.radio.indicator(s)),
+            ("switch", &|s| theme.switch.track(s)),
+        ];
+        for (name, part) in parts {
+            let off = part(disabled);
+            assert_eq!(off.fill, part(WidgetState::NONE).fill, "{name}");
+            assert!(off.from_state.contains(PartStated::FILL), "{name}");
+            assert_eq!(
+                part(disabled | checked).fill,
+                Paint::Solid(theme.colors.accent.fill),
+                "{name}"
+            );
+            assert_eq!(part(disabled | checked).fill, part(checked).fill, "{name}");
+        }
+    }
+}
+
 #[test]
 fn a_checked_toolbar_button_keeps_its_fill() {
     for theme in both_schemes() {
@@ -530,8 +610,10 @@ fn a_palette_states_its_roles() {
 }
 
 /// The widgets the preset draws in a colour a slot replaces take the slot's
-/// colour; the fills the preset states as libadwaita's layers over its own
-/// window, the placeholder and the switch's hover colour keep the preset's.
+/// colour, the toolbar's and the flat button's layers of the window text
+/// the palette's foreground at libadwaita's alphas; the fills the preset
+/// states as libadwaita's layers over its own window, the placeholder and
+/// the switch's hover colour keep the preset's.
 #[test]
 fn a_palette_recolours_the_widgets_of_its_colours() {
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -606,6 +688,33 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
             theme.input.field(WidgetState::FOCUSED).stroke,
             Stroke::uniform(INPUT_BORDER_WIDTH, ring_of(p.accent, scheme))
         );
+        for (state, alpha) in [
+            (WidgetState::HOVER, TOOLBAR_BUTTON_HOVER_ALPHA),
+            (WidgetState::PRESSED, TOOLBAR_BUTTON_PRESSED_ALPHA),
+            (WidgetState::CHECKED, TOOLBAR_BUTTON_CHECKED_ALPHA),
+            (
+                WidgetState::CHECKED | WidgetState::HOVER,
+                FLAT_CHECKED_HOVER_ALPHA,
+            ),
+            (
+                WidgetState::CHECKED | WidgetState::PRESSED,
+                FLAT_CHECKED_PRESSED_ALPHA,
+            ),
+        ] {
+            let layer = Some(p.foreground.mul_alpha(alpha));
+            assert_eq!(
+                solid(&theme.button.body(ButtonQuery::flat().state(state)).fill),
+                layer,
+                "{scheme:?} flat {state:?}"
+            );
+            if !state.contains(WidgetState::CHECKED) || state == WidgetState::CHECKED {
+                assert_eq!(
+                    solid(&theme.toolbar.button(state).fill),
+                    layer,
+                    "{scheme:?} toolbar {state:?}"
+                );
+            }
+        }
         let c = constants(scheme);
         assert_eq!(
             solid(&theme.button.body(ButtonQuery::new(none)).fill),

@@ -48,6 +48,53 @@ fn a_primary_button_keeps_the_accent_until_disabled() {
     }
 }
 
+/// The flat button, M3's text button: no container and no outline at rest;
+/// hovered and pressed primary at the state layer's opacities, disabled the
+/// on-surface container at the text button's disabled opacity; its label
+/// primary, disabled on-surface at the disabled content opacity; each stated
+/// for its state.
+#[test]
+fn a_flat_button_is_the_text_button() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes().iter().zip([LIGHT, DARK]) {
+        let query = |state| ButtonQuery::flat().state(state);
+        let rest = theme.button.body(query(WidgetState::NONE));
+        assert_eq!(rest.fill, Paint::Solid(TRANSPARENT));
+        assert_eq!(rest.stroke, Stroke::None);
+        for (state, want) in [
+            (
+                WidgetState::HOVER,
+                c.primary.mul_alpha(HOVER_STATE_LAYER_OPACITY),
+            ),
+            (
+                WidgetState::PRESSED,
+                c.primary.mul_alpha(PRESSED_STATE_LAYER_OPACITY),
+            ),
+            (
+                WidgetState::DISABLED,
+                c.on_surface
+                    .mul_alpha(TEXT_BUTTON_DISABLED_CONTAINER_OPACITY),
+            ),
+        ] {
+            let body = theme.button.body(query(state));
+            assert_eq!(body.fill, Paint::Solid(want), "{state:?}");
+            assert_eq!(body.stroke, Stroke::None, "{state:?}");
+            assert!(body.from_state.contains(PartStated::FILL), "{state:?}");
+        }
+        for state in [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED] {
+            assert_eq!(
+                theme.button.label(query(state)).color,
+                c.primary,
+                "{state:?}"
+            );
+        }
+        assert_eq!(
+            theme.button.label(query(WidgetState::DISABLED)).color,
+            c.on_surface.mul_alpha(DISABLED_CONTENT_OPACITY)
+        );
+    }
+}
+
 /// The focused text field's outline wins over the hovered one.
 #[test]
 fn a_focused_field_keeps_its_outline_under_the_pointer() {

@@ -29,7 +29,9 @@
 //! and `popover_bg_color`, the card's, the dialog's and the popover's
 //! panels; `foreground` is every `*_fg_color` of those surfaces, the window
 //! text the preset letters its widgets in, and the tooltip's text with
-//! `tooltip_bg` (§7: one text colour for the eight surfaces); `accent` is
+//! `tooltip_bg` (§7: one text colour for the eight surfaces), and with it the
+//! toolbar's and the flat button's hovered, pressed and checked layers of
+//! the window text (`currentColor` at 7, 16 and 10 %); `accent` is
 //! `accent_bg_color`, the accent's fill and the tab's active indicator, from
 //! which the focus ring is derived again through `adw_standalone`; `error`,
 //! `warning` and `success` are `destructive_bg_color`, `warning_bg_color`
@@ -750,6 +752,22 @@ const PRIMARY_BUTTON_FOCUS_RING_OFFSET: f32 = 1.0;
 /// transparent)` (_checks.scss:58, _switch.scss:45 at libadwaita 1.10.0).
 const CHECKED_HOVER_LAYER_ALPHA: f32 = 0.1;
 
+/// The alpha of the window text a hovered toolbar or flat button is filled
+/// with: $hover_color, `color-mix(in srgb, currentColor 7%, transparent)`
+/// (_colors.scss:268, _buttons.scss:250-251 at libadwaita 1.10.0;
+/// platform-facts.md (§2.13)).
+const TOOLBAR_BUTTON_HOVER_ALPHA: f32 = 0.07;
+
+/// The alpha of the window text a pressed toolbar or flat button is filled
+/// with: $active_color, currentColor 16 % (_colors.scss:269,
+/// _buttons.scss:254-256 at libadwaita 1.10.0; platform-facts.md (§2.13)).
+const TOOLBAR_BUTTON_PRESSED_ALPHA: f32 = 0.16;
+
+/// The alpha of the window text a checked toolbar or flat button is filled
+/// with: $selected_color, currentColor 10 % (_colors.scss:270,
+/// _buttons.scss:259-260 at libadwaita 1.10.0; platform-facts.md (§2.13)).
+const TOOLBAR_BUTTON_CHECKED_ALPHA: f32 = 0.1;
+
 /// The alpha of the window text a hovered checked flat button is filled
 /// with: `background: $selected_hover_color` (_buttons.scss:262-263 at
 /// libadwaita 1.10.0), `color-mix(in srgb, currentColor 13%, transparent)`
@@ -1427,6 +1445,9 @@ fn lay_palette_over(c: &mut SchemeColors, p: &Palette, scheme: Scheme) {
     c.tooltip_background = p.tooltip_bg;
     c.window_foreground = p.foreground;
     c.row_foreground = p.foreground;
+    c.toolbar_button_hover = p.foreground.mul_alpha(TOOLBAR_BUTTON_HOVER_ALPHA);
+    c.toolbar_button_pressed = p.foreground.mul_alpha(TOOLBAR_BUTTON_PRESSED_ALPHA);
+    c.toolbar_button_checked = p.foreground.mul_alpha(TOOLBAR_BUTTON_CHECKED_ALPHA);
     c.tooltip_foreground = p.foreground;
     c.window_foreground_muted = p.foreground_muted;
     c.window_border = p.border;

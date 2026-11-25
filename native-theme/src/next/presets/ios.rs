@@ -1451,7 +1451,8 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// default tint, the one tint the measurement drew (`docs/facts/ios/button.toml`
 /// on `v0.8.0-rc1` at `78ee0efd`): they do not follow the accent, and under
 /// another accent a checked button keeps the default tint's blue. The flat
-/// variant is UIKit's plain button, with no outline in any state.
+/// variant is UIKit's plain button, with no outline in any state and no fill
+/// but when checked, where it draws the toggle's selected fill.
 fn button(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -1490,6 +1491,23 @@ fn button(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.button_pressed), rest_border],
         )
+        // The flat variant, UIKit's plain button, draws no fill at rest, pressed and disabled
+        // (measured, iOS host run 41020880059, `ios-host-macos-15/analysis.toml`
+        // `cells.<scheme>.plain.<size>.{normal,highlighted,disabled}.fill` absent;
+        // `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`, `button.body.fill`
+        // preset:ios-13 variants [flat], rows B-1, B-6, B-14); hovered as at rest, as no hovered
+        // plain button was measured and the push button's hover fill is 0.7.2's uncited push
+        // button value. Before the checked rules: a checked plain button draws the toggle's
+        // selected fill (the same facts, `button.body.fill` states [checked] variants
+        // [flat, toggle], row B-7); disabled below, after the push button's disabled fill.
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+            ],
+            [PartProp::Fill(Paint::None)],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.button_checked)],
@@ -1503,6 +1521,7 @@ fn button(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_fill)],
         )
+        .rule(flat(WidgetState::DISABLED), [PartProp::Fill(Paint::None)])
         // The flat variant, UIKit's plain button, draws no outline, after the push button's rules
         // so that its own win (measured, iOS host run 41020880059, analysis.toml
         // `cells.<scheme>.plain.<size>.normal.stroke` absent; `docs/facts/ios/button.toml` on

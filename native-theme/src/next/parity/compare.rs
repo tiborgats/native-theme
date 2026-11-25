@@ -493,13 +493,20 @@ fn compare_row(
             && value.is_null()
             && under_a_state(home, row.null_reference.as_deref())?
         {
-            if from_state_at(home, new)? == Some(true) {
-                mismatches.push(Mismatch {
+            match from_state_at(home, new)? {
+                Some(true) => mismatches.push(Mismatch {
                     key: row.key.clone(),
                     home: home.clone(),
                     old: "listed: unstated, no rule for the state, `from_state` clear".to_owned(),
                     new: format!("{}, `from_state` set", read(home, new, snapshot_context)?),
-                });
+                }),
+                Some(false) => {}
+                None => {
+                    return Err(format!(
+                        "the difference value null at `{home}`, a property with no `from_state` \
+                         bit to test it by"
+                    ));
+                }
             }
             continue;
         }
