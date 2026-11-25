@@ -1057,6 +1057,27 @@ const DIFFERENCES: &[Difference] = &[
                  overrides alike",
     },
     Difference {
+        leaf: SCROLLBAR_THUMB,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's thumb at rest is the muted text (scrollbar.thumb_color unstated, \
+                 defaults.muted_color); the 0.8.0 presets state no fill for the overlay knob at \
+                 rest, which AppKit does not draw until the view scrolls and which no source \
+                 states (docs/v0.8.0-spec.md §1, stated and unstated values; \
+                 native-theme/tests/next_homes.toml, row scrollbar.thumb_color, a listed \
+                 difference), so the scrollbar_thumb slot, its token and its stored config \
+                 string are gpui-component's own of the scheme (rest_thumb_fill, spec §10, \
+                 rule 0); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: SCROLLBAR_THUMB_AT_REST,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 presets state no fill for the overlay knob at rest (as \
+                 SCROLLBAR_THUMB's entry), where 0.7.2 gives the muted text; so the geometry's \
+                 thumb is gpui-component's own scrollbar_thumb of the scheme (rest_thumb_fill, \
+                 spec §10, rule 0), in the compared ScrollbarGeometry and in the base overrides \
+                 alike",
+    },
+    Difference {
         leaf: SIDEBAR_TEXT,
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "0.7.2's sidebar text is labelColor; the 0.8.0 presets state the source-list \
@@ -1126,6 +1147,28 @@ const SCROLLBAR_THUMB_HOVER: &str = "to_theme: scrollbar_thumb_hover";
 /// compared by [`thumb_states_of`], in the compared geometry and in the
 /// base overrides alike.
 const SCROLLBAR_THUMB_STATES: &str = "ScrollbarGeometry: the hovered and the dragged thumb";
+
+/// The leaf of [`DIFFERENCES`]' entry for the scroll bar thumb at rest: the
+/// `ThemeColor` slot `scrollbar_thumb`, its token and its stored config
+/// string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const SCROLLBAR_THUMB: &str = "to_theme: scrollbar_thumb";
+
+/// The leaf of [`DIFFERENCES`]' entry for the scroll bar's thumb at rest in
+/// the geometry: `ScrollbarGeometry`'s `thumb`, compared by
+/// [`rest_thumb_own_of`], in the compared geometry and in the base overrides
+/// alike.
+const SCROLLBAR_THUMB_AT_REST: &str = "ScrollbarGeometry: the thumb at rest";
+
+/// gpui-component's own `scrollbar_thumb` of the theme's scheme where the
+/// theme leaves the thumb at rest (`scrollbar.thumb(UNFOCUSED_VIEW)`, as
+/// `thumb_at_rest` reads it) without a fill, the form of
+/// [`SCROLLBAR_THUMB`]'s and [`SCROLLBAR_THUMB_AT_REST`]'s entries; `None`
+/// where the theme states one.
+fn rest_thumb_own_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    use native_theme::next::{PartStated, WidgetState};
+    let thumb = new.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
+    (!thumb.stated.contains(PartStated::FILL)).then(|| super::upstream_colors(new).scrollbar_thumb)
+}
 
 /// A part's fill where a rule states it for the queried state, as
 /// [`super::state_fill_of`] reads it; `None` where none does, or where it
@@ -1198,7 +1241,8 @@ fn slider_thumb_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
 }
 
 /// A `ThemeColor` slot whose listed difference is the colour the connector
-/// reads at one home of the preset, compared by [`slot_as_old`]: the leaf of
+/// reads at one home of the preset, or gpui-component's own where that home
+/// is unstated, compared by [`slot_as_old`]: the leaf of
 /// its entries, what its failure names, that colour, and the slot's colour,
 /// token and stored config string, read and copied.
 struct StatedSlot {
@@ -1216,6 +1260,21 @@ struct StatedSlot {
 
 /// The slots [`DIFFERENCES`] lists as a colour stated at one home.
 const STATED_SLOTS: &[StatedSlot] = &[
+    StatedSlot {
+        leaf: SCROLLBAR_THUMB,
+        what: "gpui-component's own scroll bar thumb at rest",
+        of: rest_thumb_own_of,
+        color: |c| c.scrollbar_thumb,
+        token: |t| t.scrollbar_thumb,
+        config: |c| c.scrollbar_thumb.clone(),
+        copy: |theme, from| {
+            theme.colors.scrollbar_thumb = from.colors.scrollbar_thumb;
+            theme.tokens.scrollbar_thumb = from.tokens.scrollbar_thumb;
+        },
+        copy_config: |config, from| {
+            config.scrollbar_thumb = from.scrollbar_thumb.clone();
+        },
+    },
     StatedSlot {
         leaf: SCROLLBAR_THUMB_HOVER,
         what: "the hovered scroll bar thumb's stated fill",
@@ -2170,7 +2229,19 @@ fn compare_scrollbar(
         o.track_active_border,
         n.track_active_border,
     );
-    report.leaf("ScrollbarGeometry.thumb", o.thumb, n.thumb);
+    match report.listed(SCROLLBAR_THUMB_AT_REST) {
+        Some(listed) => {
+            report.count(SCROLLBAR_THUMB_AT_REST);
+            if o.thumb == n.thumb || rest_thumb_own_of(new) != Some(n.thumb) {
+                report.failures.push(format!(
+                    "{}: {SCROLLBAR_THUMB_AT_REST}: the listed difference ({}) no longer \
+                     describes it: 0.7.2 {:?}, 0.8.0 {:?}",
+                    report.label, listed.reason, o.thumb, n.thumb
+                ));
+            }
+        }
+        None => report.leaf("ScrollbarGeometry.thumb", o.thumb, n.thumb),
+    }
     match report.listed(SCROLLBAR_THUMB_STATES) {
         Some(listed) => {
             report.count(SCROLLBAR_THUMB_STATES);
@@ -3225,8 +3296,12 @@ fn every_listed_difference_names_a_covered_preset() {
 /// are 0.7.2's. Where `thumbs` is given, the base overrides' hovered and
 /// dragged scroll bar thumb are given as 0.7.2's of the same scheme, or as a
 /// failure where they are not the 0.8.0 preset's ([`thumb_states_of`],
-/// [`DIFFERENCES`]' [`SCROLLBAR_THUMB_STATES`] entries) or are 0.7.2's. The
-/// styled theme itself is returned beside.
+/// [`DIFFERENCES`]' [`SCROLLBAR_THUMB_STATES`] entries) or are 0.7.2's.
+/// Where `rest_thumbs` is given, the base overrides' thumb at rest is given
+/// as 0.7.2's of the same scheme, or as a failure where it is not
+/// gpui-component's own ([`rest_thumb_own_of`], [`DIFFERENCES`]'
+/// [`SCROLLBAR_THUMB_AT_REST`] entries) or is 0.7.2's. The styled theme
+/// itself is returned beside.
 fn installed(
     cx: &gpui::App,
     row_hover_listed: Option<[Option<Hsla>; 2]>,
@@ -3234,6 +3309,7 @@ fn installed(
     stated: &[StatedPatch<'_>],
     handles: Option<SchemeHandles>,
     thumbs: Option<SchemeThumbs>,
+    rest_thumbs: Option<SchemeRestThumbs>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
@@ -3278,7 +3354,7 @@ fn installed(
         }
     };
     let nt = cx.try_global::<crate::NativeTheme>();
-    let thumbs_as_old = |mut g: crate::base_layer::ScrollbarGeometry| match thumbs {
+    let thumb_states_as_old = |mut g: crate::base_layer::ScrollbarGeometry| match thumbs {
         None => format!("{g:?}"),
         Some([light, dark]) => {
             let (old, homes) = if is_dark { dark } else { light };
@@ -3293,6 +3369,20 @@ fn installed(
                 )
             }
         }
+    };
+    let thumbs_as_old = |mut g: crate::base_layer::ScrollbarGeometry| {
+        if let Some([light, dark]) = rest_thumbs {
+            let (old, own) = if is_dark { dark } else { light };
+            if g.thumb == old || own != Some(g.thumb) {
+                return format!(
+                    "{SCROLLBAR_THUMB_AT_REST}: {:?}, not gpui-component's own {own:?} beside \
+                     0.7.2's {old:?}",
+                    g.thumb
+                );
+            }
+            g.thumb = old;
+        }
+        thumb_states_as_old(g)
     };
     let overrides = nt
         .and_then(|nt| crate::base_overrides_for(nt, is_dark, Some(styled)))
@@ -3334,6 +3424,11 @@ type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 /// 0.7.2's (`crate::base_layer::scrollbar_geometry`'s `thumb_hover` and
 /// `thumb_active`) and the 0.8.0 preset's homes ([`thumb_states_of`]).
 type SchemeThumbs = [((Hsla, Hsla), Option<(Hsla, Hsla)>); 2];
+
+/// The scroll bar thumb at rest of each scheme, light and dark: 0.7.2's
+/// (`crate::base_layer::scrollbar_geometry`'s `thumb`) and gpui-component's
+/// own where the 0.8.0 preset states none ([`rest_thumb_own_of`]).
+type SchemeRestThumbs = [(Hsla, Option<Hsla>); 2];
 
 /// A slot of [`STATED_SLOTS`] to patch in what is installed ([`installed`]):
 /// the 0.7.2 side's styled theme at the same point and the 0.8.0 preset's
@@ -3464,6 +3559,31 @@ fn apply_both(
         }
         None => None,
     };
+    let rest_thumbs = (next
+        && DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == SCROLLBAR_THUMB_AT_REST && d.presets.contains(&key)))
+    .then(|| {
+        let mut schemes = themes.iter().map(|(_, (old, _, _, new))| {
+            (
+                crate::base_layer::scrollbar_geometry(old).thumb,
+                rest_thumb_own_of(new),
+            )
+        });
+        match [schemes.next(), schemes.next()] {
+            [Some(light), Some(dark)] => Some([light, dark]),
+            _ => None,
+        }
+    });
+    let rest_thumbs = match rest_thumbs {
+        Some(Some(both)) => Some(both),
+        Some(None) => {
+            return Err(format!(
+                "{key}: {SCROLLBAR_THUMB_AT_REST}: a scheme is missing"
+            ));
+        }
+        None => None,
+    };
     let after = cx.update(|cx| {
         installed(
             cx,
@@ -3472,6 +3592,7 @@ fn apply_both(
             &stated(0),
             handles,
             thumbs,
+            rest_thumbs,
         )
     });
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
@@ -3483,6 +3604,7 @@ fn apply_both(
             &stated(1),
             handles,
             thumbs,
+            rest_thumbs,
         )
     });
     Ok([after, switched])

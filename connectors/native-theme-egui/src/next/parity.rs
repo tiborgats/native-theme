@@ -485,7 +485,30 @@ const DIFFERENCES: &[Difference] = &[
         Cause::Base,
         THUMB_UNSTATED,
     ),
+    // the base style's and the Scrollbar cell's `bg_fill` is the scroll bar's thumb
+    // (`base_style_from`, §5.9)
+    d(
+        "base",
+        &[M, T],
+        ".visuals.widgets.{inactive,open}.bg_fill",
+        Cause::Egui,
+        THUMB_AT_REST,
+    ),
+    d(
+        "Scrollbar",
+        &[M, T],
+        ".visuals.widgets.{inactive,open}.bg_fill",
+        Cause::Base,
+        THUMB_AT_REST,
+    ),
 ];
+
+/// The macOS overlay knob at rest, which no source states.
+const THUMB_AT_REST: &str = "the 0.8.0 macOS presets state no fill for the overlay scroller's \
+     knob at rest (scrollbar.thumb(NONE).fill), which AppKit does not draw until the view \
+     scrolls and no source states (docs/v0.8.0-spec.md §1, stated and unstated values; \
+     native-theme/tests/next_homes.toml, row scrollbar.thumb_color, a listed difference): egui's \
+     own (spec §10, rule 0); 0.7.2 gave the muted text";
 
 /// A card stroked as none (M2.FS4, measured).
 const CARD_NO_LINE: &str = "the 0.8.0 preset states the card's outline as none (M2.FS4, \
