@@ -8745,6 +8745,8 @@ fn home_keyed(id: &str) -> bool {
         || id.starts_with("basic.checkboxes.")
         || id.starts_with("basic.radios.")
         || id.starts_with("basic.switches.")
+        || id.starts_with("basic.drop_down.")
+        || id.starts_with("basic.text_area.")
 }
 
 /// Whether the list's id `id` names the Basic page or one of its columns.
@@ -11651,6 +11653,98 @@ fn switch_route(home: &str) -> Option<String> {
     Some(route.to_owned())
 }
 
+/// The route of the home `home` of an element of the Basic page's
+/// drop-down: the label's text and line box, the field's width, height,
+/// padding, corners and outline width, and the chevron's size and column.
+/// `None` for a home none of them reads, the colours the export routes
+/// ([`colour_home_route`]) among them.
+fn drop_down_route(home: &str) -> Option<String> {
+    let route = match home {
+        "combo_box.label(NONE)" => {
+            "PickList text_size and font: combo_box.label(NONE)'s size and font"
+        }
+        "typography.line_height_multiplier" => {
+            "next_control_line: the label's line box, combo_box.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box), \
+             grown to fill combo_box.field(NONE).min_size[1] inside the padding"
+        }
+        "combo_box.field(NONE).min_size[1]" => {
+            "next_control_line: PickList::text_line_height, the line box that fills \
+             combo_box.field(NONE).min_size[1] inside the padding; combo_box.label(NONE)'s line \
+             box (next_line_box) where unstated"
+        }
+        "combo_box.field(NONE).min_size[0]" => {
+            "next_drop_down_width: PickList::width, the page's own width, at least \
+             combo_box.field(NONE).min_size[0] where stated"
+        }
+        "combo_box.chevron(NONE).size" => {
+            "next_arrow_handle: the chevron glyph's size, combo_box.chevron(NONE).size, iced's \
+             own (the renderer's default text size) where unstated"
+        }
+        "combo_box.arrow_area_width" => {
+            "iced_next::combo_box_padding: the right padding holds half the column \
+             combo_box.arrow_area_width leaves the chevron"
+        }
+        "combo_box.field(NONE).padding.top"
+        | "combo_box.field(NONE).padding.right"
+        | "combo_box.field(NONE).padding.bottom"
+        | "combo_box.field(NONE).padding.left" => {
+            "iced_next::combo_box_padding: PickList::padding, the side of \
+             combo_box.field(NONE).padding plus its stroke width, iced's own \
+             (button::DEFAULT_PADDING) where unstated"
+        }
+        "combo_box.field(NONE).corners" => {
+            "styles::pick_list: pick_list::Style::border.radius, combo_box.field(NONE).corners"
+        }
+        "combo_box.field(NONE).stroke.width" => {
+            "styles::pick_list: pick_list::Style::border.width, \
+             combo_box.field(NONE).stroke.width"
+        }
+        "combo_box.field(NONE).shadows" => {
+            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of an element of the Basic page's text
+/// area: the text and its line box, and the field's padding, corners and
+/// outline width. `None` for a home none of them reads, the colours the
+/// export routes ([`colour_home_route`]) among them.
+fn text_area_route(home: &str) -> Option<String> {
+    let route = match home {
+        "text_area.text(NONE)" => {
+            "TextEditor size, line height and font: text_area.text(NONE)'s size, line box \
+             (next_line_box) and font"
+        }
+        "typography.line_height_multiplier" => {
+            "TextEditor::line_height: text_area.text(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+        }
+        "text_area.field(NONE).padding.top"
+        | "text_area.field(NONE).padding.right"
+        | "text_area.field(NONE).padding.bottom"
+        | "text_area.field(NONE).padding.left" => {
+            "next_text_area_padding: TextEditor::padding, the side of text_area.field(NONE).padding \
+             plus its stroke width, iced's own 5 (ICED_TEXT_EDITOR_PADDING) where unstated"
+        }
+        "text_area.field(NONE).corners" => {
+            "styles::text_editor: text_editor::Style::border.radius, \
+             text_area.field(NONE).corners"
+        }
+        "text_area.field(NONE).stroke.width" => {
+            "styles::text_editor: text_editor::Style::border.width, \
+             text_area.field(NONE).stroke.width"
+        }
+        "text_area.field(NONE).shadows" => {
+            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of the home `home` of the Basic page or one of its columns
 /// under `r`, the installed 0.8.0 theme: the gaps and margins
 /// ([`layout_gap_route`]), the page's scroll bar ([`page_bar_width_route`]),
@@ -11799,6 +11893,10 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         radio_route(home)
     } else if under("basic.switches.") {
         switch_route(home)
+    } else if under("basic.drop_down.") {
+        drop_down_route(home)
+    } else if under("basic.text_area.") {
+        text_area_route(home)
     } else {
         None
     };
@@ -11924,27 +12022,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .find(|s| field == format!("border.padding_{s}_px"))
     };
     let line: Cow<'static, str> = match (table, field) {
-        // ---- input, text area ----
-        ("input", "font") if under("basic.text_area.") => {
-            "TextEditor size, line height and font: text_area.text(NONE)'s size, line box \
-             (next_line_box) and font"
-                .into()
-        }
-        ("text_area", f) if side(f).is_some() && under("basic.text_area.") => {
-            "next_text_area_padding: TextEditor::padding, the side of text_area.field(NONE).padding \
-             plus its stroke width, iced's own 5 (ICED_TEXT_EDITOR_PADDING) where unstated"
-                .into()
-        }
-        ("text_area", "border.corner_radius_px") => {
-            "styles::text_editor: text_editor::Style::border.radius".into()
-        }
-        ("text_area", "border.line_width_px") => {
-            "styles::text_editor: text_editor::Style::border.width".into()
-        }
-        ("text_area", f) if side(f).is_some() => {
-            "text_area_padding: TextEditor::padding, the side plus the line width".into()
-        }
-        ("text_area" | "combo_box" | "card", "border.shadow_enabled") => {
+        ("combo_box" | "card", "border.shadow_enabled") => {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
         }
         // ---- combo box (drop-down) ----
@@ -11971,36 +12049,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("combo_box", f) if side(f).is_some() && theme_row => {
             "combo_box_padding: ComboBox::padding, the side plus the line width".into()
         }
-        ("combo_box", "font") if under("basic.drop_down.") => {
-            "PickList text_size and font: combo_box.label(NONE)'s size and font".into()
-        }
-        ("combo_box", "min_height_px") if under("basic.drop_down.") => {
-            "next_control_line: PickList::text_line_height, the line box that fills \
-             combo_box.field(NONE).min_size[1] inside the padding; combo_box.label(NONE)'s line \
-             box (next_line_box) where unstated"
-                .into()
-        }
-        ("combo_box", "min_width_px") if under("basic.drop_down.") => {
-            "next_drop_down_width: PickList::width, the page's own width, at least \
-             combo_box.field(NONE).min_size[0] where stated"
-                .into()
-        }
-        ("combo_box", "arrow_icon_size_px") if under("basic.drop_down.") => {
-            "next_arrow_handle: the chevron glyph's size, combo_box.chevron(NONE).size, iced's \
-             own (the renderer's default text size) where unstated"
-                .into()
-        }
-        ("combo_box", "arrow_area_width_px") if under("basic.drop_down.") => {
-            "iced_next::combo_box_padding: the right padding holds half the column \
-             combo_box.arrow_area_width leaves the chevron"
-                .into()
-        }
-        ("combo_box", f) if side(f).is_some() && under("basic.drop_down.") => {
-            "iced_next::combo_box_padding: PickList::padding, the side of \
-             combo_box.field(NONE).padding plus its stroke width, iced's own \
-             (button::DEFAULT_PADDING) where unstated"
-                .into()
-        }
         ("combo_box", "font") => "PickList text_size and font (theme_font)".into(),
         ("combo_box", "min_height_px") => {
             "control_line_height: the line box that fills it inside combo_box_padding".into()
@@ -12008,9 +12056,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("combo_box", "min_width_px") => {
             "not reachable: PickList takes a width, not a minimum; the page's own width".into()
         }
-        ("combo_box", "arrow_icon_size_px") => {
-            "pick_list_handle: the chevron glyph's size".into()
-        }
+        ("combo_box", "arrow_icon_size_px") => "pick_list_handle: the chevron glyph's size".into(),
         ("combo_box", "arrow_area_width_px") => {
             "combo_box_padding: the right padding holds half the column the arrow leaves".into()
         }
@@ -12104,9 +12150,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              status_bar.label (Typeset::next_text)"
                 .into()
         }
-        ("status_bar", "font") => {
-            "the text in status_bar.label (Typeset::next_text)".into()
-        }
+        ("status_bar", "font") => "the text in status_bar.label (Typeset::next_text)".into(),
         ("status_bar", "font.color") => {
             "surface: the bar's text_color, status_bar.label.color".into()
         }
@@ -12245,7 +12289,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("expander", "border.line_width_px")
-            if under("basic.expander.") && state.next_shown().expander.frame_enabled == Some(true) =>
+            if under("basic.expander.")
+                && state.next_shown().expander.frame_enabled == Some(true) =>
         {
             "styles::expander_frame: border.width; the frame's padding, \
              expander.container(NONE)'s stroke width"
@@ -12358,17 +12403,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "status_line_box: the text's LineHeight, status_bar.label's line box \
              (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
              (gpui-pre style.rs:553-556)"
-                .into()
-        }
-        ("defaults", "line_height") if under("basic.text_area.") => {
-            "TextEditor::line_height: text_area.text(NONE)'s size by \
-             typography.line_height_multiplier where it states no line height (next_line_box)"
-                .into()
-        }
-        ("defaults", "line_height") if under("basic.drop_down.") => {
-            "next_control_line: the label's line box, combo_box.label(NONE)'s size by \
-             typography.line_height_multiplier where it states no line height (next_line_box), \
-             grown to fill combo_box.field(NONE).min_size[1] inside the padding"
                 .into()
         }
         ("defaults", "line_height") => {
