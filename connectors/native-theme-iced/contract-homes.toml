@@ -1824,6 +1824,7 @@ moves = [
 leaves = ["toolbar.button_hover_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(false, Hovered)"] },
+  { row = "styles::toolbar_button.background", statuses = ["(true, Hovered)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button(HOVER).stroke.color"]
@@ -1842,6 +1843,7 @@ moves = [
 leaves = ["toolbar.button_active_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(false, Pressed)"] },
+  { row = "styles::toolbar_button.background", statuses = ["(true, Pressed)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button(PRESSED).stroke.color"]
@@ -1868,6 +1870,7 @@ moves = [
 [homes."toolbar.button_label(HOVER).color"]
 moves = [
   { row = "styles::toolbar_button.text_color", statuses = ["(false, Hovered)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button_label(NONE).color"]
@@ -1883,6 +1886,7 @@ moves = [
 [homes."toolbar.button_label(PRESSED).color"]
 moves = [
   { row = "styles::toolbar_button.text_color", statuses = ["(false, Pressed)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."tooltip.panel.fill"]

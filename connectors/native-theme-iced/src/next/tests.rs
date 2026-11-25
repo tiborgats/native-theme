@@ -766,43 +766,151 @@ fn a_flare_radius_that_is_not_positive_and_finite_draws_none() -> TestResult {
 }
 
 /// A checked toolbar button on either macOS preset is filled with the
-/// checked fill the preset states, `toolbar.button(CHECKED).fill`, the
-/// toolbar-bezel button's as an on toggle: macos-monterey #dfdfdf /
-/// #414141, macos-tahoe the accent, #007aff (os-probe run 45634379188,
-/// toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`), at rest.
-/// Only macos-monterey proves the stated fill is read: an unstated one is the
-/// primary button's, which on macos-tahoe is the same accent, and iced reads
-/// no hovered or pressed checked shade (`toolbar.button(CHECKED | HOVER)`)
-/// that could tell the two apart.
+/// checked fills the preset states, the toolbar-bezel button's as an on
+/// toggle (os-probe run 45634379188, toolbar states sheet,
+/// `*.{normal,hovered,pressed}.toolbar_toggle_on` `fill`): at rest
+/// `toolbar.button(CHECKED).fill`, macos-monterey #dfdfdf / #414141,
+/// macos-tahoe the accent, #007aff; hovered `toolbar.button(CHECKED |
+/// HOVER)`'s, macos-monterey #c6c6c6 / #5a5a5a, macos-tahoe #006df2 /
+/// #148eff; pressed `toolbar.button(CHECKED | PRESSED)`'s, macos-monterey
+/// #b9b9b9 / #676767, macos-tahoe #0061e6 / #239dff. An unstated checked
+/// fill is the primary button's in the same status (spec §10, rule 0a),
+/// which on macos-tahoe is the same accent at rest: there the hovered and
+/// pressed fills tell the stated fill from the primary button's.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() -> TestResult {
     use iced_core::Background;
     use iced_core::theme::Theme as IcedTheme;
     use iced_widget::button::Status;
+    let opaque = |[r, g, b]: [u8; 3]| {
+        Some(Background::Color(super::to_color(Color::from_srgb8(
+            r,
+            g,
+            b,
+            u8::MAX,
+        ))))
+    };
     for (preset, light, dark) in [
         (
             Preset::MacosMonterey,
-            [0xdf, 0xdf, 0xdf],
-            [0x41, 0x41, 0x41],
+            [[0xdf, 0xdf, 0xdf], [0xc6, 0xc6, 0xc6], [0xb9, 0xb9, 0xb9]],
+            [[0x41, 0x41, 0x41], [0x5a, 0x5a, 0x5a], [0x67, 0x67, 0x67]],
         ),
-        (Preset::MacosTahoe, [0x00, 0x7a, 0xff], [0x00, 0x7a, 0xff]),
+        (
+            Preset::MacosTahoe,
+            [[0x00, 0x7a, 0xff], [0x00, 0x6d, 0xf2], [0x00, 0x61, 0xe6]],
+            [[0x00, 0x7a, 0xff], [0x14, 0x8e, 0xff], [0x23, 0x9d, 0xff]],
+        ),
     ] {
-        for (ctx, [r, g, b]) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+        for (ctx, fills) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
             let theme = Theme::preset(preset).resolve(&ctx);
-            let style =
-                super::styles::toolbar_button(&theme, true)?(&IcedTheme::Light, Status::Active);
+            let style = super::styles::toolbar_button(&theme, true)?;
+            let primary = super::styles::button_primary(&theme)?;
+            for (status, fill) in [Status::Active, Status::Hovered, Status::Pressed]
+                .into_iter()
+                .zip(fills)
+            {
+                let drawn = style(&IcedTheme::Light, status).background;
+                assert_eq!(
+                    drawn,
+                    opaque(fill),
+                    "{preset:?} {:?} {status:?}",
+                    ctx.scheme
+                );
+                if status != Status::Active {
+                    assert_ne!(
+                        drawn,
+                        primary(&IcedTheme::Light, status).background,
+                        "{preset:?} {:?} {status:?}",
+                        ctx.scheme
+                    );
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// A checked toolbar button on macos-monterey is lettered in the checked
+/// labels the preset states, the toolbar-bezel button's as an on toggle
+/// (os-probe run 45634379188, toolbar states sheet,
+/// `*.{normal,hovered,pressed}.toolbar_toggle_on` `label`):
+/// `toolbar.button_label(CHECKED).color` at rest, #424242 / #ececec;
+/// `(CHECKED | HOVER)`'s hovered, #343434 / #efefef; `(CHECKED | PRESSED)`'s
+/// pressed, #343434 / #f0f0f0.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_checked_macos_toolbar_button_takes_the_stated_checked_labels() -> TestResult {
+    use iced_core::theme::Theme as IcedTheme;
+    use iced_widget::button::Status;
+    for (ctx, labels) in [
+        (
+            ThemeContext::light(),
+            [[0x42, 0x42, 0x42], [0x34, 0x34, 0x34], [0x34, 0x34, 0x34]],
+        ),
+        (
+            ThemeContext::dark(),
+            [[0xec, 0xec, 0xec], [0xef, 0xef, 0xef], [0xf0, 0xf0, 0xf0]],
+        ),
+    ] {
+        let theme = Theme::preset(Preset::MacosMonterey).resolve(&ctx);
+        let style = super::styles::toolbar_button(&theme, true)?;
+        for (status, [r, g, b]) in [Status::Active, Status::Hovered, Status::Pressed]
+            .into_iter()
+            .zip(labels)
+        {
             assert_eq!(
-                style.background,
-                Some(Background::Color(super::to_color(Color::from_srgb8(
-                    r,
-                    g,
-                    b,
-                    u8::MAX
-                )))),
-                "{preset:?} {:?}",
+                style(&IcedTheme::Light, status).text_color,
+                super::to_color(Color::from_srgb8(r, g, b, u8::MAX)),
+                "{:?} {status:?}",
                 ctx.scheme
             );
+        }
+    }
+    Ok(())
+}
+
+/// A toolbar button that is off is filled at rest and disabled with the
+/// fill the theme states for the state: on macos-tahoe the rest capsule,
+/// `toolbar.button(NONE).fill` and `(DISABLED)`'s, #ffffff / #252525
+/// (os-probe run 45634379188, macOS 26, toolbar states sheet,
+/// `*.normal.toolbar_button`, `*.normal.toolbar_button_disabled` `fill`);
+/// on macos-monterey, which states none at rest and none disabled, no fill.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_macos_toolbar_button_takes_the_stated_rest_and_disabled_fill() -> TestResult {
+    use iced_core::Background;
+    use iced_core::theme::Theme as IcedTheme;
+    use iced_widget::button::Status;
+    let transparent = Some(Background::Color(iced_core::Color::TRANSPARENT));
+    let opaque = |[r, g, b]: [u8; 3]| {
+        Some(Background::Color(super::to_color(Color::from_srgb8(
+            r,
+            g,
+            b,
+            u8::MAX,
+        ))))
+    };
+    for (preset, light, dark) in [
+        (Preset::MacosMonterey, transparent, transparent),
+        (
+            Preset::MacosTahoe,
+            opaque([0xff, 0xff, 0xff]),
+            opaque([0x25, 0x25, 0x25]),
+        ),
+    ] {
+        for (ctx, fill) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+            let theme = Theme::preset(preset).resolve(&ctx);
+            let style = super::styles::toolbar_button(&theme, false)?;
+            for status in [Status::Active, Status::Disabled] {
+                assert_eq!(
+                    style(&IcedTheme::Light, status).background,
+                    fill,
+                    "{preset:?} {:?} {status:?}",
+                    ctx.scheme
+                );
+            }
         }
     }
     Ok(())

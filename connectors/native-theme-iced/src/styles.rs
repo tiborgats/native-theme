@@ -895,9 +895,23 @@ pub fn toolbar_button(
 /// `toolbar.button_*` field, `None` where unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ToolbarButtonSource {
+    /// The fill at rest of a button that is off, on the 0.8.0 model where
+    /// the theme states it (`toolbar.button(NONE)`); `None` is no fill, as
+    /// on 0.7.2's.
+    pub rest_background: Option<Color>,
+    /// The fill of a disabled button, on the 0.8.0 model where the theme
+    /// states it (`toolbar.button(DISABLED)`); `None` is no fill, as on
+    /// 0.7.2's.
+    pub disabled_background: Option<Color>,
     pub hover_background: Option<Layer>,
     pub active_background: Option<Layer>,
     pub checked_background: Option<Color>,
+    /// The fill of a checked button under the pointer and pressed, on the
+    /// 0.8.0 model where the theme states a checked fill
+    /// (`toolbar.button(CHECKED | HOVER)`, `(CHECKED | PRESSED)`); `None`
+    /// is the checked fill at rest, as on 0.7.2's.
+    pub checked_hover_background: Option<Color>,
+    pub checked_pressed_background: Option<Color>,
     pub hover_border_color: Option<Line>,
     pub checked_border_color: Option<Line>,
     /// The outline of a pressed button that is off, and of a checked one
@@ -931,13 +945,18 @@ pub(crate) struct ToolbarOutline {
 
 /// A toolbar button's labels on the 0.8.0 model: the label at rest where
 /// the theme states it, each other state's where a rule states it for the
-/// state; `None` is iced's own there (spec §10, rule 0).
+/// state; `None` is iced's own there (spec §10, rule 0). A checked button's
+/// label under the pointer and pressed is `(CHECKED | HOVER)`'s and
+/// `(CHECKED | PRESSED)`'s where a rule states the checked label, `None`
+/// where none does.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ToolbarLabels {
     pub rest: Option<Color>,
     pub hover: Option<Color>,
     pub pressed: Option<Color>,
     pub checked: Option<Color>,
+    pub checked_hover: Option<Color>,
+    pub checked_pressed: Option<Color>,
     pub disabled: Option<Color>,
 }
 
@@ -960,9 +979,13 @@ impl ToolbarButtonSource {
             .or(b.active_background)
             .unwrap_or(b.hover_background);
         Self {
+            rest_background: None,
+            disabled_background: None,
             hover_background: Some(Layer::Color(to_color(hover))),
             active_background: Some(Layer::Color(to_color(active))),
             checked_background: t.button_checked_background.map(to_color),
+            checked_hover_background: None,
+            checked_pressed_background: None,
             hover_border_color: line(t.button_hover_border_color),
             checked_border_color: line(t.button_checked_border_color),
             pressed_border_color: line(t.button_hover_border_color),
@@ -1014,14 +1037,15 @@ pub(crate) fn toolbar_button_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    // The layers are painted as given: a toolbar button has no fill at rest
-    // for them to lie over. Where the toolbar's source gives no layer for a
-    // state, the fill and the label are as [`in_state`] gives them against
-    // iced's own neutral class (spec §10, rule 0), the toolbar button's fill
-    // at rest being none.
+    // The layers are painted as given, each the state's whole fill. Where
+    // the toolbar's source gives no layer for a state, the fill and the
+    // label are as [`in_state`] gives them against iced's own neutral class
+    // (spec §10, rule 0), the toolbar button's fill at rest being the one
+    // the theme states, else none.
     let hovered = t.hover_background.map(Layer::as_given);
     let pressed = t.active_background.map(Layer::as_given);
-    let checked_fill = t.checked_background;
+    let rest = t.rest_background.unwrap_or(Color::TRANSPARENT);
+    let disabled = t.disabled_background.unwrap_or(Color::TRANSPARENT);
 
     let disabled_opacity = b.disabled_opacity;
 
@@ -1057,7 +1081,9 @@ pub(crate) fn toolbar_button_from(
         let (hover_width, pressed_width, checked_width, checked_hover_width, checked_pressed_width) =
             widths.unwrap_or_default();
         // On the 0.8.0 model the toolbar's own labels, an unstated label at
-        // rest iced's own neutral class's; on 0.7.2's the push button's.
+        // rest iced's own neutral class's, and a checked button's under the
+        // pointer and pressed the state's where a rule states the checked
+        // label; on 0.7.2's the push button's.
         let (label, hover_label, active_label, checked_label, disabled_label) = match t.labels {
             Some(l) => (
                 l.rest.unwrap_or_else(|| {
@@ -1065,7 +1091,11 @@ pub(crate) fn toolbar_button_from(
                 }),
                 l.hover,
                 l.pressed,
-                l.checked,
+                match status {
+                    Status::Hovered => l.checked_hover.or(l.checked),
+                    Status::Pressed => l.checked_pressed.or(l.checked),
+                    Status::Active | Status::Disabled => l.checked,
+                },
                 l.disabled,
             ),
             None => (
@@ -1091,7 +1121,7 @@ pub(crate) fn toolbar_button_from(
             (
                 in_state(
                     fill,
-                    Color::TRANSPARENT,
+                    rest,
                     (painted(own.0.background), painted(own.1.background)),
                 ),
                 in_state(text, label, (own.0.text_color, own.1.text_color)),
@@ -1102,11 +1132,18 @@ pub(crate) fn toolbar_button_from(
         // A checked fill the theme does not state is, on the 0.8.0 model,
         // the primary button's in the same status, fill and label, a
         // checked label the theme states laid over it; on 0.7.2's, the
-        // pressed toolbar button's. A stated checked fill is lettered in the
-        // checked label, else, on the 0.8.0 model, the label at rest (spec
-        // §10, rule 0a: "a stated `CHECKED` fill is lettered in the stated
-        // `CHECKED` label, else in the label at rest"); on 0.7.2's, the
-        // pressed one.
+        // pressed toolbar button's. A stated checked fill is, under the
+        // pointer and pressed, the state's on the 0.8.0 model (spec §10,
+        // rule 0: "what the theme states for the state is laid over"), and
+        // is lettered in the checked label, else, on the 0.8.0 model, the
+        // label at rest (spec §10, rule 0a: "a stated `CHECKED` fill is
+        // lettered in the stated `CHECKED` label, else in the label at
+        // rest"); on 0.7.2's, the pressed one.
+        let checked_fill = match status {
+            Status::Hovered => t.checked_hover_background.or(t.checked_background),
+            Status::Pressed => t.checked_pressed_background.or(t.checked_background),
+            Status::Active | Status::Disabled => t.checked_background,
+        };
         let (fill, checked_label) = match (checked_fill, status) {
             (None, Status::Active | Status::Hovered | Status::Pressed) if checked_primary => {
                 let shown = primary(theme, status);
@@ -1120,7 +1157,7 @@ pub(crate) fn toolbar_button_from(
             (None, _) => (pressed, pressed_label),
         };
         let (background, text_color, line, width) = match (checked, status) {
-            (false, Status::Active) => (Color::TRANSPARENT, label, None, None),
+            (false, Status::Active) => (rest, label, None, None),
             (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color, hover_width),
             (false, Status::Pressed) => (
                 pressed,
@@ -1141,7 +1178,7 @@ pub(crate) fn toolbar_button_from(
                 t.checked_pressed_border_color,
                 checked_pressed_width,
             ),
-            (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, None, None),
+            (_, Status::Disabled) => (disabled, disabled_label, None, None),
         };
         let outline = Outline {
             width: width.unwrap_or(outline.width),

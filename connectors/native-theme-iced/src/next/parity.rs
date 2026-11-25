@@ -977,7 +977,19 @@ const MEASURED_TOOLBAR_CHECKED: &str = "0.7.2's macOS toolbar states no \
      macos-monterey #dfdfdf / #414141, macos-tahoe the accent, #007aff (os-probe run \
      45634379188, macOS 15 and 26, toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`; \
      native-theme/tests/next_homes.toml, row toolbar.button_checked_background, a listed \
-     difference), which the 0.8.0 side draws in each status of the checked button";
+     difference), which the 0.8.0 side draws at rest, and its hovered and pressed fills, \
+     toolbar.button(CHECKED | HOVER) and (CHECKED | PRESSED), macos-monterey #c6c6c6 / #5a5a5a \
+     and #b9b9b9 / #676767, macos-tahoe #006df2 / #148eff and #0061e6 / #239dff on the default \
+     accent (the same run, `*.{hovered,pressed}.toolbar_toggle_on` `fill`), which the 0.8.0 \
+     side draws under the pointer and pressed (docs/v0.8.0-spec.md §10, rule 0)";
+
+/// The reason of macos-tahoe's toolbar button fill at rest and disabled.
+const MEASURED_TOOLBAR_REST: &str = "0.7.2 has no toolbar button fill at rest or disabled, so \
+     its connector drew none; the 0.8.0 macos-tahoe preset states the real toolbar's rest \
+     capsule, toolbar.button(NONE), #ffffff / #252525, disabled unchanged, \
+     toolbar.button(DISABLED) (os-probe run 45634379188, macOS 26, toolbar states sheet, \
+     `*.normal.toolbar_button`, `*.normal.toolbar_button_disabled` `fill`), which the 0.8.0 \
+     side draws at rest and disabled (docs/v0.8.0-spec.md §10, rule 0)";
 
 /// The reason of a checked button whose fill and label the 0.8.0 theme
 /// states and 0.7.2 does not.
@@ -1249,7 +1261,7 @@ const TOOLBAR_FILLS: [Stated; 2] = [
 ];
 
 /// A checked toolbar button's fill in each status, the macOS presets'
-/// measured one ([`MEASURED_TOOLBAR_CHECKED`]).
+/// measured ones ([`MEASURED_TOOLBAR_CHECKED`]).
 const TOOLBAR_CHECKED_FILL: [Stated; 3] = [
     set(
         at!(NONE | CHECKED),
@@ -1259,12 +1271,32 @@ const TOOLBAR_CHECKED_FILL: [Stated; 3] = [
     set(
         at!(HOVER | CHECKED),
         Field::Background,
-        home!(fill, toolbar.button(CHECKED)),
+        home!(fill, toolbar.button(CHECKED | HOVER)),
     ),
     set(
         at!(PRESSED | CHECKED),
         Field::Background,
-        home!(fill, toolbar.button(CHECKED)),
+        home!(fill, toolbar.button(CHECKED | PRESSED)),
+    ),
+];
+
+/// A toolbar button's fill at rest and disabled, checked or not, macos-tahoe's
+/// measured rest capsule ([`MEASURED_TOOLBAR_REST`]).
+const TOOLBAR_REST_FILL: [Stated; 3] = [
+    set(
+        at!(NONE),
+        Field::Background,
+        home!(fill, toolbar.button(NONE)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::Background,
+        home!(fill, toolbar.button(DISABLED)),
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::Background,
+        home!(fill, toolbar.button(DISABLED)),
     ),
 ];
 
@@ -2267,7 +2299,18 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         TOGGLE_PRESSED_STROKE,
     ),
-    toolbar_labels(&["macos-tahoe", "macos-monterey"]).stating(
+    toolbar_labels(&["macos-tahoe"]).stating(
+        &[&TOOLBAR_FILLS, &TOOLBAR_CHECKED_FILL, &TOOLBAR_REST_FILL],
+        &[
+            MEASURED_TOOLBAR_FILLS,
+            MEASURED_TOOLBAR_CHECKED,
+            MEASURED_TOOLBAR_REST,
+            STATED,
+            TOOLBAR_LABELS,
+            TOOLBAR_OUTLINE,
+        ],
+    ),
+    toolbar_labels(&["macos-monterey"]).stating(
         &[&TOOLBAR_FILLS, &TOOLBAR_CHECKED_FILL],
         &[
             MEASURED_TOOLBAR_FILLS,
@@ -4202,11 +4245,16 @@ fn compare_styles(
     };
     let none = WidgetState::NONE;
     let label = |state| new.toolbar.button_label(state);
+    let toolbar_checked = super::state_text_color_of(&label(WidgetState::CHECKED));
+    let checked_label_in =
+        |state| toolbar_checked.and(super::text_color_of(&label(WidgetState::CHECKED | state)));
     let toolbar_labels = ToolbarLabels {
         rest: super::text_color_of(&label(none)),
         hover: super::state_text_color_of(&label(WidgetState::HOVER)),
         pressed: super::state_text_color_of(&label(WidgetState::PRESSED)),
-        checked: super::state_text_color_of(&label(WidgetState::CHECKED)),
+        checked: toolbar_checked,
+        checked_hover: checked_label_in(WidgetState::HOVER),
+        checked_pressed: checked_label_in(WidgetState::PRESSED),
         disabled: super::state_text_color_of(&label(WidgetState::DISABLED)),
     };
     let toolbar_outline = super::styles::toolbar_outline(new).ok();

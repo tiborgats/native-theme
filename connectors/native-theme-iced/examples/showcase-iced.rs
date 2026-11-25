@@ -34891,21 +34891,6 @@ mod tests {
         ),
         (
             "basic.icons.edit",
-            "toolbar.button(HOVER).fill",
-            "Edit opens checked, and native_theme_iced::next::styles::toolbar_button keeps a \
-             checked button's checked fill under the pointer (src/next/styles.rs, \
-             `toolbar_button`): toolbar.button(HOVER).fill is drawn once a click has turned \
-             it off",
-        ),
-        (
-            "basic.icons.edit",
-            "toolbar.button(PRESSED).fill",
-            "Edit opens checked, and toolbar.button(PRESSED).fill moves only an unchecked \
-             tool button's pressed fill, `(false, Pressed)`: a checked one keeps its checked \
-             fill pressed",
-        ),
-        (
-            "basic.icons.edit",
             "button.label(HOVER).color",
             TOOL_BUTTON_PUSH_LABEL,
         ),
