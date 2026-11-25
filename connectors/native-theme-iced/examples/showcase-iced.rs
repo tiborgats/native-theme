@@ -78,12 +78,12 @@ use native_theme::next::{
     PartStyle, Preset, Scheme, Stroke, StrokeAlign, StyleQuery, TextStated, TextStyle,
     ThemeContext, Typography, WidgetState,
 };
-use native_theme::theme::{FontStyle, LayoutTheme, ResolvedTheme};
+use native_theme::theme::FontStyle;
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
-use native_theme_iced::{AccessibilityPreferences, SystemThemeExt, at_least};
+use native_theme_iced::{AccessibilityPreferences, at_least};
 // The colour-mode picker's rows: its `Display` is the Mode drop-down's and
 // the Theme menu's name of a mode, its `label` the command palette's.
 use native_theme_showcase_support::cli::ColorModeChoice as AppColorMode;
@@ -1282,52 +1282,25 @@ impl PartialEq for ThemeChoice {
 
 impl Eq for ThemeChoice {}
 
-/// The preset the showcase starts with where the OS theme fails to read:
-/// the platform's own, never another platform's, the one core merges a
-/// system read over (`pipeline::platform_preset_name`, which the egui
-/// showcase falls back to too): `kde-breeze` on KDE and `adwaita` on another
-/// Linux desktop, the running version's generation on macOS
-/// (`macos-monterey` on 12 to 15, `macos-tahoe` on 26 and later, and
-/// `macos-monterey` in a build without the `macos` reader, which reads the
-/// version), `windows-11` on Windows.
+/// The preset the showcase starts with where the 0.8.0 model's read of the
+/// desktop (`next::Theme::from_system`) fails: the platform's own, never
+/// another platform's, the one that read builds on (`Preset::detect`, which
+/// the gpui showcase falls back to too).
 fn platform_fallback_preset() -> &'static str {
-    native_theme::pipeline::platform_preset_name().name
+    Preset::detect().as_str()
 }
 
-/// The platform's preset ([`platform_fallback_preset`]), resolved, as the
-/// last-resort fallback: what is drawn, with the icon set and icon theme
-/// the preset states.
-struct PlatformFallback {
-    key: &'static str,
-    resolved: native_theme::theme::ResolvedTheme,
-    theme: Theme,
-    layout: LayoutTheme,
-    icon_set: IconSet,
-    icon_theme: Option<String>,
-}
-
-/// Load the platform's preset as a last-resort fallback.
-///
-/// Returns `None` if any step fails (should not happen for bundled data,
-/// but we never panic).
-fn load_platform_fallback(is_dark: bool) -> Option<PlatformFallback> {
-    let key = platform_fallback_preset();
-    let nt = native_theme::theme::Theme::preset(key).ok()?;
-    let r = nt
-        .resolve(if is_dark {
-            native_theme_iced::ColorMode::Dark
-        } else {
-            native_theme_iced::ColorMode::Light
-        })
-        .ok()?;
-    Some(PlatformFallback {
-        key,
-        theme: native_theme_iced::to_theme_in(&r.variant, &nt.name, r.mode),
-        resolved: r.variant,
-        layout: nt.layout.clone(),
-        icon_set: r.icon_set,
-        icon_theme: r.icon_theme.map(Cow::into_owned),
-    })
+/// The accessibility preferences of `ctx`, as the connector reads a 0.8.0
+/// theme's context back as them (docs/v0.8.0-spec.md §5, the table of
+/// homes: `reduce_motion` is a motion other than `Full`, `high_contrast` a
+/// contrast other than `Normal`), as the gpui showcase's `preferences_of`.
+fn preferences_of(ctx: &ThemeContext) -> AccessibilityPreferences {
+    let mut prefs = AccessibilityPreferences::DEFAULT.clone();
+    prefs.text_scaling_factor = ctx.text_scale;
+    prefs.reduce_motion = ctx.motion != MotionPreference::Full;
+    prefs.high_contrast = ctx.contrast != Contrast::Normal;
+    prefs.reduce_transparency = ctx.reduced_transparency;
+    prefs
 }
 
 /// The display name of the preset `key`, or `key` where no preset has it.
@@ -1843,50 +1816,37 @@ struct State {
     /// for, where it is ([`ContrastHeld`]).
     contrast_held: Option<ContrastHeld>,
     /// The desktop's settings as the 0.8.0 model reads them
-    /// (`next::Theme::from_system`, through `read_next_system`), read where
-    /// none is kept and kept until Reload System Theme reads them again;
-    /// the error to report where the read failed. No preset stands in for
+    /// (`next::Theme::from_system`, through `read_next_system`): read at
+    /// startup, and where none is kept, and kept until Reload System Theme
+    /// (which the theme watcher's event sends) reads them again, so a
+    /// colour-mode switch under `default` resolves them in the other scheme
+    /// without reading the OS again; the error to report where the read
+    /// failed, kept as a read that succeeded is. No preset stands in for
     /// them.
     next_system: Option<Result<native_theme::next::Theme, String>>,
-    /// The 0.7.2 theme of the same choice, which the pages not yet on the
-    /// 0.8.0 model read: the preset alone under a palette, which the 0.7.2
-    /// model has no equivalent of, in the scheme the 0.8.0 theme resolved
-    /// to. Built with the 0.8.0 one, in [`State::install_in_mode`].
-    current_resolved: native_theme::theme::ResolvedTheme,
-    /// `current_resolved` as a listed element's Widget Info reads its values
-    /// ([`theme_json`]), serialised once per install. Written only with
-    /// `current_resolved`, in `load_theme`: a test that sets
-    /// `current_resolved` and reads a listed element's info sets this too.
-    theme_json: serde_json::Value,
-    /// The current theme's layout spacing. Not part of `ResolvedTheme`: it is
-    /// shared between the light and the dark variant, so it sits on the
-    /// native `Theme` and on `SystemTheme` instead.
-    layout: LayoutTheme,
     /// The accessibility preferences applied: the OS's
     /// (`os_accessibility`) with the ones the user set in the Preferences
     /// dialog put over them (`preference_overrides`), laid again by every
     /// install and every change in the dialog.
     accessibility: native_theme_iced::AccessibilityPreferences,
-    /// The OS's accessibility preferences as last read: the kept `system`
-    /// read's, or, where the startup read failed and none has succeeded
-    /// since, `detect::accessibility_preferences()`.
+    /// The OS's accessibility preferences as last read: those of the kept
+    /// `next_system` read's context ([`preferences_of`]), or, where the
+    /// startup read failed and none has succeeded since,
+    /// `detect::accessibility_preferences()`.
     os_accessibility: native_theme_iced::AccessibilityPreferences,
     /// The preferences the user set in the Preferences dialog, each `None`
     /// until set there.
     preference_overrides: PreferenceOverrides,
-    /// The OS theme as last read (at startup, on Reload System Theme and on
-    /// the theme watcher's event, which sends it): both variants, so a
-    /// colour-mode switch under `default` picks the other one without
-    /// reading the OS again. `None` while no read has succeeded.
-    system: Option<native_theme::SystemTheme>,
-    /// Icon set for the current theme (from Theme or SystemTheme, not ResolvedTheme).
+    /// Icon set for the current theme, the installed 0.8.0 theme's
+    /// `icons.set`.
     current_icon_set: IconSet,
     /// Icon theme name for the current theme; `None` where the theme names
     /// none and the system's cannot be detected.
     current_icon_theme: Option<String>,
     /// The platform preset the OS theme builds on, which the theme picker's
-    /// `default` row names ([`State::default_label`]); updated at each read
-    /// of the OS theme.
+    /// `default` row names ([`State::default_label`]): the kept read's
+    /// (`next::Theme::preset_id`), [`platform_fallback_preset`] where the
+    /// startup read failed; updated at each read of the OS theme.
     default_preset: String,
     /// The Theme row's combo box ([`theme_picker`]): its rows,
     /// [`theme_choices`] of `default_preset`, rebuilt where that changes
@@ -2103,14 +2063,11 @@ struct State {
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
-    /// Reads the OS theme at startup, on Reload System Theme (which the
-    /// theme watcher's event sends) and where `default` is installed with no
-    /// read kept (`system`): `SystemTheme::from_system`, which a test
-    /// replaces with a read that fails, changes or counts.
-    read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
-    /// Reads the desktop's settings as the 0.8.0 model reads them, where
-    /// none are kept (`next_system`): `next::Theme::from_system`, which a
-    /// test replaces with a read that fails or is fixed.
+    /// Reads the desktop's settings as the 0.8.0 model reads them at
+    /// startup, on Reload System Theme (which the theme watcher's event
+    /// sends) and where none are kept (`next_system`):
+    /// `next::Theme::from_system`, which a test replaces with a read that
+    /// fails, changes or counts.
     read_next_system: fn() -> native_theme::next::Result<native_theme::next::Theme>,
     /// Detects the system icon theme the Icons page names:
     /// `system_icon_theme`, which a test replaces with a detection that
@@ -2125,97 +2082,72 @@ struct State {
 
 impl Default for State {
     fn default() -> Self {
-        Self::starting_with(native_theme::SystemTheme::from_system)
+        Self::starting_with(native_theme::next::Theme::from_system)
     }
 }
 
 impl State {
-    /// The showcase at startup, with the OS theme `read_system_theme` reads
-    /// installed in the mode the read reports (the colour mode is System),
-    /// or the platform's preset ([`platform_fallback_preset`]) where that
-    /// read fails, or where the 0.8.0 model's read of the desktop
-    /// (`next::Theme::from_system`) fails: both models are installed
-    /// through [`State::install_in_mode`], as every later switch is.
+    /// The showcase at startup, with the desktop's settings as the 0.8.0
+    /// model reads them through `read_next_system` installed in the scheme
+    /// the read reports (the colour mode is System), the OS's preferences
+    /// those of the read's context ([`preferences_of`]); where that read
+    /// fails, the platform's preset ([`platform_fallback_preset`]) with the
+    /// OS's preferences as `detect::accessibility_preferences()` detects
+    /// them, and the failure in the banner. The theme is installed through
+    /// [`State::install_in_mode`], as every later switch is.
     fn starting_with(
-        read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
-    ) -> Self {
-        Self::starting_with_reads(read_system_theme, native_theme::next::Theme::from_system)
-    }
-
-    /// [`starting_with`](Self::starting_with), the 0.8.0 model reading the
-    /// desktop through `read_next_system`.
-    fn starting_with_reads(
-        read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
         read_next_system: fn() -> native_theme::next::Result<native_theme::next::Theme>,
     ) -> Self {
         let color_mode = AppColorMode::System;
-        let (
-            resolved,
-            theme,
-            is_dark,
-            initial_error,
-            system_preset,
-            init_icon_set,
-            init_icon_theme,
-            os_accessibility,
-            layout,
-            fallback_choice,
-            system,
-        ) = match read_system_theme() {
-            Ok(system) => {
-                let loaded = system.to_iced_theme();
-                (
-                    loaded.resolved,
-                    loaded.theme,
-                    loaded.mode.is_dark(),
+        let fallback_key = platform_fallback_preset();
+        let (system_preset, os_accessibility, initial_error, fallback_choice, next_system) =
+            match read_next_system() {
+                Ok(system) => (
+                    system.preset_id().as_str().to_string(),
+                    preferences_of(system.context()),
                     None,
-                    system.preset.clone(),
-                    loaded.icon_set,
-                    loaded.icon_theme.map(Cow::into_owned),
-                    loaded.accessibility,
-                    system.layout.clone(),
                     None,
-                    Some(system),
-                )
-            }
-            Err(e) => {
-                // The platform's preset, resolved. The theme picker names
-                // what is drawn, so a mode change installs that preset again
+                    Ok(system),
+                ),
+                // The platform's preset. The theme picker names what is
+                // drawn, so a mode change installs that preset again
                 // instead of reading the OS theme.
-                let is_dark = color_mode.is_dark();
-                match load_platform_fallback(is_dark) {
-                    Some(fallback) => (
-                        fallback.resolved,
-                        fallback.theme,
-                        is_dark,
-                        Some(format!(
-                            "OS theme failed: {e}. Using {} fallback.",
-                            fallback.key
-                        )),
-                        fallback.key.to_string(),
-                        fallback.icon_set,
-                        fallback.icon_theme,
-                        native_theme::detect::accessibility_preferences(),
-                        fallback.layout,
-                        Some(ThemeChoice::Preset(fallback.key.to_string())),
-                        None,
-                    ),
-                    None => {
-                        // This is the only safe fallback when both OS theme
-                        // detection and the bundled platform preset fail.
-                        // With bundled data this case is near-impossible.
-                        // process::exit avoids constructing a dummy
-                        // ResolvedTheme (30+ required fields).
-                        eprintln!(
-                            "Fatal: OS theme failed ({e}) and the {} fallback \
-                                 also failed. Cannot start.",
-                            platform_fallback_preset()
-                        );
-                        std::process::exit(1);
-                    }
-                }
+                Err(e) => (
+                    fallback_key.to_string(),
+                    native_theme::detect::accessibility_preferences(),
+                    Some(format!(
+                        "OS theme failed: {e}. Using {fallback_key} fallback."
+                    )),
+                    Some(ThemeChoice::Preset(fallback_key.to_string())),
+                    Err(format!("Failed to load OS theme: {e}")),
+                ),
+            };
+        let is_dark = match &next_system {
+            Ok(system) => system.context().scheme == Scheme::Dark,
+            Err(_) => color_mode.is_dark(),
+        };
+        // The platform's preset on the 0.8.0 model, so the state is whole
+        // before the install below replaces it with the 0.8.0 theme of the
+        // choice the showcase starts with: its iced theme, and its icon set
+        // and icon theme.
+        let start_next = match NextInstall::new(
+            native_theme::next::Theme::preset(Preset::detect()),
+            None,
+            &next_context(None, is_dark, &os_accessibility),
+        ) {
+            Ok(next) => next,
+            Err(e) => {
+                eprintln!("Fatal: the {fallback_key} fallback failed ({e}). Cannot start.");
+                std::process::exit(1);
             }
         };
+        let init_icon_set = start_next.resolved.icons.set;
+        let init_icon_theme = start_next
+            .resolved
+            .icons
+            .theme
+            .as_deref()
+            .map(str::to_owned);
 
         let languages = vec![
             "Rust".to_string(),
@@ -2262,25 +2194,6 @@ impl State {
         #[cfg(feature = "watch")]
         let watch_os_theme = !cfg!(test) && CLI_ARGS.get().is_none_or(CliArgs::follows_os);
 
-        // The platform's preset on the 0.8.0 model, so the state is whole
-        // before the install below replaces it with the 0.8.0 theme of the
-        // choice the showcase starts with.
-        let fallback_key = platform_fallback_preset();
-        let start_next = match Preset::from_name(fallback_key)
-            .ok_or_else(|| format!("the 0.8.0 model has no preset '{fallback_key}'"))
-            .and_then(|preset| {
-                NextInstall::new(
-                    native_theme::next::Theme::preset(preset),
-                    None,
-                    &next_context(None, is_dark, &os_accessibility),
-                )
-            }) {
-            Ok(next) => next,
-            Err(e) => {
-                eprintln!("Fatal: the {fallback_key} fallback failed ({e}). Cannot start.");
-                std::process::exit(1);
-            }
-        };
         let start_choice = fallback_choice
             .unwrap_or_else(|| ThemeChoice::OsTheme(rows::default_label(&system_preset)));
         let loaded_icons = load_all_icons(&icon_set_choice, &start_next.resolved, init_icon_set);
@@ -2299,7 +2212,7 @@ impl State {
 
         let mut state = Self {
             current_choice: start_choice.clone(),
-            current_theme: theme,
+            current_theme: start_next.iced,
             color_mode,
             is_dark,
             theme_palette: None,
@@ -2308,14 +2221,10 @@ impl State {
             next_resolved: start_next.resolved,
             next_inactive: start_next.inactive,
             contrast_held: start_next.contrast_held,
-            next_system: None,
-            theme_json: theme_json(&resolved),
-            current_resolved: resolved,
-            layout,
+            next_system: Some(next_system),
             accessibility: os_accessibility.clone(),
             os_accessibility,
             preference_overrides: PreferenceOverrides::default(),
-            system,
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
             theme_combo: combo_box::State::new(theme_choices(&system_preset)),
@@ -2420,16 +2329,15 @@ impl State {
             #[cfg(all(target_os = "macos", not(test)))]
             system_menu: None,
             error_message: None,
-            read_system_theme,
             read_next_system,
             detect_icon_theme: native_theme::detect::system_icon_theme,
             #[cfg(feature = "watch")]
             watch_os_theme,
         };
 
-        // Both models of the choice, through the one install path; where
-        // the 0.8.0 model cannot install the desktop's own, the platform's
-        // preset, as where the 0.7.2 read failed.
+        // The choice, through the one install path; where the desktop's
+        // own cannot be installed, the platform's preset, as where the read
+        // failed.
         if state.install_in_mode(start_choice, color_mode) {
             state.error_message = initial_error;
         } else {
@@ -2567,24 +2475,22 @@ impl State {
 
     /// Install `choice` in `mode`, with the palette chosen laid over it:
     /// every theme, palette and colour-mode switch installs through here,
-    /// the one place that builds both models from the theme settings'
-    /// choice. The 0.8.0 theme is resolved in the context of the mode and
-    /// the preferences ([`State::next_install`]) and its iced theme
-    /// installed; the mode shown becomes the scheme it resolved to, the
-    /// palette's where one is chosen. The 0.7.2 theme of the same choice --
-    /// the preset alone under a palette -- is resolved in that scheme and
-    /// kept beside it for the pages not yet on the 0.8.0 model
-    /// ([`State::load_theme`]). The pickers then show `choice` and `mode`.
+    /// the one place that builds the theme from the theme settings' choice.
+    /// The 0.8.0 theme is resolved in the context of the mode and the
+    /// preferences ([`State::next_install`]) and its iced theme installed;
+    /// the mode shown becomes the scheme it resolved to, the palette's where
+    /// one is chosen. The pickers then show `choice` and `mode`.
     ///
-    /// A theme that fails to load in either model leaves the installed one
-    /// on screen, and the pickers showing it and the mode it is drawn in,
-    /// with the error in the banner; false is returned.
+    /// A theme that fails to load leaves the installed one on screen, and
+    /// the pickers showing it and the mode it is drawn in, with the error in
+    /// the banner; false is returned.
     fn install_in_mode(&mut self, choice: ThemeChoice, mode: AppColorMode) -> bool {
-        // The OS theme in System mode is drawn in the mode its read reports
-        // (`SystemTheme::mode`); every other install in the mode named.
+        // The OS theme in System mode is drawn in the scheme its read
+        // reports (the read's context); every other install in the mode
+        // named.
         let asked_dark = match (&choice, mode) {
-            (ThemeChoice::OsTheme(_), AppColorMode::System) => match self.os_theme() {
-                Ok(system) => system.mode.is_dark(),
+            (ThemeChoice::OsTheme(_), AppColorMode::System) => match self.next_system() {
+                Ok(system) => system.context().scheme == Scheme::Dark,
                 Err(error) => {
                     self.error_message = Some(error);
                     return false;
@@ -2601,10 +2507,7 @@ impl State {
             }
         };
         let is_dark = next.resolved.is_dark();
-        if let Err(error) = self.load_theme(&choice, is_dark) {
-            self.error_message = Some(error);
-            return false;
-        }
+        self.error_message = None;
         // The icon set and the icon theme of the installed 0.8.0 theme; the
         // `default` icon row follows a preset's icon theme only where the
         // preset states it (`icons.theme_explicit`), the desktop's always.
@@ -2678,47 +2581,39 @@ impl State {
         let failed = (self.detect_icon_theme)().is_err();
         native_theme::detect::invalidate_caches();
         self.icon_theme_redetected(failed);
-        // The 0.8.0 model reads the desktop again at the install below.
         self.next_system = None;
-        match (self.read_system_theme)() {
-            Ok(system) => {
-                self.keep_os_theme(system);
+        match self.next_system() {
+            Ok(_) => {
+                self.keep_os_theme();
                 self.rebuild_theme();
             }
-            Err(e) => {
+            Err(error) => {
                 if matches!(self.current_choice, ThemeChoice::Preset(_)) {
                     self.rebuild_theme();
                 }
                 // After the rebuild, whose install clears the banner.
-                self.error_message = Some(format!("Failed to load OS theme: {e}"));
+                self.error_message = Some(error);
             }
         }
     }
 
-    /// The OS theme as last read, read now where no read has succeeded yet
-    /// (the startup read failed).
-    fn os_theme(&mut self) -> Result<&native_theme::SystemTheme, String> {
-        match self.system {
-            Some(ref system) => Ok(system),
-            None => {
-                let system = (self.read_system_theme)()
-                    .map_err(|e| format!("Failed to load OS theme: {e}"))?;
-                Ok(self.keep_os_theme(system))
-            }
-        }
-    }
-
-    /// Keep `system`, a new read of the OS theme, with its accessibility
-    /// preferences as the OS's and its platform preset as the one the theme
-    /// picker's `default` row names, the picker's rows rebuilt where that
-    /// preset changes.
-    fn keep_os_theme(&mut self, system: native_theme::SystemTheme) -> &native_theme::SystemTheme {
-        self.os_accessibility = system.accessibility.clone();
-        if self.default_preset != system.preset {
-            self.default_preset = system.preset.clone();
+    /// Take the kept read of the desktop's settings ([`State::next_system`])
+    /// as the OS's: the preferences of its context ([`preferences_of`]) as
+    /// the OS's accessibility preferences, and its preset
+    /// (`next::Theme::preset_id`) as the one the theme picker's `default`
+    /// row names, the picker's rows rebuilt where that preset changes. A
+    /// failed read leaves both as they are.
+    fn keep_os_theme(&mut self) {
+        let Ok(system) = self.next_system() else {
+            return;
+        };
+        let prefs = preferences_of(system.context());
+        let preset = system.preset_id().as_str();
+        self.os_accessibility = prefs;
+        if self.default_preset != preset {
+            self.default_preset = preset.to_string();
             self.theme_combo = combo_box::State::new(theme_choices(&self.default_preset));
         }
-        self.system.insert(system)
     }
 
     /// Record the user's `change` in the Preferences dialog and apply the
@@ -2848,51 +2743,6 @@ impl State {
             &self.next_json.0
         } else {
             &self.next_json.1
-        }
-    }
-
-    /// Load the 0.7.2 theme of `choice` in the mode `is_dark` names into the
-    /// theme fields the pages not yet on the 0.8.0 model read
-    /// (`current_resolved`, `layout`); the iced theme installed is the 0.8.0
-    /// one's ([`State::keep_next`]), and the icon set and theme are its
-    /// ([`State::install_in_mode`]).
-    ///
-    /// `Err` holds the error, with the theme fields untouched. The OS theme
-    /// is the kept read's variant (`os_theme`): a mode switch reads nothing.
-    fn load_theme(&mut self, choice: &ThemeChoice, is_dark: bool) -> Result<(), String> {
-        let mode = if is_dark {
-            native_theme_iced::ColorMode::Dark
-        } else {
-            native_theme_iced::ColorMode::Light
-        };
-        match choice {
-            ThemeChoice::OsTheme(_) => {
-                // Only startup falls back to the platform's preset, with
-                // nothing installed yet; here a failed read leaves the
-                // installed theme.
-                let system = self.os_theme()?;
-                let layout = system.layout.clone();
-                let resolved = system.pick(mode).clone();
-                self.layout = layout;
-                self.theme_json = theme_json(&resolved);
-                self.current_resolved = resolved;
-                self.label_widths.clear();
-                self.error_message = None;
-                Ok(())
-            }
-            ThemeChoice::Preset(name) => {
-                let nt = native_theme::theme::Theme::preset(name)
-                    .map_err(|e| format!("Failed to load preset '{name}': {e}"))?;
-                let r = nt
-                    .resolve(mode)
-                    .map_err(|e| format!("Theme '{name}' resolution failed: {e}"))?;
-                self.theme_json = theme_json(&r.variant);
-                self.current_resolved = r.variant;
-                self.label_widths.clear();
-                self.layout = nt.layout.clone();
-                self.error_message = None;
-                Ok(())
-            }
         }
     }
 
@@ -8636,23 +8486,12 @@ fn hex_color(line: &str) -> Option<Color> {
 
 #[cfg(test)]
 thread_local! {
-    /// The resolved themes [`theme_json`] has serialised on this thread.
-    static THEME_JSON_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// The listed elements' Widget Info [`element_info`] has built on this
     /// thread.
     static LISTED_INFO_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// The page widgets' Widget Info [`unlisted_info`] has built on this
     /// thread.
     static UNLISTED_INFO_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
-}
-
-/// `resolved` as Widget Info reads a listed element's values from it
-/// (`values::theme_json`), counted in [`THEME_JSON_BUILDS`] under test;
-/// `Null`, every value then not stated, where it does not serialise.
-fn theme_json(resolved: &ResolvedTheme) -> serde_json::Value {
-    #[cfg(test)]
-    THEME_JSON_BUILDS.with(|builds| builds.set(builds.get() + 1));
-    values::theme_json(resolved).unwrap_or_default()
 }
 
 /// The installed 0.8.0 theme `r` as a listed element's 0.8.0 rows read the
@@ -24692,29 +24531,20 @@ mod tests {
     /// combo box's options (`State::keep_os_theme`), so the `default (..)`
     /// row names the new preset.
     #[test]
-    fn a_new_default_preset_rebuilds_the_theme_rows() {
+    fn a_new_default_preset_rebuilds_the_theme_rows() -> Result<(), String> {
         let mut state = loaded("kde-breeze", false);
-        let Some(other) = native_theme::theme::Theme::list_presets_for_platform()
+        let other = native_theme::theme::Theme::list_presets_for_platform()
             .iter()
-            .map(|info| info.key)
-            .find(|key| *key != state.default_preset)
-        else {
-            panic!(
-                "this platform offers no preset but {}",
-                state.default_preset
-            );
-        };
-        let read = match os_read_with(|system| system.preset = other.to_owned()) {
-            Ok(read) => read,
-            Err(error) if !cfg!(target_os = "linux") => {
-                eprintln!(
-                    "a_new_default_preset_rebuilds_the_theme_rows: skipped, nothing asserted: \
-                     the OS theme failed to read on this platform at run time ({error})"
-                );
-                return;
-            }
-            Err(error) => panic!("the OS theme failed to read on Linux: {error}"),
-        };
+            .filter_map(|info| Preset::from_name(info.key))
+            .find(|preset| preset.as_str() != state.default_preset)
+            .ok_or_else(|| {
+                format!(
+                    "this platform offers no preset but {}",
+                    state.default_preset
+                )
+            })?;
+        let read = os_read_of(other, |_| {}).map_err(|e| e.to_string());
+        let other = other.as_str();
         let labels = |choices: &[ThemeChoice]| -> Vec<String> {
             choices.iter().map(ToString::to_string).collect()
         };
@@ -24724,13 +24554,15 @@ mod tests {
             wanted,
             "the rows were built on {other} already"
         );
-        let _ = state.keep_os_theme(read);
+        state.next_system = Some(read);
+        state.keep_os_theme();
         assert_eq!(state.default_preset, other);
         assert_eq!(
             labels(state.theme_combo.options()),
             wanted,
             "the Theme row's rows after a read whose preset is {other}"
         );
+        Ok(())
     }
 
     /// The Theme row's field carries its arrow: `next_arrow_handle` gives a
@@ -25161,16 +24993,11 @@ mod tests {
     /// startup, with nothing installed yet, is that preset the fallback. A
     /// preset needs no read, so a failed reload still installs it in the
     /// OS's mode as now detected, as the theme watcher's event asks. The
-    /// case under `default` needs the platform's reader off Linux
-    /// ([`started_with_os`]); the others run everywhere.
+    /// case under `default` starts on a fake read ([`os_read_with`]).
     #[test]
     fn a_failed_os_theme_read_keeps_the_installed_theme() {
         const TEST: &str = "a_failed_os_theme_read_keeps_the_installed_theme";
-        fn failing_read() -> native_theme::Result<native_theme::SystemTheme> {
-            Err(native_theme::error::Error::PlatformUnsupported {
-                platform: "the test's failing read",
-            })
-        }
+        let failing_read = failing_next_read;
         let preset = match native_theme::theme::Theme::list_presets_for_platform().first() {
             Some(info) => info.key,
             None => panic!("this platform offers no preset"),
@@ -25192,7 +25019,7 @@ mod tests {
                 Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
             ),
         ];
-        if let Some(state) = started_with_os(TEST, native_theme::SystemTheme::from_system) {
+        if let Some(state) = started_with_os(TEST, || os_read_with(|_| {})) {
             cases.push((
                 "Reload System Theme under default".to_string(),
                 state,
@@ -25200,7 +25027,7 @@ mod tests {
             ));
         }
         for (case, mut state, message) in cases {
-            state.read_system_theme = failing_read;
+            state.read_next_system = failing_read;
             state.error_message = None;
             let before = shown(&state);
             let _ = update(&mut state, message);
@@ -25240,20 +25067,16 @@ mod tests {
         );
     }
 
-    /// An OS theme that fails to read at startup leaves the platform's own
-    /// preset drawn (the one core merges a system read over,
-    /// `pipeline::platform_preset_name`, never another platform's),
+    /// A 0.8.0 read of the desktop that fails at startup leaves the
+    /// platform's own preset drawn (the one that read builds on,
+    /// `Preset::detect`, never another platform's),
     /// and the theme picker naming it, with the failed read in the banner
     /// and the OS's accessibility preferences applied: a colour-mode change,
     /// from the picker or `--variant`, and a rebuild install that preset
     /// again, in the mode chosen.
     #[test]
     fn the_startup_fallback_is_the_platform_preset_in_every_mode() {
-        fn failing_read() -> native_theme::Result<native_theme::SystemTheme> {
-            Err(native_theme::error::Error::PlatformUnsupported {
-                platform: "the test's failing read",
-            })
-        }
+        let failing_read = failing_next_read;
         fn installed(state: &State) -> (ThemeChoice, AppColorMode, Option<String>) {
             (
                 state.current_choice.clone(),
@@ -25261,7 +25084,7 @@ mod tests {
                 state.error_message.clone(),
             )
         }
-        let key = native_theme::pipeline::platform_preset_name().name;
+        let key = Preset::detect().as_str();
         assert!(
             native_theme::theme::Theme::list_presets_for_platform()
                 .iter()
@@ -25275,18 +25098,17 @@ mod tests {
             state.error_message.is_some(),
             "the failed OS-theme read at startup reported nothing"
         );
-        let mode = if state.is_dark {
-            native_theme_iced::ColorMode::Dark
+        let ctx = if state.is_dark {
+            ThemeContext::dark()
         } else {
-            native_theme_iced::ColorMode::Light
+            ThemeContext::light()
         };
-        let preset = native_theme::theme::Theme::preset(key)
-            .and_then(|t| t.resolve(mode))
-            .map(|r| (r.icon_set, r.icon_theme.map(Cow::into_owned)))
-            .ok();
+        let icons = native_theme::next::Theme::preset(Preset::detect())
+            .resolve(&ctx)
+            .icons;
         assert_eq!(
-            Some((state.current_icon_set, state.current_icon_theme.clone())),
-            preset,
+            (state.current_icon_set, state.current_icon_theme.clone()),
+            (icons.set, icons.theme.as_deref().map(str::to_owned)),
             "the startup fallback's icons are not the {key} preset's"
         );
         assert_eq!(
@@ -25324,64 +25146,74 @@ mod tests {
         );
     }
 
-    /// The showcase started with `read` as its OS theme read, or `None`,
-    /// said on stderr under `test`'s name, where the read fails off Linux:
-    /// a `SystemTheme` comes only from a read of the OS, which core builds
-    /// with no public constructor besides, so nothing else can stand in.
-    /// The example's dev-dependencies turn on native-theme's `macos` and
-    /// `windows` readers on those targets (`connectors/native-theme-iced/Cargo.toml`),
-    /// so a skip there means the read itself failed at run time, not a
-    /// missing feature. On Linux the read never fails (core falls back to
-    /// the platform preset where no reader runs), so it fails the test there.
+    /// The showcase started with `read` as its 0.8.0 read of the desktop,
+    /// a fake one ([`os_read_with`]), which does not fail: its failure fails
+    /// the test, named by `test`. `Some` always, so a test reads as one that
+    /// may be skipped did.
     fn started_with_os(
         test: &str,
-        read: fn() -> native_theme::Result<native_theme::SystemTheme>,
+        read: fn() -> native_theme::next::Result<native_theme::next::Theme>,
     ) -> Option<State> {
         let state = State::starting_with(read);
-        if let Some(error) = &state.error_message {
-            if cfg!(target_os = "linux") {
-                panic!("{test}: the OS theme failed to read on Linux: {error}");
-            }
-            eprintln!(
-                "{test}: skipped, nothing asserted: the OS theme failed to read on this \
-                 platform at run time ({error}), and a SystemTheme comes from no other source"
-            );
-            return None;
-        }
+        assert!(
+            state.error_message.is_none(),
+            "{test}: the fake read did not install: {:?}",
+            state.error_message
+        );
         Some(state)
     }
 
-    /// The OS theme this host reads, with `change` made to it.
+    /// A fake 0.8.0 read of the desktop, the same on every host: the
+    /// platform's preset (`Preset::detect`) alone, in a light context with
+    /// `change` made to it, as a reader's snapshot sets the context
+    /// (`next::Theme::from_system`); no system settings over it.
     fn os_read_with(
-        change: impl FnOnce(&mut native_theme::SystemTheme),
-    ) -> native_theme::Result<native_theme::SystemTheme> {
-        let mut system = native_theme::SystemTheme::from_system()?;
-        change(&mut system);
-        Ok(system)
+        change: impl FnOnce(&mut ThemeContext),
+    ) -> native_theme::next::Result<native_theme::next::Theme> {
+        os_read_of(Preset::detect(), change)
+    }
+
+    /// [`os_read_with`] of `preset`.
+    fn os_read_of(
+        preset: Preset,
+        change: impl FnOnce(&mut ThemeContext),
+    ) -> native_theme::next::Result<native_theme::next::Theme> {
+        let mut ctx = ThemeContext::light();
+        change(&mut ctx);
+        Ok(native_theme::next::Theme::preset(preset).with_context(ctx))
     }
 
     /// Under `default`, each colour mode draws its icons from that mode's
-    /// icon theme (`SystemTheme::icon_theme_for`), as KDE names one per
-    /// variant: Dark chosen on a light desktop takes `breeze-dark`, not the
-    /// light variant's `breeze`, as the `kde-breeze` preset does in Dark.
+    /// icon theme, the desktop's read resolved in the mode's scheme, as the
+    /// `kde-breeze` preset names one per scheme: Dark chosen on a light
+    /// desktop takes `breeze-dark`, not the light scheme's `breeze`.
     #[test]
-    fn the_os_theme_takes_each_modes_icon_theme() {
-        fn breeze_variants() -> native_theme::Result<native_theme::SystemTheme> {
-            let overlay = native_theme::theme::Theme::from_toml(
-                "[light.defaults]\nicon_theme = \"breeze\"\n\
-                 [dark.defaults]\nicon_theme = \"breeze-dark\"\n",
-            )?;
-            let mut system = native_theme::SystemTheme::from_system()?.with_overlay(&overlay)?;
-            system.mode = native_theme_iced::ColorMode::Light;
-            system.icon_theme = system
-                .icon_theme_for(native_theme_iced::ColorMode::Light)
-                .map(|name| Cow::Owned(name.to_owned()));
-            Ok(system)
+    fn the_os_theme_takes_each_modes_icon_theme() -> Result<(), String> {
+        fn breeze_light() -> native_theme::next::Result<native_theme::next::Theme> {
+            os_read_of(Preset::KdeBreeze, |_| {})
+        }
+        let icon_theme = |ctx: ThemeContext| {
+            native_theme::next::Theme::preset(Preset::KdeBreeze)
+                .resolve(&ctx)
+                .icons
+                .theme
+                .as_deref()
+                .map(str::to_owned)
+        };
+        let (light, dark) = (
+            icon_theme(ThemeContext::light()),
+            icon_theme(ThemeContext::dark()),
+        );
+        if (light.as_deref(), dark.as_deref()) != (Some("breeze"), Some("breeze-dark")) {
+            return Err(format!(
+                "kde-breeze names the icon themes {light:?} and {dark:?} on the 0.8.0 model, \
+                 not breeze and breeze-dark"
+            ));
         }
         let Some(mut state) =
-            started_with_os("the_os_theme_takes_each_modes_icon_theme", breeze_variants)
+            started_with_os("the_os_theme_takes_each_modes_icon_theme", breeze_light)
         else {
-            return;
+            return Ok(());
         };
         assert_eq!(
             state.current_icon_theme.as_deref(),
@@ -25413,6 +25245,7 @@ mod tests {
             Some("breeze-dark"),
             "a switch to the OS theme in Dark"
         );
+        Ok(())
     }
 
     /// A preference set in the Preferences dialog stays what the user set
@@ -25420,8 +25253,8 @@ mod tests {
     /// OS theme; one the user did not set follows the OS.
     #[test]
     fn a_preference_set_by_the_user_survives_every_install() {
-        fn unscaled() -> native_theme::Result<native_theme::SystemTheme> {
-            os_read_with(|system| system.accessibility.text_scaling_factor = 1.0)
+        fn unscaled() -> native_theme::next::Result<native_theme::next::Theme> {
+            os_read_with(|ctx| ctx.text_scale = 1.0)
         }
         let Some(mut state) = started_with_os(
             "a_preference_set_by_the_user_survives_every_install",
@@ -25479,11 +25312,11 @@ mod tests {
     /// native-theme-gpui `forward_reduce_motion`: off is no request).
     #[test]
     fn an_os_motion_request_stops_the_animations_whatever_the_switch_shows() {
-        fn requested() -> native_theme::Result<native_theme::SystemTheme> {
-            os_read_with(|system| system.accessibility.reduce_motion = true)
+        fn requested() -> native_theme::next::Result<native_theme::next::Theme> {
+            os_read_with(|ctx| ctx.motion = MotionPreference::Reduced)
         }
-        fn not_requested() -> native_theme::Result<native_theme::SystemTheme> {
-            os_read_with(|system| system.accessibility.reduce_motion = false)
+        fn not_requested() -> native_theme::next::Result<native_theme::next::Theme> {
+            os_read_with(|ctx| ctx.motion = MotionPreference::Full)
         }
         let Some(mut state) = started_with_os(
             "an_os_motion_request_stops_the_animations_whatever_the_switch_shows",
@@ -25527,12 +25360,12 @@ mod tests {
     /// The OS theme as this host reads it, counted in [`OS_READS`], its text
     /// scale the number of the read, so a test sees which read the installed
     /// preferences come from.
-    fn counted_read() -> native_theme::Result<native_theme::SystemTheme> {
+    fn counted_read() -> native_theme::next::Result<native_theme::next::Theme> {
         let read = OS_READS.with(|reads| {
             reads.set(reads.get() + 1);
             reads.get()
         });
-        os_read_with(|system| system.accessibility.text_scaling_factor = read as f32)
+        os_read_with(|ctx| ctx.text_scale = read as f32)
     }
 
     /// The OS theme is read once at startup and again on Reload System
@@ -25584,17 +25417,17 @@ mod tests {
     /// first read in Light, every later one in Dark, as an OS switched to
     /// Dark after the showcase started reads.
     #[cfg(feature = "watch")]
-    fn read_turning_dark() -> native_theme::Result<native_theme::SystemTheme> {
+    fn read_turning_dark() -> native_theme::next::Result<native_theme::next::Theme> {
         let read = OS_READS.with(|reads| {
             reads.set(reads.get() + 1);
             reads.get()
         });
-        os_read_with(|system| {
-            system.accessibility.text_scaling_factor = read as f32;
-            system.mode = if read == 1 {
-                native_theme_iced::ColorMode::Light
+        os_read_with(|ctx| {
+            ctx.text_scale = read as f32;
+            ctx.scheme = if read == 1 {
+                Scheme::Light
             } else {
-                native_theme_iced::ColorMode::Dark
+                Scheme::Dark
             };
         })
     }
@@ -25643,15 +25476,12 @@ mod tests {
 
     /// The iced theme's `is_dark` (which the window's title bar follows) is
     /// the mode the theme was installed in, not iced's guess from its
-    /// background: on every install path, an OS theme whose dark variant
-    /// has the light background included.
+    /// background: on every install path, an OS theme read in the dark
+    /// scheme included.
     #[test]
     fn the_iced_theme_is_dark_in_the_mode_installed() {
-        fn light_dark_variant() -> native_theme::Result<native_theme::SystemTheme> {
-            os_read_with(|system| {
-                system.dark.defaults.background_color = system.light.defaults.background_color;
-                system.mode = native_theme_iced::ColorMode::Dark;
-            })
+        fn light_dark_variant() -> native_theme::next::Result<native_theme::next::Theme> {
+            os_read_with(|ctx| ctx.scheme = Scheme::Dark)
         }
         let drawn_dark = |state: &State| theme(state).extended_palette().is_dark;
         let Some(mut state) = started_with_os(
@@ -42512,11 +42342,9 @@ mod tests {
     /// M9-075, M9-139: Widget Info is built when what it shows changes, not
     /// at each view. Once the pointer has stood on the Basic page's plain
     /// button, twenty animation ticks, the second the page animates in, each
-    /// with a view, serialise the theme no more and build its info and Copy
-    /// text no more, where each view serialised the whole theme and built
-    /// them again; an install serialises the theme once and builds the info
-    /// once, and a preference change builds the info again from the
-    /// serialised theme. A page widget's info is built once per hover and
+    /// with a view, build its info and Copy text no more, where each view
+    /// built them again; an install builds the info once, and a preference
+    /// change builds it again. A page widget's info is built once per hover and
     /// install too, where each view built it twice, for the status bar and
     /// the inspector (M9b T7 review Minor 2). Copy then copies what the
     /// state builds.
@@ -42542,8 +42370,8 @@ mod tests {
         ];
         for (hovered, builds) in cases {
             let mut state = installed("kde-breeze");
-            let (json, built) = (count(&THEME_JSON_BUILDS), count(builds));
-            let since = || (count(&THEME_JSON_BUILDS) - json, count(builds) - built);
+            let built = count(builds);
+            let since = || count(builds) - built;
             let start = Instant::now();
             let entered = match hovered {
                 Hovered::Listed(id) => Message::ElementHovered(id),
@@ -42556,8 +42384,8 @@ mod tests {
             animate(&mut state, shown);
             assert_eq!(
                 since(),
-                (0, 1),
-                "{hovered:?}: (themes serialised, infos built) by a hover and twenty views"
+                1,
+                "{hovered:?}: infos built by a hover and twenty views"
             );
             let _ = update(
                 &mut state,
@@ -42566,16 +42394,15 @@ mod tests {
             animate(&mut state, shown + TICK * 20);
             assert_eq!(
                 since(),
-                (1, 2),
-                "{hovered:?}: (themes serialised, infos built) by an install and twenty views more"
+                2,
+                "{hovered:?}: infos built by an install and twenty views more"
             );
             let _ = update(&mut state, Message::TextScaleSelected(TextScale(1.5)));
             animate(&mut state, shown + TICK * 40);
             assert_eq!(
                 since(),
-                (1, 3),
-                "{hovered:?}: (themes serialised, infos built) by a preference change and \
-                 twenty views more"
+                3,
+                "{hovered:?}: infos built by a preference change and twenty views more"
             );
             let _ = update(&mut state, Message::TabSelected(Tab::Buttons));
             let built_now = match hovered {
@@ -46390,8 +46217,7 @@ thing(0);
     /// desktop fails, so the context it is resolved in is the default one
     /// every preset alone is resolved in, whatever the host's desktop.
     fn next_state() -> Result<State, String> {
-        let mut state =
-            State::starting_with_reads(native_theme::SystemTheme::from_system, failing_next_read);
+        let mut state = State::starting_with(failing_next_read);
         if state.install_in_mode(
             ThemeChoice::Preset("kde-breeze".to_owned()),
             AppColorMode::Light,
@@ -46542,8 +46368,7 @@ thing(0);
     /// 0.7.2 read fails.
     #[test]
     fn a_failed_08_desktop_read_starts_on_the_platform_preset() {
-        let state =
-            State::starting_with_reads(native_theme::SystemTheme::from_system, failing_next_read);
+        let state = State::starting_with(failing_next_read);
         let key = platform_fallback_preset();
         assert_eq!(state.current_choice, ThemeChoice::Preset(key.to_owned()));
         assert!(
