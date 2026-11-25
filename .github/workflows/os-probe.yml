@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       jobs:
-        description: "The jobs to run, comma-separated without spaces (probe, ios-host); empty runs every job"
+        description: "The jobs to run, comma-separated without spaces (probe, ios-host, switch-label); empty runs every job"
         required: false
         default: ""
       passes:
@@ -41,7 +41,7 @@ on:
         required: false
         default: "roles,fonts,symbols"
       ios_host_set:
-        description: "The ios-host job's render specimen set (run.sh's IOS_HOST_SET: base, campaign or popup)"
+        description: "The ios-host job's render specimen set (run.sh's IOS_HOST_SET: base, campaign, popup or lists)"
         required: false
         default: "base"
       ios_host_device:
@@ -1301,3 +1301,98 @@ jobs:
         with:
           name: ios-host-${{ matrix.os }}
           path: ios-host-out
+
+  # The labelled switch on macOS (M2.FS4 of the 0.8.0 plan): SwiftUI's
+  # Toggle with the switch style, which the Rust probe cannot make (SwiftUI has
+  # no Objective-C API), in tools/swiftui-host/SwitchLabel.swift, built with
+  # the image's default Xcode's swiftc and run in a key window at rest, its
+  # switch hovered and pressed by posted mouse events, in aqua and darkAqua
+  # (the file's header says how). Screen recording, Accessibility and
+  # PostEvent access are granted to the shells and the built host as the
+  # probe's button pass grants them. The step fails where the build fails or
+  # the host exits non-zero; the upload still runs.
+  switch-label:
+    name: Switch label (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',switch-label,')
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'xcode-27' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/checkout@v6
+        if: runner.os == 'macOS'
+      # This job's own VM's accessibility settings, appearance and accent, read
+      # as the probe job's record step reads them (a value, `absent` where the
+      # image sets none, or what the read said where it failed), into
+      # settings.txt; the host reads them again in its [accessibility] table.
+      - name: Record the image's accessibility settings (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=switch-label-out
+          mkdir -p "$out"
+          for setting in "com.apple.universalaccess reduceTransparency" \
+                         "com.apple.universalaccess increaseContrast" \
+                         "com.apple.universalaccess reduceMotion" \
+                         "com.apple.universalaccess differentiateWithoutColor" \
+                         "-g AppleReduceDesktopTinting" \
+                         "-g AppleInterfaceStyle" \
+                         "-g AppleAccentColor" \
+                         "-g AppleHighlightColor" \
+                         "-g AppleKeyboardUIMode"; do
+            set -- $setting
+            value="$(defaults read "$1" "$2" 2>&1)"
+            if [ $? -ne 0 ]; then
+              case "$value" in
+                *"does not exist"*|*"Could not find key"*) value=absent ;;
+                *) value="unreadable: $value" ;;
+              esac
+            fi
+            echo "$1 $2: $value"
+          done | tee "$out/settings.txt"
+      - name: Build and run
+        if: runner.os == 'macOS'
+        timeout-minutes: 20
+        run: |
+          set +e
+          out=switch-label-out
+          host="$RUNNER_TEMP/switch-label"
+          mkdir -p "$out"
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            echo "xcrun SDK: $(xcrun --show-sdk-version) build $(xcrun --show-sdk-build-version)"
+            swiftc --version; echo "swiftc --version: exit $?"
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          swiftc -parse-as-library -O tools/swiftui-host/SwitchLabel.swift -o "$host" > "$out/build.log" 2>&1
+          status=$?
+          cat "$out/build.log"
+          echo "swiftc: exit $status" | tee -a "$out/environment.txt"
+          [ $status -eq 0 ] || exit 1
+          for service in kTCCServiceScreenCapture kTCCServiceAccessibility kTCCServicePostEvent; do
+            for client in /bin/bash /bin/zsh "$host"; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$client', 1, 2, 4, 1);"
+              echo "grant $service to $client: exit $?" | tee -a "$out/environment.txt"
+            done
+          done
+          "$host" "$out" 2>&1 | tee "$out/run.log"
+          status=${PIPESTATUS[0]}
+          echo "switch-label: exit $status" | tee -a "$out/environment.txt"
+          [ -f "$out/switch-label.toml" ] || { echo "no switch-label.toml"; exit 1; }
+          captures=$(find "$out" -name '*.png' | wc -l | tr -d ' ')
+          echo "captures written: $captures"
+          if [ "$captures" -eq 0 ]; then echo "::error::no capture was written"; exit 1; fi
+          exit $status
+      - name: Upload the captures
+        if: always() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v7
+        with:
+          name: switch-label-${{ matrix.os }}
+          path: switch-label-out

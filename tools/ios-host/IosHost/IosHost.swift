@@ -18,7 +18,10 @@
 // `isSelected = true`); selected_highlighted (both); focused (a focus update to
 // the system column's specimen is requested, and whether UIKit focused it is
 // recorded). A specimen lists the states it can take. `set=campaign` draws
-// the campaign set instead (campaignSpecimens). The backdrops: the
+// the campaign set instead (campaignSpecimens), `set=lists` the list set
+// (listSpecimens: list rows, a segment, a tab bar item, an outline header,
+// an inset-grouped row, switch rows), which the press mode also presses in
+// place of the buttons. The backdrops: the
 // system background, opaque black and opaque white, all else equal, for a
 // per-pixel solve of the layer's colour and alpha (tools/ios-host/solve.swift);
 // a glass style has a second page over a known pattern, with a column of the
@@ -67,6 +70,7 @@
 // where a step failed); the `press` mode shows `press-done` for the UI test.
 
 import AVKit
+import SwiftUI
 import UIKit
 
 @main
@@ -200,6 +204,10 @@ enum ButtonState: String {
     /// campaign set).
     case disabledSelected = "disabled_selected"
     case disabledHighlighted = "disabled_highlighted"
+    /// A list row's cell disabled (its switch disabled with it), off and on
+    /// (the list set).
+    case cellDisabled = "cell_disabled"
+    case cellDisabledSelected = "cell_disabled_selected"
 }
 
 let allStates: [ButtonState] = [.normal, .highlighted, .disabled, .toggleOff, .selected, .selectedHighlighted, .focused]
@@ -232,12 +240,36 @@ final class Sample {
     let barItem: UIBarButtonItem?
     /// The size the harness gives a view that has no intrinsic size.
     let harnessSize: CGSize?
-    /// Whether the view spans the cell's width, inset by `barInset`.
+    /// Whether the view spans the cell's width, inset by `barInset` (a
+    /// harness size then gives the height alone).
     let spansWidth: Bool
+    /// The list set's press: the view whose touches the press mode's long
+    /// press recognizer reports, the view the UI test presses at its centre
+    /// (while armed, a marker over it carries the identifier: armNext),
+    /// whether UIKit reports the pressed part highlighted (nil where it
+    /// cannot say), and what restores the rest state before each press (a
+    /// release selects a row, a segment or a tab, or turns a switch).
+    let pressView: (@MainActor () -> UIView?)?
+    let pressTarget: (@MainActor () -> UIView?)?
+    let highlighted: (@MainActor () -> Bool?)?
+    let reset: (@MainActor () -> Void)?
+    /// Sets a state on the sample where the specimen sets its own (false
+    /// where it cannot take it).
+    let applyState: (@MainActor (ButtonState) -> Bool)?
+    /// What UIKit reports for the sample's parts, as TOML lines of its
+    /// [[render]] entry.
+    let reads: (@MainActor (UITraitCollection) -> String)?
+    /// What the sample's views need alive (a data source, a hosting
+    /// controller, a model).
+    let keep: [AnyObject]
 
     init(
         view: UIView, control: UIControl? = nil, button: UIButton? = nil, barItem: UIBarButtonItem? = nil,
-        harnessSize: CGSize? = nil, spansWidth: Bool = false
+        harnessSize: CGSize? = nil, spansWidth: Bool = false, pressView: (@MainActor () -> UIView?)? = nil,
+        pressTarget: (@MainActor () -> UIView?)? = nil,
+        highlighted: (@MainActor () -> Bool?)? = nil, reset: (@MainActor () -> Void)? = nil,
+        applyState: (@MainActor (ButtonState) -> Bool)? = nil,
+        reads: (@MainActor (UITraitCollection) -> String)? = nil, keep: [AnyObject] = []
     ) {
         self.view = view
         self.control = control
@@ -245,6 +277,13 @@ final class Sample {
         self.barItem = barItem
         self.harnessSize = harnessSize
         self.spansWidth = spansWidth
+        self.pressView = pressView
+        self.pressTarget = pressTarget
+        self.highlighted = highlighted
+        self.reset = reset
+        self.applyState = applyState
+        self.reads = reads
+        self.keep = keep
     }
 }
 
@@ -651,6 +690,439 @@ func campaignSpecimens() -> [Specimen] {
     return list
 }
 
+/// A list whose data source and model live as long as it does.
+final class ListView: UICollectionView {
+    var source: AnyObject?
+}
+
+/// The plain table's rows: each cell's default content configuration.
+final class TableRows: NSObject, UITableViewDataSource {
+    let rows: [String]
+
+    init(rows: [String]) { self.rows = rows }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rows.count }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "row", for: indexPath)
+        var content = cell.defaultContentConfiguration()
+        content.text = rows.indices.contains(indexPath.row) ? rows[indexPath.row] : nil
+        cell.contentConfiguration = content
+        return cell
+    }
+}
+
+/// The UIKit switch row's model: whether its cell is disabled.
+final class RowModel {
+    var cellDisabled = false
+}
+
+/// The SwiftUI switch row's model.
+final class ToggleModel: ObservableObject {
+    @Published var isOn = false
+    @Published var disabled = false
+}
+
+/// SwiftUI's labelled switch on iOS: a `Toggle` in a `Form`, its list's and
+/// row's backgrounds hidden (the solve reads the label over the backdrops).
+struct ToggleForm: View {
+    @ObservedObject var model: ToggleModel
+
+    var body: some View {
+        Form {
+            Toggle("Label", isOn: $model.isOn)
+                .disabled(model.disabled)
+                .listRowBackground(Color.clear)
+        }
+        .scrollContentBackground(.hidden)
+        .scrollDisabled(true)
+    }
+}
+
+/// A one-section list of `items` in the list layout of `appearance`, its
+/// background clear, each cell made by `configure`.
+@MainActor
+func listView(
+    _ appearance: UICollectionLayoutListConfiguration.Appearance, items: [String],
+    headerFirst: Bool = false, configure: @escaping @MainActor (UICollectionViewListCell, String) -> Void
+) -> ListView {
+    var configuration = UICollectionLayoutListConfiguration(appearance: appearance)
+    configuration.backgroundColor = .clear
+    if headerFirst { configuration.headerMode = .firstItemInSection }
+    let list = ListView(
+        frame: CGRect(x: 0, y: 0, width: 300, height: 120),
+        collectionViewLayout: UICollectionViewCompositionalLayout.list(using: configuration))
+    list.isScrollEnabled = false
+    list.backgroundColor = .clear
+    let registration = UICollectionView.CellRegistration<UICollectionViewListCell, String> { cell, _, item in
+        configure(cell, item)
+    }
+    let source = UICollectionViewDiffableDataSource<Int, String>(collectionView: list) { view, indexPath, item in
+        view.dequeueConfiguredReusableCell(using: registration, for: indexPath, item: item)
+    }
+    list.source = source
+    return list
+}
+
+/// The items of `list` as one section: `items` flat, or the first a header
+/// over the rest, expanded.
+@MainActor
+func fill(_ list: ListView, _ items: [String], outline: Bool) {
+    guard let source = list.source as? UICollectionViewDiffableDataSource<Int, String> else { return }
+    var section = NSDiffableDataSourceSectionSnapshot<String>()
+    if outline, let header = items.first {
+        section.append([header])
+        section.append(Array(items.dropFirst()), to: header)
+        section.expand([header])
+    } else {
+        section.append(items)
+    }
+    source.apply(section, to: 0, animatingDifferences: false)
+}
+
+@MainActor
+func deselectAll(_ list: UICollectionView) {
+    for path in list.indexPathsForSelectedItems ?? [] { list.deselectItem(at: path, animated: false) }
+}
+
+@MainActor
+func firstCell(_ list: UICollectionView) -> UICollectionViewCell? {
+    list.cellForItem(at: IndexPath(item: 0, section: 0))
+}
+
+/// The first view of `type` in `root`'s subtree, depth first, that `where`
+/// accepts.
+@MainActor
+func firstView<T: UIView>(_ type: T.Type, in root: UIView, where accepts: (T) -> Bool = { _ in true }) -> T? {
+    if let found = root as? T, accepts(found) { return found }
+    for child in root.subviews {
+        if let found = firstView(type, in: child, where: accepts) { return found }
+    }
+    return nil
+}
+
+/// What UIKit reports for each list or table cell among `cells`, top first:
+/// its configuration state, its background configuration (the one set, else
+/// the cell's default) resolved for that state, its content configuration's
+/// text, and, where `uikitDefaults` is set and the cell is a UIKit list or
+/// table cell, the cell's default content configuration resolved for the
+/// state and with `isDisabled` set (UIKit's own disabled text). A SwiftUI
+/// list's cells (`uikitDefaults` false) and other collection view cells get
+/// no default_* reads: their default configuration is UIKit's, not what
+/// SwiftUI draws.
+@MainActor
+func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection, uikitDefaults: Bool = true) -> String {
+    var text = ""
+    for (index, view) in cells.sorted(by: { $0.frame.minY < $1.frame.minY }).enumerated() {
+        let state: UICellConfigurationState
+        let background: UIBackgroundConfiguration?
+        let content: UIContentConfiguration?
+        let fallback: UIListContentConfiguration?
+        if let cell = view as? UICollectionViewListCell {
+            state = cell.configurationState
+            background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
+            content = cell.contentConfiguration
+            fallback = cell.defaultContentConfiguration()
+        } else if let cell = view as? UITableViewCell {
+            state = cell.configurationState
+            background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
+            content = cell.contentConfiguration
+            fallback = cell.defaultContentConfiguration()
+        } else if let cell = view as? UICollectionViewCell {
+            state = cell.configurationState
+            background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
+            content = cell.contentConfiguration
+            fallback = nil
+        } else {
+            continue
+        }
+        let tint = view.tintColor ?? .tintColor
+        var fields = [
+            "[[render.list_cell]]",
+            "index = \(index)",
+            "class = \(quoted(String(describing: type(of: view))))",
+            "frame_pt = \(rectangle(view.convert(view.bounds, to: root)))",
+            "state_highlighted = \(state.isHighlighted)",
+            "state_selected = \(state.isSelected)",
+            "state_disabled = \(state.isDisabled)",
+            "state_expanded = \(state.isExpanded)",
+            "user_interaction_enabled = \(view.isUserInteractionEnabled)",
+            "layout_margins_pt = \(insets(view.directionalLayoutMargins))",
+        ]
+        if let resolved = background?.updated(for: state) {
+            fields += [
+                "background_color = \(colorValue(resolved.resolvedBackgroundColor(for: tint), traits))",
+                "background_stroke_color = \(colorValue(resolved.resolvedStrokeColor(for: tint), traits))",
+                "background_stroke_width_pt = \(number(resolved.strokeWidth))",
+                "background_stroke_outset_pt = \(number(resolved.strokeOutset))",
+                "background_corner_radius_pt = \(number(resolved.cornerRadius))",
+                "background_insets_pt = \(insets(resolved.backgroundInsets))",
+                "background_visual_effect = \(resolved.visualEffect.map { quoted(String(describing: $0)) } ?? absent)",
+                "background_custom_view = \(resolved.customView.map { quoted(String(describing: type(of: $0))) } ?? absent)",
+            ]
+        }
+        if let list = content as? UIListContentConfiguration {
+            let resolved = list.updated(for: state)
+            fields += [
+                "text = \(resolved.text.map(quoted) ?? absent)",
+                "text_font = \(fontValue(resolved.textProperties.font))",
+                "text_color = \(colorValue(resolved.textProperties.resolvedColor(), traits))",
+                "content_insets_pt = \(insets(resolved.directionalLayoutMargins))",
+            ]
+        }
+        if uikitDefaults, let fallback {
+            var disabled = state
+            disabled.isDisabled = true
+            let disabledContent = fallback.updated(for: disabled)
+            fields += [
+                "default_text_font = \(fontValue(fallback.updated(for: state).textProperties.font))",
+                "default_text_color = \(colorValue(fallback.updated(for: state).textProperties.resolvedColor(), traits))",
+                "default_disabled_text_font = \(fontValue(disabledContent.textProperties.font))",
+                "default_disabled_text_color = \(colorValue(disabledContent.textProperties.resolvedColor(), traits))",
+            ]
+        }
+        text += fields.joined(separator: "\n") + "\n\n"
+    }
+    return text
+}
+
+/// The list set (`set=lists`, run.sh's IOS_HOST_SET; the 0.8.0 M2.FS4
+/// measurements of what UIKit draws where no source gives it). Pressed by a
+/// held touch in the press mode (`pressed`, its rest beside it): a plain
+/// UITableView's first row; the middle segment of a UISegmentedControl of
+/// three (the first selected); a `.sidebar` list's first row; the middle item
+/// of a UITabBar of three (the first selected); a UISlider's thumb at the
+/// value 0.5 (its centre, where the touch lands); a `.sidebar` list's
+/// outline-disclosure header (`headerMode = .firstItemInSection`, the
+/// accessory's `.header` style, expanded); the switch of an `.insetGrouped`
+/// list row (the cell's default content configuration "Label", the switch its
+/// trailing custom-view accessory); the UISwitch of SwiftUI's `Toggle` in a
+/// `Form`. Drawn in the render mode:
+/// each at rest, an `.insetGrouped` list's one row (the card), SwiftUI's
+/// `Toggle("Label")` in a `Form`, and both switch
+/// rows off and on, the switch disabled, and (UIKit) the row's cell disabled
+/// (`isUserInteractionEnabled = false`, its switch disabled) or (SwiftUI) the
+/// Toggle `.disabled(true)`. The lists' backgrounds are clear, and so are the
+/// switch rows' cells (`UIBackgroundConfiguration.clear()`, SwiftUI's
+/// `listRowBackground(Color.clear)`), so the solve reads what UIKit draws
+/// over them.
+@MainActor
+func listSpecimens() -> [Specimen] {
+    let pressStates: [ButtonState] = [.normal, .pressed]
+    let rowHeight = CGSize(width: 0, height: 100)
+    var list: [Specimen] = [
+        Specimen(
+            name: "table_row", kind: "table_view", style: "plain", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let table = UITableView(frame: CGRect(x: 0, y: 0, width: 300, height: 88), style: .plain)
+                let rows = TableRows(rows: ["One", "Two"])
+                table.register(UITableViewCell.self, forCellReuseIdentifier: "row")
+                table.dataSource = rows
+                table.isScrollEnabled = false
+                table.backgroundColor = .clear
+                let first = IndexPath(row: 0, section: 0)
+                return Sample(
+                    view: table, harnessSize: CGSize(width: 0, height: 88), spansWidth: true, pressView: { table },
+                    pressTarget: { table.cellForRow(at: first) },
+                    highlighted: { table.cellForRow(at: first)?.isHighlighted },
+                    reset: {
+                        for path in table.indexPathsForSelectedRows ?? [] { table.deselectRow(at: path, animated: false) }
+                    },
+                    reads: { traits in cellReads(table.visibleCells, in: table, traits: traits) }, keep: [rows])
+            }),
+        Specimen(
+            name: "segmented_control", kind: "segmented_control", style: "default", variant: [], sizes: [noSize],
+            states: pressStates,
+            make: { _ in
+                let control = UISegmentedControl(items: ["One", "Two", "Three"])
+                control.selectedSegmentIndex = 0
+                // No highlighted read: the control's isHighlighted stayed
+                // false while the middle segment was held (run 45230061151,
+                // all four captures), and UIKit has no public read of a
+                // segment's highlight.
+                return Sample(
+                    view: control, pressView: { control }, pressTarget: { control },
+                    reset: { control.selectedSegmentIndex = 0 })
+            }),
+        Specimen(
+            name: "tab_bar", kind: "tab_bar", style: "default", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let bar = UITabBar(frame: CGRect(x: 0, y: 0, width: 300, height: 49))
+                let items = ["One", "Two", "Three"].enumerated().map { index, title in
+                    UITabBarItem(title: title, image: UIImage(systemName: "star"), tag: index)
+                }
+                bar.items = items
+                bar.selectedItem = items.first
+                // A bar item's own accessibilityIdentifier does not reach the
+                // accessibility tree of a UITabBar outside a tab bar
+                // controller (run 45210835145: press-6 never appeared on
+                // iOS 26): the identifier goes on the item's button, the
+                // view whose accessibility label is the item's title, else
+                // the middle of the bar's three controls from the left.
+                let middle: @MainActor () -> UIView? = {
+                    if let labelled = firstView(UIView.self, in: bar, where: { $0.accessibilityLabel == "Two" && $0 !== bar }) {
+                        return labelled
+                    }
+                    var controls: [UIControl] = []
+                    func collect(_ view: UIView) {
+                        if let control = view as? UIControl { controls.append(control) }
+                        view.subviews.forEach(collect)
+                    }
+                    bar.subviews.forEach(collect)
+                    let sorted = controls.sorted { $0.convert($0.bounds, to: bar).minX < $1.convert($1.bounds, to: bar).minX }
+                    return sorted.count == 3 ? sorted[1] : nil
+                }
+                return Sample(
+                    view: bar, spansWidth: true, pressView: { bar }, pressTarget: { middle() },
+                    highlighted: { (middle() as? UIControl)?.isHighlighted },
+                    reset: { bar.selectedItem = items.first })
+            }),
+        Specimen(
+            name: "slider", kind: "slider", style: "default", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let slider = UISlider()
+                slider.value = 0.5
+                return Sample(
+                    view: slider, control: slider, harnessSize: CGSize(width: 0, height: 44), spansWidth: true,
+                    pressView: { slider }, pressTarget: { slider },
+                    highlighted: { slider.isHighlighted || slider.isTracking },
+                    reset: { slider.setValue(0.5, animated: false) },
+                    applyState: { state in
+                        slider.value = 0.5
+                        return state == .normal || state == .pressed
+                    },
+                    reads: { _ in
+                        let track = slider.trackRect(forBounds: slider.bounds)
+                        let thumb = slider.thumbRect(forBounds: slider.bounds, trackRect: track, value: slider.value)
+                        return "slider_track_rect_pt = \(rectangle(track))\nslider_thumb_rect_pt = \(rectangle(thumb))\n"
+                            + "slider_value = \(slider.value)\n"
+                    })
+            }),
+    ]
+    for (name, outline) in [("sidebar_row", false), ("outline_header", true)] {
+        list.append(
+            Specimen(
+                name: name, kind: "list", style: "sidebar", variant: outline ? [("header", "outline_disclosure")] : [],
+                sizes: [noSize], states: pressStates,
+                make: { _ in
+                    let items = outline ? ["Header", "Item"] : ["One", "Two"]
+                    let view = listView(.sidebar, items: items, headerFirst: outline) { cell, item in
+                        var content = cell.defaultContentConfiguration()
+                        content.text = item
+                        cell.contentConfiguration = content
+                        if outline && item == items.first {
+                            cell.accessories = [.outlineDisclosure(options: UICellAccessory.OutlineDisclosureOptions(style: .header))]
+                        }
+                    }
+                    fill(view, items, outline: outline)
+                    return Sample(
+                        view: view, harnessSize: rowHeight, spansWidth: true, pressView: { view },
+                        pressTarget: { firstCell(view) }, highlighted: { firstCell(view)?.isHighlighted },
+                        reset: {
+                            deselectAll(view)
+                            fill(view, items, outline: outline)
+                        },
+                        reads: { traits in cellReads(view.visibleCells, in: view, traits: traits) })
+                }))
+    }
+    list.append(
+        Specimen(
+            name: "card", kind: "list", style: "inset_grouped", variant: [], sizes: [noSize], states: [.normal],
+            make: { _ in
+                let view = listView(.insetGrouped, items: ["Card"]) { cell, item in
+                    var content = cell.defaultContentConfiguration()
+                    content.text = item
+                    cell.contentConfiguration = content
+                }
+                fill(view, ["Card"], outline: false)
+                return Sample(
+                    view: view, harnessSize: rowHeight, spansWidth: true,
+                    reads: { traits in cellReads(view.visibleCells, in: view, traits: traits) })
+            }))
+    list.append(
+        Specimen(
+            name: "switch_row", kind: "list", style: "inset_grouped", variant: [("accessory", "switch")],
+            sizes: [noSize],
+            states: [.normal, .selected, .disabled, .disabledSelected, .cellDisabled, .cellDisabledSelected, .pressed],
+            make: { _ in
+                let toggle = UISwitch()
+                let model = RowModel()
+                let view = listView(.insetGrouped, items: ["Label"]) { cell, item in
+                    var content = cell.defaultContentConfiguration()
+                    content.text = item
+                    cell.contentConfiguration = content
+                    cell.backgroundConfiguration = UIBackgroundConfiguration.clear()
+                    cell.accessories = [
+                        .customView(
+                            configuration: UICellAccessory.CustomViewConfiguration(
+                                customView: toggle, placement: .trailing()))
+                    ]
+                    cell.isUserInteractionEnabled = !model.cellDisabled
+                }
+                fill(view, ["Label"], outline: false)
+                return Sample(
+                    view: view, control: toggle, harnessSize: rowHeight, spansWidth: true, pressView: { toggle },
+                    pressTarget: { toggle }, highlighted: { toggle.isHighlighted },
+                    reset: { toggle.setOn(false, animated: false) },
+                    applyState: { state in
+                        switch state {
+                        case .normal, .pressed: toggle.isOn = false
+                        case .selected: toggle.isOn = true
+                        case .disabled: toggle.isEnabled = false
+                        case .disabledSelected:
+                            toggle.isOn = true
+                            toggle.isEnabled = false
+                        case .cellDisabled, .cellDisabledSelected:
+                            toggle.isOn = state == .cellDisabledSelected
+                            toggle.isEnabled = false
+                            model.cellDisabled = true
+                        default: return false
+                        }
+                        return true
+                    },
+                    reads: { traits in cellReads(view.visibleCells, in: view, traits: traits) }, keep: [model])
+            }))
+    list.append(
+        Specimen(
+            name: "switch_form", kind: "swiftui", style: "form_toggle", variant: [], sizes: [noSize],
+            // Pressed at the UISwitch in its tree through the marker over it
+            // (the identifier set on the UISwitch itself did not reach the
+            // accessibility tree, run 45220318789); the touch is reported by
+            // the hosting view, an ancestor of every view SwiftUI hit-tests.
+            states: [.normal, .selected, .disabled, .disabledSelected, .pressed],
+            make: { _ in
+                let model = ToggleModel()
+                let host = UIHostingController(rootView: ToggleForm(model: model))
+                host.view.backgroundColor = .clear
+                let view: UIView = host.view
+                return Sample(
+                    view: view, harnessSize: rowHeight, spansWidth: true,
+                    pressView: { view },
+                    pressTarget: { firstView(UISwitch.self, in: view) },
+                    highlighted: { firstView(UISwitch.self, in: view)?.isHighlighted },
+                    reset: { model.isOn = false },
+                    applyState: { state in
+                        switch state {
+                        case .normal, .pressed: model.isOn = false
+                        case .selected: model.isOn = true
+                        case .disabled: model.disabled = true
+                        case .disabledSelected:
+                            model.isOn = true
+                            model.disabled = true
+                        default: return false
+                        }
+                        return true
+                    },
+                    reads: { traits in
+                        guard let collection = firstView(UICollectionView.self, in: view) else {
+                            return "list_cells = \(absent)\n"
+                        }
+                        return cellReads(collection.visibleCells, in: view, traits: traits, uikitDefaults: false)
+                    }, keep: [host, model])
+            }))
+    return list
+}
+
 typealias Slot = (state: ButtonState, backdrop: Backdrop)
 
 /// The cells of the states (rows) over the backdrops (columns).
@@ -920,8 +1392,10 @@ final class HostViewController: UIViewController {
     private var rearm = false
     private var pressRetakes = 0
     private var aloneWritten = false
-    private var highlightedAtCapture = false
-    private var trackingAtCapture = false
+    private var highlightedAtCapture: Bool?
+    private var trackingAtCapture: Bool?
+    /// The list set's armed press target's marker (armNext).
+    private var pressMarker: UIView?
     /// The press mode's [[motion]] tables (IP-motion).
     private var motions: [String] = []
 
@@ -945,6 +1419,26 @@ final class HostViewController: UIViewController {
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         out = documents.appendingPathComponent(runName, isDirectory: true)
         var pages: [Page] = []
+        if set == "lists" && !focus {
+            // One column of the screen's width: a list row or a bar is wider
+            // than a third of it. The press pages: the specimen pressed over
+            // each solve backdrop, then at rest over each.
+            for appearance in appearances {
+                for specimen in listSpecimens() {
+                    if press {
+                        guard specimen.states.contains(.pressed) else { continue }
+                        let slots = grid([.pressed], solveBackdrops) + grid([.normal], solveBackdrops)
+                        pages += roomyPages(appearance, specimen, noSize, slots, columns: 1, rows: 6)
+                    } else {
+                        let slots = grid(specimen.states.filter { $0 != .pressed }, solveBackdrops)
+                        pages += roomyPages(appearance, specimen, noSize, slots, columns: 1, rows: 6)
+                    }
+                }
+            }
+            self.pages = pages
+            super.init(nibName: nil, bundle: nil)
+            return
+        }
         var list =
             set == "campaign"
             ? campaignSpecimens()
@@ -1147,7 +1641,11 @@ final class HostViewController: UIViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + settleSeconds) { [weak self] in
             guard let self, !self.finished else { return }
             if self.pressMode {
-                self.pressQueue = self.cells.filter { $0.sample?.button != nil || $0.sample?.barItem != nil }
+                self.pressQueue = self.cells.filter { cell in
+                    guard let sample = cell.sample else { return false }
+                    if sample.pressView != nil { return cell.state == .pressed }
+                    return sample.button != nil || sample.barItem != nil
+                }
                 self.aloneWritten = false
                 self.armNext()
             } else {
@@ -1170,16 +1668,16 @@ final class HostViewController: UIViewController {
             constraints.append(view.centerXAnchor.constraint(equalTo: cellView.centerXAnchor))
         }
         if let size = sample.harnessSize {
-            constraints += [
-                view.widthAnchor.constraint(equalToConstant: size.width),
-                view.heightAnchor.constraint(equalToConstant: size.height),
-            ]
+            if !sample.spansWidth { constraints.append(view.widthAnchor.constraint(equalToConstant: size.width)) }
+            constraints.append(view.heightAnchor.constraint(equalToConstant: size.height))
         }
         NSLayoutConstraint.activate(constraints)
     }
 
     /// Sets a state on a sample; false where the sample cannot take it.
     private func apply(_ state: ButtonState, to sample: Sample) -> Bool {
+        if let applyState = sample.applyState { return applyState(state) }
+        if sample.pressView != nil { return state == .normal || state == .pressed }
         if let item = sample.barItem {
             switch state {
             case .normal, .pressed: return true
@@ -1217,6 +1715,7 @@ final class HostViewController: UIViewController {
         case .disabledHighlighted:
             control.isHighlighted = true
             control.isEnabled = false
+        case .cellDisabled, .cellDisabledSelected: return false
         }
         return true
     }
@@ -1424,8 +1923,7 @@ final class HostViewController: UIViewController {
 
     private func armNext() {
         guard !finished else { return }
-        armed?.sample?.button?.accessibilityIdentifier = nil
-        armed?.sample?.barItem?.accessibilityIdentifier = nil
+        disarm()
         armed = nil
         guard let cell = pressQueue.first, let sample = cell.sample else {
             if pageIndex + 1 < pages.count {
@@ -1451,6 +1949,53 @@ final class HostViewController: UIViewController {
                 self, action: #selector(pressEnded(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
             recordMotion(button, phase: "rest", times: [0])
             button.accessibilityIdentifier = "press-\(armedNumber)"
+        } else if let pressView = sample.pressView {
+            // The list set: the touch on the specimen's own view, reported
+            // as the bar item's is (barPress).
+            sample.reset?()
+            sample.view.layoutIfNeeded()
+            guard let touched = pressView(), let target = sample.pressTarget?() else {
+                let reason = "the specimen has no view to press (pressView or pressTarget nil)"
+                entries.append(
+                    """
+                    [[press_skipped]]
+                    page = \(quoted(pages[pageIndex].path))
+                    cell = \(quoted(cell.name))
+                    reason = \(quoted(reason))
+
+                    """)
+                failures.append("\(pages[pageIndex].path)/\(cell.name): not pressed: \(reason)")
+                if !pressQueue.isEmpty { pressQueue.removeFirst() }
+                armed = nil
+                DispatchQueue.main.async { [weak self] in self?.armNext() }
+                return
+            }
+            for old in touched.gestureRecognizers ?? [] where old.name == "press" {
+                touched.removeGestureRecognizer(old)
+            }
+            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(barPress(_:)))
+            recognizer.name = "press"
+            recognizer.minimumPressDuration = 0
+            recognizer.cancelsTouchesInView = false
+            recognizer.delaysTouchesBegan = false
+            recognizer.delaysTouchesEnded = false
+            recognizer.delegate = self
+            touched.addGestureRecognizer(recognizer)
+            recordMotion(touched, phase: "rest", times: [0])
+            // The identifier goes on a marker over the target, not on the
+            // target: a tab bar item's (outside a tab bar controller) and a
+            // SwiftUI Toggle's UISwitch's did not reach the accessibility
+            // tree (run 45230061151 on iOS 26.5, run 45220318789). The
+            // marker takes no touch
+            // (isUserInteractionEnabled false), so the UI test's press at its
+            // centre lands on the target.
+            let marker = UIView(frame: target.convert(target.bounds, to: view))
+            marker.backgroundColor = .clear
+            marker.isUserInteractionEnabled = false
+            marker.isAccessibilityElement = true
+            marker.accessibilityIdentifier = "press-\(armedNumber)"
+            view.addSubview(marker)
+            pressMarker = marker
         } else if let item = sample.barItem {
             for old in sample.view.gestureRecognizers ?? [] where old.name == "press" {
                 sample.view.removeGestureRecognizer(old)
@@ -1512,7 +2057,8 @@ final class HostViewController: UIViewController {
     }
 
     @objc private func barPress(_ recognizer: UILongPressGestureRecognizer) {
-        guard let cell = armed, let view = recognizer.view, view === cell.sample?.view, cell.sample?.barItem != nil
+        guard let cell = armed, let sample = cell.sample, let view = recognizer.view,
+            sample.pressView != nil ? view === sample.pressView?() : view === sample.view && sample.barItem != nil
         else { return }
         switch recognizer.state {
         case .began: touchBegan(view)
@@ -1543,9 +2089,17 @@ final class HostViewController: UIViewController {
         }
     }
 
-    private func scheduleArm() {
+    /// Takes the armed cell's identifier away: off its button or bar item,
+    /// and the list set's marker out of the view.
+    private func disarm() {
         armed?.sample?.button?.accessibilityIdentifier = nil
         armed?.sample?.barItem?.accessibilityIdentifier = nil
+        pressMarker?.removeFromSuperview()
+        pressMarker = nil
+    }
+
+    private func scheduleArm() {
+        disarm()
         DispatchQueue.main.asyncAfter(deadline: .now() + pressRearmSeconds) { [weak self] in self?.armNext() }
     }
 
@@ -1555,8 +2109,8 @@ final class HostViewController: UIViewController {
             retakePress("the touch ended before the capture")
             return
         }
-        highlightedAtCapture = sample.button?.isHighlighted ?? false
-        trackingAtCapture = sample.button?.isTracking ?? false
+        highlightedAtCapture = sample.button?.isHighlighted ?? sample.highlighted?()
+        trackingAtCapture = sample.button?.isTracking
         _ = drawCell(cell, to: "draw/\(pages[pageIndex].path)/\(cell.name).png")
         requestScreenshot(sequence: shots, attempt: 0)
         shots += 1
@@ -1614,12 +2168,16 @@ final class HostViewController: UIViewController {
             renderEntry(
                 page: page, cell: cell, draw: "draw/\(page.path)/\(cell.name).png", screen: name,
                 screenshot: "pages/\(sequence).png", frame: frame,
-                press: "press_number = \(armedNumber)\nhighlighted_at_capture = \(highlightedAtCapture)\n"
-                    + "tracking_at_capture = \(trackingAtCapture)\nheld_until_screenshot = \(heldThrough)\n"
-                    + "selected_at_screenshot = \(sample.button?.isSelected ?? sample.barItem?.isSelected ?? false)\n"))
+                press: "press_number = \(armedNumber)\n"
+                    + "highlighted_at_capture = \(highlightedAtCapture.map { "\($0)" } ?? absent)\n"
+                    + "tracking_at_capture = \(trackingAtCapture.map { "\($0)" } ?? absent)\n"
+                    + "held_until_screenshot = \(heldThrough)\n"
+                    + ((sample.button?.isSelected ?? sample.barItem?.isSelected).map { "selected_at_screenshot = \($0)\n" }
+                        ?? "")))
         if !aloneWritten {
             aloneWritten = true
-            for alone in cells where !alone.backdrop.holdsSpecimen {
+            // The pattern alone, and the list set's specimens at rest.
+            for alone in cells where !alone.backdrop.holdsSpecimen || alone.state == .normal {
                 let aloneName = "screen/\(page.path)/\(alone.name).png"
                 let aloneFrame = pixels(alone)
                 if let cropped = source.cropping(to: aloneFrame) {
@@ -1712,6 +2270,7 @@ final class HostViewController: UIViewController {
 
                 """
         }
+        if let reads = sample.reads { text += reads(traits) }
         if let paste = specimen as? UIPasteControl {
             let configuration = paste.configuration
             text += """
@@ -1820,8 +2379,13 @@ final class HostViewController: UIViewController {
                 "compositing_filter = \(filterName(layer.compositingFilter))",
                 "filters = [\((layer.filters ?? []).map { quoted(String(describing: type(of: $0))) }.joined(separator: ", "))]",
             ]
+            if let toggle = view as? UISwitch {
+                fields += ["is_on = \(toggle.isOn)", "is_enabled = \(toggle.isEnabled)"]
+            }
             if let label = view as? UILabel {
                 fields += [
+                    "intrinsic_size_pt = \(pair(label.intrinsicContentSize))",
+                    "is_enabled = \(label.isEnabled)",
                     "text = \(label.text.map(quoted) ?? absent)",
                     "font = \(fontValue(label.font))",
                     "text_color = \(colorValue(label.textColor, traits))",
@@ -2103,7 +2667,7 @@ final class HostViewController: UIViewController {
         func value(_ key: String) -> String { quoted(environment[key] ?? "absent") }
         func plist(_ key: String) -> String { quoted((info[key] as? String) ?? "absent") }
         let styles = configurationStyles().map { quoted($0.name) }.joined(separator: ", ")
-        let names = (specimenSet == "campaign" || specimenSet == "popup" ? campaignSpecimens() : specimens(quick: quick)).filter {
+        let names = (specimenSet == "lists" ? listSpecimens() : specimenSet == "campaign" || specimenSet == "popup" ? campaignSpecimens() : specimens(quick: quick)).filter {
             specimenSet != "popup" || $0.variant.contains { $0.key == "pop_up" }
         }.map {
             quoted($0.name)

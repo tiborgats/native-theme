@@ -1,0 +1,2 @@
+./draw/light/tab_bar/default/black/normal.png: 145603 pixels differ, by at most 222 levels
+./screen/light/tab_bar/default/black/normal.png: 24 pixels differ, by at most 1 levels

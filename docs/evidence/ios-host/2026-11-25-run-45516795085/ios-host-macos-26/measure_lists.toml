@@ -1,0 +1,1152 @@
+[press1."light".table_row.pressed]
+part_pt = [0.0, 0.0, 346.0, 53.0]
+highlighted_at_capture = true
+fill = "#d1d1d6ff"
+fill_share = 0.992
+differs_from_normal_px = 150006
+fill_screen = "#d1d1d6ff"
+fill_screen_share = 0.992
+uikit_background_color = "#d1d1d6ff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = true
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."light".table_row.normal]
+part_pt = [0.0, 0.0, 346.0, 53.0]
+fill = "#ffffffff"
+fill_share = 0.992
+fill_screen = "#ffffffff"
+fill_screen_share = 0.992
+uikit_background_color = "#ffffffff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."light".segmented_control.pressed]
+part_pt = [55.0, 0, 55.0, 32.0]
+highlighted_at_capture = "absent"
+fill = "#73737b1f"
+fill_share = 0.938
+differs_from_normal_px = 803
+fill_screen = "#eeeeefff"
+fill_screen_share = 0.938
+
+[press1."light".segmented_control.normal]
+part_pt = [55.0, 0, 55.0, 32.0]
+fill = "#73737b1f"
+fill_share = 0.938
+fill_screen = "#eeeeefff"
+fill_screen_share = 0.938
+
+[press1."light".tab_bar.pressed]
+part_pt = [115.333, 0, 115.333, 83.0]
+highlighted_at_capture = false
+fill = "#dcdcdc3b"
+fill_share = 0.059
+differs_from_normal_px = 77510
+fill_screen = "#f7f7f7ff"
+fill_screen_share = 0.449
+
+[press1."light".tab_bar.normal]
+part_pt = [115.333, 0, 115.333, 83.0]
+fill = "#e7e7e715"
+fill_share = 0.650
+fill_screen = "#fdfdfdff"
+fill_screen_share = 0.650
+
+[press1."light".slider.pressed]
+part_pt = [154.5, 10.0, 37.0, 24.0]
+highlighted_at_capture = true
+fill = "#c1c1c121"
+fill_share = 0.418
+fill_screen = "#f7f7f7ff"
+fill_screen_share = 0.419
+
+[press1."light".slider.normal]
+part_pt = [155.0, 10.0, 37.0, 24.0]
+fill = "#ffffffff"
+fill_share = 0.962
+fill_screen = "#ffffffff"
+fill_screen_share = 0.965
+
+[press1."light".sidebar_row.pressed]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+highlighted_at_capture = true
+fill = "#00000000"
+fill_share = 0.989
+differs_from_normal_px = 1256
+fill_screen = "#ffffffff"
+fill_screen_share = 0.989
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#0000004d"
+uikit_default_disabled_text_color = "#0000004d"
+uikit_state_highlighted = true
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."light".sidebar_row.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.989
+fill_screen = "#ffffffff"
+fill_screen_share = 0.989
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#000000ff"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."light".outline_header.pressed]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+highlighted_at_capture = true
+fill = "#00000000"
+fill_share = 0.972
+differs_from_normal_px = 2756
+fill_screen = "#ffffffff"
+fill_screen_share = 0.972
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Medium 17.0 pt, weight trait 0.23"
+uikit_text_color = "#3c3c432e"
+uikit_default_disabled_text_color = "#3c3c432e"
+uikit_state_highlighted = true
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."light".outline_header.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.972
+fill_screen = "#ffffffff"
+fill_screen_share = 0.972
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Medium 17.0 pt, weight trait 0.23"
+uikit_text_color = "#3c3c4399"
+uikit_default_disabled_text_color = "#3c3c4399"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."light".switch_row.pressed]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+highlighted_at_capture = false
+fill = "#00000000"
+fill_share = 0.755
+differs_from_normal_px = 29121
+fill_screen = "#ffffffff"
+fill_screen_share = 0.755
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#000000ff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 29, 705, 148]
+
+[press1."light".switch_row.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#000000ff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[press1."light".switch_form.pressed]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+highlighted_at_capture = false
+fill = "#00000000"
+fill_share = 0.755
+differs_from_normal_px = 29121
+fill_screen = "#ffffffff"
+fill_screen_share = 0.755
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 29, 711, 148]
+
+[press1."light".switch_form.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[press1."dark".table_row.pressed]
+part_pt = [0.0, 0.0, 346.0, 53.0]
+highlighted_at_capture = true
+fill = "#3a3a3cff"
+fill_share = 0.992
+differs_from_normal_px = 150016
+fill_screen = "#3a3a3cff"
+fill_screen_share = 0.992
+uikit_background_color = "#3a3a3cff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = true
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."dark".table_row.normal]
+part_pt = [0.0, 0.0, 346.0, 53.0]
+fill = "#000000ff"
+fill_share = 0.992
+fill_screen = "#000000ff"
+fill_screen_share = 0.992
+uikit_background_color = "#000000ff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."dark".segmented_control.pressed]
+part_pt = [55.0, 0, 55.0, 32.0]
+highlighted_at_capture = "absent"
+fill = "#7575823d"
+fill_share = 0.938
+differs_from_normal_px = 797
+fill_screen = "#1c1c1fff"
+fill_screen_share = 0.938
+
+[press1."dark".segmented_control.normal]
+part_pt = [55.0, 0, 55.0, 32.0]
+fill = "#7575823d"
+fill_share = 0.938
+fill_screen = "#1c1c1fff"
+fill_screen_share = 0.938
+
+[press1."dark".tab_bar.pressed]
+part_pt = [115.333, 0, 115.333, 83.0]
+highlighted_at_capture = false
+fill = "#dcdcdc3b"
+fill_share = 0.059
+differs_from_normal_px = 77510
+fill_screen = "#000000ff"
+fill_screen_share = 0.208
+
+[press1."dark".tab_bar.normal]
+part_pt = [115.333, 0, 115.333, 83.0]
+fill = "#e7e7e715"
+fill_share = 0.650
+fill_screen = "#131313ff"
+fill_screen_share = 0.650
+
+[press1."dark".slider.pressed]
+part_pt = [154.5, 10.0, 37.0, 24.0]
+highlighted_at_capture = true
+fill = "#c1c1c121"
+fill_share = 0.418
+fill_screen = "#191919ff"
+fill_screen_share = 0.607
+
+[press1."dark".slider.normal]
+part_pt = [155.0, 10.0, 37.0, 24.0]
+fill = "#ffffffff"
+fill_share = 0.962
+fill_screen = "#ffffffff"
+fill_screen_share = 0.962
+
+[press1."dark".sidebar_row.pressed]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+highlighted_at_capture = true
+fill = "#00000000"
+fill_share = 0.989
+differs_from_normal_px = 1256
+fill_screen = "#000000ff"
+fill_screen_share = 0.989
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffff4d"
+uikit_default_disabled_text_color = "#ffffff4d"
+uikit_state_highlighted = true
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."dark".sidebar_row.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.989
+fill_screen = "#000000ff"
+fill_screen_share = 0.989
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ffffffff"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."dark".outline_header.pressed]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+highlighted_at_capture = true
+fill = "#00000000"
+fill_share = 0.972
+differs_from_normal_px = 2732
+fill_screen = "#000000ff"
+fill_screen_share = 0.972
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Medium 17.0 pt, weight trait 0.23"
+uikit_text_color = "#ebebf52e"
+uikit_default_disabled_text_color = "#ebebf52e"
+uikit_state_highlighted = true
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."dark".outline_header.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.972
+fill_screen = "#000000ff"
+fill_screen_share = 0.972
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Medium 17.0 pt, weight trait 0.23"
+uikit_text_color = "#ebebf599"
+uikit_default_disabled_text_color = "#ebebf599"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[press1."dark".switch_row.pressed]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+highlighted_at_capture = false
+fill = "#00000000"
+fill_share = 0.754
+differs_from_normal_px = 30092
+fill_screen = "#000000ff"
+fill_screen_share = 0.758
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ffffffff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 29, 705, 136]
+
+[press1."dark".switch_row.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ffffffff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[press1."dark".switch_form.pressed]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+highlighted_at_capture = false
+fill = "#00000000"
+fill_share = 0.754
+differs_from_normal_px = 30092
+fill_screen = "#000000ff"
+fill_screen_share = 0.758
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 29, 711, 136]
+
+[press1."dark".switch_form.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".table_row.normal]
+part_pt = [0.0, 0.0, 346.0, 53.0]
+fill = "#ffffffff"
+fill_share = 0.992
+fill_screen = "#ffffffff"
+fill_screen_share = 0.992
+uikit_background_color = "#ffffffff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."light".segmented_control.normal]
+part_pt = [55.0, 0, 55.0, 32.0]
+fill = "#73737b1f"
+fill_share = 0.938
+fill_screen = "#eeeeefff"
+fill_screen_share = 0.938
+
+[run1."light".tab_bar.normal]
+part_pt = [115.333, 0, 115.333, 83.0]
+fill = "#e7e7e715"
+fill_share = 0.650
+fill_screen = "#fdfdfdff"
+fill_screen_share = 0.650
+
+[run1."light".slider.normal]
+part_pt = [155.0, 10.0, 37.0, 24.0]
+fill = "#ffffffff"
+fill_share = 0.962
+fill_screen = "#ffffffff"
+fill_screen_share = 0.965
+
+[run1."light".sidebar_row.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.989
+fill_screen = "#ffffffff"
+fill_screen_share = 0.989
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#000000ff"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."light".outline_header.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.972
+fill_screen = "#ffffffff"
+fill_screen_share = 0.972
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Medium 17.0 pt, weight trait 0.23"
+uikit_text_color = "#3c3c4399"
+uikit_default_disabled_text_color = "#3c3c4399"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."light".card.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#ffffffff"
+fill_share = 0.968
+corner_first_columns_px = [92, 73, 64, 59, 55, 51, 48, 46, 43, 41, 39, 37, 36, 34, 33, 31, 30, 29, 28, 26, 25, 24, 23, 22, 21, 20, 19, 19, 18, 17, 16, 15, 15, 14, 13, 13, 12, 11, 11, 10]
+corner_radius_px = 77.9
+corner_radius_pt = 25.97
+corner_fit_mse = 8371.469
+fill_screen = "#ffffffff"
+fill_screen_share = 0.988
+uikit_background_color = "#ffffffff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."light".switch_row.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#000000ff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_row.selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 12428
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#000000ff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = true
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_row.disabled]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14472
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#000000ff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_row.disabled_selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14476
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#000000ff"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#000000ff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = true
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_row.cell_disabled]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 16216
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#3c3c434c"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = true
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#3c3c434c"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_row.cell_disabled_selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 16220
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#3c3c434c"
+uikit_default_disabled_text_color = "#3c3c434c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = true
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#3c3c434c"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = true
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_form.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_form.selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 12428
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_form.disabled]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14472
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."light".switch_form.disabled_selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14476
+fill_screen = "#ffffffff"
+fill_screen_share = 0.928
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".table_row.normal]
+part_pt = [0.0, 0.0, 346.0, 53.0]
+fill = "#000000ff"
+fill_share = 0.992
+fill_screen = "#000000ff"
+fill_screen_share = 0.992
+uikit_background_color = "#000000ff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."dark".segmented_control.normal]
+part_pt = [55.0, 0, 55.0, 32.0]
+fill = "#7575823d"
+fill_share = 0.938
+fill_screen = "#1c1c1fff"
+fill_screen_share = 0.938
+
+[run1."dark".tab_bar.normal]
+part_pt = [115.333, 0, 115.333, 83.0]
+fill = "#e7e7e715"
+fill_share = 0.650
+fill_screen = "#131313ff"
+fill_screen_share = 0.650
+
+[run1."dark".slider.normal]
+part_pt = [155.0, 10.0, 37.0, 24.0]
+fill = "#ffffffff"
+fill_share = 0.962
+fill_screen = "#ffffffff"
+fill_screen_share = 0.962
+
+[run1."dark".sidebar_row.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.989
+fill_screen = "#000000ff"
+fill_screen_share = 0.989
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ffffffff"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."dark".outline_header.normal]
+part_pt = [16.0, 0.0, 314.0, 44.0]
+fill = "#00000000"
+fill_share = 0.972
+fill_screen = "#000000ff"
+fill_screen_share = 0.972
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 26.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Medium 17.0 pt, weight trait 0.23"
+uikit_text_color = "#ebebf599"
+uikit_default_disabled_text_color = "#ebebf599"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."dark".card.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#1c1c1eff"
+fill_share = 0.968
+corner_first_columns_px = [92, 73, 64, 59, 55, 51, 48, 46, 43, 41, 39, 37, 36, 34, 33, 31, 30, 29, 28, 26, 25, 24, 23, 22, 21, 20, 19, 19, 18, 17, 16, 15, 15, 14, 13, 13, 12, 11, 11, 10]
+corner_radius_px = 77.9
+corner_radius_pt = 25.97
+corner_fit_mse = 8371.469
+fill_screen = "#1c1c1eff"
+fill_screen_share = 0.968
+uikit_background_color = "#1c1c1eff"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+
+[run1."dark".switch_row.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ffffffff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_row.selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 12428
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ffffffff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = true
+switch_is_enabled = true
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_row.disabled]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14468
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ffffffff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_row.disabled_selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14476
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ffffffff"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ffffffff"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = true
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_row.cell_disabled]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 16208
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ebebf54c"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = true
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ebebf54c"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = false
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_row.cell_disabled_selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 16216
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_text_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+uikit_text_color = "#ebebf54c"
+uikit_default_disabled_text_color = "#ebebf54c"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = true
+label_font = ".SFUI-Regular 17.0 pt, weight trait 0.0"
+label_text_color = "#ebebf54c"
+label_frame_pt = [32.0, 51.0, 41.333, 20.333]
+label_intrinsic_pt = [41.333, 20.333]
+switch_frame_pt = [251.0, 47.0, 63.0, 28.0]
+switch_is_on = true
+switch_is_enabled = false
+gap_text_end_to_switch_pt = 177.667
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_form.normal]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_form.selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 12428
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_form.disabled]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14468
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[run1."dark".switch_form.disabled_selected]
+part_pt = [16.0, 35.0, 314.0, 52.0]
+fill = "#00000000"
+fill_share = 0.879
+differs_from_normal_px = 14476
+fill_screen = "#000000ff"
+fill_screen_share = 0.879
+uikit_background_color = "#00000000"
+uikit_background_corner_radius_pt = 0.0
+uikit_background_stroke_width_pt = 0.0
+uikit_background_stroke_color = "#00000000"
+uikit_state_highlighted = false
+uikit_state_selected = false
+uikit_state_disabled = false
+label_ink_box_px = [52, 59, 169, 98]
+
+[press1."dark".switch_form.normal.label_vs_uikit_row]
+equal_within_3_levels_to = ['normal']
+
+[press1."dark".switch_form.pressed.label_vs_uikit_row]
+equal_within_3_levels_to = []
+
+[press1."light".switch_form.normal.label_vs_uikit_row]
+equal_within_3_levels_to = ['normal']
+
+[press1."light".switch_form.pressed.label_vs_uikit_row]
+equal_within_3_levels_to = []
+
+[run1."dark".switch_form.disabled.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."dark".switch_form.disabled_selected.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."dark".switch_form.normal.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."dark".switch_form.selected.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."light".switch_form.disabled.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."light".switch_form.disabled_selected.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."light".switch_form.normal.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+
+[run1."light".switch_form.selected.label_vs_uikit_row]
+equal_within_3_levels_to = ['disabled', 'disabled_selected', 'normal', 'selected']
+

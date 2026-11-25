@@ -1,13 +1,19 @@
 // The iOS host's press pass (tools/ios-host/IosHost/IosHost.swift, `press`
 // mode): launches the app with the run's name (IOS_HOST_RUN, which run.sh
-// passes as TEST_RUNNER_IOS_HOST_RUN) and presses each button the app arms,
-// `press-0`, `press-1`, …, by a real touch held for `holdSeconds`, until the
-// app shows `press-done`.
+// passes as TEST_RUNNER_IOS_HOST_RUN) and its specimen set (IOS_HOST_SET, as
+// `set=<name>`) and presses each element the app arms, `press-0`, `press-1`,
+// … (a button, a bar item, or the list set's marker over a list cell, a
+// segmented control, a tab bar item, a switch: any element type), by a real
+// touch at its centre held for `holdSeconds`, until the app shows
+// `press-done`.
 
 import XCTest
 
 final class PressTests: XCTestCase {
-    let holdSeconds = 4.0
+    // 4 s let the touch end before the screenshot arrived in 11 and 40
+    // presses of the list set's two press runs on iOS 18.6 (run 45512794102),
+    // past the host's five retakes.
+    let holdSeconds = 8.0
     let waitSeconds = 900.0
 
     func testPress() throws {
@@ -15,12 +21,13 @@ final class PressTests: XCTestCase {
         let app = XCUIApplication()
         var arguments = [environment["IOS_HOST_RUN"] ?? "press"]
         if environment["IOS_HOST_QUICK"] == "1" { arguments.append("quick") }
+        if let set = environment["IOS_HOST_SET"], !set.isEmpty { arguments.append("set=\(set)") }
         app.launchArguments = arguments
         app.launch()
         let done = app.staticTexts["press-done"]
         var index = 0
         while true {
-            let target = app.buttons["press-\(index)"]
+            let target = app.descendants(matching: .any).matching(identifier: "press-\(index)").firstMatch
             let start = Date()
             var found = false
             while Date().timeIntervalSince(start) < waitSeconds {
@@ -36,7 +43,10 @@ final class PressTests: XCTestCase {
                 XCTAssertEqual(done.label, "press-done", "the app reported failures")
                 break
             }
-            target.press(forDuration: holdSeconds)
+            // At the element's centre as a coordinate: the list set's
+            // identifier is on a marker that takes no touch, over the view
+            // pressed (IosHost.swift, armNext).
+            target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: holdSeconds)
             index += 1
         }
         app.terminate()

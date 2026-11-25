@@ -1,0 +1,21 @@
+./index.toml:66: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:69: press_number = 2 | press_number = 0
+./index.toml:584: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:1097: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:1120: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:1143: page = "pages/6.png" | page = "pages/1.png"
+./index.toml:1146: press_number = 6 | press_number = 1
+./index.toml:1171: page = "pages/7.png" | page = "pages/2.png"
+./index.toml:1174: press_number = 7 | press_number = 2
+./index.toml:1199: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:1202: press_number = 8 | press_number = 3
+./index.toml:1720: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:2236: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:2259: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:2282: page = "pages/9.png" | page = "pages/4.png"
+./index.toml:2285: press_number = 9 | press_number = 4
+./index.toml:2310: page = "pages/10.png" | page = "pages/5.png"
+./index.toml:2313: press_number = 10 | press_number = 5
+./index.toml:2338: page = "pages/11.png" | page = "pages/6.png"
+./index.toml:2341: press_number = 11 | press_number = 6
+./index.toml: differs (15958 and 15849 lines)

@@ -1,0 +1,35 @@
+ProductName:		macOS
+ProductVersion:		26.7.2
+BuildVersion:		25G332
+sw_vers: exit 0
+/Applications/Xcode_26.6.app/Contents/Developer
+xcode-select -p: exit 0
+Xcode 26.6
+Build version 17F113
+xcodebuild -version: exit 0
+iphonesimulator SDK: 26.5 build 23F81a
+sysctl hw.model: VirtualMac2,1
+UIButtonConfiguration.h, the styles and sizes:
+23:    UIButtonConfigurationSizeMedium,
+24:    UIButtonConfigurationSizeSmall,
+25:    UIButtonConfigurationSizeMini,
+26:    UIButtonConfigurationSizeLarge,
+78:+ (instancetype)plainButtonConfiguration;
+79:+ (instancetype)tintedButtonConfiguration;
+80:+ (instancetype)grayButtonConfiguration;
+81:+ (instancetype)filledButtonConfiguration;
+83:+ (instancetype)borderlessButtonConfiguration;
+84:+ (instancetype)borderedButtonConfiguration;
+85:+ (instancetype)borderedTintedButtonConfiguration;
+86:+ (instancetype)borderedProminentButtonConfiguration;
+88:+ (instancetype)glassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos);
+89:+ (instancetype)prominentGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos);
+90:+ (instancetype)clearGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos);
+91:+ (instancetype)prominentClearGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos);
+grep: exit 0
+the iOS runtimes:
+== Runtimes ==
+iOS 26.2 (26.2 - 23C54) - com.apple.CoreSimulator.SimRuntime.iOS-26-2
+iOS 26.4 (26.4.1 - 23E254a) - com.apple.CoreSimulator.SimRuntime.iOS-26-4
+iOS 26.5 (26.5 - 23F77) - com.apple.CoreSimulator.SimRuntime.iOS-26-5
+simctl list runtimes: exit 0

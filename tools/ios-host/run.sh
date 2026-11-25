@@ -19,8 +19,10 @@
 # (measure<N>, twice, after the press pass: the app's measure mode,
 # tools/ios-host/IosHost/Measure.swift, given IOS_HOST_MEASURE, its own
 # comma-separated list of passes, default roles,fonts,symbols). IOS_HOST_SET
-# (base, the default, campaign, or popup: the campaign set's pop-up buttons) is
-# the render pass's specimen set (IosHost.swift, campaignSpecimens). IOS_HOST_DEVICE (iphone, the default, or
+# (base, the default, campaign, popup: the campaign set's pop-up buttons, or
+# lists: the list set, listSpecimens) is the render pass's specimen set
+# (IosHost.swift, campaignSpecimens); the press pass presses the list set in
+# place of the buttons where it is lists. IOS_HOST_DEVICE (iphone, the default, or
 # ipad) is the simulator every pass but focus runs on: the newest "iPhone <N>
 # Pro", or the last "iPad Pro" the runtime lists. IOS_HOST_SETTINGS (a
 # comma-separated list, default none) is set on that simulator after its boot,
@@ -124,6 +126,29 @@ mkdir -p "$headers"
     else
       echo "  AVKit.framework/Headers/AVRoutePickerView.h: absent"
     fi
+    # XCTest's UI-testing events (whether a UI test can hover a pointer on
+    # this platform: the iPad pointer-hover pass).
+    platform=$(xcrun --sdk "$kind" --show-sdk-platform-path)
+    for name in XCUIElement.h XCUICoordinate.h; do
+      file="$platform/Developer/Library/Frameworks/XCTest.framework/Headers/$name"
+      if [ -f "$file" ]; then
+        cp "$file" "$headers/$kind/$name"
+        echo "  XCTest.framework/Headers/$name: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+      else
+        echo "  XCTest.framework/Headers/$name: absent"
+      fi
+    done
+    # Xcode 16's XCTest headers only import XCUIAutomation's: every
+    # XCUIElement.h and XCUICoordinate.h under the platform's developer
+    # library, kept as <framework>-<name>.
+    found=0
+    while IFS= read -r file; do
+      found=1
+      framework=$(basename "$(dirname "$(dirname "$file")")" .framework)
+      cp "$file" "$headers/$kind/$framework-$(basename "$file")"
+      echo "  ${file#"$platform"/}: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+    done < <(find "$platform/Developer/Library" \( -name XCUIElement.h -o -name XCUICoordinate.h \) -type f 2>/dev/null | sort)
+    [ $found -eq 1 ] || echo "  XCUIElement.h, XCUICoordinate.h under $platform/Developer/Library: absent"
     found=0
     for file in "$path"/System/Library/Frameworks/UIKit.framework/Modules/UIKit.swiftmodule/arm64*.swiftinterface; do
       [ -f "$file" ] || continue
@@ -135,6 +160,10 @@ mkdir -p "$headers"
   done
 } >"$headers/README.txt" 2>&1
 note "headers: $(find "$headers" -type f | wc -l | tr -d ' ') files"
+# simctl's input and output commands (whether a pointer can be posted to a
+# simulator).
+xcrun simctl help io >"$out/simctl-io-help.txt" 2>&1
+note "simctl help io: exit $?"
 
 colors=$(python3 -I - "$uikit/UIColor.h" "$uikit/UIInterface.h" <<'EOF'
 import re, sys
@@ -305,7 +334,8 @@ done
 
 for run in 1 2; do
   has press || break
-  TEST_RUNNER_IOS_HOST_RUN="press$run" TEST_RUNNER_IOS_HOST_QUICK="$quick" xcodebuild test-without-building \
+  TEST_RUNNER_IOS_HOST_RUN="press$run" TEST_RUNNER_IOS_HOST_QUICK="$quick" \
+    TEST_RUNNER_IOS_HOST_SET="$specimen_set" xcodebuild test-without-building \
     -xctestrun "$xctestrun" -destination "id=$udid" -resultBundlePath "$out/press$run.xcresult" \
     >"$out/press$run-test.log" 2>&1 &
   pid=$!
@@ -416,7 +446,13 @@ adaptive=
 if ! has render; then
   :
 elif [ -d "$out/run1" ] && [ -d "$out/run2" ]; then
-  compare run1 run2 differ.txt differ-levels.txt $adaptive || failed=1
+  # The list set's full screenshots (pages/) are left out: in run
+  # 45220318789 they differed only in the home indicator (y 2583-2598 px of
+  # 2622, outside every cell), whose colour had not yet followed the page's
+  # appearance in one run; the crops (screen/) are compared.
+  pages=
+  [ "$specimen_set" = lists ] && pages='./pages/*'
+  compare run1 run2 differ.txt differ-levels.txt "$adaptive" "$pages" || failed=1
 else
   failed=1
 fi
