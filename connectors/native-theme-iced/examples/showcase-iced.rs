@@ -1296,10 +1296,7 @@ fn preferences_of(ctx: &ThemeContext) -> AccessibilityPreferences {
 
 /// The display name of the preset `key`, or `key` where no preset has it.
 fn preset_display_name(key: &str) -> &str {
-    native_theme::theme::Theme::list_presets()
-        .iter()
-        .find(|info| info.key == key)
-        .map_or(key, |info| info.display_name)
+    Preset::from_name(key).map_or(key, |preset| preset.display_name())
 }
 
 /// The theme picker's rows (`rows::preset_rows`): the OS theme, labelled with
@@ -1336,13 +1333,12 @@ fn palette_of_row(row: &str) -> Option<&'static str> {
     cli::palette_key(row).ok().flatten()
 }
 
-/// What the Palette row's tooltip says of the pages still on the 0.7.2
-/// model, which has no palettes.
-const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): the iced theme -- its \
-     palette and the extended palette every iced widget falls back on -- is built from the 0.8.0 \
-     theme with the palette. The pages and the chrome still read the 0.7.2 preset, which has no \
-     palettes, until their page group moves to the 0.8.0 model: their widget styles, fonts, \
-     sizes and padding show the preset alone, in the palette's scheme.";
+/// What the Palette row's tooltip says a palette does: it is laid over the
+/// 0.8.0 theme the pages and the chrome draw ([`NextInstall::new`]), and
+/// the mode becomes its scheme ([`State::install_in_mode`]).
+const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): the pages and the \
+     chrome are drawn from the 0.8.0 theme with the palette laid over it, in the palette's \
+     scheme, which the mode follows.";
 
 /// Why the installed 0.8.0 theme is at a lower contrast level than the
 /// context asks for (docs/v0.8.0-spec.md §6, resolution step 1): `asked`,
@@ -1443,7 +1439,7 @@ impl NextInstall {
         alone: Option<&native_theme::next::Theme>,
         ctx: &ThemeContext,
     ) -> Result<Self, String> {
-        let resolved = theme.resolve(ctx);
+        let resolved = native_theme::next::Theme::resolve(&theme, ctx);
         let mut inactive_ctx = ctx.clone();
         inactive_ctx.window_active = false;
         let inactive = theme.resolve(&inactive_ctx);
@@ -6977,8 +6973,8 @@ fn setting<'a>(
 /// showcase's: its label, set as [`setting`] sets one, over a
 /// [`setting_picker`] of [`palette_choices`], `none` where no palette is
 /// laid over the theme. Neither is an element of the list, which has no
-/// palette row. The label carries the tooltip saying what the pages still
-/// on the 0.7.2 model show under a palette ([`PALETTE_TOOLTIP`]) and, where
+/// palette row. The label carries the tooltip saying what a palette
+/// recolours and that the mode follows it ([`PALETTE_TOOLTIP`]) and, where
 /// High contrast resolved the theme without the palette chosen (spec §6,
 /// resolution step 1), that too: on the label, not the drop-down, so it
 /// never covers the drop-down's open menu ([`icon_theme_picker`]).
@@ -8494,10 +8490,7 @@ fn info_inks(r: &native_theme::next::ResolvedTheme) -> (Option<Color>, Option<Co
 /// `#rgb` and `#rgba` too. A last word without the `#` is no colour,
 /// whatever its letters.
 fn hex_color(line: &str) -> Option<Color> {
-    let hex = line
-        .rsplit(' ')
-        .next()
-        .filter(|word| word.starts_with('#'))?;
+    let hex = line.rsplit(' ').next()?;
     native_theme::next::Color::from_hex(hex)
         .ok()
         .map(next_colour)
@@ -19135,12 +19128,15 @@ fn view_display(state: &State) -> Element<'_, Message> {
             title("Theme Information"),
             caption(theme_info_text),
             caption(font_info),
-            // The presets the theme picker and `--theme` offer: this
-            // platform's.
+            // The presets the theme picker offers besides the OS theme:
+            // this platform's of the 0.8.0 model ([`theme_choices`]).
             caption(format!(
                 "Available presets on this platform: {} | All presets have both light and \
                  dark variants.",
-                native_theme::theme::Theme::list_presets_for_platform().len(),
+                theme_choices(&state.default_preset)
+                    .iter()
+                    .filter(|choice| matches!(choice, ThemeChoice::Preset(_)))
+                    .count(),
             )),
         ]
         .spacing(gap.widget),
@@ -22250,10 +22246,23 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
     ]
 }
 
-/// `c` as native-theme's `Rgba` prints a theme colour: `#rrggbb`, or
-/// `#rrggbbaa` where its alpha, quantised to a byte, is not 255.
+/// `c` as a theme colour's hex: `#rrggbb`, or `#rrggbbaa` where its alpha,
+/// quantised to a byte, is not 255; each channel the 0.8.0 model's 8-bit
+/// sRGB byte of it (`Color::to_srgb8`: clamped to `0.0..=1.0`, times 255,
+/// rounded).
 fn color_to_hex(c: Color) -> String {
-    native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a).to_string()
+    let [r, g, b, a] = native_theme::next::Color {
+        r: c.r,
+        g: c.g,
+        b: c.b,
+        a: c.a,
+    }
+    .to_srgb8();
+    if a == u8::MAX {
+        format!("#{r:02x}{g:02x}{b:02x}")
+    } else {
+        format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
+    }
 }
 
 /// The padding round a colour swatch's hex (spec §3.1): the showcase's own,
@@ -25308,6 +25317,59 @@ mod tests {
         );
     }
 
+    /// RV-G4c22 S-4: a 0.8.0 read of the desktop that succeeds at startup
+    /// but whose theme the connector cannot install (it states no
+    /// `colors.window.background`, which `next::to_theme` needs) leaves the
+    /// platform's preset drawn (`Preset::detect`), the theme picker naming
+    /// it, and the failed install in the banner, which says the fallback is
+    /// used; the OS theme's row in the picker still names the read's preset,
+    /// here another than the platform's.
+    #[test]
+    fn a_read_whose_install_fails_starts_on_the_platform_preset() {
+        fn read_of_another() -> Preset {
+            let platform = Preset::detect();
+            Preset::ALL
+                .iter()
+                .copied()
+                .find(|preset| *preset != platform)
+                .unwrap_or(platform)
+        }
+        fn uninstallable_read() -> native_theme::next::Result<native_theme::next::Theme> {
+            os_read_of(read_of_another(), |_| {}).map(|read| {
+                read.with_transform(|r: &mut native_theme::next::ResolvedTheme| {
+                    r.colors.window.background = None;
+                })
+            })
+        }
+        let read = read_of_another();
+        let key = Preset::detect().as_str();
+        assert_ne!(
+            read.as_str(),
+            key,
+            "a read of another preset than the platform's"
+        );
+        let state = State::starting_with(uninstallable_read);
+        assert_eq!(
+            state.current_choice,
+            ThemeChoice::Preset(key.to_owned()),
+            "the picker at startup"
+        );
+        assert_eq!(
+            state.next_resolved.preset,
+            Preset::detect(),
+            "the preset drawn"
+        );
+        assert!(
+            state
+                .error_message
+                .as_deref()
+                .is_some_and(|e| e.ends_with(&format!("Using {key} fallback."))),
+            "the failed install at startup does not say the {key} fallback is used: {:?}",
+            state.error_message
+        );
+        assert_eq!(state.default_preset, read.as_str(), "the OS theme's preset");
+    }
+
     /// The showcase started with `read` as its 0.8.0 read of the desktop,
     /// a fake one ([`os_read_with`]), which does not fail: its failure fails
     /// the test, named by `test`.
@@ -26816,10 +26878,10 @@ mod tests {
         assert_eq!(state.color_mode, AppColorMode::System, "--variant system");
 
         let offered = native_theme::theme::Theme::list_presets_for_platform();
-        let foreign = native_theme::theme::Theme::list_presets()
+        let foreign = Preset::ALL
             .iter()
-            .find(|info| !offered.iter().any(|o| o.key == info.key))
-            .map(|info| info.key);
+            .map(|preset| preset.as_str())
+            .find(|key| !offered.iter().any(|o| o.key == *key));
         let foreign = match foreign {
             Some(key) => key,
             None => panic!("every bundled preset is offered on this platform"),
@@ -29305,14 +29367,11 @@ mod tests {
         };
         let mut swapped = Vec::new();
         let mut faults = Vec::new();
-        for preset in native_theme::theme::Theme::list_presets()
-            .iter()
-            .filter(|preset| Preset::from_name(preset.key).is_some())
-        {
+        for key in Preset::ALL.iter().map(|preset| preset.as_str()) {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
-                let label = format!("{}/{mode:?}", preset.key);
+                let label = format!("{key}/{mode:?}");
                 assert!(
-                    state.install_in_mode(ThemeChoice::Preset(preset.key.to_owned()), mode),
+                    state.install_in_mode(ThemeChoice::Preset(key.to_owned()), mode),
                     "{label}: {:?}",
                     state.error_message
                 );
@@ -29618,15 +29677,11 @@ mod tests {
         let mut seen = BTreeSet::new();
         let mut faults = Vec::new();
         // Every preset the Theme row can install, the 0.8.0 model's.
-        for preset in native_theme::theme::Theme::list_presets()
-            .iter()
-            .filter(|preset| Preset::from_name(preset.key).is_some())
-        {
+        for key in Preset::ALL.iter().map(|preset| preset.as_str()) {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 assert!(
-                    state.install_in_mode(ThemeChoice::Preset(preset.key.to_owned()), mode),
-                    "{} ({mode:?}): {:?}",
-                    preset.key,
+                    state.install_in_mode(ThemeChoice::Preset(key.to_owned()), mode),
+                    "{key} ({mode:?}): {:?}",
                     state.error_message
                 );
                 let (active, inactive) = (
@@ -29643,7 +29698,7 @@ mod tests {
                 let list_fill_swaps = list_swaps("colors.selection.unfocused_background");
                 seen.insert(list_fill_swaps);
                 if list_fill_swaps {
-                    list_swapped.insert(format!("{}/{mode:?}", preset.key));
+                    list_swapped.insert(format!("{key}/{mode:?}"));
                 }
                 for element in &elements {
                     for home in element.homes.iter().filter(|h| homes.contains(&h.as_str())) {
@@ -29651,8 +29706,8 @@ mod tests {
                         let route = iced_route(&state, element, home);
                         if route.starts_with("not drawn: ") == swaps {
                             faults.push(format!(
-                                "{} ({mode:?}) {} {home}, swaps: {swaps}: \"{route}\"",
-                                preset.key, element.id
+                                "{key} ({mode:?}) {} {home}, swaps: {swaps}: \"{route}\"",
+                                element.id
                             ));
                         }
                     }
@@ -31532,15 +31587,21 @@ mod tests {
     }
 
     /// M9-099 (ux): the Display page counts the presets this platform
-    /// offers, the ones the theme picker and `--theme` take, and says so.
+    /// offers, the theme picker's rows but the OS theme's, and says so.
     #[test]
     fn the_presets_line_counts_this_platforms() {
         let state = page_state("kde-breeze", Tab::Display);
         let mut ui = interface(&state);
+        let offered = state
+            .theme_combo
+            .options()
+            .iter()
+            .filter(|choice| !matches!(choice, ThemeChoice::OsTheme(_)))
+            .count();
+        assert!(offered > 0, "the theme picker offers no preset");
         let want = format!(
-            "Available presets on this platform: {} | All presets have both light and dark \
-             variants.",
-            native_theme::theme::Theme::list_presets_for_platform().len()
+            "Available presets on this platform: {offered} | All presets have both light and dark \
+             variants."
         );
         assert!(
             texts(&mut ui).iter().any(|(content, _)| *content == want),
@@ -36657,16 +36718,12 @@ mod tests {
             let mut failures = Vec::new();
             let mut seen = BTreeSet::new();
             // Every preset the Theme row can install, the 0.8.0 model's.
-            for preset in native_theme::theme::Theme::list_presets()
-                .iter()
-                .filter(|preset| Preset::from_name(preset.key).is_some())
-            {
+            for key in Preset::ALL.iter().map(|preset| preset.as_str()) {
                 for mode in [AppColorMode::Light, AppColorMode::Dark] {
-                    let choice = ThemeChoice::Preset(preset.key.to_owned());
+                    let choice = ThemeChoice::Preset(key.to_owned());
                     assert!(
                         state.install_in_mode(choice, mode),
-                        "{} ({mode:?}): {:?}",
-                        preset.key,
+                        "{key} ({mode:?}): {:?}",
                         state.error_message
                     );
                     let r = state.next_shown();
@@ -36737,9 +36794,8 @@ mod tests {
                                     seen.insert((id, drawn_open));
                                     if tab_open(&state, id) != Some(drawn_open) {
                                         failures.push(format!(
-                                            "{} ({mode:?}, tab {basic_tab}, {page:?}, \
+                                            "{key} ({mode:?}, tab {basic_tab}, {page:?}, \
                                          {inspector:?}): {id} drawn {}",
-                                            preset.key,
                                             if drawn_open { "open" } else { "closed" }
                                         ));
                                     }
@@ -36761,8 +36817,7 @@ mod tests {
                                         .is_some_and(|spinner| !spinner.is_indicator());
                                     if arc != drawn_arc {
                                         failures.push(format!(
-                                            "{} ({mode:?}): {}: an arc line {} the arc",
-                                            preset.key,
+                                            "{key} ({mode:?}): {}: an arc line {} the arc",
                                             element.id,
                                             if arc { "without" } else { "missing beside" }
                                         ));
@@ -36775,9 +36830,8 @@ mod tests {
                                             .into_iter()
                                             .map(|f| {
                                                 format!(
-                                                    "{} ({mode:?}, {icons} icons, panel {visible}, \
-                                                 tab {basic_tab}, {page:?}, {inspector:?}): {f}",
-                                                    preset.key
+                                                    "{key} ({mode:?}, {icons} icons, panel {visible}, \
+                                                 tab {basic_tab}, {page:?}, {inspector:?}): {f}"
                                                 )
                                             }),
                                     );
@@ -38251,10 +38305,7 @@ mod tests {
 
     /// The keys of the presets the Theme row installs, the 0.8.0 model's.
     fn installed_presets() -> impl Iterator<Item = &'static str> {
-        native_theme::theme::Theme::list_presets()
-            .iter()
-            .filter(|preset| Preset::from_name(preset.key).is_some())
-            .map(|preset| preset.key)
+        Preset::ALL.iter().map(|preset| preset.as_str())
     }
 
     /// A state showing the Extra page under `preset` in `mode`, the side
@@ -47191,6 +47242,42 @@ thing(0);
         Ok(())
     }
 
+    /// RV-G4c22 n3: [`color_to_hex`] prints a channel as 0.7.2's
+    /// `Rgba::from_f32` quantised it (`native-theme/src/color.rs`: clamped
+    /// to `0.0..=1.0`, times 255, rounded), over every byte's value, the
+    /// half steps between them and values outside `0.0..=1.0`, in each
+    /// colour channel and in the alpha, whose 255 drops the alpha digits.
+    #[test]
+    fn a_hex_prints_each_channel_as_its_byte() {
+        let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+        // A struct literal: `Color::from_rgba` asserts its channels in range.
+        let rgba = |r, g, b, a| Color { r, g, b, a };
+        let mut failures = Vec::new();
+        for step in -40i16..=550 {
+            let v = f32::from(step) / 510.0;
+            let b = byte(v);
+            for (c, want) in [
+                (rgba(v, 0.0, 0.0, 1.0), format!("#{b:02x}0000")),
+                (rgba(0.0, v, 0.0, 1.0), format!("#00{b:02x}00")),
+                (rgba(0.0, 0.0, v, 1.0), format!("#0000{b:02x}")),
+                (
+                    rgba(0.0, 0.0, 0.0, v),
+                    if b == u8::MAX {
+                        "#000000".to_owned()
+                    } else {
+                        format!("#000000{b:02x}")
+                    },
+                ),
+            ] {
+                let hex = color_to_hex(c);
+                if hex != want {
+                    failures.push(format!("{c:?}: {hex}, want {want}"));
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
     // -----------------------------------------------------------------------
     // the_showcase_reads_no_0_7_2_theme
     // -----------------------------------------------------------------------
@@ -47201,17 +47288,19 @@ thing(0);
     /// (`connectors/native-theme-gpui/src/showcase.rs`): the desktop's theme
     /// (`SystemTheme`, the connector's `from_system` and its `SystemThemeExt`
     /// install, `to_iced_theme`), a preset loaded or resolved
-    /// (`Theme::preset`, `Theme::from_toml`, the connector's `from_preset`,
+    /// (`Theme::preset`, `Theme::from_toml`, `Theme::from_file`, the
+    /// connector's `from_preset`, a variant picked, `into_variant`,
+    /// `pick_variant`, and resolved, `resolve_all`, `resolve_system`,
     /// `resolve_with`, `into_resolved`, `ResolutionContext`, the resolved
     /// `native_theme::Resolved`, `ResolvedTheme` and its `ResolvedFontSpec`),
     /// its modes (`ThemeMode`, `ColorMode`), the connector's installs of it
     /// (`to_theme`, `to_theme_in`), and the pipeline's preset guess
     /// (`platform_preset_name`). Each is matched as a whole path, wherever it
     /// stands: after `::`, at a crate root, or bare and imported by a `use`.
-    /// What reads no theme is not one: the preset list
-    /// (`Theme::list_presets`, `Theme::list_presets_for_platform`, which
-    /// [`preset_display_name`] reads), `AccessibilityPreferences` (which the
-    /// 0.8.0 context's preferences are, [`preferences_of`]),
+    /// What reads no theme is not one: the platform's preset list
+    /// (`Theme::list_presets_for_platform`, which the theme picker's rows
+    /// are filtered from, `rows::preset_rows`), `AccessibilityPreferences`
+    /// (which the 0.8.0 context's preferences are, [`preferences_of`]),
     /// `native_theme::color::Rgba` (the colour the icon loaders' `color_opt`
     /// takes, which the 0.8.0 icons are loaded with, [`load_all_icons`]) and
     /// the connector's `to_iced_weight`, a CSS weight as iced's.
@@ -47221,6 +47310,11 @@ thing(0);
         "to_iced_theme",
         "Theme::preset",
         "Theme::from_toml",
+        "Theme::from_file",
+        "into_variant",
+        "pick_variant",
+        "resolve_all",
+        "resolve_system",
         "from_preset",
         "from_system",
         "resolve_with",
@@ -47484,8 +47578,10 @@ thing(0);
     /// Every call or import in `code` of a function of `modules`, the
     /// connector's 0.7.2 styles and colours ([`old_module_functions`]),
     /// through a path that is not 0.8.0's, as (offset, what it reads): a
-    /// written `<module>::<function>`, and a `use` of one or of a whole
-    /// module's items (`::*`).
+    /// written `<module>::<function>`, the module written by its own name or
+    /// by the name a `use` of it binds (`use native_theme_iced::styles as
+    /// s;`, then `s::<function>`), and a `use` of one or of a whole module's
+    /// items (`::*`).
     fn old_module_calls(
         code: &str,
         uses: &[UseItem],
@@ -47493,12 +47589,24 @@ thing(0);
     ) -> Vec<(usize, String)> {
         let mut findings = Vec::new();
         for (module, names) in modules {
-            for name in names {
-                let written = format!("{module}::{name}");
-                for at in whole_matches(code, &written) {
-                    let in_use = uses.iter().any(|item| item.span.contains(&at));
-                    if !in_use && !is_next_path(&full_path(code, uses, at, &written)) {
-                        findings.push((at, format!("calls the 0.7.2 {written}")));
+            let mut bound: Vec<&str> = vec![module];
+            bound.extend(
+                uses.iter()
+                    .filter(|item| {
+                        !is_next_path(&item.path)
+                            && item.path.last().is_some_and(|leaf| leaf == module)
+                            && item.binds != *module
+                    })
+                    .map(|item| item.binds.as_str()),
+            );
+            for written_module in bound {
+                for name in names {
+                    let written = format!("{written_module}::{name}");
+                    for at in whole_matches(code, &written) {
+                        let in_use = uses.iter().any(|item| item.span.contains(&at));
+                        if !in_use && !is_next_path(&full_path(code, uses, at, &written)) {
+                            findings.push((at, format!("calls the 0.7.2 {module}::{name}")));
+                        }
                     }
                 }
             }
@@ -47534,11 +47642,12 @@ thing(0);
     /// for `Theme::preset`); a function of the connector's 0.7.2 styles and
     /// colours of `modules` ([`old_module_calls`]); and a `.resolve(` that
     /// is 0.7.2's. 0.8.0's `Theme::resolve` takes a `&ThemeContext`
-    /// (`native-theme/src/next/preset.rs`): a `&` expression, or `ctx`,
-    /// the `&ThemeContext` [`NextInstall::new`] is handed; 0.7.2's a
-    /// `ColorMode` (`ThemeSpec::resolve`, `native-theme/src/model/mod.rs`)
-    /// or nothing (`ThemeVariant::resolve`, `native-theme/src/resolve/mod.rs`):
-    /// an argument that is neither is 0.7.2's.
+    /// (`native-theme/src/next/preset.rs`), written as a `&` expression (a
+    /// context held by reference is resolved with by the path,
+    /// `native_theme::next::Theme::resolve(&theme, ctx)`, as
+    /// [`NextInstall::new`] does); 0.7.2's a `ColorMode` (`ThemeSpec::resolve`,
+    /// `native-theme/src/model/mod.rs`) or nothing (`ThemeVariant::resolve`,
+    /// `native-theme/src/resolve/mod.rs`): any other argument is 0.7.2's.
     fn old_model_reads(code: &str, modules: &[(&str, Vec<String>)]) -> Vec<(usize, String)> {
         let uses = use_items(code);
         let in_use = |at: usize| uses.iter().any(|item| item.span.contains(&at));
@@ -47579,7 +47688,7 @@ thing(0);
         for (at, m) in code.match_indices(".resolve(") {
             let open = at + m.len() - "(".len();
             let argument = call_arguments(code, open).unwrap_or("");
-            if !argument.starts_with('&') && argument != "ctx" {
+            if !argument.starts_with('&') {
                 findings.push((
                     at,
                     "resolves a 0.7.2 theme, .resolve( without a &ThemeContext".to_string(),
@@ -47636,6 +47745,11 @@ thing(0);
             "use native_theme::{AccessibilityPreferences, theme::Theme};",
             "use native_theme::theme::Theme as Old;",
             "let t = native_theme::theme::Theme::from_toml(s);",
+            "let t = native_theme::theme::Theme::from_file(path)?;",
+            "let v = spec.into_variant(mode)?;",
+            "let v = spec.pick_variant(mode)?;",
+            "variant.resolve_all();",
+            "let r = variant.resolve_system()?;",
             "let t = native_theme_iced::from_preset(p, false);",
             "let l = native_theme_iced::from_system();",
             "let s = native_theme::SystemTheme::from_system();",
@@ -47655,8 +47769,11 @@ thing(0);
             "let t = native_theme_iced::to_theme_in(&r, \"x\", m);",
             "let p = native_theme::platform_preset_name();",
             "let r = theme.resolve(mode);",
+            "let r = theme.resolve(ctx);",
             "variant.resolve();",
             "use native_theme_iced::styles;\nfn f() { let s = styles::button(&r, k); }",
+            "use native_theme_iced::styles as s;\nfn f() { let b = s::button(&r, k); }",
+            "use native_theme_iced::{palette as p};\nfn f() { let c = p::to_color(x); }",
             "let s = native_theme_iced::styles::toggler(&r);",
             "let c = native_theme_iced::styles::aw::card(&r);",
             "use native_theme_iced::styles::*;",
@@ -47679,11 +47796,11 @@ thing(0);
             "use native_theme_iced::next as iced_next;\nfn f() { let c = iced_next::styles::aw::card(&r); }",
             "use iced_next::styles as s;\nfn f() { let c = s::aw::card(&r); }",
             "use iced::{Color, Theme};\nfn f(t: &Theme) {}",
-            "let r = theme.resolve(ctx);",
+            "let r = native_theme::next::Theme::resolve(&theme, ctx);",
             "let r = system\n    .resolve(\n        &ctx);",
             "use native_theme_iced::styles;\nfn f() { let c = styles::composite_over(a, b); }",
             "use native_theme_iced::styles;\nfn f() { let p = styles::SegmentPosition::of(0, 3); }",
-            "let presets = native_theme::theme::Theme::list_presets();",
+            "let presets = native_theme::theme::Theme::list_presets_for_platform();",
             "let p = native_theme::AccessibilityPreferences::default();",
             "let c = native_theme::color::Rgba::rgb(1, 2, 3);",
             "let m = AppColorMode::Dark;",
