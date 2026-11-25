@@ -544,6 +544,11 @@ impl CheckedToolButton {
 /// and egui's own selected look stays (spec §10, rules 0 and 0a). The label
 /// colours likewise, from `toolbar.button_label`.
 ///
+/// The result is all or nothing: one value egui cannot take makes the
+/// whole of it [`Unmapped`], so a caller has no hovered or pressed look
+/// from it, not even the values that could be taken, and keeps its resting
+/// look in every state.
+///
 /// # Errors
 ///
 /// [`Unmapped`] where a fill is stated as layers that are all gradients, or

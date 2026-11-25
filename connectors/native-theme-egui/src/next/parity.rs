@@ -810,8 +810,9 @@ const TOOL_DISABLED_FILL: &str = "the toolbar's Disabled cell fills a disabled t
      ring (measured, os-probe run 45634379188, macOS 15, toolbar states sheet, \
      `*.normal.toolbar_button_disabled` `fill`, `edge_*`), on macos-tahoe the rest capsule, \
      unchanged (the same run, macOS 26) (native-theme/src/next/presets/macos.rs, \
-     `toolbar_button_rest`, the `toolbar` builder's DISABLED rule); 0.7.2 has no Disabled \
-     toolbar cell, and a disabled tool button took the Normal cell's resting fill";
+     `toolbar_button_rest`, the `toolbar` builder's DISABLED rule); 0.7.2's Disabled toolbar \
+     cell is a copy of its Normal cell, the 0.7.2 model stating no disabled tool button, and a \
+     disabled tool button takes the Normal cell's resting fill";
 
 const THUMB_CORNERS: &str = "the scroll bar's thumb and trough are rounded by the corners the \
      0.8.0 preset states for the thumb, a pill, egui's largest radius, which epaint clamps to \

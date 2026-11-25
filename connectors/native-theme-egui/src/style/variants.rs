@@ -725,7 +725,9 @@ mod tests {
 
     /// §6.2, §6.3: only Checkbox has a `Selected` cell of its own; only the nine roles §6.3
     /// lists and the toolbar, whose disabled tool button has a capsule of its own, have a
-    /// `Disabled` cell of their own. Every other slot is the `Normal` `Arc`.
+    /// `Disabled` cell of their own: on the 0.7.2 model, which states no disabled tool button,
+    /// the toolbar's is a copy of its `Normal` cell, an `Arc` of its own. Every other slot is the
+    /// `Normal` `Arc`.
     #[test]
     fn cells_without_variant_data_share_the_normal_arc() {
         let t = resolved("kde-breeze", ColorMode::Light);

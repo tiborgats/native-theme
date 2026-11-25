@@ -13783,12 +13783,14 @@ fn a_toolbar_button_at_rest_is_the_stated_capsule() -> Result<(), String> {
 
 /// A toolbar button's icon is loaded in `toolbar.button_icon(<state>).color` where the theme
 /// states it, in the state of its previous response: macos-monterey light's #676767 at rest and
-/// #666666 hovered, and at rest while checked the resting one, as no rule states another
-/// (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// #666666 hovered (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
 /// `aqua.{normal,hovered}.toolbar_image` `ink`; native-theme/src/next/presets/macos.rs,
-/// `toolbar_icon`); kde-breeze states none, and the icon keeps the colour it is loaded in. So
-/// the Basic page's Copy, a bundled Material icon, is painted from another texture under the
-/// pointer than at rest.
+/// `toolbar_icon`). Checked, in no stated colour where no rule states one for `CHECKED`, as
+/// neither macOS preset does: the resting colour is not the checked state's (spec §2,
+/// `from_state`), so macos-tahoe's checked icon is never loaded in its resting #4d4d4d, in any
+/// state. kde-breeze states none, and the icon keeps the colour it is loaded in. So the Basic
+/// page's Copy, a bundled Material icon, is painted from another texture under the pointer than
+/// at rest.
 #[test]
 fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     use crate::demo::tool_icon_color;
@@ -13798,7 +13800,15 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     let r = Some(&monterey);
     assert_eq!(tool_icon_color(r, (false, false), false), grey(0x67));
     assert_eq!(tool_icon_color(r, (true, false), false), grey(0x66));
-    assert_eq!(tool_icon_color(r, (false, false), true), grey(0x67));
+    assert_eq!(tool_icon_color(r, (false, false), true), None);
+    let tahoe = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
+    assert_eq!(
+        tool_icon_color(Some(&tahoe), (false, false), false),
+        grey(0x4d)
+    );
+    for was in [(false, false), (true, false), (false, true)] {
+        assert_eq!(tool_icon_color(Some(&tahoe), was, true), None, "{was:?}");
+    }
     let breeze = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
     assert_eq!(tool_icon_color(Some(&breeze), (true, false), false), None);
     assert_eq!(tool_icon_color(None, (false, false), false), None);
@@ -13841,6 +13851,52 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
         rest, hovered,
         "Copy's icon is painted from one texture at rest and hovered, though the theme states \
          another icon colour hovered"
+    );
+    Ok(())
+}
+
+/// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
+/// icon is not the texture it is painted from unchecked at rest, loaded in the resting
+/// `toolbar.button_icon(NONE).color` #4d4d4d, since no rule states a colour for `CHECKED`.
+#[test]
+fn the_checked_edit_icon_is_not_loaded_in_the_resting_icon_colour() -> Result<(), String> {
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
+    harness.state_mut().settings.icon = IconSetChoice::Material;
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let textures = |harness: &Harness<'_, App>| -> Result<Vec<egui::TextureId>, String> {
+        let place = harness
+            .state()
+            .registry
+            .places()
+            .get("basic.icons.edit")
+            .copied()
+            .ok_or("basic.icons.edit is not placed")?;
+        Ok(harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| b.fill_texture_id)
+                }
+                _ => None,
+            })
+            .collect())
+    };
+    assert!(harness.state().demo_state.basic_edit, "Edit starts checked");
+    let checked = textures(&harness)?;
+    harness.state_mut().demo_state.basic_edit = false;
+    harness.run_steps(3);
+    let rest = textures(&harness)?;
+    assert!(
+        checked.len() == 1 && rest.len() == 1,
+        "Edit's icon is not painted once: checked {checked:?}, at rest {rest:?}"
+    );
+    assert_ne!(
+        checked, rest,
+        "the checked Edit icon is loaded in the resting icon colour"
     );
     Ok(())
 }

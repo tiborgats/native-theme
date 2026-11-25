@@ -837,11 +837,16 @@ listed here, and a value the theme leaves unstated is egui's own
   on-hover effect, in the state of the button's previous response
   (`CheckedToolButton::at`); where none does, egui's own selected look
   stays.
-- **A tool button's icon colour.** An egui image is loaded in its colour
-  (`IconKey::tint`) and painted with no state of its own, so no cell tints
-  a tool button's icon. The application loads it in
-  `toolbar.button_icon(<state>).color` where the theme states it, in the
-  state of the button's previous response; where it states none, the icon
+- **A tool button's icon colour.** egui's only per-state tint of a
+  button's image is the label's text colour
+  (`Button::image_tint_follows_text_color`, `egui-0.37.0`
+  `src/widgets/button.rs`; `src/theme/default_style.rs`, the `image_tint`
+  branch), and the theme states the icon's colour apart from the label's
+  (macos-monterey light: the label #606060, the icon #676767 at rest), so
+  no cell carries both. The application loads the icon in
+  `toolbar.button_icon(<state>).color` (`IconKey::tint`) where the theme
+  states it, in the state of the button's previous response, and checked
+  only where a rule states it for `CHECKED`; where it states none, the icon
   keeps the colour it is loaded in.
 - **A flat button's narrower hovered or pressed outline.** egui lays a
   button out at the inner margin `button_padding + expansion −

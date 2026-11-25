@@ -2071,16 +2071,22 @@ pub(crate) fn remember_state<S: ResponseState>(
 }
 
 /// The colour `toolbar.button_icon(<state>).color` of the installed 0.8.0 theme `r` states for a
-/// toolbar button's icon in the state `(hovered, pressed)` of its previous response, with
-/// `CHECKED` where `checked`: pressed `PRESSED`, else hovered `HOVER`, else at rest; `None` where
-/// it states none, or none is installed, and the icon keeps the colour it is loaded in. Never the
-/// label's: no rule makes the icon take it.
+/// toolbar button's icon in the state `(hovered, pressed)` of its previous response: pressed
+/// `PRESSED`, else hovered `HOVER`, else at rest, where the theme states it. Checked
+/// (`checked`), only where a rule states the colour for `CHECKED` (asked alone, spec §2,
+/// `from_state`), and then the `(<state> | CHECKED)` query's: a colour stated at rest is not
+/// the checked state's, which keeps egui's selected look (spec §10, rules 0 and 0a); unchecked,
+/// the icon loads in one colour and egui changes it in no state, so a colour stated at rest
+/// holds under the pointer and pressed (rule 0). `None` where it states none, or none is
+/// installed, and the icon keeps the colour it is loaded in. Never the label's: no rule makes the
+/// icon take it.
 pub(crate) fn tool_icon_color(
     r: Option<&native_theme::next::ResolvedTheme>,
     (hovered, pressed): (bool, bool),
     checked: bool,
 ) -> Option<egui::Color32> {
     use native_theme::next::{IconStated, WidgetState};
+    let r = r?;
     let state = if pressed {
         WidgetState::PRESSED
     } else if hovered {
@@ -2088,12 +2094,19 @@ pub(crate) fn tool_icon_color(
     } else {
         WidgetState::NONE
     };
-    let state = if checked {
-        state | WidgetState::CHECKED
-    } else {
-        state
-    };
-    let icon = r?.toolbar.button_icon(state);
+    if checked {
+        if !r
+            .toolbar
+            .button_icon(WidgetState::CHECKED)
+            .from_state
+            .contains(IconStated::COLOR)
+        {
+            return None;
+        }
+        let icon = r.toolbar.button_icon(state | WidgetState::CHECKED);
+        return Some(native_theme_egui::next::to_color32(icon.color));
+    }
+    let icon = r.toolbar.button_icon(state);
     icon.stated
         .contains(IconStated::COLOR)
         .then(|| native_theme_egui::next::to_color32(icon.color))

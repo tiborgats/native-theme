@@ -909,7 +909,8 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          toolbar.button_label(CHECKED).color, in every state; where one does, that one at rest, \
          toolbar.button_label(HOVER|CHECKED).color under the pointer and \
          toolbar.button_label(PRESSED|CHECKED).color pressed; else egui's own selected button's, \
-         visuals.selection.stroke. Its icon loads in it where the theme states no \
+         visuals.selection.stroke. Its icon loads in it where no rule states \
+         toolbar.button_icon(CHECKED).color for CHECKED; where one does, in \
          toolbar.button_icon(<state>|CHECKED).color (pages::basic::edit_look_at, \
          demo::tool_icon_color)",
     ),
