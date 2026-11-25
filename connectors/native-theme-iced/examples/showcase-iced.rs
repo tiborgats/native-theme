@@ -29996,7 +29996,7 @@ mod tests {
     /// frame's either. A fill that took the shown part for the frame's
     /// inside would round it at the page's edge.
     #[test]
-    fn a_basic_list_fill_is_square_where_the_page_cuts_the_list() {
+    fn a_basic_list_fill_is_square_where_the_page_cuts_the_list() -> Result<(), String> {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             side_panel_visible: false,
@@ -30007,13 +30007,15 @@ mod tests {
             AppColorMode::Light
         ));
         state.basic_list_selected = Some(1);
-        let r = state.current_resolved.clone();
-        let l = &r.list;
+        let border = list_frame_border(&state.next_resolved);
         assert!(
-            l.border.corner_radius > l.border.line_width,
+            border.radius.top_left > border.width,
             "the list's frame is rounded inside its line"
         );
-        let selection = iced::Background::Color(to_color(l.selection_background));
+        let selection =
+            drawn_state_fill(&state.next_resolved.list.highlight(WidgetState::SELECTED))
+                .map(iced::Background::Color)
+                .ok_or("adwaita: list.highlight(SELECTED).fill is unstated")?;
         let tall = Size::new(WINDOW_SIZE.0, 2000.0);
         let (_, rects, _) = frame_of(&state, view(&state), tall);
         let rect_of = |rects: &ElementRects, id: &str| match rects.get(id) {
@@ -30023,7 +30025,7 @@ mod tests {
         let frame = rect_of(&rects, "basic.list.frame");
         let row_1 = rect_of(&rects, "basic.list.row_1");
         let content = rect_of(&rects, "chrome.content");
-        let w = l.border.line_width;
+        let w = border.width;
         let top = frame.y + w;
         let rh = row_1.height;
         let by = (rh / 2.0).round();
@@ -30073,6 +30075,7 @@ mod tests {
             );
             assert_eq!(*radius, square, "the second row's fill, cut by the page");
         }
+        Ok(())
     }
 
     /// The Basic table's rows on the installed 0.8.0 theme, at text scales 1
@@ -31049,19 +31052,23 @@ mod tests {
     }
 
     /// M9-096 (theme-data): the Display page's Spacing & Layout boxes, drawn
-    /// as cards, are padded as the page's cards are, by `card.border.padding`
-    /// inside `card.border.line_width` (`padding_inside_border`): under
-    /// kde-breeze and windows-11, which state a card padding, the
-    /// Right-aligned box's label is the stated side plus the line in from
-    /// its box's left and top, read from the theme.
+    /// as cards, are padded as the page's cards are, by the sides
+    /// `card.container(NONE).padding` states inside its stroke
+    /// ([`next_card_padding`]): under kde-breeze and windows-11, which state
+    /// a card padding, the Right-aligned box's label is the stated side plus
+    /// the line in from its box's left and top, read from the 0.8.0 theme.
     #[test]
     fn the_spacing_boxes_take_the_cards_padding() {
         for preset in ["kde-breeze", "windows-11"] {
             let state = page_state(preset, Tab::Display);
-            let card = &state.current_resolved.card.border;
-            let (Some(left), Some(top)) = (card.padding.left, card.padding.top) else {
-                panic!("{preset} states no card padding");
-            };
+            assert!(
+                matches!(
+                    iced_next::padding_of(&state.next_resolved.card.container(WidgetState::NONE)),
+                    [Some(_), _, _, Some(_)]
+                ),
+                "{preset} states no card padding"
+            );
+            let pad = next_card_padding(&state.next_resolved);
             let mut ui = interface(&state);
             let frame = probe_bounds(&mut ui, probes::DISPLAY_SPACING_BOX);
             let label = match texts(&mut ui)
@@ -31072,8 +31079,8 @@ mod tests {
                 None => panic!("{preset}: the Right-aligned box has no label"),
             };
             for (side, inset, want) in [
-                ("left", label.x - frame.x, left + card.line_width),
-                ("top", label.y - frame.y, top + card.line_width),
+                ("left", label.x - frame.x, pad.left),
+                ("top", label.y - frame.y, pad.top),
             ] {
                 assert!(
                     (inset - want).abs() < 0.01,
@@ -35923,26 +35930,22 @@ mod tests {
     /// ([`basic_tab_row`], [`page_tabs`], [`inspector_tabs`];
     /// [`tab_rows_frame`]) with the open tab's fill set to a colour of its
     /// own, the 0.8.0 theme's `tab.tab(SELECTED).fill`, which `tab_style`
-    /// fills the open tab with, and the 0.7.2 theme's `tab.active_background`,
-    /// which `styles::aw::tab_bar` does: a tab is open where most of its
-    /// pixels are that colour. Read from the drawing, not from the state, so
-    /// a row that gives a tab the wrong `open` is seen.
+    /// fills the open tab with: a tab is open where most of its pixels are
+    /// that colour. Read from the drawing, not from the state, so a row that
+    /// gives a tab the wrong `open` is seen.
     fn drawn_open(state: &mut State) -> BTreeMap<&'static str, bool> {
         let mark: native_theme::color::Rgba = match "#13579b".parse() {
             Ok(colour) => colour,
             Err(error) => panic!("{error}"),
         };
         let want = to_color(mark).into_rgba8();
-        let theirs = state.current_resolved.tab.active_background;
         let kept = (state.next_resolved.clone(), state.next_inactive.clone());
-        state.current_resolved.tab.active_background = mark;
         for next in [&mut state.next_resolved, &mut state.next_inactive] {
             if let Some(marked) = with_home(next, "tab.tab(SELECTED).fill", "#13579b") {
                 *next = marked;
             }
         }
         let (image, laid, scale) = tab_rows_frame(state);
-        state.current_resolved.tab.active_background = theirs;
         (state.next_resolved, state.next_inactive) = kept;
         let mut open = BTreeMap::new();
         for tab in TAB_ROWS.into_iter().flatten() {
@@ -36165,10 +36168,19 @@ mod tests {
                         preset.key,
                         state.error_message
                     );
-                    let r = &state.current_resolved;
-                    seen.insert(("stroke", next_check_stroke(state.next_shown()).is_some()));
-                    seen.insert(("pressed fill", r.button.active_background.is_some()));
-                    seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
+                    let r = state.next_shown();
+                    seen.insert(("stroke", next_check_stroke(r).is_some()));
+                    // Every bundled preset states a flat button's hover and
+                    // pressed fills on the 0.8.0 model; its checked fill is
+                    // the state fill some leave to iced.
+                    seen.insert((
+                        "checked fill",
+                        drawn_state_fill(&r.button.body(flat(WidgetState::CHECKED))).is_some(),
+                    ));
+                    seen.insert((
+                        "tab hover fill",
+                        drawn_state_fill(&r.tab.tab(WidgetState::HOVER)).is_some(),
+                    ));
                     seen.insert(("indicator", basic_indicator(&state)));
                     // The side panel shown and hidden, and each tab of the
                     // three rows open: the Basic page's, the page tabs' and the
@@ -36277,7 +36289,7 @@ mod tests {
             let tabs = TAB_ROWS.into_iter().flatten();
             for case in [
                 "stroke",
-                "pressed fill",
+                "checked fill",
                 "tab hover fill",
                 "indicator",
                 "icon",
@@ -36756,22 +36768,28 @@ mod tests {
 
     /// D13b: a separator spans the segments' height: under kde-breeze, which
     /// states a `segmented_control.separator_width` on the installed 0.8.0
-    /// theme the page lays it out by ([`NextSegmented`]; the line's colour is
-    /// still `styles::segmented_control`'s, the 0.7.2 border colour), the
-    /// line between Day and Week is the
-    /// border colour a point below the segments' top and a point above their
-    /// bottom, the row's `Shrink` height giving the separator's `Fill` the
-    /// segments' height and not the page's.
+    /// theme the page lays it out by ([`NextSegmented`]), the line between
+    /// Day and Week is the separator's colour as the page draws it
+    /// (`iced_next::styles::segment_separator`) a point below the segments'
+    /// top and a point above their bottom, the row's `Shrink` height giving
+    /// the separator's `Fill` the segments' height and not the page's.
     #[test]
-    fn the_separators_span_the_segments_height() {
+    fn the_separators_span_the_segments_height() -> Result<(), String> {
         let state = page_state("kde-breeze", Tab::Basic);
-        let sc = state.current_resolved.segmented_control.clone();
         let geometry = NextSegmented::of(state.next_shown());
         assert!(
             geometry.separator_width > 0.0,
             "kde-breeze states no segmented_control.separator_width on the 0.8.0 model"
         );
-        assert_eq!(sc.border.color.a, 255, "kde-breeze's line colour is opaque");
+        let line = iced_next::styles::segment_separator(state.next_shown(), false)
+            .map_err(|e| format!("kde-breeze's separator: {e}"))?;
+        let Some(iced::Background::Color(line)) = line(&state.current_theme).background else {
+            return Err("kde-breeze's separator is drawn with no colour".to_owned());
+        };
+        assert!(
+            (line.a - 1.0).abs() < f32::EPSILON,
+            "kde-breeze's line colour is opaque"
+        );
         let (image, rects, scale) = basic_frame(&state);
         let rect = |id: &str| match rects.get(id) {
             Some(rect) => *rect,
@@ -36779,7 +36797,7 @@ mod tests {
         };
         let (day, week) = (rect("basic.segmented.day"), rect("basic.segmented.week"));
         let x = (day.x + day.width + week.x) / 2.0;
-        let want = to_color(sc.border.color).into_rgba8();
+        let want = line.into_rgba8();
         for y in [day.y + 1.0, day.y + day.height - 1.0] {
             let got = image.get_pixel((x * scale) as u32, (y * scale) as u32).0;
             assert!(
@@ -36795,23 +36813,35 @@ mod tests {
                 < day.height + 4.0 * geometry.outline.unwrap_or_default().max(1.0),
             "the control grew past its segments"
         );
+        Ok(())
     }
 
-    /// D13: the segmented control's group is `segmented_control.background_color`
-    /// laid once over what the control lies on, and a segment lays only its
-    /// own fill over the group: under windows-11, whose group fill is
-    /// translucent (#00000006 / #00000019), an unselected segment's inside is
-    /// the group over the page and the selected one `active_background` over
-    /// that, in both modes, where the control was filled with its line colour
-    /// and each segment painted the group fill again over it.
+    /// D13: the segmented control's group, the fill the page draws the
+    /// control with (`iced_next::styles::segmented_control`, from
+    /// `segmented_control.track(NONE).fill`), is laid once over what the
+    /// control lies on, and a segment lays only its own fill over the group:
+    /// under windows-11, whose group fill is translucent, an unselected
+    /// segment's inside is the group over the page and the selected one its
+    /// fill as the page draws it (`iced_next::styles::segment`, from
+    /// `segmented_control.segment(SELECTED).fill`) over that, in both modes,
+    /// where the control was filled with its line colour and each segment
+    /// painted the group fill again over it.
     #[test]
-    fn the_windows_11_segments_lie_on_the_group_fill() {
+    fn the_windows_11_segments_lie_on_the_group_fill() -> Result<(), String> {
         for mode in [AppColorMode::Light, AppColorMode::Dark] {
             let mut state = page_state("windows-11", Tab::Basic);
             assert!(state.install_in_mode(ThemeChoice::Preset("windows-11".to_owned()), mode));
-            let sc = state.current_resolved.segmented_control.clone();
+            let colour = |background: Option<iced::Background>, what: &str| match background {
+                Some(iced::Background::Color(colour)) => Ok(colour),
+                _ => Err(format!(
+                    "windows-11 ({mode:?}): the {what} is drawn with no colour"
+                )),
+            };
+            let control = iced_next::styles::segmented_control(state.next_shown(), false)
+                .map_err(|e| format!("windows-11 ({mode:?}): the group: {e}"))?;
+            let group_fill = colour(control(&state.current_theme).background, "group")?;
             assert!(
-                sc.background_color.a < 255,
+                group_fill.a < 1.0,
                 "windows-11 ({mode:?}) no longer states a translucent group fill, so this proves nothing"
             );
             let (image, rects, scale) = basic_frame(&state);
@@ -36827,7 +36857,7 @@ mod tests {
             let mid = control.y + control.height / 2.0;
             let ground = pixel(control.x - 3.0, mid);
             let ground = Color::from_rgba8(ground[0], ground[1], ground[2], 1.0);
-            let group = styles::composite_over(to_color(sc.background_color), ground);
+            let group = styles::composite_over(group_fill, ground);
             let ids = [
                 "basic.segmented.day",
                 "basic.segmented.week",
@@ -36836,7 +36866,14 @@ mod tests {
             for (i, id) in ids.into_iter().enumerate() {
                 let segment = rect(id);
                 let want = if i == state.basic_segment {
-                    styles::composite_over(to_color(sc.active_background), group)
+                    let selected = iced_next::styles::segment(
+                        state.next_shown(),
+                        true,
+                        styles::SegmentPosition::of(i, ids.len()),
+                    )
+                    .map_err(|e| format!("windows-11 ({mode:?}): the selected segment: {e}"))?;
+                    let fill = selected(&state.current_theme, button::Status::Active).background;
+                    styles::composite_over(colour(fill, "selected segment")?, group)
                 } else {
                     group
                 }
@@ -36851,6 +36888,7 @@ mod tests {
                 );
             }
         }
+        Ok(())
     }
 
     /// M9x CI item I6 (M9-175): the Number input's Widget Info says how
@@ -37194,9 +37232,8 @@ mod tests {
     /// G3 T13 (D1): a state showing the Basic page under windows-11 light,
     /// at a text scale of 1, with `tab.active_outward_corner_radius` set to
     /// `radius` on the resolved theme, the preset's 4 (G3 T15) or another
-    /// (spec §12.2's seam: `State::current_resolved`, a resolved theme's
-    /// fields being public), on the 0.7.2 theme the Basic page reads and
-    /// the installed 0.8.0 one the page tabs and the inspector's read.
+    /// (a resolved theme's fields being public), on the installed 0.8.0
+    /// theme, in both windows' resolves, which every tab row reads.
     fn curving_out(radius: Option<f32>) -> State {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
@@ -37210,7 +37247,6 @@ mod tests {
             "windows-11: {:?}",
             state.error_message
         );
-        state.current_resolved.tab.active_outward_corner_radius = radius;
         state.next_resolved.tab.active_outward_corner_radius = radius;
         state.next_inactive.tab.active_outward_corner_radius = radius;
         state
@@ -37265,12 +37301,11 @@ mod tests {
     /// G3 T13 (D1): the Basic page's tabs curve out at the open tab's feet,
     /// in this build (the default one, and `--features iced_aw`, the one the
     /// Windows runners capture): with the open tab's fill set apart from the
-    /// bar's (`tab.active_background`, which the `iced_aw` bar's flares
-    /// read, and `tab.tab(SELECTED).fill` on the installed 0.8.0 theme, which
-    /// the other build's do), the pixel centred at `(x0 - 0.25, y1 - 0.25)` of the
-    /// open tab's rectangle and its mirror `(x1 + 0.25, y1 - 0.25)`, 4.65
-    /// from each flare's centre, past the outline's band, are
-    /// `tab.active_background` (each channel within 2), and with the radius
+    /// bar's (`tab.tab(SELECTED).fill` on the installed 0.8.0 theme, which
+    /// both builds' flares read), the pixel centred at `(x0 - 0.25, y1 - 0.25)`
+    /// of the open tab's rectangle and its mirror `(x1 + 0.25, y1 - 0.25)`,
+    /// 4.65 from each flare's centre, past the outline's band, are that fill
+    /// (each channel within 2), and with the radius
     /// unstated they are not; the second tab open, its own are, the left one
     /// over the first tab's fill.
     #[test]
@@ -37280,7 +37315,6 @@ mod tests {
         for (open, id) in [(0, "basic.tabs.one"), (1, "basic.tabs.two")] {
             for radius in [Some(4.0), None] {
                 let mut state = curving_out(radius);
-                state.current_resolved.tab.active_background = fill;
                 for next in [&mut state.next_resolved, &mut state.next_inactive] {
                     if let Some(marked) = with_home(next, "tab.tab(SELECTED).fill", "#13579b") {
                         *next = marked;
@@ -37368,13 +37402,6 @@ mod tests {
             r.tab.active_outward_corner_radius = Some(5.0);
         });
         state.label_widths.clear();
-        let t = &state.current_resolved.tab;
-        if t.font.size == 60.0
-            || t.item_gap == Some(9.0)
-            || t.active_outward_corner_radius == Some(5.0)
-        {
-            return Err("the splice states 0.7.2's tab".into());
-        }
         let widths = BASIC_TABS.map(|label| next_tab_width(&state, label));
         if widths[0] <= before + 1.0 {
             return Err(format!(
@@ -40117,7 +40144,7 @@ mod tests {
     #[test]
     fn a_page_colour_names_the_homes_that_move_it() {
         let mut failures = Vec::new();
-        over_bundled_infos(|_, combination, infos, _| {
+        over_bundled_infos(|_, combination, infos| {
             for info in infos {
                 failures.extend(
                     colour_label_faults(info, combination)
@@ -40218,7 +40245,7 @@ mod tests {
     fn every_page_colour_is_the_style_output_at_its_status() {
         let mut failures = Vec::new();
         let mut titles = BTreeSet::new();
-        over_bundled_infos(|state, combination, infos, _| {
+        over_bundled_infos(|state, combination, infos| {
             for info in infos {
                 let title = info.lines().next().unwrap_or_default();
                 titles.insert(title.to_owned());
@@ -40265,7 +40292,7 @@ mod tests {
     #[test]
     fn every_requested_colour_field_is_produced() {
         let mut failures = BTreeSet::new();
-        over_bundled_infos(|_, combination, _, _| {
+        over_bundled_infos(|_, combination, _| {
             for row in UNPRODUCED_ROWS.with(|rows| std::mem::take(&mut *rows.borrow_mut())) {
                 if !row.ends_with(".text_color") {
                     failures.insert(format!("{combination}: {row}"));
@@ -40297,7 +40324,7 @@ mod tests {
             })
             .collect();
         let mut shown = BTreeSet::new();
-        over_bundled_infos(|_, _, infos, _| {
+        over_bundled_infos(|_, _, infos| {
             for info in infos {
                 for (_, rest) in style_lines(info) {
                     shown.insert(style_row_of(rest).0.to_owned());
@@ -40395,7 +40422,7 @@ mod tests {
             "Hovered", "Focused", "Pressed", "Dragged", "Opened", "Selected", "Disabled",
         ];
         let mut failures = BTreeSet::new();
-        over_bundled_infos(|_, _, infos, _| {
+        over_bundled_infos(|_, _, infos| {
             for info in infos {
                 let title = info.lines().next().unwrap_or_default();
                 for (line, rest) in style_lines(info) {
@@ -40418,28 +40445,27 @@ mod tests {
         assert!(failures.is_empty(), "{failures:#?}");
     }
 
-    /// `each` over every bundled preset in both modes installed in a state:
-    /// the state, its combination (`<preset>/<mode>`), the page widgets'
-    /// infos its pages build and its resolved theme serialised.
-    fn over_bundled_infos(mut each: impl FnMut(&State, &str, &[String], &serde_json::Value)) {
+    /// `each` over every bundled preset the Theme row installs, the 0.8.0
+    /// model's, in both modes, installed in a state as the Theme row
+    /// installs it ([`State::install_in_mode`]): the state, its combination
+    /// (`<preset>/<mode>`) and the page widgets' infos its pages build.
+    fn over_bundled_infos(mut each: impl FnMut(&State, &str, &[String])) {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..State::default()
         };
-        for preset in native_theme::theme::Theme::list_presets() {
-            for dark in [false, true] {
-                let choice = ThemeChoice::Preset(preset.key.to_owned());
-                state.current_choice = choice.clone();
-                state.is_dark = dark;
-                let loaded = state.load_theme(&choice, dark);
-                assert!(loaded.is_ok(), "{} (dark: {dark}): {loaded:?}", preset.key);
-                let json = match serde_json::to_value(&state.current_resolved) {
-                    Ok(json) => json,
-                    Err(error) => panic!("{}: {error}", preset.key),
-                };
+        for preset in Preset::ALL {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                let choice = ThemeChoice::Preset(preset.as_str().to_owned());
+                assert!(
+                    state.install_in_mode(choice, mode),
+                    "{} ({mode:?}): {:?}",
+                    preset.as_str(),
+                    state.error_message
+                );
                 let infos = built_infos(&mut state);
                 let combination = state.installed_combination().unwrap_or_default();
-                each(&state, &combination, &infos, &json);
+                each(&state, &combination, &infos);
             }
         }
     }
@@ -43423,13 +43449,6 @@ mod tests {
         use native_theme::next::{Edges, PartPatch, SidebarRule, ThemePatch};
         let spliced = {
             let mut state = loaded("kde-breeze", false);
-            // The route Widget Info shows still reads the 0.7.2 theme.
-            state.current_resolved.sidebar.border.padding = native_theme::theme::ResolvedPadding {
-                top: Some(3.0),
-                right: None,
-                bottom: Some(5.0),
-                left: Some(7.0),
-            };
             assert_eq!(
                 sidebar_padding(&state.next_resolved),
                 None,
@@ -46428,9 +46447,9 @@ thing(0);
     }
 
     /// The iced theme installed is the 0.8.0 theme's; a palette laid over
-    /// the preset recolours it and locks the mode to the palette's scheme,
-    /// while the 0.7.2 theme the pages still read is the preset alone in
-    /// that scheme; `none` takes the palette off again.
+    /// the preset recolours it and locks the mode to the palette's scheme;
+    /// `none` takes the palette off again, the preset's own window
+    /// background back.
     #[test]
     fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String> {
         let mut state = next_state()?;
@@ -46440,6 +46459,7 @@ thing(0);
                 .map_err(|e| e.home().to_string())
         };
         assert_eq!(state.current_theme.palette().background, installed(&state)?);
+        let own = state.next_resolved.colors.window.background;
         let dracula = Palette::from_name("dracula").ok_or("no bundled palette dracula")?;
         assert!(
             state.choose_palette(Some("dracula")),
@@ -46453,20 +46473,9 @@ thing(0);
         );
         assert_eq!(state.current_theme.palette().background, installed(&state)?);
         assert_eq!(state.is_dark, dracula.scheme == Scheme::Dark);
-        let mode = if state.is_dark {
-            native_theme_iced::ColorMode::Dark
-        } else {
-            native_theme_iced::ColorMode::Light
-        };
-        let alone = native_theme::theme::Theme::preset("kde-breeze")
-            .and_then(|theme| theme.resolve(mode))
-            .map_err(|e| e.to_string())?;
-        assert_eq!(
-            state.current_resolved.defaults.text_color,
-            alone.variant.defaults.text_color
-        );
         assert!(state.choose_palette(palette_of_row(cli::NO_PALETTE)));
         assert_eq!(state.theme_palette, None);
+        assert_eq!(state.next_resolved.colors.window.background, own);
         Ok(())
     }
 
