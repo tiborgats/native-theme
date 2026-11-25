@@ -36,6 +36,7 @@ const BODY_COVERAGE: f64 = 0.98;
 const BODY_ALPHA_TOLERANCE: f64 = 8.0 / 255.0;
 
 /// A capture as 8-bit RGBA, rows top to bottom.
+#[derive(PartialEq, Eq)]
 pub(super) struct Rgba {
     pub(super) width: usize,
     pub(super) height: usize,

@@ -1,0 +1,6 @@
+aqua.normal.selected: over_grey: 2592 px over 2, max 7.0; window: 0 px over 2, max 1.9
+aqua.hovered.selected: over_grey: 2592 px over 2, max 7.0; window: 0 px over 2, max 1.9
+aqua.pressed.selected: over_grey: 2592 px over 2, max 7.0; window: 0 px over 2, max 1.9
+darkAqua.normal.selected: over_grey: 2579 px over 2, max 6.8; window: 45 px over 2, max 2.7
+darkAqua.hovered.selected: over_grey: 2579 px over 2, max 6.8; window: 45 px over 2, max 2.7
+darkAqua.pressed.selected: over_grey: 2579 px over 2, max 6.8; window: 45 px over 2, max 2.7

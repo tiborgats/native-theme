@@ -1,0 +1,1 @@
+aqua.normal.disabled: over_grey: 0 px over 2, max 0.6; window: 0 px over 2, max 1.2

@@ -303,15 +303,17 @@ jobs:
       # real mouse-down captured during the press, every state over the
       # window's background and the black, white and grey backdrops; then the
       # toolbar sheet, the toolbar button again in a window whose content
-      # view lies under its transparent title bar; into
+      # view lies under its transparent title bar, and the toolbar items
+      # sheet, that window with three image items in its toolbar (the
+      # selected one, an unselected one, a disabled one); into
       # button-pass-controls/; probe.toml's [macos.button_pass.controls]
-      # method and its toolbar_sheet's say how. It posts mouse and key
+      # method and its two sheets' say how. It posts mouse and key
       # events, so Accessibility and PostEvent access are granted to the
       # built probe's path as for the button pass. The step fails where the
       # build fails, where the probe exits non-zero (it does where
       # [macos.button_pass] or [macos.button_pass.controls] or its
-      # toolbar_sheet is missing or holds an error, or where every target of
-      # either sheet is in error, or where a state of either sheet is in
+      # toolbar_sheet or toolbar_items_sheet is missing or holds an error, or
+      # where every target of a sheet is in error, or where a state of a sheet is in
       # error or lacks a capture) or wrote no probe.toml, and where its
       # probe.toml does not read accessibilityDisplayShouldReduceTransparency
       # false; the upload still runs. The controls-accent pass is the same
