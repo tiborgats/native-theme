@@ -23,7 +23,8 @@ use objc2_app_kit::{
     NSFontWeightRegular, NSFontWeightSemibold, NSFontWeightThin, NSFontWeightTrait,
     NSFontWeightUltraLight, NSFontWidthTrait, NSImageView, NSLayoutManager, NSPanel, NSResponder,
     NSTableCellView, NSTableColumn, NSTableView, NSTableViewDataSource, NSTableViewDelegate,
-    NSTextField, NSToolbar, NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
+    NSTextField, NSToolbar, NSToolbarDelegate, NSToolbarFlexibleSpaceItemIdentifier, NSToolbarItem,
+    NSView, NSWindow, NSWindowStyleMask,
 };
 use objc2_core_foundation::{
     CFArray, CFBundle, CFDictionary, CFNumber, CFRange, CFRetained, CFString, CFType,
@@ -58,6 +59,13 @@ pub(super) fn font_weights() -> Result<[(&'static str, f64); 9], String> {
             ("black", NSFontWeightBlack),
         ]
     })
+}
+
+/// `NSToolbarFlexibleSpaceItemIdentifier`.
+pub(super) fn toolbar_flexible_space_identifier() -> &'static NSString {
+    // SAFETY: reads an AppKit `extern` NSString constant, as `font_weights`
+    // reads its CGFloat ones.
+    unsafe { NSToolbarFlexibleSpaceItemIdentifier }
 }
 
 /// `-[NSCell getPeriodicDelay:interval:]`: `(delay, interval)` in seconds.

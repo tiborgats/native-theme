@@ -36,7 +36,9 @@
 //! box, toolbar) over every backdrop, captures disabled check boxes and
 //! radio buttons at rest, then the toolbar button again in a toolbar sheet whose
 //! content view lies under its transparent title bar, and in that window a toolbar
-//! of image items, the selected one, an unselected one and a disabled one; `--colors`, macOS only, the
+//! of image items, the selected one, an unselected one and a disabled one, then the toolbar
+//! button over an opaque title bar beside itself disabled, as a toggle on and off, and with an
+//! image and no title; `--colors`, macOS only, the
 //! colours pass alone: every NSColor and Core Animation's colour
 //! interpolation.
 
@@ -74,7 +76,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls (the scrollers' knobs and radio buttons among them) hovered and pressed by posted mouse events over every backdrop, disabled check boxes and radio buttons at rest, then the toolbar button in a toolbar sheet; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls (the scrollers' knobs and radio buttons among them) hovered and pressed by posted mouse events over every backdrop, disabled check boxes and radio buttons at rest, then the toolbar button in a toolbar sheet, image items in a toolbar and the toolbar button's states (disabled, a toggle on and off, an image and no title) in a toolbar over an opaque title bar; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -343,9 +345,10 @@ const OVER_BACKDROPS: [&str; 3] = ["over_black", "over_white", "over_grey"];
 
 /// Why the controls pass's output is a failure, where it is:
 /// `[macos.button_pass]` missing, not a table or holding an `error`;
-/// `[macos.button_pass.controls]`, its `toolbar_sheet` or its
-/// `toolbar_items_sheet` missing, not a table or holding an `error`; any of
-/// the three sheets with no target outside error; or, in any of them, an
+/// `[macos.button_pass.controls]`, its `toolbar_sheet`, its
+/// `toolbar_items_sheet` or its `toolbar_states_sheet` missing, not a table
+/// or holding an `error`; any of the four sheets with no target outside
+/// error; or, in any of them, an
 /// appearance missing, recorded unavailable or
 /// holding an `error` (`appearance_table`'s cannot-create one), or a state's
 /// failure (`states_error`). A `targets` row's own `error` is no failure.
@@ -376,6 +379,10 @@ fn pass_error(doc: &toml::Table) -> Option<String> {
                 (
                     "toolbar_items_sheet",
                     "[macos.button_pass.controls.toolbar_items_sheet]",
+                ),
+                (
+                    "toolbar_states_sheet",
+                    "[macos.button_pass.controls.toolbar_states_sheet]",
                 ),
             ] {
                 let sheet = controls
@@ -841,6 +848,7 @@ mod tests {
     const CONTROLS: &str = "macos.button_pass.controls";
     const TOOLBAR: &str = "macos.button_pass.controls.toolbar_sheet";
     const ITEMS: &str = "macos.button_pass.controls.toolbar_items_sheet";
+    const STATES: &str = "macos.button_pass.controls.toolbar_states_sheet";
 
     /// The four captures of a state at `path`: the window's own as the
     /// state's `file` (`own`) or its `window.file`.
@@ -903,7 +911,8 @@ mod tests {
 
     /// A whole controls pass's output: in the controls sheet a pressed
     /// target, a hovered one and one neither, in the toolbar sheet a
-    /// pressed one.
+    /// pressed one, in the toolbar items sheet its three items and in the
+    /// toolbar states sheet its five specimens.
     fn controls_doc() -> Result<toml::Table, String> {
         let mut text = sheet_text(
             CONTROLS,
@@ -920,6 +929,16 @@ mod tests {
                 ("selected", true, true),
                 ("unselected", true, false),
                 ("disabled", false, false),
+            ],
+        ));
+        text.push_str(&sheet_text(
+            STATES,
+            &[
+                ("toolbar_button", true, true),
+                ("toolbar_button_disabled", false, false),
+                ("toolbar_toggle_on", true, true),
+                ("toolbar_toggle_off", false, false),
+                ("toolbar_image", true, false),
             ],
         ));
         text.parse().map_err(|e: toml::de::Error| e.to_string())
@@ -1253,6 +1272,52 @@ mod tests {
         }
         let mut doc = controls_doc()?;
         in_error("disabled")(&mut doc)?;
+        match pass_error(&doc) {
+            None => Ok(()),
+            Some(reason) => Err(format!("one target in error failed the pass: {reason}")),
+        }
+    }
+
+    #[test]
+    fn a_toolbar_states_sheet_missing_or_in_error_is_a_failure() -> Result<(), String> {
+        type Edit<'a> = &'a dyn Fn(&mut toml::Table) -> Result<(), String>;
+        const SPECIMENS: [&str; 5] = [
+            "toolbar_button",
+            "toolbar_button_disabled",
+            "toolbar_toggle_on",
+            "toolbar_toggle_off",
+            "toolbar_image",
+        ];
+        let in_error = |name: &'static str| {
+            move |d: &mut toml::Table| {
+                set(
+                    d,
+                    &format!("{STATES}.targets.{name}"),
+                    "error",
+                    "unavailable: the view is in no window".into(),
+                )
+            }
+        };
+        let every_target =
+            |d: &mut toml::Table| SPECIMENS.into_iter().try_for_each(|name| in_error(name)(d));
+        let edits: [Edit<'_>; 5] = [
+            &|d| remove(d, CONTROLS, "toolbar_states_sheet"),
+            &|d| set(d, STATES, "error", "unavailable: x".into()),
+            &every_target,
+            &|d| remove(d, STATES, "darkAqua"),
+            &|d| remove(d, &format!("{STATES}.aqua.pressed"), "toolbar_toggle_on"),
+        ];
+        for edit in edits {
+            let mut doc = controls_doc()?;
+            edit(&mut doc)?;
+            match pass_error(&doc) {
+                Some(reason)
+                    if reason.contains("[macos.button_pass.controls.toolbar_states_sheet]") => {}
+                other => return Err(format!("not the toolbar states sheet's failure: {other:?}")),
+            }
+        }
+        let mut doc = controls_doc()?;
+        in_error("toolbar_image")(&mut doc)?;
         match pass_error(&doc) {
             None => Ok(()),
             Some(reason) => Err(format!("one target in error failed the pass: {reason}")),

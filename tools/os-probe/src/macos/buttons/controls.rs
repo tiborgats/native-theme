@@ -10,7 +10,9 @@
 //! button again in a window whose content view lies under its transparent
 //! title bar; then the toolbar items sheet, that window with three image
 //! items in its toolbar, the selected one, an unselected one and a disabled
-//! one. Every state is captured over the window's own background and
+//! one; then the toolbar states sheet, the toolbar button again over an
+//! opaque title bar beside itself disabled, as a toggle on and off, and with
+//! an image and no title. Every state is captured over the window's own background and
 //! the three opaque backdrops, so each state's layer is solved
 //! ([`super::layer`]). The analysis reads each control's part from the
 //! layers at the rects this pass records.
@@ -20,12 +22,12 @@ use objc2::runtime::ProtocolObject;
 use objc2::{MainThreadOnly, Message};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSAttributedStringNSStringDrawing, NSBezelStyle,
-    NSBox, NSBoxType, NSButton, NSButtonType, NSClipView, NSColorSpace, NSControl, NSControlSize,
-    NSEvent, NSPopUpButton, NSScrollView, NSScroller, NSScrollerPart, NSScrollerStyle,
-    NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView, NSSwitch, NSTabView, NSTabViewItem,
-    NSTableCellView, NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTitlePosition,
-    NSToolbar, NSToolbarItem, NSView, NSVisualEffectBlendingMode, NSVisualEffectView, NSWindow,
-    NSWindowStyleMask,
+    NSBox, NSBoxType, NSButton, NSButtonType, NSCellImagePosition, NSClipView, NSColorSpace,
+    NSControl, NSControlSize, NSEvent, NSPopUpButton, NSScrollView, NSScroller, NSScrollerPart,
+    NSScrollerStyle, NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView, NSSwitch, NSTabView,
+    NSTabViewItem, NSTableCellView, NSTableColumn, NSTableView, NSTableViewStyle, NSTextField,
+    NSTitlePosition, NSToolbar, NSToolbarItem, NSView, NSVisualEffectBlendingMode,
+    NSVisualEffectView, NSWindow, NSWindowStyleMask,
 };
 use objc2_core_graphics::{CGEvent, CGEventTapLocation, CGScrollEventUnit};
 use objc2_foundation::{NSIndexSet, NSPoint, NSRect, NSSize, NSString};
@@ -88,6 +90,77 @@ const TOOLBAR_CONTENT: NSSize = NSSize::new(CONTROLS_CONTENT.width, 120.0);
 const CONTROLS_TOOLBAR_ID: &str = "NativeThemeOsProbeControls";
 const TOOLBAR_SHEET_ID: &str = "NativeThemeOsProbeControlsToolbar";
 const TOOLBAR_ITEMS_SHEET_ID: &str = "NativeThemeOsProbeControlsToolbarItems";
+const TOOLBAR_STATES_SHEET_ID: &str = "NativeThemeOsProbeControlsToolbarStates";
+
+/// One of the toolbar states sheet's specimens: the controls sheet's
+/// toolbar button (`toolbar_bezel_button`) of `button_type`, set on or off,
+/// enabled or not, and given the button pass's symbol image in place of its
+/// title where `image` is true.
+struct Specimen {
+    name: &'static str,
+    setup: &'static str,
+    button_type: NSButtonType,
+    on: bool,
+    enabled: bool,
+    image: bool,
+    hover: bool,
+    press: bool,
+}
+
+/// The toolbar states sheet's specimens, left to right, each the view of an
+/// item of its own, a flexible space item between each two.
+const TOOLBAR_SPECIMENS: [Specimen; 5] = [
+    Specimen {
+        name: "toolbar_button",
+        setup: "NSButton, NSButtonTypeMomentaryPushIn, NSBezelStyleToolbar, the view of an NSToolbarItem (the controls sheet's toolbar button)",
+        button_type: NSButtonType::MomentaryPushIn,
+        on: false,
+        enabled: true,
+        image: false,
+        hover: true,
+        press: true,
+    },
+    Specimen {
+        name: "toolbar_button_disabled",
+        setup: "NSButton, NSButtonTypeMomentaryPushIn, NSBezelStyleToolbar, setEnabled: NO, the view of an NSToolbarItem",
+        button_type: NSButtonType::MomentaryPushIn,
+        on: false,
+        enabled: false,
+        image: false,
+        hover: false,
+        press: false,
+    },
+    Specimen {
+        name: "toolbar_toggle_on",
+        setup: "NSButton, NSButtonTypePushOnPushOff, NSBezelStyleToolbar, state on, the view of an NSToolbarItem",
+        button_type: NSButtonType::PushOnPushOff,
+        on: true,
+        enabled: true,
+        image: false,
+        hover: true,
+        press: true,
+    },
+    Specimen {
+        name: "toolbar_toggle_off",
+        setup: "NSButton, NSButtonTypePushOnPushOff, NSBezelStyleToolbar, state off, the view of an NSToolbarItem",
+        button_type: NSButtonType::PushOnPushOff,
+        on: false,
+        enabled: true,
+        image: false,
+        hover: false,
+        press: false,
+    },
+    Specimen {
+        name: "toolbar_image",
+        setup: "NSButton, NSButtonTypeMomentaryPushIn, NSBezelStyleToolbar, the symbol image, empty title, NSImageOnly, the view of an NSToolbarItem",
+        button_type: NSButtonType::MomentaryPushIn,
+        on: false,
+        enabled: true,
+        image: true,
+        hover: true,
+        press: false,
+    },
+];
 
 /// The toolbar items sheet's image items, left to right: identifier and
 /// label. Every one is selectable; the first is made the selected one, the
@@ -319,6 +392,64 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
         "toolbar_items_sheet",
         toolbar_items_sheet_table(pass),
     );
+    out::put_table(
+        &mut t,
+        "toolbar_states_sheet",
+        toolbar_states_sheet_table(pass),
+    );
+    t
+}
+
+/// The toolbar states sheet: the controls sheet's toolbar button beside
+/// itself disabled, as a toggle on and off, and with the symbol image in
+/// place of its title, in a toolbar over an opaque title bar as the
+/// controls sheet's, captured as the toolbar sheet is.
+fn toolbar_states_sheet_table(pass: &Pass<'_>) -> Table {
+    let mut t = Table::new();
+    out::put(&mut t, "method", out::text(toolbar_states_method_text()));
+    let (sheet, pending, buttons, delegate) = match build_toolbar_states_sheet(pass) {
+        Ok(built) => built,
+        Err(reason) => {
+            out::put(&mut t, "error", out::unavailable(reason));
+            return t;
+        }
+    };
+    let window = &sheet.window;
+    let other = pass.present(window, &mut t);
+    pass.settle(window, SETTLE_STEPS);
+    out::put(
+        &mut t,
+        "styleMask_fullSizeContentView",
+        out::boolean(
+            window
+                .styleMask()
+                .contains(NSWindowStyleMask::FullSizeContentView),
+        ),
+    );
+    out::put(
+        &mut t,
+        "titlebarAppearsTransparent",
+        out::boolean(window.titlebarAppearsTransparent()),
+    );
+    sheet_reads(&mut t, &sheet);
+    let mut placed = Table::new();
+    let targets = place_targets(pending, &[], &sheet, &mut placed, &|_, _| {});
+    out::put_table(&mut t, "targets", placed);
+
+    let button_reads = |row: &mut Table| {
+        let mut states = Table::new();
+        for (name, button) in &buttons {
+            let mut s = Table::new();
+            out::put(&mut s, "state", out::int_isize(button.state()));
+            out::put(&mut s, "isEnabled", out::boolean(button.isEnabled()));
+            out::put_table(&mut states, name, s);
+        }
+        out::put_table(row, "specimens", states);
+    };
+    appearances(pass, &sheet, &targets, &button_reads, &mut t);
+    close(window, other);
+    window.setToolbar(None);
+    drop(delegate);
     t
 }
 
@@ -2372,21 +2503,42 @@ fn toolbar_with_button(
     window: &NSWindow,
     id: &str,
 ) -> (Retained<NSButton>, Retained<ffi::ToolbarDelegate>) {
-    let button = NSButton::new(mtm);
-    button.setButtonType(NSButtonType::MomentaryPushIn);
-    button.setBezelStyle(NSBezelStyle::Toolbar);
-    button.setTitle(&ns(TITLE));
-    button.sizeToFit();
-    let item = NSToolbarItem::initWithItemIdentifier(NSToolbarItem::alloc(mtm), &ns("button"));
-    item.setAutovalidates(false);
-    item.setEnabled(true);
-    let v: &NSView = &button;
-    item.setView(Some(v));
+    let button = toolbar_bezel_button(mtm, NSButtonType::MomentaryPushIn);
+    let item = toolbar_view_item(mtm, "button", &button);
     let delegate = ffi::ToolbarDelegate::new(mtm, vec![item]);
     let toolbar = NSToolbar::initWithIdentifier(NSToolbar::alloc(mtm), &ns(id));
     toolbar.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
     window.setToolbar(Some(&toolbar));
     (button, delegate)
+}
+
+/// An NSButton of `button_type`, NSBezelStyleToolbar, titled `TITLE`,
+/// sized to fit.
+fn toolbar_bezel_button(
+    mtm: objc2::MainThreadMarker,
+    button_type: NSButtonType,
+) -> Retained<NSButton> {
+    let button = NSButton::new(mtm);
+    button.setButtonType(button_type);
+    button.setBezelStyle(NSBezelStyle::Toolbar);
+    button.setTitle(&ns(TITLE));
+    button.sizeToFit();
+    button
+}
+
+/// An NSToolbarItem (identifier `id`, autovalidates NO, enabled) whose view
+/// is `button`.
+fn toolbar_view_item(
+    mtm: objc2::MainThreadMarker,
+    id: &str,
+    button: &NSButton,
+) -> Retained<NSToolbarItem> {
+    let item = NSToolbarItem::initWithItemIdentifier(NSToolbarItem::alloc(mtm), &ns(id));
+    item.setAutovalidates(false);
+    item.setEnabled(true);
+    let v: &NSView = button;
+    item.setView(Some(v));
+    item
 }
 
 /// The toolbar sheet: a titled window whose content view is given the whole
@@ -2439,6 +2591,101 @@ fn build_toolbar_sheet(
         notes,
     };
     Ok((sheet, pending, delegate))
+}
+
+/// The toolbar states sheet's window, its pending targets, its specimens'
+/// buttons (by target name) and the toolbar's delegate.
+type StatesSheet = (
+    Sheet,
+    Vec<Pending>,
+    Vec<(&'static str, Retained<NSButton>)>,
+    Retained<ffi::ToolbarDelegate>,
+);
+
+/// The toolbar states sheet: a titled window as the controls sheet's (its
+/// title bar opaque, the content view below it), whose NSToolbar holds
+/// `TOOLBAR_SPECIMENS`, each the view of an item of its own, a flexible
+/// space item between each two.
+fn build_toolbar_states_sheet(pass: &Pass<'_>) -> Result<StatesSheet, String> {
+    let mtm = pass.mtm;
+    let image = super::symbol_image()?;
+    let (window, content, backdrop) = sheet_window(mtm, CONTROLS_ORIGIN, TOOLBAR_CONTENT, false)?;
+    let mut items: Vec<Retained<NSToolbarItem>> = Vec::new();
+    let mut pending: Vec<Pending> = Vec::new();
+    let mut buttons: Vec<(&'static str, Retained<NSButton>)> = Vec::new();
+    let mut cases: Vec<Case> = Vec::new();
+    for (i, specimen) in TOOLBAR_SPECIMENS.iter().enumerate() {
+        let button = toolbar_bezel_button(mtm, specimen.button_type);
+        button.setState(state_value(specimen.on));
+        if specimen.image {
+            button.setTitle(&ns(""));
+            button.setImage(Some(&image));
+            button.setImagePosition(NSCellImagePosition::ImageOnly);
+            button.sizeToFit();
+        }
+        if i > 0 {
+            items.push(NSToolbarItem::initWithItemIdentifier(
+                NSToolbarItem::alloc(mtm),
+                ffi::toolbar_flexible_space_identifier(),
+            ));
+        }
+        let item = toolbar_view_item(mtm, specimen.name, &button);
+        item.setEnabled(specimen.enabled);
+        button.setEnabled(specimen.enabled);
+        items.push(item);
+        let reset_button = button.clone();
+        let on = specimen.on;
+        let button_view: &NSView = &button;
+        pending.push(Pending {
+            name: specimen.name,
+            view: button_view.retain(),
+            part: Part::Bounds,
+            hover: specimen.hover,
+            press: specimen.press,
+            escape: false,
+            reset: Box::new(move |row: &mut Table| {
+                reset_button.setState(state_value(on));
+                out::put(
+                    row,
+                    "state_after_reset",
+                    out::int_isize(reset_button.state()),
+                );
+            }),
+        });
+        cases.push(Case {
+            name: specimen.name.to_owned(),
+            size: NSControlSize::Regular,
+            kind: "toolbar_button",
+            setup: specimen.setup,
+            control: Retained::into_super(button.retain()),
+            button: Some(button.clone()),
+            clickable: false,
+            focus: false,
+        });
+        buttons.push((specimen.name, button));
+    }
+    let delegate = ffi::ToolbarDelegate::new(mtm, items);
+    let toolbar =
+        NSToolbar::initWithIdentifier(NSToolbar::alloc(mtm), &ns(TOOLBAR_STATES_SHEET_ID));
+    toolbar.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
+    window.setToolbar(Some(&toolbar));
+    let mut notes = Table::new();
+    out::put(
+        &mut notes,
+        "content_size_wh",
+        out::floats(&[TOOLBAR_CONTENT.width, TOOLBAR_CONTENT.height]),
+    );
+    let sheet = Sheet {
+        name: "controls_toolbar_states",
+        window,
+        content,
+        backdrop,
+        cases,
+        pointer_states: false,
+        settled: true,
+        notes,
+    };
+    Ok((sheet, pending, buttons, delegate))
 }
 
 /// The toolbar items sheet's window, toolbar, items and delegate.
@@ -2659,7 +2906,7 @@ fn tabs_table(tabs: &Tabs, frame: NSSize) -> Table {
 
 fn method_text() -> String {
     format!(
-        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt; its title is drawn in the cell's titleRectForBounds:, clipped to it where the title is wider; targets.disclosure: title_rect_xywh, that rect, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide, and in the third and fourth columns a radio button off and one on (\"{RADIO_TITLE}\", NSButtonTypeRadio, no action, so the two form no group; set back to off and on after each press); row 3 a check box off and one on and a radio button off and one on, each disabled (setEnabled: NO; neither hovered nor pressed: their states are the sheet's normal and highlighted ones; targets.<name>: the indicator's rect and title_rect_xywh as the disclosure button's, for every check box and radio button); under it two scroll views at {scroll} and {overlay} (x, y), each {} x {} pt with a vertical scroller (autohidesScrollers NO), the first set to NSScrollerStyleLegacy, the second to NSScrollerStyleOverlay, each document view an empty NSView {SCROLL_DOCUMENT_FACTOR} times the scroll view's height, scrolled to its middle, and neither the scroll view nor its clip view drawing a background (drawsBackground NO on both), so the backdrop shows behind the scroller; once the window is shown and settled each scroll view's style read (scroll_views.scrollerStyle_when_shown), set again and the scroll view tiled and scrolled to its middle again (scroll_views: the styles read back after that, drawsBackground and contentView_drawsBackground, each vertical scroller's isHidden, alphaValue, knobProportion and doubleValue, and NSScroller's preferredScrollerStyle), and so again once each appearance is set (<appearance>.scroll_views: scrollerStyle_read, then scrollerStyle_after_set); below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked {park}; so again after the hovered and the pressed states, cursor_parked), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the mouse-up posted once the capture is done, on the main thread by a timer in the run loop's common modes, which fires in the control's tracking loop, where windowNumberAtPoint: at the press point, read just before it, gives the probe's window or another window its process owns (kCGWindowOwnerPID; the pop-up's menu), else to the probe's process alone (CGEventPostToPid) with the press's error (mouseUp_window_under, mouseUp_window_is_ours, mouseUp_posted_to); the pop-up's mouse-up followed {delay} s later by an Escape down and up, to the HID event tap where the probe's application is active, else to its process alone with the error (escape_NSApp_isActive, escape_posted_to); where the timer has posted no release {wait_steps} pump steps after the capture, the capture thread posts it to the probe's process alone (release_by_watchdog, the press's error); firstResponder_class_after_press, the class of the window's first responder read after the mouse-up, before the control is set back: the text field's press makes its field editor the first responder), the control set back after each press (the text field: makeFirstResponder: nil, the first responder's class read back (firstResponder_class_after_reset), and its text set again; the tables: the selection cleared and makeFirstResponder: nil, read back as the text field's; the split view: setPosition:ofDividerAtIndex: 0 to the first pane's right edge read when it was built; the scroll views: scrolled to their middle again); a press is posted only where windowNumberAtPoint: at the press point gives the probe's window (window_at_press_is_ours), else it is skipped and its error recorded; for the scroller knobs the hovered state is taken per backdrop as the press is, and before each hovered and pressed capture, once the cursor is over the knob, the scrollers are shown (an overlay scroller's knob is drawn only while shown; reveal): a scroll-wheel CGEvent of {REVEAL_LINES} line (wheel1 {REVEAL_LINES}) and one of as many with wheel1 negated posted at the cursor (kCGScrollEventUnitLine), each where windowNumberAtPoint: at the cursor, read just before it, gives the probe's window (else that scroll is not posted and is the reveal's error), each followed by {REVEAL_STEPS} steps and the vertical scroller's doubleValue read (reveal.verticalScroller_doubleValue_before, reveal.scrolls), then the scroll view scrolled to its middle again and its flashScrollers; knob_drawn: in the capture over the window's background, the pixels of the knob's own rect (the vertical scroller's rectForPart: NSScrollerKnob read after the state's captures, the view scrolled to its middle as at them; knob_in_window_from_top_left_xywh) that differ from the scroll view's background read at the middle of its clip view (background_raw), where none does the state's error (the knob is not drawn) (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part whose view is in no window, or that is empty or does not lie within its view's bounds, is the target's error and the target is neither hovered nor pressed; a case whose control is in no window gets an error for its geometry and its layer's measures and is not highlighted; behind_part: what is drawn behind the part, a line per view (class, frame, isOpaque and, for a scroll view or clip view, drawsBackground; for a visual effect view, material, blendingMode and state; for a table, backgroundColor in sRGB, usesAlternatingRowBackgroundColors, style and effectiveStyle): the target's view, with a scroll view its clip view and, for a knob, its vertical scroller, then each view up to the content view and, under the next one up, its visible subviews that overlap the part, with theirs, and the content view's subviews under the target's that overlap it, the backdrop box left out; a table's enclosing_scroll_view_tree, its scroll view's every subview; over_backdrop: whether the part lies within the backdrop box and nothing behind it covers it (backdrop_covered_by: a scroll view or clip view that draws its background, a visual effect view, a table whose backgroundColor has alpha above 0 or no sRGB form, a legacy scroller's knob slot behind its knob), where not its layer is the composite over what lies behind it; per appearance, normal.backdrop_shows: per target the pixels of its part that differ between the normal captures over the black and the white backdrop, and the target's error where over_backdrop is true and none does (the flag checked by the data; a covering view may be translucent, so a covered part's differing pixels are no error); the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of the cell's titleRectForBounds:, the slot its title is drawn in; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide; the scroller knobs: the vertical scroller's rectForPart: NSScrollerKnob, in the scroll view's coordinates); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt; then the toolbar sheet (toolbar_sheet, its method) and the toolbar items sheet (toolbar_items_sheet, its method)",
+        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt; its title is drawn in the cell's titleRectForBounds:, clipped to it where the title is wider; targets.disclosure: title_rect_xywh, that rect, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide, and in the third and fourth columns a radio button off and one on (\"{RADIO_TITLE}\", NSButtonTypeRadio, no action, so the two form no group; set back to off and on after each press); row 3 a check box off and one on and a radio button off and one on, each disabled (setEnabled: NO; neither hovered nor pressed: their states are the sheet's normal and highlighted ones; targets.<name>: the indicator's rect and title_rect_xywh as the disclosure button's, for every check box and radio button); under it two scroll views at {scroll} and {overlay} (x, y), each {} x {} pt with a vertical scroller (autohidesScrollers NO), the first set to NSScrollerStyleLegacy, the second to NSScrollerStyleOverlay, each document view an empty NSView {SCROLL_DOCUMENT_FACTOR} times the scroll view's height, scrolled to its middle, and neither the scroll view nor its clip view drawing a background (drawsBackground NO on both), so the backdrop shows behind the scroller; once the window is shown and settled each scroll view's style read (scroll_views.scrollerStyle_when_shown), set again and the scroll view tiled and scrolled to its middle again (scroll_views: the styles read back after that, drawsBackground and contentView_drawsBackground, each vertical scroller's isHidden, alphaValue, knobProportion and doubleValue, and NSScroller's preferredScrollerStyle), and so again once each appearance is set (<appearance>.scroll_views: scrollerStyle_read, then scrollerStyle_after_set); below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked {park}; so again after the hovered and the pressed states, cursor_parked), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the mouse-up posted once the capture is done, on the main thread by a timer in the run loop's common modes, which fires in the control's tracking loop, where windowNumberAtPoint: at the press point, read just before it, gives the probe's window or another window its process owns (kCGWindowOwnerPID; the pop-up's menu), else to the probe's process alone (CGEventPostToPid) with the press's error (mouseUp_window_under, mouseUp_window_is_ours, mouseUp_posted_to); the pop-up's mouse-up followed {delay} s later by an Escape down and up, to the HID event tap where the probe's application is active, else to its process alone with the error (escape_NSApp_isActive, escape_posted_to); where the timer has posted no release {wait_steps} pump steps after the capture, the capture thread posts it to the probe's process alone (release_by_watchdog, the press's error); firstResponder_class_after_press, the class of the window's first responder read after the mouse-up, before the control is set back: the text field's press makes its field editor the first responder), the control set back after each press (the text field: makeFirstResponder: nil, the first responder's class read back (firstResponder_class_after_reset), and its text set again; the tables: the selection cleared and makeFirstResponder: nil, read back as the text field's; the split view: setPosition:ofDividerAtIndex: 0 to the first pane's right edge read when it was built; the scroll views: scrolled to their middle again); a press is posted only where windowNumberAtPoint: at the press point gives the probe's window (window_at_press_is_ours), else it is skipped and its error recorded; for the scroller knobs the hovered state is taken per backdrop as the press is, and before each hovered and pressed capture, once the cursor is over the knob, the scrollers are shown (an overlay scroller's knob is drawn only while shown; reveal): a scroll-wheel CGEvent of {REVEAL_LINES} line (wheel1 {REVEAL_LINES}) and one of as many with wheel1 negated posted at the cursor (kCGScrollEventUnitLine), each where windowNumberAtPoint: at the cursor, read just before it, gives the probe's window (else that scroll is not posted and is the reveal's error), each followed by {REVEAL_STEPS} steps and the vertical scroller's doubleValue read (reveal.verticalScroller_doubleValue_before, reveal.scrolls), then the scroll view scrolled to its middle again and its flashScrollers; knob_drawn: in the capture over the window's background, the pixels of the knob's own rect (the vertical scroller's rectForPart: NSScrollerKnob read after the state's captures, the view scrolled to its middle as at them; knob_in_window_from_top_left_xywh) that differ from the scroll view's background read at the middle of its clip view (background_raw), where none does the state's error (the knob is not drawn) (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part whose view is in no window, or that is empty or does not lie within its view's bounds, is the target's error and the target is neither hovered nor pressed; a case whose control is in no window gets an error for its geometry and its layer's measures and is not highlighted; behind_part: what is drawn behind the part, a line per view (class, frame, isOpaque and, for a scroll view or clip view, drawsBackground; for a visual effect view, material, blendingMode and state; for a table, backgroundColor in sRGB, usesAlternatingRowBackgroundColors, style and effectiveStyle): the target's view, with a scroll view its clip view and, for a knob, its vertical scroller, then each view up to the content view and, under the next one up, its visible subviews that overlap the part, with theirs, and the content view's subviews under the target's that overlap it, the backdrop box left out; a table's enclosing_scroll_view_tree, its scroll view's every subview; over_backdrop: whether the part lies within the backdrop box and nothing behind it covers it (backdrop_covered_by: a scroll view or clip view that draws its background, a visual effect view, a table whose backgroundColor has alpha above 0 or no sRGB form, a legacy scroller's knob slot behind its knob), where not its layer is the composite over what lies behind it; per appearance, normal.backdrop_shows: per target the pixels of its part that differ between the normal captures over the black and the white backdrop, and the target's error where over_backdrop is true and none does (the flag checked by the data; a covering view may be translucent, so a covered part's differing pixels are no error); the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of the cell's titleRectForBounds:, the slot its title is drawn in; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide; the scroller knobs: the vertical scroller's rectForPart: NSScrollerKnob, in the scroll view's coordinates); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt; then the toolbar sheet (toolbar_sheet, its method), the toolbar items sheet (toolbar_items_sheet, its method) and the toolbar states sheet (toolbar_states_sheet, its method)",
         CONTROLS_CONTENT.width,
         CONTROLS_CONTENT.height,
         point_text(CONTROLS_ORIGIN),
@@ -2701,6 +2948,33 @@ fn toolbar_items_method_text() -> String {
         TOOLBAR_ITEMS[1].0,
         TOOLBAR_ITEMS[2].0,
         TOOLBAR_ITEMS[0].0,
+    )
+}
+
+/// The toolbar states sheet's method.
+fn toolbar_states_method_text() -> String {
+    let specimens: Vec<String> = TOOLBAR_SPECIMENS
+        .iter()
+        .map(|s| {
+            format!(
+                "{} ({}; {})",
+                s.name,
+                s.setup,
+                match (s.hover, s.press) {
+                    (true, true) => "hovered and pressed",
+                    (true, false) => "hovered only",
+                    (false, true) => "pressed only",
+                    (false, false) => "neither hovered nor pressed",
+                }
+            )
+        })
+        .collect();
+    format!(
+        "after the toolbar items sheet's window is closed, one titled NSWindow ({} x {} pt content from {}, empty title) made as the controls sheet's, its title bar opaque and its content view below it (styleMask_fullSizeContentView and titlebarAppearsTransparent read back, both false), so the toolbar lies over no backdrop, as the controls sheet's; its NSToolbar (identifier {TOOLBAR_STATES_SHEET_ID}) holds, left to right, one item per specimen, each the item the controls sheet's toolbar button is given (autovalidates NO) whose view is an NSButton made as that one (setButtonType:, NSBezelStyleToolbar, \"{TITLE}\", sizeToFit), and a flexible space item (NSToolbarFlexibleSpaceItemIdentifier) between each two: {}; for the image specimen the title then set empty, the button pass's symbol image set, imagePosition NSImageOnly and sizeToFit again; the disabled specimen's item and button setEnabled: NO; per appearance specimens.<target>: each button's state and isEnabled read before the states are captured; the window made key as a button sheet's; per appearance normal, highlighted (highlight: YES on every specimen's button), hovered and pressed, each over every backdrop, as the toolbar sheet's (targets.<target>: its part the button's bounds; settled captures, each capture's backdrop); after each press the pressed specimen set back to its state and that read back (state_after_reset); its captures in <appearance>/controls_toolbar_states/; each layer solved from the black and white captures as the button pass's (layer_method)",
+        TOOLBAR_CONTENT.width,
+        TOOLBAR_CONTENT.height,
+        point_text(CONTROLS_ORIGIN),
+        specimens.join("; "),
     )
 }
 
