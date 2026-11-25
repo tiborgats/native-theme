@@ -2568,16 +2568,24 @@ impl State {
     }
 
     /// The bundled preset/mode combination installed, as the contract's
-    /// export names it (`<preset>/<mode>`), or `None` under the OS theme,
-    /// which is no bundled combination.
+    /// export names it (`<preset>/<mode>`), where the installed theme is the
+    /// one the export's walk resolved: the preset alone, with no palette
+    /// laid over it, resolved in the walk's context, `ThemeContext::light()`
+    /// or `ThemeContext::dark()`. `None` under the OS theme, which is no
+    /// bundled combination, under a palette, and in any other context (a
+    /// desktop's, a preference set): a route then names what any platform
+    /// theme moves, as a claim names only what was resolved.
     fn installed_combination(&self) -> Option<String> {
-        match &self.current_choice {
-            ThemeChoice::OsTheme(_) => None,
-            ThemeChoice::Preset(key) => {
-                let mode = if self.is_dark { "dark" } else { "light" };
-                Some(format!("{key}/{mode}"))
-            }
-        }
+        let ThemeChoice::Preset(key) = &self.current_choice else {
+            return None;
+        };
+        let (mode, walked) = if self.is_dark {
+            ("dark", ThemeContext::dark())
+        } else {
+            ("light", ThemeContext::light())
+        };
+        (self.theme_palette.is_none() && self.next_resolved.context == walked)
+            .then(|| format!("{key}/{mode}"))
     }
 
     /// Install `choice` in `mode`, with the palette chosen laid over it:
@@ -9116,8 +9124,11 @@ struct Drawing {
     rows: &'static [&'static str],
     /// A status is drawn where it contains each of these...
     with: &'static [&'static str],
-    /// ...and none of these.
+    /// ...and none of these...
     without: &'static [&'static str],
+    /// ...and is none of these, whole: a status that is a bare value, such
+    /// as the `disabled` flag `styles::segmented_control` takes.
+    not: &'static [&'static str],
 }
 
 impl Drawing {
@@ -9126,6 +9137,7 @@ impl Drawing {
             rows,
             with: &[],
             without: &[],
+            not: &[],
         }
     }
 
@@ -9135,6 +9147,7 @@ impl Drawing {
             rows,
             with: &[],
             without: &["Disabled"],
+            not: &[],
         }
     }
 
@@ -9147,7 +9160,13 @@ impl Drawing {
             rows,
             with,
             without,
+            not: &[],
         }
+    }
+
+    /// The drawing, with the statuses `not` left out whole.
+    const fn not(self, not: &'static [&'static str]) -> Self {
+        Self { not, ..self }
     }
 
     fn draws_row(&self, row: &str) -> bool {
@@ -9157,6 +9176,7 @@ impl Drawing {
     fn draws_status(&self, status: &str) -> bool {
         self.with.iter().all(|s| status.contains(s))
             && !self.without.iter().any(|s| status.contains(s))
+            && !self.not.contains(&status)
     }
 }
 
@@ -9342,8 +9362,13 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
             Drawing::enabled(TEXT_INPUT)
         }
         _ if under("basic.text_area") => Drawing::enabled(&["styles::text_editor."]),
+        // The Theme row is a field in the drop-down's look, never drawn open
+        // ([`theme_picker_style`]).
+        _ if id == "chrome.side_panel.settings.theme" => {
+            Drawing::only(&["styles::pick_list."], &[], &["Opened"])
+        }
         _ if under("basic.drop_down")
-            || ["theme", "mode", "icon_theme"]
+            || ["mode", "icon_theme"]
                 .iter()
                 .any(|s| id == format!("chrome.side_panel.settings.{s}")) =>
         {
@@ -9373,13 +9398,19 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
         // The page's and the inspector's tabs are the showcase's
         // ([`tab_style`]); their line is the connector's.
         _ if home == "tab.indicator(SELECTED).fill" => Drawing::of(&["crate::tab_indicator_line"]),
+        // The page draws the control, its frame and its dividers enabled:
+        // `styles::segmented_control` and `styles::segment_separator` take
+        // the `disabled` flag, which the export writes bare.
+        _ if under("basic.segmented.divider_1") || under("basic.segmented.divider_2") => {
+            Drawing::only(&["styles::segment_separator."], &[], &[]).not(&["true"])
+        }
         _ if under("basic.segmented.week") => {
-            Drawing::only(SEGMENT, &[], &["(false, ", "Disabled"])
+            Drawing::only(SEGMENT, &[], &["(false, ", "Disabled"]).not(&["true"])
         }
         _ if under("basic.segmented.day") || under("basic.segmented.month") => {
-            Drawing::only(SEGMENT, &[], &["(true, ", "Disabled"])
+            Drawing::only(SEGMENT, &[], &["(true, ", "Disabled"]).not(&["true"])
         }
-        _ if under("basic.segmented") => Drawing::enabled(SEGMENT),
+        _ if under("basic.segmented") => Drawing::enabled(SEGMENT).not(&["true"]),
         // The list's scroll bar is vertical, and its rows overflow it; it
         // is drawn as an unfocused view's while the window is inactive
         // ([`list_bar_style`]).
@@ -9435,16 +9466,13 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
 const DERIVED_ROWS: &[(&str, &str)] = &[
     (
         "styles::button_primary.background",
-        "Hovered and Pressed: iced's derivation from button.primary_background, \
+        "Hovered and Pressed: iced's derivation from button.body(NONE; variant=Primary).fill, \
          Primary::generate(..).strong and .base",
     ),
     (
         "styles::button_primary.text_color",
-        "Hovered and Pressed: button.primary_text_color, the label of iced's Primary pair",
-    ),
-    (
-        "styles::slider.handle.background",
-        "Dragged: iced's own handle fill, slider.thumb_color has no dragged variant",
+        "Hovered and Pressed: button.label(NONE; variant=Primary).color, the label of iced's \
+         Primary pair",
     ),
     (
         "styles::expander.border",
@@ -10104,15 +10132,24 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, home: &str) -> Option<String
 /// The route of a colour home `home` of the Basic list under `r`, of its
 /// frame where `frame` ([`list_frame`]), else of a row ([`list_row`]): what
 /// the function draws of the home, naming what it reads, or that it is
-/// unstated and what is drawn in its place. `None` for a home neither
-/// reads.
-fn list_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -> Option<String> {
+/// unstated and what is drawn in its place. While the window is not active,
+/// `window_active` false, a selected row is drawn in the `UNFOCUSED_VIEW`
+/// pair where it differs ([`next_selection_pair`]). `None` for a home
+/// neither reads.
+fn list_route(
+    r: &native_theme::next::ResolvedTheme,
+    home: &str,
+    frame: bool,
+    window_active: bool,
+) -> Option<String> {
     let l = &r.list;
     let fill = |state: WidgetState| drawn_state_fill(&l.highlight(state)).is_some();
     let ink = |state: WidgetState| iced_next::state_text_color_of(&l.item_label(state)).is_some();
     let (hover, selected) = (WidgetState::HOVER, WidgetState::SELECTED);
     let container = l.container(WidgetState::NONE);
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
+    let unfocused_fill = !window_active && inactive.0 != active.0;
+    let unfocused_ink = !window_active && inactive.1 != active.1;
     let unmapped = unmapped_fill_route(
         home,
         &[
@@ -10163,12 +10200,20 @@ fn list_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) ->
         "list.item_label(NONE).color" => {
             "list_row: text_color at rest, list.item_label(NONE).color"
         }
+        "list.highlight(SELECTED).fill" if unfocused_fill => {
+            "not drawn while the window is inactive: the selected row's fill is \
+             list.highlight(SELECTED|UNFOCUSED_VIEW).fill"
+        }
         "list.highlight(SELECTED).fill" if !fill(selected) => {
             "not drawn: list.highlight(SELECTED).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
         "list.highlight(SELECTED).fill" => {
             "list_row: the selected row's fill, list.highlight(SELECTED).fill"
+        }
+        "list.item_label(SELECTED).color" if unfocused_ink => {
+            "not drawn while the window is inactive: the selected row's label is \
+             list.item_label(SELECTED|UNFOCUSED_VIEW).color"
         }
         "list.item_label(SELECTED).color" if !ink(selected) => {
             "not drawn: list.item_label(SELECTED).color is unstated, so the selected row's label \
@@ -10225,12 +10270,21 @@ fn list_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) ->
 /// installed 0.8.0 theme, of its frame where `frame` ([`list_frame`]), else
 /// of its rows and header ([`basic_table`], [`TableColours`],
 /// [`header_section_style`]): what is drawn of the home, naming what it
-/// reads, or that it is unstated and what is drawn in its place. `None` for
-/// a home none of them reads.
-fn table_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -> Option<String> {
+/// reads, or that it is unstated and what is drawn in its place. While the
+/// window is not active, `window_active` false, the selected row is drawn
+/// in the `UNFOCUSED_VIEW` pair where it differs ([`next_selection_pair`]).
+/// `None` for a home none of them reads.
+fn table_route(
+    r: &native_theme::next::ResolvedTheme,
+    home: &str,
+    frame: bool,
+    window_active: bool,
+) -> Option<String> {
     let l = &r.list;
     let none = WidgetState::NONE;
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
+    let unfocused_fill = !window_active && inactive.0 != active.0;
+    let unfocused_ink = !window_active && inactive.1 != active.1;
     let hovered = iced_next::list_header_hover_background(r).ok().flatten();
     let pressed = iced_next::list_header_active_background(r).ok().flatten();
     let unmapped = unmapped_fill_route(
@@ -10262,7 +10316,7 @@ fn table_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -
     }
     let route = match home {
         "list.container(NONE).fill" | "list.container(NONE).stroke.color" => {
-            return list_route(r, home, frame);
+            return list_route(r, home, frame, window_active);
         }
         "list.item_label(NONE).color"
             if iced_next::text_color_of(&l.item_label(none)).is_none() =>
@@ -10273,6 +10327,10 @@ fn table_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -
         "list.item_label(NONE).color" => {
             "basic_table: a cell's text colour, list.item_label(NONE).color"
         }
+        "list.highlight(SELECTED).fill" if unfocused_fill => {
+            "not drawn while the window is inactive: the selected row's fill is \
+             list.highlight(SELECTED|UNFOCUSED_VIEW).fill"
+        }
         "list.highlight(SELECTED).fill" if active.0.is_none() => {
             "not drawn: list.highlight(SELECTED).fill is unstated, so the selected row is not \
              filled"
@@ -10280,6 +10338,10 @@ fn table_route(r: &native_theme::next::ResolvedTheme, home: &str, frame: bool) -
         "list.highlight(SELECTED).fill" => {
             "basic_table: the selected row container's background, list.highlight(SELECTED).fill \
              (table_row_style)"
+        }
+        "list.item_label(SELECTED).color" if unfocused_ink => {
+            "not drawn while the window is inactive: the selected row's text colour is \
+             list.item_label(SELECTED|UNFOCUSED_VIEW).color"
         }
         "list.item_label(SELECTED).color" if active.1.is_none() => {
             "not drawn: list.item_label(SELECTED).color is unstated, so the selected row's text \
@@ -11369,8 +11431,14 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
              has no widget opacity)"
                 .to_owned()
         }
-        "button.body(NONE).shadows" | "tooltip.panel.shadows" => {
-            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+        "button.body(NONE).shadows" => {
+            "not drawn: iced's button::Style takes a shadow, but the connector's button styles \
+             map none; iced's own class's is drawn"
+                .to_owned()
+        }
+        "tooltip.panel.shadows" => {
+            "not drawn: iced's container::Style takes a shadow, but iced_next::styles::tooltip \
+             maps none; iced's own container's is drawn"
                 .to_owned()
         }
         "tooltip.text" => "next_text: the tip's size, line box and font, tooltip.text".to_owned(),
@@ -11667,7 +11735,8 @@ fn drop_down_route(home: &str) -> Option<String> {
              combo_box.field(NONE).stroke.width"
         }
         "combo_box.field(NONE).shadows" => {
-            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+            "not reachable: iced's pick_list::Style has no shadow (text_color, \
+             placeholder_color, handle_color, background, border)"
         }
         _ => return None,
     };
@@ -11704,7 +11773,8 @@ fn text_area_route(home: &str) -> Option<String> {
              text_area.field(NONE).stroke.width"
         }
         "text_area.field(NONE).shadows" => {
-            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+            "not reachable: iced's text_editor::Style has no shadow (background, border, \
+             placeholder, value, selection)"
         }
         _ => return None,
     };
@@ -12210,7 +12280,8 @@ fn theme_row_route(home: &str) -> Option<&'static str> {
              combo_box.field(NONE).stroke.width"
         }
         "combo_box.field(NONE).shadows" => {
-            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+            "not reachable: the field's text_input::Style has no shadow, nor has the \
+             pick_list::Style it takes its look from"
         }
         _ => return None,
     })
@@ -12242,7 +12313,8 @@ fn card_route(home: &str) -> Option<String> {
              card.container(NONE).stroke.width; next_card_padding: the padding inside it"
         }
         "card.container(NONE).shadows" => {
-            "not reachable: the model states no shadow geometry; iced draws no shadow here"
+            "not drawn: iced's container::Style takes a shadow, but \
+             iced_next::styles::container_card maps none; iced's own container's is drawn"
         }
         "card.container(NONE).padding.top"
         | "card.container(NONE).padding.right"
@@ -12463,13 +12535,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
             "list.container(NONE).corners" | "list.container(NONE).stroke.width"
         );
     let route = if under("basic.list.") && !under("basic.list.scrollbar") {
-        list_route(r, home, frame).or_else(|| {
+        list_route(r, home, frame, state.window_active).or_else(|| {
             (!frame_shape)
                 .then(|| list_shape_route(r, home, under("basic.list.row_2")))
                 .flatten()
         })
     } else if under("basic.table.") {
-        table_route(r, home, id == "basic.table.frame").or_else(|| table_layout_route(r, id, home))
+        table_route(r, home, id == "basic.table.frame", state.window_active)
+            .or_else(|| table_layout_route(r, id, home))
     } else if tab_element(id) {
         tab_home_route(r, id, home)
     } else if under("chrome.menu") {
@@ -12640,7 +12713,12 @@ fn menu_keeps_iced_aws_shadow(r: &native_theme::next::ResolvedTheme) -> bool {
 /// nothing for: the "Not themeable" lines of its Widget Info.
 fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'static, str>> {
     match element.name.as_str() {
-        "Switch" => vec!["label gap: iced's toggler's, Toggler::DEFAULT_SIZE / 2".into()],
+        // Where the theme states `switch.label_gap`, the row draws it
+        // ([`next_switch_row`]).
+        "Switch" if state.next_shown().switch.label_gap.is_none() => {
+            vec!["label gap: iced's toggler's, Toggler::DEFAULT_SIZE / 2".into()]
+        }
+        "Switch" => Vec::new(),
         "Spinner" if spinner_keeps_its_colours(state) => {
             vec!["the indicator's frames, own colours and pace: the icon theme's".into()]
         }
@@ -13576,6 +13654,19 @@ fn stroke_zero(part: &PartStyle, home: &str) -> String {
         Stroke::None => format!("{home}.stroke none"),
         Stroke::Uniform { width, .. } => format!("{home}.stroke.width {width}"),
         Stroke::Complex(_) => format!("{home}.stroke per side"),
+    }
+}
+
+/// Why a checked box's or a selected radio's edge is 0 wide where it is,
+/// as `iced_next::styles::checkbox` and `radio` draw it: in the colour of
+/// `checked`'s stroke, `home`'s (`checkbox.indicator(CHECKED)`), at the
+/// width at rest, so a stroke stated none there draws none, and else the
+/// width at rest, `rest_zero`, makes it 0.
+fn checked_stroke_zero(checked: &PartStyle, home: &str, rest_zero: &str) -> String {
+    if checked.stated.contains(PartStated::STROKE) && matches!(checked.stroke, Stroke::None) {
+        stroke_zero(checked, home)
+    } else {
+        rest_zero.to_owned()
     }
 }
 
@@ -17833,6 +17924,11 @@ fn checkbox_info(state: &State) -> String {
         style().err(),
     );
     let zero = stroke_zero(&indicator, "checkbox.indicator(NONE)");
+    let checked_zero = checked_stroke_zero(
+        &next.checkbox.indicator(WidgetState::CHECKED),
+        "checkbox.indicator(CHECKED)",
+        &zero,
+    );
     // The gap and the box the page lays the check boxes out by, on the
     // installed 0.8.0 theme: `checkbox.label_gap` and
     // [`next_check_box_size`], the box's side, which `Checkbox::size`
@@ -17873,7 +17969,7 @@ fn checkbox_info(state: &State) -> String {
             checkbox_inks,
             Status::Active { is_checked },
             &rows,
-            &zero,
+            if is_checked { &checked_zero } else { &zero },
         ));
     }
     widget_tooltip(
@@ -17970,6 +18066,15 @@ fn radio_info(state: &State) -> String {
     }
     let label_s = next_font_row("radio.label(NONE)", &radio_label);
     sizes.push(("label", label_s.as_str()));
+    let zero = stroke_zero(
+        &next.radio.indicator(WidgetState::NONE),
+        "radio.indicator(NONE)",
+    );
+    let selected_zero = checked_stroke_zero(
+        &next.radio.indicator(WidgetState::CHECKED),
+        "radio.indicator(CHECKED)",
+        &zero,
+    );
     let mut colours = Vec::new();
     for (is_selected, rows) in [
         (
@@ -17997,10 +18102,7 @@ fn radio_info(state: &State) -> String {
             radio_inks,
             Status::Active { is_selected },
             &rows,
-            &stroke_zero(
-                &next.radio.indicator(WidgetState::NONE),
-                "radio.indicator(NONE)",
-            ),
+            if is_selected { &selected_zero } else { &zero },
         ));
     }
     widget_tooltip("Radio", &colours, &sizes, &unthemed)
@@ -23579,6 +23681,7 @@ mod tests {
     use iced_test::runtime::UserInterface;
     use iced_test::selector::{self, Candidate};
     use native_theme_iced::icons::animated_frames_to_svg_handles_for;
+    use native_theme_showcase_support::next::patch::{WIDGET_COLOURS, home_patch_toml};
     use std::collections::BTreeSet;
 
     /// The macOS system UI font, the installed 0.8.0 theme's
@@ -27214,18 +27317,20 @@ mod tests {
             total += sites.len();
 
             for required in row.styles {
-                // A widget on the 0.8.0 model wears the connector's 0.8.0
-                // style of the same name (`iced_next::styles`).
+                // A widget wears the connector's 0.8.0 style of the name
+                // (`iced_next::styles`), never its 0.7.2 one, or the
+                // showcase's own style function.
                 let next: Vec<String> = required
                     .iter()
-                    .filter(|style| style.starts_with("styles::"))
-                    .map(|style| format!("iced_next::{style}"))
+                    .map(|style| {
+                        if style.starts_with("styles::") {
+                            format!("iced_next::{style}")
+                        } else {
+                            (*style).to_owned()
+                        }
+                    })
                     .collect();
-                let either: Vec<&str> = required
-                    .iter()
-                    .copied()
-                    .chain(next.iter().map(String::as_str))
-                    .collect();
+                let either: Vec<&str> = next.iter().map(String::as_str).collect();
                 let bare: Vec<String> = sites
                     .iter()
                     .filter(|site| {
@@ -27245,10 +27350,10 @@ mod tests {
         }
         assert!(total > 0, "the coverage table found nothing");
 
-        // Every public style function the connector ships is demonstrated,
-        // itself, its 0.8.0 style of the same name (`iced_next::styles`), or
-        // through the connector function that applies it.
-        for function in public_functions(include_str!("../src/styles.rs")) {
+        // Every public style function of the connector's 0.8.0 path
+        // (`iced_next::styles`) is demonstrated, itself or through the
+        // connector function that applies it.
+        for function in public_functions(include_str!("../src/next/styles.rs")) {
             let call = format!("styles::{function}");
             let next = format!("iced_next::styles::{function}");
             let applied_by = CONNECTOR_DRESSED
@@ -27256,22 +27361,481 @@ mod tests {
                 .filter(|(_, style, _)| *style == call)
                 .any(|(_, _, wrapper)| !call_sites(&source, wrapper).is_empty());
             assert!(
-                !call_sites(&source, &call).is_empty()
-                    || !call_sites(&source, &next).is_empty()
-                    || applied_by,
-                "styles::{function} has no call site in the showcase"
+                !call_sites(&source, &next).is_empty() || applied_by,
+                "iced_next::styles::{function} has no call site in the showcase"
             );
         }
         if cfg!(feature = "iced_aw") {
-            for function in public_functions(include_str!("../src/styles/aw.rs")) {
-                let call = format!("styles::aw::{function}");
+            for function in public_functions(include_str!("../src/next/styles/aw.rs")) {
                 let next = format!("iced_next::styles::aw::{function}");
                 assert!(
-                    !call_sites(&source, &call).is_empty()
-                        || !call_sites(&source, &next).is_empty(),
-                    "styles::aw::{function} has no call site in the showcase"
+                    !call_sites(&source, &next).is_empty(),
+                    "iced_next::styles::aw::{function} has no call site in the showcase"
                 );
             }
+        }
+    }
+
+    /// The style calls the page draws a listed element in, by the element's
+    /// id or the id of the group it is under (the longest that matches), as
+    /// `(id, the call as the page writes it, whitespace aside, the function
+    /// whose rows the export walks it as)`: the connector's 0.8.0 style
+    /// function (`iced_next::styles::<fn>(..)`), or the connector function
+    /// that applies one ([`CONNECTOR_DRESSED`]); a call written only up to
+    /// an argument (`next_radio(next,`, whose next argument is the widget's
+    /// closure) is held to the page that far and passes no flag.
+    /// [`a_drawing_names_the_style_call_the_page_draws_it_in`] holds each
+    /// call to the page and [`drawing`] to the calls.
+    const PAGE_STYLE_CALLS: &[(&str, &str, &str)] = &[
+        ("basic.buttons", "iced_next::styles::button(next)", "button"),
+        (
+            "basic.buttons.primary",
+            "iced_next::styles::button_primary(next)",
+            "button_primary",
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "iced_next::styles::button_toggle(next, true)",
+            "button_toggle",
+        ),
+        (
+            "basic.buttons.dialog_default",
+            "iced_next::styles::button_default(next)",
+            "button_default",
+        ),
+        (
+            "basic.buttons.dialog_default",
+            "iced_next::styles::button_default(next)",
+            "button",
+        ),
+        (
+            "basic.buttons.tooltip.bubble",
+            "iced_next::styles::tooltip(r)",
+            "tooltip",
+        ),
+        (
+            "basic.checkboxes",
+            "iced_next::styles::checkbox_over(next, page)",
+            "checkbox",
+        ),
+        ("basic.radios", "next_radio(next,", "radio"),
+        (
+            "basic.switches",
+            "next_switch(next, on, enabled.then_some(Message::BasicHeld))",
+            "toggler",
+        ),
+        (
+            "basic.text_inputs",
+            "iced_next::styles::text_input(next)",
+            "text_input",
+        ),
+        (
+            "basic.number_input",
+            "iced_next::styles::text_input(next)",
+            "text_input",
+        ),
+        (
+            "basic.text_area",
+            "iced_next::styles::text_editor(next)",
+            "text_editor",
+        ),
+        (
+            "basic.drop_down",
+            "iced_next::styles::pick_list(next)",
+            "pick_list",
+        ),
+        ("basic.slider", "iced_next::styles::slider(next)", "slider"),
+        (
+            "basic.tabs",
+            "iced_next::styles::aw::tab_bar(next)",
+            "aw::tab_bar",
+        ),
+        (
+            "basic.progress_bar",
+            "iced_next::styles::progress_bar(next)",
+            "progress_bar",
+        ),
+        (
+            "basic.segmented.control",
+            "iced_next::styles::segmented_control(next, false)",
+            "segmented_control",
+        ),
+        (
+            "basic.segmented.control",
+            "iced_next::styles::segment(next, i == state.basic_segment,",
+            "segment",
+        ),
+        (
+            "basic.segmented.day",
+            "iced_next::styles::segment(next, i == state.basic_segment,",
+            "segment",
+        ),
+        (
+            "basic.segmented.day",
+            "iced_next::styles::segmented_control(next, false)",
+            "segmented_control",
+        ),
+        (
+            "basic.segmented.week",
+            "iced_next::styles::segment(next, i == state.basic_segment,",
+            "segment",
+        ),
+        (
+            "basic.segmented.week",
+            "iced_next::styles::segmented_control(next, false)",
+            "segmented_control",
+        ),
+        (
+            "basic.segmented.month",
+            "iced_next::styles::segment(next, i == state.basic_segment,",
+            "segment",
+        ),
+        (
+            "basic.segmented.month",
+            "iced_next::styles::segmented_control(next, false)",
+            "segmented_control",
+        ),
+        (
+            "basic.segmented.divider_1",
+            "iced_next::styles::segment_separator(next, false)",
+            "segment_separator",
+        ),
+        (
+            "basic.segmented.divider_2",
+            "iced_next::styles::segment_separator(next, false)",
+            "segment_separator",
+        ),
+        (
+            "basic.list.scrollbar",
+            "iced_next::styles::scrollable(r, view_focus(window_active))",
+            "scrollable",
+        ),
+        (
+            "basic.expander",
+            "iced_next::styles::expander(r)",
+            "expander",
+        ),
+        (
+            "basic.expander",
+            "iced_next::styles::expander_frame(next)",
+            "expander_frame",
+        ),
+        (
+            "basic.card.frame",
+            "iced_next::styles::container_card(next)",
+            "container_card",
+        ),
+        ("basic.separator", "iced_next::styles::rule(next)", "rule"),
+        (
+            "basic.typography.link",
+            "iced_next::styles::button_link(next)",
+            "button_link",
+        ),
+        (
+            "basic.icons",
+            "iced_next::styles::toolbar_button(r, spec.selected)",
+            "toolbar_button",
+        ),
+        ("chrome.toolbar", "iced_next::styles::toolbar(r)", "toolbar"),
+        (
+            "chrome.toolbar",
+            "iced_next::styles::toolbar_rule(r)",
+            "toolbar_rule",
+        ),
+        (
+            "chrome.toolbar.command_palette",
+            "iced_next::styles::toolbar_button(r, spec.selected)",
+            "toolbar_button",
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "iced_next::styles::toolbar_button(r, spec.selected)",
+            "toolbar_button",
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "iced_next::styles::toolbar_button(r, spec.selected)",
+            "toolbar_button",
+        ),
+        (
+            "chrome.page_tabs.rule",
+            "iced_next::styles::rule(r)",
+            "rule",
+        ),
+        (
+            "chrome.side_panel.separator",
+            "iced_next::styles::rule(r)",
+            "rule",
+        ),
+        (
+            "chrome.side_panel.settings.theme",
+            "iced_next::styles::pick_list(r)",
+            "pick_list",
+        ),
+        (
+            "chrome.side_panel.settings.mode",
+            "iced_next::styles::pick_list(r)",
+            "pick_list",
+        ),
+        (
+            "chrome.side_panel.settings.icon_theme",
+            "iced_next::styles::pick_list(r)",
+            "pick_list",
+        ),
+    ];
+
+    /// The functions a page call applies whose rows the export walks under
+    /// another's name, as `(called, walked)`: a check box over the page's
+    /// ground is walked as `styles::checkbox`, the connector's radio and
+    /// switch as `styles::radio` and `styles::toggler`, and the default
+    /// button pressed is the plain button's pressed pair
+    /// (`button_default_from`, `src/styles.rs`).
+    const WALKED_AS: &[(&str, &str)] = &[
+        ("checkbox_over", "checkbox"),
+        ("next_radio", "radio"),
+        ("next_switch", "toggler"),
+        ("button_default", "button"),
+    ];
+
+    /// The function a page call names, `button` of
+    /// `iced_next::styles::button(next)`, `next_radio` of `next_radio(..`,
+    /// and its arguments after the theme where the call is written whole.
+    fn page_call(call: &str) -> Option<(&str, Option<Vec<&str>>)> {
+        let (function, args) = call
+            .strip_prefix("iced_next::styles::")
+            .unwrap_or(call)
+            .split_once('(')?;
+        let Some(args) = args.strip_suffix(')') else {
+            return Some((function, None));
+        };
+        let mut split = Vec::new();
+        let (mut depth, mut start) = (0usize, 0usize);
+        for (at, c) in args.char_indices() {
+            match c {
+                '(' | '[' | '{' => depth += 1,
+                ')' | ']' | '}' => depth = depth.saturating_sub(1),
+                ',' if depth == 0 => {
+                    split.push(args.get(start..at)?.trim());
+                    start = at + 1;
+                }
+                _ => {}
+            }
+        }
+        split.push(args.get(start..)?.trim());
+        Some((function, Some(split.into_iter().skip(1).collect())))
+    }
+
+    /// The style function a drawing's row prefix names: `scrollable` of
+    /// `styles::scrollable(UNFOCUSED_VIEW).vertical_rail.`, `aw::tab_bar` of
+    /// `styles::aw::tab_bar.`; `None` for a palette slot or the connector's
+    /// own widget.
+    fn row_function(prefix: &str) -> Option<&str> {
+        let rest = prefix.strip_prefix("styles::")?;
+        let end = rest
+            .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':'))
+            .unwrap_or(rest.len());
+        rest.get(..end)
+    }
+
+    /// The flag a status of the export leads with, where it leads with one:
+    /// `true` of `true` (a bare flag, as `styles::segmented_control`'s
+    /// `disabled`) and of `(true, Active)`.
+    fn status_flag(status: &str) -> Option<bool> {
+        let lead = status
+            .strip_prefix('(')
+            .and_then(|s| s.split_once(", "))
+            .map_or(status, |(flag, _)| flag);
+        match lead {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
+
+    /// RV-iced3 S3, the proof for M1: per listed element whose drawing
+    /// names a style function's rows, the style call the page draws it in
+    /// ([`PAGE_STYLE_CALLS`]) is in the page, inside the element's
+    /// `tagged(..)` where the page tags it by its id, and [`drawing`] names
+    /// that call's function in every combination and colour home, and draws
+    /// a row of it only in the statuses the call's flag argument gives (a
+    /// literal `false` passed as `disabled` or `selected`: no status of the
+    /// other flag). Over every bundled combination.
+    #[test]
+    fn a_drawing_names_the_style_call_the_page_draws_it_in() -> Result<(), String> {
+        let export = contract_homes().ok_or("contract-homes.toml does not parse")?;
+        let page = SHOWCASE
+            .split_once("\nmod tests {")
+            .map_or(SHOWCASE, |(page, _)| page);
+        let code = strip_comments_and_strings(page);
+        let squeezed: String = code.chars().filter(|c| !c.is_whitespace()).collect();
+        let bundled = next_combinations();
+        let mut failures = Vec::new();
+        let tight =
+            |call: &str| -> String { call.chars().filter(|c| !c.is_whitespace()).collect() };
+        for (key, call, walked) in PAGE_STYLE_CALLS {
+            if !squeezed.contains(&tight(call)) {
+                failures.push(format!("{key}: the page has no call {call}"));
+            }
+            // The call applies the function it is walked as, or one walked
+            // under that name.
+            let applies = page_call(call).is_some_and(|(function, _)| {
+                function == *walked
+                    || WALKED_AS
+                        .iter()
+                        .any(|(called, name)| *called == function && name == walked)
+            });
+            if !applies {
+                failures.push(format!("{key}: {call} is not walked as styles::{walked}"));
+            }
+        }
+        let keys: BTreeSet<&str> = PAGE_STYLE_CALLS.iter().map(|(key, _, _)| *key).collect();
+        for key in keys {
+            let calls: Vec<String> = PAGE_STYLE_CALLS
+                .iter()
+                .filter(|(k, _, _)| *k == key)
+                .map(|(_, call, _)| tight(call))
+                .collect();
+            // Where the page tags the element by its id and dresses it in a
+            // connector style there, one of those calls is the element's:
+            // the `tagged(` found in the page, its call's extent in the code
+            // (whose comments may hold characters wider than the spaces
+            // that replace them, so it is found by its line). A tagged
+            // element built in a helper or bound to a name has no call in
+            // it.
+            let opener = format!("\"{key}\"");
+            if let Some(at) = page.match_indices("tagged(").map(|(at, _)| at).find(|at| {
+                page.get(at + "tagged(".len()..)
+                    .is_some_and(|rest| rest.trim_start().starts_with(&opener))
+            }) {
+                let line = line_at(page, at);
+                let start: usize = code
+                    .split_inclusive('\n')
+                    .take(line.saturating_sub(1))
+                    .map(str::len)
+                    .sum();
+                let inside = code
+                    .get(start..)
+                    .and_then(|rest| rest.find("tagged("))
+                    .map(|offset| start + offset)
+                    .and_then(|site| Some((site, close_of_call(&code, site)?)))
+                    .and_then(|(site, end)| code.get(site..end))
+                    .map(|span| {
+                        span.chars()
+                            .filter(|c| !c.is_whitespace())
+                            .collect::<String>()
+                    });
+                let dressed = inside
+                    .as_ref()
+                    .is_some_and(|span| span.contains("iced_next::styles::"));
+                if dressed
+                    && !inside.is_some_and(|span| calls.iter().any(|call| span.contains(call)))
+                {
+                    failures.push(format!(
+                        "{key}: none of {calls:?} is in its tagged(..) at \
+                         showcase-iced.rs:{line}"
+                    ));
+                }
+            }
+        }
+        for element in elements::elements() {
+            let id = element.id.as_str();
+            let under = |key: &str| id == key || id.starts_with(&format!("{key}."));
+            let longest = PAGE_STYLE_CALLS
+                .iter()
+                .filter(|(key, _, _)| under(key))
+                .map(|(key, _, _)| key.len())
+                .max();
+            // The element's calls: the function each is walked as, and the
+            // flag it passes after the theme where that is a literal.
+            let calls: Vec<(&str, Option<bool>)> = PAGE_STYLE_CALLS
+                .iter()
+                .filter(|(key, _, _)| under(key) && Some(key.len()) == longest)
+                .map(|(_, call, walked)| {
+                    let flag = page_call(call)
+                        .and_then(|(_, args)| args?.first().copied())
+                        .and_then(|arg| match arg {
+                            "true" => Some(true),
+                            "false" => Some(false),
+                            _ => None,
+                        });
+                    (*walked, flag)
+                })
+                .collect();
+            for (label, r) in &bundled {
+                for home in &element.homes {
+                    if !matches!(export.homes.get(home.as_str()), Some(HomeReach::Moves(_))) {
+                        continue;
+                    }
+                    let Some(drawing) = drawing(element, home, Shown::opening(r)) else {
+                        continue;
+                    };
+                    let drawn: Vec<&str> = drawing
+                        .rows
+                        .iter()
+                        .filter_map(|p| row_function(p))
+                        .collect();
+                    if drawn.is_empty() {
+                        continue;
+                    }
+                    if calls.is_empty() {
+                        failures.push(format!(
+                            "{id}: drawn by {:?}, no page style call listed",
+                            drawing.rows
+                        ));
+                        continue;
+                    }
+                    // Each style function the drawing names is one the page
+                    // draws the element in.
+                    for function in &drawn {
+                        if !calls.iter().any(|(walked, _)| walked == function) {
+                            failures.push(format!(
+                                "{id} {home} on {label}: drawn by styles::{function}, which \
+                                 the page does not draw it in ({calls:?})"
+                            ));
+                        }
+                    }
+                    // A row of a call that passes a literal flag is drawn in
+                    // no status of the other flag.
+                    for (walked, flag) in &calls {
+                        let Some(flag) = flag else {
+                            continue;
+                        };
+                        for (row, entry) in &export.rows {
+                            if row_function(row) != Some(walked) || !drawing.draws_row(row) {
+                                continue;
+                            }
+                            for moved in &entry.homes {
+                                let Some(HomeReach::Moves(moves)) =
+                                    export.homes.get(moved.as_str())
+                                else {
+                                    continue;
+                                };
+                                for status in moves
+                                    .iter()
+                                    .filter(|m| m.row == *row)
+                                    .flat_map(|m| &m.statuses)
+                                {
+                                    if status_flag(status).is_some_and(|f| f != *flag)
+                                        && drawing.draws_status(status)
+                                    {
+                                        failures.push(format!(
+                                            "{id} {home}: {row} drawn under {status}, the \
+                                             page passes {flag}"
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        failures.sort();
+        failures.dedup();
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("\n"))
         }
     }
 
@@ -34059,11 +34623,11 @@ mod tests {
                 "tab.tab(SELECTED).fill",
             ),
             (
-                list_route(&patched, "list.highlight(HOVER).fill", false),
+                list_route(&patched, "list.highlight(HOVER).fill", false, true),
                 "list.highlight(HOVER).fill",
             ),
             (
-                table_route(&patched, "list.header(NONE).fill", false),
+                table_route(&patched, "list.header(NONE).fill", false, true),
                 "list.header(NONE).fill",
             ),
             (
@@ -34546,12 +35110,21 @@ mod tests {
         let Some(export) = contract_homes() else {
             panic!("contract-homes.toml does not parse");
         };
-        let mut state = State::default();
+        let mut state = State {
+            theme_palette: None,
+            ..State::default()
+        };
         let mut named = BTreeSet::new();
         for info in native_theme::theme::Theme::list_presets() {
             for (is_dark, mode) in [(false, "light"), (true, "dark")] {
                 state.current_choice = ThemeChoice::Preset(info.key.to_owned());
                 state.is_dark = is_dark;
+                // Resolved in the context the export's walk resolves in.
+                state.next_resolved.context = if is_dark {
+                    ThemeContext::dark()
+                } else {
+                    ThemeContext::light()
+                };
                 let label = state.installed_combination();
                 assert_eq!(
                     label.as_deref(),
@@ -34569,6 +35142,28 @@ mod tests {
             listed.difference(&named).collect::<Vec<_>>()
         );
         assert_eq!(listed.len(), 14, "7 platform presets in both schemes");
+        // RV-iced3 Q1: a combination is named only where the installed
+        // theme is the one the walk resolved: not under a palette, not in
+        // another context.
+        assert!(state.installed_combination().is_some());
+        state.theme_palette = Some("dracula");
+        assert_eq!(
+            state.installed_combination(),
+            None,
+            "a palette laid over the preset is no walked combination"
+        );
+        state.theme_palette = None;
+        state.next_resolved.context.text_scale = 2.0;
+        assert_eq!(
+            state.installed_combination(),
+            None,
+            "a context the walk did not resolve in names no combination"
+        );
+        state.next_resolved.context.text_scale = ThemeContext::dark().text_scale;
+        state.next_resolved.context.contrast = Contrast::High;
+        assert_eq!(state.installed_combination(), None, "High contrast");
+        state.next_resolved.context.contrast = Contrast::Normal;
+        assert!(state.installed_combination().is_some());
         state.current_choice = ThemeChoice::OsTheme("default".to_owned());
         assert_eq!(
             state.installed_combination(),
@@ -34748,6 +35343,59 @@ mod tests {
         let rest = route("scrollbar.thumb(NONE).fill", false)?;
         if rest.contains(focused) {
             failures.push(format!("inactive, the thumb at rest: {rest}"));
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("\n"))
+        }
+    }
+
+    /// RV-iced3 S5: a selected list row and table row are routed by the
+    /// window's focus, as [`list_row`] and [`basic_table`] draw them: while
+    /// the window is inactive, where the `UNFOCUSED_VIEW` pair differs
+    /// ([`next_selection_pair`]), the `SELECTED` fill and label are not
+    /// drawn, and while it is active they are routed as drawn. Over every
+    /// bundled combination, at least one of which states a differing pair.
+    #[test]
+    fn a_selected_rows_route_follows_the_windows_focus() -> Result<(), String> {
+        let mut failures = Vec::new();
+        let mut differing = 0usize;
+        for (label, r) in next_combinations() {
+            let (active, inactive) = (
+                next_selection_pair(&r, true),
+                next_selection_pair(&r, false),
+            );
+            for (home, differs) in [
+                ("list.highlight(SELECTED).fill", active.0 != inactive.0),
+                ("list.item_label(SELECTED).color", active.1 != inactive.1),
+            ] {
+                if !differs {
+                    continue;
+                }
+                differing += 1;
+                for (what, route) in [
+                    ("list", list_route(&r, home, false, false)),
+                    ("table", table_route(&r, home, false, false)),
+                ] {
+                    let route = route.unwrap_or_default();
+                    if !route.starts_with("not drawn while the window is inactive: ") {
+                        failures.push(format!("{label} {what} {home}, inactive: {route}"));
+                    }
+                }
+                for (what, route) in [
+                    ("list", list_route(&r, home, false, true)),
+                    ("table", table_route(&r, home, false, true)),
+                ] {
+                    let route = route.unwrap_or_default();
+                    if route.starts_with("not drawn while the window is inactive") {
+                        failures.push(format!("{label} {what} {home}, active: {route}"));
+                    }
+                }
+            }
+        }
+        if differing == 0 {
+            failures.push("no bundled combination states a differing unfocused pair".to_owned());
         }
         if failures.is_empty() {
             Ok(())
@@ -34942,11 +35590,6 @@ mod tests {
                 .is_some_and(|(widget, _)| STATIC_WIDGETS.contains(&widget))
     }
 
-    /// The colours a ruled widget of the 0.8.0 model holds outside its
-    /// parts, `<widget>.<field>`, which a patch states in the widget's
-    /// table (`native-theme/src/next/patch.rs`, the widget's `set` fields).
-    const WIDGET_COLOURS: &[&str] = &["list.grid_color"];
-
     /// The homes the part of `route` that names `function` names, in the
     /// order it names them: the colours a ported function's route says it
     /// draws.
@@ -34961,106 +35604,6 @@ mod tests {
             .map(|word| word.strip_prefix('(').unwrap_or(word))
             .filter(|word| is_home(word))
             .collect()
-    }
-
-    /// Every state flag of the 0.8.0 model by its name in a theme file
-    /// (`WidgetState`'s serde form, `native-theme/src/next/serial.rs`).
-    const STATE_NAMES: [&str; 19] = [
-        "hover",
-        "pressed",
-        "focused",
-        "focus_within",
-        "focus_visible",
-        "unfocused_view",
-        "disabled",
-        "checked",
-        "selected",
-        "indeterminate",
-        "open",
-        "default",
-        "invalid",
-        "read_only",
-        "visited",
-        "dragged",
-        "drop_target",
-        "scrolled",
-        "hover_within",
-    ];
-
-    /// The TOML of a patch that states `colour` at `home`, a colour home of
-    /// the 0.8.0 model ([`is_home`]), the property `fill`, `stroke.color`
-    /// or, of a text part, `color`: a rule of the home's states appended to
-    /// a ruled widget's (for `NONE`, a rule that forbids every state, so it
-    /// answers the query at rest alone and leaves the other states' rules
-    /// as the preset orders them; spec §9, step 3, `not_states`), of the
-    /// variant `;variant=<Variant>` after them names (`button.body(HOVER;
-    /// variant=Flat).fill` written without the space) or of the rows
-    /// `;alternate=<bool>` names (`list.row(NONE;alternate=true).fill`), a
-    /// static widget's part patch, or the colour role. A stroke is stated
-    /// 1 px wide in the colour, so a home whose stroke the theme leaves
-    /// unstated draws it. A widget's own colour ([`WIDGET_COLOURS`]) is
-    /// stated in the widget's table. `None` for any other home.
-    fn home_patch_toml(home: &str, colour: &str) -> Option<String> {
-        if let Some(role) = home.strip_prefix("colors.") {
-            return Some(match role.split_once('.') {
-                Some((surface, slot)) => format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"),
-                None => format!("[colors]\n{role} = \"{colour}\"\n"),
-            });
-        }
-        if WIDGET_COLOURS.contains(&home) {
-            let (widget, field) = home.split_once('.')?;
-            return Some(format!("[widgets.{widget}]\n{field} = \"{colour}\"\n"));
-        }
-        let (widget, rest) = home.split_once('.')?;
-        let (part, states, property) = match rest.split_once('(') {
-            Some((part, rest)) => {
-                let (states, property) = rest.split_once(").")?;
-                (part, Some(states), property)
-            }
-            None => match rest.split_once('.') {
-                Some((part, property)) => (part, None, property),
-                // A static widget's own colour (`separator.color`).
-                None => return Some(format!("[widgets.{widget}]\n{rest} = \"{colour}\"\n")),
-            },
-        };
-        let value = match property {
-            "fill" | "color" => format!("{part}.{property} = \"{colour}\""),
-            "stroke.color" => format!("{part}.stroke = {{ width = 1.0, color = \"{colour}\" }}"),
-            _ => return None,
-        };
-        Some(match states {
-            None => format!("[widgets.{widget}]\n{value}\n"),
-            Some(query) => {
-                let (states, variant) = match query.split_once(';') {
-                    Some((states, matcher)) => match matcher.split_once('=')? {
-                        ("variant", variant) => (
-                            states,
-                            format!("variant = \"{}\"\n", variant.to_lowercase()),
-                        ),
-                        ("alternate", alternate @ ("true" | "false")) => {
-                            (states, format!("alternate = {alternate}\n"))
-                        }
-                        _ => return None,
-                    },
-                    None => (query, String::new()),
-                };
-                let names: Vec<String> = states
-                    .split('|')
-                    .filter(|state| *state != "NONE")
-                    .map(|state| format!("\"{}\"", state.to_lowercase()))
-                    .collect();
-                let states = if names.is_empty() {
-                    let every: Vec<String> = STATE_NAMES
-                        .iter()
-                        .map(|name| format!("\"{name}\""))
-                        .collect();
-                    format!("not_states = [{}]\n", every.join(", "))
-                } else {
-                    format!("states = [{}]\n", names.join(", "))
-                };
-                format!("[[widgets.{widget}.rules]]\n{variant}{states}{value}\n")
-            }
-        })
     }
 
     /// `r` with `colour` stated at `home` ([`home_patch_toml`]); `None` where
@@ -35289,6 +35832,20 @@ mod tests {
                 .window
                 .border
                 .map(next_colour)),
+            colour
+        );
+        // A variant written with a space after the `;`, as the element list
+        // writes the primary button's homes.
+        assert_eq!(
+            read("button.body(NONE; variant=Primary).fill", &|r| {
+                drawn_fill(&r.button.body(ButtonQuery::primary()))
+            }),
+            colour
+        );
+        assert_eq!(
+            read("button.label(NONE; variant=Primary).color", &|r| {
+                native_theme_iced::next::text_color_of(&r.button.label(ButtonQuery::primary()))
+            }),
             colour
         );
         assert!(with_home(&r, UNPATCHED_HOME, "#13579b").is_none());
@@ -36089,7 +36646,8 @@ mod tests {
             && let Some((home, frame)) = list_home(leaf)
         {
             let route_on = |patched: &native_theme::next::ResolvedTheme| {
-                list_route(patched, leaf, id == "basic.list.frame").unwrap_or_default()
+                list_route(patched, leaf, id == "basic.list.frame", state.window_active)
+                    .unwrap_or_default()
             };
             for what in home_route_faults(state.next_shown(), home, route, route_on, |r| {
                 list_drawn(r, frame)
@@ -36101,7 +36659,13 @@ mod tests {
             && let Some(home) = table_home(leaf)
         {
             let route_on = |patched: &native_theme::next::ResolvedTheme| {
-                table_route(patched, leaf, id == "basic.table.frame").unwrap_or_default()
+                table_route(
+                    patched,
+                    leaf,
+                    id == "basic.table.frame",
+                    state.window_active,
+                )
+                .unwrap_or_default()
             };
             for what in home_route_faults(state.next_shown(), home, route, route_on, table_drawn) {
                 fault(&format!("the Basic table: {what}"));
@@ -36165,10 +36729,15 @@ mod tests {
                         preset.key,
                         state.error_message
                     );
-                    let r = &state.current_resolved;
-                    seen.insert(("stroke", next_check_stroke(state.next_shown()).is_some()));
-                    seen.insert(("pressed fill", r.button.active_background.is_some()));
-                    seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
+                    let r = state.next_shown();
+                    seen.insert(("stroke", next_check_stroke(r).is_some()));
+                    // The hover fill `tab_style` draws. (0.7.2's pressed fill,
+                    // `button.active_background`, is `button.body(PRESSED)
+                    // .fill`, which every bundled 0.8.0 preset states.)
+                    seen.insert((
+                        "tab hover fill",
+                        drawn_state_fill(&r.tab.tab(WidgetState::HOVER)).is_some(),
+                    ));
                     seen.insert(("indicator", basic_indicator(&state)));
                     // The side panel shown and hidden, and each tab of the
                     // three rows open: the Basic page's, the page tabs' and the
@@ -36275,16 +36844,9 @@ mod tests {
                 }
             }
             let tabs = TAB_ROWS.into_iter().flatten();
-            for case in [
-                "stroke",
-                "pressed fill",
-                "tab hover fill",
-                "indicator",
-                "icon",
-                "os icon",
-            ]
-            .into_iter()
-            .chain(tabs)
+            for case in ["stroke", "tab hover fill", "indicator", "icon", "os icon"]
+                .into_iter()
+                .chain(tabs)
             {
                 for holds in [false, true] {
                     if !seen.contains(&(case, holds)) {
@@ -36914,6 +37476,79 @@ mod tests {
                 && !lines.iter().any(|l| l.contains("outline")),
             "kde-breeze: {lines:?}"
         );
+    }
+
+    /// RV-iced3 S1: a switch's "Not themeable" names iced's toggler gap only
+    /// where the theme states no `switch.label_gap`; where it states one,
+    /// [`next_switch_row`] draws the theme's. kde-breeze light states it,
+    /// and the same theme with the gap taken out does not.
+    #[test]
+    fn a_switchs_info_names_iceds_gap_only_where_the_theme_states_none() {
+        let Some(switch) = elements::element("basic.switches.on") else {
+            panic!("basic.switches.on is not in the list");
+        };
+        let iced_gap = |lines: &[Cow<'static, str>]| lines.iter().any(|l| l.contains("label gap"));
+        let mut state = loaded("kde-breeze", false);
+        assert!(
+            state.next_shown().switch.label_gap.is_some(),
+            "kde-breeze light states switch.label_gap"
+        );
+        let lines = iced_not_themeable(&state, switch);
+        assert!(!iced_gap(&lines), "kde-breeze, gap stated: {lines:?}");
+        state.next_resolved.switch.label_gap = None;
+        let lines = iced_not_themeable(&state, switch);
+        assert!(iced_gap(&lines), "kde-breeze, gap unstated: {lines:?}");
+    }
+
+    /// A checked box's and a selected radio's border is said not drawn for
+    /// what makes it so on the installed theme: the `CHECKED` state's stroke
+    /// where a rule states it none (ios-13), else the stroke at rest, each
+    /// reason holding at its home. Over every bundled 0.8.0 preset in both
+    /// modes, each installed; at least one draws no such border.
+    #[test]
+    fn a_checked_border_not_drawn_names_what_makes_it_so() -> Result<(), String> {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let mut failures = Vec::new();
+        let mut not_drawn = 0usize;
+        for preset in native_theme::theme::Theme::list_presets()
+            .iter()
+            .filter(|preset| Preset::from_name(preset.key).is_some())
+        {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                if !state.install_in_mode(ThemeChoice::Preset(preset.key.to_owned()), mode) {
+                    return Err(format!(
+                        "{} ({mode:?}): {:?}",
+                        preset.key, state.error_message
+                    ));
+                }
+                for (info, role) in [
+                    (checkbox_info(&state), "checked border: "),
+                    (radio_info(&state), "selected border: "),
+                ] {
+                    for line in info.lines().filter(|l| l.trim_start().starts_with(role)) {
+                        let Some((_, reason)) = line.rsplit_once(", not drawn (") else {
+                            continue;
+                        };
+                        not_drawn += 1;
+                        let reason = reason.strip_suffix(')').unwrap_or(reason);
+                        if !zero_reason_holds(reason, state.next_shown()) {
+                            failures.push(format!("{} ({mode:?}): \"{line}\"", preset.key));
+                        }
+                    }
+                }
+            }
+        }
+        if not_drawn == 0 {
+            failures.push("no bundled preset leaves a checked border undrawn".to_owned());
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("\n"))
+        }
     }
 
     /// M9-147 (M9b T5 fix round 1): the layout dump records a check box's
@@ -42315,14 +42950,25 @@ mod tests {
     /// section and an Icons cell, under one preset, then another installed
     /// without a move: what the inspector shows and copies is what the same
     /// hover shows under the new theme from the start, its hexes the new
-    /// theme's, where it kept the old theme's text.
+    /// theme's, where it kept the old theme's text. Each install is held to
+    /// have installed its preset: two bundled presets of the 0.8.0 model,
+    /// neither of them a startup theme on Linux.
     #[test]
     fn widget_info_follows_an_install_under_a_still_pointer() {
-        let (from, to) = ("catppuccin-mocha", "material-3");
+        let (from, to) = ("windows-11", "material-3");
         let settle = INFO_SETTLE;
+        let holds = |state: &State, preset: &str| {
+            assert_eq!(
+                Some(state.next_resolved.preset),
+                Preset::from_name(preset),
+                "{preset} was not installed: {:?}",
+                state.error_message
+            );
+        };
         for tab in [Tab::Buttons, Tab::ThemeMap, Tab::Icons] {
             let hovered = |preset: &str| {
                 let mut state = installed(preset);
+                holds(&state, preset);
                 state.active_tab = tab;
                 let label = match tab {
                     Tab::Buttons => "Primary Actions".to_owned(),
@@ -42344,6 +42990,7 @@ mod tests {
                 &mut state,
                 Message::ThemeSelected(ThemeChoice::Preset(to.to_owned())),
             );
+            holds(&state, to);
             let after = copied(&state);
             assert_eq!(
                 after,
