@@ -50,8 +50,9 @@
 //! palette's `accent`, `selection_bg`, `info`, and with the accent its text
 //! (`accent_fg`, `selection_fg`), which are then the preset's.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (libadwaita's `.flat` button), a list's alternate
 //! rows (`ListKind::alternate`), the two orientations of the scroll bar and
 //! of the slider's groove, no control size, and the contrast levels `Normal`
 //! and `High`. `High` states two values of its own, the focus ring's alpha

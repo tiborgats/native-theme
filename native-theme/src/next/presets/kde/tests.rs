@@ -38,6 +38,67 @@ fn system(accent: Option<Color>) -> SystemOverrides {
     }
 }
 
+/// The flat button draws Breeze's flat frame: nothing at rest and disabled;
+/// hovered a Highlight pen; checked ButtonText at FLAT_CHECKED_ALPHA in the
+/// button's pen; pressed the toolbar's pressed fill in a Highlight pen; checked
+/// and disabled the Disabled group's ButtonText at FLAT_CHECKED_ALPHA in the
+/// mix of the Disabled Button and ButtonText (breezehelper.cpp:665-712 at
+/// breeze 6.8.2), #a8a9aa / #6d6f72 at 0x20 (platform-facts.md §2.1.6).
+#[test]
+fn a_flat_button_draws_breeze_s_flat_frame() {
+    let pen = |stroke: &Stroke| match stroke {
+        Stroke::Uniform { color, .. } => Some(*color),
+        _ => None,
+    };
+    for (ctx, c, disabled_checked) in [
+        (ThemeContext::light(), LIGHT, 0xa8a9_aa20),
+        (ThemeContext::dark(), DARK, 0x6d6f_7220),
+    ] {
+        let theme = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let of = |state: WidgetState| {
+            let body = theme.button.body(ButtonQuery::flat().state(state));
+            (body.fill, pen(&body.stroke))
+        };
+        let (checked, disabled) = (WidgetState::CHECKED, WidgetState::DISABLED);
+        assert_eq!(of(WidgetState::NONE), (Paint::None, None));
+        assert_eq!(of(disabled), (Paint::None, None));
+        assert_eq!(of(disabled | WidgetState::HOVER), (Paint::None, None));
+        assert_eq!(
+            of(WidgetState::HOVER),
+            (
+                Paint::Solid(TOOLBAR_BUTTON_HOVER_BACKGROUND),
+                Some(c.selection_background)
+            )
+        );
+        assert_eq!(
+            of(checked),
+            (Paint::Solid(c.toolbar_button_checked), Some(c.button_frame))
+        );
+        assert_eq!(
+            of(WidgetState::PRESSED),
+            (
+                Paint::Solid(c.toolbar_button_pressed),
+                Some(c.selection_background)
+            )
+        );
+        assert_eq!(
+            of(checked | disabled),
+            (
+                Paint::Solid(srgb8(disabled_checked)),
+                Some(mix(
+                    c.button_disabled_background,
+                    c.button_disabled_foreground,
+                    c.frame_contrast
+                ))
+            )
+        );
+        assert_eq!(
+            of(checked | disabled | WidgetState::HOVER),
+            of(checked | disabled)
+        );
+    }
+}
+
 #[test]
 fn a_portal_accent_replaces_the_accent_and_the_selection_but_not_the_kde_frames() {
     for (accent, fill, selection) in [

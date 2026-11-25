@@ -521,10 +521,27 @@
           "states": [
             "disabled"
           ],
+          "not_states": [
+            "checked"
+          ],
           "variant": "flat",
           "body": {
             "fill": "none",
             "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "#6d6f7220",
+            "stroke": {
+              "width": 1.0,
+              "color": "#35383c"
+            }
           }
         }
       ]

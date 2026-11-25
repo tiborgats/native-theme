@@ -22,8 +22,9 @@
 //! `windowBackgroundColor`, the window's background (0.7.2's
 //! `defaults.background_color`), so also the window's frame and every panel
 //! and bar the preset fills with it (the menu's, the menu bar's, the tab
-//! bar's and the tabs', the toolbar's, the status bar's, the segmented
-//! control's track); `view_bg` is `controlBackgroundColor`, the view's
+//! bar's, the toolbar's, the status bar's, the segmented control's track;
+//! the tabs take their measured fills, [`SchemeColors::tab_fill`] and
+//! [`SchemeColors::tab_selected_off_accent`]); `view_bg` is `controlBackgroundColor`, the view's
 //! background (`defaults.surface_color`), so also the list's
 //! (`list.background_color`, the same colour) and the slider's knob where
 //! the scheme states no knob colour; `sidebar_bg` is the sidebar's material, so its pane; `tooltip_bg`
@@ -78,7 +79,8 @@
 //! in AppKit.
 //!
 //! Defined by the presets (spec §1, "Axis values without data"): the
-//! variant `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's
+//! variants `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (AppKit's borderless button, `bordered` NO), a list's
 //! alternate rows (`ListKind::alternate`), the two orientations of the
 //! scroll bar and of the slider's groove, no control size and the contrast
 //! level `Normal` only; a query for anything else returns the part's base
@@ -108,16 +110,30 @@
 //!   AppKit draws a disabled checked toggle in a look of its own (the same
 //!   facts), pressed or not, as a disabled and pressed button draws as a
 //!   disabled one (the same facts: run 42272240639's disabled-and-pressed
-//!   and disabled layers of 402 buttons are the same pixels);
+//!   and disabled layers of 402 buttons are the same pixels); the borderless
+//!   button's absent fill and outline over the push button's at rest,
+//!   hovered, pressed and disabled, as measured (os-probe runs 41006842699
+//!   and 42272240639, `layers-key-styles_b.toml` and
+//!   `layers-key-image_b.toml` `*-flat.fill`, `*-flat.stroke` absent), and on
+//!   `macos-tahoe` the checked fills over its absent fill, as no checked
+//!   borderless button was measured;
 //! - the check box's and the radio button's indicator: the checked fill and
 //!   outline over the hovered fill, as 0.7.2's egui widgets draw a checked
 //!   box or circle in its checked look whatever the pointer does (the
 //!   `Selected` variant "while it is checked":
-//!   `connectors/native-theme-egui-widgets/src/radio_button.rs`);
-//! - the list's item label: the disabled colour over the selection's text,
-//!   by egui's order above;
-//! - the scroll bar's handle: the pressed fill over the hovered one, by
-//!   egui's order above;
+//!   `connectors/native-theme-egui-widgets/src/radio_button.rs`); the
+//!   disabled fill over the hovered and the pressed ones and the disabled
+//!   edge over every other, by egui's order above; the checked and disabled
+//!   fill over the checked one, as AppKit draws a disabled checked box and
+//!   circle in a fill of its own (os-probe run 45345116763,
+//!   `*.normal.{checkbox,radio}_disabled_on` `fill`);
+//! - the list's item and its label: the unfocused selection's fill and text
+//!   (`SELECTED | UNFOCUSED_VIEW`) over the selection's, as AppKit draws the
+//!   selected row of a view that is not the first responder unemphasized
+//!   (platform-facts.md §2.1.3, `selection_inactive_background`); the
+//!   label's disabled colour over both, by egui's order above;
+//! - the scroll bar's handle and the toolbar's button and its label: the
+//!   pressed fill (and label) over the hovered one, by egui's order above;
 //! - the slider's knob (`macos-monterey`), the menu's item label and the
 //!   pop-up button's field and label: the disabled look over the hovered
 //!   one, by egui's order above;
@@ -127,6 +143,8 @@
 //!   hovered widgets' fill (`connectors/native-theme-egui/src/mapping.md`)
 //!   and egui fills a selected item with the selection's fill over its
 //!   hovered look (egui 0.37.0 `src/style.rs`, `Style::interact_selectable`);
+//!   the tab's selected fill and label over the pressed ones too (its
+//!   pressed fill is an unselected tab's alone), by the same;
 //! - the switch's track: the on track over the hovered off track, the
 //!   hovered on track being the on track (0.7.2's
 //!   `switch.hover_checked_background` unset, which the table of homes
@@ -277,6 +295,9 @@ struct SchemeColors {
     checkbox_unchecked_border: Color,
     /// The unchecked box's edge pressed; `None` where it is the rest one.
     checkbox_pressed_border: Option<Color>,
+    /// The unchecked radio button's edge pressed; `None` where it is the
+    /// rest one.
+    radio_pressed_border: Option<Color>,
     /// The unchecked check box's fill pressed.
     checkbox_pressed: Color,
     /// The checked check box's fill pressed, measured on the default accent;
@@ -493,6 +514,10 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // at rest #d1d1d1 (#bcbcbc), one row in each (measured, os-probe run 45198750893, macOS 15,
     // `*.pressed.checkbox_off` against `*.normal.checkbox_off` `edge_*`)
     checkbox_pressed_border: Some(srgb8(0xc7c7_c7ff)),
+    // `radio.indicator(PRESSED).stroke`: the pressed circle's left edge #c5c5c5f8 (top #b2b2b2f8),
+    // at rest #cfcfcff8 (#bbbbbbf8), the side read as the box's is (measured, os-probe run
+    // 45345116763, macOS 15, `*.pressed.radio_off` against `*.normal.radio_off` `edge_*`)
+    radio_pressed_border: Some(srgb8(0xc5c5_c5f8)),
     // `checkbox.indicator(PRESSED).fill`: #f2f2f2, at rest #ffffff (measured, os-probe run
     // 45198750893, macOS 15, `*.pressed.checkbox_off` `fill`)
     checkbox_pressed: srgb8(0xf2f2_f2ff),
@@ -618,14 +643,17 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // #262626, a composite over the opaque fill (measured, os-probe run 45252258079, macOS 15,
     // Reduce Transparency off, `aqua.normal.tab_One` `fill`, `label`)
     tab_selected_off_accent: Some((srgb8(0xffff_ffff), srgb8(0x2626_26ff))),
-    // `sidebar.background_color`: the source-list row at rest, #dddddd, NSVisualEffectView's
-    // sidebar material behind it, opaque, and its label #424242 (measured, os-probe run
-    // 45252258079, macOS 15, Reduce Transparency off, `*.normal.source_list_row` `fill`, `label`),
-    // where the Reduce Transparency on reading #f6f6f6 stood (run 40320895749)
-    sidebar_background: srgb8(0xdddd_ddff),
+    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView's sidebar
+    // material, which blends what lies behind the window (#dddddd over the runners' black
+    // desktop, os-probe run 45252258079, macOS 15, Reduce Transparency off,
+    // `*.normal.source_list_row` `fill`), stated in its opaque rendering with Reduce Transparency
+    // on, #f6f6f6 (measured, os-probe run 40320895749), as the model has no material form whose
+    // blur and tint a source states; its label #424242 (run 45252258079, `label`)
+    sidebar_background: srgb8(0xf6f6_f6ff),
     sidebar_foreground: srgb8(0x4242_42ff),
-    // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent (measured, os-probe run
-    // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent, over the sidebar's material on
+    // the runners' black desktop (measured, os-probe run 45252258079, macOS 15, Reduce
+    // Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x2d92_fbff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 26/255 (measured,
     // renders/aqua/switch-regular-off@2x.png); over background_color #d4d4d4
@@ -671,6 +699,9 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // opaque title bar (measured, os-probe run 45252258079, macOS 15, Reduce Transparency off,
     // `*.normal.toolbar_button`, `*.hovered.toolbar_button`, `*.pressed.toolbar_button` `label`)
     toolbar_label: srgb8(0x6060_60ff),
+    // `toolbar.button_label(HOVER)`: as at rest, and translucent and unchanged over the probe's
+    // backdrops (run 45231684209's toolbar sheet, `*.normal.toolbar_button`,
+    // `*.hovered.toolbar_button` `label`)
     toolbar_label_hover: None,
     toolbar_label_pressed: srgb8(0x3434_34ff),
     // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #dfdfdf hovered, #d2d2d2
@@ -790,6 +821,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // fill #ffffff5c (top #ffffff62), so no line of its own shows (measured, os-probe run
     // 45198750893, macOS 15, `*.pressed.checkbox_off` `edge_*`)
     checkbox_pressed_border: None,
+    // `radio.indicator(PRESSED).stroke`: as at rest: the pressed circle's edge, left #f9f9f95b
+    // (top #fcfcfc62), is the pressed fill #ffffff5c within 6 levels, no line of its own
+    // (measured, os-probe run 45345116763, macOS 15, `*.pressed.radio_off` `fill`, `edge_*`)
+    radio_pressed_border: None,
     // `checkbox.indicator(PRESSED).fill`: white at alpha 92/255, at rest 41/255 (measured, the
     // same run, `*.pressed.checkbox_off` `fill`)
     checkbox_pressed: srgb8(0xffff_ff5c),
@@ -915,14 +950,16 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // 73/255, lettered white at alpha 217/255 (measured, os-probe run 45252258079, macOS 15,
     // Reduce Transparency off, `darkAqua.normal.tab_One` `fill`, `label`)
     tab_selected_off_accent: Some((srgb8(0xffff_ff49), srgb8(0xffff_ffd9))),
-    // `sidebar.background_color`: the source-list row at rest, #424242, the sidebar material behind
-    // it, opaque, and its label #ececec (measured, os-probe run 45252258079, macOS 15, Reduce
-    // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
-    // on reading #383838 stood (run 40320895749)
-    sidebar_background: srgb8(0x4242_42ff),
+    // `sidebar.background_color`: platform-facts.md (§2.12): the sidebar material, which blends
+    // what lies behind the window (#424242 over the runners' black desktop, os-probe run
+    // 45252258079, macOS 15, Reduce Transparency off, `*.normal.source_list_row` `fill`), stated
+    // in its opaque rendering with Reduce Transparency on, #383838 (measured, os-probe run
+    // 40320895749); its label #ececec (run 45252258079, `label`)
+    sidebar_background: srgb8(0x3838_38ff),
     sidebar_foreground: srgb8(0xecec_ecff),
-    // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent (measured, os-probe run
-    // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent, over the sidebar's material on
+    // the runners' black desktop (measured, os-probe run 45252258079, macOS 15, Reduce
+    // Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x378c_e5ff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 26/255 (measured,
     // renders/darkAqua/switch-regular-off@2x.png); over background_color #474747
@@ -969,6 +1006,9 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // opaque title bar (measured, os-probe run 45252258079, macOS 15, Reduce Transparency off,
     // `*.normal.toolbar_button`, `*.hovered.toolbar_button`, `*.pressed.toolbar_button` `label`)
     toolbar_label: srgb8(0xb4b4_b4ff),
+    // `toolbar.button_label(HOVER)`: as at rest, and translucent and unchanged over the probe's
+    // backdrops (run 45231684209's toolbar sheet, `*.normal.toolbar_button`,
+    // `*.hovered.toolbar_button` `label`)
     toolbar_label_hover: None,
     toolbar_label_pressed: srgb8(0xeeee_eeff),
     // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #414141 hovered, #4e4e4e
@@ -1096,6 +1136,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `checkbox.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the fill
     // (measured, os-probe run 45198750893, macOS 26, `*.pressed.checkbox_*` `edge_*`)
     checkbox_pressed_border: None,
+    // `radio.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the fill
+    // (measured, os-probe run 45345116763, macOS 26, `*.pressed.radio_*` `fill`, `edge_*`)
+    radio_pressed_border: None,
     // `checkbox.indicator(PRESSED).fill`: black at alpha 48/255, at rest 25/255 (measured, os-probe
     // run 45198750893, macOS 26, `*.pressed.checkbox_off` `fill`)
     checkbox_pressed: srgb8(0x0000_0030),
@@ -1214,14 +1257,16 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // run 45252258079, macOS 26, Reduce Transparency off, `aqua.normal.tab_One` `fill`, `label`)
     tab_selected: Some(srgb8(0x0077_f9ff)),
     tab_selected_off_accent: None,
-    // `sidebar.background_color`: the source-list row at rest, #dddddd, the sidebar material behind
-    // it, opaque, and its label #000000 (measured, os-probe run 45252258079, macOS 26, Reduce
-    // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
-    // on reading #f6f6f6 stood (run 40320895749)
-    sidebar_background: srgb8(0xdddd_ddff),
+    // `sidebar.background_color`: platform-facts.md (§2.12): the sidebar material, which blends
+    // what lies behind the window (#dddddd over the runners' black desktop, os-probe run
+    // 45252258079, macOS 26, Reduce Transparency off, `*.normal.source_list_row` `fill`), stated
+    // in its opaque rendering with Reduce Transparency on, #f6f6f6 (measured, os-probe run
+    // 40320895749, macOS 26); its label #000000 (run 45252258079, `label`)
+    sidebar_background: srgb8(0xf6f6_f6ff),
     sidebar_foreground: srgb8(0x0000_00ff),
-    // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent (measured, os-probe run
-    // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent, over the sidebar's material on
+    // the runners' black desktop (measured, os-probe run 45252258079, macOS 26, Reduce
+    // Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x0069_eeff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #e6e6e6
@@ -1259,6 +1304,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // Transparency off, `*.normal.toolbar_button`, `*.hovered.toolbar_button`,
     // `*.pressed.toolbar_button` `label`)
     toolbar_label: srgb8(0x4d4d_4dff),
+    // `toolbar.button_label(HOVER)`: the real toolbar's above; over the probe's backdrops not
+    // settled, a material that adapts to what lies behind it (os-probe run 45242497701, toolbar
+    // sheet, `*.toolbar_button` `label`, `fill`)
     toolbar_label_hover: Some(srgb8(0x4949_49ff)),
     toolbar_label_pressed: srgb8(0x4545_45ff),
     // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #f2f2f2 hovered, #e6e6e6
@@ -1389,6 +1437,9 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `checkbox.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the fill
     // (measured, os-probe run 45198750893, macOS 26, `*.pressed.checkbox_*` `edge_*`)
     checkbox_pressed_border: None,
+    // `radio.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the fill
+    // (measured, os-probe run 45345116763, macOS 26, `*.pressed.radio_*` `fill`, `edge_*`)
+    radio_pressed_border: None,
     // `checkbox.indicator(PRESSED).fill`: white at alpha 48/255, at rest 25/255 (measured, os-probe
     // run 45198750893, macOS 26, `*.pressed.checkbox_off` `fill`)
     checkbox_pressed: srgb8(0xffff_ff30),
@@ -1509,14 +1560,16 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `label`)
     tab_selected: Some(srgb8(0x077d_ffff)),
     tab_selected_off_accent: None,
-    // `sidebar.background_color`: the source-list row at rest, #424242, the sidebar material behind
-    // it, opaque, and its label #ffffff (measured, os-probe run 45252258079, macOS 26, Reduce
-    // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
-    // on reading #383838 stood (run 40320895749)
-    sidebar_background: srgb8(0x4242_42ff),
+    // `sidebar.background_color`: platform-facts.md (§2.12): the sidebar material, which blends
+    // what lies behind the window (#424242 over the runners' black desktop, os-probe run
+    // 45252258079, macOS 26, Reduce Transparency off, `*.normal.source_list_row` `fill`), stated
+    // in its opaque rendering with Reduce Transparency on, #383838 (measured, os-probe run
+    // 40320895749, macOS 26); its label #ffffff (run 45252258079, `label`)
+    sidebar_background: srgb8(0x3838_38ff),
     sidebar_foreground: srgb8(0xffff_ffff),
-    // `sidebar.item(PRESSED).fill`: #219bff, on the default accent (measured, os-probe run
-    // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    // `sidebar.item(PRESSED).fill`: #219bff, on the default accent, over the sidebar's material on
+    // the runners' black desktop (measured, os-probe run 45252258079, macOS 26, Reduce
+    // Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x219b_ffff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #343434
@@ -1556,6 +1609,9 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // Transparency off, `*.normal.toolbar_button`, `*.hovered.toolbar_button`,
     // `*.pressed.toolbar_button` `label`)
     toolbar_label: srgb8(0xe9e9_e9ff),
+    // `toolbar.button_label(HOVER)`: the real toolbar's above; over the probe's backdrops not
+    // settled, a material that adapts to what lies behind it (os-probe run 45242497701, toolbar
+    // sheet, `*.toolbar_button` `label`, `fill`)
     toolbar_label_hover: Some(srgb8(0xebeb_ebff)),
     toolbar_label_pressed: srgb8(0xecec_ecff),
     // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #393939 hovered, #484848
@@ -1678,8 +1734,6 @@ struct Generation {
     tab_selected_on_accent: bool,
     toolbar_bar_height: Option<f32>,
     toolbar_item_gap: Option<f32>,
-    /// Whether a hovered toolbar button's label is measured as at rest.
-    toolbar_label_hover_as_rest: bool,
     toolbar_padding_vertical: Option<f32>,
     toolbar_padding_horizontal: Option<f32>,
     switch_track_width: f32,
@@ -1940,11 +1994,6 @@ const MONTEREY: Generation = Generation {
     toolbar_bar_height: Some(38.0),
     // `toolbar.item_gap`: platform-facts.md (§2.13): AppKit 8
     toolbar_item_gap: Some(8.0),
-    // `toolbar.button_label(HOVER)`: as at rest, #606060 / #b4b4b4 in the toolbar (measured,
-    // os-probe run 45252258079, macOS 15, Reduce Transparency off, `*.hovered.toolbar_button`
-    // `label`), and translucent and unchanged over the probe's backdrops (run 45231684209's
-    // toolbar sheet, `*.normal.toolbar_button`, `*.hovered.toolbar_button` `label`)
-    toolbar_label_hover_as_rest: true,
     // `toolbar.border.padding.top`, `toolbar.border.padding.bottom`: 0.7.2 macos-monterey.toml
     // (uncited)
     toolbar_padding_vertical: Some(0.0),
@@ -2262,11 +2311,6 @@ const TAHOE: Generation = Generation {
     tab_selected_on_accent: true,
     toolbar_bar_height: None,
     toolbar_item_gap: None,
-    // `toolbar.button_label(HOVER)`: not the rest one: in the real toolbar the scheme's own
-    // (`toolbar_label_hover`); over the probe's backdrops not settled, a material that adapts to
-    // what lies behind it (os-probe run 45242497701, toolbar sheet, `*.toolbar_button` `label`,
-    // `fill`)
-    toolbar_label_hover_as_rest: false,
     toolbar_padding_vertical: None,
     toolbar_padding_horizontal: None,
     // `switch.track_width`: platform-facts.md (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe)
@@ -2821,8 +2865,11 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// slider follow that mix again (#c53236 / #ff676b and #c53136 / #ff676a,
 /// within one level of it), the row's does not (os-probe run 45345116763,
 /// `controls-accent`, `*.pressed.checkbox_on`, `*.pressed.slider_knob`,
-/// `*.pressed.source_list_row` `fill`); macOS 15's are not measured under
-/// another accent (its checked box a gradient, its filled track not read).
+/// `*.pressed.source_list_row` `fill`); macOS 15's checked box was read
+/// under it and does not follow the mix: in dark #fc4e55 pressed, where the
+/// mix of its rest fill #ec3f44 gives #ee565a, 14 levels off (the same run,
+/// `darkAqua.highlighted.checkbox_on`, `darkAqua.normal.checkbox_on`
+/// `fill`), in light a gradient; its filled track not read.
 /// One accent besides the default does not show the function for every
 /// accent, so they are dropped, not derived: the checked box and the slider
 /// keep their rest fill pressed
@@ -2833,8 +2880,9 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// unmeasured rest fill rather than a colour measured for another accent.
 /// It also drops the selected tab's fill measured on the default accent,
 /// which then takes the accent's fill, as the checked box's does, and the
-/// disabled checked box's and circle's fill measured on it, which then keep
-/// their checked fill disabled.
+/// disabled checked box's and circle's fill measured on it, which then take
+/// the checked button's disabled fill, the accent's mix at alpha 0x70, as
+/// the red accent reads ([`indicator`]).
 fn drop_accent_measurements(c: &mut SchemeColors) {
     c.checkbox_checked_pressed = None;
     c.checkbox_checked_disabled = None;
@@ -3189,6 +3237,26 @@ fn button(
                 .map(|_| RuleSelector::on(WidgetState::PRESSED)),
             pressed.into_iter().flatten(),
         )
+        // The borderless button (`bordered` NO) draws no fill: on macOS 15 at rest, pressed and
+        // disabled (measured, os-probe run 41006842699, os-probe-macos-15/layers-key-styles_b.toml
+        // `key.styles_b.aqua.<state>.mini-flat.fill` absent; `docs/facts/macos/button.toml` on
+        // `v0.8.0-rc1` at `78ee0efd`, `button.body.fill` preset:macos-monterey variants [flat]);
+        // on macOS 26 at rest (the same run, os-probe-macos-26/layers-key-styles_b.toml
+        // `key.styles_b.aqua.normal.mini-flat.fill` absent; those facts' `button.body.fill`
+        // preset:macos-tahoe variants [flat]), pressed with an image (os-probe run 42272240639,
+        // layers-key-image_b.toml `key.image_b.<appearance>.pressed.regular-flat.fill` absent) and
+        // disabled as disabled and pressed (`key.styles_b.<appearance>.disabled_pressed.*-flat.fill`
+        // absent; a disabled and pressed button draws as a disabled one, below); hovered as at
+        // rest. Before the checked rules, as no checked borderless button was measured: where the
+        // generation states a checked fill, a checked one keeps it.
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+            ],
+            [PartProp::Fill(Paint::None)],
+        )
         .rules(
             c.button_checked_mix_with
                 .map(|_| RuleSelector::on(WidgetState::CHECKED)),
@@ -3206,18 +3274,12 @@ fn button(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled)],
         )
+        .rule(flat(WidgetState::DISABLED), [PartProp::Fill(Paint::None)])
         .rules(
             c.button_checked_mix_with
                 .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED)),
-            c.button_checked_mix_with.map(|with| {
-                fill(
-                    roles
-                        .accent
-                        .fill
-                        .mix_srgb(with, BUTTON_CHECKED_DISABLED_MIX)
-                        .with_alpha(BUTTON_CHECKED_DISABLED_ALPHA),
-                )
-            }),
+            c.button_checked_mix_with
+                .map(|with| fill(checked_disabled_fill(roles.accent.fill, with))),
         )
         // The borderless button (`bordered` NO) draws no outline, after the push button's rules
         // so that its own win: on macOS 15 at rest, pressed and disabled (measured, os-probe run
@@ -3277,6 +3339,14 @@ fn button(
     )
 }
 
+/// `macos-tahoe`'s disabled checked fill: `accent` mixed with `with` by
+/// [`BUTTON_CHECKED_DISABLED_MIX`] at [`BUTTON_CHECKED_DISABLED_ALPHA`].
+fn checked_disabled_fill(accent: Color, with: Color) -> Color {
+    accent
+        .mix_srgb(with, BUTTON_CHECKED_DISABLED_MIX)
+        .with_alpha(BUTTON_CHECKED_DISABLED_ALPHA)
+}
+
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both: the unchecked fill in the unchecked outline, no
 /// shadow, of an exact size; hovered and pressed, the fills `states` gives;
@@ -3297,15 +3367,23 @@ fn indicator(
     // pressed, the measured edge where the generation states one, else as at rest (macOS 26:
     // every pressed edge pixel is the fill, `*.pressed.checkbox_*` `edge_*`).
     let rest_edge = outline(layout, c.checkbox_unchecked_border);
-    let pressed_edge = c
-        .checkbox_pressed_border
+    let pressed_edge = states
+        .pressed_border
         .map_or_else(|| rest_edge.clone(), |color| outline(layout, color));
     // Disabled, the measured fills and edge (os-probe run 45345116763, macOS 15 and 26,
-    // `*.normal.{checkbox,radio}_disabled_{off,on}` `fill`, `edge_*`); checked, where neither a
-    // fill on the accent nor one off it is stated, the checked fill as at rest.
+    // `*.normal.{checkbox,radio}_disabled_{off,on}` `fill`, `edge_*`); checked, on
+    // `macos-tahoe` under another accent the checked button's disabled fill, the accent mixed
+    // and at alpha 0x70, as that run reads under the red accent (`controls-accent`, macOS 26,
+    // `*.normal.checkbox_disabled_on` `fill` #d6363d71 / #ff5b5d70, which the mix gives within
+    // 2 levels, the test `the_disabled_checked_fill_measured_on_the_default_accent_drops_under_
+    // another`); where none is stated, the checked fill as at rest.
     let checked_disabled = c
         .checkbox_checked_disabled_off_accent
-        .or(c.checkbox_checked_disabled);
+        .or(c.checkbox_checked_disabled)
+        .or_else(|| {
+            c.button_checked_mix_with
+                .map(|with| checked_disabled_fill(roles.accent.fill, with))
+        });
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.checkbox_unchecked),
@@ -3348,21 +3426,25 @@ fn indicator(
 }
 
 /// The fills [`indicator`] states for the hovered, the pressed and the
-/// checked pressed box or circle; `None` where it states none.
+/// checked pressed box or circle, and its pressed edge; `None` where it
+/// states none (the edge: as at rest).
 #[derive(Clone, Copy)]
 struct IndicatorFills {
     hover: Option<Color>,
     pressed: Option<Color>,
     checked_pressed: Option<Color>,
+    pressed_border: Option<Color>,
 }
 
 /// The fills of the check box and the radio button, which AppKit draws
-/// alike: hovered, the unchecked fill; pressed, the scheme's pressed fills.
-fn check_fills(c: &SchemeColors) -> IndicatorFills {
+/// alike: hovered, the unchecked fill; pressed, the scheme's pressed fills;
+/// the pressed edge `pressed_border`, each part's own.
+fn check_fills(c: &SchemeColors, pressed_border: Option<Color>) -> IndicatorFills {
     IndicatorFills {
         hover: Some(c.checkbox_unchecked),
         pressed: Some(c.checkbox_pressed),
         checked_pressed: c.checkbox_checked_pressed,
+        pressed_border,
     }
 }
 
@@ -3406,8 +3488,8 @@ fn checkbox(
         .build();
     // Hovered, the box's fill as at rest (`*.hovered.checkbox_off`, `…checkbox_on` differ in 0
     // pixels), where 0.7.2 macos-monterey.toml states an uncited hover fill (#e0e0e5 / #444446);
-    // pressed, the measured fills.
-    let states = check_fills(c);
+    // pressed, the measured fills and edge.
+    let states = check_fills(c, c.checkbox_pressed_border);
     CheckboxWidget::new(
         WidgetOrigin::Native,
         indicator(c, g, roles, layout, states)
@@ -3451,8 +3533,8 @@ fn radio(
     // macOS 15 and 26: `*.hovered.radio_off` and `…radio_on` differ from the normal capture in 0
     // pixels; `*.pressed.radio_off` `fill` #f2f2f2 / #ffffff5c on macOS 15, #00000030 / #ffffff30
     // on macOS 26, `*.pressed.radio_on` `fill` #006be1 / #1f8aff on macOS 26, on macOS 15 a
-    // gradient, its edges #157deb… / #3384f4…).
-    let states = check_fills(c);
+    // gradient, its edges #157deb… / #3384f4…); pressed, the circle's own measured edge.
+    let states = check_fills(c, c.radio_pressed_border);
     RadioWidget::new(
         WidgetOrigin::Native,
         indicator(c, g, roles, layout, states).build(),
@@ -4096,18 +4178,21 @@ fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
     )
 }
 
-/// The tab bar: the bar and the tabs in the window's background (0.7.2:
-/// `tab.bar_background` and `tab.background_color` are
-/// `defaults.background_color` where unstated), a tab of least sizes with
-/// `macos-monterey`'s padding and hover fill; the selected tab in its
-/// measured fill and label ([`SchemeColors::tab_selected_off_accent`]), else
-/// in the window's background again (`tab.active_background`:
-/// `defaults.background_color` where unstated), or where the generation
-/// draws it on the accent, in its measured fill lettered in the accent's
-/// text; the UI font in the window's text, which a hovered tab keeps, and a
-/// selected one off the accent without a measured label (0.7.2: `tab.font` is `defaults.font`,
-/// `hover_text_color` `tab.font.color` and `active_text_color`
-/// `defaults.text_color` where unstated).
+/// The tab bar: the bar in the window's background (0.7.2:
+/// `tab.bar_background` is `defaults.background_color` where unstated); a
+/// tab of least sizes with `macos-monterey`'s padding in the generation's
+/// measured fill ([`SchemeColors::tab_fill`]), as at rest hovered, an
+/// unselected one pressed in its measured fill ([`SchemeColors::tab_pressed`]);
+/// the selected tab in its measured fill and label
+/// ([`SchemeColors::tab_selected_off_accent`]), else in the window's
+/// background (`tab.active_background`: `defaults.background_color` where
+/// unstated), or where the generation draws it on the accent, in its
+/// measured fill ([`SchemeColors::tab_selected`], the accent's fill under
+/// another accent) lettered in the accent's text; the UI font in the
+/// window's text, which a hovered and a pressed tab keep, and a selected one
+/// off the accent without a measured label (0.7.2: `tab.font` is
+/// `defaults.font`, `hover_text_color` `tab.font.color` and
+/// `active_text_color` `defaults.text_color` where unstated).
 /// 0.7.2 states no outline, corners, shadow or indicator.
 fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typography) -> TabWidget {
     let bar = RuleBuilder::new(PartStyle::default())
@@ -4192,8 +4277,8 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
 /// `sidebar.selection_background` and `selection_text_color` are the
 /// selection's where unstated); the UI font (0.7.2: `sidebar.font` is
 /// `defaults.font` where unstated) in the measured source-list row's label
-/// ([`SchemeColors::sidebar_foreground`]), or in the palette's text where
-/// the system's colours are laid over ([`lay_palette_over`]). No hover fill (0.7.2:
+/// ([`SchemeColors::sidebar_foreground`]), or in the palette's text where a
+/// palette is laid over ([`lay_palette_over`]). No hover fill (0.7.2:
 /// `sidebar.hover_background` unset is the pane's fill, "no tint"); a
 /// pressed item in its measured fill and the selection's text.
 fn sidebar(
@@ -4284,20 +4369,16 @@ fn toolbar(
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(g.icon_toolbar)])
         .build();
-    // At rest, the measured label; hovered, as at rest where the generation measured it so, else
-    // the scheme's hovered label where it states one; pressed, the measured label.
+    // At rest, the measured label; hovered, the scheme's hovered label where it states one, else
+    // as at rest, measured so; pressed, the measured label.
     let rest_label = label(&typography.body, Some(c.toolbar_label));
-    let (hover, hover_color) = rest_color_rules(&rest_label, [WidgetState::HOVER]);
+    let hover_label = rest_label.color;
     let button_label = RuleBuilder::new(rest_label)
-        .rules(
-            hover.into_iter().filter(|_| g.toolbar_label_hover_as_rest),
-            hover_color,
-        )
-        .rules(
-            c.toolbar_label_hover
-                .filter(|_| !g.toolbar_label_hover_as_rest)
-                .map(|_| RuleSelector::on(WidgetState::HOVER)),
-            c.toolbar_label_hover.map(TextProp::Color),
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(
+                c.toolbar_label_hover.unwrap_or(hover_label),
+            )],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),

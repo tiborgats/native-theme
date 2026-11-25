@@ -18,8 +18,9 @@
 //! derived again from the settings in force; under either the system's
 //! accent, focus ring and text selection are not applied.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (Qt's flat push button), a list's alternate
 //! rows (`ListKind::alternate`) and a table's row corners
 //! (`ListVariant::Table`), the two orientations of the scroll bar and of the
 //! slider's groove, no control size and the contrast level `Normal` only; a
@@ -3432,7 +3433,32 @@ fn button(
                 outline(layout, c.selection_background),
             ],
         )
-        .rule(flat(WidgetState::DISABLED), [no_fill(), no_stroke()])
+        .rule(
+            flat(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [no_fill(), no_stroke()],
+        )
+        // Checked and disabled, the checked branch from the Disabled group: ButtonText at
+        // FLAT_CHECKED_ALPHA in the mix of Button and ButtonText at the frame contrast
+        // (breezehelper.cpp:681-684 at breeze 6.8.2; `docs/facts/kde/button.toml` on `v0.8.0-rc1`
+        // at `78ee0efd`, row K1.24, `variants = ["flat"], states = ["checked", "disabled"]`), the
+        // Disabled `[Colors:Button]` colours platform-facts.md (§2.1.6) gives.
+        .rule(
+            flat(WidgetState::DISABLED | WidgetState::CHECKED),
+            [
+                fill(translucent(
+                    c.button_disabled_foreground,
+                    FLAT_CHECKED_ALPHA,
+                )),
+                outline(
+                    layout,
+                    mix(
+                        c.button_disabled_background,
+                        c.button_disabled_foreground,
+                        c.frame_contrast,
+                    ),
+                ),
+            ],
+        )
         .build();
     // `button.hover_text_color` and `checked_text_color`: platform-facts.md (§2.3), a non-flat
     // button's label is ButtonText in every state; `default_button_text_color`: platform-facts.md

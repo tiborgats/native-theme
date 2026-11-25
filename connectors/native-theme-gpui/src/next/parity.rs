@@ -542,8 +542,10 @@ const DIFFERENCES: &[Difference] = &[
                  whole fill of its state (spec §9, step 2; crate::colors::assign_buttons), and \
                  secondary_hover and secondary_active, the flat button's home \
                  (button.body(HOVER; variant=Flat), button.body(PRESSED; variant=Flat)), which \
-                 the same rules with no variant state, the same two; their tokens and their \
-                 stored config strings; every other leaf of the theme is equal",
+                 the borderless button's rules state with no fill, transparent \
+                 (docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat] absent); their tokens and their stored config strings; every \
+                 other leaf of the theme is equal",
     },
     Difference {
         leaf: "variants::ghost_button",
@@ -551,10 +553,9 @@ const DIFFERENCES: &[Difference] = &[
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
                  secondary_foreground, the flat button's home (button.body(HOVER; \
                  variant=Flat), button.body(PRESSED; variant=Flat)), which the macOS presets' \
-                 button rules with no variant state as the rest fill (hover draws nothing on \
-                 macOS) and the measured pressed fill \
-                 (docs/facts/macos/state-models.toml and docs/facts/macos/button.toml on \
-                 v0.8.0-rc1 at 78ee0efd; os-probe runs 41006842699 and 40969040283), where \
+                 borderless button rules state with no fill, transparent \
+                 (docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat] absent; os-probe runs 41006842699 and 42272240639), where \
                  0.7.2 gives #e0e0e5 / #444446 and its soft option or derived layer; \
                  secondary_foreground is equal",
     },
@@ -956,17 +957,6 @@ const DIFFERENCES: &[Difference] = &[
                  geometry's thumb_hover and thumb_active are the fills of scrollbar.thumb(HOVER) \
                  and scrollbar.thumb(PRESSED), in the compared ScrollbarGeometry and in the base \
                  overrides alike",
-    },
-    Difference {
-        leaf: SIDEBAR_FILL,
-        presets: &["macos-monterey", "macos-tahoe"],
-        reason: "0.7.2's #f6f6f6 / #383838 is the sidebar material read with Reduce \
-                 Transparency on; the 0.8.0 presets state the source-list row's measured rest \
-                 fill under the default conditions, #dddddd / #424242 on both (os-probe run \
-                 45252258079, Reduce Transparency off, `*.normal.source_list_row` `fill`; \
-                 native-theme/tests/next_homes.toml, row sidebar.background_color, a listed \
-                 difference), so the sidebar slot, its token and its stored config string are \
-                 sidebar.container(NONE)'s fill; every other leaf of the theme is equal",
     },
     Difference {
         leaf: SIDEBAR_TEXT,

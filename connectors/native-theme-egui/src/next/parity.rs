@@ -1493,24 +1493,6 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         home!(sidebar.item_label(HOVER).color),
     ),
     s(
-        "Sidebar",
-        &[M, T],
-        ".visuals.panel_fill",
-        home!(sidebar.container(NONE).fill),
-    ),
-    s(
-        "Panel(Left)",
-        &[M, T],
-        ".fill",
-        home!(sidebar.container(NONE).fill),
-    ),
-    s(
-        "Panel(Right)",
-        &[M, T],
-        ".fill",
-        home!(sidebar.container(NONE).fill),
-    ),
-    s(
         "Slider",
         &[M, I],
         ".visuals.widgets.active.bg_fill",

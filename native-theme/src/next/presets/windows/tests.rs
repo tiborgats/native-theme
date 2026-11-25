@@ -758,6 +758,91 @@ fn a_high_contrast_box_hovered_and_pressed_takes_the_system_colours() {
     assert_eq!(dot(checked | pressed), Paint::Solid(button_text));
 }
 
+/// Under high contrast the push button is the button face in the button text,
+/// hovered the highlight's text in the highlight, pressed the highlight's
+/// text in it, disabled the button face in the grey text
+/// (Button_themeresources.xaml:78-89 at microsoft-ui-xaml 8463f45); the flat
+/// (subtle) button the same at rest, hovered, pressed and disabled (:66-77);
+/// the toolbar's button hovered and pressed the highlight behind the
+/// highlight's text, checked and hovered or pressed the highlight's text,
+/// checked and disabled the grey text (AppBarButton_themeresources.xaml:41-47,
+/// AppBarToggleButton_themeresources.xaml:74-77).
+#[test]
+fn a_high_contrast_button_takes_the_system_colours() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [face, button_text, highlight, highlight_text, gray] =
+        [1, 2, 3, 4, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                background: Some(face),
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        disabled_text: Some(gray),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    let width = high.layout.border_width;
+    let look = |fill: Color, edge: Color| {
+        (
+            Paint::Solid(fill),
+            Stroke::uniform_aligned(width, edge, StrokeAlign::Outside),
+        )
+    };
+    let (hover, pressed, disabled) = (
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+    );
+    for query in [ButtonQuery::new(WidgetState::NONE), ButtonQuery::flat()] {
+        let of = |state: WidgetState| {
+            let body = high.button.body(query.state(state));
+            (body.fill, body.stroke)
+        };
+        assert_eq!(of(WidgetState::NONE), look(face, button_text), "{query:?}");
+        assert_eq!(of(hover), look(highlight_text, highlight), "{query:?}");
+        assert_eq!(
+            of(pressed),
+            look(highlight_text, highlight_text),
+            "{query:?}"
+        );
+        assert_eq!(of(disabled), look(face, gray), "{query:?}");
+        assert_eq!(
+            high.button.label(query.state(disabled)).color,
+            gray,
+            "{query:?}"
+        );
+    }
+    let toolbar = |state: WidgetState| high.toolbar.button(state).fill;
+    assert_eq!(toolbar(hover), Paint::Solid(highlight));
+    assert_eq!(toolbar(pressed), Paint::Solid(highlight));
+    assert_eq!(
+        toolbar(WidgetState::CHECKED | hover),
+        Paint::Solid(highlight_text)
+    );
+    assert_eq!(
+        toolbar(WidgetState::CHECKED | pressed),
+        Paint::Solid(highlight_text)
+    );
+    assert_eq!(toolbar(WidgetState::CHECKED | disabled), Paint::Solid(gray));
+    assert_eq!(high.toolbar.button_label(hover).color, highlight_text);
+}
+
 /// The focus visual is the 2px outer ring around the 1px inner one in
 /// `FocusStrokeColorInner` (#B3FFFFFF / #B3000000), 1 px outside the part
 /// (Button's `FocusVisualMargin` -3); a list row's lies inside it, its outer

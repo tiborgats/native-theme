@@ -61,8 +61,9 @@
 //! background; one that replaces a transparent rest fill (a list row, a
 //! sidebar item, a segment) stated as the brush, a layer.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (WinUI's subtle button), a list's alternate
 //! rows (`ListKind::alternate`), the two orientations of the scroll bar and
 //! of the slider's groove, no control size, and the contrast level `Normal`
 //! alone. A query for anything else returns the part's base style. A
@@ -1005,13 +1006,12 @@ const DARK: SchemeColors = SchemeColors {
     inactive_title: srgb8(0xffff_ff87),
 };
 
-// `scrollbar.track_color`: platform-facts.md (§2.8): ScrollBarBackground = SubtleFillColorTransparent
-// #00FFFFFF
-const SCROLLBAR_TRACK: Color = srgb8(0xffff_ff00);
-// The subtle (flat) button's fill at rest and disabled: SubtleButtonBackground and
-// SubtleButtonBackgroundDisabled = SubtleFillColorTransparentBrush, #00FFFFFF
-// (Button_themeresources.xaml:17, :20; Common_themeresources_any.xaml:229 at microsoft-ui-xaml
-// 2.5.1; `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021)
+// SubtleFillColorTransparent, #00FFFFFF (Common_themeresources_any.xaml:229, :25 at
+// microsoft-ui-xaml 8463f45): `scrollbar.track_color`, platform-facts.md (§2.8):
+// ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF; the subtle (flat) button's fill at
+// rest and disabled, SubtleButtonBackground and SubtleButtonBackgroundDisabled =
+// SubtleFillColorTransparentBrush (Button_themeresources.xaml:17, :20 at microsoft-ui-xaml
+// 8463f45; `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021)
 const SUBTLE_FILL_TRANSPARENT: Color = srgb8(0xffff_ff00);
 // `link.background_color`: 0.7.2 windows-11.toml (uncited)
 // `link.hover_background`: platform-facts.md (§2.28): an inline Hyperlink has no background and
@@ -2399,9 +2399,13 @@ fn button(
                 .into_iter()
                 .chain(border(roles, layout.border_width)),
         )
+        // Disabled, ButtonBackgroundDisabled = ControlFillColorDisabledBrush
+        // (Button_themeresources.xaml:131, :33 at microsoft-ui-xaml 8463f45); under high contrast
+        // ButtonBackgroundDisabled and AccentButtonBackgroundDisabled =
+        // SystemControlBackgroundBaseLowBrush (:81, :57), the button face (generic.xaml:2010).
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.control_fill_disabled)],
+            [fill(hc.button_face.unwrap_or(c.control_fill_disabled))],
         )
         // Disabled under high contrast, the outline the grey text: ButtonBorderBrushDisabled and
         // AccentButtonBorderBrushDisabled = SystemControlDisabledTransparentBrush
@@ -2415,7 +2419,7 @@ fn button(
         )
         // The flat button, WinUI's subtle button (SubtleButtonStyle), after the push button's
         // rules so that its own win, each from its resources (Button_themeresources.xaml:17-28,
-        // high contrast :66-69 and :74-77 at microsoft-ui-xaml 2.5.1; `docs/facts/windows/
+        // high contrast :66-69 and :74-77 at microsoft-ui-xaml 8463f45; `docs/facts/windows/
         // button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021). At rest, SubtleFillColor-
         // Transparent in a transparent outline; under high contrast SystemControlBackground-
         // BaseLowBrush, the button face (generic.xaml:2010), in SystemControlForeground-
@@ -2502,7 +2506,7 @@ fn button(
     // under high contrast SystemColorHighlightColor hovered and pressed
     // (SystemControlHighlightBaseHighBrush, generic.xaml:2069) and SystemColorGrayTextColor
     // disabled (SystemControlDisabledBaseMediumLowBrush, generic.xaml:2026)
-    // (Button_themeresources.xaml:21-24, :70-73 at microsoft-ui-xaml 2.5.1;
+    // (Button_themeresources.xaml:21-24, :70-73 at microsoft-ui-xaml 8463f45;
     // `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021). At rest
     // SubtleButtonForeground, under high contrast SystemColorButtonTextColor, stated with no state
     // so that a checked flat button, which WinUI has not (the doc comment above), keeps it.
@@ -3075,7 +3079,7 @@ fn scrollbar(
     min_thumb_length: f32,
 ) -> ScrollbarWidget {
     let track = across(
-        RuleBuilder::new(PartStyle::default()).base([fill(SCROLLBAR_TRACK)]),
+        RuleBuilder::new(PartStyle::default()).base([fill(SUBTLE_FILL_TRANSPARENT)]),
         groove_width,
     )
     .build();
@@ -3760,8 +3764,8 @@ fn toolbar(
         // Checked, AppBarToggleButtonForegroundChecked = TextOnAccentFillColorPrimaryBrush
         // (AppBarToggleButton_themeresources.xaml:22, :152 at microsoft-ui-xaml 8463f45), the
         // accent's text, hovered the same (:23, :153), pressed TextOnAccentFillColorSecondaryBrush
-        // (:24, :154; #80000000 / #B3FFFFFF, Common_themeresources_any.xaml:13, :217), disabled
-        // TextOnAccentFillColorDisabled (:25, :155; #87FFFFFF / #FFFFFF, :14, :218). Under high
+        // (:24, :154; light / dark #B3FFFFFF / #80000000, Common_themeresources_any.xaml:217, :13),
+        // disabled TextOnAccentFillColorDisabled (:25, :155; #FFFFFF / #87FFFFFF, :218, :14). Under high
         // contrast SystemColorHighlightTextColorBrush (AppBarToggleButton_themeresources.xaml:87), on
         // the highlight; hovered and pressed …CheckedPointerOver / …CheckedPressed =
         // SystemColorHighlightColorBrush (:88-89), on the highlight text; disabled

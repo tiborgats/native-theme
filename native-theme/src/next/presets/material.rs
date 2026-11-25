@@ -73,8 +73,9 @@
 //! hovered and pressed fills); a disabled colour as `on-surface` at the
 //! disabled opacities, with its alpha.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields: the filled button),
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields: the filled button)
+//! and `ButtonVariant::Flat` (M3's text button),
 //! a list's alternate rows (`ListKind::alternate`), the two orientations of
 //! the scroll bar and of the slider's groove, no control size, and the
 //! contrast level `Normal` alone. A query for anything else returns the

@@ -54,9 +54,10 @@
 //! step 2): the accent's text and the selection's text are then the
 //! preset's; the palette's other slots stand.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields, which it fills from
-//! the accent), a list's alternate rows (`ListKind::alternate`), the two
+//! the accent) and `ButtonVariant::Flat` (UIKit's plain button), a list's
+//! alternate rows (`ListKind::alternate`), the two
 //! orientations of the scroll bar, no control size, and the contrast level
 //! `Normal` alone. A query for anything else returns the part's base style.
 //! A maximized or full-screen window has no data of its own.
@@ -2370,8 +2371,8 @@ fn popover(
     let mut panel = PartStyle::default();
     // The large radius on the continuous curve: the popover's content view in `_UIPopoverView`
     // reads 13.0 pt, continuous (measured, ios-host run 42269041636, iOS 18.6,
-    // `measure1/index.toml` scene `popover`, root `container`, view `0.1.1.1`, `corner_radius_pt`,
-    // `corner_curve`).
+    // `docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml`
+    // scene `popover`, root `container`, view `0.1.1.1`, `corner_radius_pt`, `corner_curve`).
     for prop in [fill(roles.popover.background.unwrap_or(c.elevated))]
         .into_iter()
         .chain(border(roles, layout))
@@ -2510,8 +2511,9 @@ fn dialog(
     let mut panel = PartStyle::default();
     // The large radius on the continuous curve: the alert's group view (`UIAlertController`
     // `.alert`) reads 13.0 pt, continuous (measured, ios-host run 42269041636, iOS 18.6,
-    // `measure1/index.toml` scene `alert`, root `container`, views `0.3.0.0.0` and `0.3.0.0.1`,
-    // `corner_radius_pt`, `corner_curve`).
+    // `docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml`
+    // scene `alert`, root `container`, views `0.3.0.0.0` and `0.3.0.0.1`, `corner_radius_pt`,
+    // `corner_curve`).
     for prop in roles
         .dialog
         .background

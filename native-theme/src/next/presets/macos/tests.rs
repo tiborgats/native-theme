@@ -94,6 +94,38 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
     }
 }
 
+/// The borderless button draws neither a fill nor an outline at rest,
+/// hovered, pressed or disabled, each stated for its state.
+#[test]
+fn a_flat_button_has_no_fill_and_no_outline() {
+    for (preset, theme) in every_theme() {
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::PRESSED,
+        ] {
+            let body = theme.button.body(ButtonQuery::flat().state(state));
+            assert_eq!(
+                (&body.fill, &body.stroke),
+                (&Paint::None, &Stroke::None),
+                "{preset:?} {state:?}"
+            );
+            assert!(
+                body.stated.contains(PartStated::FILL),
+                "{preset:?} {state:?}"
+            );
+            if state != WidgetState::NONE {
+                assert!(
+                    body.from_state.contains(PartStated::FILL),
+                    "{preset:?} {state:?}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
     for (preset, theme) in every_theme() {
@@ -139,6 +171,15 @@ fn a_radio_takes_the_check_box_s_fills() {
                 "{preset:?} {state:?}"
             );
         }
+        // Pressed, the circle's own measured edge where one was read, else the rest one.
+        let edge = |state: WidgetState| stroke_color(&theme.radio.indicator(state).stroke);
+        let expected = match (preset, theme.context.scheme) {
+            (Preset::MacosMonterey, Scheme::Light) => {
+                Some(Color::from_srgb8(0xc5, 0xc5, 0xc5, 0xf8))
+            }
+            _ => edge(WidgetState::NONE),
+        };
+        assert_eq!(edge(WidgetState::PRESSED), expected, "{preset:?}");
     }
 }
 
@@ -1354,15 +1395,36 @@ fn the_disabled_checked_fill_measured_on_the_default_accent_drops_under_another(
             Some(on_accent),
             "{scheme:?}"
         );
+        let button = tahoe_red
+            .button
+            .body(ButtonQuery::new(checked_disabled))
+            .fill;
         for indicator in [
             tahoe_red.checkbox.indicator(checked_disabled),
             tahoe_red.radio.indicator(checked_disabled),
         ] {
+            assert_eq!(indicator.fill, button, "{scheme:?}");
             assert_eq!(
-                indicator.fill,
-                tahoe_red.checkbox.indicator(WidgetState::CHECKED).fill,
+                solid(&indicator.fill).map(|c| c.to_srgb8()[3]),
+                Some(0x70),
                 "{scheme:?}"
             );
+        }
+        // Under the system's red accent (`controlAccentColor` #e0383e / #ff5257), within 2
+        // levels of what os-probe run 45345116763 reads (`controls-accent`, macOS 26,
+        // `*.normal.checkbox_disabled_on` `fill` #d6363d71 / #ff5b5d70).
+        let (accent, read) = match scheme {
+            Scheme::Light => (0xe0383e, [0xd6, 0x36, 0x3d, 0x71]),
+            _ => (0xff5257, [0xff, 0x5b, 0x5d, 0x70]),
+        };
+        let system_red = Theme::preset(Preset::MacosTahoe)
+            .with_accent(hex(accent))
+            .resolve(&ctx);
+        let drawn = solid(&system_red.checkbox.indicator(checked_disabled).fill)
+            .ok_or("no solid fill")?
+            .to_srgb8();
+        for (d, r) in drawn.iter().zip(read) {
+            assert!(d.abs_diff(r) <= 2, "{scheme:?} {drawn:x?} {read:x?}");
         }
         for indicator in [
             monterey_red.checkbox.indicator(checked_disabled),

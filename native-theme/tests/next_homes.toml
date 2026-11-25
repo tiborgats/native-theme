@@ -2124,10 +2124,6 @@ homes = ["tab.tab(NONE).padding.left"]
 [[row]]
 key = "sidebar.background_color"
 homes = ["sidebar.container(NONE).fill"]
-difference_presets = ["macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2's #f6f6f6 / #383838 is the sidebar material read with Reduce Transparency on (os-probe run 40320895749), which the runner images had set; 0.8.0 states the source-list row's rest fill under the default conditions, the material behind it, opaque"
-difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.source_list_row` `fill`"
-difference_values = { "macos-monterey" = { light = "#dddddd", dark = "#424242" }, "macos-tahoe" = { light = "#dddddd", dark = "#424242" } }
 
 [[row]]
 key = "sidebar.selection_background"
