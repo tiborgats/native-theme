@@ -57,10 +57,13 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "SwitchLook::label disabled",
         presets: &["macos-monterey", "macos-tahoe", "ios-13"],
-        reason: "the 0.8.0 preset states no disabled colour of switch.label, so a disabled \
-                 switch's label is gpui-component's own, muted_foreground, \
-                 colors.window.foreground_muted (spec §10, rule 0), where the 0.7.2 look took \
-                 defaults.disabled_text_color",
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 presets state the disabled switch's label at its rest colour, as the \
+                 platform draws it: macOS labelColor (os-probe run 45210835145, macOS 15 and \
+                 26, `switch-label-macos-{15,26}/measure.toml` `*.normal.toggle_*_disabled` \
+                 within 3 levels of the 13 pt labelColor reference), ios-13 the list row's \
+                 label colour #000000 / #ffffff (ios-host run 45230061151, iOS 18.6, \
+                 `measure_lists.toml` `run1.\"<a>\".switch_row.disabled` `label_text_color`)",
     },
     Difference {
         leaf: "SwitchLook::label disabled",
@@ -131,50 +134,49 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "CheckboxLook::of mark disabled",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "macos-monterey",
-            "macos-tahoe",
-            "ios-13",
-        ],
-        reason: "these 0.8.0 presets state no checkbox.checkmark(DISABLED).color, so a \
-                 disabled box's mark keeps gpui-component's own treatment (spec §10, rule 0): \
-                 the enabled mark, checkbox.checkmark(CHECKED).color, at half alpha \
-                 (primary_foreground.opacity(0.5), gpui-component 0.10.0 checkbox.rs:230-234), \
+        presets: &["macos-tahoe"],
+        reason: "the 0.8.0 macos-tahoe states the measured disabled checked box's mark for \
+                 DISABLED, #fefefe80 light and #fdffff80 dark (os-probe run 45345116763, \
+                 macOS 26, `*.normal.checkbox_disabled_on` `label`), where the 0.7.2 look drew \
+                 it in the label's disabled colour where a disabled fill is stated, else as \
+                 enabled; the look reads checkbox.checkmark(DISABLED|CHECKED).color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of mark disabled",
+        presets: &["macos-monterey"],
+        reason: "the 0.8.0 macos-monterey states the measured disabled checked box's mark for \
+                 DISABLED in light, #01010140 (os-probe run 45345116763, macOS 15, \
+                 `*.normal.checkbox_disabled_on` `label`), and none in dark, where the run \
+                 read no one colour (`label` non_uniform_fill): light, the look reads \
+                 checkbox.checkmark(DISABLED|CHECKED).color; dark, the mark keeps \
+                 gpui-component's own treatment (spec §10, rule 0), the enabled mark, \
+                 checkbox.checkmark(CHECKED).color, at half alpha \
+                 (primary_foreground.opacity(0.5), gpui-component 0.10.0 checkbox.rs:230-234); \
                  where the 0.7.2 look drew it in the label's disabled colour where a disabled \
-                 fill is stated, else as enabled; the 0.8.0 look is compared to that home at \
-                 half alpha (Report::moved)",
+                 fill is stated, else as enabled",
     },
     Difference {
         leaf: "CheckboxLook::radio mark disabled",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "macos-monterey",
-            "macos-tahoe",
-            "material-3",
-            "ios-13",
-        ],
-        reason: "as the check box's (CheckboxLook::of mark disabled): no 0.8.0 preset states \
-                 radio.dot(DISABLED).fill, and gpui-component's radio draws the same mark \
-                 through checkbox_check_icon, dimmed to half alpha when disabled \
-                 (gpui-component 0.10.0 radio.rs:249-256, checkbox.rs:230-234), so a \
-                 disabled radio's dot is radio.dot(CHECKED).fill at half alpha, where the \
-                 0.7.2 look drew it in the label's disabled colour where a disabled fill is \
-                 stated, else as enabled",
+        presets: &["macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of mark disabled): the 0.8.0 macos-tahoe \
+                 states the measured disabled checked radio's dot for DISABLED, the check box's \
+                 mark colour, #fefefe80 light and #fdffff80 dark (os-probe run 45345116763, \
+                 macOS 26, `*.normal.radio_disabled_on` `label`), where the 0.7.2 look drew it \
+                 in the label's disabled colour where a disabled fill is stated, else as \
+                 enabled; the look reads radio.dot(DISABLED|CHECKED).fill",
     },
     Difference {
-        leaf: "SwitchLook track disabled",
-        presets: &["adwaita"],
-        reason: "the 0.8.0 adwaita states no switch.track(DISABLED).fill (libadwaita fades \
-                 the whole switch, switch.disabled_opacity), so a disabled switch's track \
-                 keeps gpui-component's own treatment (spec §10, rule 0): the enabled track \
-                 at half alpha (disabled_bg, gpui-component 0.10.0 switch.rs:192, :285), \
-                 under the whole-switch fade, where the 0.7.2 look kept the enabled track; \
-                 the 0.8.0 look is compared to that home at half alpha (Report::moved)",
+        leaf: "CheckboxLook::radio mark disabled",
+        presets: &["macos-monterey"],
+        reason: "as the check box's (CheckboxLook::of mark disabled): the 0.8.0 macos-monterey \
+                 states the measured disabled checked radio's dot for DISABLED in light, \
+                 #01010140 (os-probe run 45345116763, macOS 15, `*.normal.radio_disabled_on` \
+                 `label`), read at radio.dot(DISABLED|CHECKED).fill, and none in dark (not \
+                 read), where gpui-component's radio draws the same mark through \
+                 checkbox_check_icon, dimmed to half alpha when disabled (gpui-component \
+                 0.10.0 radio.rs:249-256, checkbox.rs:230-234), so the dark disabled dot is \
+                 radio.dot(CHECKED).fill at half alpha; where the 0.7.2 look drew it in the \
+                 label's disabled colour where a disabled fill is stated, else as enabled",
     },
     Difference {
         leaf: "CheckboxLook::radio label disabled",
@@ -203,18 +205,6 @@ const DIFFERENCES: &[Difference] = &[
                  over the bar (_notebook.scss:127-129, _colors.scss:268, :33, :96 at \
                  libadwaita 1.10.0; native-theme/tests/next_homes.toml, row \
                  tab.hover_background, a listed difference)",
-    },
-    Difference {
-        leaf: "CheckboxLook::of hover_border",
-        presets: &["adwaita", "windows-11"],
-        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
-                 outline; 0.8.0 states the unchecked box's outline for HOVER \
-                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
-                 listed difference): adwaita's $trough_hover_color (_checks.scss:20-35 at \
-                 libadwaita 1.10.0), windows-11's rest ControlStrongStrokeColorDefault, which \
-                 WinUI keeps (CheckBox_themeresources.xaml:218, :42 at microsoft-ui-xaml \
-                 8463f45); so an enabled box hovers in the outline stated there, a checked one \
-                 in its checked outline",
     },
     Difference {
         leaf: "CheckboxLook::of hover_fill",
@@ -291,65 +281,240 @@ const DIFFERENCES: &[Difference] = &[
                  outline where no padding is stated, is 19 px where 0.7.2's is 21 px",
     },
     Difference {
+        leaf: "CheckboxLook::of fill",
+        presets: &["ios-13"],
+        reason: "0.8.0's ios-13 fills an empty box at rest in WebKit's \
+                 -webkit-control-background, systemBackground #ffffff / #000000, in place of \
+                 0.7.2's uncited #ffffff / #1c1c1e (checkboxRadioBackgroundColor, \
+                 RenderThemeIOS.mm:1391, :1395, :1027 at WebKit 31adf9d; \
+                 system-color-for-css-value-expected.txt:7, :9 at WebKit de320ba; \
+                 native-theme/tests/next_homes.toml, row checkbox.unchecked_background, a \
+                 listed difference); the look reads it at checkbox.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of fill): the radio button's indicator is \
+                 the same part on ios-13; the look reads it at radio.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::of opacity",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 fades a disabled box by its uncited defaults.disabled_opacity \
+                 0.3 (ios-13.toml); 0.8.0's draws it at full opacity, as WebKit's iOS style \
+                 sheet resets a disabled check box's and radio button's opacity 0.4 with \
+                 `opacity: initial` (html.css:962-963, :1031-1034, :1040-1047 at WebKit \
+                 31adf9d), their disabled colours the theme's own; the look reads \
+                 checkbox.disabled_opacity, 1",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio opacity",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of opacity): the same rule of the iOS style \
+                 sheet covers the radio button (html.css:1040-1047 at WebKit 31adf9d); the \
+                 look reads radio.disabled_opacity, 1",
+    },
+    Difference {
+        leaf: "CheckboxLook::of fill disabled",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 fills a disabled box, checked or not, in its uncited \
+                 checkbox.disabled_background #e5e5ea80 / #2c2c2e80 (ios-13.toml); 0.8.0's \
+                 states WebKit's: empty, -webkit-control-background, systemBackground #ffffff \
+                 / #000000 (checkboxRadioBackgroundColor, RenderThemeIOS.mm:1387-1388, :1027 \
+                 at WebKit 31adf9d), checked, opaqueTertiaryFill #eeeeef / #1c1c1e \
+                 (RenderThemeIOS.mm:1372, :1387-1388; ios-18 expected.txt:90-91, :93); the look \
+                 reads them at checkbox.indicator(DISABLED).fill and \
+                 checkbox.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of fill disabled): WebKit fills a disabled \
+                 radio button's circle as the box, checked in opaqueTertiaryFill \
+                 (RenderThemeIOS.mm:1561-1563 at WebKit 31adf9d); the look reads \
+                 radio.indicator(DISABLED).fill and radio.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
         leaf: "CheckboxLook::of border disabled",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "macos-monterey",
-            "macos-tahoe",
-            "material-3",
-            "ios-13",
-        ],
-        reason: "no 0.8.0 preset states checkbox.indicator(DISABLED).stroke, so a disabled box \
-                 keeps gpui-component's own treatment (spec §10, rule 0): its enabled border, \
-                 checkbox.indicator(CHECKED).stroke.color checked and \
+        presets: &["adwaita", "material-3"],
+        reason: "these 0.8.0 presets state no checkbox.indicator(DISABLED).stroke, so a \
+                 disabled box keeps gpui-component's own treatment (spec §10, rule 0): its \
+                 enabled border, checkbox.indicator(CHECKED).stroke.color checked and \
                  checkbox.indicator(NONE).stroke.color unchecked, at half alpha \
                  (disabled_indicator_color, gpui-component 0.10.0 checkbox.rs:286-290, \
                  :359-361), where the 0.7.2 look kept the enabled border; the 0.8.0 look is \
                  compared to that home at half alpha (Report::moved)",
     },
     Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["kde-breeze"],
+        reason: "as adwaita's and material-3's: the 0.8.0 kde-breeze states no \
+                 checkbox.indicator(DISABLED).stroke, so a disabled box keeps \
+                 gpui-component's own treatment (spec §10, rule 0), its enabled border at half \
+                 alpha, where the 0.7.2 look kept the enabled border. kde-breeze does state a \
+                 disabled checked box's frame for DISABLED|CHECKED, Breeze's Disabled \
+                 Highlight #e3e5e7 / #1f2124 (`indicator` in native-theme/src/next/presets/ \
+                 kde.rs, switch_disabled_on_frame), which the look does not reach: by spec §2's \
+                 from_state contract a connector keeping its own treatment of DISABLED asks \
+                 the query with that flag alone, and a rule for DISABLED|CHECKED does not set \
+                 its bit there; a spec question, not a connector fix",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["windows-11"],
+        reason: "the 0.8.0 windows-11 states WinUI's disabled box's outline, \
+                 CheckBoxCheckBackgroundStrokeUncheckedDisabled and …StrokeCheckedDisabled = \
+                 ControlStrongStrokeColorDisabled, #37000000 / #28ffffff \
+                 (CheckBox_themeresources.xaml:220, :44, :224, set at :465-468 at \
+                 microsoft-ui-xaml 8463f45; XAML's #AARRGGBB, alpha first: #RRGGBBAA \
+                 #00000037 / #ffffff28), where the 0.7.2 look kept the enabled border; \
+                 gpui-component's half alpha of the rest border would give #00000039 \
+                 (#RRGGBBAA, alpha last) in light; the look reads \
+                 checkbox.indicator(DISABLED).stroke.color and \
+                 checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 macOS presets state the measured disabled box's edge, checked or not: \
+                 macos-monterey #d1d1d180 on the sides and the bottom in light and none in \
+                 dark (every edge pixel within 6 alpha levels of the fill), macos-tahoe none \
+                 (every edge pixel the fill) (os-probe run 45345116763, macOS 15 and 26, \
+                 `*.normal.checkbox_disabled_{off,on}` `edge_*`), where the 0.7.2 look kept \
+                 the enabled border; the look reads checkbox.indicator(DISABLED).stroke.color \
+                 and checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
+        presets: &["ios-13"],
+        reason: "the 0.8.0 ios-13 states WebKit's disabled box's outline: empty, \
+                 checkboxRadioBorderColor secondaryLabel at checkboxRadioBorderDisabledOpacity \
+                 0.3 (RenderThemeIOS.mm:1355, :1359-1362 at WebKit 31adf9d), checked, none \
+                 (:1502), where the 0.7.2 look kept the enabled border; the look reads checkbox.indicator(DISABLED).stroke.color and \
+                 checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
         leaf: "CheckboxLook::radio border disabled",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "macos-monterey",
-            "macos-tahoe",
-            "material-3",
-            "ios-13",
-        ],
-        reason: "as the check box's (CheckboxLook::of border disabled): no 0.8.0 preset states \
-                 radio.indicator(DISABLED).stroke, and gpui-component dims a disabled radio's \
-                 border_color, radio.indicator(CHECKED).stroke.color checked and \
+        presets: &["adwaita"],
+        reason: "as the check box's (CheckboxLook::of border disabled): the 0.8.0 adwaita \
+                 states no radio.indicator(DISABLED).stroke, and gpui-component dims a disabled \
+                 radio's border_color, radio.indicator(CHECKED).stroke.color checked and \
                  radio.indicator(NONE).stroke.color unchecked, to half alpha \
                  (gpui-component 0.10.0 radio.rs:193-200)",
     },
     Difference {
-        leaf: "CheckboxLook::of fill disabled",
-        presets: &["adwaita", "macos-monterey", "macos-tahoe"],
-        reason: "these 0.8.0 presets state no checkbox.indicator(DISABLED).fill, so a disabled \
-                 box keeps gpui-component's own treatment (spec §10, rule 0): a checked (filled) \
-                 box's fill, checkbox.indicator(CHECKED).fill, at half alpha \
-                 (disabled_indicator_color under .when(filled, ..), gpui-component 0.10.0 \
-                 checkbox.rs:286-290, :359-362), an unchecked box's unchanged, where the 0.7.2 \
-                 look kept the enabled fill; the 0.8.0 look is compared to that home at half \
-                 alpha (Report::moved)",
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["kde-breeze"],
+        reason: "as the check box's (CheckboxLook::of border disabled, kde-breeze): no \
+                 radio.indicator(DISABLED).stroke is stated, so gpui-component dims a disabled \
+                 radio's border_color to half alpha (gpui-component 0.10.0 radio.rs:193-200); \
+                 the Disabled Highlight frame kde-breeze states for DISABLED|CHECKED \
+                 (#e3e5e7 / #1f2124, switch_disabled_on_frame) is not reached by the query \
+                 with DISABLED alone (spec §2, from_state), a spec question",
     },
     Difference {
-        leaf: "CheckboxLook::radio fill disabled",
-        presets: &["adwaita", "macos-monterey", "macos-tahoe"],
-        reason: "as the check box's (CheckboxLook::of fill disabled): these presets state no \
-                 radio.indicator(DISABLED).fill, and gpui-component dims a disabled radio's bg, \
-                 radio.indicator(CHECKED).fill checked and radio.indicator(NONE).fill \
-                 unchecked, to half alpha (gpui-component 0.10.0 radio.rs:193-200)",
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["windows-11"],
+        reason: "the 0.8.0 windows-11 states WinUI's disabled circle's outline, \
+                 RadioButtonOuterEllipseStrokeDisabled = ControlStrongStrokeColorDisabled \
+                 (RadioButton_themeresources.xaml:137, :21 at microsoft-ui-xaml 8463f45), \
+                 checked …CheckedStrokeDisabled = AccentFillColorDisabled (set at :326-330), \
+                 #37000000 / #28ffffff both (XAML's #AARRGGBB, alpha first), where the 0.7.2 \
+                 look kept the enabled border; the look reads \
+                 radio.indicator(DISABLED).stroke.color and \
+                 radio.indicator(DISABLED|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        reason: "as the check box's (CheckboxLook::of border disabled): the radio button's \
+                 indicator is the same part on these presets (macos-monterey's light circle \
+                 measured #d0d0d07c, the same run, `*.normal.radio_disabled_off` `edge_*`, the \
+                 preset stating the box's #d1d1d180 for both)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["material-3"],
+        reason: "the 0.8.0 material-3 states material-web's disabled radio's ring, \
+                 disabled-unselected-icon-color and disabled-selected-icon-color on-surface at \
+                 0.38 (_radio.scss:163-166, :180-183, _md-comp-radio-button.scss:28-33, v0_192 \
+                 at material-web cbd34a8), where the 0.7.2 look kept the enabled border; the \
+                 look reads radio.indicator(DISABLED).stroke.color",
     },
     Difference {
         leaf: "CheckboxLook::radio outline",
         presets: &["ios-13"],
         reason: "as the check box's (CheckboxLook::of outline): the radio button's indicator is the \
                  same part on ios-13",
+    },
+    Difference {
+        leaf: "CheckboxLook::of fill disabled",
+        presets: &["kde-breeze", "windows-11"],
+        reason: "0.7.2 has one disabled fill for a checked and an unchecked box; 0.8.0 states \
+                 the disabled checked box's own (native-theme/tests/next_homes.toml, row \
+                 checkbox.disabled_background, a listed difference): kde-breeze the Disabled \
+                 Button under the Disabled Highlight at 0.3, #eceded / #25272b \
+                 (breezehelper.cpp:865-869 at breeze f0b1d75; docs/platform-facts.md §2.5 \
+                 disabled_background), windows-11 AccentFillColorDisabled #37000000 / \
+                 #28FFFFFF (CheckBox_themeresources.xaml:236, :60 at microsoft-ui-xaml \
+                 8463f45); the look reads it at checkbox.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["kde-breeze", "windows-11"],
+        reason: "as the check box's (CheckboxLook::of fill disabled): the disabled checked radio's circle \
+                 is filled as the box (breezehelper.cpp:1012-1019; \
+                 RadioButtonOuterEllipseCheckedFillDisabled, RadioButton_themeresources.xaml:149, \
+                 :33)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of fill disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 states no disabled fill, so a disabled box keeps its rest or checked \
+                 fill; 0.8.0 states the measured disabled box (os-probe run 45345116763, macOS \
+                 15 and 26, `*.normal.checkbox_disabled_{off,on}` `fill`; \
+                 native-theme/tests/next_homes.toml, row checkbox.disabled_background, a listed \
+                 difference): macos-monterey #ffffff80 / #ffffff15 checked or not, macos-tahoe \
+                 #0000000d / #ffffff0d unchecked and #0076f470 / #0982ff70 checked on the \
+                 default accent; the look reads them at checkbox.indicator(DISABLED).fill and \
+                 checkbox.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of fill disabled): the disabled radio button's circle is \
+                 filled as the box (the same run, `*.normal.radio_disabled_{off,on}` `fill`)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill",
+        presets: &["material-3"],
+        reason: "0.7.2 fills a checked radio button as its check box, in primary; 0.8.0's \
+                 material-3 states material-web's radio, a ring and a dot with nothing between \
+                 them in any state (radio/internal/radio.ts:108-120, _radio.scss:109-113 at \
+                 material-web cbd34a8; native-theme/tests/next_homes.toml, row \
+                 checkbox.checked_background, a listed difference); the look reads \
+                 radio.indicator(CHECKED).fill, transparent",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio mark",
+        presets: &["material-3"],
+        reason: "0.7.2 draws the radio button's dot in on-primary, over the check box's fill; \
+                 0.8.0's material-3 states material-web's dot, in selected-icon-color primary \
+                 (radio/internal/radio.ts:119, _radio.scss:126-127, \
+                 _md-comp-radio-button.scss:45, v0_192 at material-web cbd34a8; \
+                 native-theme/tests/next_homes.toml, row checkbox.indicator_color, a listed \
+                 difference); the look reads radio.dot(CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["material-3"],
+        reason: "0.7.2 fills a disabled radio button as its check box, on-surface at 0.38; \
+                 0.8.0's material-3 states material-web's disabled radio, the ring and the dot \
+                 in on-surface at 0.38 with nothing between them (_radio.scss:163-166, \
+                 :180-183, _md-comp-radio-button.scss:28-33 at material-web cbd34a8; \
+                 native-theme/tests/next_homes.toml, row checkbox.disabled_background, a \
+                 listed difference); the look reads radio.indicator(DISABLED).fill, \
+                 transparent",
     },
     Difference {
         leaf: "SliderLook hover_thumb",
@@ -361,16 +526,6 @@ const DIFFERENCES: &[Difference] = &[
                  difference), so the look's hovered thumb is white",
     },
     Difference {
-        leaf: "SwitchLabelFont",
-        presets: &["ios-13"],
-        reason: "the 0.8.0 ios-13 states no font of switch.label (no source: iOS's switch \
-                 draws no label), so a switch's label is lettered in gpui-component's own font \
-                 (spec §10, rule 0): text_sm (input_text_size(Size::Medium)) in the window's \
-                 family and weight (gpui-component 0.10.0 switch.rs, Switch::render), where \
-                 the 0.7.2 switch took the body text's size and weight (SwitchTheme states no \
-                 label font)",
-    },
-    Difference {
         leaf: "SwitchLabelFont family and style",
         presets: &[
             "kde-breeze",
@@ -379,14 +534,258 @@ const DIFFERENCES: &[Difference] = &[
             "macos-monterey",
             "macos-tahoe",
             "material-3",
+            "ios-13",
         ],
         reason: "the 0.8.0 presets state switch.label as the platform's switch label, the \
                  body font (kde-breeze qqc2-desktop-style's control.font, adwaita \
                  AdwSwitchRow's title, windows-11 ToggleSwitch's content, macOS the body \
-                 font, material-3 Android's MaterialSwitch text), its family and slant \
+                 font, material-3 Android's MaterialSwitch text, ios-13 the list row's \
+                 UILabel in the Body text style), its family and slant \
                  included, where the 0.7.2 switch took the body text's size and weight alone \
                  and left the family and slant to the window's (SwitchTheme states no label \
                  font); the size and weight are the same",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["adwaita", "windows-11"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0 states the unchecked box's outline for HOVER \
+                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
+                 listed difference): adwaita's $trough_hover_color (_checks.scss:20-35 at \
+                 libadwaita 1.10.0), windows-11's rest ControlStrongStrokeColorDefault, which \
+                 WinUI keeps (CheckBox_themeresources.xaml:218, :42 at microsoft-ui-xaml \
+                 8463f45); so an enabled box hovers in the outline stated there, a checked one \
+                 in its checked hovered outline: on adwaita none, on windows-11 \
+                 AccentFillColorSecondary, the accent's fill at 0.9, #0067c0e6 / #4cc2ffe6 \
+                 (CheckBoxCheckBackgroundStrokeCheckedPointerOver, CheckBox_themeresources.xaml:222, \
+                 :46; Common_themeresources_any.xaml:330, :126); the look reads \
+                 checkbox.indicator(HOVER|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of outline",
+        presets: &["adwaita", "windows-11"],
+        reason: "0.7.2's adwaita and windows-11 outline a checked box in the default border \
+                 colour; 0.8.0's adwaita states none round a checked box, as libadwaita draws a checked or mixed \
+                 check with `box-shadow: none`, its only outline (_checks.scss:27, :52-56 at \
+                 libadwaita 1.10.0); windows-11 outlines it in AccentFillColorDefault, the \
+                 accent's fill, #0067c0 / #4cc2ff (CheckBoxCheckBackgroundStrokeChecked, \
+                 CheckBox_themeresources.xaml:221, :45 at microsoft-ui-xaml 8463f45) \
+                 (native-theme/tests/next_homes.toml, rows checkbox.border.color and \
+                 checkbox.unchecked_border_color, listed differences); the look reads \
+                 checkbox.indicator(CHECKED).stroke.color and checkbox.indicator(NONE).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio outline",
+        presets: &["adwaita", "windows-11"],
+        reason: "as the check box's (CheckboxLook::of outline): libadwaita's rule covers the \
+                 radio (_checks.scss:52-56), WinUI's RadioButtonOuterEllipseCheckedStroke is \
+                 AccentFillColorDefaultBrush (RadioButton_themeresources.xaml:142, :26), and \
+                 WebKit strokes the iOS radio as the box; the look reads \
+                 radio.indicator(CHECKED).stroke.color and radio.indicator(NONE).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_border",
+        presets: &["windows-11"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0's windows-11 states an unselected circle's outline for HOVER, \
+                 the rest ControlStrongStrokeColorDefault, which WinUI keeps \
+                 (RadioButtonOuterEllipseStrokePointerOver, RadioButton_themeresources.xaml:135, \
+                 :19 at microsoft-ui-xaml 8463f45), and a selected one's, \
+                 AccentFillColorSecondary, the accent's fill at 0.9, #0067c0e6 / #4cc2ffe6 \
+                 (…CheckedStrokePointerOver, :143, :27; Common_themeresources_any.xaml:330, \
+                 :126) (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, \
+                 a listed difference); the look reads radio.indicator(HOVER).stroke.color and \
+                 radio.indicator(HOVER|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of mark disabled",
+        presets: &["kde-breeze", "windows-11", "ios-13"],
+        reason: "0.7.2 draws a disabled box's mark in its disabled label colour (where a \
+                 disabled fill is stated); the 0.8.0 presets state the disabled checked or \
+                 mixed mark as the platform draws it, which the look reads at \
+                 checkbox.checkmark(DISABLED|CHECKED).color: kde-breeze palette.text() in the \
+                 Disabled group, Disabled [Colors:View] ForegroundNormal #aaabac / #606263 \
+                 (breezehelper.cpp:938, :948-952 at breeze f0b1d75; docs/platform-facts.md \
+                 §2.1.6); windows-11 TextOnAccentFillColorDisabled #FFFFFF / #87FFFFFF \
+                 (CheckBox_themeresources.xaml:248, :72, :471 at microsoft-ui-xaml 8463f45); \
+                 ios-13 WebKit's tertiaryLabel (RenderThemeIOS.mm:1410-1413, :1541-1542 at \
+                 WebKit 31adf9d)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio mark disabled",
+        presets: &["kde-breeze", "windows-11", "ios-13"],
+        reason: "as the check box's (CheckboxLook::of mark disabled), the dot at \
+                 radio.dot(DISABLED|CHECKED).fill: kde-breeze palette.text() in the Disabled \
+                 group (breezehelper.cpp:1059); windows-11 RadioButtonCheckGlyphFillDisabled, \
+                 the rest's TextOnAccentFillColorPrimary as the source names it \
+                 (RadioButton_themeresources.xaml:153, :37, :333; the Color-for-a-Brush key's \
+                 drawn result not measured); ios-13 tertiaryLabel (RenderThemeIOS.mm:1578-1579)",
+    },
+    Difference {
+        leaf: "SwitchLook::label_gap",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 has no switch label, so the look has no gap; the 0.8.0 macOS presets \
+                 state switch.label_gap, SwiftUI's switch Toggle's, 8 (os-probe run \
+                 45210835145, macOS 15 and 26, `switch-label.toml` `[[item]] toggle_off` \
+                 fitting width 33 + 8 + the switch, \
+                 docs/evidence/os-probe/2026-11-23-run-45210835145/ on m2-fs4d)",
+    },
+    Difference {
+        leaf: "TabLook::hover",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macos-monterey states tab.hover_background #e8e8ed / #3a3a3c, \
+                 uncited, macos-tahoe leaves it unset; the 0.8.0 presets state \
+                 tab.tab(HOVER).fill, the tab's measured rest fill, as AppKit draws a hovered \
+                 tab as at rest (os-probe run 45198750893, macOS 15 and 26, `*.hovered.tab` \
+                 differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row tab.hover_background, a listed \
+                 difference), drawn over the bar",
+    },
+    Difference {
+        leaf: "TabLook::idle",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS presets give an unselected tab the window's background \
+                 (uncited); the 0.8.0 presets state tab.tab(NONE).fill, NSTabView's measured \
+                 unselected tab, #0000000d / #ffffff0d on macos-monterey, #00000013 / \
+                 #ffffff13 on macos-tahoe (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.tab` `fill`, docs/evidence/os-probe/2026-11-23-run-45252258079/ on \
+                 m2-fs4c; native-theme/tests/next_homes.toml, row tab.background_color, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "TabLook::active",
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe gives a selected tab the window's background and the body \
+                 text (uncited); the 0.8.0 preset states tab.tab(SELECTED).fill and \
+                 tab.label(SELECTED).color, NSTabView's measured selected tab on macOS 26, on \
+                 the accent #0077f9 / #077dff, lettered white (os-probe run 45252258079, Reduce \
+                 Transparency off, `*.normal.tab_One` `fill`, `label`; \
+                 native-theme/tests/next_homes.toml, rows tab.active_background and \
+                 tab.active_text_color, listed differences)",
+    },
+    Difference {
+        leaf: "TabLook::active",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey gives a selected tab the window's background and the \
+                 body text (uncited); the 0.8.0 preset states tab.tab(SELECTED).fill and \
+                 tab.label(SELECTED).color, NSTabView's measured selected tab on macOS 15, \
+                 #ffffff / #ffffff49 lettered #262626 / #ffffffd9 (os-probe run 45252258079, \
+                 Reduce Transparency off, `*.normal.tab_One` `fill`, `label`; \
+                 native-theme/tests/next_homes.toml, rows tab.active_background and \
+                 tab.active_text_color, listed differences)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \
+                 uncited; the 0.8.0 preset states checkbox.indicator(HOVER).fill, the check \
+                 box's rest fill, as AppKit draws a hovered check box as at rest (os-probe run \
+                 45198750893, macOS 15, `*.hovered.checkbox_off` differs from the normal \
+                 capture in 0 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on \
+                 m2-fs4c; native-theme/tests/next_homes.toml, row checkbox.hover_background, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \
+                 uncited, for the radio button too; the 0.8.0 preset states no rule for \
+                 radio.indicator(HOVER).fill (not measured; the check box measured in the same \
+                 run draws hovered as at rest, os-probe run 45198750893, macOS 15, \
+                 `*.hovered.checkbox_off` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed \
+                 difference, \"unstated\" there), so the look's hovered fill is the rest fill \
+                 radio.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 states checkbox.hover_background #d1d1d6 / #3a3a3c, uncited; \
+                 the 0.8.0 preset states no fill for checkbox.indicator(HOVER), as WebKit's iOS \
+                 checkboxRadioBackgroundColor reads no hover state (RenderThemeIOS.mm:1370-1395 \
+                 at WebKit 31adf9d; native-theme/tests/next_homes.toml, row \
+                 checkbox.hover_background, a listed difference, \"unstated\" there), so the \
+                 look's hovered fill is the rest fill checkbox.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of hover_fill): WebKit draws the radio \
+                 button's circle by the same checkboxRadioBackgroundColor, so the look's \
+                 hovered fill is the rest fill radio.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states checkbox.hover_background #d5d5d5 / #464649, \
+                 uncited; the 0.8.0 preset states checkbox.indicator(HOVER).fill, the rest \
+                 fill #ffffff / #303034, as libadwaita changes only the outline of an unchecked \
+                 check under the pointer (`&:not(:checked):not(:indeterminate) { &:hover { \
+                 box-shadow: inset 0 0 0 2px $trough_hover_color; } }`, _checks.scss:33-40 at \
+                 libadwaita 1.10.0; native-theme/tests/next_homes.toml, row \
+                 checkbox.hover_background, a listed difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["adwaita"],
+        reason: "as the check box's (CheckboxLook::of hover_fill): libadwaita's rule is the \
+                 same for `check, radio`, so radio.indicator(HOVER).fill is the rest fill",
+    },
+    Difference {
+        leaf: "SliderLook thumb_color",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
+                 defaults.surface_color, #f2f2f7 / #1c1c1e; the 0.8.0 preset states UISlider's \
+                 thumb as measured, white in both schemes, slider.thumb(NONE).fill (ios-host \
+                 run 45230061151, iOS 18.6, `measure_lists.toml` `press1.\"<a>\".slider.normal` \
+                 `fill` #ffffffff, docs/evidence/ios-host/2026-11-23-run-45230061151/ on \
+                 m2-fs4d; native-theme/tests/next_homes.toml, row slider.thumb_color, a listed \
+                 difference)",
+    },
+    Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states switch.hover_unchecked_background #c8c8cd / \
+                 #4a4a4c, uncited; the 0.8.0 preset states switch.track(HOVER).fill, the off \
+                 track's rest fill, as AppKit draws a hovered switch as at rest (os-probe run \
+                 45208260830, macOS 15, `*.hovered.switch_off` differs from the normal capture \
+                 in 0 pixels, docs/evidence/os-probe/2026-11-23-run-45208260830/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row switch.hover_unchecked_background, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states switch.hover_checked_background #2e78cc, uncited; the \
+                 0.8.0 preset states switch.track(HOVER|CHECKED).fill, libadwaita's hover layer \
+                 over the on track, currentColor, the accent's text, at 10 % over the accent, \
+                 the whole hovered fill (`switch:checked { &:hover { background-image: \
+                 image(color-mix(in srgb, currentColor 10%, transparent)); } }`, \
+                 _switch.scss:41-45 at libadwaita 1.10.0; native-theme/tests/next_homes.toml, \
+                 row switch.hover_checked_background, a listed difference)",
+    },
+    Difference {
+        leaf: "SliderLook hover_thumb",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states slider.thumb_hover_color #e0e0e0 (light), \
+                 uncited; the 0.8.0 preset states slider.thumb(HOVER).fill, the knob's rest \
+                 fill, as AppKit draws a hovered knob as at rest (os-probe run 45198750893, \
+                 macOS 15, `*.hovered.slider_knob` differs from the normal capture in 0 \
+                 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
+                 difference)",
+    },
+    Difference {
+        leaf: "ThemeSource::focus_ring inner",
+        presets: &["windows-11"],
+        reason: "0.7.2 states no second ring; the 0.8.0 windows-11 states WinUI's focus visual \
+                 with its 1 px inner ring in FocusStrokeColorInner, #b3ffffff / #b3000000 \
+                 (platform-facts.md §2.1.5, focus_ring_color and focus_ring_offset; \
+                 FocusVisualSecondaryThickness 1, ListViewItem_themeresources.xaml:252 at \
+                 microsoft-ui-xaml 8463f45), which the ring reads at \
+                 focus_ring.inner_stroke",
     },
 ];
 
@@ -781,17 +1180,44 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         SpinnerLook::next_of(&new),
     );
     let (old_tab, new_tab) = (TabLook::of(&old), TabLook::next_of(&new));
-    // The hover fill apart, so a listed difference of it leaves the rest of
-    // the look compared.
+    // The hover and rest fills apart, so a listed difference of either
+    // leaves the rest of the look compared.
     let unhovered = |look: TabLook| TabLook {
         hover: gpui::transparent_black(),
+        idle: gpui::transparent_black(),
+        active: gpui::transparent_black(),
+        active_text: gpui::transparent_black(),
         ..look
     };
+    r.moved(
+        "TabLook::active",
+        "",
+        old_tab.map(|look| (look.active, look.active_text)),
+        new_tab.map(|look| (look.active, look.active_text)),
+        fill(
+            &new.tab.tab(WidgetState::SELECTED),
+            "tab.tab(SELECTED).fill",
+        )
+        .and_then(|fill| {
+            crate::next::text_color(
+                &new.tab.label(WidgetState::SELECTED),
+                "tab.label(SELECTED).color",
+            )
+            .map(|text| (fill, text))
+        }),
+    );
     r.leaf(
         "TabLook",
         "",
         old_tab.map(unhovered),
         new_tab.map(unhovered),
+    );
+    r.moved(
+        "TabLook::idle",
+        "",
+        old_tab.map(|look| look.idle),
+        new_tab.map(|look| look.idle),
+        fill(&new.tab.tab(WidgetState::NONE), "tab.tab(NONE).fill"),
     );
     r.moved(
         "TabLook::hover",
@@ -806,9 +1232,10 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             SliderLook::of(&old, disabled),
             SliderLook::next_of(&new, disabled),
         );
-        // The hovered thumb apart, so a listed difference of it leaves the
-        // rest of the look compared.
+        // The thumb's fill and the hovered thumb apart, so a listed
+        // difference of either leaves the rest of the look compared.
         let unhovered = |look: SliderLook| SliderLook {
+            thumb_color: gpui::transparent_black(),
             hover_thumb: None,
             ..look
         };
@@ -817,6 +1244,20 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             &state,
             old_slider.map(unhovered),
             new_slider.map(unhovered),
+        );
+        // `SliderLook::next_of`: the thumb's fill, at `DISABLED` where the
+        // slider is disabled.
+        let thumb_state = if disabled {
+            WidgetState::DISABLED
+        } else {
+            WidgetState::NONE
+        };
+        r.moved(
+            "SliderLook thumb_color",
+            &state,
+            old_slider.map(|look| look.thumb_color),
+            new_slider.map(|look| look.thumb_color),
+            fill(&new.slider.thumb(thumb_state), "slider.thumb(shown).fill"),
         );
         r.moved(
             "SliderLook hover_thumb",
@@ -924,23 +1365,18 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             // listed difference of it leaves the rest of the look compared; disabled its colour
             // on its own, which the 0.8.0
             // look dims where no rule states the disabled stroke.
+            // Enabled, the fill and the mark apart too, and the whole control's opacity, so a
+            // listed difference of one leaves the rest of the look compared.
             let unframed = |look: CheckboxLook| CheckboxLook {
                 hover_border: None,
                 hover_fill: None,
                 label: gpui::transparent_black(),
-                mark: if disabled {
-                    gpui::transparent_black()
-                } else {
-                    look.mark
-                },
+                mark: gpui::transparent_black(),
                 border: gpui::transparent_black(),
                 border_width: px(0.),
                 mark_size: px(0.),
-                fill: if disabled {
-                    gpui::transparent_black()
-                } else {
-                    look.fill
-                },
+                fill: gpui::transparent_black(),
+                opacity: 1.,
                 ..look
             };
             let outline = |look: CheckboxLook| {
@@ -982,6 +1418,45 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                     if radio { radio_name } else { name }
                 };
                 r.leaf(look, &state, old_look.map(unframed), new_look.map(unframed));
+                if !disabled {
+                    r.moved(
+                        leaf("CheckboxLook::of fill", "CheckboxLook::radio fill"),
+                        &state,
+                        old_look.map(|look| look.fill),
+                        new_look.map(|look| look.fill),
+                        fill(&indicator(shown(checked)), "indicator(shown).fill"),
+                    );
+                    r.moved(
+                        leaf("CheckboxLook::of mark", "CheckboxLook::radio mark"),
+                        &state,
+                        old_look.map(|look| look.mark),
+                        new_look.map(|look| look.mark),
+                        if radio {
+                            fill(
+                                &new.radio.dot(WidgetState::CHECKED),
+                                "radio.dot(CHECKED).fill",
+                            )
+                        } else {
+                            Ok(crate::next::hsla(
+                                new.checkbox.checkmark(WidgetState::CHECKED).color,
+                            ))
+                        },
+                    );
+                }
+                r.moved(
+                    leaf("CheckboxLook::of opacity", "CheckboxLook::radio opacity"),
+                    &state,
+                    old_look.map(|look| look.opacity),
+                    new_look.map(|look| look.opacity),
+                    Ok(super::next_disabled_opacity(
+                        disabled,
+                        if radio {
+                            new.radio.disabled_opacity
+                        } else {
+                            new.checkbox.disabled_opacity
+                        },
+                    )),
+                );
                 r.moved(
                     leaf("CheckboxLook::of outline", "CheckboxLook::radio outline"),
                     &state,
@@ -1082,25 +1557,42 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                         "radio.indicator(DISABLED|shown).fill",
                     ),
                 );
+                // The border disabled: the stroke a rule states for `DISABLED` (at the checked
+                // state), else the enabled one at half alpha, as gpui-component dims it.
+                let disabled_border =
+                    |indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+                     home: &'static str,
+                     stated_home: &'static str| {
+                        if indicator(WidgetState::DISABLED)
+                            .from_state
+                            .contains(native_theme::next::PartStated::STROKE)
+                        {
+                            stroke_color(&indicator(WidgetState::DISABLED | shown), stated_home)
+                        } else {
+                            dimmed(stroke_color(&indicator(shown), home))
+                        }
+                    };
                 r.moved(
                     "CheckboxLook::of border disabled",
                     &state,
                     old_box.map(|look| look.border),
                     new_box.map(|look| look.border),
-                    dimmed(stroke_color(
-                        &new.checkbox.indicator(shown),
+                    disabled_border(
+                        &|s| new.checkbox.indicator(s),
                         "checkbox.indicator(shown).stroke.color",
-                    )),
+                        "checkbox.indicator(DISABLED|shown).stroke.color",
+                    ),
                 );
                 r.moved(
                     "CheckboxLook::radio border disabled",
                     &state,
                     old_radio.map(|look| look.border),
                     new_radio.map(|look| look.border),
-                    dimmed(stroke_color(
-                        &new.radio.indicator(shown),
+                    disabled_border(
+                        &|s| new.radio.indicator(s),
                         "radio.indicator(shown).stroke.color",
-                    )),
+                        "radio.indicator(DISABLED|shown).stroke.color",
+                    ),
                 );
                 // The mark disabled: the one a rule states for `DISABLED`, else the
                 // enabled one at half alpha, as gpui-component dims a disabled mark.
@@ -1164,11 +1656,32 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         o.background(),
         given(n.background()),
     );
+    // The second ring apart, so a listed difference of it leaves the rest of the ring compared.
+    let (old_ring, new_ring) = (
+        FocusRing::of(&old),
+        FocusRing::next_of(&new).and_then(given),
+    );
+    let outer = |ring: FocusRing| FocusRing {
+        inner: None,
+        ..ring
+    };
     r.leaf(
         "ThemeSource::focus_ring",
         "",
-        FocusRing::of(&old),
-        FocusRing::next_of(&new).and_then(given),
+        old_ring.map(outer),
+        new_ring.map(outer),
+    );
+    r.moved(
+        "ThemeSource::focus_ring inner",
+        "",
+        old_ring.map(|ring| ring.inner),
+        new_ring.map(|ring| ring.inner),
+        match &new.focus_ring.inner_stroke {
+            native_theme::next::Stroke::Uniform { width, color, .. } => {
+                Ok(Some((crate::next::hsla(*color), *width)))
+            }
+            _ => Ok(None),
+        },
     );
     r.leaf(
         "ThemeSource::keyboard_only",

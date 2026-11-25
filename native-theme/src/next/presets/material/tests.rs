@@ -48,6 +48,53 @@ fn a_primary_button_keeps_the_accent_until_disabled() {
     }
 }
 
+/// The flat button, M3's text button: no container and no outline at rest;
+/// hovered and pressed primary at the state layer's opacities, disabled the
+/// on-surface container at the text button's disabled opacity; its label
+/// primary, disabled on-surface at the disabled content opacity; each stated
+/// for its state.
+#[test]
+fn a_flat_button_is_the_text_button() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes().iter().zip([LIGHT, DARK]) {
+        let query = |state| ButtonQuery::flat().state(state);
+        let rest = theme.button.body(query(WidgetState::NONE));
+        assert_eq!(rest.fill, Paint::Solid(TRANSPARENT));
+        assert_eq!(rest.stroke, Stroke::None);
+        for (state, want) in [
+            (
+                WidgetState::HOVER,
+                c.primary.mul_alpha(HOVER_STATE_LAYER_OPACITY),
+            ),
+            (
+                WidgetState::PRESSED,
+                c.primary.mul_alpha(PRESSED_STATE_LAYER_OPACITY),
+            ),
+            (
+                WidgetState::DISABLED,
+                c.on_surface
+                    .mul_alpha(TEXT_BUTTON_DISABLED_CONTAINER_OPACITY),
+            ),
+        ] {
+            let body = theme.button.body(query(state));
+            assert_eq!(body.fill, Paint::Solid(want), "{state:?}");
+            assert_eq!(body.stroke, Stroke::None, "{state:?}");
+            assert!(body.from_state.contains(PartStated::FILL), "{state:?}");
+        }
+        for state in [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED] {
+            assert_eq!(
+                theme.button.label(query(state)).color,
+                c.primary,
+                "{state:?}"
+            );
+        }
+        assert_eq!(
+            theme.button.label(query(WidgetState::DISABLED)).color,
+            c.on_surface.mul_alpha(DISABLED_CONTENT_OPACITY)
+        );
+    }
+}
+
 /// The focused text field's outline wins over the hovered one.
 #[test]
 fn a_focused_field_keeps_its_outline_under_the_pointer() {
@@ -80,6 +127,49 @@ fn the_switch_s_thumb_grows_when_on() {
                 .fill,
             theme.switch.thumb(WidgetState::DISABLED).fill
         );
+    }
+}
+
+/// The line between segments is their shared outline, outline-color =
+/// outline at outline-width 1 (v0_192/_md-comp-outlined-segmented-button.scss:65-66).
+#[test]
+fn the_segments_are_parted_by_their_outline() {
+    for theme in both_schemes() {
+        let outline = match theme.context.scheme {
+            Scheme::Dark => DARK.outline,
+            _ => LIGHT.outline,
+        };
+        assert_eq!(
+            theme.segmented_control.separator(WidgetState::NONE).fill,
+            Paint::Solid(outline)
+        );
+        assert_eq!(theme.segmented_control.separator_width, 1.0);
+    }
+}
+
+/// A disabled radio's ring is on-surface at 0.38, checked or not, under the
+/// pointer or pressed too: material-web fills the whole icon with
+/// disabled-unselected-icon-color / disabled-selected-icon-color at their
+/// 0.38 opacity (_radio.scss:163-166, :180-183;
+/// v0_192/_md-comp-radio-button.scss:28-33).
+#[test]
+fn a_disabled_radio_s_ring_takes_the_disabled_content_checked_or_not() {
+    for theme in both_schemes() {
+        let disabled_content = match theme.context.scheme {
+            Scheme::Dark => DARK.disabled_content,
+            _ => LIGHT.disabled_content,
+        };
+        let ring = Stroke::uniform(CHECKBOX_BORDER_WIDTH, disabled_content);
+        let disabled = WidgetState::DISABLED;
+        for state in [
+            disabled,
+            disabled | WidgetState::HOVER,
+            disabled | WidgetState::PRESSED,
+            disabled | WidgetState::CHECKED,
+            disabled | WidgetState::CHECKED | WidgetState::HOVER,
+        ] {
+            assert_eq!(theme.radio.indicator(state).stroke, ring, "{state:?}");
+        }
     }
 }
 

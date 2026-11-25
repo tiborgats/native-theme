@@ -126,13 +126,73 @@ const DIFFERENCES: &[Difference] = &[
                  switch::Look.text's entry gives it; in dark both are white",
     },
     Difference {
+        leaf: "switch::Look.disabled_text",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 macOS presets state the disabled switch label (switch.label(DISABLED)) \
+                 in labelColor as at rest, #000000d8 / #ffffffd8, the measured SwiftUI \
+                 Toggle's (os-probe run 45210835145, switch-label-macos-{15,26}/measure.toml \
+                 `*.normal.toggle_*_disabled` within 3 levels of the labelColor reference)",
+    },
+    Difference {
+        leaf: "switch::Look.disabled_text",
+        presets: &["ios-13"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 ios-13 states the disabled switch label (switch.label(DISABLED)) in the \
+                 label colour as at rest, #000000 / #ffffff, the list row's UILabel beside a \
+                 disabled UISwitch (ios-host run 45230061151, iOS 18.6, measure_lists.toml \
+                 `run1.\"<a>\".switch_row.disabled` `label_text_color`)",
+    },
+    Difference {
         leaf: "switch::Look.hover_text",
-        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        presets: &["ios-13"],
         reason: "0.7.2 has no switch label and lettered a hovered one in its rest colour; the \
-                 0.8.0 presets state no hovered switch label, so the switch letters it in \
-                 egui's own hovered label colour, the scope's widgets.hovered.fg_stroke, as \
-                 egui's Checkbox does (spec §10, rule 0); \
+                 0.8.0 ios-13 states no hovered switch label (no pointer on an iPhone), so the \
+                 switch letters it in egui's own hovered label colour, the scope's \
+                 widgets.hovered.fg_stroke, as egui's Checkbox does (spec §10, rule 0); \
                  next_drawn::an_unstated_hovered_switch_label_is_egui_s_own",
+    },
+    Difference {
+        leaf: "switch::Look.hover_checked_background",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states an uncited switch.hover_checked_background; 0.8.0's \
+                 adwaita states libadwaita's hovered on track, currentColor (the accent's text) \
+                 at 10 % over the accent, #4990e7 (`&:checked { &:hover … }`, _switch.scss:41-46, \
+                 _checks.scss:58 at libadwaita 1.10.0), the whole fill the look takes as it is \
+                 (spec §9, step 2)",
+    },
+    Difference {
+        leaf: "switch::Look.hover_unchecked_background",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states an uncited hover fill (#c8c8cd / #4a4a4c); \
+                 0.8.0's states the hovered off track as at rest (os-probe runs 45208260830, \
+                 macOS 15, and 45217592058, macOS 26: `*.hovered.switch_off` differs from the \
+                 normal capture in 0 pixels), so the hovered track paints its rest fill",
+    },
+    Difference {
+        leaf: "segmented_control::Look.hover",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states an uncited hover fill (#e0e0e5 / #444446); \
+                 0.8.0's states no hovered fill of a segment's own, the hovered segment \
+                 differing from its normal capture in 0 pixels (os-probe run 45208260830, \
+                 `*.hovered.segment`, macOS 15 and 26), so the hovered segment paints its rest \
+                 fill",
+    },
+    Difference {
+        leaf: "slider::Look.thumb_hover_color",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states an uncited hover fill (#e0e0e0); 0.8.0's states \
+                 the hovered knob as at rest (os-probe runs 45198750893, macOS 15, and \
+                 45217592058, macOS 26: `*.hovered.slider_knob` differs from the normal capture \
+                 in 0 pixels), so the hovered knob paints its rest fill",
+    },
+    Difference {
+        leaf: "slider::Look.thumb_color",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 states no slider.thumb_color, which its resolver fills in \
+                 (#f2f2f7 / #1c1c1e); 0.8.0's states the \
+                 measured thumb, white in both schemes (ios-host run 45230061151, iOS 18.6, \
+                 measure_lists.toml `press1.\"<a>\".slider.normal` `fill`)",
     },
     Difference {
         leaf: "switch::Look.pressed_text",
@@ -141,15 +201,6 @@ const DIFFERENCES: &[Difference] = &[
                  window's text, #2e3436 in light; the 0.8.0 adwaita states the pressed label \
                  (switch.label(PRESSED)), #000005cc in light, AdwSwitchRow's title as \
                  switch::Look.text's entry gives it; in dark both are white",
-    },
-    Difference {
-        leaf: "switch::Look.pressed_text",
-        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
-        reason: "0.7.2 has no switch label and lettered a pressed one in its rest colour; the \
-                 0.8.0 presets state no pressed switch label, so the switch letters it in \
-                 egui's own pressed label colour, the scope's widgets.active.fg_stroke, as \
-                 egui's Checkbox does (spec §10, rule 0); \
-                 next_drawn::an_unstated_pressed_switch_label_is_egui_s_own",
     },
     Difference {
         leaf: "switch::Geometry.label_gap",
@@ -164,6 +215,15 @@ const DIFFERENCES: &[Difference] = &[
                  microsoft-ui-xaml 8463f45): next_drawn lists both",
     },
     Difference {
+        leaf: "switch::Geometry.label_gap",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 has no switch label gap, so the label lies at the scope's own \
+                 icon_spacing; the 0.8.0 macOS presets state 8, the measured SwiftUI Toggle's \
+                 label 8 px before its switch (os-probe run 45210835145, macOS 15 and 26, \
+                 switch-label.toml `[[item]] toggle_off` fitting width 33 + 8 + the switch): \
+                 next_drawn lists the drawn switch",
+    },
+    Difference {
         leaf: "switch::Geometry.label_size",
         presets: &[
             "kde-breeze",
@@ -172,12 +232,16 @@ const DIFFERENCES: &[Difference] = &[
             "macos-monterey",
             "macos-tahoe",
             "material-3",
+            "ios-13",
         ],
         reason: "0.7.2's SwitchTheme states no label font, so the label is lettered in the \
                  scope's own size; the 0.8.0 presets state switch.label as the platform's \
                  switch label, the body font (kde-breeze qqc2-desktop-style's control.font, \
                  adwaita AdwSwitchRow's title, windows-11 ToggleSwitch's content, macOS the \
-                 body font, material-3 Android's MaterialSwitch text), the size the scope's \
+                 body font, material-3 Android's MaterialSwitch text, ios-13 the list row's \
+                 UILabel beside a UISwitch in the Body text style, 17 pt, ios-host run \
+                 45230061151 measure_lists.toml `run1.\"<a>\".switch_row.normal` \
+                 `label_font`), the size the scope's \
                  own is: drawn alike, next_drawn::the_switch_draws_alike_from_both_models",
     },
     Difference {

@@ -38,6 +38,67 @@ fn system(accent: Option<Color>) -> SystemOverrides {
     }
 }
 
+/// The flat button draws Breeze's flat frame: nothing at rest and disabled;
+/// hovered a Highlight pen; checked ButtonText at FLAT_CHECKED_ALPHA in the
+/// button's pen; pressed the toolbar's pressed fill in a Highlight pen; checked
+/// and disabled the Disabled group's ButtonText at FLAT_CHECKED_ALPHA in the
+/// mix of the Disabled Button and ButtonText (breezehelper.cpp:665-712 at
+/// breeze 6.8.2), #a8a9aa / #6d6f72 at 0x20 (platform-facts.md §2.1.6).
+#[test]
+fn a_flat_button_draws_breeze_s_flat_frame() {
+    let pen = |stroke: &Stroke| match stroke {
+        Stroke::Uniform { color, .. } => Some(*color),
+        _ => None,
+    };
+    for (ctx, c, disabled_checked) in [
+        (ThemeContext::light(), LIGHT, 0xa8a9_aa20),
+        (ThemeContext::dark(), DARK, 0x6d6f_7220),
+    ] {
+        let theme = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let of = |state: WidgetState| {
+            let body = theme.button.body(ButtonQuery::flat().state(state));
+            (body.fill, pen(&body.stroke))
+        };
+        let (checked, disabled) = (WidgetState::CHECKED, WidgetState::DISABLED);
+        assert_eq!(of(WidgetState::NONE), (Paint::None, None));
+        assert_eq!(of(disabled), (Paint::None, None));
+        assert_eq!(of(disabled | WidgetState::HOVER), (Paint::None, None));
+        assert_eq!(
+            of(WidgetState::HOVER),
+            (
+                Paint::Solid(TOOLBAR_BUTTON_HOVER_BACKGROUND),
+                Some(c.selection_background)
+            )
+        );
+        assert_eq!(
+            of(checked),
+            (Paint::Solid(c.toolbar_button_checked), Some(c.button_frame))
+        );
+        assert_eq!(
+            of(WidgetState::PRESSED),
+            (
+                Paint::Solid(c.toolbar_button_pressed),
+                Some(c.selection_background)
+            )
+        );
+        assert_eq!(
+            of(checked | disabled),
+            (
+                Paint::Solid(srgb8(disabled_checked)),
+                Some(mix(
+                    c.button_disabled_background,
+                    c.button_disabled_foreground,
+                    c.frame_contrast
+                ))
+            )
+        );
+        assert_eq!(
+            of(checked | disabled | WidgetState::HOVER),
+            of(checked | disabled)
+        );
+    }
+}
+
 #[test]
 fn a_portal_accent_replaces_the_accent_and_the_selection_but_not_the_kde_frames() {
     for (accent, fill, selection) in [
@@ -279,6 +340,15 @@ fn both_schemes() -> [ResolvedTheme; 2] {
         .map(|ctx| Theme::preset(Preset::KdeBreeze).resolve(&ctx))
 }
 
+/// A popover is rounded as qqc2-desktop-style's Popup rounds it,
+/// `Kirigami.Units.cornerRadius` (5).
+#[test]
+fn a_popover_is_rounded_by_the_popup_s_radius() {
+    for theme in both_schemes() {
+        assert_eq!(theme.popover.panel.corners, Corners::uniform(5.0));
+    }
+}
+
 #[test]
 fn a_primary_button_keeps_the_accent_fill_when_pressed_checked_or_default() {
     for theme in both_schemes() {
@@ -419,6 +489,42 @@ fn a_checked_toolbar_button_keeps_its_fill_and_takes_the_hover_outline() {
             theme.toolbar.button(pressed_hover),
             theme.toolbar.button(WidgetState::PRESSED),
             "{scheme:?}"
+        );
+    }
+}
+
+/// A toolbar button is rounded as Breeze rounds a tool button's frame, the
+/// push button's (5), in every state.
+#[test]
+fn a_toolbar_button_is_rounded_as_the_push_button_s_frame() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                theme.toolbar.button(state).corners,
+                Corners::uniform(5.0),
+                "{scheme:?} {state:?}"
+            );
+        }
+    }
+}
+
+/// The tool bar states no corners: Breeze draws no frame round it
+/// (platform-facts.md (§2.13), `border.corner_radius` none).
+#[test]
+fn the_toolbar_states_no_corners() {
+    for theme in both_schemes() {
+        let bar = theme.toolbar.bar(WidgetState::NONE);
+        assert!(
+            !bar.stated.contains(PartStated::CORNERS),
+            "{:?}",
+            theme.context.scheme
         );
     }
 }
@@ -923,18 +1029,41 @@ fn an_open_menu_bar_title_is_filled_over_a_hovered_one() {
     );
 }
 
-/// A pressed menu item is filled in the opaque focus colour and keeps the
-/// hover outline; a hovered selected tab keeps the selected tab's fill.
+/// A pressed menu item, asked with `PRESSED` alone (spec §2, `from_state`),
+/// is filled in the opaque focus colour and outlined in it at the hover
+/// outline's width, by a rule for `PRESSED`, and so under the pointer too;
+/// a hovered selected tab keeps the selected tab's fill.
 #[test]
 fn pressed_and_selected_fills_win_over_hover() {
     for theme in both_schemes() {
         let scheme = theme.context.scheme;
-        let pressed = theme
-            .menu
-            .item(WidgetState::HOVER.union(WidgetState::PRESSED));
+        let pressed = theme.menu.item(WidgetState::PRESSED);
         let hovered = theme.menu.item(WidgetState::HOVER);
         assert_ne!(pressed.fill, hovered.fill, "{scheme:?}");
-        assert_eq!(pressed.stroke, hovered.stroke, "{scheme:?}");
+        let hover_width = match hovered.stroke {
+            Stroke::Uniform { width, .. } => Some(width),
+            _ => None,
+        };
+        assert_eq!(
+            Some(pressed.stroke.clone()),
+            hover_width
+                .zip(solid(&pressed.fill))
+                .map(|(width, focus)| Stroke::uniform(width, focus)),
+            "{scheme:?}"
+        );
+        assert!(
+            pressed
+                .from_state
+                .contains(PartStated::FILL | PartStated::STROKE),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .menu
+                .item(WidgetState::HOVER.union(WidgetState::PRESSED)),
+            pressed,
+            "{scheme:?}"
+        );
         let selected = WidgetState::SELECTED;
         assert_eq!(
             theme.tab.tab(selected.union(WidgetState::HOVER)).fill,
@@ -1503,6 +1632,7 @@ const KEPT: &[Field] = &[
     ("button_disabled_foreground", |c| {
         c.button_disabled_foreground
     }),
+    ("checkbox_disabled_checked", |c| c.checkbox_disabled_checked),
     ("checkbox_disabled_foreground", |c| {
         c.checkbox_disabled_foreground
     }),

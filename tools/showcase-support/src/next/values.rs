@@ -699,8 +699,9 @@ const UNITLESS: [&str; 8] = [
 /// for a field named `_ms`, `px` for one named `_px`; a font's source size
 /// in the unit it names (`defined_size.pt`); `px` for an icon size
 /// (`icons.sizes.*`), a padding's or a margin's side, a stroke's width, a
-/// caret's width and every name in `LENGTHS`; none for the names in
-/// `UNITLESS`. An error for any other name.
+/// caret's width, the radius of corners in the serialised form's `{ radius,
+/// curve }` (`CornerRadius`, in logical pixels) and every name in
+/// `LENGTHS`; none for the names in `UNITLESS`. An error for any other name.
 pub fn unit_of(segments: &[&str]) -> Result<Option<&'static str>, String> {
     let named: Vec<&str> = segments
         .iter()
@@ -720,6 +721,7 @@ pub fn unit_of(segments: &[&str]) -> Result<Option<&'static str>, String> {
         (Some("sizes"), _) => Some("px"),
         (Some("padding" | "margin"), "top" | "right" | "bottom" | "left") => Some("px"),
         (Some("stroke" | "caret"), "width") => Some("px"),
+        (Some("corners"), "radius") => Some("px"),
         (_, name) if LENGTHS.contains(&name) => Some("px"),
         (_, name) if UNITLESS.contains(&name) => None,
         _ => {

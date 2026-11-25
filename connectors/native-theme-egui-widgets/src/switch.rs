@@ -168,11 +168,12 @@ impl Geometry {
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
         let sw = &r.switch;
         let label = sw.label(WidgetState::NONE);
-        let label_size = if label.stated.contains(TextStated::SIZE_PX) {
-            Some(scope::length(label.size_px).filter(|size| *size > 0.0)?)
-        } else {
-            None
-        };
+        let label_size = Self::label_size(
+            label
+                .stated
+                .contains(TextStated::SIZE_PX)
+                .then_some(label.size_px),
+        )?;
         let track = sw.track(WidgetState::NONE);
         let rest_thumb = sw.thumb(WidgetState::NONE);
         let checked_thumb = sw.thumb(WidgetState::CHECKED);
@@ -202,6 +203,16 @@ impl Geometry {
             leading: sw.label_side == Some(LabelSide::Leading),
             stretches: sw.label_gap_stretches == Some(true),
         })
+    }
+
+    /// The label's size of the size the theme states of `switch.label(NONE)`, `stated`:
+    /// `Some(None)` where it states none, egui's own; `None` where it states one that is not a
+    /// positive finite number, which sends the switch to egui's own counterpart.
+    pub(crate) fn label_size(stated: Option<f32>) -> Option<Option<f32>> {
+        match stated {
+            Some(size) => Some(Some(scope::length(size).filter(|size| *size > 0.0)?)),
+            None => Some(None),
+        }
     }
 
     /// The geometry as the switch paints it, so two that paint alike compare equal: an outline
@@ -319,6 +330,12 @@ impl Look {
             WidgetState::DISABLED | WidgetState::CHECKED,
         );
         let hover = track(WidgetState::HOVER);
+        let (text, disabled_text) = Self::label_colors(
+            next::text_color_of(&sw.label(WidgetState::NONE)),
+            next::state_text_color_of(&sw.label(off)),
+            next::body_text(r),
+            next::disabled_text_color(r),
+        );
         Some(Self {
             checked_background: next::fill_of(&track(on))?,
             hover_checked_background: next::ruled_fill(
@@ -339,15 +356,25 @@ impl Look {
             disabled_checked_track_border_color: next::stroke_color_of(&track(off_on)),
             thumb_border_color: next::stroke_color_of(&thumb(WidgetState::NONE)),
             checked_thumb_border_color: next::stroke_color_of(&thumb(on)),
-            text: next::text_color_of(&sw.label(WidgetState::NONE)).or_else(|| next::body_text(r)),
+            text,
             hover_text: next::state_text_color_of(&sw.label(WidgetState::HOVER)),
             pressed_text: next::state_text_color_of(&sw.label(WidgetState::PRESSED)),
-            disabled_text: Some(
-                next::state_text_color_of(&sw.label(off))
-                    .unwrap_or_else(|| next::disabled_text_color(r)),
-            ),
+            disabled_text: Some(disabled_text),
             background: next::window_background(r),
         })
+    }
+
+    /// The label's colours at rest and disabled of what the theme states of them: `stated`,
+    /// `switch.label(NONE)`'s colour, else `body`, the body text's (`typography.body.color`);
+    /// `stated_disabled`, the colour a rule for `DISABLED` states of `switch.label`, else
+    /// `disabled`, the theme's disabled text (`colors.disabled_text`).
+    pub(crate) fn label_colors(
+        stated: Option<egui::Color32>,
+        stated_disabled: Option<egui::Color32>,
+        body: Option<egui::Color32>,
+        disabled: egui::Color32,
+    ) -> (Option<egui::Color32>, egui::Color32) {
+        (stated.or(body), stated_disabled.unwrap_or(disabled))
     }
 
     /// The colours as the switch paints them, so two looks that paint alike compare equal: the

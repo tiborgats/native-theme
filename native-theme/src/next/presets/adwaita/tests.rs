@@ -26,7 +26,8 @@ fn the_constant_colours_are_their_8_bit_channels() {
 }
 
 /// Under `Contrast::High` the focus ring, and the focused text field's
-/// outline with it, is the ring's colour at alpha 0.8; nothing else changes.
+/// outline with it, is the ring's colour at alpha 0.8, and the disabled
+/// opacity, the disabled switch label's too, is 0.4; nothing else changes.
 #[test]
 fn under_high_contrast_the_focus_ring_is_at_alpha_0_8() {
     for ctx in [ThemeContext::light(), ThemeContext::dark()] {
@@ -45,9 +46,81 @@ fn under_high_contrast_the_focus_ring_is_at_alpha_0_8() {
             high.input.field(WidgetState::FOCUSED).stroke,
             Stroke::uniform(INPUT_BORDER_WIDTH, high.colors.focus_ring)
         );
+        assert_eq!(normal.colors.disabled_opacity, DISABLED_OPACITY);
+        assert_eq!(high.colors.disabled_opacity, DISABLED_OPACITY_HIGH);
+        let rest = high.switch.label(WidgetState::NONE).color;
+        assert_eq!(
+            high.switch.label(WidgetState::DISABLED).color,
+            rest.mul_alpha(DISABLED_OPACITY_HIGH)
+        );
+        let opacities = |t: &ResolvedTheme| {
+            [
+                t.button.disabled_opacity,
+                t.checkbox.disabled_opacity,
+                t.radio.disabled_opacity,
+                t.input.disabled_opacity,
+                t.text_area.disabled_opacity,
+                t.slider.disabled_opacity,
+                t.switch.disabled_opacity,
+                t.combo_box.disabled_opacity,
+                t.segmented_control.disabled_opacity,
+            ]
+        };
+        assert_eq!(opacities(&high), [Some(DISABLED_OPACITY_HIGH); 9]);
         let mut same = high.clone();
+        same.colors.disabled_opacity = normal.colors.disabled_opacity;
+        same.button.disabled_opacity = normal.button.disabled_opacity;
+        same.checkbox.disabled_opacity = normal.checkbox.disabled_opacity;
+        same.radio.disabled_opacity = normal.radio.disabled_opacity;
+        same.slider.disabled_opacity = normal.slider.disabled_opacity;
+        same.switch = normal.switch.clone();
+        same.combo_box.disabled_opacity = normal.combo_box.disabled_opacity;
+        same.segmented_control.disabled_opacity = normal.segmented_control.disabled_opacity;
         same.colors.focus_ring = normal.colors.focus_ring;
         same.focus_ring = normal.focus_ring.clone();
+        // The parts' own rings take the ring's colour too
+        // (`a_part_with_its_own_ring_offset_states_its_ring`); in every state their rules
+        // name, the parts are otherwise the same.
+        let unringed = |mut part: PartStyle| {
+            part.focus = None;
+            part
+        };
+        let states = [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+            WidgetState::SELECTED,
+            WidgetState::DISABLED,
+            WidgetState::FOCUSED,
+            WidgetState::HOVER | WidgetState::CHECKED,
+            WidgetState::PRESSED | WidgetState::CHECKED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+        ];
+        for state in states {
+            for query in [ButtonQuery::new(state), ButtonQuery::primary().state(state)] {
+                assert_eq!(
+                    unringed(high.button.body(query)),
+                    unringed(normal.button.body(query)),
+                    "{state:?}"
+                );
+            }
+            let pairs = [
+                (high.slider.thumb(state), normal.slider.thumb(state)),
+                (
+                    high.segmented_control.segment(state),
+                    normal.segmented_control.segment(state),
+                ),
+                (high.expander.header(state), normal.expander.header(state)),
+            ];
+            for (high_part, normal_part) in pairs {
+                assert_eq!(unringed(high_part), unringed(normal_part), "{state:?}");
+            }
+        }
+        same.button.body = normal.button.body.clone();
+        same.slider.thumb = normal.slider.thumb.clone();
+        same.segmented_control.segment = normal.segmented_control.segment.clone();
+        same.expander.header = normal.expander.header.clone();
         same.input = normal.input.clone();
         same.text_area = normal.text_area.clone();
         same.context = normal.context.clone();
@@ -83,8 +156,12 @@ fn a_primary_button_keeps_the_accent_fill_when_hovered_pressed_or_checked() {
     }
 }
 
+/// A checked indicator under the pointer keeps its checked outline, none,
+/// not the unchecked one's hover outline; its fill is the checked fill under
+/// libadwaita's hover layer
+/// (`a_hovered_or_pressed_checked_control_lays_libadwaita_s_layer_over_the_accent`).
 #[test]
-fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
+fn a_checked_indicator_keeps_its_outline_under_the_pointer() {
     for theme in both_schemes() {
         let checked = WidgetState::CHECKED;
         let hovered = checked | WidgetState::HOVER;
@@ -93,25 +170,79 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
             theme.checkbox.indicator(checked)
         );
         assert_eq!(
-            theme.checkbox.indicator(hovered),
-            theme.checkbox.indicator(checked)
+            theme.checkbox.indicator(hovered).stroke,
+            theme.checkbox.indicator(checked).stroke
         );
         assert_eq!(
-            theme.radio.indicator(hovered),
-            theme.radio.indicator(checked)
+            theme.radio.indicator(hovered).stroke,
+            theme.radio.indicator(checked).stroke
+        );
+        assert_ne!(
+            theme.checkbox.indicator(hovered).fill,
+            theme.checkbox.indicator(checked).fill
         );
     }
 }
 
+/// A mixed box under the pointer or pressed is drawn as a checked one: the
+/// accent under the checked box's layer with no outline, not the unchecked
+/// box's hover outline or pressed trough. No exclusive group clears `HOVER`
+/// or `PRESSED` from a mixed box's state; the mixed rules, last, win, as libadwaita 1.10.0 keeps
+/// `:indeterminate` out of the unchecked hover and active rules
+/// (`&:not(:checked):not(:indeterminate)`, _checks.scss:33-50) and draws it
+/// with `:checked` (`&:checked, &:indeterminate`, :52-60).
 #[test]
-fn a_hovered_switch_that_is_on_has_its_own_colour() {
+fn a_mixed_box_under_the_pointer_or_pressed_is_drawn_as_a_checked_one() {
     for theme in both_schemes() {
-        let on_hover = theme
-            .switch
-            .track(WidgetState::HOVER | WidgetState::CHECKED);
-        assert_eq!(on_hover.fill, Paint::Solid(LIGHT.switch_hover_on));
-        assert_ne!(on_hover, theme.switch.track(WidgetState::HOVER));
-        assert_ne!(on_hover, theme.switch.track(WidgetState::CHECKED));
+        for state in [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::HOVER | WidgetState::PRESSED,
+        ] {
+            let mixed = theme.checkbox.indicator(WidgetState::INDETERMINATE | state);
+            let checked = theme.checkbox.indicator(WidgetState::CHECKED | state);
+            assert_eq!(mixed.stroke, Stroke::None, "{state:?}");
+            assert_eq!(mixed.fill, checked.fill, "{state:?}");
+            assert_eq!(mixed.stroke, checked.stroke, "{state:?}");
+        }
+    }
+}
+
+/// An on switch, and a checked or mixed check or radio, hovered and pressed
+/// take libadwaita's layers over the accent (_checks.scss:52-59,
+/// _switch.scss:41-46 at libadwaita 1.10.0): currentColor, the accent's
+/// text, at 10 %, and RGB(0 0 6 / 20%), each laid over the accent's fill.
+#[test]
+fn a_hovered_or_pressed_checked_control_lays_libadwaita_s_layer_over_the_accent() {
+    for theme in both_schemes() {
+        let accent = theme.colors.accent;
+        let hover = accent
+            .foreground
+            .mul_alpha(CHECKED_HOVER_LAYER_ALPHA)
+            .composite_over(accent.fill);
+        let pressed = CHECKED_PRESSED_LAYER.composite_over(accent.fill);
+        for (state, want) in [
+            (WidgetState::HOVER, hover),
+            (WidgetState::PRESSED, pressed),
+            (WidgetState::HOVER | WidgetState::PRESSED, pressed),
+        ] {
+            let on = WidgetState::CHECKED | state;
+            let mixed = WidgetState::INDETERMINATE | state;
+            for (name, fill) in [
+                ("switch", theme.switch.track(on).fill),
+                ("check", theme.checkbox.indicator(on).fill),
+                ("mixed check", theme.checkbox.indicator(mixed).fill),
+                ("radio", theme.radio.indicator(on).fill),
+            ] {
+                assert_eq!(fill, Paint::Solid(want), "{name} {state:?}");
+            }
+        }
+        assert_ne!(
+            theme
+                .switch
+                .track(WidgetState::HOVER | WidgetState::CHECKED),
+            theme.switch.track(WidgetState::HOVER)
+        );
     }
 }
 
@@ -129,6 +260,101 @@ fn a_selected_item_wins_over_the_pointer() {
             theme.segmented_control.segment(hovered),
             theme.segmented_control.segment(selected)
         );
+    }
+}
+
+/// The line between toggles is GtkSeparator's `$border_color`, the
+/// splitter's line, 1 px wide (_misc.scss:21-24 at libadwaita 1.10.0).
+#[test]
+fn the_segments_are_parted_by_the_separator_s_line() {
+    for theme in both_schemes() {
+        let line = theme.splitter.handle(WidgetState::NONE).fill;
+        assert_ne!(line, Paint::None);
+        assert_eq!(
+            theme.segmented_control.separator(WidgetState::NONE).fill,
+            line
+        );
+        assert_eq!(theme.segmented_control.separator_width, 1.0);
+    }
+}
+
+/// The flat button: at rest no fill and no shadow; hovered, pressed and
+/// checked the window text at libadwaita's 7, 16 and 10 %, the toolbar's
+/// buttons' fills; checked and hovered or pressed at 13 and 19 %; each
+/// stated for its state.
+#[test]
+fn a_flat_button_lays_the_window_text_s_layers() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
+        let flat = |state| theme.button.body(ButtonQuery::flat().state(state));
+        let rest = flat(WidgetState::NONE);
+        assert_eq!(rest.fill, Paint::None);
+        assert_eq!(rest.shadows, None);
+        assert!(rest.stated.contains(PartStated::FILL));
+        let text = c.row_foreground;
+        for (state, alpha) in [
+            (WidgetState::HOVER, TOOLBAR_BUTTON_HOVER_ALPHA),
+            (WidgetState::PRESSED, TOOLBAR_BUTTON_PRESSED_ALPHA),
+            (WidgetState::CHECKED, TOOLBAR_BUTTON_CHECKED_ALPHA),
+            (
+                WidgetState::CHECKED | WidgetState::HOVER,
+                FLAT_CHECKED_HOVER_ALPHA,
+            ),
+            (
+                WidgetState::CHECKED | WidgetState::PRESSED,
+                FLAT_CHECKED_PRESSED_ALPHA,
+            ),
+        ] {
+            let body = flat(state);
+            assert_eq!(
+                solid(&body.fill).map(Color::to_srgb8),
+                Some(text.mul_alpha(alpha).to_srgb8()),
+                "{state:?}"
+            );
+            assert!(body.from_state.contains(PartStated::FILL), "{state:?}");
+        }
+        for state in [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+        ] {
+            assert_eq!(
+                flat(state).fill,
+                theme.toolbar.button(state).fill,
+                "{state:?}"
+            );
+        }
+    }
+}
+
+/// A disabled check, radio and off switch state their rest fill for
+/// `DISABLED`, the fade alone changing them; checked, each keeps its checked
+/// fill, the accent.
+#[test]
+fn a_disabled_control_states_its_rest_fill_and_a_checked_one_keeps_the_accent() {
+    use crate::next::style::PartStated;
+    for theme in both_schemes() {
+        let disabled = WidgetState::DISABLED;
+        let checked = WidgetState::CHECKED;
+        let parts: [(&str, &dyn Fn(WidgetState) -> PartStyle); 3] = [
+            ("check", &|s| theme.checkbox.indicator(s)),
+            ("radio", &|s| theme.radio.indicator(s)),
+            ("switch", &|s| theme.switch.track(s)),
+        ];
+        for (name, part) in parts {
+            let off = part(disabled);
+            assert_eq!(off.fill, part(WidgetState::NONE).fill, "{name}");
+            assert!(off.from_state.contains(PartStated::FILL), "{name}");
+            assert_eq!(
+                part(disabled | checked).fill,
+                Paint::Solid(theme.colors.accent.fill),
+                "{name}"
+            );
+            assert_eq!(part(disabled | checked).fill, part(checked).fill, "{name}");
+        }
     }
 }
 
@@ -150,6 +376,34 @@ fn a_checked_toolbar_button_keeps_its_fill() {
                 .button(WidgetState::PRESSED | WidgetState::HOVER),
             theme.toolbar.button(WidgetState::PRESSED)
         );
+    }
+}
+
+/// The toolbar button's hovered, pressed and checked layers, derived from
+/// the window text, are libadwaita's in 8 bits: platform-facts.md (§2.13),
+/// #0000060e, #00000621, #00000614 light and #ffffff12, #ffffff29, #ffffff1a
+/// dark.
+#[test]
+fn the_toolbar_button_layers_are_the_platform_facts_values() {
+    for (theme, want) in both_schemes().iter().zip([
+        [
+            [0x00, 0x00, 0x06, 0x0e],
+            [0x00, 0x00, 0x06, 0x21],
+            [0x00, 0x00, 0x06, 0x14],
+        ],
+        [
+            [0xff, 0xff, 0xff, 0x12],
+            [0xff, 0xff, 0xff, 0x29],
+            [0xff, 0xff, 0xff, 0x1a],
+        ],
+    ]) {
+        let got = [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+        ]
+        .map(|state| solid(&theme.toolbar.button(state).fill).map(Color::to_srgb8));
+        assert_eq!(got, want.map(Some), "{:?}", theme.context.scheme);
     }
 }
 
@@ -384,8 +638,10 @@ fn a_palette_states_its_roles() {
 }
 
 /// The widgets the preset draws in a colour a slot replaces take the slot's
-/// colour; the fills the preset states as libadwaita's layers over its own
-/// window, the placeholder and the switch's hover colour keep the preset's.
+/// colour, the toolbar's and the flat button's layers of the window text
+/// the palette's foreground at libadwaita's alphas; the fills the preset
+/// states as libadwaita's layers over its own window, the placeholder and
+/// the switch's hover colour keep the preset's.
 #[test]
 fn a_palette_recolours_the_widgets_of_its_colours() {
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -460,6 +716,34 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
             theme.input.field(WidgetState::FOCUSED).stroke,
             Stroke::uniform(INPUT_BORDER_WIDTH, ring_of(p.accent, scheme))
         );
+        for (state, alpha) in [
+            (WidgetState::HOVER, TOOLBAR_BUTTON_HOVER_ALPHA),
+            (WidgetState::PRESSED, TOOLBAR_BUTTON_PRESSED_ALPHA),
+            (WidgetState::CHECKED, TOOLBAR_BUTTON_CHECKED_ALPHA),
+            (
+                WidgetState::CHECKED | WidgetState::HOVER,
+                FLAT_CHECKED_HOVER_ALPHA,
+            ),
+            (
+                WidgetState::CHECKED | WidgetState::PRESSED,
+                FLAT_CHECKED_PRESSED_ALPHA,
+            ),
+        ] {
+            let layer = Some(p.foreground.mul_alpha(alpha).to_srgb8());
+            assert_eq!(
+                solid(&theme.button.body(ButtonQuery::flat().state(state)).fill)
+                    .map(Color::to_srgb8),
+                layer,
+                "{scheme:?} flat {state:?}"
+            );
+            if !state.contains(WidgetState::CHECKED) || state == WidgetState::CHECKED {
+                assert_eq!(
+                    solid(&theme.toolbar.button(state).fill).map(Color::to_srgb8),
+                    layer,
+                    "{scheme:?} toolbar {state:?}"
+                );
+            }
+        }
         let c = constants(scheme);
         assert_eq!(
             solid(&theme.button.body(ButtonQuery::new(none)).fill),
@@ -473,7 +757,11 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
                     .track(WidgetState::HOVER | WidgetState::CHECKED)
                     .fill
             ),
-            Some(c.switch_hover_on)
+            Some(
+                p.accent_fg
+                    .mul_alpha(CHECKED_HOVER_LAYER_ALPHA)
+                    .composite_over(p.accent)
+            )
         );
     }
 }
@@ -553,4 +841,53 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
         assert_eq!(colors.error, palette_only.colors.error);
         assert_eq!(colors.info.origin, RoleOrigin::Custom);
     }
+}
+
+/// The parts whose libadwaita `focus-ring` takes an offset of its own state
+/// their ring there, in the global ring's width and colour: the primary
+/// button and the switch 1 px outside, the slider thumb and a segment at
+/// their edge, the expander header 1 px inside (_buttons.scss:158,
+/// _switch.scss:18, _scale.scss:29, _toggle-group.scss:63, _lists.scss:344 at
+/// libadwaita 1.10.0); a standard button and the check box keep the global
+/// ring, 2 px inside.
+#[test]
+fn a_part_with_its_own_ring_offset_states_its_ring() -> TestResult {
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        for contrast in [Contrast::Normal, Contrast::High] {
+            let theme =
+                Theme::preset(Preset::Adwaita).resolve(&ctx.clone().with_contrast(contrast));
+            let none = WidgetState::NONE;
+            for (what, part, offset) in [
+                (
+                    "primary button",
+                    theme.button.body(ButtonQuery::primary().state(none)),
+                    1.0,
+                ),
+                ("switch track", theme.switch.track(none), 1.0),
+                ("slider thumb", theme.slider.thumb(none), 0.0),
+                ("segment", theme.segmented_control.segment(none), 0.0),
+                ("expander header", theme.expander.header(none), -1.0),
+            ] {
+                let Some(ring) = part.focus.as_deref() else {
+                    return Err(format!("{what} states no focus ring").into());
+                };
+                assert_eq!(
+                    ring,
+                    &FocusIndicator::new(
+                        FocusKind::Ring,
+                        theme.focus_ring.stroke.clone(),
+                        Stroke::None,
+                        offset,
+                        None,
+                        None,
+                    ),
+                    "{what} {contrast:?}"
+                );
+            }
+            assert_eq!(theme.button.body(ButtonQuery::new(none)).focus, None);
+            assert_eq!(theme.checkbox.indicator(none).focus, None);
+            assert_eq!(theme.focus_ring.offset, FOCUS_RING_OFFSET);
+        }
+    }
+    Ok(())
 }

@@ -9971,7 +9971,8 @@ pub(crate) struct MenuRowsLook {
     pub(crate) edge: Option<(Hsla, Pixels)>,
     /// A pressed row's fill and text, `menu.item(PRESSED).fill` and
     /// `menu.item_label(PRESSED).color` where a rule states each for the
-    /// pressed state, the row keeping its hover look otherwise.
+    /// pressed state (spec §2, `from_state`: a rule for `HOVER` does not
+    /// answer it), the row keeping its hover look otherwise.
     pub(crate) active: Option<Hsla>,
     pub(crate) active_text: Option<Hsla>,
     /// A pressed row's outline ([`menu_pressed_edge`]), `None` where it

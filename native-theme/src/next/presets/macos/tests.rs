@@ -2,7 +2,7 @@ use super::*;
 
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::preset::Theme;
-use crate::next::query::{ButtonQuery, ListQuery, MotionPreference};
+use crate::next::query::{ButtonQuery, ListQuery, ListVariant, MotionPreference};
 use crate::next::style::PartStated;
 use crate::next::window::WindowState;
 
@@ -94,6 +94,103 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
     }
 }
 
+/// The borderless button draws neither a fill nor an outline at rest,
+/// hovered, pressed or disabled, each stated for its state.
+#[test]
+fn a_flat_button_has_no_fill_and_no_outline() {
+    for (preset, theme) in every_theme() {
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::PRESSED,
+        ] {
+            let body = theme.button.body(ButtonQuery::flat().state(state));
+            assert_eq!(
+                (&body.fill, &body.stroke),
+                (&Paint::None, &Stroke::None),
+                "{preset:?} {state:?}"
+            );
+            assert!(
+                body.stated.contains(PartStated::FILL),
+                "{preset:?} {state:?}"
+            );
+            if state != WidgetState::NONE {
+                assert!(
+                    body.from_state.contains(PartStated::FILL),
+                    "{preset:?} {state:?}"
+                );
+            }
+        }
+    }
+}
+
+/// The borderless button's label is the measured one, at rest and hovered
+/// and pressed, and on macos-tahoe disabled, each stated for its state; on
+/// macos-monterey, where the facts state no disabled label of its own, it is
+/// the push button's disabled label.
+#[test]
+fn the_flat_button_takes_its_measured_labels() {
+    use crate::next::style::TextStated;
+    for (preset, scheme, [rest, pressed], disabled) in [
+        (
+            Preset::MacosTahoe,
+            Scheme::Light,
+            [0x0000_0080_u32, 0x0000_00d9],
+            Some(0x0000_0040_u32),
+        ),
+        (
+            Preset::MacosTahoe,
+            Scheme::Dark,
+            [0xffff_ff8c, 0xffff_ffd9],
+            Some(0xffff_ff40),
+        ),
+        (
+            Preset::MacosMonterey,
+            Scheme::Light,
+            [0x0000_0080, 0x0000_00d9],
+            None,
+        ),
+        (
+            Preset::MacosMonterey,
+            Scheme::Dark,
+            [0xffff_ff8c, 0xffff_ffd9],
+            None,
+        ),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(preset).resolve(&ctx);
+        let push_disabled = theme
+            .button
+            .label(ButtonQuery::new(WidgetState::DISABLED))
+            .color
+            .to_srgb8();
+        for (state, want) in [
+            (WidgetState::NONE, rest.to_be_bytes()),
+            (WidgetState::HOVER, rest.to_be_bytes()),
+            (WidgetState::PRESSED, pressed.to_be_bytes()),
+            (
+                WidgetState::DISABLED,
+                disabled.map_or(push_disabled, u32::to_be_bytes),
+            ),
+        ] {
+            let label = theme.button.label(ButtonQuery::flat().state(state));
+            assert_eq!(
+                label.color.to_srgb8(),
+                want,
+                "{preset:?} {scheme:?} {state:?}"
+            );
+            if state != WidgetState::NONE {
+                assert!(
+                    label.from_state.contains(TextStated::COLOR),
+                    "{preset:?} {scheme:?} {state:?}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
     for (preset, theme) in every_theme() {
@@ -115,6 +212,40 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
         monterey.checkbox.indicator(WidgetState::HOVER),
         monterey.checkbox.indicator(WidgetState::NONE)
     );
+}
+
+/// The radio button takes the check box's measured fills: hovered as at
+/// rest, pressed and checked pressed the check box's, stated.
+#[test]
+fn a_radio_takes_the_check_box_s_fills() {
+    for (preset, theme) in every_theme() {
+        let hovered = theme.radio.indicator(WidgetState::HOVER);
+        assert!(hovered.from_state.contains(PartStated::FILL), "{preset:?}");
+        assert_eq!(
+            hovered.fill,
+            theme.radio.indicator(WidgetState::NONE).fill,
+            "{preset:?}"
+        );
+        for state in [
+            WidgetState::PRESSED,
+            WidgetState::CHECKED | WidgetState::PRESSED,
+        ] {
+            assert_eq!(
+                theme.radio.indicator(state).fill,
+                theme.checkbox.indicator(state).fill,
+                "{preset:?} {state:?}"
+            );
+        }
+        // Pressed, the circle's own measured edge where one was read, else the rest one.
+        let edge = |state: WidgetState| stroke_color(&theme.radio.indicator(state).stroke);
+        let expected = match (preset, theme.context.scheme) {
+            (Preset::MacosMonterey, Scheme::Light) => {
+                Some(Color::from_srgb8(0xc5, 0xc5, 0xc5, 0xf8))
+            }
+            _ => edge(WidgetState::NONE),
+        };
+        assert_eq!(edge(WidgetState::PRESSED), expected, "{preset:?}");
+    }
 }
 
 #[test]
@@ -174,6 +305,62 @@ fn a_pressed_scroll_handle_wins_over_the_pointer() {
     }
 }
 
+/// The overlay knob is the window's muted text at rest and the measured one
+/// hovered and pressed; the legacy knob its measured rest fill, hovered and
+/// pressed its active one, and the track each style's (os-probe run
+/// 45252258079, `*.scroller_knob_*`).
+#[test]
+fn the_scroll_handle_follows_the_scroller_s_style() {
+    for (preset, scheme) in every_scheme() {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(preset, scheme);
+        for (overlay, rest, active, track) in [
+            (
+                true,
+                Some(c.muted),
+                c.scrollbar_thumb_overlay_active,
+                c.scrollbar_track,
+            ),
+            (
+                false,
+                Some(c.scrollbar_thumb_legacy),
+                c.scrollbar_thumb_legacy_active,
+                c.scrollbar_track_legacy,
+            ),
+        ] {
+            let system = SystemOverrides {
+                overlay_scrollbars: Some(overlay),
+                ..SystemOverrides::default()
+            };
+            let theme = Theme::preset(preset)
+                .with_system_overrides(system)
+                .resolve(&ctx);
+            assert_eq!(
+                solid(&theme.scrollbar.track(WidgetState::NONE).fill),
+                Some(track),
+                "{preset:?} {scheme:?} overlay {overlay}"
+            );
+            let at_rest = theme.scrollbar.thumb(WidgetState::NONE);
+            assert_eq!(
+                rest,
+                at_rest
+                    .stated
+                    .contains(PartStated::FILL)
+                    .then(|| solid(&at_rest.fill))
+                    .flatten(),
+                "{preset:?} {scheme:?} overlay {overlay}"
+            );
+            for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+                assert_eq!(
+                    solid(&theme.scrollbar.thumb(state).fill),
+                    Some(active),
+                    "{preset:?} {scheme:?} overlay {overlay} {state:?}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn a_selected_item_wins_over_the_pointer() {
     for (preset, theme) in every_theme() {
@@ -205,15 +392,30 @@ fn a_selected_item_wins_over_the_pointer() {
             "{preset:?}"
         );
     }
-    let monterey = Theme::preset(Preset::MacosMonterey).resolve(&ThemeContext::dark());
-    assert_ne!(
-        monterey.tab.tab(WidgetState::HOVER),
-        monterey.tab.tab(WidgetState::SELECTED)
-    );
-    assert_ne!(
-        monterey.segmented_control.segment(WidgetState::HOVER),
-        monterey.segmented_control.segment(WidgetState::SELECTED)
-    );
+    for (preset, theme) in every_theme() {
+        let selected = WidgetState::SELECTED;
+        let pressed = selected | WidgetState::PRESSED;
+        assert_eq!(
+            theme.tab.tab(pressed),
+            theme.tab.tab(selected),
+            "{preset:?}"
+        );
+        assert_eq!(
+            theme.segmented_control.segment(pressed),
+            theme.segmented_control.segment(selected),
+            "{preset:?}"
+        );
+        assert_ne!(
+            theme.tab.tab(WidgetState::PRESSED),
+            theme.tab.tab(selected),
+            "{preset:?}"
+        );
+        assert_ne!(
+            theme.segmented_control.segment(WidgetState::PRESSED),
+            theme.segmented_control.segment(selected),
+            "{preset:?}"
+        );
+    }
 }
 
 /// The on track keeps the accent under the pointer; disabled, the off track
@@ -601,8 +803,12 @@ fn an_explicit_accent_is_written_as_given() {
         let mut want = plain.colors.clone();
         want.accent.fill = accent;
         want.selection.background = accent;
-        want.text_selection =
-            SelectionColors::new(accent, plain.colors.selection.foreground, None, None);
+        want.text_selection = SelectionColors::new(
+            accent,
+            plain.colors.selection.foreground,
+            plain.colors.text_selection.unfocused_background,
+            plain.colors.text_selection.unfocused_foreground,
+        );
         want.focus_ring = ring(accent);
         want.caret = accent;
         assert_eq!(theme.colors, want, "{preset:?} {scheme:?}");
@@ -767,7 +973,12 @@ fn a_palette_states_its_roles() {
         );
         assert_eq!(
             colors.text_selection,
-            SelectionColors::new(p.selection_bg, p.selection_fg, None, None)
+            SelectionColors::new(
+                p.selection_bg,
+                p.selection_fg,
+                Some(c.text_selection_inactive_background),
+                Some(c.text_selection_inactive_foreground)
+            )
         );
         assert_eq!(colors.focus_ring, ring(p.accent), "{preset:?} {scheme:?}");
         assert_eq!(colors.caret, p.caret);
@@ -854,7 +1065,7 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
             ),
             ("separator", Some(theme.separator.color), p.border),
             (
-                "scroll bar's handle",
+                "overlay scroll bar's handle",
                 solid(&theme.scrollbar.thumb(none).fill),
                 p.foreground_muted,
             ),
@@ -981,7 +1192,12 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
         );
         assert_eq!(
             colors.text_selection,
-            SelectionColors::new(accent, c.selection_foreground, None, None)
+            SelectionColors::new(
+                accent,
+                c.selection_foreground,
+                Some(c.text_selection_inactive_background),
+                Some(c.text_selection_inactive_foreground)
+            )
         );
         assert_eq!(colors.focus_ring, ring(accent), "{preset:?} {scheme:?}");
         assert_eq!(colors.caret, p.caret);
@@ -1146,6 +1362,372 @@ fn tahoe_s_pressed_and_disabled_checked_button_mix_the_accent_in_force() {
                 .fill,
             Paint::Solid(theme.colors.accent.fill),
             "{scheme:?}"
+        );
+    }
+}
+
+/// The pressed fills `macos-tahoe` measured on the default accent (the
+/// checked box's, the slider's filled track's, the source-list row's) stand
+/// under that accent, given explicitly or by a palette, and drop under
+/// another, given either way ([`lay_accent_over`]): the checked box and the
+/// filled track then keep their fill pressed, the row takes the selection's.
+#[test]
+fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
+    let pressed = |theme: &ResolvedTheme| {
+        [
+            solid(
+                &theme
+                    .checkbox
+                    .indicator(WidgetState::CHECKED | WidgetState::PRESSED)
+                    .fill,
+            ),
+            solid(&theme.slider.active_track(WidgetState::PRESSED).fill),
+            solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+        ]
+    };
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(Preset::MacosTahoe, scheme);
+        let measured = [
+            c.checkbox_checked_pressed,
+            c.slider_fill_pressed,
+            c.sidebar_pressed,
+        ];
+        assert!(measured.iter().all(Option::is_some), "{scheme:?}");
+        let preset = || Theme::preset(Preset::MacosTahoe);
+        let default_palette = Palette {
+            accent: c.accent,
+            ..distinct_palette(scheme)
+        };
+        for (how, theme) in [
+            ("alone", preset().resolve(&ctx)),
+            ("explicit", preset().with_accent(c.accent).resolve(&ctx)),
+            (
+                "palette",
+                preset().with_palette(default_palette).resolve(&ctx),
+            ),
+        ] {
+            assert_eq!(pressed(&theme), measured, "{scheme:?} {how}");
+        }
+        for (how, theme) in [
+            ("explicit", preset().with_accent(hex(RED)).resolve(&ctx)),
+            (
+                "palette",
+                preset()
+                    .with_palette(distinct_palette(scheme))
+                    .resolve(&ctx),
+            ),
+        ] {
+            assert_eq!(
+                pressed(&theme),
+                [
+                    solid(&theme.checkbox.indicator(WidgetState::CHECKED).fill),
+                    solid(&theme.slider.active_track(WidgetState::NONE).fill),
+                    solid(&theme.sidebar.item(WidgetState::SELECTED).fill),
+                ],
+                "{scheme:?} {how}"
+            );
+            assert_ne!(pressed(&theme), measured, "{scheme:?} {how}");
+        }
+    }
+}
+
+/// The selected tab: on macos-tahoe its fill measured on the default accent
+/// stands under that accent and drops to the accent's fill under another,
+/// given explicitly or by a palette; on macos-monterey, off the accent, the
+/// measured fill and label stand under every accent.
+#[test]
+fn the_selected_tab_s_fill_follows_the_accent_where_it_is_drawn_on_it() {
+    let selected = WidgetState::SELECTED;
+    for (preset, scheme) in every_scheme() {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(preset, scheme);
+        let theme = || Theme::preset(preset);
+        let alone = theme().resolve(&ctx);
+        let red = theme().with_accent(hex(RED)).resolve(&ctx);
+        let palette = theme().with_palette(distinct_palette(scheme)).resolve(&ctx);
+        match preset {
+            Preset::MacosTahoe => {
+                assert!(c.tab_selected.is_some(), "{scheme:?}");
+                assert_eq!(
+                    solid(&alone.tab.tab(selected).fill),
+                    c.tab_selected,
+                    "{scheme:?}"
+                );
+                for (how, other) in [("explicit", &red), ("palette", &palette)] {
+                    assert_eq!(
+                        solid(&other.tab.tab(selected).fill),
+                        Some(other.colors.accent.fill),
+                        "{scheme:?} {how}"
+                    );
+                    assert_ne!(
+                        solid(&other.tab.tab(selected).fill),
+                        c.tab_selected,
+                        "{scheme:?} {how}"
+                    );
+                }
+            }
+            _ => {
+                let measured = c.tab_selected_off_accent;
+                assert!(measured.is_some(), "{preset:?} {scheme:?}");
+                for (how, other) in [("alone", &alone), ("explicit", &red), ("palette", &palette)] {
+                    assert_eq!(
+                        solid(&other.tab.tab(selected).fill)
+                            .zip(Some(other.tab.label(selected).color)),
+                        measured,
+                        "{preset:?} {scheme:?} {how}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// The disabled checked box's and circle's fill measured on macOS 26's
+/// default accent drops under another accent, and they then take the
+/// checked button's disabled fill, the accent's mix at alpha 0x70; macOS
+/// 15's, which is not on the accent, stays.
+#[test]
+fn the_disabled_checked_fill_measured_on_the_default_accent_drops_under_another() -> TestResult {
+    let checked_disabled = WidgetState::CHECKED | WidgetState::DISABLED;
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let tahoe = constants(Preset::MacosTahoe, scheme);
+        let monterey = constants(Preset::MacosMonterey, scheme);
+        let on_accent = tahoe
+            .checkbox_checked_disabled
+            .ok_or("macos-tahoe states no disabled checked fill")?;
+        let off_accent = monterey
+            .checkbox_checked_disabled_off_accent
+            .ok_or("macos-monterey states no disabled checked fill")?;
+        let tahoe_alone = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+        let tahoe_red = Theme::preset(Preset::MacosTahoe)
+            .with_accent(hex(RED))
+            .resolve(&ctx);
+        let monterey_red = Theme::preset(Preset::MacosMonterey)
+            .with_accent(hex(RED))
+            .resolve(&ctx);
+        assert_eq!(
+            solid(&tahoe_alone.checkbox.indicator(checked_disabled).fill),
+            Some(on_accent),
+            "{scheme:?}"
+        );
+        let button = tahoe_red
+            .button
+            .body(ButtonQuery::new(checked_disabled))
+            .fill;
+        for indicator in [
+            tahoe_red.checkbox.indicator(checked_disabled),
+            tahoe_red.radio.indicator(checked_disabled),
+        ] {
+            assert_eq!(indicator.fill, button, "{scheme:?}");
+            assert_eq!(
+                solid(&indicator.fill).map(|c| c.to_srgb8()[3]),
+                Some(0x70),
+                "{scheme:?}"
+            );
+        }
+        // Under the system's red accent (`controlAccentColor` #e0383e / #ff5257, os-probe run
+        // 40348854007, `os-probe-macos-26/accent-red/probe.toml`), within 2
+        // levels of what os-probe run 45345116763 reads (`controls-accent`, macOS 26,
+        // `*.normal.checkbox_disabled_on` `fill` #d6363d71 / #ff5b5d70).
+        let (accent, read) = match scheme {
+            Scheme::Light => (0xe0383e, [0xd6, 0x36, 0x3d, 0x71]),
+            _ => (0xff5257, [0xff, 0x5b, 0x5d, 0x70]),
+        };
+        let system_red = Theme::preset(Preset::MacosTahoe)
+            .with_accent(hex(accent))
+            .resolve(&ctx);
+        let drawn = solid(&system_red.checkbox.indicator(checked_disabled).fill)
+            .ok_or("no solid fill")?
+            .to_srgb8();
+        for (d, r) in drawn.iter().zip(read) {
+            assert!(d.abs_diff(r) <= 2, "{scheme:?} {drawn:x?} {read:x?}");
+        }
+        for indicator in [
+            monterey_red.checkbox.indicator(checked_disabled),
+            monterey_red.radio.indicator(checked_disabled),
+        ] {
+            assert_eq!(solid(&indicator.fill), Some(off_accent), "{scheme:?}");
+        }
+    }
+    Ok(())
+}
+
+/// The same pressed fills under a system accent ([`lay_system_over`]): a
+/// system that reads the preset's own accent keeps them, one that reads
+/// another accent drops them, so the checked box and the filled track keep
+/// their fill pressed and the row takes the selection's.
+#[test]
+fn the_pressed_fills_measured_on_the_default_accent_drop_under_a_system_accent() {
+    let pressed = |theme: &ResolvedTheme| {
+        [
+            solid(
+                &theme
+                    .checkbox
+                    .indicator(WidgetState::CHECKED | WidgetState::PRESSED)
+                    .fill,
+            ),
+            solid(&theme.slider.active_track(WidgetState::PRESSED).fill),
+            solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+        ]
+    };
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(Preset::MacosTahoe, scheme);
+        let measured = [
+            c.checkbox_checked_pressed,
+            c.slider_fill_pressed,
+            c.sidebar_pressed,
+        ];
+        assert!(measured.iter().all(Option::is_some), "{scheme:?}");
+        let with_system_accent = |accent| {
+            let system = SystemOverrides {
+                color_schemes: vec![(
+                    (scheme, Contrast::Normal),
+                    OsColors {
+                        accent: Some(accent),
+                        ..OsColors::default()
+                    },
+                )],
+                ..SystemOverrides::default()
+            };
+            Theme::preset(Preset::MacosTahoe)
+                .with_system_overrides(system)
+                .resolve(&ctx)
+        };
+        let same = with_system_accent(c.accent);
+        assert_eq!(pressed(&same), measured, "{scheme:?} same accent");
+        let other = with_system_accent(hex(RED));
+        assert_eq!(other.colors.accent.fill, hex(RED), "{scheme:?}");
+        assert_eq!(
+            pressed(&other),
+            [
+                solid(&other.checkbox.indicator(WidgetState::CHECKED).fill),
+                solid(&other.slider.active_track(WidgetState::NONE).fill),
+                solid(&other.sidebar.item(WidgetState::SELECTED).fill),
+            ],
+            "{scheme:?} another accent"
+        );
+        assert_ne!(pressed(&other), measured, "{scheme:?} another accent");
+    }
+}
+
+/// The single-line text field states its own focus ring, 4 px wide from
+/// 2 px (monterey) or 1 px (tahoe) inside its frame, shown on any focus (the
+/// mouse-down brings it; os-probe run 45231684209, `*.pressed.text_field`);
+/// the text area keeps the global ring, which states none.
+#[test]
+fn the_text_field_states_its_own_focus_ring() -> TestResult {
+    for (preset, theme) in every_theme() {
+        let field = theme.input.field(WidgetState::NONE);
+        let Some(ring) = field.focus.as_deref() else {
+            return Err(format!("{preset:?}: the text field states no focus ring").into());
+        };
+        let offset = if preset == Preset::MacosMonterey {
+            -2.0
+        } else {
+            -1.0
+        };
+        assert_eq!(ring.kind, FocusKind::Ring, "{preset:?}");
+        assert_eq!(
+            ring.stroke,
+            Stroke::uniform(4.0, theme.colors.focus_ring),
+            "{preset:?}"
+        );
+        assert_eq!(ring.inner_stroke, Stroke::None, "{preset:?}");
+        assert_eq!(ring.offset, offset, "{preset:?}");
+        assert_eq!(ring.trigger, Some(FocusTrigger::Always), "{preset:?}");
+        assert_eq!(
+            theme.text_area.field(WidgetState::NONE).focus,
+            None,
+            "{preset:?}"
+        );
+        assert_eq!(theme.focus_ring.offset, -1.0, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// A selected row of a list or a table in a view without the focus is drawn
+/// unemphasized (platform-facts.md (§2.1.3), `selection_inactive_background`
+/// and `selection_inactive_text_color`): its highlight and label take the
+/// unfocused selection's pair, hovered too, while the focused view's
+/// selection keeps the emphasized pair and a disabled row its disabled text.
+#[test]
+fn an_unfocused_views_selected_row_is_unemphasized() {
+    let unfocused = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
+    for (preset, theme) in every_theme() {
+        let scheme = theme.context.scheme;
+        let (fill, text) = match scheme {
+            Scheme::Dark => (srgb8(0x4646_46ff), srgb8(0xffff_ffd8)),
+            _ => (srgb8(0xdcdc_dcff), srgb8(0x0000_00d8)),
+        };
+        assert_eq!(
+            theme.colors.selection.unfocused_background,
+            Some(fill),
+            "{preset:?} {scheme:?}"
+        );
+        assert_eq!(
+            theme.colors.selection.unfocused_foreground,
+            Some(text),
+            "{preset:?} {scheme:?}"
+        );
+        for query in [
+            ListQuery::new(WidgetState::NONE),
+            ListQuery::from(ListVariant::Table),
+        ] {
+            for state in [unfocused, unfocused.union(WidgetState::HOVER)] {
+                let query = query.state(state);
+                assert_eq!(
+                    solid(&theme.list.highlight(query).fill),
+                    Some(fill),
+                    "{preset:?} {scheme:?} {state:?}"
+                );
+                assert_eq!(
+                    theme.list.item_label(query).color,
+                    text,
+                    "{preset:?} {scheme:?} {state:?}"
+                );
+            }
+        }
+        let selected = ListQuery::new(WidgetState::SELECTED);
+        assert_eq!(
+            solid(&theme.list.highlight(selected).fill),
+            Some(theme.colors.selection.background),
+            "{preset:?} {scheme:?}"
+        );
+        assert_eq!(
+            theme.list.item_label(selected).color,
+            theme.colors.selection.foreground,
+            "{preset:?} {scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .list
+                .item_label(ListQuery::new(unfocused.union(WidgetState::DISABLED)))
+                .color,
+            theme.colors.disabled_text,
+            "{preset:?} {scheme:?}"
+        );
+    }
+}
+
+/// A pressed sidebar row is the source-list row's pressed fill over the
+/// material's Reduce Transparency rendering, as the sidebar's own fill, not
+/// the reading over the material on the black desktop (os-probe run
+/// 45231684209, Reduce Transparency on, `*.pressed.source_list_row` `fill`):
+/// #0064e1 / #0059d1 on macOS 15, #0076fb / #1c96ff on macOS 26.
+#[test]
+fn a_pressed_sidebar_row_is_read_over_the_reduce_transparency_rendering() {
+    for ((preset, scheme), rgb) in every_scheme()
+        .into_iter()
+        .zip([0x0064e1, 0x0059d1, 0x0076fb, 0x1c96ff])
+    {
+        let theme = Theme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
+        assert_eq!(
+            solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+            Some(hex(rgb)),
+            "{preset:?} {scheme:?}"
         );
     }
 }

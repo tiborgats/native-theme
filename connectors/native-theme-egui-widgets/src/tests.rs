@@ -3739,6 +3739,44 @@ const WIDGET_READS: &[(&str, &[Read])] = &[
     ),
 ];
 
+/// The reads of [`WIDGET_READS`] no splice in a platform preset reaches, each with the test of
+/// the crate's that proves the widget reads it: a home the widget falls back on where the theme
+/// states its own value of the leaf not, which every platform preset states. The widget, the
+/// 0.7.2 field, the home, and the test, by its name in the crate's sources.
+const PROVED_BY_TEST: &[(&str, &str, &str, &str)] = &[
+    (
+        "Switch",
+        "defaults.font.color",
+        "typography.body.color",
+        "an_unstated_switch_label_is_lettered_in_the_body_and_the_disabled_text",
+    ),
+    (
+        "Switch",
+        "defaults.disabled_text_color",
+        "colors.disabled_text",
+        "an_unstated_switch_label_is_lettered_in_the_body_and_the_disabled_text",
+    ),
+];
+
+/// Whether the crate's sources define the test `name`: a `#[test]` before `fn name(`.
+fn defines_test(name: &str) -> std::io::Result<bool> {
+    let mut dirs = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("src")];
+    let defined = format!("#[test]\nfn {name}(");
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(&dir)? {
+            let path = entry?.path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path.extension().is_some_and(|e| e == "rs")
+                && std::fs::read_to_string(&path)?.contains(&defined)
+            {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
+}
+
 /// The rows of the table of homes (`native-theme/tests/next_homes.toml`): each 0.7.2 key with
 /// its `homes`, read line by line, an array over one line or several.
 fn table_of_homes() -> std::io::Result<Vec<(String, Vec<String>)>> {
@@ -3795,7 +3833,8 @@ fn quoted_to_bracket(s: &str) -> Option<Vec<String>> {
 /// Every 0.8.0 home `WIDGET_READS` lists beside a 0.7.2 field is one of that field's homes in
 /// the table of homes, every field lists one at least, and the widget reads each: spliced with
 /// two colours ([`next_spliced`]) in some platform preset, light or dark, the widget's 0.8.0
-/// look ([`next_looks`]) differs between the two.
+/// look ([`next_looks`]) differs between the two, or, where no splice does, a test the crate's
+/// sources define proves it ([`PROVED_BY_TEST`]), an entry no splice needs failing.
 #[test]
 fn every_listed_home_is_its_fields_home_in_the_table() -> std::io::Result<()> {
     let table = table_of_homes()?;
@@ -3849,14 +3888,40 @@ fn every_listed_home_is_its_fields_home_in_the_table() -> std::io::Result<()> {
                         }
                     }
                 }
-                match read {
-                    Ok(true) => {}
-                    Ok(false) => failures.push(format!(
+                let proof = PROVED_BY_TEST
+                    .iter()
+                    .find(|(w, f, h, _)| (*w, *f, *h) == (*widget, *field, *home))
+                    .map(|(_, _, _, test)| *test);
+                match (read, proof) {
+                    (Ok(true), None) => {}
+                    (Ok(true), Some(test)) => failures.push(format!(
+                        "{widget}: {field}: {home} spliced moves its 0.8.0 look, but is listed as \
+                         proved by {test}: remove the entry"
+                    )),
+                    (Ok(false), Some(test)) if defines_test(test)? => {}
+                    (Ok(false), Some(test)) => failures.push(format!(
+                        "{widget}: {field}: {home} is listed as proved by {test}, which the \
+                         crate's sources do not define"
+                    )),
+                    (Ok(false), None) => failures.push(format!(
                         "{widget}: {field}: {home} spliced moves its 0.8.0 look in no preset"
                     )),
-                    Err(e) => failures.push(format!("{widget}: {field}: {e}")),
+                    (Err(e), _) => failures.push(format!("{widget}: {field}: {e}")),
                 }
             }
+        }
+    }
+    for (widget, field, home, test) in PROVED_BY_TEST {
+        let listed = WIDGET_READS.iter().any(|(w, reads)| {
+            w == widget
+                && reads
+                    .iter()
+                    .any(|(f, homes)| f == field && homes.contains(home))
+        });
+        if !listed {
+            failures.push(format!(
+                "{widget}: {field}: {home}, proved by {test}, is no read of WIDGET_READS"
+            ));
         }
     }
     assert!(

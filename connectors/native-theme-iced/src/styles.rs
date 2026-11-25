@@ -308,6 +308,50 @@ impl Outline {
     }
 }
 
+/// A border of which the theme may leave a property unstated: the stroke
+/// with its width, and the corners, each `None` where unstated, which is
+/// iced's own there (spec §10, rule 0); [`Self::or`] completes it with
+/// iced's own border of the widget.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct PartOutline {
+    pub stroke: Option<(Line, f32)>,
+    pub radius: Option<Radius>,
+}
+
+impl PartOutline {
+    /// This border, each property the theme leaves unstated `iced`'s.
+    pub(crate) fn or(self, iced: Border) -> Outline {
+        let (line, width) = self
+            .stroke
+            .unwrap_or((Line::outside(iced.color), iced.width));
+        Outline {
+            line,
+            width,
+            radius: self.radius.unwrap_or(iced.radius),
+        }
+    }
+
+    /// [`Outline::aligned`] of the stroke, where stated.
+    #[cfg(test)]
+    pub(crate) fn aligned(self, align: LineAlign) -> Self {
+        Self {
+            stroke: self
+                .stroke
+                .map(|(line, width)| (line.aligned(align), width)),
+            ..self
+        }
+    }
+}
+
+impl From<Outline> for PartOutline {
+    fn from(outline: Outline) -> Self {
+        Self {
+            stroke: Some((outline.line, outline.width)),
+            radius: Some(outline.radius),
+        }
+    }
+}
+
 /// One property of a widget in a status: `stated`, what the theme states
 /// for the status's state, where it states it (its `from_state` bit set,
 /// queried with that state's flag alone); else the toolkit's own treatment
@@ -448,10 +492,12 @@ pub fn button(
 /// iced's own for that status (spec §2, `from_state`), never the idle fill
 /// composited over itself; the disabled look where the theme states no
 /// opacity is iced's own too (spec §10, rule 0). The 0.7.2 model states
-/// both.
+/// both. A fill, a label or a border property at rest the theme leaves
+/// unstated is `None`, iced's own class's at rest (spec §10, rule 0); the
+/// 0.7.2 model states each.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ButtonSource {
-    pub background: Color,
+    pub background: Option<Color>,
     pub hover_background: Option<Layer>,
     /// The pressed fill: 0.7.2's `active_background`, its hover layer where
     /// that is unset, which its connector drew as the pressed one.
@@ -466,17 +512,17 @@ pub(crate) struct ButtonSource {
     /// the label at rest (0.8.0: spec §10, rule 0a), else in the pressed one
     /// (0.7.2).
     pub checked_primary: bool,
-    pub label: Color,
+    pub label: Option<Color>,
     pub hover_label: Option<Color>,
     pub active_label: Option<Color>,
     /// The disabled label where the theme states one.
     pub disabled_label: Option<Color>,
     pub checked_label: Option<Color>,
     pub disabled_opacity: Option<f32>,
-    pub border: Outline,
+    pub border: PartOutline,
     /// The primary button's own border: 0.7.2's `border`, which the model
     /// gives every button.
-    pub primary_border: Outline,
+    pub primary_border: PartOutline,
     pub hover_border_color: Option<Line>,
     /// The border of a pressed button: 0.7.2's `hover_border_color`, which a
     /// pressed button keeps.
@@ -485,8 +531,8 @@ pub(crate) struct ButtonSource {
     /// `hover_border_color`, which the model gives every button.
     pub primary_hover_border_color: Option<Line>,
     pub primary_pressed_border_color: Option<Line>,
-    pub primary_background: Color,
-    pub primary_label: Color,
+    pub primary_background: Option<Color>,
+    pub primary_label: Option<Color>,
     pub default_background: Option<Color>,
     pub default_label: Option<Color>,
     pub default_border_color: Option<Line>,
@@ -504,26 +550,26 @@ impl ButtonSource {
         let line = |c: Option<Rgba>| c.map(|c| Line::outside(to_color(c)));
         let hover = to_color(b.hover_background);
         Self {
-            background: to_color(b.background_color),
+            background: Some(to_color(b.background_color)),
             hover_background: Some(Layer::Color(hover)),
             active_background: Some(Layer::Color(b.active_background.map_or(hover, to_color))),
             disabled_background: b.disabled_background.map(to_color),
             checked_background: b.checked_background.map(to_color),
             checked_primary: false,
-            label: to_color(b.font.color),
+            label: Some(to_color(b.font.color)),
             hover_label: Some(to_color(b.hover_text_color)),
             active_label: Some(to_color(b.active_text_color)),
             disabled_label: Some(to_color(b.disabled_text_color)),
             checked_label: b.checked_text_color.map(to_color),
             disabled_opacity: Some(b.disabled_opacity),
-            border: Outline::of(&b.border),
-            primary_border: Outline::of(&b.border),
+            border: Outline::of(&b.border).into(),
+            primary_border: Outline::of(&b.border).into(),
             hover_border_color: line(b.hover_border_color),
             pressed_border_color: line(b.hover_border_color),
             primary_hover_border_color: line(b.hover_border_color),
             primary_pressed_border_color: line(b.hover_border_color),
-            primary_background: to_color(b.primary_background),
-            primary_label: to_color(b.primary_text_color),
+            primary_background: Some(to_color(b.primary_background)),
+            primary_label: Some(to_color(b.primary_text_color)),
             default_background: b.default_button_background.map(to_color),
             default_label: b.default_button_text_color.map(to_color),
             default_border_color: line(b.default_button_border_color),
@@ -535,7 +581,8 @@ impl ButtonSource {
     /// The border a button shows in `status` over `fill`: under the pointer
     /// the hover stroke where the theme states one, pressed the pressed one,
     /// else [`Outline::in_state`] against `class`, the iced class the button
-    /// replaces; the one at rest at rest and disabled.
+    /// replaces; the one at rest at rest and disabled. Each property of the
+    /// border at rest the theme leaves unstated is `class`'s at rest.
     fn border_at(
         &self,
         theme: &Theme,
@@ -548,20 +595,32 @@ impl ButtonSource {
             class(theme, Status::Active).border,
             class(theme, status).border,
         );
+        let border = self.border.or(iced.0);
         match status {
-            Status::Active | Status::Disabled => self.border.over(fill),
-            Status::Hovered => self.border.in_state(self.hover_border_color, fill, iced),
-            Status::Pressed => self.border.in_state(self.pressed_border_color, fill, iced),
+            Status::Active | Status::Disabled => border.over(fill),
+            Status::Hovered => border.in_state(self.hover_border_color, fill, iced),
+            Status::Pressed => border.in_state(self.pressed_border_color, fill, iced),
         }
     }
 
-    /// The hovered and the pressed fill: each layer over the idle fill (a
+    /// The fill, the label and the border at rest, each the theme leaves
+    /// unstated iced's own neutral class's at rest (spec §10, rule 0).
+    fn at_rest(&self, theme: &Theme) -> (Color, Color, Outline) {
+        let own = iced_widget::button::secondary(theme, iced_widget::button::Status::Active);
+        (
+            self.background.unwrap_or(painted(own.background)),
+            self.label.unwrap_or(own.text_color),
+            self.border.or(own.border),
+        )
+    }
+
+    /// The hovered and the pressed fill: each layer over the `idle` fill (a
     /// whole fill as it is, [`Layer::over`]). A
     /// layer `None` is a state the theme states no fill for, whose fill is
     /// then as [`in_state`] gives it against iced's own (spec §2,
     /// `from_state`; spec §10, rule 0).
-    fn layered(&self) -> (Option<Color>, Option<Color>) {
-        let over = |layer: Option<Layer>| layer.map(|layer| layer.over(self.background));
+    fn layered(&self, idle: Color) -> (Option<Color>, Option<Color>) {
+        let over = |layer: Option<Layer>| layer.map(|layer| layer.over(idle));
         (over(self.hover_background), over(self.active_background))
     }
 
@@ -624,16 +683,14 @@ pub(crate) fn button_from(
     use iced_widget::button::{Status, Style};
 
     let source = *b;
-    let idle = b.background;
-    let (hovered, pressed) = b.layered();
-
-    let label = b.label;
     let hovered_label = b.hover_label;
     let pressed_label = b.active_label;
     let opacity = b.disabled_opacity;
 
     move |theme, status| {
         let iced = Style::default();
+        let (idle, label, outline) = source.at_rest(theme);
+        let (hovered, pressed) = source.layered(idle);
         // Each of the fill, the label and the stroke the theme states
         // nothing for in a state is as [`in_state`] gives it against iced's
         // own neutral class.
@@ -648,18 +705,11 @@ pub(crate) fn button_from(
                 (own.0.background, own.1.background),
             );
             let text = in_state(text, label, (own.0.text_color, own.1.text_color));
-            let border =
-                source
-                    .border
-                    .in_state(line, painted(background), (own.0.border, own.1.border));
+            let border = outline.in_state(line, painted(background), (own.0.border, own.1.border));
             (background, text, border)
         };
         let (background, text_color, border) = match status {
-            Status::Active => (
-                Some(Background::Color(idle)),
-                label,
-                source.border.over(idle),
-            ),
+            Status::Active => (Some(Background::Color(idle)), label, outline.over(idle)),
             Status::Hovered => state(hovered, hovered_label, source.hover_border_color),
             Status::Pressed => state(pressed, pressed_label, source.pressed_border_color),
             // A translucent disabled fill replaces the idle one and lets the
@@ -671,7 +721,7 @@ pub(crate) fn button_from(
                     idle,
                     source.disabled_label,
                     label,
-                    source.border,
+                    outline,
                     opacity,
                 );
                 (Some(Background::Color(fill)), label, border)
@@ -745,13 +795,11 @@ pub(crate) fn button_toggle_from(
         // (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
         // stated `CHECKED` label, else in the label at rest"); on 0.7.2's,
         // the pressed one the theme states, else the label at rest.
+        let (_, rest_label, outline) = source.at_rest(theme);
         let (fill, label) = match source.checked_background {
             Some(fill) => {
                 let pressed = source.active_label.filter(|_| !source.checked_primary);
-                (
-                    fill,
-                    source.checked_label.or(pressed).unwrap_or(source.label),
-                )
+                (fill, source.checked_label.or(pressed).unwrap_or(rest_label))
             }
             None => {
                 let shown = if source.checked_primary {
@@ -769,7 +817,6 @@ pub(crate) fn button_toggle_from(
                 )
             }
         };
-        let outline = source.border;
         let (background, text_color, border) = match status {
             Status::Active | Status::Hovered | Status::Pressed => (
                 fill,
@@ -781,7 +828,7 @@ pub(crate) fn button_toggle_from(
                     source.disabled_background,
                     fill,
                     source.disabled_label,
-                    source.label,
+                    rest_label,
                     outline,
                     opacity,
                 ),
@@ -859,6 +906,39 @@ pub(crate) struct ToolbarButtonSource {
     pub pressed_border_color: Option<Line>,
     pub checked_hover_border_color: Option<Line>,
     pub checked_pressed_border_color: Option<Line>,
+    /// The toolbar's own labels, on the 0.8.0 model; `None` on 0.7.2's,
+    /// whose toolbar button is lettered in the push button's labels.
+    pub labels: Option<ToolbarLabels>,
+    /// The toolbar button's own outline, on the 0.8.0 model; `None` on
+    /// 0.7.2's, whose toolbar button is outlined as the push button at rest
+    /// (its width and corners) in no colour at rest.
+    pub outline: Option<ToolbarOutline>,
+}
+
+/// A toolbar button's own outline on the 0.8.0 model (spec §5, the toolbar's
+/// `button` part): at rest `toolbar.button(NONE)`'s stroke and corners, each
+/// iced's own where unstated (spec §10, rule 0); in a state a rule states
+/// the stroke for, that stroke's own width, else the width at rest.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolbarOutline {
+    pub rest: PartOutline,
+    pub hover_width: Option<f32>,
+    pub pressed_width: Option<f32>,
+    pub checked_width: Option<f32>,
+    pub checked_hover_width: Option<f32>,
+    pub checked_pressed_width: Option<f32>,
+}
+
+/// A toolbar button's labels on the 0.8.0 model: the label at rest where
+/// the theme states it, each other state's where a rule states it for the
+/// state; `None` is iced's own there (spec §10, rule 0).
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolbarLabels {
+    pub rest: Option<Color>,
+    pub hover: Option<Color>,
+    pub pressed: Option<Color>,
+    pub checked: Option<Color>,
+    pub disabled: Option<Color>,
 }
 
 impl ToolbarButtonSource {
@@ -888,6 +968,8 @@ impl ToolbarButtonSource {
             pressed_border_color: line(t.button_hover_border_color),
             checked_hover_border_color: checked_hover,
             checked_pressed_border_color: checked_hover,
+            labels: None,
+            outline: None,
         }
     }
 
@@ -902,6 +984,10 @@ impl ToolbarButtonSource {
             pressed_border_color: line(self.pressed_border_color),
             checked_hover_border_color: line(self.checked_hover_border_color),
             checked_pressed_border_color: line(self.checked_pressed_border_color),
+            outline: self.outline.map(|o| ToolbarOutline {
+                rest: o.rest.aligned(align),
+                ..o
+            }),
             ..self
         }
     }
@@ -937,28 +1023,66 @@ pub(crate) fn toolbar_button_from(
     let pressed = t.active_background.map(Layer::as_given);
     let checked_fill = t.checked_background;
 
-    let label = b.label;
-    let hover_label = b.hover_label;
-    let active_label = b.active_label;
-    let checked_label = b.checked_label;
-    // A disabled label the theme leaves to iced is the label at rest, faded
-    // by the theme's disabled opacity as `button_from` fades it, or as
-    // iced's own classes fade it where the theme states no opacity.
-    let disabled_label = b.disabled_label.unwrap_or(match b.disabled_opacity {
-        Some(opacity) => faded(b.label, opacity),
-        None => b.label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
-    });
+    let disabled_opacity = b.disabled_opacity;
 
-    let outline = Outline {
-        line: Line::outside(Color::TRANSPARENT),
-        ..b.border
-    };
+    let source = *b;
     let t = *t;
     let primary = button_primary_from(b);
     let checked_primary = b.checked_primary;
 
     move |theme, status| {
         let iced = Style::default();
+        let (_, push_label, push_outline) = source.at_rest(theme);
+        // On the 0.8.0 model the toolbar button's own outline, what it leaves
+        // unstated iced's own neutral class's; on 0.7.2's the push button's
+        // width and corners in no colour at rest.
+        let outline = match t.outline {
+            Some(own) => own
+                .rest
+                .or(iced_widget::button::secondary(theme, Status::Active).border),
+            None => Outline {
+                line: Line::outside(Color::TRANSPARENT),
+                ..push_outline
+            },
+        };
+        let widths = t.outline.map(|o| {
+            (
+                o.hover_width,
+                o.pressed_width,
+                o.checked_width,
+                o.checked_hover_width,
+                o.checked_pressed_width,
+            )
+        });
+        let (hover_width, pressed_width, checked_width, checked_hover_width, checked_pressed_width) =
+            widths.unwrap_or_default();
+        // On the 0.8.0 model the toolbar's own labels, an unstated label at
+        // rest iced's own neutral class's; on 0.7.2's the push button's.
+        let (label, hover_label, active_label, checked_label, disabled_label) = match t.labels {
+            Some(l) => (
+                l.rest.unwrap_or_else(|| {
+                    iced_widget::button::secondary(theme, Status::Active).text_color
+                }),
+                l.hover,
+                l.pressed,
+                l.checked,
+                l.disabled,
+            ),
+            None => (
+                push_label,
+                source.hover_label,
+                source.active_label,
+                source.checked_label,
+                source.disabled_label,
+            ),
+        };
+        // A disabled label the theme leaves to iced is the label at rest, faded
+        // by the theme's disabled opacity as `button_from` fades it, or as
+        // iced's own classes fade it where the theme states no opacity.
+        let disabled_label = disabled_label.unwrap_or(match disabled_opacity {
+            Some(opacity) => faded(label, opacity),
+            None => label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
+        });
         let state = |fill: Option<Color>, text: Option<Color>, status| {
             let own = (
                 iced_widget::button::secondary(theme, Status::Active),
@@ -995,14 +1119,33 @@ pub(crate) fn toolbar_button_from(
             (Some(fill), _) => (fill, checked_label.unwrap_or(pressed_label)),
             (None, _) => (pressed, pressed_label),
         };
-        let (background, text_color, line) = match (checked, status) {
-            (false, Status::Active) => (Color::TRANSPARENT, label, None),
-            (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color),
-            (false, Status::Pressed) => (pressed, pressed_label, t.pressed_border_color),
-            (true, Status::Active) => (fill, checked_label, t.checked_border_color),
-            (true, Status::Hovered) => (fill, checked_label, t.checked_hover_border_color),
-            (true, Status::Pressed) => (fill, checked_label, t.checked_pressed_border_color),
-            (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, None),
+        let (background, text_color, line, width) = match (checked, status) {
+            (false, Status::Active) => (Color::TRANSPARENT, label, None, None),
+            (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color, hover_width),
+            (false, Status::Pressed) => (
+                pressed,
+                pressed_label,
+                t.pressed_border_color,
+                pressed_width,
+            ),
+            (true, Status::Active) => (fill, checked_label, t.checked_border_color, checked_width),
+            (true, Status::Hovered) => (
+                fill,
+                checked_label,
+                t.checked_hover_border_color,
+                checked_hover_width,
+            ),
+            (true, Status::Pressed) => (
+                fill,
+                checked_label,
+                t.checked_pressed_border_color,
+                checked_pressed_width,
+            ),
+            (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, None, None),
+        };
+        let outline = Outline {
+            width: width.unwrap_or(outline.width),
+            ..outline
         };
         let border = outline.with(line).over(background);
         Style {
@@ -1039,52 +1182,58 @@ pub(crate) fn toolbar_button_from(
 /// where the platform states a disabled fill, which it gives every button
 /// class; where it states none it dims by opacity alone
 /// (`docs/platform-facts.md` §2.1.6), and the class keeps its idle pair. Either
-/// is faded by `button.disabled_opacity` (see [`faded`]).
+/// is faded by `button.disabled_opacity` (see [`faded`]). A fill, a label
+/// or a border property at rest the theme leaves unstated (`None`) is
+/// `class`'s at rest (spec §10, rule 0).
 pub(crate) fn class_button(
     b: &ButtonSource,
-    fill: Color,
-    label: Color,
+    fill: Option<Color>,
+    label: Option<Color>,
     class: fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style,
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    let idle = fill;
-    let idle_label = label;
-    let disabled = match b.disabled_background {
-        Some(_) => (b.disabled_background, idle, b.disabled_label, b.label),
-        None => (None, idle, None, idle_label),
-    };
     let opacity = b.disabled_opacity;
     let source = *b;
 
     move |theme, status| {
         let iced = class(theme, status);
+        let own = class(theme, Status::Active);
+        let idle = fill.unwrap_or(painted(own.background));
+        let idle_label = label.unwrap_or(own.text_color);
+        let outline = source.border.or(own.border);
         let (background, text_color, border) = match status {
             Status::Active => (
                 Some(Background::Color(idle)),
                 idle_label,
-                source.border.over(idle),
+                outline.over(idle),
             ),
             // Neither the fill nor the label of these two states has a native
             // source, so each is as [`in_state`] gives it against this
             // class.
             Status::Hovered | Status::Pressed => {
-                let rest = class(theme, Status::Active);
                 let background = in_state(
                     None,
                     Some(Background::Color(idle)),
-                    (rest.background, iced.background),
+                    (own.background, iced.background),
                 );
                 (
                     background,
-                    in_state(None, idle_label, (rest.text_color, iced.text_color)),
+                    in_state(None, idle_label, (own.text_color, iced.text_color)),
                     source.border_at(theme, status, painted(background), class),
                 )
             }
             Status::Disabled => {
-                let (fill, idle, label, idle_label) = disabled;
+                let (fill, label, idle_label) = match source.disabled_background {
+                    Some(_) => (
+                        source.disabled_background,
+                        source.disabled_label,
+                        source.at_rest(theme).1,
+                    ),
+                    None => (None, None, idle_label),
+                };
                 let (fill, label, border) =
-                    disabled_button(fill, idle, label, idle_label, source.border, opacity);
+                    disabled_button(fill, idle, label, idle_label, outline, opacity);
                 (Some(Background::Color(fill)), label, border)
             }
         };
@@ -1140,18 +1289,22 @@ pub(crate) fn button_primary_from(
         iced_widget::button::primary,
     );
 
-    let primary = iced_core::theme::palette::Primary::generate(
-        b.primary_background,
-        b.window_background,
-        b.window_text,
-    );
-    let hovered = primary.strong.color;
-    let pressed = primary.base.color;
+    // Where the theme states no primary fill, the class's own hovered and
+    // pressed fills, as [`class_button`] gives them from iced's own fill at
+    // rest.
+    let generated = b.primary_background.map(|fill| {
+        let primary =
+            iced_core::theme::palette::Primary::generate(fill, b.window_background, b.window_text);
+        (primary.strong.color, primary.base.color)
+    });
     let label = b.primary_label;
     let source = *b;
 
     move |theme, status| {
         let style = class(theme, status);
+        let Some((hovered, pressed)) = generated else {
+            return style;
+        };
         let background = match status {
             Status::Hovered => hovered,
             Status::Pressed => pressed,
@@ -1159,7 +1312,7 @@ pub(crate) fn button_primary_from(
         };
         Style {
             background: Some(Background::Color(background)),
-            text_color: label,
+            text_color: label.unwrap_or(style.text_color),
             border: source.border_at(theme, status, background, iced_widget::button::primary),
             ..style
         }
@@ -1196,15 +1349,17 @@ pub(crate) fn button_default_from(
     let primary = button_primary_from(b);
 
     let fill = b.default_background;
-    let label = b.default_label.unwrap_or(b.label);
-    let border = b.border.with(b.default_border_color);
-    let hovered_border = border.with(b.hover_border_color);
-    let pressed_border = border.with(b.pressed_border_color);
+    let source = *b;
 
     move |theme, status| {
         let Some(fill) = fill else {
             return primary(theme, status);
         };
+        let (_, rest_label, outline) = source.at_rest(theme);
+        let label = source.default_label.unwrap_or(rest_label);
+        let border = outline.with(source.default_border_color);
+        let hovered_border = border.with(source.hover_border_color);
+        let pressed_border = border.with(source.pressed_border_color);
         let rest = plain(theme, Status::Active);
         match status {
             Status::Active => Style {
@@ -1243,8 +1398,8 @@ pub fn button_danger(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         &ButtonSource::of(resolved),
-        to_color(resolved.defaults.danger_color),
-        to_color(resolved.defaults.danger_text_color),
+        Some(to_color(resolved.defaults.danger_color)),
+        Some(to_color(resolved.defaults.danger_text_color)),
         iced_widget::button::danger,
     )
 }
@@ -1260,8 +1415,8 @@ pub fn button_success(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         &ButtonSource::of(resolved),
-        to_color(resolved.defaults.success_color),
-        to_color(resolved.defaults.success_text_color),
+        Some(to_color(resolved.defaults.success_color)),
+        Some(to_color(resolved.defaults.success_text_color)),
         iced_widget::button::success,
     )
 }
@@ -1277,8 +1432,8 @@ pub fn button_warning(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         &ButtonSource::of(resolved),
-        to_color(resolved.defaults.warning_color),
-        to_color(resolved.defaults.warning_text_color),
+        Some(to_color(resolved.defaults.warning_color)),
+        Some(to_color(resolved.defaults.warning_text_color)),
         iced_widget::button::warning,
     )
 }
@@ -1306,18 +1461,21 @@ pub fn button_link(
 
 /// What [`button_link`] reads, of either model. A hover or pressed fill or
 /// label `None` is iced's own text button's for the status (spec §2,
-/// `from_state`).
+/// `from_state`). The fill and the label at rest and the disabled label the
+/// theme leaves unstated are `None`, iced's own text button's (spec §10,
+/// rule 0); the 0.7.2 model states each.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct LinkSource {
-    pub background: Color,
+    pub background: Option<Color>,
     /// The hover layer over the idle fill.
     pub hover_background: Option<Layer>,
-    /// The fill of a pressed link, as painted: the 0.7.2 model's idle one.
-    pub pressed_background: Option<Color>,
-    pub label: Color,
+    /// The pressed layer over the idle fill: on the 0.7.2 model the idle
+    /// fill itself.
+    pub pressed_background: Option<Layer>,
+    pub label: Option<Color>,
     pub hover_label: Option<Color>,
     pub active_label: Option<Color>,
-    pub disabled_label: Color,
+    pub disabled_label: Option<Color>,
     pub disabled_opacity: f32,
 }
 
@@ -1326,13 +1484,13 @@ impl LinkSource {
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let l = &resolved.link;
         Self {
-            background: to_color(l.background_color),
+            background: Some(to_color(l.background_color)),
             hover_background: Some(Layer::Color(to_color(l.hover_background))),
-            pressed_background: Some(to_color(l.background_color)),
-            label: to_color(l.font.color),
+            pressed_background: Some(Layer::Whole(to_color(l.background_color))),
+            label: Some(to_color(l.font.color)),
             hover_label: Some(to_color(l.hover_text_color)),
             active_label: Some(to_color(l.active_text_color)),
-            disabled_label: to_color(l.disabled_text_color),
+            disabled_label: Some(to_color(l.disabled_text_color)),
             // `LinkTheme` states no `disabled_opacity`: the defaults' fades it.
             disabled_opacity: resolved.defaults.disabled_opacity,
         }
@@ -1359,23 +1517,28 @@ pub(crate) fn button_link_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    let idle = Some(Background::Color(l.background));
-    let hovered = l
-        .hover_background
-        .map(|hover| Background::Color(hover.over(l.background)));
-    let pressed = l.pressed_background.map(Background::Color);
-
-    let label = l.label;
+    let source = *l;
     let hovered_label = l.hover_label;
     let pressed_label = l.active_label;
-    let disabled_label = faded(l.disabled_label, l.disabled_opacity);
+    let disabled_label = l
+        .disabled_label
+        .map(|label| faded(label, l.disabled_opacity));
 
     move |theme, status| {
         let iced = iced_widget::button::text(theme, status);
         // Each of the fill and the label the theme states nothing for in a
         // hover or a press is as [`in_state`] gives it against iced's own
-        // text button.
+        // text button, as is each at rest and the disabled label where the
+        // theme leaves it unstated.
         let rest = iced_widget::button::text(theme, Status::Active);
+        let idle = source.background.map(Background::Color).or(rest.background);
+        let label = source.label.unwrap_or(rest.text_color);
+        let layered =
+            |layer: Option<Layer>| layer.map(|layer| Background::Color(layer.over(painted(idle))));
+        let (hovered, pressed) = (
+            layered(source.hover_background),
+            layered(source.pressed_background),
+        );
         let own = |fill: Option<Background>, text: Option<Color>| {
             (
                 in_state(fill.map(Some), idle, (rest.background, iced.background)),
@@ -1386,7 +1549,7 @@ pub(crate) fn button_link_from(
             Status::Active => (idle, label),
             Status::Hovered => own(hovered, hovered_label),
             Status::Pressed => own(pressed, pressed_label),
-            Status::Disabled => (idle, disabled_label),
+            Status::Disabled => (idle, disabled_label.unwrap_or(iced.text_color)),
         };
         Style {
             background,
@@ -1415,7 +1578,8 @@ struct InputColors {
     /// it.
     focus_ring: Option<Border>,
     disabled: (Color, Border, Color),
-    placeholder: Color,
+    /// `None` where the theme leaves it unstated, iced's own in the status.
+    placeholder: Option<Color>,
     selection: Color,
 }
 
@@ -1427,15 +1591,19 @@ fn inset_ring(width: f32, offset: f32) -> bool {
 }
 
 impl InputColors {
-    fn new(i: &InputSource) -> Self {
-        let idle = i.background;
+    /// The field's values, each the theme leaves unstated iced's own field's
+    /// (spec §10, rule 0): `own` its fill, border and value at rest,
+    /// `own_disabled_value` its disabled value.
+    fn new(i: &InputSource, own: (Color, Border, Color), own_disabled_value: Color) -> Self {
+        let (own_fill, own_border, own_value) = own;
+        let idle = i.background.unwrap_or(own_fill);
         // A translucent disabled fill replaces the idle one and lets the
         // window through, so it is emitted as given.
-        let disabled = i.disabled_background.unwrap_or(i.background);
-        let text = i.text;
+        let disabled = i.disabled_background.unwrap_or(idle);
+        let text = i.text.unwrap_or(own_value);
         let opacity = i.disabled_opacity;
 
-        let border = i.border;
+        let border = i.border.or(own_border);
         // An inset focus ring (offset -width: libadwaita's `outline-offset:
         // -$width`, `docs/platform-facts.md` §2.1.5) lies inside the field's
         // edge, where iced paints a border (`renderer::Quad { bounds, border,
@@ -1450,11 +1618,13 @@ impl InputColors {
         // with a gap (an offset below minus the width) is not a border iced
         // can draw; there a focused field takes its focused stroke
         // ([`Self::focused`]), and `crate::focus_ring` draws the ring round
-        // the field it wraps.
-        let focus_color = i.focus_border_color.map_or(i.focus_ring_color, |l| l.color);
-        let focus_ring = inset_ring(i.focus_ring_width, i.focus_ring_offset).then(|| Border {
-            color: composite_over(focus_color, idle),
-            width: border.width.max(i.focus_ring_width),
+        // the field it wraps. On the 0.8.0 model no field draws the ring:
+        // `crate::next::focus_ring` paints every ring over the field, an
+        // inset one as the band over its outermost width (spec §2,
+        // `FocusIndicator`), so its source states none.
+        let focus_ring = i.focus_ring.map(|(ring_color, ring_width)| Border {
+            color: composite_over(i.focus_border_color.map_or(ring_color, |l| l.color), idle),
+            width: border.width.max(ring_width),
             radius: border.radius,
         });
         // A field the theme states no opacity for is faded as iced's own
@@ -1475,7 +1645,11 @@ impl InputColors {
                     color: fade(disabled_border.color),
                     ..disabled_border
                 },
-                fade(i.disabled_text),
+                in_state(
+                    i.disabled_text.map(fade),
+                    fade(text),
+                    (own_value, own_disabled_value),
+                ),
             ),
             placeholder: i.placeholder,
             selection: i.selection,
@@ -1512,18 +1686,25 @@ impl InputColors {
 /// border, and the focus ring's colour, width and offset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct InputSource {
-    pub background: Color,
+    /// The fill, the value, the placeholder and the border at rest: each
+    /// `None` (a border property) where the theme leaves it unstated,
+    /// iced's own field's (spec §10, rule 0); the 0.7.2 model states each.
+    /// The disabled value where the theme states it for the disabled state
+    /// (on the 0.8.0 model a rule for `DISABLED`, spec §2, `from_state`);
+    /// `None` where it does not, iced's own disabled value where iced's own
+    /// field changes it, else the value at rest ([`in_state`]).
+    pub background: Option<Color>,
     pub disabled_background: Option<Color>,
-    pub text: Color,
-    pub disabled_text: Color,
+    pub text: Option<Color>,
+    pub disabled_text: Option<Color>,
     pub disabled_opacity: Option<f32>,
-    pub border: Outline,
+    pub border: PartOutline,
     pub hover_border_color: Option<Line>,
     pub focus_border_color: Option<Line>,
-    pub focus_ring_color: Color,
-    pub focus_ring_width: f32,
-    pub focus_ring_offset: f32,
-    pub placeholder: Color,
+    /// The inset focus ring a focused field draws as its border: the
+    /// ring's colour and width; `None` where the field draws none.
+    pub focus_ring: Option<(Color, f32)>,
+    pub placeholder: Option<Color>,
     pub selection: Color,
 }
 
@@ -1542,28 +1723,27 @@ impl InputSource {
         let line = |c: Rgba| Line::outside(to_color(c));
         let inset = inset_ring(d.focus_ring_width, d.focus_ring_offset);
         Self {
-            background: to_color(i.background_color),
+            background: Some(to_color(i.background_color)),
             disabled_background: i.disabled_background.map(to_color),
-            text: to_color(i.font.color),
-            disabled_text: to_color(i.disabled_text_color),
+            text: Some(to_color(i.font.color)),
+            disabled_text: Some(to_color(i.disabled_text_color)),
             disabled_opacity: Some(i.disabled_opacity),
-            border,
+            border: border.into(),
             hover_border_color: Some(i.hover_border_color.map_or(border.line, line)),
             focus_border_color: i
                 .focus_border_color
                 .map(line)
                 .or((!inset).then_some(border.line)),
-            focus_ring_color: to_color(d.focus_ring_color),
-            focus_ring_width: d.focus_ring_width,
-            focus_ring_offset: d.focus_ring_offset,
-            placeholder: to_color(i.placeholder_color),
+            focus_ring: inset.then(|| (to_color(d.focus_ring_color), d.focus_ring_width)),
+            placeholder: Some(to_color(i.placeholder_color)),
             selection: to_color(i.selection_background),
         }
     }
 
-    /// Every stroke where it lies as `listed` says, and the hovered and the
-    /// focused stroke unset where it names them, for the parity test's
-    /// expected values.
+    /// Every stroke where it lies as `listed` says, the hovered and the
+    /// focused stroke unset where it names them, and no inset ring drawn as
+    /// the focused border where it names the ring drawn over the field, for
+    /// the parity test's expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         let (align, s) = (listed.align, listed.states);
@@ -1572,6 +1752,7 @@ impl InputSource {
             border: self.border.aligned(align),
             hover_border_color: line(self.hover_border_color, s.hover_stroke),
             focus_border_color: line(self.focus_border_color, s.focus_stroke),
+            focus_ring: self.focus_ring.filter(|_| !s.ring_over),
             ..self
         }
     }
@@ -1617,12 +1798,18 @@ pub(crate) fn text_input_from(
     s: &InputSource,
 ) -> impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>
 {
-    use iced_widget::text_input::{Status, Style};
+    use iced_widget::text_input::{Status, Style, default};
 
-    let input = InputColors::new(s);
+    let s = *s;
 
     move |theme, status| {
-        let iced = iced_widget::text_input::default(theme, status);
+        let iced = default(theme, status);
+        let rest = default(theme, Status::Active);
+        let input = InputColors::new(
+            &s,
+            (painted(Some(rest.background)), rest.border, rest.value),
+            default(theme, Status::Disabled).value,
+        );
         let own = || {
             (
                 iced_widget::text_input::default(theme, Status::Active).border,
@@ -1642,7 +1829,7 @@ pub(crate) fn text_input_from(
             background: Background::Color(background),
             border,
             icon: iced.icon,
-            placeholder: input.placeholder,
+            placeholder: input.placeholder.unwrap_or(iced.placeholder),
             value,
             selection: input.selection,
         }
@@ -1680,17 +1867,19 @@ pub(crate) fn text_editor_from(
     s: &InputSource,
 ) -> impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>
 {
-    use iced_widget::text_editor::{Status, Style};
+    use iced_widget::text_editor::{Status, Style, default};
 
-    let input = InputColors::new(s);
+    let s = *s;
 
     move |theme, status| {
-        let own = || {
-            (
-                iced_widget::text_editor::default(theme, Status::Active).border,
-                iced_widget::text_editor::default(theme, status).border,
-            )
-        };
+        let iced = default(theme, status);
+        let rest = default(theme, Status::Active);
+        let input = InputColors::new(
+            &s,
+            (painted(Some(rest.background)), rest.border, rest.value),
+            default(theme, Status::Disabled).value,
+        );
+        let own = || (rest.border, iced.border);
         let (background, border, value) = match status {
             Status::Active => input.active,
             Status::Hovered => input.hovered(own()),
@@ -1702,7 +1891,7 @@ pub(crate) fn text_editor_from(
         Style {
             background: Background::Color(background),
             border,
-            placeholder: input.placeholder,
+            placeholder: input.placeholder.unwrap_or(iced.placeholder),
             value,
             selection: input.selection,
         }
@@ -1770,22 +1959,24 @@ pub fn checkbox(
 /// the theme states nothing for the hovered box, which is then iced's own
 /// (spec §2, `from_state`); the 0.7.2 model's unset soft options are the
 /// platform saying the box looks as it does at rest, and its reads state
-/// that.
+/// that. A fill or a stroke at rest the theme leaves unstated is `None`,
+/// iced's own control's at rest (spec §10, rule 0); the 0.7.2 model states
+/// each.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct CheckFills {
-    pub checked: Color,
+    pub checked: Option<Color>,
     /// The unchecked fill: `checkbox.unchecked_background`, or the box's own
     /// fill where that is unset.
-    pub unchecked: Color,
+    pub unchecked: Option<Color>,
     /// The fill of an unchecked box under the pointer: its hover layer over
     /// the unchecked fill.
     pub hover_fill: Option<Color>,
     /// The fill of a checked box under the pointer.
     pub checked_hover_fill: Option<Color>,
-    pub checked_border: Line,
+    pub checked_border: Option<Line>,
     /// `checkbox.unchecked_border_color`, or the box's own border colour
     /// where that is unset.
-    pub unchecked_border: Line,
+    pub unchecked_border: Option<Line>,
     /// The border of an unchecked box under the pointer.
     pub hover_border: Option<Line>,
     /// The border of a checked box under the pointer.
@@ -1805,15 +1996,15 @@ impl CheckFills {
         let unchecked_border = line(c.unchecked_border_color.unwrap_or(c.border.color));
         let checked_border = line(c.border.color);
         Self {
-            checked: to_color(c.checked_background),
-            unchecked,
+            checked: Some(to_color(c.checked_background)),
+            unchecked: Some(unchecked),
             hover_fill: Some(c.hover_background.map_or(unchecked, |hover| {
                 composite_over(to_color(hover), unchecked)
             })),
             // 0.7.2's connector kept a checked box's fill under the pointer.
             checked_hover_fill: Some(to_color(c.checked_background)),
-            checked_border,
-            unchecked_border,
+            checked_border: Some(checked_border),
+            unchecked_border: Some(unchecked_border),
             hover_border: Some(c.hover_border_color.map_or(unchecked_border, line)),
             checked_hover_border: Some(c.hover_border_color.map_or(checked_border, line)),
             hover_label: Some(to_color(c.font.color)),
@@ -1827,8 +2018,8 @@ impl CheckFills {
         let (align, s) = (listed.align, listed.states);
         let line = |l: Option<Line>| l.map(|l| l.aligned(align)).filter(|_| !s.hover_stroke);
         Self {
-            checked_border: self.checked_border.aligned(align),
-            unchecked_border: self.unchecked_border.aligned(align),
+            checked_border: self.checked_border.map(|l| l.aligned(align)),
+            unchecked_border: self.unchecked_border.map(|l| l.aligned(align)),
             hover_fill: self.hover_fill.filter(|_| !s.hover_fill),
             checked_hover_fill: self.checked_hover_fill.filter(|_| !s.hover_fill),
             hover_border: line(self.hover_border),
@@ -1842,33 +2033,27 @@ impl CheckFills {
     /// `width`) of a box that is checked or not, under the pointer or not,
     /// the stroke laid over that fill ([`Line::over`]). Under the pointer
     /// each the theme states nothing for is as [`in_state`] gives it against
-    /// `iced`, iced's own fill and border at rest and in the status.
+    /// `iced`, iced's own fill and border at rest and in the status. A fill,
+    /// a stroke or a width at rest the theme leaves unstated is iced's own
+    /// at rest.
     fn at(
         &self,
         is_checked: bool,
         is_hovered: bool,
-        width: f32,
+        width: Option<f32>,
         iced: impl Fn() -> ((Color, Border), (Color, Border)),
     ) -> (Color, Color, f32) {
-        let (fill, line, hover_fill, hover_line) = if is_checked {
-            (
-                self.checked,
-                self.checked_border,
-                self.checked_hover_fill,
-                self.checked_hover_border,
-            )
+        let ((iced_fill, iced_rest), (iced_hover_fill, iced_hover)) = iced();
+        let (fill, line) = self.rest(is_checked, (iced_fill, iced_rest));
+        let width = width.unwrap_or(iced_rest.width);
+        let (hover_fill, hover_line) = if is_checked {
+            (self.checked_hover_fill, self.checked_hover_border)
         } else {
-            (
-                self.unchecked,
-                self.unchecked_border,
-                self.hover_fill,
-                self.hover_border,
-            )
+            (self.hover_fill, self.hover_border)
         };
         if !is_hovered {
             return (fill, line.over(fill), line.width(width));
         }
-        let ((iced_fill, iced_rest), (iced_hover_fill, iced_hover)) = iced();
         let fill = in_state(hover_fill, fill, (iced_fill, iced_hover_fill));
         let rest = Outline {
             line,
@@ -1877,6 +2062,20 @@ impl CheckFills {
         };
         let border = rest.in_state(hover_line, fill, (iced_rest, iced_hover));
         (fill, border.color, border.width)
+    }
+
+    /// The fill and the stroke of a box at rest, checked or not, each the
+    /// theme leaves unstated `iced`'s, iced's own fill and border at rest.
+    fn rest(&self, is_checked: bool, iced: (Color, Border)) -> (Color, Line) {
+        let (fill, line) = if is_checked {
+            (self.checked, self.checked_border)
+        } else {
+            (self.unchecked, self.unchecked_border)
+        };
+        (
+            fill.unwrap_or(iced.0),
+            line.unwrap_or(Line::outside(iced.1.color)),
+        )
     }
 }
 
@@ -1888,42 +2087,62 @@ pub(crate) struct CheckboxSource {
     /// options.
     pub disabled_background: Option<Color>,
     pub checked_disabled_background: Option<Color>,
+    /// The stroke of a disabled box unchecked and checked, where the theme
+    /// states one for the state; `None` where it states none, the stroke
+    /// then as [`Outline::in_state`] gives it against iced's own box at
+    /// rest and disabled.
+    pub disabled_border: Option<Line>,
+    pub checked_disabled_border: Option<Line>,
     pub disabled_opacity: Option<f32>,
     /// The check mark.
-    pub mark: Color,
+    pub mark: Option<Color>,
     /// The checked disabled box's mark, where the theme states a disabled
     /// mark.
     pub disabled_mark: Option<Color>,
-    pub label: Color,
-    pub disabled_label: Color,
-    pub border_width: f32,
-    pub border_radius: f32,
+    /// The labels, the mark, the stroke's width and the corners: each
+    /// `None` where the theme leaves it unstated, iced's own box's in the
+    /// status (spec §10, rule 0); the 0.7.2 model states each.
+    pub label: Option<Color>,
+    pub disabled_label: Option<Color>,
+    pub border_width: Option<f32>,
+    pub border_radius: Option<f32>,
 }
 
 impl CheckboxSource {
-    /// The 0.7.2 model's reads.
+    /// The 0.7.2 model's reads: a disabled box keeps its outline at rest,
+    /// which says whether it is checked.
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let c = &resolved.checkbox;
+        let fills = CheckFills::of(c);
         Self {
-            fills: CheckFills::of(c),
+            fills,
             disabled_background: c.disabled_background.map(to_color),
             checked_disabled_background: c.disabled_background.map(to_color),
+            disabled_border: fills.unchecked_border,
+            checked_disabled_border: fills.checked_border,
             disabled_opacity: Some(c.disabled_opacity),
-            mark: to_color(c.indicator_color),
+            mark: Some(to_color(c.indicator_color)),
             disabled_mark: None,
-            label: to_color(c.font.color),
-            disabled_label: to_color(c.disabled_text_color),
-            border_width: c.border.line_width,
-            border_radius: c.border.corner_radius,
+            label: Some(to_color(c.font.color)),
+            disabled_label: Some(to_color(c.disabled_text_color)),
+            border_width: Some(c.border.line_width),
+            border_radius: Some(c.border.corner_radius),
         }
     }
 
-    /// [`CheckFills::listed`] of the box's fills, for the parity test's
-    /// expected values.
+    /// [`CheckFills::listed`] of the box's fills, and its disabled strokes
+    /// where they lie as `listed` says, unset where it names them, for the
+    /// parity test's expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let line = |l: Option<Line>| {
+            l.map(|l| l.aligned(listed.align))
+                .filter(|_| !listed.states.disabled_stroke)
+        };
         Self {
             fills: self.fills.listed(listed),
+            disabled_border: line(self.disabled_border),
+            checked_disabled_border: line(self.checked_disabled_border),
             ..self
         }
     }
@@ -1956,6 +2175,7 @@ pub(crate) fn checkbox_from(
     // (`docs/platform-facts.md` §2.1.6): the box keeps its enabled look.
     let disabled = c.disabled_background;
     let checked_disabled = c.checked_disabled_background;
+    let (disabled_border, checked_disabled_border) = (c.disabled_border, c.checked_disabled_border);
     let opacity = c.disabled_opacity;
 
     let mark = c.mark;
@@ -1964,13 +2184,15 @@ pub(crate) fn checkbox_from(
     let disabled_label = c.disabled_label;
 
     let border_width = c.border_width;
-    let border_radius = Radius::new(c.border_radius);
+    let border_radius = c.border_radius.map(Radius::new);
 
     move |theme, status| {
         let own = |status| {
             let own = iced_widget::checkbox::primary(theme, status);
             (painted(Some(own.background)), own.border, own.text_color)
         };
+        let own_style = iced_widget::checkbox::primary(theme, status);
+        let mark = mark.unwrap_or(own_style.icon_color);
         // A box the theme states no opacity for is drawn in the colours it
         // states, not faded.
         let fade = |under: Color, color: Color| {
@@ -1982,7 +2204,7 @@ pub(crate) fn checkbox_from(
                     let (fill, border, _) = own(status);
                     ((fill, border), (fill, border))
                 });
-                (fill, border, Some(label), mark, width)
+                (fill, border, label.or(own_style.text_color), mark, width)
             }
             Status::Hovered { is_checked } => {
                 let rest = own(Status::Active { is_checked });
@@ -1992,7 +2214,7 @@ pub(crate) fn checkbox_from(
                 });
                 let text = in_state(
                     fills.hover_label.map(Some),
-                    Some(label),
+                    label.or(rest.2),
                     (rest.2, hovered.2),
                 );
                 (fill, border, text, mark, width)
@@ -2004,27 +2226,44 @@ pub(crate) fn checkbox_from(
             // so the mark takes the one foreground the platform states for
             // everything it dims -- the same field the disabled label takes.
             // With no disabled fill stated the box is its enabled self. A
-            // disabled mark the theme states is drawn in its own colour. The
-            // box is then faded by `checkbox.disabled_opacity` as one widget
-            // over the ground: the border and the mark on the fill.
+            // disabled mark the theme states is drawn in its own colour. A
+            // disabled stroke the theme states is drawn; one it leaves
+            // unstated is as `Outline::in_state` gives it against iced's own
+            // box, which recolours its border when disabled (iced_widget
+            // 0.14.2 `src/checkbox.rs`, `primary`: `background.weak` for
+            // `background.strong` unchecked, `background.strong` for
+            // `primary.base` checked). The box is then faded by
+            // `checkbox.disabled_opacity` as one widget over the ground: the
+            // border and the mark on the fill.
             Status::Disabled { is_checked } => {
-                let (at_rest, line, disabled) = if is_checked {
-                    (fills.checked, fills.checked_border, checked_disabled)
+                let (stated_line, disabled) = if is_checked {
+                    (checked_disabled_border, checked_disabled)
                 } else {
-                    (fills.unchecked, fills.unchecked_border, disabled)
+                    (disabled_border, disabled)
                 };
+                let (own_fill, own_rest, _) = own(Status::Active { is_checked });
+                let (_, own_disabled, _) = own(status);
+                let (at_rest, line) = fills.rest(is_checked, (own_fill, own_rest));
                 let (background, mark) = match disabled {
-                    Some(fill) => (fill, disabled_label),
+                    Some(fill) => (fill, disabled_label.unwrap_or(own_style.icon_color)),
                     None => (at_rest, mark),
                 };
                 let mark = disabled_mark.filter(|_| is_checked).unwrap_or(mark);
                 let fill = composite_over(background, ground);
+                let rest = Outline {
+                    line,
+                    width: border_width.unwrap_or(own_rest.width),
+                    radius: own_rest.radius,
+                };
+                let border = rest.in_state(stated_line, background, (own_rest, own_disabled));
                 (
                     fade(ground, background),
-                    fade(fill, line.over(background)),
-                    Some(fade(ground, disabled_label)),
+                    fade(fill, border.color),
+                    disabled_label
+                        .map(|label| fade(ground, label))
+                        .or(own_style.text_color),
                     fade(fill, mark),
-                    line.width(border_width),
+                    border.width,
                 )
             }
         };
@@ -2034,7 +2273,7 @@ pub(crate) fn checkbox_from(
             border: Border {
                 color: border_color,
                 width,
-                radius: border_radius,
+                radius: border_radius.unwrap_or(own_style.border.radius),
             },
             text_color,
         }
@@ -2079,19 +2318,20 @@ pub fn radio(
     let c = &resolved.checkbox;
     radio_from(
         CheckFills::of(c),
-        to_color(c.indicator_color),
-        to_color(c.font.color),
-        c.border.line_width,
+        Some(to_color(c.indicator_color)),
+        Some(to_color(c.font.color)),
+        Some(c.border.line_width),
     )
 }
 
 /// [`radio`] of what it reads: the circle's fills and borders, the dot, the
-/// label and the border's width.
+/// label and the border's width, each the theme leaves unstated (`None`)
+/// iced's own radio's in the status (spec §10, rule 0).
 pub(crate) fn radio_from(
     fills: CheckFills,
-    dot: Color,
-    label: Color,
-    border_width: f32,
+    dot: Option<Color>,
+    label: Option<Color>,
+    border_width: Option<f32>,
 ) -> impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<> {
     use iced_widget::radio::{Status, Style};
 
@@ -2111,7 +2351,7 @@ pub(crate) fn radio_from(
                     let (fill, border, _) = own(status);
                     ((fill, border), (fill, border))
                 });
-                (fill, border, Some(label), width)
+                (fill, border, label.or(own(status).2), width)
             }
             Status::Hovered { is_selected } => {
                 let rest = own(Status::Active { is_selected });
@@ -2121,7 +2361,7 @@ pub(crate) fn radio_from(
                 });
                 let text = in_state(
                     fills.hover_label.map(Some),
-                    Some(label),
+                    label.or(rest.2),
                     (rest.2, hovered.2),
                 );
                 (fill, border, text, width)
@@ -2129,7 +2369,7 @@ pub(crate) fn radio_from(
         };
         Style {
             background: Background::Color(background),
-            dot_color: dot,
+            dot_color: dot.unwrap_or(iced_widget::radio::default(theme, status).dot_color),
             border_width,
             border_color,
             text_color,
@@ -2220,8 +2460,11 @@ pub(crate) struct SwitchSource {
     /// `None` where the theme states no disabled opacity: a disabled switch
     /// is then drawn in the colours it states, not faded.
     pub disabled_opacity: Option<f32>,
-    pub checked_background: Color,
-    pub unchecked_background: Color,
+    /// The track and the thumb at rest, on and off: each `None` where the
+    /// theme leaves it unstated, iced's own switch's at rest (spec §10, rule
+    /// 0); the 0.7.2 model states each.
+    pub checked_background: Option<Color>,
+    pub unchecked_background: Option<Color>,
     /// The track of a switch under the pointer, on and off: its hover layer
     /// over the track at rest. `None` where the theme states nothing for the
     /// hovered switch, which is then iced's own (spec §2, `from_state`); the
@@ -2231,10 +2474,10 @@ pub(crate) struct SwitchSource {
     pub hovered_unchecked_background: Option<Color>,
     pub disabled_checked_background: Option<Color>,
     pub disabled_unchecked_background: Option<Color>,
-    pub thumb_background: Color,
+    pub thumb_background: Option<Color>,
     /// The off thumb: `switch.unchecked_thumb_background`, or the on one
     /// where that is unset.
-    pub unchecked_thumb_background: Color,
+    pub unchecked_thumb_background: Option<Color>,
     /// The thumb of a hovered switch, on and off.
     pub hovered_thumb: Option<Color>,
     pub hovered_unchecked_thumb: Option<Color>,
@@ -2249,7 +2492,10 @@ pub(crate) struct SwitchSource {
     /// rest.
     pub disabled_checked_track_border: Option<(f32, Line)>,
     pub disabled_unchecked_track_border: Option<(f32, Line)>,
+    /// The thumb's outline on and off, as stated (width, stroke), where the
+    /// theme states both.
     pub thumb_border: Option<(f32, Line)>,
+    pub unchecked_thumb_border: Option<(f32, Line)>,
     pub track_radius: Option<f32>,
     pub track_height: Option<f32>,
     pub thumb_diameter: Option<f32>,
@@ -2277,6 +2523,11 @@ impl SwitchSource {
             })
         };
         let track = |colour| outline(colour, s.track_border_line_width, LineAlign::Inside);
+        let thumb_border = outline(
+            s.thumb_border_color,
+            s.thumb_border_line_width,
+            LineAlign::Outside,
+        );
         let unchecked_thumb = s.unchecked_thumb_background.unwrap_or(s.thumb_background);
         let checked = to_color(s.checked_background);
         let unchecked = to_color(s.unchecked_background);
@@ -2285,14 +2536,14 @@ impl SwitchSource {
         };
         Self {
             disabled_opacity: Some(s.disabled_opacity),
-            checked_background: checked,
-            unchecked_background: unchecked,
+            checked_background: Some(checked),
+            unchecked_background: Some(unchecked),
             hovered_checked_background: hovered(s.hover_checked_background, checked),
             hovered_unchecked_background: hovered(s.hover_unchecked_background, unchecked),
             disabled_checked_background: s.disabled_checked_background.map(to_color),
             disabled_unchecked_background: s.disabled_unchecked_background.map(to_color),
-            thumb_background: to_color(s.thumb_background),
-            unchecked_thumb_background: to_color(unchecked_thumb),
+            thumb_background: Some(to_color(s.thumb_background)),
+            unchecked_thumb_background: Some(to_color(unchecked_thumb)),
             // 0.7.2 states no hovered thumb, and its connector drew the
             // thumb at rest.
             hovered_thumb: Some(to_color(s.thumb_background)),
@@ -2303,11 +2554,9 @@ impl SwitchSource {
             unchecked_track_border: track(s.unchecked_track_border_color),
             disabled_checked_track_border: track(s.disabled_checked_track_border_color),
             disabled_unchecked_track_border: track(s.disabled_unchecked_track_border_color),
-            thumb_border: outline(
-                s.thumb_border_color,
-                s.thumb_border_line_width,
-                LineAlign::Outside,
-            ),
+            // 0.7.2 states one thumb outline, on and off.
+            thumb_border,
+            unchecked_thumb_border: thumb_border,
             track_radius: Some(s.track_radius),
             track_height: Some(s.track_height),
             thumb_diameter: Some(s.thumb_diameter),
@@ -2350,14 +2599,14 @@ pub(crate) fn toggler_from(
     let hovered_unchecked = s.hovered_unchecked_background;
     let hovered_on_thumb = s.hovered_thumb;
     let hovered_off_thumb = s.hovered_unchecked_thumb;
-    let disabled_checked = s.disabled_checked_background.unwrap_or(checked);
-    let disabled_unchecked = s.disabled_unchecked_background.unwrap_or(unchecked);
+    let disabled_checked = s.disabled_checked_background;
+    let disabled_unchecked = s.disabled_unchecked_background;
 
     let thumb = s.thumb_background;
     // The off thumb: a soft option copying the on one.
     let unchecked_thumb = s.unchecked_thumb_background;
-    let disabled_thumb = s.disabled_thumb_color.unwrap_or(thumb);
-    let disabled_unchecked_thumb = s.disabled_unchecked_thumb_color.unwrap_or(unchecked_thumb);
+    let disabled_thumb = s.disabled_thumb_color;
+    let disabled_unchecked_thumb = s.disabled_unchecked_thumb_color;
 
     // A disabled switch is faded by `switch.disabled_opacity` as one widget
     // over the ground: the thumb on its track (see `faded_as_one`). A switch
@@ -2365,14 +2614,12 @@ pub(crate) fn toggler_from(
     let fade = move |under: Color, color: Color| {
         opacity.map_or(color, |opacity| faded_as_one(ground, under, color, opacity))
     };
-    let disabled_as_one = |track: Color, thumb: Color| {
+    let disabled_as_one = move |track: Color, thumb: Color| {
         (
             fade(ground, track),
             fade(composite_over(track, ground), thumb),
         )
     };
-    let disabled_on = disabled_as_one(disabled_checked, disabled_thumb);
-    let disabled_off = disabled_as_one(disabled_unchecked, disabled_unchecked_thumb);
 
     // The outlines, where the theme states a colour and a width: the track's
     // per state over that state's fill, a disabled one faded as one with it
@@ -2387,26 +2634,18 @@ pub(crate) fn toggler_from(
     };
     let rest_edge_on = s.checked_track_border;
     let rest_edge_off = s.unchecked_track_border;
-    let disabled_edge = |edge: Option<(f32, Line)>, rest: Option<(f32, Line)>, track: Color| {
-        over(edge.or(rest), track).map(|(width, edge)| (width, edge.map(|e| fade(ground, e))))
-    };
-    let disabled_edge_on = disabled_edge(
-        s.disabled_checked_track_border,
-        rest_edge_on,
-        disabled_checked,
-    );
-    let disabled_edge_off = disabled_edge(
-        s.disabled_unchecked_track_border,
-        rest_edge_off,
-        disabled_unchecked,
-    );
-    let thumb_edge = s.thumb_border;
-    let disabled_thumb_edge = |track: Color, thumb: Color| {
-        over(thumb_edge, thumb)
+    let disabled_edge_on = s.disabled_checked_track_border;
+    let disabled_edge_off = s.disabled_unchecked_track_border;
+    let disabled_edge =
+        move |edge: Option<(f32, Line)>, rest: Option<(f32, Line)>, track: Color| {
+            over(edge.or(rest), track).map(|(width, edge)| (width, edge.map(|e| fade(ground, e))))
+        };
+    let thumb_edge_on = s.thumb_border;
+    let thumb_edge_off = s.unchecked_thumb_border;
+    let disabled_thumb_edge = move |edge: Option<(f32, Line)>, track: Color, thumb: Color| {
+        over(edge, thumb)
             .map(|(width, edge)| (width, edge.map(|e| fade(composite_over(track, ground), e))))
     };
-    let disabled_thumb_edge_on = disabled_thumb_edge(disabled_checked, disabled_thumb);
-    let disabled_thumb_edge_off = disabled_thumb_edge(disabled_unchecked, disabled_unchecked_thumb);
 
     let track_radius = s.track_radius.map(Radius::new);
     // Guarded so that a track with no height, or a thumb taller than its
@@ -2428,76 +2667,69 @@ pub(crate) fn toggler_from(
 
     move |theme, status| {
         let iced = iced_widget::toggler::default(theme, status);
-        let (background, foreground) = match status {
-            Status::Active { is_toggled } => {
-                if is_toggled {
-                    (checked, thumb)
-                } else {
-                    (unchecked, unchecked_thumb)
-                }
-            }
-            // The track and the thumb the theme states nothing for under the
-            // pointer are as [`in_state`] gives them against iced's own.
-            Status::Hovered { is_toggled } => {
-                let (hovered, track, hovered_thumb, thumb) = if is_toggled {
-                    (hovered_checked, checked, hovered_on_thumb, thumb)
-                } else {
-                    (
-                        hovered_unchecked,
-                        unchecked,
-                        hovered_off_thumb,
-                        unchecked_thumb,
-                    )
-                };
-                let rest = iced_widget::toggler::default(theme, Status::Active { is_toggled });
-                (
-                    in_state(
-                        hovered,
-                        track,
-                        (
-                            painted(Some(rest.background)),
-                            painted(Some(iced.background)),
-                        ),
-                    ),
-                    in_state(
-                        hovered_thumb,
-                        thumb,
-                        (
-                            painted(Some(rest.foreground)),
-                            painted(Some(iced.foreground)),
-                        ),
-                    ),
-                )
-            }
-            Status::Disabled { is_toggled } => {
-                if is_toggled {
-                    disabled_on
-                } else {
-                    disabled_off
-                }
-            }
-        };
         let is_toggled = match status {
             Status::Active { is_toggled }
             | Status::Hovered { is_toggled }
             | Status::Disabled { is_toggled } => is_toggled,
         };
+        // The track and the thumb at rest, each the theme leaves unstated
+        // iced's own at rest (spec §10, rule 0).
+        let own = iced_widget::toggler::default(theme, Status::Active { is_toggled });
+        let (own_track, own_thumb) = (painted(Some(own.background)), painted(Some(own.foreground)));
+        let (track, knob, rest_edge, thumb_edge) = if is_toggled {
+            (checked, thumb, rest_edge_on, thumb_edge_on)
+        } else {
+            (unchecked, unchecked_thumb, rest_edge_off, thumb_edge_off)
+        };
+        let (track, knob) = (track.unwrap_or(own_track), knob.unwrap_or(own_thumb));
+        let (background, foreground, track_edge, thumb_edge) = match status {
+            Status::Active { .. } => (track, knob, over(rest_edge, track), over(thumb_edge, knob)),
+            // The track and the thumb the theme states nothing for under the
+            // pointer are as [`in_state`] gives them against iced's own.
+            Status::Hovered { .. } => {
+                let (hovered, hovered_thumb) = if is_toggled {
+                    (hovered_checked, hovered_on_thumb)
+                } else {
+                    (hovered_unchecked, hovered_off_thumb)
+                };
+                let background =
+                    in_state(hovered, track, (own_track, painted(Some(iced.background))));
+                let foreground = in_state(
+                    hovered_thumb,
+                    knob,
+                    (own_thumb, painted(Some(iced.foreground))),
+                );
+                (
+                    background,
+                    foreground,
+                    over(rest_edge, background),
+                    over(thumb_edge, foreground),
+                )
+            }
+            Status::Disabled { .. } => {
+                let (fill, thumb_fill, edge) = if is_toggled {
+                    (disabled_checked, disabled_thumb, disabled_edge_on)
+                } else {
+                    (
+                        disabled_unchecked,
+                        disabled_unchecked_thumb,
+                        disabled_edge_off,
+                    )
+                };
+                let (fill, thumb_fill) = (fill.unwrap_or(track), thumb_fill.unwrap_or(knob));
+                let (background, foreground) = disabled_as_one(fill, thumb_fill);
+                (
+                    background,
+                    foreground,
+                    disabled_edge(edge, rest_edge, fill),
+                    disabled_thumb_edge(thumb_edge, fill, thumb_fill),
+                )
+            }
+        };
         let padding_ratio = if is_toggled {
             padding_ratio
         } else {
             unchecked_padding_ratio
-        };
-        let (track_edge, thumb_edge) = match status {
-            Status::Disabled { is_toggled: true } => (disabled_edge_on, disabled_thumb_edge_on),
-            Status::Disabled { is_toggled: false } => (disabled_edge_off, disabled_thumb_edge_off),
-            Status::Active { is_toggled } | Status::Hovered { is_toggled } => {
-                let rest = if is_toggled {
-                    rest_edge_on
-                } else {
-                    rest_edge_off
-                };
-                (over(rest, background), over(thumb_edge, foreground))
-            }
         };
         let (background_border_width, background_border_color) = track_edge.map_or(
             (iced.background_border_width, iced.background_border_color),
@@ -2569,22 +2801,25 @@ pub fn pick_list(
 /// each field's 0.7.2 name, soft options as `None` where unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PickListSource {
-    pub background: Color,
+    /// The fill, the label, the placeholder and the border at rest: each
+    /// `None` (a border property) where the theme leaves it unstated, iced's
+    /// own field's (spec §10, rule 0); the 0.7.2 model states each.
+    pub background: Option<Color>,
     /// The field under the pointer: its hover layer over the idle fill.
     /// `None` where the theme states nothing for the hovered field, which is
     /// then iced's own (spec §2, `from_state`); the 0.7.2 model's unset hover
     /// layer is the platform saying the field looks as it does at rest, and
     /// its reads state that.
     pub hovered_background: Option<Color>,
-    pub label: Color,
-    pub placeholder: Color,
+    pub label: Option<Color>,
+    pub placeholder: Option<Color>,
     /// The open field's layer over the idle fill; `None` where the theme
     /// states none.
     pub open_background: Option<Layer>,
     /// The open field's layer under the pointer: 0.7.2's
     /// `open_background`, which the field keeps under the pointer.
     pub open_hover_background: Option<Layer>,
-    pub border: Outline,
+    pub border: PartOutline,
     /// The border under the pointer, `None` as the hover fill.
     pub hover_border_color: Option<Line>,
     /// The open field's border; `None` where the theme states none.
@@ -2602,16 +2837,16 @@ impl PickListSource {
         let border = Outline::of(&c.border);
         let line = |c: Rgba| Line::outside(to_color(c));
         Self {
-            background: idle,
+            background: Some(idle),
             hovered_background: Some(
                 c.hover_background
                     .map_or(idle, |hover| composite_over(to_color(hover), idle)),
             ),
-            label: to_color(c.font.color),
-            placeholder: to_color(resolved.input.placeholder_color),
+            label: Some(to_color(c.font.color)),
+            placeholder: Some(to_color(resolved.input.placeholder_color)),
             open_background: c.open_background.map(|c| Layer::Color(to_color(c))),
             open_hover_background: c.open_background.map(|c| Layer::Color(to_color(c))),
-            border,
+            border: border.into(),
             hover_border_color: Some(c.hover_border_color.map_or(border.line, line)),
             // 0.7.2's connector framed an open field it states no open
             // border for in its border at rest.
@@ -2650,8 +2885,8 @@ pub(crate) fn pick_list_from(
     let label = c.label;
     let placeholder = c.placeholder;
 
-    let open = c.open_background.map(|fill| fill.over(idle));
-    let open_hovered = c.open_hover_background.map(|fill| fill.over(idle));
+    let open = c.open_background;
+    let open_hovered = c.open_hover_background;
 
     let border = c.border;
     let hovered_border = c.hover_border_color;
@@ -2661,6 +2896,14 @@ pub(crate) fn pick_list_from(
     move |theme, status| {
         let iced = iced_widget::pick_list::default(theme, status);
         let rest = iced_widget::pick_list::default(theme, Status::Active);
+        // The fill, the label, the placeholder and the border at rest, each
+        // the theme leaves unstated iced's own at rest (spec §10, rule 0).
+        let idle = idle.unwrap_or(painted(Some(rest.background)));
+        let label = label.unwrap_or(rest.text_color);
+        let placeholder = placeholder.unwrap_or(iced.placeholder_color);
+        let border = border.or(rest.border);
+        let open = open.map(|fill| fill.over(idle));
+        let open_hovered = open_hovered.map(|fill| fill.over(idle));
         // The fill and the stroke the theme states for the status: the
         // pointer's, and an open field's own over them; each it states
         // nothing for is as [`in_state`] gives it against iced's own.
@@ -2726,8 +2969,8 @@ pub fn menu(
 /// the two hovered values); the 0.7.2 model states all but the shadow.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct MenuSource {
-    pub background: Color,
-    pub label: Color,
+    pub background: Option<Color>,
+    pub label: Option<Color>,
     /// The label of the item under the pointer.
     pub selected_label: Option<Color>,
     /// The highlight of the item under the pointer, painted as given over
@@ -2747,8 +2990,8 @@ impl MenuSource {
         let m = &resolved.menu;
         let p = &resolved.popover;
         Self {
-            background: to_color(m.background_color),
-            label: to_color(m.font.color),
+            background: Some(to_color(m.background_color)),
+            label: Some(to_color(m.font.color)),
             selected_label: Some(to_color(m.hover_text_color)),
             selected_background: Some(to_color(m.hover_background)),
             line: Some(Line::outside(to_color(p.border.color))),
@@ -2782,9 +3025,11 @@ pub(crate) fn menu_from(
 
     move |theme| {
         let iced = iced_widget::overlay::menu::default(theme);
+        let background = m.background.map_or(iced.background, Background::Color);
+        let label = m.label.unwrap_or(iced.text_color);
         let border = Border {
             color: match (m.line, m.width) {
-                (Some(line), _) => line.over(m.background),
+                (Some(line), _) => line.over(painted(Some(background))),
                 (None, Some(_)) => Border::default().color,
                 (None, None) => iced.border.color,
             },
@@ -2792,19 +3037,19 @@ pub(crate) fn menu_from(
             radius: m.radius.map_or(iced.border.radius, Radius::new),
         };
         Style {
-            background: Background::Color(m.background),
+            background,
             border,
-            text_color: m.label,
+            text_color: label,
             // The item under the pointer against one at rest, which shows
             // the panel ([`in_state`]).
             selected_text_color: in_state(
                 m.selected_label,
-                m.label,
+                label,
                 (iced.text_color, iced.selected_text_color),
             ),
             selected_background: in_state(
                 m.selected_background.map(Background::Color),
-                Background::Color(m.background),
+                background,
                 (iced.background, iced.selected_background),
             ),
             shadow: m.shadow.unwrap_or(iced.shadow),
@@ -2858,14 +3103,17 @@ pub fn slider(
 /// field's 0.7.2 name, soft options as `None` where unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct SliderSource {
-    pub fill_color: Color,
+    /// The filled rail, the rest of the rail and the thumb at rest: each
+    /// `None` where the theme leaves it unstated, iced's own slider's (spec
+    /// §10, rule 0); the 0.7.2 model states each.
+    pub fill_color: Option<Color>,
     /// The filled rail under the pointer and dragged, where the theme
     /// states it; 0.7.2's connector drew it as at rest.
     pub hovered_fill_color: Option<Color>,
     pub dragged_fill_color: Option<Color>,
-    pub track_color: Color,
+    pub track_color: Option<Color>,
     pub track_height: Option<f32>,
-    pub thumb_color: Color,
+    pub thumb_color: Option<Color>,
     /// The thumb under the pointer, its hover layer over the thumb's fill;
     /// `None` where the theme states nothing for the hovered thumb, which
     /// is then iced's own (spec §2, `from_state`). The 0.7.2 model's unset
@@ -2896,12 +3144,12 @@ impl SliderSource {
         let line = |c: Rgba| Line::outside(to_color(c));
         let hover_border = s.thumb_hover_border_color.map(line);
         Self {
-            fill_color: to_color(s.fill_color),
+            fill_color: Some(to_color(s.fill_color)),
             hovered_fill_color: Some(to_color(s.fill_color)),
             dragged_fill_color: Some(to_color(s.fill_color)),
-            track_color: to_color(s.track_color),
+            track_color: Some(to_color(s.track_color)),
             track_height: Some(s.track_height),
-            thumb_color: thumb,
+            thumb_color: Some(thumb),
             hovered_thumb: Some(
                 s.thumb_hover_color
                     .map_or(thumb, |hover| composite_over(to_color(hover), thumb)),
@@ -2968,19 +3216,29 @@ pub(crate) fn slider_from(
         // The thumb's fill and the filled rail's the theme states nothing
         // for in this status are as [`in_state`] gives them against iced's
         // own.
+        // A thumb or a rail the theme leaves unstated at rest is iced's own
+        // at rest (spec §10, rule 0).
+        let thumb = thumb.map_or(rest.handle.background, Background::Color);
+        let filled = filled.map_or(rest.rail.backgrounds.0, Background::Color);
         let (stated_thumb, stated_fill) = match status {
             Status::Active => (Some(thumb), Some(filled)),
-            Status::Hovered => (hovered_thumb, hovered_filled),
-            Status::Dragged => (pressed_thumb, dragged_filled),
+            Status::Hovered => (
+                hovered_thumb.map(Background::Color),
+                hovered_filled.map(Background::Color),
+            ),
+            Status::Dragged => (
+                pressed_thumb.map(Background::Color),
+                dragged_filled.map(Background::Color),
+            ),
         };
         let handle_background = in_state(
-            stated_thumb.map(Background::Color),
-            Background::Color(thumb),
+            stated_thumb,
+            thumb,
             (rest.handle.background, iced.handle.background),
         );
         let filled = in_state(
-            stated_fill.map(Background::Color),
-            Background::Color(filled),
+            stated_fill,
+            filled,
             (rest.rail.backgrounds.0, iced.rail.backgrounds.0),
         );
         // The thumb's stroke over the fill it paints in this status: the
@@ -3008,7 +3266,10 @@ pub(crate) fn slider_from(
         );
         Style {
             rail: Rail {
-                backgrounds: (filled, Background::Color(remaining)),
+                backgrounds: (
+                    filled,
+                    remaining.map_or(iced.rail.backgrounds.1, Background::Color),
+                ),
                 width: rail_width.unwrap_or(iced.rail.width),
                 border: iced.rail.border,
             },
@@ -3078,8 +3339,11 @@ pub fn scrollable(
 /// whether the bar floats.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ScrollbarSource {
-    pub track: Color,
-    pub thumb: Color,
+    /// The rail's fill and the scroller's at rest: each `None` where the
+    /// theme leaves it unstated, iced's own scrollable's (spec §10, rule 0);
+    /// the 0.7.2 model states each.
+    pub track: Option<Color>,
+    pub thumb: Option<Color>,
     /// The scroller under the pointer; `None` where the theme states nothing
     /// for the hovered thumb, iced's own then (spec §2, `from_state`).
     pub hovered_thumb: Option<Color>,
@@ -3107,8 +3371,8 @@ impl ScrollbarSource {
         let s = &resolved.scrollbar;
         let hovered = to_color(s.thumb_hover_color);
         Self {
-            track: to_color(s.track_color),
-            thumb: to_color(s.thumb_color),
+            track: Some(to_color(s.track_color)),
+            thumb: Some(to_color(s.thumb_color)),
             hovered_thumb: Some(hovered),
             dragged_thumb: Some(s.thumb_active_color.map_or(hovered, to_color)),
             overlay_mode: s.overlay_mode,
@@ -3133,7 +3397,13 @@ impl ScrollbarSource {
         };
         match listed.added {
             Added::Nothing | Added::CheckedButton => listed_self,
+            Added::ScrollerFills { hovered, dragged } => Self {
+                hovered_thumb: Some(hovered),
+                dragged_thumb: Some(dragged),
+                ..listed_self
+            },
             Added::ScrollerOutline {
+                thumb,
                 width,
                 align,
                 rest,
@@ -3145,6 +3415,7 @@ impl ScrollbarSource {
                     ..Line::outside(color)
                 };
                 Self {
+                    thumb: Some(thumb),
                     thumb_edge: Some((width, line(rest))),
                     thumb_radius: Some(pill()),
                     hovered_thumb_line: Some(line(hovered)),
@@ -3166,7 +3437,7 @@ pub(crate) fn scrollable_from(
     use iced_widget::scrollable::{AutoScroll, Rail, Scroller, Status, Style};
 
     let track = s.track;
-    let thumb = Background::Color(s.thumb);
+    let thumb = s.thumb.map(Background::Color);
     let hovered_thumb = s.hovered_thumb.map(Background::Color);
     let dragged_thumb = s.dragged_thumb.map(Background::Color);
     let thumb_edge = s.thumb_edge;
@@ -3185,7 +3456,14 @@ pub(crate) fn scrollable_from(
     move |theme, status| {
         let iced = iced_widget::scrollable::default(theme, status);
         let shown = !(floats && matches!(status, Status::Active { .. }));
-        let rail = if shown { track } else { Color::TRANSPARENT };
+        // A rail the theme leaves unstated is iced's own (spec §10, rule 0).
+        let rail = |own: Option<Background>| {
+            if shown {
+                track.map(Background::Color).or(own)
+            } else {
+                Some(Background::Color(Color::TRANSPARENT))
+            }
+        };
         // Which scroller the pointer is on decides that axis alone. The
         // disabled flags are named and ignored: an upstream addition to the
         // status then fails to compile here rather than falling into a `..`.
@@ -3208,6 +3486,9 @@ pub(crate) fn scrollable_from(
         let scroller = |axis: fn(&Style) -> Scroller,
                         state: Option<(Option<Background>, Option<Line>)>| {
             let (rest, now) = (axis(&rest), axis(&iced));
+            // A scroller the theme leaves unstated at rest is iced's own at
+            // rest (spec §10, rule 0).
+            let thumb = thumb.unwrap_or(rest.background);
             let outline = Outline {
                 line: thumb_edge.map_or(Line::outside(rest.border.color), |(_, line)| line),
                 width: thumb_edge.map_or(rest.border.width, |(width, _)| width),
@@ -3279,12 +3560,12 @@ pub(crate) fn scrollable_from(
                 snap: iced.container.snap,
             },
             vertical_rail: Rail {
-                background: Some(Background::Color(rail)),
+                background: rail(iced.vertical_rail.background),
                 border: iced.vertical_rail.border,
                 scroller: vertical,
             },
             horizontal_rail: Rail {
-                background: Some(Background::Color(rail)),
+                background: rail(iced.horizontal_rail.background),
                 border: iced.horizontal_rail.border,
                 scroller: horizontal,
             },
@@ -3377,26 +3658,31 @@ pub fn progress_bar(
 ) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<> {
     let p = &resolved.progress_bar;
     progress_bar_from(
-        to_color(p.track_color),
-        to_color(p.fill_color),
-        Outline::of(&p.border),
+        Some(to_color(p.track_color)),
+        Some(to_color(p.fill_color)),
+        Outline::of(&p.border).into(),
     )
 }
 
 /// [`progress_bar`] of what it reads; the groove's border lies on the track.
+/// The track, the bar and each border property the theme leaves unstated
+/// (`None`) are iced's own bar's (spec §10, rule 0; iced_widget 0.14.2
+/// `src/progress_bar.rs`, `primary`, its default class).
 pub(crate) fn progress_bar_from(
-    track: Color,
-    filled: Color,
-    border: Outline,
+    track: Option<Color>,
+    filled: Option<Color>,
+    border: PartOutline,
 ) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<> {
     use iced_widget::progress_bar::Style;
 
-    let border = border.over(track);
-
-    move |_theme| Style {
-        background: Background::Color(track),
-        bar: Background::Color(filled),
-        border,
+    move |theme| {
+        let own = iced_widget::progress_bar::primary(theme);
+        let background = track.map_or(own.background, Background::Color);
+        Style {
+            background,
+            bar: filled.map_or(own.bar, Background::Color),
+            border: border.or(own.border).over(painted(Some(background))),
+        }
     }
 }
 
@@ -3418,19 +3704,20 @@ pub(crate) fn progress_bar_from(
 pub fn rule(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    rule_from(to_color(resolved.separator.line_color))
+    rule_from(Some(to_color(resolved.separator.line_color)))
 }
 
-/// [`rule`] and [`toolbar_rule`] of the line's colour.
+/// [`rule`] and [`toolbar_rule`] of the line's colour; `None` where the
+/// theme leaves it unstated, iced's own rule's (spec §10, rule 0).
 pub(crate) fn rule_from(
-    line: Color,
+    line: Option<Color>,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
     use iced_widget::rule::Style;
 
     move |theme| {
         let iced = iced_widget::rule::default(theme);
         Style {
-            color: line,
+            color: line.unwrap_or(iced.color),
             radius: iced.radius,
             fill_mode: iced.fill_mode,
             snap: iced.snap,
@@ -3460,22 +3747,29 @@ pub fn pane_grid(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
     let s = &resolved.splitter;
-    pane_grid_from(to_color(s.hover_color), s.divider_width)
+    pane_grid_from(Some(to_color(s.hover_color)), s.divider_width)
 }
 
-/// [`pane_grid`] of the split's colour and width.
+/// [`pane_grid`] of the split's colour and width; a colour `None` where the
+/// theme leaves it unstated, iced's own hovered and picked split's then
+/// (spec §10, rule 0).
 pub(crate) fn pane_grid_from(
-    color: Color,
+    color: Option<Color>,
     width: f32,
 ) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
     use iced_widget::pane_grid::{Line, Style};
 
-    let split = Line { color, width };
-
-    move |theme| Style {
-        hovered_region: iced_widget::pane_grid::default(theme).hovered_region,
-        picked_split: split,
-        hovered_split: split,
+    move |theme| {
+        let iced = iced_widget::pane_grid::default(theme);
+        let split = |own: Line| Line {
+            color: color.unwrap_or(own.color),
+            width,
+        };
+        Style {
+            hovered_region: iced.hovered_region,
+            picked_split: split(iced.picked_split),
+            hovered_split: split(iced.hovered_split),
+        }
     }
 }
 
@@ -3500,7 +3794,7 @@ pub fn tooltip(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let t = &resolved.tooltip;
     panel_from(
-        to_color(t.background_color),
+        Some(to_color(t.background_color)),
         Some(to_color(t.font.color)),
         Some(Outline::of(&t.border)),
     )
@@ -3508,21 +3802,22 @@ pub fn tooltip(
 
 /// The surfaces [`tooltip`], [`container_card`], [`dialog`] and [`toolbar`]
 /// paint, of what they read: the fill, the label colour, and the border on
-/// the fill, each `None` that keeps `container::Style::default()`'s.
+/// the fill (on no fill where `panel` is `None`), each `None` that keeps
+/// `container::Style::default()`'s.
 pub(crate) fn panel_from(
-    panel: Color,
+    panel: Option<Color>,
     label: Option<Color>,
     border: Option<Outline>,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
-    let border = border.map(|border| border.over(panel));
+    let border = border.map(|border| border.over(panel.unwrap_or(Color::TRANSPARENT)));
 
     move |_theme| {
         let iced = Style::default();
         Style {
             text_color: label.or(iced.text_color),
-            background: Some(Background::Color(panel)),
+            background: panel.map(Background::Color).or(iced.background),
             border: border.unwrap_or(iced.border),
             shadow: iced.shadow,
             snap: iced.snap,
@@ -3550,7 +3845,7 @@ pub fn container_card(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let c = &resolved.card;
     panel_from(
-        to_color(c.background_color),
+        Some(to_color(c.background_color)),
         None,
         Some(Outline::of(&c.border)),
     )
@@ -3659,15 +3954,21 @@ pub fn segmented_control(
 pub(crate) struct SegmentedSource {
     /// The window under the control.
     pub window_background: Color,
-    pub background: Color,
-    pub label: Color,
-    /// The control's outline, its stroke laid over the group fill.
-    pub border: Outline,
+    /// The group fill and an unselected segment's label: each `None` where
+    /// the theme leaves it unstated, iced's own container's and segment's
+    /// (spec §10, rule 0); the 0.7.2 model states each.
+    pub background: Option<Color>,
+    pub label: Option<Color>,
+    /// The control's outline, its stroke laid over the group fill; each
+    /// property the theme leaves unstated iced's own container's.
+    pub border: PartOutline,
     /// The line between two segments, as stated; `None` where the theme
     /// states no line, which is then drawn as none.
     pub separator: Option<Color>,
-    pub active_background: Color,
-    pub active_text_color: Color,
+    /// The selected segment's fill and label: each `None` where the theme
+    /// leaves it unstated, iced's own segment's (spec §10, rule 0).
+    pub active_background: Option<Color>,
+    pub active_text_color: Option<Color>,
     /// An unselected segment's fill under the pointer, painted as given over
     /// the group; `None` where the theme states none, no fill then.
     pub hover_background: Option<Color>,
@@ -3689,12 +3990,12 @@ impl SegmentedSource {
         let s = &resolved.segmented_control;
         Self {
             window_background: to_color(resolved.defaults.background_color),
-            background: to_color(s.background_color),
-            label: to_color(s.font.color),
-            border: Outline::of(&s.border),
+            background: Some(to_color(s.background_color)),
+            label: Some(to_color(s.font.color)),
+            border: Outline::of(&s.border).into(),
             separator: Some(to_color(s.border.color)),
-            active_background: to_color(s.active_background),
-            active_text_color: to_color(s.active_text_color),
+            active_background: Some(to_color(s.active_background)),
+            active_text_color: Some(to_color(s.active_text_color)),
             hover_background: s.hover_background.map(to_color),
             pressed_background: s.hover_background.map(to_color),
             disabled_opacity: Some(s.disabled_opacity),
@@ -3702,12 +4003,14 @@ impl SegmentedSource {
         }
     }
 
-    /// The outline's stroke where it lies as `listed` says, and the pressed
-    /// fill unset where it names it, for the parity test's expected values.
+    /// The outline's stroke where it lies as `listed` says, and the hovered
+    /// and the pressed fill unset where it names them, for the parity test's
+    /// expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         Self {
             border: self.border.aligned(listed.align),
+            hover_background: self.hover_background.filter(|_| !listed.states.hover_fill),
             pressed_background: self
                 .pressed_background
                 .filter(|_| !listed.states.pressed_fill),
@@ -3725,13 +4028,19 @@ pub(crate) fn segmented_control_from(
 
     let fade = SegmentedFade::of(s, disabled);
 
-    let group = fade.over_ground(s.background);
-    let label = fade.over_group(s.label);
+    let group = s.background.map(|fill| fade.over_ground(fill));
+    let label = s.label.map(|label| fade.over_group(label));
 
     // The stroke over the group fill where the theme lays it there
-    // ([`Line::over`]), the pair on the window, faded with the control.
-    let mut border = s.border.over(s.background);
-    border.color = fade.over_ground(border.color);
+    // ([`Line::over`]), the pair on the window, faded with the control; a
+    // stroke the theme leaves unstated is iced's own container's.
+    let mut border = s
+        .border
+        .or(Style::default().border)
+        .over(s.background.unwrap_or(Color::TRANSPARENT));
+    if s.border.stroke.is_some() {
+        border.color = fade.over_ground(border.color);
+    }
     // The shadow where the theme states one, faded with the control: a
     // widget's opacity scales its shadow's alpha.
     let shadow = s.shadow.map(|shadow| Shadow {
@@ -3742,8 +4051,8 @@ pub(crate) fn segmented_control_from(
     move |_theme| {
         let iced = Style::default();
         Style {
-            text_color: Some(label),
-            background: Some(Background::Color(group)),
+            text_color: label.or(iced.text_color),
+            background: group.map(Background::Color).or(iced.background),
             border,
             shadow: shadow.unwrap_or(iced.shadow),
             snap: iced.snap,
@@ -3771,7 +4080,9 @@ impl SegmentedFade {
         let ground = s.window_background;
         Self {
             ground,
-            group: composite_over(s.background, ground),
+            group: s
+                .background
+                .map_or(ground, |fill| composite_over(fill, ground)),
             opacity: match s.disabled_opacity {
                 Some(opacity) if disabled => opacity,
                 _ => 1.0,
@@ -3880,8 +4191,10 @@ pub(crate) fn segment_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
+    // A fill or a label the theme leaves unstated is iced's own segment's,
+    // `button::Style::default()`'s in every status (spec §10, rule 0).
     let (idle, hovered, pressed, label) = if selected {
-        let fill = Some(s.active_background);
+        let fill = s.active_background;
         (fill, fill, None, s.active_text_color)
     } else {
         (
@@ -3893,12 +4206,13 @@ pub(crate) fn segment_from(
     };
     let fade = SegmentedFade::of(s, true);
     let disabled = idle.map(|fill| fade.over_group(fill));
-    let disabled_label = match idle {
+    let disabled_label = label.map(|label| match idle {
         Some(fill) => fade.over(composite_over(fill, fade.group), label),
         None => fade.over_group(label),
-    };
+    });
 
-    let inner_radius = (s.border.radius.top_left - s.border.width).max(0.0);
+    let outline = s.border.or(iced_widget::container::Style::default().border);
+    let inner_radius = (outline.radius.top_left - outline.width).max(0.0);
     let radius = match position {
         SegmentPosition::First => Radius::new(0.0).left(inner_radius),
         SegmentPosition::Middle => Radius::new(0.0),
@@ -3927,7 +4241,7 @@ pub(crate) fn segment_from(
         };
         Style {
             background,
-            text_color,
+            text_color: text_color.unwrap_or(iced.text_color),
             border: Border {
                 radius,
                 ..iced.border
@@ -3987,12 +4301,15 @@ pub(crate) struct ExpanderSource {
     /// theme states none, as [`in_state`] gives it then. 0.7.2's pressed
     /// header is the hovered one, and its reads state that.
     pub pressed_background: Option<Color>,
-    pub label: Color,
+    /// The header's label: `None` where the theme leaves it unstated, iced's
+    /// own header's (spec §10, rule 0); the 0.7.2 model states it.
+    pub label: Option<Color>,
     /// The opacity a disabled header is faded by: the expander states none
     /// of its own, so the theme's.
     pub disabled_opacity: f32,
-    /// The frame's stroke, width and corners.
-    pub border: Outline,
+    /// The frame's stroke, width and corners; each property the theme
+    /// leaves unstated iced's own container's.
+    pub border: PartOutline,
     pub frame_enabled: Option<bool>,
     /// The frame's shadow as iced draws one; `None`, iced's own, where the
     /// theme states none (0.7.2 has no shadow geometry).
@@ -4006,10 +4323,10 @@ impl ExpanderSource {
         Self {
             hover_background: x.hover_background.map(to_color),
             pressed_background: x.hover_background.map(to_color),
-            label: to_color(x.font.color),
+            label: Some(to_color(x.font.color)),
             // `ExpanderTheme` states no `disabled_opacity`: the defaults' fades it.
             disabled_opacity: resolved.defaults.disabled_opacity,
-            border: Outline::of(&x.border),
+            border: Outline::of(&x.border).into(),
             frame_enabled: x.frame_enabled,
             shadow: None,
         }
@@ -4046,11 +4363,17 @@ pub(crate) fn expander_from(
     // the frame's.
     let border = Border {
         width: 0.0,
-        ..x.border.over(Color::TRANSPARENT)
+        ..x.border
+            .or(iced_widget::container::Style::default().border)
+            .over(Color::TRANSPARENT)
     };
 
     move |_theme, status| {
         let iced = Style::default();
+        // A label the theme leaves unstated is iced's own header's,
+        // `button::Style::default()`'s in every status (spec §10, rule 0).
+        let disabled_label = label.map_or(iced.text_color, |label| faded(label, opacity));
+        let label = label.unwrap_or(iced.text_color);
         let (background, text_color, border) = match status {
             Status::Active => (None, label, border),
             Status::Hovered => (hovered.map(Background::Color), label, border),
@@ -4066,7 +4389,7 @@ pub(crate) fn expander_from(
                 label,
                 border,
             ),
-            Status::Disabled => (None, faded(label, opacity), faded_border(border, opacity)),
+            Status::Disabled => (None, disabled_label, faded_border(border, opacity)),
         };
         Style {
             background,
@@ -4128,9 +4451,11 @@ pub(crate) fn expander_frame_from(
     // The frame paints no fill: its stroke lies over nothing. Its shadow,
     // where the theme states one, is drawn with the frame alone.
     let framed = matches!(x.frame_enabled, Some(true));
+    // Each property the theme leaves unstated is iced's own container's.
+    let outline = x.border.or(Style::default().border);
     let border = Border {
-        width: if framed { x.border.width } else { 0.0 },
-        ..x.border.over(Color::TRANSPARENT)
+        width: if framed { outline.width } else { 0.0 },
+        ..outline.over(Color::TRANSPARENT)
     };
     let shadow = x.shadow.filter(|_| framed);
 
@@ -4165,7 +4490,7 @@ pub fn dialog(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let d = &resolved.dialog;
     panel_from(
-        to_color(d.background_color),
+        Some(to_color(d.background_color)),
         Some(to_color(d.body_font.color)),
         Some(Outline::of(&d.border)),
     )
@@ -4196,7 +4521,7 @@ pub fn toolbar(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let t = &resolved.toolbar;
     panel_from(
-        to_color(t.background_color),
+        Some(to_color(t.background_color)),
         Some(to_color(t.font.color)),
         None,
     )
@@ -4211,7 +4536,7 @@ pub fn toolbar(
 pub fn toolbar_rule(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    rule_from(to_color(resolved.toolbar.border.color))
+    rule_from(Some(to_color(resolved.toolbar.border.color)))
 }
 
 /// The application's own background and default text, for
@@ -4255,17 +4580,21 @@ pub fn toolbar_rule(
 pub fn application(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
-    application_from(to_color(resolved.window.background_color))
+    application_from(Some(to_color(resolved.window.background_color)))
 }
 
-/// [`application`] of the window's background.
+/// [`application`] of the window's background; `None` where the theme
+/// leaves it unstated, the base style's then (spec §10, rule 0).
 pub(crate) fn application_from(
-    background: Color,
+    background: Option<Color>,
 ) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
     use iced_core::theme::{Base, Style};
 
-    move |theme| Style {
-        background_color: background,
-        text_color: theme.base().text_color,
+    move |theme| {
+        let base = theme.base();
+        Style {
+            background_color: background.unwrap_or(base.background_color),
+            text_color: base.text_color,
+        }
     }
 }

@@ -92,8 +92,10 @@ pub fn card(
 /// §10, rule 0); the 0.7.2 model states all three.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct CardSource {
-    pub background: Color,
-    pub label: Color,
+    /// The fill and the text on it: each `None` where the theme leaves it
+    /// unstated, `iced_aw`'s own card's (spec §10, rule 0).
+    pub background: Option<Color>,
+    pub label: Option<Color>,
     /// The outline's stroke, laid over the card's fill; `None` with a
     /// stated `width` is no line.
     pub line: Option<Line>,
@@ -106,8 +108,8 @@ impl CardSource {
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let c = &resolved.card;
         Self {
-            background: to_color(c.background_color),
-            label: to_color(resolved.defaults.text_color),
+            background: Some(to_color(c.background_color)),
+            label: Some(to_color(resolved.defaults.text_color)),
             line: Some(Line::outside(to_color(c.border.color))),
             width: Some(c.border.line_width),
             radius: Some(c.border.corner_radius),
@@ -146,18 +148,22 @@ pub(crate) fn card_from(
 
     move |theme, status| {
         let iced = iced_aw::style::card::primary(theme, status);
+        let background = panel.map_or(iced.background, Background::Color);
+        let label = |own: Color| label.unwrap_or(own);
         Style {
-            background: Background::Color(panel),
+            background,
             border_radius: radius.unwrap_or(iced.border_radius),
             border_width: width.unwrap_or(iced.border_width),
-            border_color: line.map_or(iced.border_color, |line| line.over(panel)),
+            border_color: line.map_or(iced.border_color, |line| {
+                line.over(painted(Some(background)))
+            }),
             head_background: section,
-            head_text_color: label,
+            head_text_color: label(iced.head_text_color),
             body_background: section,
-            body_text_color: label,
+            body_text_color: label(iced.body_text_color),
             foot_background: section,
-            foot_text_color: label,
-            close_color: label,
+            foot_text_color: label(iced.foot_text_color),
+            close_color: label(iced.close_color),
         }
     }
 }
@@ -226,8 +232,10 @@ pub fn menu(
 /// hovered item).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct MenuSource {
-    pub bar: Color,
-    pub panel: Color,
+    /// The bar's and the menu panel's fills: each `None` where the theme
+    /// leaves it unstated, `iced_aw`'s own (spec §10, rule 0).
+    pub bar: Option<Color>,
+    pub panel: Option<Color>,
     /// The highlight under the item the pointer is on.
     pub highlight: Option<Color>,
     /// The open menu's frame: its stroke, laid over the panel (`None` with
@@ -253,8 +261,8 @@ impl MenuSource {
         let m = &resolved.menu;
         let p = &resolved.popover.border;
         Self {
-            bar: to_color(resolved.toolbar.background_color),
-            panel: to_color(m.background_color),
+            bar: Some(to_color(resolved.toolbar.background_color)),
+            panel: Some(to_color(m.background_color)),
             highlight: Some(to_color(m.hover_background)),
             frame_line: Some(Line::outside(to_color(p.color))),
             frame_width: Some(p.line_width),
@@ -290,11 +298,12 @@ pub(crate) fn menu_from(
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
+        let panel = m.panel.map_or(iced.menu_background, Background::Color);
         // The item under the pointer against one at rest, which shows the
         // panel ([`in_state`]).
         let path = in_state(
             m.highlight.map(Background::Color),
-            Background::Color(m.panel),
+            panel,
             (iced.menu_background, iced.path),
         );
         let path_fill = match path {
@@ -302,14 +311,14 @@ pub(crate) fn menu_from(
             Background::Gradient(_) => Color::TRANSPARENT,
         };
         Style {
-            bar_background: Background::Color(m.bar),
+            bar_background: m.bar.map_or(iced.bar_background, Background::Color),
             bar_border: Border::default(),
             bar_shadow: iced.bar_shadow,
-            menu_background: Background::Color(m.panel),
+            menu_background: panel,
             menu_border: Border {
-                color: m
-                    .frame_line
-                    .map_or(iced.menu_border.color, |line| line.over(m.panel)),
+                color: m.frame_line.map_or(iced.menu_border.color, |line| {
+                    line.over(painted(Some(panel)))
+                }),
                 width: m.frame_width.unwrap_or(iced.menu_border.width),
                 radius: m.frame_radius.map_or(iced.menu_border.radius, Radius::new),
             },
@@ -398,12 +407,15 @@ pub fn tab_bar(
 /// §10, rule 0).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct TabBarSource {
-    pub bar_background: Color,
-    pub background: Color,
-    pub active_background: Color,
+    /// The strip, a tab not selected and the selected tab, each its fill
+    /// and label: each `None` where the theme leaves it unstated,
+    /// `iced_aw`'s own in the status (spec §10, rule 0).
+    pub bar_background: Option<Color>,
+    pub background: Option<Color>,
+    pub active_background: Option<Color>,
     pub hover_background: Option<Color>,
-    pub label: Color,
-    pub active_label: Color,
+    pub label: Option<Color>,
+    pub active_label: Option<Color>,
     pub hover_label: Option<Color>,
     /// The selected tab's outline: its stroke, laid over the selected
     /// tab's fill (`None` with a stated `width` is no line), its width and
@@ -425,12 +437,12 @@ impl TabBarSource {
         let t = &resolved.tab;
         let idle = to_color(t.background_color);
         Self {
-            bar_background: to_color(t.bar_background),
-            background: idle,
-            active_background: to_color(t.active_background),
+            bar_background: Some(to_color(t.bar_background)),
+            background: Some(idle),
+            active_background: Some(to_color(t.active_background)),
             hover_background: Some(t.hover_background.map_or(idle, to_color)),
-            label: to_color(t.font.color),
-            active_label: to_color(t.active_text_color),
+            label: Some(to_color(t.font.color)),
+            active_label: Some(to_color(t.active_text_color)),
             hover_label: Some(to_color(t.hover_text_color)),
             line: Some(Line::outside(to_color(t.border.color))),
             width: Some(t.border.line_width),
@@ -483,30 +495,51 @@ pub(crate) fn tab_bar_from(
 
     move |theme, status| {
         let iced = iced_aw::style::tab_bar::primary(theme, status);
+        // A tab at rest, which `iced_aw` styles as `Disabled`, and the
+        // selected tab, `Active` (iced_aw 0.14.1 src/widget/tab_bar.rs, fn
+        // draw): each fill and label the theme leaves unstated is
+        // `iced_aw`'s own in that status (spec §10, rule 0).
+        let rest = iced_aw::style::tab_bar::primary(theme, Status::Disabled);
+        let active = iced_aw::style::tab_bar::primary(theme, Status::Active);
+        let idle_fill = idle.map_or(rest.tab_label_background, Background::Color);
+        let selected_fill = selected.map_or(active.tab_label_background, Background::Color);
         let (fill, text, icon) = match status {
-            Status::Active => (Background::Color(selected), selected_label, selected_label),
-            // A hovered tab against one at rest, which `iced_aw` styles as
-            // `Disabled` (iced_aw 0.14.1 src/widget/tab_bar.rs, fn draw),
-            // each value the theme states nothing for as [`in_state`] gives
-            // it.
-            Status::Hovered => {
-                let rest = iced_aw::style::tab_bar::primary(theme, Status::Disabled);
-                (
-                    in_state(
-                        hovered.map(Background::Color),
-                        Background::Color(idle),
-                        (rest.tab_label_background, iced.tab_label_background),
-                    ),
-                    in_state(hovered_label, label, (rest.text_color, iced.text_color)),
-                    in_state(hovered_label, label, (rest.icon_color, iced.icon_color)),
-                )
-            }
-            Status::Disabled => (Background::Color(idle), label, label),
+            Status::Active => (
+                selected_fill,
+                selected_label.unwrap_or(active.text_color),
+                selected_label.unwrap_or(active.icon_color),
+            ),
+            // A hovered tab against one at rest, each value the theme
+            // states nothing for as [`in_state`] gives it.
+            Status::Hovered => (
+                in_state(
+                    hovered.map(Background::Color),
+                    idle_fill,
+                    (rest.tab_label_background, iced.tab_label_background),
+                ),
+                in_state(
+                    hovered_label,
+                    label.unwrap_or(rest.text_color),
+                    (rest.text_color, iced.text_color),
+                ),
+                in_state(
+                    hovered_label,
+                    label.unwrap_or(rest.icon_color),
+                    (rest.icon_color, iced.icon_color),
+                ),
+            ),
+            Status::Disabled => (
+                idle_fill,
+                label.unwrap_or(rest.text_color),
+                label.unwrap_or(rest.icon_color),
+            ),
             Status::Pressed | Status::Focused | Status::Selected => {
                 (iced.tab_label_background, iced.text_color, iced.icon_color)
             }
         };
-        let selected_color = line.map_or(iced.tab_label_border_color, |line| line.over(selected));
+        let selected_color = line.map_or(iced.tab_label_border_color, |line| {
+            line.over(painted(Some(selected_fill)))
+        });
         // A tab not selected: its own outline where the theme states one,
         // none where it states none, `iced_aw`'s own where it states
         // nothing (spec §10, rule 0).
@@ -527,7 +560,7 @@ pub(crate) fn tab_bar_from(
             ),
         };
         Style {
-            background: Some(Background::Color(strip)),
+            background: strip.map(Background::Color).or(iced.background),
             border_color: iced.border_color,
             border_width: iced.border_width,
             tab_border_radius: radius,
@@ -593,14 +626,17 @@ pub fn sidebar(
 /// (spec §10, rule 0).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ListSource {
-    pub background: Color,
-    pub selection_background: Color,
+    /// The panel's and the selected row's fills and labels, and a disabled
+    /// row's label: each `None` where the theme leaves it unstated,
+    /// `iced_aw`'s own in the status (spec §10, rule 0).
+    pub background: Option<Color>,
+    pub selection_background: Option<Color>,
     pub hover_background: Option<Color>,
-    pub label: Color,
-    pub selection_label: Color,
+    pub label: Option<Color>,
+    pub selection_label: Option<Color>,
     pub hover_label: Option<Color>,
     /// A disabled row's label, faded already.
-    pub disabled_label: Color,
+    pub disabled_label: Option<Color>,
     /// The outline's stroke, laid over the panel (`None` with a stated
     /// `width` is no line), and its width.
     pub line: Option<Line>,
@@ -612,13 +648,13 @@ impl ListSource {
     pub(crate) fn of_sidebar(resolved: &ResolvedTheme) -> Self {
         let s = &resolved.sidebar;
         Self {
-            background: to_color(s.background_color),
-            selection_background: to_color(s.selection_background),
+            background: Some(to_color(s.background_color)),
+            selection_background: Some(to_color(s.selection_background)),
             hover_background: Some(to_color(s.hover_background)),
-            label: to_color(s.font.color),
-            selection_label: to_color(s.selection_text_color),
+            label: Some(to_color(s.font.color)),
+            selection_label: Some(to_color(s.selection_text_color)),
             hover_label: Some(to_color(s.font.color)),
-            disabled_label: to_color(s.font.color),
+            disabled_label: Some(to_color(s.font.color)),
             line: Some(Line::outside(to_color(s.border.color))),
             width: Some(s.border.line_width),
         }
@@ -628,18 +664,18 @@ impl ListSource {
     pub(crate) fn of_list(resolved: &ResolvedTheme) -> Self {
         let l = &resolved.list;
         Self {
-            background: to_color(l.background_color),
-            selection_background: to_color(l.selection_background),
+            background: Some(to_color(l.background_color)),
+            selection_background: Some(to_color(l.selection_background)),
             hover_background: Some(to_color(l.hover_background)),
-            label: to_color(l.item_font.color),
-            selection_label: to_color(l.selection_text_color),
+            label: Some(to_color(l.item_font.color)),
+            selection_label: Some(to_color(l.selection_text_color)),
             hover_label: Some(to_color(l.hover_text_color)),
             // `ListTheme` states no `disabled_opacity`: the defaults' fades a
             // disabled row (see `styles::faded`).
-            disabled_label: super::faded(
+            disabled_label: Some(super::faded(
                 to_color(l.disabled_text_color),
                 resolved.defaults.disabled_opacity,
-            ),
+            )),
             line: Some(Line::outside(to_color(l.border.color))),
             width: Some(l.border.line_width),
         }
@@ -661,7 +697,7 @@ impl ListSource {
     }
 }
 
-/// [`sidebar`] of what it reads (the hovered and the disabled label unread).
+/// [`sidebar`] of what it reads (the disabled label unread).
 pub(crate) fn sidebar_from(
     s: &ListSource,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::sidebar::Style + Clone + use<> {
@@ -673,40 +709,57 @@ pub(crate) fn sidebar_from(
 
     let label = s.label;
     let selected_label = s.selection_label;
+    let hovered_label = s.hover_label;
 
     let line = s.line;
     let border_width = s.width;
 
     move |theme, status| {
         let iced = iced_aw::style::sidebar::primary(theme, status);
+        // An item at rest, which `iced_aw` styles as `Disabled`, as a tab:
+        // a fill or a label the theme leaves unstated is `iced_aw`'s own in
+        // the status (spec §10, rule 0).
+        let rest = iced_aw::style::sidebar::primary(theme, Status::Disabled);
+        let idle = panel.map_or(rest.tab_label_background, Background::Color);
         let (fill, text) = match status {
-            Status::Active => (Background::Color(selected), selected_label),
-            // A hovered item against one at rest, which `iced_aw` styles as
-            // `Disabled`, as a tab ([`in_state`]).
+            Status::Active => (
+                selected.map_or(iced.tab_label_background, Background::Color),
+                selected_label.unwrap_or(iced.text_color),
+            ),
+            // A hovered item against one at rest ([`in_state`]).
             Status::Hovered => (
                 in_state(
                     hovered.map(Background::Color),
-                    Background::Color(panel),
-                    (
-                        iced_aw::style::sidebar::primary(theme, Status::Disabled)
-                            .tab_label_background,
-                        iced.tab_label_background,
-                    ),
+                    idle,
+                    (rest.tab_label_background, iced.tab_label_background),
                 ),
-                label,
+                in_state(
+                    hovered_label,
+                    label.unwrap_or(rest.text_color),
+                    (rest.text_color, iced.text_color),
+                ),
             ),
-            Status::Disabled => (Background::Color(panel), label),
+            Status::Disabled => (idle, label.unwrap_or(iced.text_color)),
             Status::Pressed | Status::Focused | Status::Selected => {
                 (iced.tab_label_background, iced.text_color)
             }
         };
         let icon = match status {
-            Status::Active | Status::Hovered | Status::Disabled => text,
+            Status::Active => selected_label.unwrap_or(iced.icon_color),
+            Status::Hovered => in_state(
+                hovered_label,
+                label.unwrap_or(rest.icon_color),
+                (rest.icon_color, iced.icon_color),
+            ),
+            Status::Disabled => label.unwrap_or(iced.icon_color),
             Status::Pressed | Status::Focused | Status::Selected => iced.icon_color,
         };
+        let background = panel.map(Background::Color).or(iced.background);
         Style {
-            background: Some(Background::Color(panel)),
-            border_color: line.map_or(iced.border_color, |line| Some(line.over(panel))),
+            background,
+            border_color: line.map_or(iced.border_color, |line| {
+                Some(line.over(painted(background)))
+            }),
             border_width: border_width.unwrap_or(iced.border_width),
             tab_label_background: fill,
             tab_label_border_color: iced.tab_label_border_color,
@@ -803,29 +856,41 @@ pub(crate) fn selection_list_from(
 
     move |theme, status| {
         let iced = iced_aw::style::selection_list::primary(theme, status);
+        // The list and a row at rest, `Active`: a fill or a label the theme
+        // leaves unstated is `iced_aw`'s own in the status (spec §10, rule
+        // 0).
+        let rest = iced_aw::style::selection_list::primary(theme, Status::Active);
+        let list = panel.map_or(rest.background, Background::Color);
         let (fill, text) = match status {
-            Status::Active => (Background::Color(panel), label),
+            Status::Active => (list, label.unwrap_or(iced.text_color)),
             // A hovered row against one at rest ([`in_state`]).
-            Status::Hovered => {
-                let rest = iced_aw::style::selection_list::primary(theme, Status::Active);
-                (
-                    in_state(
-                        hovered.map(Background::Color),
-                        Background::Color(panel),
-                        (rest.background, iced.background),
-                    ),
-                    in_state(hovered_label, label, (rest.text_color, iced.text_color)),
-                )
-            }
-            Status::Selected => (Background::Color(selected), selected_label),
-            Status::Disabled => (Background::Color(panel), disabled_label),
+            Status::Hovered => (
+                in_state(
+                    hovered.map(Background::Color),
+                    list,
+                    (rest.background, iced.background),
+                ),
+                in_state(
+                    hovered_label,
+                    label.unwrap_or(rest.text_color),
+                    (rest.text_color, iced.text_color),
+                ),
+            ),
+            Status::Selected => (
+                selected.map_or(iced.background, Background::Color),
+                selected_label.unwrap_or(iced.text_color),
+            ),
+            Status::Disabled => (
+                panel.map_or(iced.background, Background::Color),
+                disabled_label.unwrap_or(iced.text_color),
+            ),
             Status::Pressed | Status::Focused => (iced.background, iced.text_color),
         };
         Style {
             text_color: text,
             background: fill,
             border_width: border_width.unwrap_or(iced.border_width),
-            border_color: line.map_or(iced.border_color, |line| line.over(panel)),
+            border_color: line.map_or(iced.border_color, |line| line.over(painted(Some(list)))),
         }
     }
 }

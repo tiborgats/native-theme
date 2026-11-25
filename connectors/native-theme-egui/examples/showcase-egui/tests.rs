@@ -11886,6 +11886,64 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
     Ok(())
 }
 
+/// The Basic switches' label homes, which no `mapping.toml` row holds, are routed to the
+/// companion crate's switch that reads them ([`crate::info::SWITCH_LABEL_ROUTES`]), not shown
+/// as unreachable: every `switch.label` home the three switches and their labels list, each
+/// with its claim, painted by the switch, or not read by it with its reason.
+#[test]
+fn the_switch_label_routes_name_the_switch_that_draws_them() -> Result<(), String> {
+    const READ: &str = "egui: native-theme-egui-widgets Switch";
+    const CLAIMS: [(&str, Option<&str>); 4] = [
+        ("switch.label(NONE)", None),
+        ("switch.label(NONE).color", None),
+        (
+            "switch.label(CHECKED).color",
+            Some(
+                "egui: not read by native-theme-egui-widgets Switch \
+                 (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as \
+                 the off one",
+            ),
+        ),
+        ("switch.label(DISABLED|CHECKED).color", None),
+    ];
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Switch,
+        RoleVariant::Normal,
+    )];
+    let mut checked = 0usize;
+    let mut wrong = Vec::new();
+    for element in listed_elements()
+        .iter()
+        .filter(|e| e.id.starts_with("basic.switches."))
+    {
+        for home in element
+            .homes
+            .iter()
+            .filter(|h| h.starts_with("switch.label("))
+        {
+            checked += 1;
+            let how = crate::info::listed_how(&manifest, &element.id, home, &seams);
+            let claimed = match CLAIMS.iter().find(|(h, _)| *h == home.as_str()) {
+                Some((_, None)) => {
+                    how.starts_with(READ) && how.contains(" paints it") && !how.contains("not read")
+                }
+                Some((_, Some(unread))) => how.starts_with(unread),
+                None => false,
+            };
+            if !claimed || how.contains("not reachable") {
+                wrong.push(format!("{} {home}: {how:?}", element.id));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    assert_eq!(
+        checked, 12,
+        "the font and the colour of each of the three switches and of its label"
+    );
+    Ok(())
+}
+
 /// A tab's label is drawn at the weight the theme states for it, so the tabs' Widget Info names
 /// the call that applies it (`demo::next_tab_label`) for the label's weight, its other fields
 /// by their `mapping.toml` rows: on material-3, whose `tab.label(NONE).weight` is stated apart
@@ -12417,7 +12475,7 @@ fn info_row_value(harness: &Harness<'_, App>, leaf: &str) -> String {
 
 /// Every font label names the family egui draws, as the atlas records it: the status bar's
 /// font item, the Theme tab's `font_family` and `mono_font_family` rows, Widget Info's
-/// `defaults.font.family` row (hover a Basic group heading), its `defaults.font` row (the
+/// `defaults.font.family` row (hover a Basic group heading), its `switch.label(NONE)` row (the
 /// Basic "Off" switch), its `defaults.mono_font` row (the Basic "Monospace" line) and its
 /// `button.font` row (the Basic "Button"), under windows-11, set directly as `--theme` does not
 /// take it here. Conditioned on the host: where the system lacks "Segoe UI", the
@@ -12440,6 +12498,8 @@ fn every_font_label_names_the_drawn_family() -> Result<(), String> {
     println!("windows-11's {mono_family:?} is shown as {mono:?}");
     let button_family = r.button.label(native_theme::next::WidgetState::NONE).family;
     let button = drawn_label(&harness, &button_family, false);
+    let switch_family = r.switch.label(native_theme::next::WidgetState::NONE).family;
+    let switch = drawn_label(&harness, &switch_family, false);
     // A `Label`'s text is its AccessKit value (`egui/src/response.rs:962-964`).
     let values = |harness: &Harness<'_, App>| -> Vec<String> {
         harness
@@ -12483,7 +12543,7 @@ fn every_font_label_names_the_drawn_family() -> Result<(), String> {
     };
     assert_eq!(row("heading", "typography.body.family"), body);
     for (kind, leaf, label) in [
-        ("switch (off)", "typography.body", &body),
+        ("switch (off)", "switch.label(NONE)", &switch),
         ("Label (monospace)", "typography.monospace", &mono),
         ("button (enabled)", "button.label(NONE)", &button),
     ] {

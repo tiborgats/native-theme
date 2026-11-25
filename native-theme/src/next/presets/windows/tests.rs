@@ -98,30 +98,85 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
     }
 }
 
+/// A checked box and a checked radio button change their fill under the
+/// pointer ([`a_checked_or_mixed_box_hovered_and_pressed_takes_the_accent_s_secondary_and_tertiary_fills`]);
+/// disabled, a checked or mixed box and a checked radio button take `AccentFillColorDisabled`
+/// (#37000000 / #28FFFFFF), filled and stroked, where an unchecked one keeps
+/// the disabled fill, outlined in `ControlStrongStrokeColorDisabled`
+/// (CheckBox_themeresources.xaml:220, :44; RadioButton_themeresources.xaml:137,
+/// :21); the mark takes `TextOnAccentFillColorDisabled` (#FFFFFF / #87FFFFFF),
+/// the dot the rest's colour.
 #[test]
-fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_loses_it_when_disabled() {
-    for theme in both_schemes() {
+fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_its_own_when_disabled() {
+    let [light, dark] = both_schemes();
+    for (theme, accent_disabled, mark_disabled, colors) in [
+        (light, [0, 0, 0, 0x37], [0xff, 0xff, 0xff, 0xff], &LIGHT),
+        (
+            dark,
+            [0xff, 0xff, 0xff, 0x28],
+            [0xff, 0xff, 0xff, 0x87],
+            &DARK,
+        ),
+    ] {
         let checked = WidgetState::CHECKED;
         let hovered = checked | WidgetState::HOVER;
+        let disabled = WidgetState::DISABLED;
         assert_ne!(
             theme.checkbox.indicator(WidgetState::HOVER),
             theme.checkbox.indicator(checked)
         );
-        assert_eq!(
+        assert_ne!(
             theme.checkbox.indicator(hovered),
             theme.checkbox.indicator(checked)
         );
-        assert_eq!(
+        assert_ne!(
             theme.radio.indicator(hovered),
             theme.radio.indicator(checked)
         );
+        for part in [
+            theme.checkbox.indicator(checked | disabled),
+            theme
+                .checkbox
+                .indicator(WidgetState::INDETERMINATE | disabled),
+            theme.radio.indicator(checked | disabled),
+        ] {
+            assert_ne!(part.fill, theme.checkbox.indicator(disabled).fill);
+            assert_eq!(
+                solid(&part.fill).map(Color::to_srgb8),
+                Some(accent_disabled)
+            );
+            let stroke = match part.stroke {
+                Stroke::Uniform { color, .. } => Some(color.to_srgb8()),
+                _ => None,
+            };
+            assert_eq!(stroke, Some(accent_disabled), "{:?}", part.stroke);
+        }
         assert_eq!(
             theme
                 .checkbox
-                .indicator(checked | WidgetState::DISABLED)
-                .fill,
-            theme.checkbox.indicator(WidgetState::DISABLED).fill
+                .checkmark(checked | disabled)
+                .color
+                .to_srgb8(),
+            mark_disabled
         );
+        assert_eq!(
+            theme.radio.dot(checked | disabled).fill,
+            theme.radio.dot(checked).fill
+        );
+        for state in [
+            disabled,
+            disabled | WidgetState::HOVER,
+            disabled | WidgetState::PRESSED,
+        ] {
+            let edge = Stroke::uniform(theme.layout.border_width, colors.strong_stroke_disabled);
+            assert_eq!(theme.checkbox.indicator(state).stroke, edge, "{state:?}");
+            assert_eq!(theme.radio.indicator(state).stroke, edge, "{state:?}");
+            assert_eq!(
+                theme.radio.indicator(state).fill,
+                theme.radio.indicator(disabled).fill,
+                "{state:?}"
+            );
+        }
     }
 }
 
@@ -426,6 +481,162 @@ fn the_system_s_high_contrast_colours_make_high_available() {
     assert_eq!(dark.colors.accent.fill, accent);
 }
 
+/// Under high contrast the hovered unchecked box and circle are the
+/// selection's text colour, a disabled checked or mixed box the disabled text
+/// with its mark in the window colour, a disabled checked radio's circle
+/// the window colour in the disabled text with its dot in the disabled text,
+/// and a disabled unchecked box and circle the window colour in the disabled
+/// text (WinUI's high-contrast dictionaries, CheckBox_themeresources.xaml:142,
+/// :148, :136, :160, :144, :132; RadioButton_themeresources.xaml:81, :91, :87,
+/// :95, :83, :79).
+#[test]
+fn a_high_contrast_check_box_takes_the_system_colours() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [highlight, highlight_text, window, gray] =
+        [1, 2, 3, 4].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            window: Some(SurfaceColors {
+                background: Some(window),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        disabled_text: Some(gray),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    let solid = Paint::Solid;
+    assert_eq!(
+        high.checkbox.indicator(WidgetState::HOVER).fill,
+        solid(highlight_text)
+    );
+    assert_eq!(
+        high.radio.indicator(WidgetState::HOVER).fill,
+        solid(highlight_text)
+    );
+    let width = high.layout.border_width;
+    for on in [WidgetState::CHECKED, WidgetState::INDETERMINATE] {
+        let state = WidgetState::DISABLED | on;
+        let indicator = high.checkbox.indicator(state);
+        assert_eq!(indicator.fill, solid(gray));
+        assert_eq!(indicator.stroke, Stroke::uniform(width, gray));
+        assert_eq!(high.checkbox.checkmark(state).color, window);
+    }
+    let state = WidgetState::DISABLED | WidgetState::CHECKED;
+    let circle = high.radio.indicator(state);
+    assert_eq!(circle.fill, solid(window));
+    assert_eq!(circle.stroke, Stroke::uniform(width, gray));
+    assert_eq!(high.radio.dot(state).fill, solid(gray));
+    for part in [
+        high.checkbox.indicator(WidgetState::DISABLED),
+        high.radio.indicator(WidgetState::DISABLED),
+    ] {
+        assert_eq!(part.fill, solid(window));
+        assert_eq!(part.stroke, Stroke::uniform(width, gray));
+    }
+    let circle = high.radio.indicator(WidgetState::CHECKED);
+    assert_eq!(circle.fill, solid(highlight_text));
+    assert_eq!(circle.stroke, Stroke::uniform(width, highlight));
+    assert_eq!(high.radio.dot(WidgetState::CHECKED).fill, solid(highlight));
+    let normal = theme.resolve(&ThemeContext::light());
+    assert_eq!(
+        normal.checkbox.indicator(WidgetState::HOVER).fill,
+        solid(LIGHT.checkbox_hover)
+    );
+}
+
+/// A checked or mixed box at rest is filled and outlined in the accent's
+/// fill, as WinUI paints it (CheckBox_themeresources.xaml:233, :221, :237,
+/// :225), a checked radio button outlined in it (RadioButton_themeresources.xaml:142).
+#[test]
+fn a_mixed_box_is_the_accent_fill() -> TestResult {
+    for theme in both_schemes() {
+        let accent = theme.checkbox.indicator(WidgetState::CHECKED).fill;
+        let Paint::Solid(color) = accent else {
+            return Err("the checked fill is not solid".into());
+        };
+        let edge = Stroke::uniform(theme.layout.border_width, color);
+        for state in [WidgetState::CHECKED, WidgetState::INDETERMINATE] {
+            let part = theme.checkbox.indicator(state);
+            assert_eq!(part.fill, accent);
+            assert_eq!(part.stroke, edge);
+        }
+        assert_eq!(theme.radio.indicator(WidgetState::CHECKED).stroke, edge);
+    }
+    Ok(())
+}
+
+/// A checked or mixed box, hovered, is filled and outlined in
+/// `AccentFillColorSecondaryBrush`, pressed in `AccentFillColorTertiaryBrush`:
+/// the accent's fill at 0.9 and 0.8 (CheckBox_themeresources.xaml:234, :222,
+/// :238, :226, :235, :223, :239, :227; Common_themeresources_any.xaml:330,
+/// :331); the mark hovered as at rest, pressed `TextOnAccentFillColorSecondary`.
+/// A checked radio button's circle the same (RadioButton_themeresources.xaml:147,
+/// :143, :148, :144), its dot as at rest (:151, :152).
+#[test]
+fn a_checked_or_mixed_box_hovered_and_pressed_takes_the_accent_s_secondary_and_tertiary_fills()
+-> TestResult {
+    for theme in both_schemes() {
+        let Paint::Solid(accent) = theme.checkbox.indicator(WidgetState::CHECKED).fill else {
+            return Err("the checked fill is not solid".into());
+        };
+        let rest_mark = theme.checkbox.checkmark(WidgetState::CHECKED).color;
+        for state in [WidgetState::CHECKED, WidgetState::INDETERMINATE] {
+            for (extra, opacity) in [
+                (WidgetState::HOVER, ACCENT_FILL_SECONDARY_OPACITY),
+                (WidgetState::PRESSED, ACCENT_FILL_TERTIARY_OPACITY),
+            ] {
+                let expected = accent.mul_alpha(opacity);
+                let part = theme.checkbox.indicator(state | extra);
+                assert_eq!(part.fill, Paint::Solid(expected), "{state:?} {extra:?}");
+                assert_eq!(
+                    part.stroke,
+                    Stroke::uniform(theme.layout.border_width, expected),
+                    "{state:?} {extra:?}"
+                );
+            }
+            assert_eq!(
+                theme.checkbox.checkmark(state | WidgetState::HOVER).color,
+                rest_mark
+            );
+            assert_ne!(
+                theme.checkbox.checkmark(state | WidgetState::PRESSED).color,
+                rest_mark
+            );
+        }
+        let rest_dot = theme.radio.dot(WidgetState::CHECKED).fill;
+        for (extra, opacity) in [
+            (WidgetState::HOVER, ACCENT_FILL_SECONDARY_OPACITY),
+            (WidgetState::PRESSED, ACCENT_FILL_TERTIARY_OPACITY),
+        ] {
+            let expected = accent.mul_alpha(opacity);
+            let state = WidgetState::CHECKED | extra;
+            let circle = theme.radio.indicator(state);
+            assert_eq!(circle.fill, Paint::Solid(expected), "{extra:?}");
+            assert_eq!(
+                circle.stroke,
+                Stroke::uniform(theme.layout.border_width, expected),
+                "{extra:?}"
+            );
+            assert_eq!(theme.radio.dot(state).fill, rest_dot, "{extra:?}");
+        }
+    }
+    Ok(())
+}
+
 /// Under high contrast the hovered on switch is the system's button face
 /// (`ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColorBrush`,
 /// ToggleSwitch_themeresources.xaml:88), whatever the accent.
@@ -466,6 +677,226 @@ fn a_high_contrast_hovered_on_switch_is_the_button_face() {
             .fill,
         Paint::Solid(accent.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY))
     );
+}
+
+/// Under high contrast the box at rest is the button face in the button text,
+/// a checked box hovered the button text with its mark in the button face and
+/// pressed the reverse, a mixed box hovered the highlight's text in the
+/// highlight with its bar in the highlight and pressed the highlight with its
+/// bar in the highlight's text, an unchecked box hovered outlined and pressed
+/// filled and outlined in the highlight (CheckBox_themeresources.xaml:129-163
+/// at microsoft-ui-xaml 8463f45); an unchecked circle hovered outlined in the
+/// highlight and pressed filled and outlined in the highlight's text, a
+/// checked one hovered the button face in the button text and pressed the
+/// button face in it, its dot the button text in both
+/// (RadioButton_themeresources.xaml:77-94).
+#[test]
+fn a_high_contrast_box_hovered_and_pressed_takes_the_system_colours() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [face, button_text, highlight, highlight_text] =
+        [1, 2, 3, 4].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                background: Some(face),
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    let width = high.layout.border_width;
+    let look = |fill: Color, edge: Color| (Paint::Solid(fill), Stroke::uniform(width, edge));
+    let of = |state: WidgetState| {
+        let part = high.checkbox.indicator(state);
+        (part.fill, part.stroke)
+    };
+    let mark = |state: WidgetState| high.checkbox.checkmark(state).color;
+    let (checked, mixed) = (WidgetState::CHECKED, WidgetState::INDETERMINATE);
+    let (hover, pressed) = (WidgetState::HOVER, WidgetState::PRESSED);
+    assert_eq!(of(WidgetState::NONE), look(face, button_text));
+    assert_eq!(
+        high.radio.indicator(WidgetState::NONE).stroke,
+        Stroke::uniform(width, button_text)
+    );
+    assert_eq!(of(hover).1, Stroke::uniform(width, highlight));
+    assert_eq!(of(pressed), look(highlight, highlight));
+    assert_eq!(of(checked), look(highlight, highlight));
+    assert_eq!(mark(checked), highlight_text);
+    assert_eq!(of(checked | hover), look(button_text, button_text));
+    assert_eq!(mark(checked | hover), face);
+    assert_eq!(of(checked | pressed), look(face, face));
+    assert_eq!(mark(checked | pressed), button_text);
+    assert_eq!(of(mixed | hover), look(highlight_text, highlight));
+    assert_eq!(mark(mixed | hover), highlight);
+    assert_eq!(of(mixed | pressed), look(highlight, highlight));
+    assert_eq!(mark(mixed | pressed), highlight_text);
+    let circle = |state: WidgetState| {
+        let part = high.radio.indicator(state);
+        (part.fill, part.stroke)
+    };
+    let dot = |state: WidgetState| high.radio.dot(state).fill;
+    assert_eq!(circle(hover).1, Stroke::uniform(width, highlight));
+    assert_eq!(circle(pressed), look(highlight_text, highlight_text));
+    assert_eq!(circle(checked | hover), look(face, button_text));
+    assert_eq!(dot(checked | hover), Paint::Solid(button_text));
+    assert_eq!(circle(checked | pressed), look(face, face));
+    assert_eq!(dot(checked | pressed), Paint::Solid(button_text));
+}
+
+/// Under high contrast the push button is the button face in the button text,
+/// hovered the highlight's text in the highlight, pressed the highlight's
+/// text in it, disabled the button face in the grey text
+/// (Button_themeresources.xaml:78-89 at microsoft-ui-xaml 8463f45); the flat
+/// (subtle) button the same at rest, hovered, pressed and disabled (:66-77);
+/// the toolbar's button hovered and pressed the highlight behind the
+/// highlight's text, checked and hovered or pressed the highlight's text,
+/// checked and disabled the grey text (AppBarButton_themeresources.xaml:41-47,
+/// AppBarToggleButton_themeresources.xaml:74-77).
+#[test]
+fn a_high_contrast_button_takes_the_system_colours() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [face, button_text, highlight, highlight_text, gray] =
+        [1, 2, 3, 4, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                background: Some(face),
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        disabled_text: Some(gray),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    let width = high.layout.border_width;
+    let look = |fill: Color, edge: Color| {
+        (
+            Paint::Solid(fill),
+            Stroke::uniform_aligned(width, edge, StrokeAlign::Outside),
+        )
+    };
+    let (hover, pressed, disabled) = (
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+    );
+    for query in [ButtonQuery::new(WidgetState::NONE), ButtonQuery::flat()] {
+        let of = |state: WidgetState| {
+            let body = high.button.body(query.state(state));
+            (body.fill, body.stroke)
+        };
+        assert_eq!(of(WidgetState::NONE), look(face, button_text), "{query:?}");
+        assert_eq!(of(hover), look(highlight_text, highlight), "{query:?}");
+        assert_eq!(
+            of(pressed),
+            look(highlight_text, highlight_text),
+            "{query:?}"
+        );
+        assert_eq!(of(disabled), look(face, gray), "{query:?}");
+        assert_eq!(
+            high.button.label(query.state(disabled)).color,
+            gray,
+            "{query:?}"
+        );
+    }
+    let toolbar = |state: WidgetState| high.toolbar.button(state).fill;
+    assert_eq!(toolbar(hover), Paint::Solid(highlight));
+    assert_eq!(toolbar(pressed), Paint::Solid(highlight));
+    assert_eq!(
+        toolbar(WidgetState::CHECKED | hover),
+        Paint::Solid(highlight_text)
+    );
+    assert_eq!(
+        toolbar(WidgetState::CHECKED | pressed),
+        Paint::Solid(highlight_text)
+    );
+    assert_eq!(toolbar(WidgetState::CHECKED | disabled), Paint::Solid(gray));
+    assert_eq!(high.toolbar.button_label(hover).color, highlight_text);
+}
+
+/// The focus visual is the 2px outer ring around the 1px inner one in
+/// `FocusStrokeColorInner` (#B3FFFFFF / #B3000000), 1 px outside the part
+/// (Button's `FocusVisualMargin` -3); a list row's lies inside it, its outer
+/// ring's inner edge 3 px inside (`ListViewItem`'s `FocusVisualMargin` 1,
+/// ListViewItem_themeresources.xaml:248-252); under high contrast the rings
+/// are the window text around the window (Common_themeresources_any.xaml:472,
+/// :473; ListViewItem_themeresources.xaml:94, :95).
+#[test]
+fn the_focus_visual_is_two_rings_and_a_list_row_s_lies_inside_it() -> TestResult {
+    use crate::next::reader::{OsColors, OsSurfaceOverrides};
+    for (theme, inner) in both_schemes().into_iter().zip([0xffff_ffb3, 0x0000_00b3]) {
+        let ring = &theme.focus_ring;
+        assert_eq!(ring.kind, FocusKind::Ring);
+        assert_eq!(ring.stroke, Stroke::uniform(2.0, theme.colors.focus_ring));
+        assert_eq!(ring.inner_stroke, Stroke::uniform(1.0, srgb8(inner)));
+        assert_eq!(ring.offset, 1.0);
+        assert_eq!(ring.trigger, Some(FocusTrigger::KeyboardOnly));
+        let row = theme.list.row(ListQuery::new(WidgetState::NONE));
+        let Some(row_ring) = row.focus.as_deref() else {
+            return Err("the list row states no focus ring".into());
+        };
+        assert_eq!(row_ring.offset, -3.0);
+        assert_eq!(
+            (&row_ring.stroke, &row_ring.inner_stroke, row_ring.trigger),
+            (&ring.stroke, &ring.inner_stroke, ring.trigger)
+        );
+    }
+    let [window_text, window] = [1, 2].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            window: Some(SurfaceColors {
+                background: Some(window),
+                foreground: Some(window_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(high.focus_ring.stroke, Stroke::uniform(2.0, window_text));
+    assert_eq!(high.focus_ring.inner_stroke, Stroke::uniform(1.0, window));
+    let row = high.list.row(ListQuery::new(WidgetState::NONE));
+    let Some(row_ring) = row.focus.as_deref() else {
+        return Err("the high-contrast list row states no focus ring".into());
+    };
+    assert_eq!(row_ring.inner_stroke, Stroke::uniform(1.0, window));
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

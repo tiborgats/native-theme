@@ -426,7 +426,11 @@ pub(crate) struct FlatButton {
 /// hovered and `active` fill, label colour and border, each unstated one what `unstated`
 /// gives. The resting entry is left as it stands: egui draws a
 /// `Button::frame_when_inactive(false)` unframed at rest (egui 0.37.0
-/// `src/theme/default_style.rs:77-87`).
+/// `src/theme/default_style.rs:77-87`). A hovered or pressed outline of no width is a
+/// transparent one of the resting entry's width: egui lays a button out at the inner margin
+/// `button_padding + expansion − bg_stroke.width` of its state (`src/theme/default_style.rs:54-71`,
+/// `src/containers/frame.rs:313-323`), so a state's outline narrower than the resting one would
+/// grow the button by the difference, and either pen paints nothing.
 pub(crate) fn flat_cell(
     w: &mut egui::style::Widgets,
     f: &FlatButton,
@@ -465,6 +469,12 @@ pub(crate) fn flat_cell(
         unstated,
         notes,
     );
+    let rest = w.inactive.bg_stroke.width;
+    for entry in [&mut w.hovered, &mut w.active] {
+        if entry.bg_stroke.width <= 0.0 && rest > 0.0 {
+            entry.bg_stroke = egui::Stroke::new(rest, egui::Color32::TRANSPARENT);
+        }
+    }
 }
 
 /// The five entries of `w`.

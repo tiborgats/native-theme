@@ -2147,13 +2147,13 @@ pub fn native_switch(
             "label",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:488",
+            "native-theme-gpui/widgets/switch.rs:487",
         ),
         _ => claim(
             "label",
             "colors.window.foreground",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:484",
+            "native-theme-gpui/widgets/switch.rs:481",
         ),
     });
     let thumb_home = if checked {

@@ -11,8 +11,13 @@
 //! - [`info`]: a listed element's Widget Info rows;
 //! - [`rows`]: a table row's height under the text scale;
 //! - [`status`]: the status bar's font and accessibility items.
+//!
+//! [`patch`] has no 0.7.2 namesake: the patch that states a colour at a
+//! home, which the iced showcase's route tests and the iced connector's
+//! colour-home walk share.
 
 pub mod info;
+pub mod patch;
 pub mod rows;
 pub mod status;
 pub mod values;

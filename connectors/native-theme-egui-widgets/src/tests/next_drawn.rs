@@ -24,8 +24,6 @@ enum Differs {
     Label,
     /// The label's gap alone: each text lies the row's width change farther along.
     Gap,
-    /// The label's colour ([`labels_masked`]) and a dot's fill ([`dots_masked`]).
-    LabelAndDot,
     /// A circle's outline, its outer edge kept ([`rings_masked`]).
     Ring,
     /// The field's outline (the first shape's stroke), and every other shape lying the
@@ -43,9 +41,24 @@ enum Differs {
     Side,
     /// The label's side ([`Differs::Side`]) and its colour ([`labels_masked`]).
     SideAndLabel,
+    /// The label's side ([`Differs::Side`]) and the gap the row's width change wider.
+    SideAndGap,
     /// The label's side ([`Differs::Side`]), the gap the row's width change wider, and the
     /// label's colour ([`labels_masked`]).
     SideGapAndLabel,
+    /// A circle's fill, a dot inside it kept ([`fills_masked`]): a radio's circle, a slider's
+    /// knob.
+    Fill,
+    /// A radio's dot's colour: the dot's fill ([`dots_masked`]) and the colour egui letters a
+    /// text without a colour of its own in, the cell's `fg_stroke` the dot is painted in, where
+    /// the label's sections each carry their own ([`fallbacks_masked`]).
+    Dot,
+    /// The dividers between the segments ([`dividers_closed`]): each painted in 0.7.2 and none in
+    /// 0.8.0, the frame and every shape after one the dividers' width nearer the start.
+    Dividers,
+    /// What each of these lets differ, at once, each of them one that changes no place
+    /// ([`masked`]).
+    Each(&'static [Differs]),
 }
 
 /// A listed difference: the widget's case, the presets on which it draws differently, what may
@@ -74,19 +87,19 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "radio off disabled",
         presets: &["macos-monterey", "macos-tahoe"],
-        differs: Differs::Outline,
-        reason: RADIO_CELL,
+        differs: Differs::Each(&[Differs::Fill, Differs::Outline, Differs::Dot]),
+        reason: MACOS_RADIO_DISABLED,
     },
     Difference {
         case: "radio on disabled",
         presets: &["macos-monterey", "macos-tahoe"],
-        differs: Differs::Outline,
-        reason: RADIO_CELL,
+        differs: Differs::Each(&[Differs::Fill, Differs::Outline, Differs::Dot]),
+        reason: MACOS_RADIO_DISABLED,
     },
     Difference {
         case: "radio off",
         presets: &["ios-13"],
-        differs: Differs::Ring,
+        differs: Differs::Each(&[Differs::Ring, Differs::Fill]),
         reason: IOS_RADIO,
     },
     Difference {
@@ -96,28 +109,82 @@ const DIFFERENCES: &[Difference] = &[
         reason: IOS_RADIO,
     },
     Difference {
+        case: "radio off",
+        presets: &["material-3"],
+        differs: Differs::Dot,
+        reason: M3_RADIO,
+    },
+    Difference {
+        case: "radio on",
+        presets: &["material-3"],
+        differs: Differs::Each(&[Differs::Fill, Differs::Dot]),
+        reason: M3_RADIO,
+    },
+    Difference {
         case: "radio off disabled",
         presets: &["material-3"],
-        differs: Differs::LabelAndDot,
+        differs: Differs::Each(&[Differs::Label, Differs::Fill, Differs::Outline]),
         reason: M3_RADIO_DISABLED,
     },
     Difference {
         case: "radio on disabled",
         presets: &["material-3"],
-        differs: Differs::LabelAndDot,
+        differs: Differs::Each(&[Differs::Label, Differs::Fill, Differs::Outline]),
         reason: M3_RADIO_DISABLED,
     },
     Difference {
         case: "radio off disabled",
         presets: &["ios-13"],
-        differs: Differs::Ring,
-        reason: IOS_RADIO,
+        differs: Differs::Each(&[Differs::Label, Differs::Ring, Differs::Fill]),
+        reason: IOS_RADIO_DISABLED,
     },
     Difference {
         case: "radio on disabled",
         presets: &["ios-13"],
+        differs: Differs::Each(&[Differs::Label, Differs::Ring, Differs::Fill, Differs::Dot]),
+        reason: IOS_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio off disabled",
+        presets: &["kde-breeze"],
+        differs: Differs::Dot,
+        reason: KDE_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio on disabled",
+        presets: &["kde-breeze"],
+        differs: Differs::Each(&[Differs::Fill, Differs::Dot]),
+        reason: KDE_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio on",
+        presets: &["adwaita"],
         differs: Differs::Ring,
-        reason: IOS_RADIO,
+        reason: ADWAITA_RADIO_CHECKED,
+    },
+    Difference {
+        case: "radio on disabled",
+        presets: &["adwaita"],
+        differs: Differs::Ring,
+        reason: ADWAITA_RADIO_CHECKED,
+    },
+    Difference {
+        case: "radio off disabled",
+        presets: &["adwaita"],
+        differs: Differs::Dot,
+        reason: ADWAITA_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio off disabled",
+        presets: &["windows-11"],
+        differs: Differs::Each(&[Differs::Outline, Differs::Dot]),
+        reason: WINDOWS_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio on disabled",
+        presets: &["windows-11"],
+        differs: Differs::Each(&[Differs::Fill, Differs::Outline, Differs::Dot]),
+        reason: WINDOWS_RADIO_DISABLED,
     },
     Difference {
         case: "combo box",
@@ -180,6 +247,24 @@ const DIFFERENCES: &[Difference] = &[
         reason: TAHOE_SEGMENTED,
     },
     Difference {
+        case: "segmented control",
+        presets: &["kde-breeze"],
+        differs: Differs::Dividers,
+        reason: KDE_SEGMENTED,
+    },
+    Difference {
+        case: "segmented control disabled",
+        presets: &["kde-breeze"],
+        differs: Differs::Dividers,
+        reason: KDE_SEGMENTED,
+    },
+    Difference {
+        case: "slider",
+        presets: &["ios-13"],
+        differs: Differs::Fill,
+        reason: IOS_SLIDER_KNOB,
+    },
+    Difference {
         case: "expander closed",
         presets: &["macos-tahoe"],
         differs: Differs::Padding,
@@ -217,27 +302,51 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         case: "switch off",
-        presets: &["macos-monterey", "macos-tahoe", "material-3", "ios-13"],
+        presets: &["material-3", "ios-13"],
         differs: Differs::Side,
         reason: SWITCH_LEADING,
     },
     Difference {
         case: "switch on",
-        presets: &["macos-monterey", "macos-tahoe", "material-3", "ios-13"],
+        presets: &["material-3", "ios-13"],
         differs: Differs::Side,
         reason: SWITCH_LEADING,
     },
     Difference {
         case: "switch off disabled",
-        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
-        differs: Differs::Side,
-        reason: SWITCH_LEADING,
+        presets: &["ios-13"],
+        differs: Differs::SideAndLabel,
+        reason: IOS_SWITCH_DISABLED,
     },
     Difference {
         case: "switch on disabled",
-        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
-        differs: Differs::Side,
-        reason: SWITCH_LEADING,
+        presets: &["ios-13"],
+        differs: Differs::SideAndLabel,
+        reason: IOS_SWITCH_DISABLED,
+    },
+    Difference {
+        case: "switch off",
+        presets: &["macos-monterey", "macos-tahoe"],
+        differs: Differs::SideAndGap,
+        reason: MACOS_SWITCH,
+    },
+    Difference {
+        case: "switch on",
+        presets: &["macos-monterey", "macos-tahoe"],
+        differs: Differs::SideAndGap,
+        reason: MACOS_SWITCH,
+    },
+    Difference {
+        case: "switch off disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        differs: Differs::SideGapAndLabel,
+        reason: MACOS_SWITCH_DISABLED,
+    },
+    Difference {
+        case: "switch on disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        differs: Differs::SideGapAndLabel,
+        reason: MACOS_SWITCH_DISABLED,
     },
     Difference {
         case: "switch off disabled",
@@ -313,7 +422,7 @@ const SWITCH_DISABLED_LABEL: &str = "the label's colour alone differs: 0.7.2 has
 const SWITCH_LEADING: &str = "the label's side alone differs: 0.7.2's SwitchTheme states no \
      label side, so the label lies after the track, as egui's own Checkbox lays its text; the \
      0.8.0 preset states switch.label_side Leading, the platform's label before its switch \
-     (macOS and iOS SwiftUI's ToggleStyle.switch, \"a leading label and a trailing switch\", \
+     (iOS SwiftUI's ToggleStyle.switch, \"a leading label and a trailing switch\", \
      developer.apple.com, read 2026-11-23; material-3 Android's MaterialSwitch text at the \
      start, materialswitch/res/values/styles.xml:26 at material-components-android 66c334b), \
      so the label lies where the track began and the track and its thumb the label's width and \
@@ -352,17 +461,29 @@ const WINDOWS_SWITCH_GAP: &str = "the label's gap: the 0.8.0 windows-11 states \
      icon_spacing, 4 pt nearer; crate::next::parity, switch::Geometry.label_gap";
 
 /// material-3's disabled radio.
-const M3_RADIO_DISABLED: &str = "the label's colour, and a checked radio's dot: 0.7.2 draws \
-     both in defaults.disabled_text_color, on-surface at 0.38; the 0.8.0 material-3 states \
-     Android's disabled label, the label's colour at material_emphasis_medium 0.6 (#1d1b2099 / \
-     #e6e0e999: android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, AOSP \
-     core/res/res/values/styles.xml:386 at android-15.0.0_r1; radiobutton/res/values/styles.xml:19-33 \
-     sets none, m3_primary_text_disable_only.xml:19, dimens.xml:21 at material-components-android \
-     66c334b), and the radio states no dot for DISABLED, so the dot is the connector's \
-     Checkbox/SelectedDisabled cell's fg_stroke, checkbox.checkmark(DISABLED|CHECKED)'s colour, \
-     surface (selected-disabled-icon-color, _md-comp-checkbox.scss:50, v0_192 at material-web \
-     cbd34a8; native-theme-egui, next::parity, the Checkbox/Disabled and \
-     Checkbox/SelectedDisabled entries)";
+const M3_RADIO_DISABLED: &str = "the label's colour, and the circle's fill and outline: 0.7.2 \
+     draws the label in defaults.disabled_text_color, on-surface at 0.38, fills the circle in \
+     that colour and outlines it as at rest (#49454f unchecked, primary checked, in light); the \
+     0.8.0 material-3 states Android's disabled label, the label's colour at \
+     material_emphasis_medium 0.6 (#1d1b2099 / #e6e0e999: android:Widget.CompoundButton's \
+     textColor ?attr/textColorPrimaryDisableOnly, AOSP core/res/res/values/styles.xml:386 at \
+     android-15.0.0_r1; radiobutton/res/values/styles.xml:19-33 sets none, \
+     m3_primary_text_disable_only.xml:19, dimens.xml:21 at material-components-android 66c334b), \
+     and material-web's disabled radio, its ring and its dot in on-surface at 0.38 \
+     (#1d1b2061 / #e6e0e961: disabled-unselected-icon-color, disabled-selected-icon-color, \
+     _radio.scss:163-166, :180-183; _md-comp-radio-button.scss:28-33 at material-web cbd34a8), \
+     nothing filling the space between them (radio.ts:108-120, _radio.scss:109-113), so the \
+     circle is unfilled and outlined in that colour, and the dot, checked, is as before";
+
+/// material-3's radio.
+const M3_RADIO: &str = "a checked circle's fill and the dot's colour: 0.7.2 fills a checked \
+     circle in primary and draws the dot, and the cell's fg_stroke an unchecked one paints no dot \
+     in, in its Checkbox cell's on-primary (#ffffff / #381e72); the 0.8.0 material-3 states \
+     material-web's radio, one SVG of a ring and a dot in the icon's colour, nothing filling the \
+     space between them (radio.ts:108-120, the ring :113-118, the dot :119; _radio.scss:109-113 \
+     at material-web cbd34a8), checked selected-icon-color, primary (_radio.scss:126-127; \
+     _md-comp-radio-button.scss:45, v0_192), so the checked circle is unfilled and the dot is \
+     primary (#6750a4 / #d0bcff); the label is lettered in its own colour, as before";
 
 /// ios-13's radio circle.
 const IOS_RADIO: &str = "the circle's outline: 0.7.2's ios-13 outlines it in its uncited \
@@ -371,7 +492,117 @@ const IOS_RADIO: &str = "the circle's outline: 0.7.2's ios-13 outlines it in its
      as it shows (checkboxRadioBorderWidth × 2 clipped to the edge), and none round a checked \
      one (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d; \
      native-theme/tests/next_homes.toml, rows checkbox.unchecked_border_color and \
-     checkbox.border.line_width, listed differences); the circle's outer edge stays";
+     checkbox.border.line_width, listed differences); the circle's outer edge stays; and, in \
+     dark, an empty circle's fill: the 0.8.0 ios-13 states WebKit's checkboxRadioBackgroundColor, \
+     -webkit-control-background, systemBackground (#000000 in dark: RenderThemeIOS.mm:1391, \
+     :1395, :1027 at WebKit 31adf9d), where 0.7.2 took its uncited \
+     checkbox.unchecked_background, #1c1c1e (in light both are #ffffff)";
+
+/// ios-13's disabled radio.
+const IOS_RADIO_DISABLED: &str = "the circle, its outline, the dot and the label's colour: \
+     0.7.2's ios-13 fades a disabled radio as one by its defaults.disabled_opacity 0.3; the \
+     0.8.0 ios-13 states radio.disabled_opacity 1, the iOS style sheet's `opacity: initial` for \
+     check boxes and radios (html.css:1031-1034, :1040-1047 at WebKit 31adf9d), and WebKit's \
+     disabled colours: an empty circle in systemBackground, outlined 1.5 px in secondaryLabel at \
+     checkboxRadioBorderDisabledOpacity 0.3 (RenderThemeIOS.mm:1387-1388, :1355, :1359-1362, \
+     :1027), a checked one filled in opaqueTertiaryFill with no outline (#eeeeef / #1c1c1e: \
+     :1372, :1387-1388, :1502, :1561-1563), the dot in tertiaryLabel (#3c3c434c / #ebebf54c: \
+     :1410-1413, :1578-1579), and the label in its disabled colour (#c7c7cc / #3a3a3c, 0.7.2 \
+     ios-13.toml, uncited) unfaded; the circle's outer edge stays";
+
+/// kde-breeze's disabled radio.
+const KDE_RADIO_DISABLED: &str = "a checked circle's fill and the dot's colour: 0.7.2 fills a \
+     disabled checked circle in #f0f0f0 / #272a2e and draws the dot, and the cell's fg_stroke an \
+     unchecked one paints no dot in, in #a0a1a3 / #686a6c; the 0.8.0 kde-breeze states Breeze's \
+     disabled checked circle, Disabled [Colors:Button] BackgroundNormal under the Disabled \
+     Highlight at highlightBackgroundAlpha (#eceded / #25272b: breezehelper.cpp:862, :865-869, \
+     :1012-1019, :40 at breeze f0b1d75; breezemetrics.h:176; platform-facts.md §2.5), and its \
+     dot in palette.text() of the Disabled group, Disabled [Colors:View] ForegroundNormal \
+     (#aaabac / #606263: breezehelper.cpp:938, :1059 at breeze f0b1d75; platform-facts.md \
+     §2.1.6); the label is lettered in its own colour, as before";
+
+/// adwaita's checked radio.
+const ADWAITA_RADIO_CHECKED: &str = "a checked circle's outline: 0.7.2's adwaita outlines it \
+     1 px wide; the 0.8.0 adwaita states none round a checked check or radio, \
+     libadwaita's `&:checked` with `box-shadow: none` (_checks.scss:52-56 at libadwaita 1.10.0; \
+     the outline is the inset box-shadow, :27), disabled too, `:disabled` changing no colour \
+     (:62-64), so the accent fills the circle to its outer edge, which stays";
+
+/// adwaita's disabled radio.
+const ADWAITA_RADIO_DISABLED: &str = "the cell's fg_stroke alone, which an unchecked radio \
+     paints no dot in and its label, lettered in its own colour, does not show: the 0.8.0 \
+     adwaita states the disabled dot as at rest, the accent's text, `:disabled` changing no \
+     colour, only the control's opacity (_checks.scss:52-55, :62-64, :76 at libadwaita \
+     1.10.0), which the radio lays into the cell's fg_stroke, where 0.7.2's is #949799 in light \
+     (in dark the two are one)";
+
+/// windows-11's disabled radio.
+const WINDOWS_RADIO_DISABLED: &str = "the circle's outline, a checked one's fill, and the dot's \
+     colour: 0.7.2 draws its Checkbox cell's disabled outline (#00000072 / #ffffff8b unchecked), \
+     no fill, and the dot and the cell's fg_stroke in #0000005c / #ffffff5d; the 0.8.0 windows-11 states WinUI's disabled radio: unchecked, outlined in \
+     RadioButtonOuterEllipseStrokeDisabled = ControlStrongStrokeColorDisabled (#00000037 / \
+     #ffffff28: RadioButton_themeresources.xaml:137, :21 at microsoft-ui-xaml 8463f45), checked, \
+     filled and outlined in AccentFillColorDisabled (#00000037 / #ffffff28: \
+     RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled, set at :326-330; :149, \
+     :145), the outline composited over the fill as the Checkbox cell lays its bg_stroke \
+     (RADIO_CELL), and the dot RadioButtonCheckGlyphFillDisabled = TextOnAccentFillColorPrimary, \
+     the rest's (#ffffff / #000000: :153, :37), which the radio lays into the cell's fg_stroke";
+
+/// The macOS presets' disabled radio.
+const MACOS_RADIO_DISABLED: &str = "the circle's fill and outline and the dot's colour: 0.7.2 \
+     draws its Checkbox cell's Disabled and SelectedDisabled colours; the 0.8.0 macOS presets \
+     state the measured disabled radio (os-probe run 45345116763, macOS 15 and 26, \
+     `*.normal.radio_disabled_off` and `*.normal.radio_disabled_on` `fill`, `edge_*`, the dot \
+     `label`; macos-monterey's checked one the unchecked one's fill, macos-tahoe's #0076f470 / \
+     #0982ff70), the outline composited over the fill as the \
+     Checkbox cell lays its bg_stroke (RADIO_CELL), and the dot's colour laid into the cell's \
+     fg_stroke, which an unchecked radio paints no dot in and the label, lettered in its own \
+     colour, does not show; macos-monterey states no disabled dot in dark (the run's \
+     `*.normal.radio_disabled_on` `label` is no one colour), so there the dot is the cell's own \
+     disabled fg_stroke, egui's treatment of the state (spec §10, rule 0), where 0.7.2 drew \
+     #ffffff";
+
+/// kde-breeze's segmented control.
+const KDE_SEGMENTED: &str = "the divider between the segments: 0.7.2's kde-breeze states an \
+     uncited segmented_control.separator_width 1, which the control paints as a 1 pt line in \
+     its outline's colour; the 0.8.0 kde-breeze states 0, no line: Breeze's tab bar, KDE's \
+     segmented control (platform-facts.md §2.25), fills an unselected tab with no pen and widens \
+     it by TabBar_TabOverlap into the next, an overlap of the fills, not a line \
+     (breezehelper.cpp:1488-1506, breezestyle.cpp:7238 at breeze f0b1d75; native-theme-egui, \
+     next::parity, the segmented control's item_spacing entry), so the control is 1 pt \
+     narrower and the second segment lies 1 pt nearer the start";
+
+/// ios-13's slider knob.
+const IOS_SLIDER_KNOB: &str = "the knob's fill: 0.7.2's ios-13 states no slider.thumb_color, \
+     which its resolver fills in (#f2f2f7 / #1c1c1e); the 0.8.0 ios-13 states the measured \
+     thumb, white in both schemes (ios-host run 45230061151, iOS 18.6, measure_lists.toml \
+     `press1.\"<a>\".slider.normal` `fill`); crate::next::parity, slider::Look.thumb_color";
+
+/// ios-13's disabled switch label.
+const IOS_SWITCH_DISABLED: &str = "the label's side and colour: the 0.8.0 ios-13 states \
+     switch.label_side Leading, as SWITCH_LEADING gives, and the disabled switch label \
+     (switch.label(DISABLED)) in the label colour as at rest, #000000 / #ffffff, the list row's \
+     UILabel beside a disabled UISwitch (ios-host run 45230061151, iOS 18.6, measure_lists.toml \
+     `run1.\"<a>\".switch_row.disabled` `label_text_color`), faded with the switch, where 0.7.2 \
+     has no switch label and takes defaults.disabled_text_color; crate::next::parity, \
+     switch::Geometry.leading, switch::Look.disabled_text";
+
+/// The macOS presets' switch label.
+const MACOS_SWITCH: &str = "the label's side and gap: the 0.8.0 macOS presets state \
+     switch.label_side Leading, SwiftUI's ToggleStyle.switch, \"a leading label and a trailing \
+     switch\" (developer.apple.com, read 2026-11-23), and switch.label_gap 8, the measured \
+     SwiftUI Toggle's label 8 px before its switch (os-probe run 45210835145, macOS 15 and 26, \
+     switch-label.toml `[[item]] toggle_off` fitting width 33 + 8 + the switch), where 0.7.2 \
+     states neither and the label lies after the track at the scope's own icon_spacing, 2 pt \
+     nearer; crate::next::parity, switch::Geometry.leading and .label_gap";
+
+/// The macOS presets' disabled switch label.
+const MACOS_SWITCH_DISABLED: &str = "the label's side, gap and colour: as MACOS_SWITCH gives, \
+     and the disabled switch label (switch.label(DISABLED)) in labelColor as at rest, \
+     #000000d8 / #ffffffd8, the measured SwiftUI Toggle's (os-probe run 45210835145, \
+     switch-label-macos-{15,26}/measure.toml `*.normal.toggle_*_disabled` within 3 levels of \
+     the labelColor reference), where 0.7.2 has no switch label and takes \
+     defaults.disabled_text_color; crate::next::parity, switch::Look.disabled_text";
 
 /// macos-tahoe's drop-down field.
 const TAHOE_COMBO: &str = "the field's outline and the text's inset: 0.7.2's macos-tahoe \
@@ -598,8 +829,13 @@ fn snapped(a: &egui::Shape, b: &egui::Shape, by: egui::Vec2) -> egui::Shape {
 /// lettered in, an override ([`labels_masked`]), and the colour its galley's sections are laid
 /// out in ([`laid_out_alike`]).
 fn labels_alike(a: &[egui::Shape], b: &[egui::Shape]) -> bool {
-    let b: Vec<egui::Shape> = a
-        .iter()
+    labels_masked(a) == labels_masked(&galleys_taken(a, b))
+}
+
+/// `b` with each text's galley taken as `a`'s where the two are laid out alike but for their
+/// colours ([`laid_out_alike`]), every other value kept.
+fn galleys_taken(a: &[egui::Shape], b: &[egui::Shape]) -> Vec<egui::Shape> {
+    a.iter()
         .zip(b)
         .map(|(x, y)| match (x, y) {
             (egui::Shape::Text(x), egui::Shape::Text(y))
@@ -611,8 +847,37 @@ fn labels_alike(a: &[egui::Shape], b: &[egui::Shape]) -> bool {
             }
             _ => y.clone(),
         })
-        .collect();
-    labels_masked(a) == labels_masked(&b)
+        .collect()
+}
+
+/// `a` and `b` with what `differs` lets differ masked in both, where it changes no place: a
+/// colour, an outline's width laid into its circle ([`Differs::Ring`]), or several of these
+/// ([`Differs::Each`]), each in turn; `None` for a difference that moves a shape.
+fn masked(
+    differs: Differs,
+    a: &[egui::Shape],
+    b: &[egui::Shape],
+) -> Option<(Vec<egui::Shape>, Vec<egui::Shape>)> {
+    let both = |mask: fn(&[egui::Shape]) -> Vec<egui::Shape>| Some((mask(a), mask(b)));
+    match differs {
+        Differs::Outline => both(outlines_masked),
+        Differs::Label => Some((labels_masked(a), labels_masked(&galleys_taken(a, b)))),
+        Differs::Ring => both(rings_masked),
+        Differs::Fill => both(fills_masked),
+        Differs::Dot => both(|s| fallbacks_masked(&dots_masked(s))),
+        Differs::Each(each) => each
+            .iter()
+            .try_fold((a.to_vec(), b.to_vec()), |(a, b), d| masked(*d, &a, &b)),
+        Differs::Gap
+        | Differs::Inset
+        | Differs::Padding
+        | Differs::Frame
+        | Differs::Side
+        | Differs::SideAndLabel
+        | Differs::SideAndGap
+        | Differs::SideGapAndLabel
+        | Differs::Dividers => None,
+    }
 }
 
 /// Whether the galley `b` is laid out as `a`: the same text in the same sections and fonts, in
@@ -647,7 +912,8 @@ fn alike_but(
     (b, rb): (&[egui::Shape], egui::Rect),
 ) -> bool {
     use egui::Shape;
-    if a.len() != b.len() {
+    // the dividers' shapes are 0.7.2's alone
+    if differs != Differs::Dividers && a.len() != b.len() {
         return false;
     }
     let frames = match (a.first(), b.first()) {
@@ -655,8 +921,12 @@ fn alike_but(
         _ => None,
     };
     match differs {
-        Differs::Outline => ra == rb && outlines_masked(a) == outlines_masked(b),
-        Differs::Label => ra == rb && labels_alike(a, b),
+        Differs::Outline
+        | Differs::Label
+        | Differs::Ring
+        | Differs::Fill
+        | Differs::Dot
+        | Differs::Each(_) => ra == rb && masked(differs, a, b).is_some_and(|(a, b)| a == b),
         Differs::Gap => {
             // the row's background spans the row, which the gap's change widens
             let along = egui::vec2(rb.width() - ra.width(), 0.0);
@@ -675,23 +945,31 @@ fn alike_but(
                 .collect();
             ra.min == rb.min && ra.height() == rb.height() && a == b.as_slice()
         }
-        Differs::Side | Differs::SideAndLabel | Differs::SideGapAndLabel => {
+        Differs::Side | Differs::SideAndLabel | Differs::SideAndGap | Differs::SideGapAndLabel => {
             let grown = rb.width() - ra.width();
-            if differs != Differs::SideGapAndLabel && grown != 0.0 {
+            let gap = matches!(differs, Differs::SideAndGap | Differs::SideGapAndLabel);
+            if !gap && grown != 0.0 {
                 return false;
             }
             let Some(b) = sides_swapped(a, (b, rb), ra, grown) else {
                 return false;
             };
-            let alike = if differs == Differs::Side {
+            let alike = if matches!(differs, Differs::Side | Differs::SideAndGap) {
                 a == b.as_slice()
             } else {
                 labels_alike(a, &b)
             };
             ra.min == rb.min && ra.height() == rb.height() && alike
         }
-        Differs::LabelAndDot => ra == rb && labels_alike(&dots_masked(a), &dots_masked(b)),
-        Differs::Ring => ra == rb && rings_masked(a) == rings_masked(b),
+        Differs::Dividers => dividers_closed(a, ra).is_some_and(|(a, ra)| {
+            let moved: Vec<Shape> = a
+                .iter()
+                .zip(b)
+                .map(|((x, by), y)| snapped(x, y, egui::vec2(-by, 0.0)))
+                .collect();
+            let a: Vec<Shape> = a.into_iter().map(|(x, _)| x).collect();
+            a.len() == b.len() && near(ra.min, rb.min) && near(ra.max, rb.max) && a == moved
+        }),
         Differs::Inset => {
             let Some((fa, mut fb)) = frames else {
                 return false;
@@ -841,6 +1119,102 @@ fn dots_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
         masked.push(shape);
     }
     masked
+}
+
+/// `shapes` with each circle that lies inside no earlier one round the same centre (a radio's
+/// circle, a slider's knob) filled transparent, a dot inside it and every other value kept:
+/// what a listed difference, a circle's fill, leaves to compare.
+fn fills_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    let mut circles: Vec<(egui::Pos2, f32)> = Vec::new();
+    let mut masked = Vec::with_capacity(shapes.len());
+    for shape in shapes {
+        let mut shape = shape.clone();
+        if let egui::Shape::Circle(c) = &mut shape {
+            if !circles
+                .iter()
+                .any(|(centre, radius)| *centre == c.center && c.radius < *radius)
+            {
+                c.fill = egui::Color32::TRANSPARENT;
+            }
+            circles.push((c.center, c.radius));
+        }
+        masked.push(shape);
+    }
+    masked
+}
+
+/// `shapes` with the fallback colour of each text whose galley's sections each carry a colour
+/// of their own (none `Color32::PLACEHOLDER`, which egui letters in the fallback) made
+/// transparent, every other value kept: a colour the text is not lettered in, what a listed
+/// difference, the cell's `fg_stroke` the dot is painted in, leaves to compare.
+fn fallbacks_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    shapes
+        .iter()
+        .cloned()
+        .map(|mut shape| {
+            if let egui::Shape::Text(t) = &mut shape
+                && t.galley
+                    .job
+                    .sections
+                    .iter()
+                    .all(|s| s.format.color != egui::Color32::PLACEHOLDER)
+            {
+                t.fallback_color = egui::Color32::TRANSPARENT;
+            }
+            shape
+        })
+        .collect()
+}
+
+/// `a`, drawn in `ra`, with its dividers taken out and the row closed up, each shape with the
+/// distance it lies farther along than closed up: a divider is a rect after the first, the
+/// frame, with no outline, filled in the frame's outline colour, as the control paints the
+/// lines; every shape lying past a divider is that divider's width nearer the start, and the
+/// frame's right edge and `ra`'s the dividers' widths together, the frame given already
+/// closed up (moved by none). `None` where `a` draws no frame or no divider.
+fn dividers_closed(
+    a: &[egui::Shape],
+    ra: egui::Rect,
+) -> Option<(Vec<(egui::Shape, f32)>, egui::Rect)> {
+    let Some(egui::Shape::Rect(frame)) = a.first() else {
+        return None;
+    };
+    let line = frame.stroke.color;
+    let dividers: Vec<egui::Rect> = a
+        .iter()
+        .skip(1)
+        .filter_map(|s| match s {
+            egui::Shape::Rect(r) if r.stroke.width == 0.0 && r.fill == line => Some(r.rect),
+            _ => None,
+        })
+        .collect();
+    if dividers.is_empty() {
+        return None;
+    }
+    let closed: f32 = dividers.iter().map(egui::Rect::width).sum();
+    let mut frame = frame.clone();
+    frame.rect.max.x -= closed;
+    let mut kept = vec![(egui::Shape::Rect(frame), 0.0)];
+    for shape in a.iter().skip(1) {
+        if let egui::Shape::Rect(r) = shape
+            && dividers.contains(&r.rect)
+            && r.stroke.width == 0.0
+            && r.fill == line
+        {
+            continue;
+        }
+        let by = anchor(shape).map_or(0.0, |p| {
+            dividers
+                .iter()
+                .filter(|d| p.x >= d.max.x - NEAR)
+                .map(egui::Rect::width)
+                .sum()
+        });
+        kept.push((shape.clone(), by));
+    }
+    let mut ra = ra;
+    ra.max.x -= closed;
+    Some((kept, ra))
 }
 
 /// `shapes` with each circle's outline taken off and its width laid back into the radius, every
@@ -1480,8 +1854,9 @@ fn an_unstated_pressed_switch_label_is_egui_s_own() -> TestResult {
 
 /// `switch.label(NONE).size_px` letters the label at that size in egui's `Proportional` family,
 /// as the connector's role fonts are, here a size kde-breeze does not state; where it is
-/// unstated (ios-13 states no font of `switch.label`) the size is egui's own; a size that is not
-/// positive sends the switch to egui's own counterpart.
+/// unstated the size is egui's own, read of an unstated size directly, as every platform preset
+/// states one ([`Geometry::label_size`]); a size that is not positive sends the switch to egui's
+/// own counterpart.
 #[test]
 fn a_switch_label_takes_its_stated_size() -> TestResult {
     use crate::switch::Geometry;
@@ -1496,8 +1871,7 @@ fn a_switch_label_takes_its_stated_size() -> TestResult {
             _ => None,
         })
     };
-    let unstated = Geometry::next_of(&patched(Preset::Ios13, "")?).ok_or("no geometry")?;
-    assert_eq!(unstated.label_size, None);
+    assert_eq!(Geometry::label_size(None), Some(None));
     let stock = Geometry::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no geometry")?;
     assert!(
         stock.label_size.is_some_and(|size| size != 31.0),
@@ -1522,6 +1896,37 @@ fn a_switch_label_takes_its_stated_size() -> TestResult {
     let zero = "[[widgets.switch.rules]]\nstates = []\nlabel.size_px = 0.0\n";
     assert_eq!(Geometry::next_of(&patched(Preset::KdeBreeze, zero)?), None);
     Ok(())
+}
+
+/// A switch label whose colours the theme leaves unstated is lettered in the body text's at rest
+/// and in the theme's disabled text disabled, a stated one in its own; read of unstated colours
+/// directly, as every platform preset states the label's colour at rest and disabled
+/// ([`Look::label_colors`]); a stated colour is drawn on a preset at rest in
+/// `a_switch_label_is_at_the_stated_gap_in_the_stated_colour`, disabled in
+/// `the_switch_draws_alike_from_both_models` (kde-breeze's listed disabled label).
+///
+/// [`Look::label_colors`]: crate::switch::Look::label_colors
+#[test]
+fn an_unstated_switch_label_is_lettered_in_the_body_and_the_disabled_text() {
+    use crate::switch::Look;
+    let [stated, stated_disabled, body, disabled] = [
+        egui::Color32::from_rgb(255, 0, 0),
+        egui::Color32::from_rgb(0, 255, 0),
+        egui::Color32::from_rgb(0, 0, 255),
+        egui::Color32::from_rgb(255, 255, 0),
+    ];
+    assert_eq!(
+        Look::label_colors(None, None, Some(body), disabled),
+        (Some(body), disabled)
+    );
+    assert_eq!(
+        Look::label_colors(None, None, None, disabled),
+        (None, disabled)
+    );
+    assert_eq!(
+        Look::label_colors(Some(stated), Some(stated_disabled), Some(body), disabled),
+        (Some(stated), stated_disabled)
+    );
 }
 
 /// A checked switch reads its own states: a disabled checked track and thumb at

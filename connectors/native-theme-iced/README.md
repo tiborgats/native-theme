@@ -709,7 +709,11 @@ in none of them:
   `basic_table` does.
 - **A button's and a slider's focus.** An iced button takes no keyboard
   focus (`iced_widget` 0.14.2 `src/button.rs:257-273`), so
-  `button.focus_border_color` has no receiver, and iced's slider has no
+  `button.focus_border_color` has no receiver, nor has a stroke stated for
+  a focused button (`button.body(FOCUS_VISIBLE)`, of a flat button too:
+  Breeze's flat button turns its pen Highlight when focused, as when
+  hovered or pressed, and the showcase's flat buttons draw that pen hovered
+  and pressed only), and iced's slider has no
   focused status, so `slider.thumb_focus_border_color` is not drawn.
 - **The window frame.** iced takes no colour for the title bar or the window
   border (`window::Settings::decorations` is a `bool`); it passes the
@@ -774,6 +778,15 @@ rule 0).
   check box, a switch's track, the menu, a scroll bar's handle, the
   selected tab's top corners), per-corner radii that differ are
   `Unmapped`; no preset states them.
+- **Layered fills.** iced has no backdrop blur, and `next` fills a widget
+  with one colour. A fill stated as layers (`Paint::Complex`) is drawn in
+  the colour a toolkit without blur renders in its place (spec §10, rule 2,
+  `Paint::fallback_color`): each solid layer its colour, each material its
+  `fallback`, the topmost opaque one. Layers that are all gradients have no
+  such colour, so the style is `Unmapped` at the fill's home
+  (`button.body(NONE).fill`), not iced's own fill, and so are
+  `next::fill_of` and `next::state_fill_of`, the readers the styles take a
+  fill through; no preset states layers.
 - **Shadows.** iced's `Shadow` is one outset shadow: a colour, an offset and
   a blur (`iced_core` 0.14.0 `src/shadow.rs`). The menu, the segmented
   control's track and the expander's frame cast the first outset layer the
@@ -790,6 +803,11 @@ rule 0).
   material-3, which states the container's 4 px corners and no item
   corners (docs/platform-facts.md §2.6, `container-shape`), the popup is
   drawn with its corners and the highlighted row is rounded by them too.
+- **The toolbar's rule.** iced's rule is one line (`iced_widget` 0.14.2
+  `src/rule.rs`: a `Style` of one colour), so a toolbar stroke stated per
+  side (`toolbar.bar(NONE).stroke`, a `Stroke::Complex`) is not drawn:
+  `next::styles::toolbar_rule` returns `Unmapped` for it. A stroke stated
+  as none is no rule, drawn transparent.
 - **The scroll bar.** A rail's `border` is one `Border` round all four
   sides (`iced_widget` 0.14.2 `src/scrollable.rs`, `Rail`), so the line
   Breeze draws along the bar's inner edge alone (spec §5, issue #4's
@@ -819,10 +837,15 @@ rule 0).
   ring inside the first, its `corners` as those of the line between the
   two, the outer ring's edge grown by its width), so
   `next::focus_ring` returns `Unmapped("focus_ring.kind")` for `Fill` and
-  `Underline`; no preset states either. A ring inset at the field's edge
-  (`offset` minus its width, adwaita's) is drawn by `next::styles::text_input`
-  and `text_editor` as the focused field's border, whose corners are the
-  field's, so its `inner_stroke` and `corners` are not drawn there.
+  `Underline`; no preset states either. A ring a part states of its own
+  (`PartStyle.focus`, on `input.field` or `text_area.field`) is drawn in
+  place of the global one (`next::part_ring_look`, read at `FOCUSED` and at
+  `FOCUS_VISIBLE`, and `next::focus_rings_with`), and is `Unmapped` at the
+  part's home (`input.field(FOCUSED).focus.kind`) where it is not a ring.
+  A ring inset at the field's edge
+  (`offset` minus its width, adwaita's) is painted over the field by
+  `next::focus_ring` too, a band over the part's outermost width (FR2);
+  `next::styles::text_input` and `text_editor` draw no ring.
 - **A checked button.** iced's button has no checked status. iced marks a
   chosen button by its primary class: its own `todos` example draws the
   chosen filter with `button::primary` (iced 0.14.0

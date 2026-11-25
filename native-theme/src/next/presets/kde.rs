@@ -18,8 +18,9 @@
 //! derived again from the settings in force; under either the system's
 //! accent, focus ring and text selection are not applied.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (Qt's flat push button), a list's alternate
 //! rows (`ListKind::alternate`) and a table's row corners
 //! (`ListVariant::Table`), the two orientations of the scroll bar and of the
 //! slider's groove, no control size and the contrast level `Normal` only; a
@@ -298,6 +299,7 @@ struct SchemeColors {
     button_disabled_foreground: Color,
     checkbox_checked: Color,
     checkbox_pressed: Color,
+    checkbox_disabled_checked: Color,
     checkbox_frame: Color,
     view_foreground: Color,
     checkbox_disabled_foreground: Color,
@@ -357,6 +359,9 @@ struct SchemeColors {
     toolbar_border: Color,
     toolbar_button_pressed: Color,
     toolbar_button_checked: Color,
+    /// A disabled toolbar button's label: the tools area's Disabled
+    /// WindowText, the Header set's.
+    toolbar_button_disabled_foreground: Color,
     sidebar_hover: Color,
     popover_border: Color,
     switch_off: Color,
@@ -589,6 +594,13 @@ const LIGHT: SchemeColors = SchemeColors {
     // the project's clean-room `qt_lighter` port's darker branch; Breeze's default Button, which a
     // system colour scheme does not replace here
     checkbox_pressed: srgb8(0xe5e5_e5ff),
+    // the disabled checked or partial box and the disabled checked radio: platform-facts.md
+    // (§2.5) `disabled_background`, checked or partial: Disabled [Colors:Button] BackgroundNormal
+    // #f0f0f0 under the Disabled Highlight #e3e5e7 at highlightBackgroundAlpha, Blend_Value 0.3
+    // held as 77/255 (breezehelper.cpp:862, :865-869, :1012-1019, :40 at breeze f0b1d75;
+    // breezemetrics.h:176); the Disabled Selection set reads [Colors:Window]
+    // (kcolorscheme.cpp:317-320 at kcolorscheme 27066d4); computed as `checked_background`
+    checkbox_disabled_checked: srgb8(0xeced_edff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #eff0f1,
@@ -640,6 +652,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
     // `input.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // the disabled check box's mark and radio's dot: platform-facts.md (§2.1.6): Disabled
+    // [Colors:View] ForegroundNormal, `palette.text()` (breezehelper.cpp:938, :1059 at breeze
+    // f0b1d75)
     view_disabled_foreground: srgb8(0xaaab_acff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5) at
@@ -764,6 +779,13 @@ const LIGHT: SchemeColors = SchemeColors {
     // ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5) at 0.125
     // (breezehelper.cpp:681-684 at breeze f0b1d75)
     toolbar_button_checked: srgb8(0x2326_2920),
+    // `toolbar.button_label(DISABLED).color`: the flat button's label role, WindowText
+    // (breezestyle.cpp:5665-5674 at breeze 6.8.2), from the Disabled group of the palette Breeze
+    // gives a top tool bar, the Header set's (breezetoolsareamanager.cpp:147-149, :201-216;
+    // `docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row K1.150): #95979a, not the
+    // window's #a0a1a3 (measured, breeze 6.8.3 offscreen,
+    // `docs/evidence/breeze-offscreen/2026-11-24/toolbar_disabled_light.txt`)
+    toolbar_button_disabled_foreground: srgb8(0x9597_9aff),
     // `sidebar.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     sidebar_hover: srgb8(0x93ce_e9ff),
     // `popover.border.color`: platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup
@@ -799,6 +821,8 @@ const LIGHT: SchemeColors = SchemeColors {
     switch_disabled_frame: srgb8(0xe2e2_e2ff),
     // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
     // the Disabled group, Disabled Selection
+    // the disabled checked or partial box's and the disabled checked radio's frame:
+    // platform-facts.md (§2.5) `disabled_background`, the Disabled Highlight
     switch_disabled_on_frame: srgb8(0xe3e5_e7ff),
     // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     segment_hover: srgb8(0xdee0_e2ff),
@@ -1019,6 +1043,13 @@ const DARK: SchemeColors = SchemeColors {
     // the project's clean-room `qt_lighter` port's darker branch; Breeze's default Button, which a
     // system colour scheme does not replace here
     checkbox_pressed: srgb8(0x2528_2cff),
+    // the disabled checked or partial box and the disabled checked radio: platform-facts.md
+    // (§2.5) `disabled_background`, checked or partial: Disabled [Colors:Button] BackgroundNormal
+    // #272a2e under the Disabled Highlight #1f2124 at highlightBackgroundAlpha, Blend_Value 0.3
+    // held as 77/255 (breezehelper.cpp:862, :865-869, :1012-1019, :40 at breeze f0b1d75;
+    // breezemetrics.h:176); the Disabled Selection set reads [Colors:Window]
+    // (kcolorscheme.cpp:317-320 at kcolorscheme 27066d4); computed as `checked_background`
+    checkbox_disabled_checked: srgb8(0x2527_2bff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #202326,
@@ -1071,6 +1102,9 @@ const DARK: SchemeColors = SchemeColors {
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
     // `input.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // the disabled check box's mark and radio's dot: platform-facts.md (§2.1.6): Disabled
+    // [Colors:View] ForegroundNormal, `palette.text()` (breezehelper.cpp:938, :1059 at breeze
+    // f0b1d75)
     view_disabled_foreground: srgb8(0x6062_63ff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5) at [KDE]
@@ -1198,6 +1232,10 @@ const DARK: SchemeColors = SchemeColors {
     // ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5) at 0.125
     // (breezehelper.cpp:681-684 at breeze f0b1d75)
     toolbar_button_checked: srgb8(0xfcfc_fc20),
+    // `toolbar.button_label(DISABLED).color`: as in the light scheme, the top tool bar's
+    // Disabled WindowText, the Header set's: #6d6f72, not the window's #686a6c (measured, breeze
+    // 6.8.3 offscreen, `docs/evidence/breeze-offscreen/2026-11-24/toolbar_disabled_dark.txt`)
+    toolbar_button_disabled_foreground: srgb8(0x6d6f_72ff),
     // `sidebar.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     sidebar_hover: srgb8(0x2e4a_5eff),
     // `popover.border.color`: platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup
@@ -1233,6 +1271,8 @@ const DARK: SchemeColors = SchemeColors {
     switch_disabled_frame: srgb8(0x3437_3bff),
     // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
     // the Disabled group, Disabled Selection
+    // the disabled checked or partial box's and the disabled checked radio's frame:
+    // platform-facts.md (§2.5) `disabled_background`, the Disabled Highlight
     switch_disabled_on_frame: srgb8(0x1f21_24ff),
     // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     segment_hover: srgb8(0x3136_3bff),
@@ -1356,7 +1396,9 @@ const DISABLED_OPACITY: f32 = 1.0;
 const FOCUS_RING_WIDTH: f32 = 2.0;
 
 /// The focus ring's offset from the part's edge.
-// `defaults.focus_ring_offset`: 0.7.2 kde-breeze.toml (uncited)
+// `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: −1, the band from 1
+// px inside the widget's rectangle to 1 px outside it (breezestyle.cpp:6642-6651 at breeze
+// f0b1d75)
 const FOCUS_RING_OFFSET: f32 = -1.0;
 
 /// Whether the focus ring is shown only for keyboard focus.
@@ -1732,6 +1774,17 @@ const TOOLBAR_PADDING_HORIZONTAL: f32 = 6.0;
 // `toolbar.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
 const TOOLBAR_PADDING_VERTICAL: f32 = 6.0;
 
+/// The radius of a toolbar button's corners.
+// `toolbar.button` corners: Breeze draws a tool button's frame through the push button's
+// renderButtonFrame with no round button (drawPanelButtonToolPrimitive,
+// breezestyle.cpp:4572-4612), the frame's pen at frameRadius(PenWidth::Frame), Frame_FrameRadius 5
+// − 0.5 × int(PenWidth::Frame) = 4.5, on the rect inset by half the 1.001 pen, so its outer edge
+// at 5 (breezehelper.cpp:670-671, :737-739, :1747-1757; breezehelper.h:345-348;
+// breezemetrics.h:25, :42 at breeze f0b1d75); `docs/facts/kde/button.toml` on `v0.8.0-rc1` at
+// `78ee0efd`,
+// `button.body.corners.*` 5px in every variant but `circular`
+const TOOLBAR_BUTTON_CORNER_RADIUS: f32 = 5.0;
+
 /// A hovered toolbar button's fill.
 // `toolbar.button_hover_background`: platform-facts.md (§2.13): a hovered flat button's fill is
 // alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691 at breeze f0b1d75); its hover
@@ -1764,6 +1817,16 @@ const POPOVER_PADDING_HORIZONTAL: f32 = 12.0;
 /// A popover's padding above and below.
 // `popover.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
 const POPOVER_PADDING_VERTICAL: f32 = 12.0;
+
+/// The radius of a popover's corners.
+// `popover.border.corner_radius`: qqc2-desktop-style's Popup rounds its background by
+// `Kirigami.Units.cornerRadius` (Popup.qml:46-47 at qqc2-desktop-style v6.31.0, Menu.qml:128-129
+// the same), 5 (platform-facts.md (§2.26) `border.corner_radius`, units.cpp:46 at Kirigami
+// 8319acc7); a Qt Widgets QMenu's frame, drawPanelMenuPrimitive's renderMenuFrame, is rounded by
+// Frame_FrameRadius, 5, where the window has an alpha channel (breezestyle.cpp:4695, :4721;
+// breezehelper.cpp:568, :587; breezemetrics.h:42 at breeze f0b1d75). 0.7.2 took the uncited 8 of
+// `defaults.border.corner_radius_lg`.
+const POPOVER_CORNER_RADIUS: f32 = 5.0;
 
 /// The length of a switch's track.
 // `switch.track_width`: 0.7.2 kde-breeze.toml (uncited)
@@ -1866,9 +1929,12 @@ const COMBO_BOX_PADDING_LEFT: f32 = 6.0;
 // `segmented_control.segment_height`: 0.7.2 kde-breeze.toml (uncited)
 const SEGMENT_MIN_HEIGHT: f32 = 30.0;
 
-/// The width of the line between two segments.
-// `segmented_control.separator_width`: 0.7.2 kde-breeze.toml (uncited)
-const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
+/// The width of the line between two segments: none is drawn.
+// `segmented_control.separator_width`: platform-facts.md (§2.25): the tab bar, KDE's segmented
+// control there, fills an unselected tab with no pen and widens it by TabBar_TabOverlap into the
+// next, an overlap of the fills, not a line (breezehelper.cpp:1488-1506, breezestyle.cpp:7238 at
+// breeze f0b1d75), where 0.7.2 took an uncited 1
+const SEGMENT_SEPARATOR_WIDTH: f32 = 0.0;
 
 /// The radius of a card's corners.
 // `card.border.corner_radius`: platform-facts.md §2.26 border.corner_radius: Units.cornerRadius,
@@ -2054,6 +2120,13 @@ const SCROLLBAR_BAR_HOVER_HANDLE_ALPHA: f32 = 0.25;
 /// with, `alphaColor(palette.buttonText().color(), 0.125)`
 /// (breezehelper.cpp:681-684 at breeze f0b1d75; docs/platform-facts.md §2.13).
 const FLAT_CHECKED_ALPHA: f32 = 0.125;
+
+/// The alpha of the selection colour a flat Breeze button that is the
+/// default one is filled with under the pointer or the keyboard focus,
+/// `alphaColor(highlightColor, 0.125)` (breezehelper.cpp:685-687 at breeze
+/// 6.8.2; `docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row
+/// K1.24).
+const FLAT_DEFAULT_ALPHA: f32 = 0.125;
 
 /// How far a Qt Widgets menu's panel moves from `Window` towards `Base`:
 /// `frameBackgroundColor()`, `KColorUtils::mix(Window, Base,
@@ -3256,6 +3329,14 @@ fn button(
             shape: None,
         })
     };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
+            shape: None,
+        })
+    };
+    let no_fill = || PartProp::Fill(Paint::None);
+    let no_stroke = || PartProp::Stroke(Stroke::None);
     let body = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_PRESSED_HOVER)
         .base([
             fill(c.button_background),
@@ -3310,6 +3391,85 @@ fn button(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled_background)],
         )
+        // The flat button (QPushButton::flat, an auto-raised QToolButton), after the push
+        // button's rules so that its own win, each from Breeze's flat branch of the button frame
+        // (`docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row K1.24, breeze 6.8.2,
+        // the lines the toolbar's button cites at f0b1d75). At rest and disabled, nothing: "if
+        // (flat && !(hovered || down || checked || visualFocus) …) return;"
+        // (breezehelper.cpp:665-668).
+        .rule(flat(WidgetState::NONE), [no_fill(), no_stroke()])
+        // Hovered or keyboard-focused, alphaColor(highlightColor, 0), nothing, in a Highlight pen
+        // (breezehelper.cpp:688-691, :710-712), as the toolbar's hovered button.
+        .rules(
+            [flat(WidgetState::HOVER), flat(WidgetState::FOCUS_VISIBLE)],
+            [
+                fill(TOOLBAR_BUTTON_HOVER_BACKGROUND),
+                outline(layout, c.selection_background),
+            ],
+        )
+        // The default button so, Highlight at FLAT_DEFAULT_ALPHA (breezehelper.cpp:685-687).
+        .rules(
+            [
+                flat(WidgetState::DEFAULT | WidgetState::HOVER),
+                flat(WidgetState::DEFAULT | WidgetState::FOCUS_VISIBLE),
+            ],
+            [fill(translucent(
+                c.selection_background,
+                FLAT_DEFAULT_ALPHA,
+            ))],
+        )
+        // Checked, ButtonText at FLAT_CHECKED_ALPHA in the plain button pen
+        // (breezehelper.cpp:681-684), the pen Highlight under the pointer or the focus
+        // (:710-712); as the toolbar's checked button.
+        .rule(
+            flat(WidgetState::CHECKED),
+            [
+                fill(c.toolbar_button_checked),
+                outline(layout, c.button_frame),
+            ],
+        )
+        .rules(
+            [
+                flat(WidgetState::CHECKED | WidgetState::HOVER),
+                flat(WidgetState::CHECKED | WidgetState::FOCUS_VISIBLE),
+            ],
+            [outline(layout, c.selection_background)],
+        )
+        // Pressed, Highlight at Blend_Value in a Highlight pen (breezehelper.cpp:679-680,
+        // :710-712), as the toolbar's pressed button.
+        .rule(
+            flat(WidgetState::PRESSED),
+            [
+                fill(c.toolbar_button_pressed),
+                outline(layout, c.selection_background),
+            ],
+        )
+        .rule(
+            flat(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [no_fill(), no_stroke()],
+        )
+        // Checked and disabled, the checked branch from the Disabled group: ButtonText at
+        // FLAT_CHECKED_ALPHA in the mix of Button and ButtonText at the frame contrast
+        // (breezehelper.cpp:681-684 at breeze 6.8.2; `docs/facts/kde/button.toml` on `v0.8.0-rc1`
+        // at `78ee0efd`, row K1.24, `variants = ["flat"], states = ["checked", "disabled"]`), the
+        // Disabled `[Colors:Button]` colours platform-facts.md (§2.1.6) gives.
+        .rule(
+            flat(WidgetState::DISABLED | WidgetState::CHECKED),
+            [
+                fill(translucent(
+                    c.button_disabled_foreground,
+                    FLAT_CHECKED_ALPHA,
+                )),
+                outline(
+                    layout,
+                    mix(
+                        c.button_disabled_background,
+                        c.button_disabled_foreground,
+                        c.frame_contrast,
+                    ),
+                ),
+            ],
+        )
         .build();
     // `button.hover_text_color` and `checked_text_color`: platform-facts.md (§2.3), a non-flat
     // button's label is ButtonText in every state; `default_button_text_color`: platform-facts.md
@@ -3331,6 +3491,24 @@ fn button(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.button_disabled_foreground)],
         )
+        // The flat button's label is WindowText in every state, "if (flat) { … textRole =
+        // QPalette::WindowText; }" (breezestyle.cpp:5349-5362 at breeze 6.8.2), the Disabled
+        // group's when disabled (`docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row
+        // K1.24), each state the push button's label states stated for it too.
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+                flat(WidgetState::CHECKED),
+                flat(WidgetState::DEFAULT),
+            ],
+            [TextProp::Color(c.window_foreground)],
+        )
+        .rule(
+            flat(WidgetState::DISABLED),
+            [TextProp::Color(c.disabled_text)],
+        )
         .build();
     ButtonWidget::new(
         WidgetOrigin::Native,
@@ -3351,10 +3529,20 @@ fn button(
 /// pointer, checked or not, the frame in `[Colors:View]` DecorationFocus
 /// (`checkbox.hover_border_color`: platform-facts.md (§2.5), "focusColor(),
 /// `[Colors:View]` DecorationFocus"), and no fill of its own ("Breeze adds no
-/// fill under the pointer"); disabled, the disabled button's background. A
+/// fill under the pointer"); disabled, the disabled button's background, and
+/// checked as well, that background under the Disabled Highlight in a frame
+/// of it (platform-facts.md (§2.5) `disabled_background`: the palette's
+/// Disabled group, `palette.highlight()` for the frame of a checked box or
+/// radio, breezehelper.cpp:853-854, :1005-1006 at breeze f0b1d75; the
+/// Disabled Highlight #e3e5e7 / #1f2124, platform-facts.md (§2.21)). A
 /// portal accent replaces neither frame colour (0.7.2's `apply_kde_accent`
-/// leaves both fields on kdeglobals' colours).
-fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle, PartProp> {
+/// leaves both fields on kdeglobals' colours). Each state of `on` (checked,
+/// and for the check box mixed) draws the checked look.
+fn indicator(
+    c: &SchemeColors,
+    layout: &LayoutMetrics,
+    on: &[WidgetState],
+) -> RuleBuilder<PartStyle, PartProp> {
     RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_HOVER)
         .base([
             fill(c.button_background),
@@ -3364,8 +3552,8 @@ fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle,
             PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
             PartProp::MaxSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
         ])
-        .rule(
-            RuleSelector::on(WidgetState::CHECKED),
+        .rules(
+            on.iter().map(|&state| RuleSelector::on(state)),
             [
                 fill(c.checkbox_checked),
                 outline(layout, c.selection_background),
@@ -3378,6 +3566,14 @@ fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle,
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled_background)],
+        )
+        .rules(
+            on.iter()
+                .map(|&state| RuleSelector::on(WidgetState::DISABLED | state)),
+            [
+                fill(c.checkbox_disabled_checked),
+                outline(layout, c.switch_disabled_on_frame),
+            ],
         )
 }
 
@@ -3405,7 +3601,8 @@ fn checkbox(
     // `checkbox.indicator_color`: platform-facts.md (§2.5), palette.text(), `[Colors:View]`
     // ForegroundNormal, the checked box's mark, stated for `CHECKED` (spec §2, `from_state`);
     // hovered and pressed the same: the mark's pen is `QPen(palette.text(), …)` in every state
-    // (breezehelper.cpp:938 at breeze f0b1d75), and renderCheckBox ignores `sunken` (:888).
+    // (breezehelper.cpp:938 at breeze f0b1d75), and renderCheckBox ignores `sunken` (:888); the
+    // partial mark's three squares in the same `palette.text()` (:948-952).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base(roles.view.foreground.map(IconProp::Color))
         .base([IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH))])
@@ -3413,11 +3610,20 @@ fn checkbox(
             roles.view.foreground.into_iter().flat_map(|_| {
                 [
                     RuleSelector::on(WidgetState::CHECKED),
+                    RuleSelector::on(WidgetState::INDETERMINATE),
                     RuleSelector::on(WidgetState::HOVER),
                     RuleSelector::on(WidgetState::PRESSED),
                 ]
             }),
             roles.view.foreground.map(IconProp::Color),
+        )
+        // Disabled, the mark and the partial mark (`CheckPartial`'s squares, breezehelper.cpp:948-952)
+        // in the same `palette.text()` from the Disabled group: Disabled `[Colors:View]`
+        // ForegroundNormal (platform-facts.md (§2.1.6), KColorScheme 6.31.0; breezestyle.cpp:4907
+        // passes the widget's palette, :4917-4918 for `State_NoChange`).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.view_disabled_foreground)],
         )
         .build();
     // `hover_background`: platform-facts.md (§2.5), no hover fill, the box keeps palette.button()
@@ -3425,24 +3631,31 @@ fn checkbox(
     // Pressed: renderCheckBoxBackground fills `palette.button().darker(sunken ? 110 : 100)`
     // (breezehelper.cpp:862, :42; `sunken` is State_Sunken, breezestyle.cpp:4912), and the hover
     // pen stays over the frame while the pointer presses (breezehelper.cpp:894-907,
-    // breezestyle.cpp:4913). A checked box keeps its checked look; a disabled one its own.
-    let indicator = indicator(c, layout)
-        .base([corners(layout)])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER)
-                .except(WidgetState::CHECKED | WidgetState::DISABLED),
-            [fill(c.button_background)],
-        )
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED)
-                .except(WidgetState::CHECKED | WidgetState::DISABLED),
-            [fill(c.checkbox_pressed)],
-        )
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
-            [outline(layout, c.accent)],
-        )
-        .build();
+    // breezestyle.cpp:4913). A checked box keeps its checked look; a disabled one its own. A
+    // partial box, enabled or disabled, as a checked one: `CheckPartial` is not `CheckOff`, so the
+    // highlight overlay and the highlight frame are drawn (breezehelper.cpp:853-854, :865-869;
+    // `State_NoChange` gives `CheckPartial`, breezestyle.cpp:4917-4918; platform-facts.md (§2.5)
+    // `disabled_background`).
+    let on = WidgetState::CHECKED | WidgetState::INDETERMINATE;
+    let indicator = indicator(
+        c,
+        layout,
+        &[WidgetState::CHECKED, WidgetState::INDETERMINATE],
+    )
+    .base([corners(layout)])
+    .rule(
+        RuleSelector::on(WidgetState::HOVER).except(on | WidgetState::DISABLED),
+        [fill(c.button_background)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::PRESSED).except(on | WidgetState::DISABLED),
+        [fill(c.checkbox_pressed)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+        [outline(layout, c.accent)],
+    )
+    .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
         indicator,
@@ -3477,10 +3690,16 @@ fn radio(
                 .map(|_| RuleSelector::on(WidgetState::CHECKED)),
             roles.view.foreground.map(fill),
         )
+        // Disabled, the dot in `palette.text()` from the Disabled group (breezehelper.cpp:1059):
+        // Disabled `[Colors:View]` ForegroundNormal (platform-facts.md (§2.1.6), KColorScheme 6.31.0).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.view_disabled_foreground)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, layout).build(),
+        indicator(c, layout, &[WidgetState::CHECKED]).build(),
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
@@ -4153,7 +4372,8 @@ fn spinner(roles: &ColorRoles) -> SpinnerWidget {
 /// margins and the highlight's radius, hovered in DecorationFocus at the
 /// blend alpha and outlined at the default border width, as 0.7.2's
 /// connectors draw `menu.hover_border_color` (gpui: at
-/// `defaults.border.line_width`), pressed in the opaque DecorationFocus;
+/// `defaults.border.line_width`), pressed in the opaque DecorationFocus
+/// outlined in itself;
 /// the menu font `font` in the window text (0.7.2: `menu.font` is
 /// `defaults.font` where unstated), the accent's text on the pressed
 /// DecorationFocus (spec §8, *Text on a fill*), the disabled window text
@@ -4193,7 +4413,14 @@ fn menu(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.menu_hover), outline(layout, c.menu_hover_frame)],
         )
-        .rule(RuleSelector::on(WidgetState::PRESSED), [fill(c.accent)])
+        // Pressed, the opaque focusColor() outlined in itself at the hover outline's width: Breeze
+        // keeps the item's frame and draws its edge in the fill's colour (breezestyle.cpp:6021-6029
+        // at breeze f0b1d75; measured 2026-11-20, `Sunken|Selected`: the fill and its edge
+        // #3daee9, docs/issues/0004_kde-leftovers-rationale.md, E2).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.accent), outline(layout, c.accent)],
+        )
         .build();
     // `menu.hover_text_color`: platform-facts.md (§2.6), `[Colors:Window]` ForegroundNormal, "a
     // hovered item keeps the window text; only a pressed one is HighlightedText", stated for
@@ -4354,17 +4581,20 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 }
 
 /// The toolbar: Breeze's tools area in the Header set's colour with its line
-/// at its own width, the default radius (0.7.2: `toolbar.border`'s radius is
-/// `defaults.border.corner_radius` where unstated), no shadow and
+/// at its own width, no corners stated (Breeze draws no frame round the tool
+/// bar, platform-facts.md (§2.13), where 0.7.2 took
+/// `defaults.border.corner_radius`), no shadow and
 /// ToolBar_ItemMargin's padding; its items edge to edge. Its buttons are
-/// flat: nothing at rest; hovered, a transparent fill outlined in Highlight;
+/// flat, rounded as the push button's frame
+/// ([`TOOLBAR_BUTTON_CORNER_RADIUS`]): nothing at rest; hovered, a transparent fill outlined in Highlight;
 /// pressed, Highlight at the blend alpha, outlined so; checked, ButtonText at
 /// 0.125 in the plain button pen, outlined in Highlight under the pointer and
 /// pressed (0.7.2's `button_checked_border_color`); each outline at the
 /// default border width (0.7.2: drawn at `button.border.line_width`, which
 /// is `defaults.border.line_width` where unstated). The labels in the
 /// toolbar font `font` (0.7.2: `toolbar.font` is `defaults.font` where
-/// unstated), the icons at the toolbar's icon size `icon_size` (0.7.2:
+/// unstated), disabled in the tool bar's Disabled WindowText, the icons at
+/// the toolbar's icon size `icon_size` (0.7.2:
 /// `toolbar.icon_size` is `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
     c: &SchemeColors,
@@ -4376,7 +4606,9 @@ fn toolbar(
         .base([
             fill(c.toolbar_background),
             PartProp::Stroke(Stroke::uniform(TOOLBAR_BORDER_WIDTH, c.toolbar_border)),
-            corners(layout),
+            // `toolbar.border.corner_radius`: platform-facts.md (§2.13): none, Breeze draws no
+            // frame round the tool bar (CE_ToolBar is emptyControl, breezestyle.cpp:1466-1467 at
+            // breeze f0b1d75): unstated
             // `toolbar.border.shadow_enabled`: platform-facts.md §2.13 border.shadow_enabled:
             // CE_ToolBar paints nothing, no shadow
             PartProp::Shadows(None),
@@ -4388,6 +4620,9 @@ fn toolbar(
         .build();
     let hover_outline = outline(layout, c.selection_background);
     let button = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::Corners(Corners::uniform(
+            TOOLBAR_BUTTON_CORNER_RADIUS,
+        ))])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(TOOLBAR_BUTTON_HOVER_BACKGROUND), hover_outline.clone()],
@@ -4416,7 +4651,9 @@ fn toolbar(
         .build();
     // Hovered and pressed, the label as at rest: drawToolButtonLabelControl letters an
     // auto-raised (toolbar) button in WindowText whatever the state (breezestyle.cpp:5666-5674 at
-    // breeze f0b1d75).
+    // breeze f0b1d75); disabled, in the tool bar's Disabled WindowText
+    // (`toolbar_button_disabled_foreground`): the button's disabled opacity, `DISABLED_OPACITY`,
+    // is 1, so no fade draws it.
     let button_label = label(font, None);
     let (selectors, color) =
         rest_color_rules(&button_label, [WidgetState::HOVER, WidgetState::PRESSED]);
@@ -4426,6 +4663,10 @@ fn toolbar(
         button,
         RuleBuilder::new(button_label)
             .rules(selectors, color)
+            .rule(
+                RuleSelector::on(WidgetState::DISABLED),
+                [TextProp::Color(c.toolbar_button_disabled_foreground)],
+            )
             .build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
@@ -4534,9 +4775,10 @@ fn sidebar(
 /// The popover: the popover's background where a palette states it, else the
 /// window's (0.7.2: `popover.background_color` is
 /// `defaults.background_color` where unstated, `resolve_safety_nets`) in
-/// the Popup's line at the default width with the large radius (0.7.2:
-/// `popover.border`'s width and radius are `defaults.border`'s line width
-/// and `corner_radius_lg` where unstated) and the Popup's padding; the UI
+/// the Popup's line at the default width (0.7.2: `popover.border`'s width
+/// is `defaults.border`'s line width where unstated) with the Popup's own
+/// radius, [`POPOVER_CORNER_RADIUS`] (0.7.2's `corner_radius_lg`, 8, has no
+/// source), and the Popup's padding; the UI
 /// font (0.7.2: `popover.font` is `defaults.font` where unstated).
 fn popover(
     c: &SchemeColors,
@@ -4548,7 +4790,7 @@ fn popover(
     let background = roles.popover.background.or(roles.window.background);
     for prop in background.map(fill).into_iter().chain([
         outline(layout, c.popover_border),
-        PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
+        PartProp::Corners(Corners::uniform(POPOVER_CORNER_RADIUS)),
         PartProp::Padding(Edges::symmetric(
             POPOVER_PADDING_VERTICAL,
             POPOVER_PADDING_HORIZONTAL,
@@ -4842,7 +5084,7 @@ fn combo_box(
 /// `active_text_color` is `defaults.accent_text_color` where unstated, the
 /// same colour without a palette); the UI font (0.7.2:
 /// `segmented_control.font` is `defaults.font` where unstated); the line
-/// between segments of the preset's width (0.7.2:
+/// between segments none, as the tab bar draws none (0.7.2:
 /// `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
 /// unstated).
 fn segmented_control(

@@ -793,9 +793,44 @@ pub(crate) const TAB_LABEL_PER_CALL: [(&str, &str); 1] = [(
      body's (demo::next_tab_label)",
 )];
 
+/// The homes of a switch's label the companion crate's switch reads from the installed 0.8.0
+/// theme at its home (`pages::basic::switches`), which no `mapping.toml` row holds, each with
+/// its route.
+pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 4] = [
+    (
+        "switch.label(NONE)",
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it: the label at its size_px where stated, lowered to the atlas's \
+         text_size_cap, else egui's own, in egui's \
+         Proportional family, which holds the body text's face; a stated family, weight or \
+         slant is not drawn (native-theme-egui-widgets switch.rs, Geometry::next_of, Switch::ui)",
+    ),
+    (
+        "switch.label(NONE).color",
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it: the off label's colour where stated, else the body text's, \
+         typography.body.color (native-theme-egui-widgets switch.rs, Look::next_of)",
+    ),
+    (
+        "switch.label(CHECKED).color",
+        "egui: not read by native-theme-egui-widgets Switch \
+         (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as the off \
+         one, in switch.label(NONE).color where stated, else the body text's, \
+         typography.body.color (native-theme-egui-widgets switch.rs, Look::next_of)",
+    ),
+    (
+        "switch.label(DISABLED|CHECKED).color",
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it as switch.label(DISABLED).color, a disabled switch's label, where a rule \
+         states it for DISABLED; else colors.disabled_text (native-theme-egui-widgets switch.rs, \
+         Look::next_of)",
+    ),
+];
+
 /// The line under a listed element's row: the call that applies it where a page or the chrome
 /// paints it per call ([`PER_CALL_ROUTES`], whose `row_` ids name every row by prefix and whose
-/// other ids name one element each; [`TAB_PER_CALL_ROUTES`] on [`TAB_ELEMENTS`]), else
+/// other ids name one element each; [`TAB_PER_CALL_ROUTES`] on [`TAB_ELEMENTS`]), the companion
+/// crate's switch where it reads a home of its label ([`SWITCH_LABEL_ROUTES`]), else
 /// [`how_line`]'s, from the `mapping.toml` row that holds the home, a tab's label with its
 /// fields [`TAB_LABEL_PER_CALL`] names by their call.
 pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: &[Seam]) -> String {
@@ -811,11 +846,16 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .then(|| TAB_PER_CALL_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
         .map(|(_, line)| *line);
+    let switch_route = SWITCH_LABEL_ROUTES
+        .iter()
+        .find(|(h, _)| *h == home)
+        .map(|(_, line)| *line);
     PER_CALL_ROUTES
         .iter()
         .find(|(id, h, _)| names(id) && *h == home)
         .map(|(_, _, line)| *line)
         .or(tab_route)
+        .or(switch_route)
         .map_or_else(
             || {
                 if tab {

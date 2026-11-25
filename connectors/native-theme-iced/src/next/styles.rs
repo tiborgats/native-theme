@@ -9,18 +9,22 @@ use iced_core::border::Radius;
 use iced_core::theme::Theme;
 use iced_core::{Shadow, Vector};
 use native_theme::next::{
-    ButtonQuery, FocusKind, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme,
-    Stroke, StyleQuery, WidgetState, WindowState,
+    ButtonQuery, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
+    StyleQuery, WidgetState, WindowState,
 };
 
 use super::borders::{
-    flagged, line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
+    flagged, line, line_or_none, outline_or_iced, part_outline, radius, state_line, stroke_width,
 };
-use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
+use super::{
+    Mapped, Unmapped, fill, fill_of, state_fill_of, state_text_color, stated, text_color_of,
+    to_color,
+};
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
-    Line, LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource, SegmentPosition,
-    SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
+    Line, LinkSource, MenuSource, Outline, PartOutline, PickListSource, ScrollbarSource,
+    SegmentPosition, SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
+    ToolbarLabels, ToolbarOutline,
 };
 
 /// A part's fill, where stated, as the state's whole fill (spec §9, step
@@ -47,7 +51,10 @@ pub(crate) fn state_layer(part: &PartStyle, home: &'static str) -> Mapped<Option
 /// its state (its `from_state` bit clear) is `None`, and the state is then
 /// iced's own for that status (spec §2, `from_state`). A button that states
 /// no disabled opacity takes iced's own disabled look for each colour the
-/// theme leaves to iced (spec §10, rule 0).
+/// theme leaves to iced (spec §10, rule 0). The fill, the label and each
+/// border property at rest, of the plain and of the primary button, are
+/// `None` where the theme leaves them unstated, iced's own class's at rest
+/// there (spec §10, rule 0).
 fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let b = &r.button;
     let rest = b.body(WidgetState::NONE);
@@ -57,16 +64,19 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let primary = b.body(ButtonQuery::primary());
     let c = &r.colors;
     Ok(ButtonSource {
-        background: fill(&rest, "button.body(NONE).fill")?,
+        background: fill_of(&rest, "button.body(NONE).fill")?,
         hover_background: state_layer(&hover, "button.body(HOVER).fill")?,
         active_background: state_layer(&pressed, "button.body(PRESSED).fill")?,
-        disabled_background: state_fill(
+        disabled_background: state_fill_of(
             &b.body(WidgetState::DISABLED),
             "button.body(DISABLED).fill",
         )?,
-        checked_background: state_fill(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
+        checked_background: state_fill_of(
+            &b.body(WidgetState::CHECKED),
+            "button.body(CHECKED).fill",
+        )?,
         checked_primary: true,
-        label: text_color(&b.label(WidgetState::NONE), "button.label(NONE).color")?,
+        label: text_color_of(&b.label(WidgetState::NONE)),
         hover_label: state_text_color(&b.label(WidgetState::HOVER), "button.label(HOVER).color")?,
         active_label: state_text_color(
             &b.label(WidgetState::PRESSED),
@@ -81,8 +91,8 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             "button.label(CHECKED).color",
         )?,
         disabled_opacity: b.disabled_opacity,
-        border: outline!(rest, "button.body(NONE)")?,
-        primary_border: outline!(primary, "button.body(NONE; variant=Primary)")?,
+        border: part_outline!(rest, "button.body(NONE)")?,
+        primary_border: part_outline!(primary, "button.body(NONE; variant=Primary)")?,
         hover_border_color: state_line(&hover, "button.body(HOVER).stroke.color")?,
         pressed_border_color: state_line(&pressed, "button.body(PRESSED).stroke.color")?,
         primary_hover_border_color: state_line(
@@ -93,12 +103,9 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.body(ButtonQuery::primary().state(WidgetState::PRESSED)),
             "button.body(PRESSED; variant=Primary).stroke.color",
         )?,
-        primary_background: fill(&primary, "button.body(NONE; variant=Primary).fill")?,
-        primary_label: text_color(
-            &b.label(ButtonQuery::primary()),
-            "button.label(NONE; variant=Primary).color",
-        )?,
-        default_background: state_fill(&default, "button.body(DEFAULT).fill")?,
+        primary_background: fill_of(&primary, "button.body(NONE; variant=Primary).fill")?,
+        primary_label: text_color_of(&b.label(ButtonQuery::primary())),
+        default_background: state_fill_of(&default, "button.body(DEFAULT).fill")?,
         default_label: state_text_color(
             &b.label(WidgetState::DEFAULT),
             "button.label(DEFAULT).color",
@@ -109,18 +116,56 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     })
 }
 
+/// A part's stroke width where a rule states its stroke for the queried
+/// state (its `from_state` bit), as [`stroke_width`] reads it; `None`
+/// where none does.
+fn state_stroke_width(part: &PartStyle, home: &'static str) -> Mapped<Option<f32>> {
+    if part.from_state.contains(PartStated::STROKE) {
+        stroke_width(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// [`ToolbarOutline`] of the 0.8.0 model: `toolbar.button(NONE)`'s stroke
+/// and corners, and the width of each state's stroke a rule states.
+pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
+    let t = &r.toolbar;
+    let width = |state: WidgetState, home| state_stroke_width(&t.button(state), home);
+    let (hover, pressed, checked) = (
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::CHECKED,
+    );
+    Ok(ToolbarOutline {
+        rest: part_outline!(t.button(WidgetState::NONE), "toolbar.button(NONE)")?,
+        hover_width: width(hover, "toolbar.button(HOVER).stroke.width")?,
+        pressed_width: width(pressed, "toolbar.button(PRESSED).stroke.width")?,
+        checked_width: width(checked, "toolbar.button(CHECKED).stroke.width")?,
+        checked_hover_width: width(
+            hover | checked,
+            "toolbar.button(HOVER|CHECKED).stroke.width",
+        )?,
+        checked_pressed_width: width(
+            pressed | hover | checked,
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width",
+        )?,
+    })
+}
+
 /// [`ToolbarButtonSource`] of the 0.8.0 model.
 fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
     let t = &r.toolbar;
     let hover = t.button(WidgetState::HOVER);
     let checked = t.button(WidgetState::CHECKED);
     Ok(ToolbarButtonSource {
+        outline: Some(toolbar_outline(r)?),
         hover_background: state_layer(&hover, "toolbar.button(HOVER).fill")?,
         active_background: state_layer(
             &t.button(WidgetState::PRESSED),
             "toolbar.button(PRESSED).fill",
         )?,
-        checked_background: state_fill(&checked, "toolbar.button(CHECKED).fill")?,
+        checked_background: state_fill_of(&checked, "toolbar.button(CHECKED).fill")?,
         hover_border_color: state_line(&hover, "toolbar.button(HOVER).stroke.color")?,
         checked_border_color: state_line(&checked, "toolbar.button(CHECKED).stroke.color")?,
         pressed_border_color: state_line(
@@ -135,6 +180,25 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
             &t.button(WidgetState::PRESSED | WidgetState::HOVER | WidgetState::CHECKED),
             "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
         )?,
+        labels: Some(ToolbarLabels {
+            rest: text_color_of(&t.button_label(WidgetState::NONE)),
+            hover: state_text_color(
+                &t.button_label(WidgetState::HOVER),
+                "toolbar.button_label(HOVER).color",
+            )?,
+            pressed: state_text_color(
+                &t.button_label(WidgetState::PRESSED),
+                "toolbar.button_label(PRESSED).color",
+            )?,
+            checked: state_text_color(
+                &t.button_label(WidgetState::CHECKED),
+                "toolbar.button_label(CHECKED).color",
+            )?,
+            disabled: state_text_color(
+                &t.button_label(WidgetState::DISABLED),
+                "toolbar.button_label(DISABLED).color",
+            )?,
+        }),
     })
 }
 
@@ -142,7 +206,10 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -161,7 +228,10 @@ pub fn button(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_toggle(
     r: &ResolvedTheme,
     checked: bool,
@@ -174,15 +244,26 @@ pub fn button_toggle(
 /// [`crate::styles::toolbar_button`]: a checked button whose theme states
 /// no checked fill (`toolbar.button(CHECKED)`) is drawn in
 /// [`button_primary`]'s fill and label in the same status, a stated
-/// `button.label(CHECKED)` laid over, and a stated checked fill lettered in
+/// `toolbar.button_label(CHECKED)` laid over, and a stated checked fill lettered in
 /// it, else in the label at rest, as [`button_toggle`] (spec §10, rule 0a).
 /// A hovered or pressed fill is `toolbar.button(HOVER)`'s or
 /// `toolbar.button(PRESSED)`'s where a rule states it, else iced's own
-/// (spec §10, rule 0), never the push button's.
+/// (spec §10, rule 0), never the push button's. The labels are
+/// `toolbar.button_label(<state>)`'s: at rest where stated, else iced's
+/// own; another state's where a rule states it, else as iced's own class
+/// derives it from the label at rest, never the push button's. The outline
+/// is the toolbar button's own (spec §5, the toolbar's `button` part):
+/// `toolbar.button(NONE)`'s stroke and corners, each iced's own neutral
+/// class's where unstated (spec §10, rule 0), and a state's stroke a rule
+/// states drawn at that stroke's width, never the push button's
+/// (`button.body(NONE)`).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn toolbar_button(
     r: &ResolvedTheme,
     checked: bool,
@@ -200,7 +281,10 @@ pub fn toolbar_button(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_primary(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -213,7 +297,10 @@ pub fn button_primary(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_default(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -226,7 +313,10 @@ pub fn button_default(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_danger(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -235,8 +325,8 @@ pub fn button_danger(
     let role = &r.colors.error;
     Ok(old::class_button(
         &button_source(r)?,
-        to_color(role.fill),
-        to_color(role.foreground),
+        Some(to_color(role.fill)),
+        Some(to_color(role.foreground)),
         iced_widget::button::danger,
     ))
 }
@@ -246,7 +336,10 @@ pub fn button_danger(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_success(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -255,8 +348,8 @@ pub fn button_success(
     let role = &r.colors.success;
     Ok(old::class_button(
         &button_source(r)?,
-        to_color(role.fill),
-        to_color(role.foreground),
+        Some(to_color(role.fill)),
+        Some(to_color(role.foreground)),
         iced_widget::button::success,
     ))
 }
@@ -266,7 +359,10 @@ pub fn button_success(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_warning(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -275,28 +371,35 @@ pub fn button_warning(
     let role = &r.colors.warning;
     Ok(old::class_button(
         &button_source(r)?,
-        to_color(role.fill),
-        to_color(role.foreground),
+        Some(to_color(role.fill)),
+        Some(to_color(role.foreground)),
         iced_widget::button::warning,
     ))
 }
 
 /// [`crate::styles::button_link`]: faded when disabled by the theme's
 /// `colors.disabled_opacity`, the link stating none of its own. A hover
-/// fill no `HOVER` rule states is iced's own text button's.
+/// fill no `HOVER` rule states is iced's own text button's, and so is each
+/// of the fill and the label at rest and the disabled label the theme
+/// leaves unstated (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the link needs.
+/// [`super::Unmapped`] where a state's fill is stated in a form iced cannot
+/// paint (a layered paint with no fallback colour).
 pub fn button_link(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<>,
 > {
+    Ok(old::button_link_from(&link_source(r)?))
+}
+
+/// [`LinkSource`] of the 0.8.0 model.
+fn link_source(r: &ResolvedTheme) -> Mapped<LinkSource> {
     let l = &r.link;
-    let idle = fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?;
-    Ok(old::button_link_from(&LinkSource {
-        background: idle,
+    Ok(LinkSource {
+        background: fill_of(&l.container(WidgetState::NONE), "link.container(NONE).fill")?,
         hover_background: state_layer(
             &l.container(WidgetState::HOVER),
             "link.container(HOVER).fill",
@@ -304,56 +407,40 @@ pub fn button_link(
         pressed_background: state_layer(
             &l.container(WidgetState::PRESSED),
             "link.container(PRESSED).fill",
-        )?
-        .map(|pressed| pressed.over(idle)),
-        label: text_color(&l.label(WidgetState::NONE), "link.label(NONE).color")?,
+        )?,
+        label: text_color_of(&l.label(WidgetState::NONE)),
         hover_label: state_text_color(&l.label(WidgetState::HOVER), "link.label(HOVER).color")?,
         active_label: state_text_color(
             &l.label(WidgetState::PRESSED),
             "link.label(PRESSED).color",
         )?,
-        disabled_label: text_color(
-            &l.label(WidgetState::DISABLED),
-            "link.label(DISABLED).color",
-        )?,
+        disabled_label: text_color_of(&l.label(WidgetState::DISABLED)),
         disabled_opacity: r.colors.disabled_opacity,
-    }))
+    })
 }
 
 /// [`InputSource`] of the 0.8.0 model, of the field `$w` of `$r` (`input`
-/// or `text_area`, each its own widget), every home under `$home`, and the
-/// focus indicator.
+/// or `text_area`, each its own widget), every home under `$home`. The
+/// field draws no focus ring: [`super::focus_ring`] paints the ring over
+/// it, an inset one too (spec §2, `FocusIndicator`).
 macro_rules! input_source {
     ($r:expr, $w:ident, $home:literal) => {{
         let r: &ResolvedTheme = $r;
         let i = &r.$w;
-        let ring = &r.focus_ring;
-        // a fill or an underline is no ring the field can draw, as `ring_look` finds
-        if ring.kind != FocusKind::Ring {
-            return Err(Unmapped("focus_ring.kind"));
-        }
-        // A ring the theme states none of is 0 wide, which no field draws
-        // ([`crate::styles::text_input`]'s inset ring), so its colour is
-        // never shown.
-        let (ring_width, ring_color) = super::ring_stroke(&ring.stroke, "focus_ring.stroke")?
-            .unwrap_or((0.0, iced_core::Color::TRANSPARENT));
         let rest = i.field(WidgetState::NONE);
         Ok::<InputSource, Unmapped>(InputSource {
-            background: fill(&rest, concat!($home, ".field(NONE).fill"))?,
-            disabled_background: state_fill(
+            background: fill_of(&rest, concat!($home, ".field(NONE).fill"))?,
+            disabled_background: state_fill_of(
                 &i.field(WidgetState::DISABLED),
                 concat!($home, ".field(DISABLED).fill"),
             )?,
-            text: text_color(
-                &i.text(WidgetState::NONE),
-                concat!($home, ".text(NONE).color"),
-            )?,
-            disabled_text: text_color(
+            text: text_color_of(&i.text(WidgetState::NONE)),
+            disabled_text: state_text_color(
                 &i.text(WidgetState::DISABLED),
                 concat!($home, ".text(DISABLED).color"),
             )?,
             disabled_opacity: i.disabled_opacity,
-            border: outline!(rest, concat!($home, ".field(NONE)"))?,
+            border: part_outline!(rest, concat!($home, ".field(NONE)"))?,
             hover_border_color: state_line(
                 &i.field(WidgetState::HOVER),
                 concat!($home, ".field(HOVER).stroke.color"),
@@ -362,13 +449,8 @@ macro_rules! input_source {
                 &i.field(WidgetState::FOCUSED),
                 concat!($home, ".field(FOCUSED).stroke.color"),
             )?,
-            focus_ring_color: ring_color,
-            focus_ring_width: ring_width,
-            focus_ring_offset: ring.offset,
-            placeholder: text_color(
-                &i.placeholder(WidgetState::NONE),
-                concat!($home, ".placeholder(NONE).color"),
-            )?,
+            focus_ring: None,
+            placeholder: text_color_of(&i.placeholder(WidgetState::NONE)),
             selection: to_color(r.colors.text_selection.background),
         })
     }};
@@ -377,39 +459,53 @@ macro_rules! input_source {
 /// [`crate::styles::text_input`]: a hovered or focused field's stroke the
 /// theme states nothing for is iced's own field's (`text_input::default`
 /// recolours the border under the pointer and when focused), its width and
-/// corners the theme's at rest (spec §2, `from_state`); an inset focus ring
-/// is still drawn as the focused field's border.
+/// corners the theme's at rest (spec §2, `from_state`); so is a disabled
+/// field's value no rule for `DISABLED` states (`input.text(DISABLED)`):
+/// `text_input::default` recolours it when disabled. The field draws no
+/// focus ring, an inset one included: [`super::focus_ring`] paints it over
+/// the field.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs, or
-/// its focus indicator is not a ring (`focus_ring.kind`).
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// value at rest it leaves unstated is iced's own field's (spec §10, rule
+/// 0).
 pub fn text_input(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>,
 > {
-    Ok(old::text_input_from(&input_source!(r, input, "input")?))
+    Ok(old::text_input_from(&text_input_source(r)?))
+}
+
+/// [`InputSource`] of the 0.8.0 model's text field.
+fn text_input_source(r: &ResolvedTheme) -> Mapped<InputSource> {
+    input_source!(r, input, "input")
 }
 
 /// [`crate::styles::text_editor`]: the text area's own colours and border,
 /// a hovered or focused stroke the theme states nothing for as
-/// [`text_input`]'s, against iced's own `text_editor::default`.
+/// [`text_input`]'s, against iced's own `text_editor::default`; no focus
+/// ring, as [`text_input`].
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs, or
-/// its focus indicator is not a ring (`focus_ring.kind`).
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// value at rest it leaves unstated is iced's own text area's (spec §10,
+/// rule 0).
 pub fn text_editor(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>,
 > {
-    Ok(old::text_editor_from(&input_source!(
-        r,
-        text_area,
-        "text_area"
-    )?))
+    Ok(old::text_editor_from(&text_area_source(r)?))
+}
+
+/// [`InputSource`] of the 0.8.0 model's text area.
+fn text_area_source(r: &ResolvedTheme) -> Mapped<InputSource> {
+    input_source!(r, text_area, "text_area")
 }
 
 /// [`CheckFills`] of the 0.8.0 model, of the indicator of `$w` (the check
@@ -417,33 +513,33 @@ pub fn text_editor(
 macro_rules! check_fills {
     ($w:expr, $home:literal) => {{
         let w = $w;
-        let unchecked = fill(
-            &w.indicator(WidgetState::NONE),
-            concat!($home, ".indicator(NONE).fill"),
-        )?;
-        let checked = fill(
-            &w.indicator(WidgetState::CHECKED),
-            concat!($home, ".indicator(CHECKED).fill"),
-        )?;
         let hover = w.indicator(WidgetState::HOVER);
         let checked_hover = w.indicator(WidgetState::HOVER | WidgetState::CHECKED);
         Ok::<CheckFills, Unmapped>(CheckFills {
-            checked,
-            unchecked,
+            checked: fill_of(
+                &w.indicator(WidgetState::CHECKED),
+                concat!($home, ".indicator(CHECKED).fill"),
+            )?,
+            unchecked: fill_of(
+                &w.indicator(WidgetState::NONE),
+                concat!($home, ".indicator(NONE).fill"),
+            )?,
             hover_fill: state_layer(&hover, concat!($home, ".indicator(HOVER).fill"))?
-                .map(|layer| layer.over(unchecked)),
+                .map(Layer::as_given),
             checked_hover_fill: flagged(&hover, &checked_hover, PartStated::FILL, |p| {
                 layer(p, concat!($home, ".indicator(HOVER|CHECKED).fill"))
             })?
-            .map(|layer| layer.over(checked)),
-            checked_border: line_or_none(
+            .map(Layer::as_given),
+            checked_border: edge(
                 &w.indicator(WidgetState::CHECKED),
                 concat!($home, ".indicator(CHECKED).stroke.color"),
-            )?,
-            unchecked_border: line_or_none(
+            )?
+            .map(|(_, line)| line),
+            unchecked_border: edge(
                 &w.indicator(WidgetState::NONE),
                 concat!($home, ".indicator(NONE).stroke.color"),
-            )?,
+            )?
+            .map(|(_, line)| line),
             hover_border: state_line(&hover, concat!($home, ".indicator(HOVER).stroke.color"))?,
             checked_hover_border: flagged(&hover, &checked_hover, PartStated::STROKE, |p| {
                 line_or_none(p, concat!($home, ".indicator(HOVER|CHECKED).stroke.color"))
@@ -461,12 +557,9 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
     let c = &r.checkbox;
     let rest = c.indicator(WidgetState::NONE);
     let mark = c.checkmark(WidgetState::CHECKED);
-    if !mark.stated.contains(IconStated::COLOR) {
-        return Err(Unmapped("checkbox.checkmark(CHECKED).color"));
-    }
     Ok(CheckboxSource {
         fills: check_fills!(c, "checkbox")?,
-        disabled_background: state_fill(
+        disabled_background: state_fill_of(
             &c.indicator(WidgetState::DISABLED),
             "checkbox.indicator(DISABLED).fill",
         )?,
@@ -476,8 +569,21 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
             PartStated::FILL,
             |p| fill(p, "checkbox.indicator(DISABLED|CHECKED).fill"),
         )?,
+        disabled_border: state_line(
+            &c.indicator(WidgetState::DISABLED),
+            "checkbox.indicator(DISABLED).stroke.color",
+        )?,
+        checked_disabled_border: flagged(
+            &c.indicator(WidgetState::DISABLED),
+            &c.indicator(WidgetState::DISABLED | WidgetState::CHECKED),
+            PartStated::STROKE,
+            |p| line_or_none(p, "checkbox.indicator(DISABLED|CHECKED).stroke.color"),
+        )?,
         disabled_opacity: c.disabled_opacity,
-        mark: to_color(mark.color),
+        mark: mark
+            .stated
+            .contains(IconStated::COLOR)
+            .then(|| to_color(mark.color)),
         disabled_mark: {
             let checked = c.checkmark(WidgetState::DISABLED | WidgetState::CHECKED);
             (c.checkmark(WidgetState::DISABLED)
@@ -486,22 +592,25 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
                 && checked.stated.contains(IconStated::COLOR))
             .then(|| to_color(checked.color))
         },
-        label: text_color(&c.label(WidgetState::NONE), "checkbox.label(NONE).color")?,
-        disabled_label: text_color(
-            &c.label(WidgetState::DISABLED),
-            "checkbox.label(DISABLED).color",
-        )?,
-        border_width: stroke_width(&rest, "checkbox.indicator(NONE).stroke.width")?,
-        border_radius: radius(&rest, "checkbox.indicator(NONE).corners")?,
+        label: text_color_of(&c.label(WidgetState::NONE)),
+        disabled_label: text_color_of(&c.label(WidgetState::DISABLED)),
+        border_width: edge(&rest, "checkbox.indicator(NONE).stroke.width")?.map(|(width, _)| width),
+        border_radius: radius_or_iced(&rest, "checkbox.indicator(NONE).corners")?,
     })
 }
 
 /// [`crate::styles::checkbox`]: a disabled box faded as one widget over the
-/// window.
+/// window, stroked in what a rule for `DISABLED` states
+/// (`checkbox.indicator(DISABLED)`, `indicator(DISABLED|CHECKED)` checked),
+/// else in iced's own disabled border colour where iced's own box changes
+/// it (spec §2, `from_state`; §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the box needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a value at
+/// rest it leaves unstated is iced's own box's (spec §10, rule 0).
 pub fn checkbox(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -515,7 +624,10 @@ pub fn checkbox(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the box needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a value at rest it leaves unstated is iced's own
+/// box's (spec §10, rule 0).
 pub fn checkbox_over(
     r: &ResolvedTheme,
     backdrop: iced_core::Color,
@@ -526,23 +638,45 @@ pub fn checkbox_over(
 }
 
 /// [`crate::styles::radio`]: the radio's own indicator, dot and label.
+/// iced's radio has no disabled status (iced_widget 0.14.2 `src/radio.rs`,
+/// `Status`), so `radio.indicator(DISABLED)` has no receiver.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the radio needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// value at rest it leaves unstated is iced's own radio's (spec §10, rule
+/// 0).
 pub fn radio(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<>>
 {
+    let (fills, dot, label, width) = radio_source(r)?;
+    Ok(old::radio_from(fills, dot, label, width))
+}
+
+/// What [`radio`] hands [`old::radio_from`]: the circle's fills and
+/// strokes, the dot, the label and the stroke's width, each at rest `None`
+/// where the theme leaves it unstated.
+type RadioSource = (
+    CheckFills,
+    Option<iced_core::Color>,
+    Option<iced_core::Color>,
+    Option<f32>,
+);
+
+/// [`RadioSource`] of the 0.8.0 model.
+fn radio_source(r: &ResolvedTheme) -> Mapped<RadioSource> {
     let w = &r.radio;
-    Ok(old::radio_from(
+    Ok((
         check_fills!(w, "radio")?,
-        fill(&w.dot(WidgetState::CHECKED), "radio.dot(CHECKED).fill")?,
-        text_color(&w.label(WidgetState::NONE), "radio.label(NONE).color")?,
-        stroke_width(
+        fill_of(&w.dot(WidgetState::CHECKED), "radio.dot(CHECKED).fill")?,
+        text_color_of(&w.label(WidgetState::NONE)),
+        edge(
             &w.indicator(WidgetState::NONE),
             "radio.indicator(NONE).stroke.width",
-        )?,
+        )?
+        .map(|(width, _)| width),
     ))
 }
 
@@ -573,10 +707,6 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
     let on = s.track(WidgetState::CHECKED);
     let thumb_on = s.thumb(WidgetState::CHECKED);
     let thumb_off = s.thumb(WidgetState::NONE);
-    let checked = fill(&on, "switch.track(CHECKED).fill")?;
-    let unchecked = fill(&off, "switch.track(NONE).fill")?;
-    let thumb = fill(&thumb_on, "switch.thumb(CHECKED).fill")?;
-    let unchecked_thumb = fill(&thumb_off, "switch.thumb(NONE).fill")?;
     let [_, track_height] = off.min_size;
     let [thumb_diameter, _] = thumb_on.min_size;
     let [unchecked_thumb_diameter, _] = thumb_off.min_size;
@@ -586,42 +716,42 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
     let disabled_on = WidgetState::DISABLED | WidgetState::CHECKED;
     Ok(SwitchSource {
         disabled_opacity: s.disabled_opacity,
-        checked_background: checked,
-        unchecked_background: unchecked,
+        checked_background: fill_of(&on, "switch.track(CHECKED).fill")?,
+        unchecked_background: fill_of(&off, "switch.track(NONE).fill")?,
         hovered_checked_background: flagged(
             &s.track(hover),
             &s.track(hover_on),
             PartStated::FILL,
             |p| layer(p, "switch.track(HOVER|CHECKED).fill"),
         )?
-        .map(|layer| layer.over(checked)),
+        .map(Layer::as_given),
         hovered_unchecked_background: state_layer(&s.track(hover), "switch.track(HOVER).fill")?
-            .map(|layer| layer.over(unchecked)),
+            .map(Layer::as_given),
         disabled_checked_background: flagged(
             &s.track(disabled),
             &s.track(disabled_on),
             PartStated::FILL,
             |p| fill(p, "switch.track(DISABLED|CHECKED).fill"),
         )?,
-        disabled_unchecked_background: state_fill(
+        disabled_unchecked_background: state_fill_of(
             &s.track(disabled),
             "switch.track(DISABLED).fill",
         )?,
-        thumb_background: thumb,
-        unchecked_thumb_background: unchecked_thumb,
+        thumb_background: fill_of(&thumb_on, "switch.thumb(CHECKED).fill")?,
+        unchecked_thumb_background: fill_of(&thumb_off, "switch.thumb(NONE).fill")?,
         hovered_thumb: flagged(&s.thumb(hover), &s.thumb(hover_on), PartStated::FILL, |p| {
             layer(p, "switch.thumb(HOVER|CHECKED).fill")
         })?
-        .map(|layer| layer.over(thumb)),
+        .map(Layer::as_given),
         hovered_unchecked_thumb: state_layer(&s.thumb(hover), "switch.thumb(HOVER).fill")?
-            .map(|layer| layer.over(unchecked_thumb)),
+            .map(Layer::as_given),
         disabled_thumb_color: flagged(
             &s.thumb(disabled),
             &s.thumb(disabled_on),
             PartStated::FILL,
             |p| fill(p, "switch.thumb(DISABLED|CHECKED).fill"),
         )?,
-        disabled_unchecked_thumb_color: state_fill(
+        disabled_unchecked_thumb_color: state_fill_of(
             &s.thumb(disabled),
             "switch.thumb(DISABLED).fill",
         )?,
@@ -642,7 +772,8 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
                 None
             }
         },
-        thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
+        thumb_border: edge(&thumb_on, "switch.thumb(CHECKED).stroke")?,
+        unchecked_thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
         track_radius: radius_or_iced(&off, "switch.track(NONE).corners")?,
         track_height,
         thumb_diameter,
@@ -655,7 +786,10 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the switch needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a fill at rest
+/// it leaves unstated is iced's own switch's (spec §10, rule 0).
 pub fn toggler(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -669,7 +803,10 @@ pub fn toggler(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the switch needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a fill at rest it leaves unstated is iced's own
+/// switch's (spec §10, rule 0).
 pub fn toggler_over(
     r: &ResolvedTheme,
     backdrop: iced_core::Color,
@@ -684,37 +821,41 @@ pub fn toggler_over(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// value at rest it leaves unstated is iced's own field's (spec §10, rule
+/// 0).
 pub fn pick_list(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::pick_list::Status) -> iced_widget::pick_list::Style + Clone + use<>,
 > {
+    Ok(old::pick_list_from(&pick_list_source(r)?))
+}
+
+/// [`PickListSource`] of the 0.8.0 model.
+fn pick_list_source(r: &ResolvedTheme) -> Mapped<PickListSource> {
     let c = &r.combo_box;
     let rest = c.field(WidgetState::NONE);
     let hover = c.field(WidgetState::HOVER);
     let open = c.field(WidgetState::OPEN);
     let open_hover = c.field(WidgetState::OPEN | WidgetState::HOVER);
-    let idle = fill(&rest, "combo_box.field(NONE).fill")?;
-    Ok(old::pick_list_from(&PickListSource {
-        background: idle,
+    Ok(PickListSource {
+        background: fill_of(&rest, "combo_box.field(NONE).fill")?,
         hovered_background: state_layer(&hover, "combo_box.field(HOVER).fill")?
-            .map(|layer| layer.over(idle)),
-        label: text_color(&c.label(WidgetState::NONE), "combo_box.label(NONE).color")?,
-        placeholder: text_color(
-            &r.input.placeholder(WidgetState::NONE),
-            "input.placeholder(NONE).color",
-        )?,
+            .map(Layer::as_given),
+        label: text_color_of(&c.label(WidgetState::NONE)),
+        placeholder: text_color_of(&r.input.placeholder(WidgetState::NONE)),
         open_background: state_layer(&open, "combo_box.field(OPEN).fill")?,
         open_hover_background: state_layer(&open_hover, "combo_box.field(OPEN|HOVER).fill")?,
-        border: outline!(rest, "combo_box.field(NONE)")?,
+        border: part_outline!(rest, "combo_box.field(NONE)")?,
         hover_border_color: state_line(&hover, "combo_box.field(HOVER).stroke.color")?,
         open_border_color: state_line(&open, "combo_box.field(OPEN).stroke.color")?,
         open_hover_border_color: state_line(
             &open_hover,
             "combo_box.field(OPEN|HOVER).stroke.color",
         )?,
-    }))
+    })
 }
 
 /// A part's shadow as iced draws one, where the theme states the part's
@@ -749,11 +890,17 @@ fn shadow(part: &PartStyle) -> Option<Shadow> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no panel fill or item label
-/// colour, or a frame, corners or highlight iced cannot take.
+/// [`super::Unmapped`] where the theme states a frame, corners or highlight
+/// iced cannot take; a panel fill or an item label colour it leaves
+/// unstated is iced's own menu's (spec §10, rule 0).
 pub fn menu(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::overlay::menu::Style + Clone + use<>> {
+    Ok(old::menu_from(&menu_source(r)?))
+}
+
+/// [`MenuSource`] of the 0.8.0 model.
+fn menu_source(r: &ResolvedTheme) -> Mapped<MenuSource> {
     let m = &r.menu;
     let panel = m.panel(WidgetState::NONE);
     let (frame, color_home, width_home) = if panel.stated.contains(PartStated::STROKE) {
@@ -778,17 +925,14 @@ pub fn menu(
     } else {
         (None, None)
     };
-    Ok(old::menu_from(&MenuSource {
-        background: fill(&panel, "menu.panel(NONE).fill")?,
-        label: text_color(
-            &m.item_label(WidgetState::NONE),
-            "menu.item_label(NONE).color",
-        )?,
+    Ok(MenuSource {
+        background: fill_of(&panel, "menu.panel(NONE).fill")?,
+        label: text_color_of(&m.item_label(WidgetState::NONE)),
         selected_label: state_text_color(
             &m.item_label(WidgetState::HOVER),
             "menu.item_label(HOVER).color",
         )?,
-        selected_background: state_fill(&m.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
+        selected_background: state_fill_of(&m.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
         line,
         width,
         radius: match radius_or_iced(&m.item(WidgetState::NONE), "menu.item(NONE).corners")? {
@@ -796,7 +940,7 @@ pub fn menu(
             None => radius_or_iced(&panel, "menu.panel(NONE).corners")?,
         },
         shadow: shadow(&panel),
-    }))
+    })
 }
 
 /// A part's stroke at rest as the slider's thumb takes it: its width and
@@ -820,83 +964,147 @@ fn thumb_edge(part: &PartStyle) -> Mapped<(Option<f32>, Option<Line>)> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no rail or thumb fill, or a
-/// stroke iced cannot take.
+/// [`super::Unmapped`] where the theme states a fill or a stroke iced cannot
+/// take; a rail or thumb fill at rest it leaves unstated is iced's own
+/// slider's (spec §10, rule 0).
 pub fn slider(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
 > {
+    slider_across(r, Orientation::Horizontal)
+}
+
+/// [`slider`] for `vertical_slider(..).style(..)`, which takes the same
+/// `slider::Style` (iced_widget 0.14.2 `src/vertical_slider.rs`): the rail
+/// as wide as the vertical track (`slider.track(NONE; orientation=Vertical)
+/// .min_size[0]`), where the theme states the track's thickness per
+/// orientation.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states a fill or a stroke iced cannot
+/// take; a rail or thumb fill at rest it leaves unstated is iced's own
+/// slider's (spec §10, rule 0).
+pub fn vertical_slider(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
+> {
+    slider_across(r, Orientation::Vertical)
+}
+
+/// [`slider`] of a slider laid out along `orientation`: the rail across it
+/// the track's thickness that orientation's own query gives (its height
+/// horizontal, its width vertical; iced's own where unstated).
+fn slider_across(
+    r: &ResolvedTheme,
+    orientation: Orientation,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
+> {
+    Ok(old::slider_from(&slider_source(r, orientation)?))
+}
+
+/// [`SliderSource`] of the 0.8.0 model, for a slider along `orientation`.
+fn slider_source(r: &ResolvedTheme, orientation: Orientation) -> Mapped<SliderSource> {
     let s = &r.slider;
-    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
-    let [_, track_height] = s.track(horizontal).min_size;
+    let [width, height] = s
+        .track(StyleQuery::new(WidgetState::NONE).orientation(orientation))
+        .min_size;
+    let track_height = match orientation {
+        Orientation::Vertical => width,
+        Orientation::Horizontal => height,
+    };
     let thumb = s.thumb(WidgetState::NONE);
     let [thumb_diameter, _] = thumb.min_size;
-    let thumb_color = fill(&thumb, "slider.thumb(NONE).fill")?;
     let hover = s.thumb(WidgetState::HOVER);
     let pressed = s.thumb(WidgetState::PRESSED);
     let (width, rest_line) = thumb_edge(&thumb)?;
-    Ok(old::slider_from(&SliderSource {
-        fill_color: fill(
+    Ok(SliderSource {
+        fill_color: fill_of(
             &s.active_track(WidgetState::NONE),
             "slider.active_track(NONE).fill",
         )?,
-        hovered_fill_color: state_fill(
+        hovered_fill_color: state_fill_of(
             &s.active_track(WidgetState::HOVER),
             "slider.active_track(HOVER).fill",
         )?,
-        dragged_fill_color: state_fill(
+        dragged_fill_color: state_fill_of(
             &s.active_track(WidgetState::PRESSED),
             "slider.active_track(PRESSED).fill",
         )?,
-        track_color: fill(&s.track(WidgetState::NONE), "slider.track(NONE).fill")?,
+        track_color: fill_of(&s.track(WidgetState::NONE), "slider.track(NONE).fill")?,
         track_height,
-        thumb_color,
-        hovered_thumb: state_layer(&hover, "slider.thumb(HOVER).fill")?
-            .map(|layer| layer.over(thumb_color)),
-        pressed_thumb: state_layer(&pressed, "slider.thumb(PRESSED).fill")?
-            .map(|layer| layer.over(thumb_color)),
+        thumb_color: fill_of(&thumb, "slider.thumb(NONE).fill")?,
+        hovered_thumb: state_layer(&hover, "slider.thumb(HOVER).fill")?.map(Layer::as_given),
+        pressed_thumb: state_layer(&pressed, "slider.thumb(PRESSED).fill")?.map(Layer::as_given),
         thumb_diameter,
         thumb_border_line_width: width,
         thumb_border_color: rest_line,
         thumb_hover_border_color: state_line(&hover, "slider.thumb(HOVER).stroke.color")?,
         thumb_pressed_border_color: state_line(&pressed, "slider.thumb(PRESSED).stroke.color")?,
-    }))
+    })
 }
 
 /// [`crate::styles::scrollable`]: the rail's fill, the scroller at rest (the
-/// handle of a view without the focus, which is the plain handle on every
-/// preset: spec §5, S3; iced knows no view focus), under the pointer and
-/// dragged (`thumb(PRESSED)`, spec §5, `scrollbar.thumb_active_color`), with
-/// its outline and corners where the theme states them (Breeze's pen round
-/// a pill), each value the theme states nothing for iced's own, and whether
-/// the bar floats.
+/// handle of the view `view` says: `thumb(NONE)` in the view that has the
+/// focus, `thumb(UNFOCUSED_VIEW)` where `view` holds `UNFOCUSED_VIEW`, as a
+/// connector sets it only where the view lacks the focus, spec §5, S3;
+/// spec §3, `WidgetState`; iced's scrollable reports no view focus, so the
+/// caller passes it, `UNFOCUSED_VIEW` while the window is inactive; no other
+/// bit of `view` is read), under the pointer and dragged (`thumb(PRESSED)`,
+/// spec §5, `scrollbar.thumb_active_color`), with its outline and corners
+/// where the theme states them (Breeze's pen round a pill), each value the
+/// theme states nothing for iced's own, and whether the bar floats.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no rail or thumb fill, or a
-/// stroke or corners iced cannot take.
+/// [`super::Unmapped`] where the theme states a fill, a stroke or corners
+/// iced cannot take; a rail or scroller fill at rest it leaves unstated is
+/// iced's own scrollable's (spec §10, rule 0).
 pub fn scrollable(
     r: &ResolvedTheme,
+    view: WidgetState,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>,
 > {
+    Ok(old::scrollable_from(&scrollbar_source(r, view)?))
+}
+
+/// [`ScrollbarSource`] of the 0.8.0 model, in the view `view` says.
+fn scrollbar_source(r: &ResolvedTheme, view: WidgetState) -> Mapped<ScrollbarSource> {
     let s = &r.scrollbar;
-    let thumb = s.thumb(WidgetState::UNFOCUSED_VIEW);
+    let (rest, fill_home, stroke_home, corners_home) = if view.contains(WidgetState::UNFOCUSED_VIEW)
+    {
+        (
+            WidgetState::UNFOCUSED_VIEW,
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+            "scrollbar.thumb(UNFOCUSED_VIEW).stroke",
+            "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        )
+    } else {
+        (
+            WidgetState::NONE,
+            "scrollbar.thumb(NONE).fill",
+            "scrollbar.thumb(NONE).stroke",
+            "scrollbar.thumb(NONE).corners",
+        )
+    };
+    let thumb = s.thumb(rest);
     let hover = s.thumb(WidgetState::HOVER);
     let pressed = s.thumb(WidgetState::PRESSED);
-    Ok(old::scrollable_from(&ScrollbarSource {
-        track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
-        thumb: fill(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).fill")?,
-        hovered_thumb: state_fill(&hover, "scrollbar.thumb(HOVER).fill")?,
-        dragged_thumb: state_fill(&pressed, "scrollbar.thumb(PRESSED).fill")?,
+    Ok(ScrollbarSource {
+        track: fill_of(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
+        thumb: fill_of(&thumb, fill_home)?,
+        hovered_thumb: state_fill_of(&hover, "scrollbar.thumb(HOVER).fill")?,
+        dragged_thumb: state_fill_of(&pressed, "scrollbar.thumb(PRESSED).fill")?,
         overlay_mode: s.overlay_mode,
-        thumb_edge: edge(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).stroke")?,
-        thumb_radius: radius_or_iced(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).corners")?
-            .map(Radius::new),
+        thumb_edge: edge(&thumb, stroke_home)?,
+        thumb_radius: radius_or_iced(&thumb, corners_home)?.map(Radius::new),
         hovered_thumb_line: state_line(&hover, "scrollbar.thumb(HOVER).stroke.color")?,
         dragged_thumb_line: state_line(&pressed, "scrollbar.thumb(PRESSED).stroke.color")?,
-    }))
+    })
 }
 
 /// [`crate::styles::scrollbar`]: the groove's and the thumb's thickness
@@ -917,7 +1125,10 @@ pub fn scrollbar(r: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar {
 /// part is the line itself), and where the theme states none, the
 /// outline's colour, the one line colour 0.7.2 states for the control (the
 /// table of homes, `segmented_control.border.color`); no line where the
-/// outline is stated as none.
+/// outline is stated as none, or left unstated, iced's own container's,
+/// which draws none. The group fill, the labels, the outline and the
+/// selected segment's fill at rest are each iced's own where the theme
+/// leaves them unstated (spec §10, rule 0).
 fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
     let s = &r.segmented_control;
     let track = s.track(WidgetState::NONE);
@@ -927,28 +1138,22 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
             r.colors.window.background,
             "colors.window.background",
         )?),
-        background: fill(&track, "segmented_control.track(NONE).fill")?,
-        label: text_color(
-            &s.label(WidgetState::NONE),
-            "segmented_control.label(NONE).color",
-        )?,
-        border: outline!(track, "segmented_control.track(NONE)")?,
+        background: fill_of(&track, "segmented_control.track(NONE).fill")?,
+        label: text_color_of(&s.label(WidgetState::NONE)),
+        border: part_outline!(track, "segmented_control.track(NONE)")?,
         separator: if separator.stated.contains(PartStated::FILL) {
             Some(fill(&separator, "segmented_control.separator(NONE).fill")?)
-        } else if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None)
+        } else if !track.stated.contains(PartStated::STROKE) || matches!(track.stroke, Stroke::None)
         {
             None
         } else {
             Some(line(&track, "segmented_control.track(NONE).stroke.color")?.color)
         },
-        active_background: fill(
+        active_background: fill_of(
             &s.segment(WidgetState::SELECTED),
             "segmented_control.segment(SELECTED).fill",
         )?,
-        active_text_color: text_color(
-            &s.label(WidgetState::SELECTED),
-            "segmented_control.label(SELECTED).color",
-        )?,
+        active_text_color: text_color_of(&s.label(WidgetState::SELECTED)),
         hover_background: state_layer(
             &s.segment(WidgetState::HOVER),
             "segmented_control.segment(HOVER).fill",
@@ -970,7 +1175,10 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the control needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a value at
+/// rest it leaves unstated is iced's own container's (spec §10, rule 0).
 pub fn segmented_control(
     r: &ResolvedTheme,
     disabled: bool,
@@ -982,7 +1190,9 @@ pub fn segmented_control(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the control needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius).
 pub fn segment_separator(
     r: &ResolvedTheme,
     disabled: bool,
@@ -996,7 +1206,11 @@ pub fn segment_separator(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the control needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a fill or a
+/// label at rest it leaves unstated is iced's own segment's (spec §10, rule
+/// 0).
 pub fn segment(
     r: &ResolvedTheme,
     selected: bool,
@@ -1022,12 +1236,9 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
             "expander.header(PRESSED).fill",
         )?
         .map(Layer::as_given),
-        label: text_color(
-            &x.header_label(WidgetState::NONE),
-            "expander.header_label(NONE).color",
-        )?,
+        label: text_color_of(&x.header_label(WidgetState::NONE)),
         disabled_opacity: r.colors.disabled_opacity,
-        border: outline!(frame, "expander.container(NONE)")?,
+        border: part_outline!(frame, "expander.container(NONE)")?,
         frame_enabled: x.frame_enabled,
         shadow: shadow(&frame),
     })
@@ -1038,7 +1249,10 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the header needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a label or a frame property it leaves unstated is
+/// iced's own (spec §10, rule 0).
 pub fn expander(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -1052,7 +1266,10 @@ pub fn expander(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the frame needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a frame property it leaves unstated is iced's own
+/// container's (spec §10, rule 0).
 pub fn expander_frame(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
@@ -1063,142 +1280,174 @@ pub fn expander_frame(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no track or fill colour.
+/// [`super::Unmapped`] where the theme states a stroke or corners iced
+/// cannot take; a track or bar fill, a stroke or corners it leaves
+/// unstated are iced's own bar's (spec §10, rule 0).
 pub fn progress_bar(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<>> {
+    let (track, filled, border) = progress_bar_source(r)?;
+    Ok(old::progress_bar_from(track, filled, border))
+}
+
+/// What [`progress_bar`] hands [`old::progress_bar_from`]: the track's and
+/// the bar's fills and the track's border, each `None` where unstated.
+type ProgressBarSource = (
+    Option<iced_core::Color>,
+    Option<iced_core::Color>,
+    PartOutline,
+);
+
+/// [`ProgressBarSource`] of the 0.8.0 model.
+fn progress_bar_source(r: &ResolvedTheme) -> Mapped<ProgressBarSource> {
     let p = &r.progress_bar;
     let track = p.track(WidgetState::NONE);
-    Ok(old::progress_bar_from(
-        fill(&track, "progress_bar.track(NONE).fill")?,
-        fill(&p.fill(WidgetState::NONE), "progress_bar.fill(NONE).fill")?,
-        outline!(track, "progress_bar.track(NONE)")?,
+    Ok((
+        fill_of(&track, "progress_bar.track(NONE).fill")?,
+        fill_of(&p.fill(WidgetState::NONE), "progress_bar.fill(NONE).fill")?,
+        part_outline!(track, "progress_bar.track(NONE)")?,
     ))
 }
 
 /// [`crate::styles::rule`]: the separator's colour.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn rule(r: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    old::rule_from(to_color(r.separator.color))
+    old::rule_from(Some(to_color(r.separator.color)))
 }
 
-/// [`crate::styles::toolbar_rule`]: the toolbar's stroke colour as stated.
-/// The rule is a line of its own under the bar, not a border over the bar's
-/// fill, so no fill is composited under it.
+/// [`crate::styles::toolbar_rule`]: the toolbar's stroke colour as stated,
+/// iced's own rule's where the theme leaves it unstated (spec §10, rule 0);
+/// a stroke stated as none is no rule, drawn transparent. The rule is a
+/// line of its own under the bar, not a border over the bar's fill, so no
+/// fill is composited under it.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no toolbar stroke of one
-/// colour.
+/// [`super::Unmapped`] where the theme states a toolbar stroke per side:
+/// iced's rule is one line (spec §10, rule 4).
 pub fn toolbar_rule(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<>> {
     let bar = r.toolbar.bar(WidgetState::NONE);
     let line = match &bar.stroke {
-        Stroke::Uniform { color, .. } if bar.stated.contains(PartStated::STROKE) => *color,
+        _ if !bar.stated.contains(PartStated::STROKE) => None,
+        Stroke::None => Some(iced_core::Color::TRANSPARENT),
+        Stroke::Uniform { color, .. } => Some(to_color(*color)),
         _ => return Err(Unmapped("toolbar.bar(NONE).stroke.color")),
     };
-    Ok(old::rule_from(to_color(line)))
+    Ok(old::rule_from(line))
 }
 
 /// [`crate::styles::pane_grid`]: the splitter's handle under the pointer
-/// and its divider width.
+/// and its divider width; a handle fill the theme leaves unstated is iced's
+/// own split's (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no hovered handle fill.
+/// [`super::Unmapped`] where the theme states the hovered handle's fill in
+/// a form iced cannot paint (a layered fill with no fallback colour).
 pub fn pane_grid(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<>> {
     let s = &r.splitter;
-    Ok(old::pane_grid_from(
-        fill(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?,
-        s.divider_width,
-    ))
+    let color = fill_of(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?;
+    Ok(old::pane_grid_from(color, s.divider_width))
 }
 
-/// [`crate::styles::tooltip`].
+/// [`crate::styles::tooltip`]: the panel's fill, the text colour and the
+/// panel's border, each iced's own container's (`container::Style::default()`:
+/// no fill, the inherited text colour, no line and square corners) where the
+/// theme leaves it unstated (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no panel fill or text colour.
+/// [`super::Unmapped`] where the panel's fill or border is stated in a form
+/// iced cannot draw (a layered fill with no fallback colour, a per-side
+/// stroke, a concentric radius).
 pub fn tooltip(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let t = &r.tooltip;
     Ok(old::panel_from(
-        fill(&t.panel, "tooltip.panel.fill")?,
-        Some(text_color(&t.text, "tooltip.text.color")?),
-        Some(outline!(t.panel, "tooltip.panel")?),
+        fill_of(&t.panel, "tooltip.panel.fill")?,
+        text_color_of(&t.text),
+        Some(outline_or_iced!(t.panel, "tooltip.panel")?),
     ))
 }
 
-/// [`crate::styles::container_card`]. The card's border is iced's own where
-/// the theme states none (the table of homes, `card.border.*`:
-/// `unstated_if_unset`).
+/// [`crate::styles::container_card`]: the card's fill and border, each iced's
+/// own container's where the theme states none (the table of homes,
+/// `card.border.*`: `unstated_if_unset`; spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no card fill.
+/// [`super::Unmapped`] where the card's fill or border is stated in a form
+/// iced cannot draw.
 pub fn container_card(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let card = r.card.container(WidgetState::NONE);
     Ok(old::panel_from(
-        fill(&card, "card.container(NONE).fill")?,
+        fill_of(&card, "card.container(NONE).fill")?,
         None,
         Some(outline_or_iced!(card, "card.container(NONE)")?),
     ))
 }
 
-/// [`crate::styles::dialog`].
+/// [`crate::styles::dialog`]: the panel's fill, the body colour and the
+/// panel's border, each iced's own container's where the theme leaves it
+/// unstated (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no panel fill or body colour.
+/// [`super::Unmapped`] where the panel's fill or border is stated in a form
+/// iced cannot draw.
 pub fn dialog(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let d = &r.dialog;
     Ok(old::panel_from(
-        fill(&d.panel, "dialog.panel.fill")?,
-        Some(text_color(&d.body, "dialog.body.color")?),
-        Some(outline!(d.panel, "dialog.panel")?),
+        fill_of(&d.panel, "dialog.panel.fill")?,
+        text_color_of(&d.body),
+        Some(outline_or_iced!(d.panel, "dialog.panel")?),
     ))
 }
 
-/// [`crate::styles::toolbar`].
+/// [`crate::styles::toolbar`]: the bar's fill and the button label's colour,
+/// each iced's own container's where the theme leaves it unstated (spec
+/// §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no bar fill or button label
-/// colour.
+/// [`super::Unmapped`] where the theme states the bar's fill in a form
+/// iced cannot paint (a layered fill with no fallback colour).
 pub fn toolbar(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let t = &r.toolbar;
     Ok(old::panel_from(
-        fill(&t.bar(WidgetState::NONE), "toolbar.bar(NONE).fill")?,
-        Some(text_color(
-            &t.button_label(WidgetState::NONE),
-            "toolbar.button_label(NONE).color",
-        )?),
+        fill_of(&t.bar(WidgetState::NONE), "toolbar.bar(NONE).fill")?,
+        text_color_of(&t.button_label(WidgetState::NONE)),
         None::<Outline>,
     ))
 }
 
-/// [`crate::styles::application`]: the fill of a normal window's frame.
+/// [`crate::styles::application`]: the fill of a normal window's frame,
+/// the theme's base style's where the theme leaves it unstated (spec §10,
+/// rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no frame fill.
+/// [`super::Unmapped`] where the theme states the frame's fill in a form
+/// iced cannot paint (a layered fill with no fallback colour).
 pub fn application(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<>> {
-    Ok(old::application_from(fill(
+    let background = fill_of(
         &r.window.frame(WindowState::default()),
         "window.frame(normal).fill",
-    )?))
+    )?;
+    Ok(old::application_from(background))
 }
 
 #[cfg(feature = "iced_aw")]

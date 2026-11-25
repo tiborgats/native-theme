@@ -14,10 +14,10 @@
 //! `UNREACHABLE`. Its converse walks the model rather than the output:
 //! `every_colour_leaf_reaches_a_row_or_is_named` splices every colour leaf of
 //! `ResolvedTheme` and requires each to move a row's native side, or to be
-//! named by `UNREAD_COLOURS` or `UNREACHABLE`. What it finds -- per leaf, the
-//! rows it moves under which statuses and in which combinations -- is
-//! exported as `contract-leaves.toml` at the crate root, which the iced
-//! showcase reads for its Widget Info and the test holds to the walk.
+//! named by `UNREAD_COLOURS` or `UNREACHABLE`. The 0.8.0 model's
+//! counterpart walks the colour homes (`homes`), and what it finds is
+//! exported as `contract-homes.toml` at the crate root, which the iced
+//! showcase reads for its Widget Info and its test holds to the walk.
 
 use crate::extended::contrast_ratio;
 use crate::palette::to_color;
@@ -51,6 +51,8 @@ use iced_aw::style::{card, menu_bar, selection_list, sidebar, tab_bar};
 // walkers, the `check_*` helpers and every `#[test]` stay here, because the
 // tests are the single roots of trust and read all three tables at once.
 mod derived;
+#[cfg(feature = "iced_aw")]
+mod homes;
 mod pairs;
 mod rows;
 
@@ -5631,17 +5633,6 @@ fn names(entry: &str, leaf: &str) -> bool {
             .is_some_and(|rest| rest.starts_with('.'))
 }
 
-/// The command that rewrites `contract-leaves.toml`, which
-/// `every_colour_leaf_reaches_a_row_or_is_named` names when the file is stale.
-#[cfg(feature = "iced_aw")]
-const REGENERATE: &str =
-    "cargo test -p native-theme-iced --all-features --lib -- --ignored regenerate_contract_leaves";
-
-/// The exported leaf-to-row map as committed: the iced showcase reads it to
-/// name the rows a colour leaf moves in its Widget Info.
-#[cfg(feature = "iced_aw")]
-const CONTRACT_LEAVES: &str = include_str!("../contract-leaves.toml");
-
 /// What the colour-leaf walk finds over the 34 bundled combinations.
 #[cfg(feature = "iced_aw")]
 struct Reach {
@@ -5667,9 +5658,8 @@ struct Reach {
 /// so neither a passthrough of another leaf nor a composite under an opaque
 /// layer hides the change. Every leaf is spliced in every base: a soft
 /// option's fallback moves its row only where the option is unstated, and a
-/// row reached in one base is not reached in every base, which the export
-/// records. The bases are independent, so each is walked on a thread of its
-/// own.
+/// row reached in one base is not reached in every base. The bases are
+/// independent, so each is walked on a thread of its own.
 #[cfg(feature = "iced_aw")]
 fn reach() -> native_theme::Result<Reach> {
     let combinations = combinations()?;
@@ -5807,8 +5797,9 @@ fn toml_strings<'a>(items: impl IntoIterator<Item = &'a str>) -> String {
 }
 
 /// The table and the reason that name a colour leaf no row reads, as the
-/// export records them: the table, the entry's own name (a leaf, or the
-/// widget that is a prefix of it), the kind of reason and the reason.
+/// home export records them for a home that holds it: the table, the
+/// entry's own name (a leaf, or the widget that is a prefix of it), the kind
+/// of reason and the reason.
 #[cfg(feature = "iced_aw")]
 fn naming(leaf: &str) -> Option<(&'static str, &'static str, String, &'static str)> {
     if let Some(entry) = UNREAD_COLOURS.iter().find(|e| names(e.leaf, leaf)) {
@@ -5827,133 +5818,87 @@ fn naming(leaf: &str) -> Option<(&'static str, &'static str, String, &'static st
         .map(|u| ("UNREACHABLE", u.field, "no receiver".to_owned(), u.evidence))
 }
 
-/// `contract-leaves.toml` as the walk finds it: per colour leaf the rows it
-/// moves, under which statuses, and the combinations in which it does not
-/// move them, or the entry that names it; per row the leaves that move it.
+/// The `moves` array `contract-homes.toml` gives one key: per row, its
+/// statuses grouped by the bases they move in, each group with the bases
+/// among `labels` it does not move in.
 #[cfg(feature = "iced_aw")]
-fn render_contract_leaves(reach: &Reach) -> String {
+fn render_moves(out: &mut String, rows: &BTreeMap<Reached, BTreeSet<usize>>, labels: &[String]) {
     use std::fmt::Write as _;
 
-    let labels: Vec<String> = reach.combinations.iter().map(Combination::label).collect();
     let all: BTreeSet<usize> = (0..labels.len()).collect();
-    let mut out = String::new();
-    let _ = write!(
-        out,
-        "\
-# connectors/native-theme-iced/contract-leaves.toml -- generated; do not edit.
-# Written by `{REGENERATE}`
-# from the contract's colour-leaf walk (src/contract.rs, `reach`), and held to it by
-# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ. That
-# test exists only with `--features iced_aw` (check_release's and CI's
-# `iced_aw,watch,native` run); a default `cargo test` does not compare the file.
-# The iced showcase reads it for the colour rows of its Widget Info.
-#
-# Every colour leaf of the serialised ResolvedTheme, spliced in each of the {} bundled
-# preset/mode combinations, is a [leaves.\"<leaf>\"] table:
-#   moves: each contract row the splice moves, as {{ row, statuses, except }}:
-#     row       a palette slot (`palette.*`, `extended.*`), a crate-root accessor or the
-#               connector's Spinner (`crate::*`), or a field of a style function's output
-#               (`styles::<fn>.<field>`; `styles::<fn>.border` is the whole border);
-#     statuses  the widget statuses, as `{{:?}}` writes them, it moves the row under;
-#               absent for a row that takes no status;
-#     except    the combinations (`<preset>/<mode>`) in which it does not move the row
-#               under those statuses; absent where it moves it in all {}.
-#   A leaf that moves no row in any combination has instead the entry that names it:
-#     named     UNREAD_COLOURS or UNREACHABLE (src/contract/derived.rs);
-#     entry     the entry's name, the leaf or a widget that is a prefix of it;
-#     kind      why: no receiver, inherited, no widget, ruled, or fallback of <option>;
-#     why       the entry's evidence.
-# Every row a leaf moves is a [rows.\"<row>\"] table: leaves, the leaves that move it,
-# and cfg, the feature it exists under where a build can lack it.
-# combinations lists the {} combinations' names, in the walk's order.
-
-combinations = {}
-",
-        labels.len(),
-        labels.len(),
-        labels.len(),
-        toml_strings(labels.iter().map(String::as_str))
-    );
-
-    for leaf in &reach.leaves {
-        let _ = write!(out, "\n[leaves.{}]\n", toml_string(leaf));
-        match reach.moves.get(leaf) {
-            Some(rows) => {
-                // Per row, its statuses grouped by the bases they move in.
-                type Groups<'a> = Vec<(BTreeSet<usize>, Vec<&'a str>)>;
-                let mut grouped: BTreeMap<&str, Groups<'_>> = BTreeMap::new();
-                for (key, bases) in rows {
-                    let groups = grouped.entry(key.row.as_str()).or_default();
-                    let status = key.status.as_deref();
-                    match groups.iter_mut().find(|(b, _)| b == bases) {
-                        Some((_, statuses)) => statuses.extend(status),
-                        None => groups.push((bases.clone(), status.into_iter().collect())),
-                    }
-                }
-                out.push_str("moves = [\n");
-                for (row, groups) in &grouped {
-                    for (bases, statuses) in groups {
-                        let mut entry = format!("row = {}", toml_string(row));
-                        if !statuses.is_empty() {
-                            let _ = write!(
-                                entry,
-                                ", statuses = {}",
-                                toml_strings(statuses.iter().copied())
-                            );
-                        }
-                        if bases != &all {
-                            let except = all
-                                .difference(bases)
-                                .filter_map(|&i| labels.get(i))
-                                .map(String::as_str);
-                            let _ = write!(entry, ", except = {}", toml_strings(except));
-                        }
-                        let _ = writeln!(out, "  {{ {entry} }},");
-                    }
-                }
-                out.push_str("]\n");
-            }
-            None => {
-                if let Some((named, entry, kind, why)) = naming(leaf) {
-                    let _ = writeln!(out, "named = {}", toml_string(named));
-                    let _ = writeln!(out, "entry = {}", toml_string(entry));
-                    let _ = writeln!(out, "kind = {}", toml_string(&kind));
-                    let _ = writeln!(out, "why = {}", toml_string(why));
-                }
-            }
+    type Groups<'a> = Vec<(BTreeSet<usize>, Vec<&'a str>)>;
+    let mut grouped: BTreeMap<&str, Groups<'_>> = BTreeMap::new();
+    for (key, bases) in rows {
+        let groups = grouped.entry(key.row.as_str()).or_default();
+        let status = key.status.as_deref();
+        match groups.iter_mut().find(|(b, _)| b == bases) {
+            Some((_, statuses)) => statuses.extend(status),
+            None => groups.push((bases.clone(), status.into_iter().collect())),
         }
     }
+    out.push_str("moves = [\n");
+    for (row, groups) in &grouped {
+        for (bases, statuses) in groups {
+            let mut entry = format!("row = {}", toml_string(row));
+            if !statuses.is_empty() {
+                let _ = write!(
+                    entry,
+                    ", statuses = {}",
+                    toml_strings(statuses.iter().copied())
+                );
+            }
+            if bases != &all {
+                let except = all
+                    .difference(bases)
+                    .filter_map(|&i| labels.get(i))
+                    .map(String::as_str);
+                let _ = write!(entry, ", except = {}", toml_strings(except));
+            }
+            let _ = writeln!(out, "  {{ {entry} }},");
+        }
+    }
+    out.push_str("]\n");
+}
+
+/// The four lines an export gives a key that moves no row: the table that
+/// names it, the entry's name, the kind of reason and the reason.
+#[cfg(feature = "iced_aw")]
+fn render_named(out: &mut String, named: &str, entry: &str, kind: &str, why: &str) {
+    use std::fmt::Write as _;
+
+    let _ = writeln!(out, "named = {}", toml_string(named));
+    let _ = writeln!(out, "entry = {}", toml_string(entry));
+    let _ = writeln!(out, "kind = {}", toml_string(kind));
+    let _ = writeln!(out, "why = {}", toml_string(why));
+}
+
+/// The `[rows."<row>"]` tables of an export: per row the keys of `moves`
+/// that move it, under `key` (`leaves`, `homes`), and the feature the row
+/// exists under where a build can lack it.
+#[cfg(feature = "iced_aw")]
+fn render_rows(
+    out: &mut String,
+    moves: &BTreeMap<String, BTreeMap<Reached, BTreeSet<usize>>>,
+    key: &str,
+) {
+    use std::fmt::Write as _;
 
     let mut converse: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
-    for (leaf, rows) in &reach.moves {
-        for key in rows.keys() {
+    for (moved_by, rows) in moves {
+        for reached in rows.keys() {
             converse
-                .entry(key.row.as_str())
+                .entry(reached.row.as_str())
                 .or_default()
-                .insert(leaf.as_str());
+                .insert(moved_by.as_str());
         }
     }
-    for (row, leaves) in &converse {
+    for (row, keys) in &converse {
         let _ = write!(out, "\n[rows.{}]\n", toml_string(row));
         if let Some(cfg) = row_cfg(row) {
             let _ = writeln!(out, "cfg = {}", toml_string(cfg));
         }
-        let _ = writeln!(out, "leaves = {}", toml_strings(leaves.iter().copied()));
+        let _ = writeln!(out, "{key} = {}", toml_strings(keys.iter().copied()));
     }
-    out
-}
-
-/// Rewrites `contract-leaves.toml` from the walk; run on purpose, with every
-/// feature, as `REGENERATE` spells it.
-#[cfg(feature = "iced_aw")]
-#[test]
-#[ignore = "rewrites contract-leaves.toml; run on purpose"]
-fn regenerate_contract_leaves() -> native_theme::Result<()> {
-    let reach = reach()?;
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/contract-leaves.toml");
-    let written = std::fs::write(path, render_contract_leaves(&reach));
-    assert!(written.is_ok(), "write {path}: {written:?}");
-    Ok(())
 }
 
 /// M1-T7-03, iced's half: every colour leaf of `ResolvedTheme` reaches a
@@ -5977,14 +5922,9 @@ fn regenerate_contract_leaves() -> native_theme::Result<()> {
 ///
 /// Every leaf that reaches no row must be named once, by `UNREAD_COLOURS` or
 /// `UNREACHABLE`. An entry of either that names a leaf a row reads is stale,
-/// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
-///
-/// And `contract-leaves.toml`, the walk's export, must be what the walk finds:
-/// a file that differs fails, naming the command that rewrites it. The test
+/// and so is an `UNREAD_COLOURS` entry that names no colour leaf. The test
 /// exists only with `--features iced_aw` (check_release's and CI's
-/// `iced_aw,watch,native` run), and compares the file only with `spinner` as
-/// well, the default feature the `Spinner` rows need: a default `cargo test`
-/// does not compare it.
+/// `iced_aw,watch,native` run).
 #[cfg(feature = "iced_aw")]
 #[test]
 fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
@@ -6122,16 +6062,6 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         {
             failures.push(failure);
         }
-    }
-
-    // The export is the walk's: every row it records exists in this build only
-    // with `spinner` (the `Spinner` rows) and `iced_aw` (this test's own gate).
-    #[cfg(feature = "spinner")]
-    if CONTRACT_LEAVES != render_contract_leaves(&reach) {
-        failures.push(format!(
-            "contract-leaves.toml differs from what the colour-leaf walk finds; \
-             run `{REGENERATE}`"
-        ));
     }
 
     println!(

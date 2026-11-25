@@ -2675,6 +2675,52 @@ pub(crate) fn gnome_cases() -> Vec<(
 )> {
     const BLUE: (u8, u8, u8) = (0x35, 0x84, 0xe4);
     const PURPLE: (u8, u8, u8) = (0x91, 0x41, 0xac);
+    // Listed under `Contrast::High`: the adwaita builder's disabled opacity is libadwaita's
+    // `--disabled-opacity: 40%` under `prefers-contrast: more` (`_colors.scss:323-328` at 1.10.0;
+    // its module documentation), which every widget's disabled opacity takes; 0.7.2's reader keeps
+    // the preset's 0.5.
+    const DISABLED_OPACITY: [&str; 8] = [
+        "defaults.disabled_opacity",
+        "button.disabled_opacity",
+        "checkbox.disabled_opacity",
+        "input.disabled_opacity",
+        "slider.disabled_opacity",
+        "switch.disabled_opacity",
+        "combo_box.disabled_opacity",
+        "segmented_control.disabled_opacity",
+    ];
+    // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
+    // whose value is libadwaita's hover layer over the preset's accent, currentColor at 10 % over
+    // #3584e4 (`_switch.scss:41-45` at 1.10.0), which a case's other accent replaces; so is the
+    // disabled checked box's and radio's fill, the checked one's accent (`_checks.scss:62-64`).
+    const ACCENT: [&str; 2] = [
+        "checkbox.disabled_background",
+        "switch.hover_checked_background",
+    ];
+    const ACCENT_DISABLED_OPACITY: [&str; 10] = [
+        "defaults.disabled_opacity",
+        "button.disabled_opacity",
+        "checkbox.disabled_opacity",
+        "checkbox.disabled_background",
+        "input.disabled_opacity",
+        "slider.disabled_opacity",
+        "switch.disabled_opacity",
+        "switch.hover_checked_background",
+        "combo_box.disabled_opacity",
+        "segmented_control.disabled_opacity",
+    ];
+    const HIGH_CONTRAST_NO_ACCENT: [&str; 10] = [
+        "defaults.disabled_opacity",
+        "defaults.focus_ring_color",
+        "button.disabled_opacity",
+        "checkbox.disabled_opacity",
+        "input.disabled_opacity",
+        "input.focus_border_color",
+        "slider.disabled_opacity",
+        "switch.disabled_opacity",
+        "combo_box.disabled_opacity",
+        "segmented_control.disabled_opacity",
+    ];
     let base = default_gnome_data;
     let with = |f: fn(&mut crate::gnome::GnomePortalData)| {
         let mut data = base();
@@ -2700,7 +2746,7 @@ pub(crate) fn gnome_cases() -> Vec<(
         (
             "purple accent, light",
             with(|d| d.accent_rgb = portal_accent(PURPLE)),
-            &[],
+            &ACCENT,
         ),
         (
             "purple accent, dark",
@@ -2708,7 +2754,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.is_dark = true;
                 d.accent_rgb = portal_accent(PURPLE);
             }),
-            &[],
+            &ACCENT,
         ),
         (
             "purple accent, high contrast from the portal",
@@ -2716,7 +2762,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.accent_rgb = portal_accent(PURPLE);
                 d.high_contrast = true;
             }),
-            &[],
+            &ACCENT_DISABLED_OPACITY,
         ),
         (
             "blue accent, dark, high contrast from gsettings",
@@ -2725,7 +2771,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.accent_rgb = portal_accent(BLUE);
                 d.gsettings_high_contrast = Some(true);
             }),
-            &[],
+            &DISABLED_OPACITY,
         ),
         // Listed: under `Contrast::High` the adwaita builder draws the preset's focus ring, and the
         // focused text field's outline, at libadwaita's `$focus_border_color_hc` alpha of 0.8 (its
@@ -2738,7 +2784,7 @@ pub(crate) fn gnome_cases() -> Vec<(
         (
             "high contrast without an accent",
             with(|d| d.high_contrast = true),
-            &["defaults.focus_ring_color", "input.focus_border_color"],
+            &HIGH_CONTRAST_NO_ACCENT,
         ),
         (
             "an accent out of range",
@@ -3015,11 +3061,54 @@ pub(crate) fn windows_cases() -> Vec<(
     const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
     // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
     // whose value is the preset's accent fill at 0.9, which every case's accent (and high contrast's
-    // button face) replaces.
-    const ACCENT: &[&str] = &["switch.hover_checked_background"];
-    const HIGH_CONTRAST: &[&str] = &[
-        "button.hover_border_color",
+    // button face) replaces; so are a checked box's and radio button's outline, the accent's fill
+    // (CheckBoxCheckBackgroundStrokeChecked, RadioButtonOuterEllipseCheckedStroke =
+    // AccentFillColorDefaultBrush), and a checked box's hovered one, that fill at 0.9
+    // (…StrokeCheckedPointerOver = AccentFillColorSecondaryBrush; CheckBox_themeresources.xaml:221,
+    // :222, RadioButton_themeresources.xaml:142 at microsoft-ui-xaml 8463f45).
+    const ACCENT: &[&str] = &[
         "checkbox.hover_border_color",
+        "checkbox.border.color",
+        "switch.hover_checked_background",
+    ];
+    // The hovered unchecked box and a disabled checked box under high contrast: the builder takes
+    // WinUI's high-contrast brushes, `SystemColorHighlightTextColorBrush` and
+    // `SystemColorGrayTextColorBrush` (CheckBox_themeresources.xaml:142, :148 at microsoft-ui-xaml
+    // 8463f45), where 0.7.2's `apply_sys_colors` keeps the preset's colours; so for the box at rest,
+    // `SystemColorButtonFaceColorBrush` in `SystemColorButtonTextColorBrush` (:141, :129), and a
+    // checked box's outline, `SystemColorHighlightColorBrush` (:133); a checked radio button's
+    // circle, `SystemColorHighlightTextColorBrush`, and its dot, `SystemColorHighlightColorBrush`
+    // (RadioButton_themeresources.xaml:88, :92); a hovered and a pressed button,
+    // `SystemColorHighlightTextColorBrush` (Button_themeresources.xaml:79-80), lettered
+    // `SystemControlHighlightBaseHighBrush`, the highlight (:83-84; generic.xaml:2069), and a
+    // disabled one's label, `SystemControlDisabledBaseMediumLowBrush`, the grey
+    // text (Button_themeresources.xaml:85; generic.xaml:2026); a button's outline,
+    // `SystemControlForegroundTransparentBrush`, the button text (Button_themeresources.xaml:86;
+    // generic.xaml:2054), hovered `SystemColorHighlightColorBrush` and pressed
+    // `SystemColorHighlightTextColorBrush` (Button_themeresources.xaml:87-88); a hovered and a
+    // pressed toolbar button, `SystemControlHighlightListLowBrush` / `…ListMediumBrush`, the
+    // highlight (AppBarButton_themeresources.xaml:41-42; generic.xaml:2079-2080); a disabled
+    // button, `SystemControlBackgroundBaseLowBrush`, the button face
+    // (Button_themeresources.xaml:81; generic.xaml:2010).
+    const HIGH_CONTRAST: &[&str] = &[
+        "button.hover_background",
+        "button.hover_text_color",
+        "button.active_text_color",
+        "button.disabled_text_color",
+        "button.active_background",
+        "button.disabled_background",
+        "button.hover_border_color",
+        "button.border.color",
+        "checkbox.checked_background",
+        "checkbox.indicator_color",
+        "checkbox.hover_background",
+        "checkbox.hover_border_color",
+        "checkbox.disabled_background",
+        "checkbox.unchecked_background",
+        "checkbox.unchecked_border_color",
+        "checkbox.border.color",
+        "toolbar.button_hover_background",
+        "toolbar.button_active_background",
         "switch.hover_checked_background",
         "combo_box.hover_border_color",
         "expander.hover_background",
@@ -3453,13 +3542,45 @@ pub(crate) fn macos_cases() -> Vec<(
     // D-R4 (spec §8, "The macOS part", *Derived by the macOS builders*): 0.7.2 takes the disabled on
     // switch's alpha from the running version, the builder from its own generation.
     const PINNED: &[&str] = &["switch.disabled_checked_background"];
+    // M2.FS4: the scroll bar's handle is the measured knob of the scroller's style; the table's
+    // listed difference gives the overlay knob, the presets' style, and the legacy style draws the
+    // legacy knob, a fill at rest (os-probe run 45252258079, `*.scroller_knob_legacy` `fill`),
+    // hovered and held on macOS 15 a colour of its own, on macOS 26 the overlay knob's; and the
+    // legacy track, which 0.7.2 leaves transparent, the measured one round the knob (the same
+    // run, `*.normal.scroller_knob_legacy` `common`).
+    const LEGACY_SCROLLER: &[&str] = &[
+        "scrollbar.track_color",
+        "scrollbar.thumb_color",
+        "scrollbar.thumb_hover_color",
+        "scrollbar.thumb_active_color",
+    ];
+    const TAHOE_LEGACY_SCROLLER: &[&str] = &["scrollbar.track_color", "scrollbar.thumb_color"];
     // M2.FS3 (spec §8, "The macOS part", *Derived by the macOS builders*): `macos-tahoe`'s checked
     // button fill is the accent in force mixed by the measured weight; the table's listed difference
-    // gives it under the default accent alone.
-    const TAHOE_ACCENT: &[&str] = &["button.checked_background"];
+    // gives it under the default accent alone. M2.FS4: so is its selected tab, on the accent in force
+    // lettered in the accent's text (os-probe run 45345116763, macOS 26, `controls-accent`,
+    // `*.normal.tab_One`), where the listed difference gives the default accent's measured fill;
+    // the label is the listed white where the case states no accent text of its own. The disabled
+    // checked box's and circle's fill is the listed default accent's measured one (os-probe run
+    // 45345116763, macOS 26, `*.normal.checkbox_disabled_on` `fill`), dropped under another
+    // accent: the checked fill as at rest.
+    const TAHOE_CUSTOM_ACCENT: &[&str] = &[
+        "button.checked_background",
+        "checkbox.disabled_background",
+        "tab.active_background",
+    ];
+    const TAHOE_ACCENT: &[&str] = &[
+        "button.checked_background",
+        "checkbox.disabled_background",
+        "tab.active_background",
+        "tab.active_text_color",
+    ];
     const PINNED_TAHOE_ACCENT: &[&str] = &[
         "button.checked_background",
+        "checkbox.disabled_background",
         "switch.disabled_checked_background",
+        "tab.active_background",
+        "tab.active_text_color",
     ];
     let base = default_macos_settings;
     let every = || MacosSettings {
@@ -3553,7 +3674,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..base()
             },
             None,
-            TAHOE_ACCENT,
+            TAHOE_CUSTOM_ACCENT,
         ),
         (
             "other fonts",
@@ -3604,7 +3725,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..base()
             },
             None,
-            &[],
+            LEGACY_SCROLLER,
         ),
         (
             "macOS 26's legacy scroller",
@@ -3614,7 +3735,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..base()
             },
             None,
-            &[],
+            TAHOE_LEGACY_SCROLLER,
         ),
         (
             "the accessibility flags",
@@ -3694,11 +3815,14 @@ fn reader_parity_macos() -> TestResult {
         } else {
             TAHOE_HOVER_BORDER
         };
+        let surface_rows = macos_surface_rows(&snapshot);
         let listed: Vec<&str> = table
             .row
             .iter()
             .map(|row| row.key.as_str())
-            .filter(|key| hover_border.contains(key) || listed.contains(key))
+            .filter(|key| {
+                hover_border.contains(key) || surface_rows.contains(key) || listed.contains(key)
+            })
             .collect();
         assert_reader_parity(
             name,
@@ -3723,6 +3847,29 @@ const MONTEREY_HOVER_BORDER: &[&str] = &[
     "input.hover_border_color",
     "combo_box.hover_border_color",
 ];
+
+/// M2.FS4: the rows of a macOS reader case whose listed difference is a colour role of the preset
+/// that the case's reader replaces (the roles of the preset alone against the preset under the
+/// case's settings): a hovered slider knob's, its rest one, which in the light scheme of both
+/// presets is the view's background.
+fn macos_surface_rows(snapshot: &crate::next::reader::SystemSnapshot) -> Vec<&'static str> {
+    use crate::next::preset::Theme as NextTheme;
+    use crate::next::query::Scheme;
+    let own = NextTheme::preset(snapshot.preset)
+        .resolve(&snapshot.context)
+        .colors;
+    let read = NextTheme::preset(snapshot.preset)
+        .with_system_overrides(snapshot.overrides.clone())
+        .resolve(&snapshot.context)
+        .colors;
+    [(
+        snapshot.context.scheme == Scheme::Light && own.view.background != read.view.background,
+        "slider.thumb_hover_color",
+    )]
+    .into_iter()
+    .filter_map(|(replaced, row)| replaced.then_some(row))
+    .collect()
+}
 
 /// The same rows on macos-tahoe, whose push button and pop-up button have no outline: the checked
 /// check box's and radio's and the text field's.

@@ -50,12 +50,6 @@ fn the_public_part_reads_are_the_mappings_own() -> TestResult {
             let part = r.button.body(state);
             let text = r.button.label(state);
             let at = format!("{preset:?} {state:?}");
-            assert_eq!(super::fill_of(&part), super::fill(&part, "h").ok(), "{at}");
-            assert_eq!(
-                super::state_fill_of(&part),
-                super::state_fill(&part, "h").ok().flatten(),
-                "{at}"
-            );
             assert_eq!(
                 super::stroke_color_of(&part),
                 super::borders::line(&part, "h").ok().map(|l| l.color),
@@ -223,6 +217,37 @@ fn a_stated_inner_stroke_and_corners_are_drawn_on_the_ring() -> TestResult {
     Ok(())
 }
 
+/// A ring with no stated corners has its inner edge's corners the field's
+/// radius plus the offset, floored at 0, and its outer edge's those grown
+/// by the width (spec §2, `FocusIndicator`): round a square field, 3 wide
+/// at offset -1, the outer radius is 3, not the 2 the field's radius grown
+/// by the offset and the width together gives.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_ring_with_no_stated_corners_floors_its_inner_corners_before_the_width() -> TestResult {
+    use iced_core::border::Radius;
+    use iced_core::{Padding, Point, Rectangle, Size};
+    use native_theme::next::{FocusIndicator, FocusKind, FocusTrigger, Stroke};
+
+    let field = Rectangle::new(Point::new(10.0, 20.0), Size::new(100.0, 30.0));
+    for (preset, mut r) in every_preset() {
+        r.focus_ring = FocusIndicator::new(
+            FocusKind::Ring,
+            Stroke::uniform(3.0, OUTER),
+            Stroke::None,
+            -1.0,
+            None,
+            Some(FocusTrigger::Always),
+        );
+        let look = super::ring_look(&r, 0.0)?.ok_or("a ring")?;
+        let (ring, _) = look.quad(field).ok_or("the ring's quad")?;
+        assert_eq!(ring.bounds, field.expand(Padding::new(2.0)), "{preset:?}");
+        assert_eq!(ring.border.width, 3.0, "{preset:?}");
+        assert_eq!(ring.border.radius, Radius::from(3.0), "{preset:?}");
+    }
+    Ok(())
+}
+
 /// A focus indicator iced's ring cannot draw is [`Unmapped`]: a fill or an
 /// underline, an inner stroke per side, concentric corners; continuous
 /// corners are drawn circular (spec §10, rule 2).
@@ -287,6 +312,176 @@ fn a_focus_indicator_iced_cannot_draw_is_unmapped() -> TestResult {
             "{preset:?}"
         );
     }
+    Ok(())
+}
+
+/// FR4's ring of a part's own: 2 px of [`OUTER`], 1 px out from the part's
+/// edge, the second ring 1 px of [`INNER`], unlike every preset's global
+/// ring.
+fn own_ring() -> std::sync::Arc<native_theme::next::FocusIndicator> {
+    use native_theme::next::{FocusIndicator, FocusKind, FocusTrigger, Stroke};
+    std::sync::Arc::new(FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(2.0, OUTER),
+        Stroke::uniform(1.0, INNER),
+        1.0,
+        None,
+        Some(FocusTrigger::Always),
+    ))
+}
+
+/// FR4: where a part states its own focus ring (spec §2, `FocusIndicator`:
+/// `PartStyle.focus`), [`super::part_ring_look`] is that ring round the
+/// field, in place of the global one: the text field's, patched to state
+/// one, in its own stroke's colour and width, a band outward from the
+/// field's edge moved out by its offset, and its second ring inward from
+/// that line. A part that states none keeps the global ring: the
+/// multi-line field's look is [`super::ring_look`]'s.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_part_that_states_its_own_ring_draws_it_in_place_of_the_global_one() -> TestResult {
+    use iced_core::{Padding, Point, Rectangle, Size};
+    use native_theme::next::{InputRule, PartPatch, PartStated, WidgetState};
+
+    use super::RingHomes;
+
+    let field = Rectangle::new(Point::new(10.0, 20.0), Size::new(100.0, 30.0));
+    let patch =
+        ThemePatch::new().input(InputRule::new().field(PartPatch::new().focus(Some(own_ring()))));
+    let mut kept = 0;
+    for (preset, r) in every_preset_with(&patch) {
+        let global = super::ring_look(&r, 4.0)?;
+        assert_ne!(
+            global.map(|look| look.color),
+            Some(super::to_color(OUTER)),
+            "{preset:?}: the global ring is not the part's own"
+        );
+        let input = r.input.field(WidgetState::FOCUSED);
+        let look = super::part_ring_look(&r, &input, RingHomes::INPUT, 4.0)?
+            .ok_or("the field's own ring")?;
+        let (ring, _) = look.quad(field).ok_or("the ring's quad")?;
+        assert_eq!(ring.bounds, field.expand(Padding::new(3.0)), "{preset:?}");
+        assert_eq!(ring.border.color, super::to_color(OUTER), "{preset:?}");
+        assert_eq!(ring.border.width, 2.0, "{preset:?}");
+        let (inner, _) = look.inner_quad(field).ok_or("the inner ring's quad")?;
+        assert_eq!(inner.bounds, field.expand(Padding::new(1.0)), "{preset:?}");
+        assert_eq!(inner.border.color, super::to_color(INNER), "{preset:?}");
+        assert_eq!(inner.border.width, 1.0, "{preset:?}");
+        assert!(!look.keyboard_only, "{preset:?}: the own ring's trigger");
+
+        let area = r.text_area.field(WidgetState::FOCUSED);
+        if !area.stated.contains(PartStated::FOCUS) {
+            kept += 1;
+            assert_eq!(
+                super::part_ring_look(&r, &area, RingHomes::TEXT_AREA, 4.0)?,
+                global,
+                "{preset:?}: the multi-line field keeps the global ring"
+            );
+        }
+    }
+    assert!(
+        kept > 0,
+        "no preset leaves the multi-line field's ring unstated"
+    );
+    Ok(())
+}
+
+/// FR4: a part whose rule states `focus` with no indicator draws none where
+/// the global ring is drawn; one stated in a form iced's ring cannot draw is
+/// [`Unmapped`] at the part's own home, not the global ring's.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_part_that_states_no_ring_or_one_iced_cannot_draw_draws_none() -> TestResult {
+    use native_theme::next::{CornerRadius, Corners, FocusKind, InputRule, PartPatch, WidgetState};
+
+    use super::RingHomes;
+
+    let none = ThemePatch::new().input(InputRule::new().field(PartPatch::new().focus(None)));
+    let mut ringed = 0;
+    for (preset, r) in every_preset_with(&none) {
+        if super::ring_look(&r, 4.0)?.is_some() {
+            ringed += 1;
+        }
+        let input = r.input.field(WidgetState::FOCUSED);
+        assert_eq!(
+            super::part_ring_look(&r, &input, RingHomes::INPUT, 4.0)?,
+            None,
+            "{preset:?}"
+        );
+    }
+    assert!(ringed > 0, "no preset states a global ring");
+
+    let mut fill = (*own_ring()).clone();
+    fill.kind = FocusKind::Fill;
+    let mut concentric = (*own_ring()).clone();
+    concentric.corners = Some(Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        ..Corners::default()
+    });
+    for (own, home) in [
+        (fill, "text_area.field(FOCUSED).focus.kind"),
+        (concentric, "text_area.field(FOCUSED).focus.corners"),
+    ] {
+        let patch = ThemePatch::new().text_area(
+            InputRule::new().field(PartPatch::new().focus(Some(std::sync::Arc::new(own)))),
+        );
+        for (preset, r) in every_preset_with(&patch) {
+            let area = r.text_area.field(WidgetState::FOCUSED);
+            assert_eq!(
+                super::part_ring_look(&r, &area, RingHomes::TEXT_AREA, 4.0).err(),
+                Some(Unmapped(home)),
+                "{preset:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// FR4: a part's own ring stated for a focus that followed a key only (a
+/// rule at `FOCUS_VISIBLE`) is the part's ring read at `FOCUS_VISIBLE`,
+/// while the part read at `FOCUSED` keeps the ring it has without that
+/// rule, the global ring where the preset states the field no ring of its
+/// own, so the field draws each for its focus
+/// ([`super::focus_rings_with`]).
+#[cfg(feature = "widgets")]
+#[test]
+fn a_ring_stated_at_focus_visible_is_the_ring_of_a_focus_that_followed_a_key() -> TestResult {
+    use native_theme::next::{InputRule, PartPatch, WidgetState};
+
+    use super::RingHomes;
+
+    let patch = ThemePatch::new().input(
+        InputRule::new()
+            .states(WidgetState::FOCUS_VISIBLE)
+            .field(PartPatch::new().focus(Some(own_ring()))),
+    );
+    let mut global = 0;
+    for ((preset, r), (_, plain)) in every_preset_with(&patch).into_iter().zip(every_preset()) {
+        let look = |state| super::part_ring_look(&r, &r.input.field(state), RingHomes::INPUT, 4.0);
+        assert_eq!(
+            look(WidgetState::FOCUS_VISIBLE)?.map(|look| look.color),
+            Some(super::to_color(OUTER)),
+            "{preset:?}: the key focus's ring"
+        );
+        let without = super::part_ring_look(
+            &plain,
+            &plain.input.field(WidgetState::FOCUSED),
+            RingHomes::INPUT,
+            4.0,
+        )?;
+        assert_eq!(
+            look(WidgetState::FOCUSED)?,
+            without,
+            "{preset:?}: another focus's ring"
+        );
+        if without == super::ring_look(&r, 4.0)? {
+            global += 1;
+        }
+    }
+    assert!(global > 0, "no preset's field keeps the global ring");
     Ok(())
 }
 
@@ -442,26 +637,26 @@ fn a_radio_of_no_stated_width_is_iceds_own_size() -> TestResult {
     Ok(())
 }
 
-/// A field's focus indicator that is not a ring is none the field can draw: the text input
-/// and the text editor are `Unmapped` at `focus_ring.kind`, as the ring is.
+/// A focus indicator that is not a ring is `Unmapped` at `focus_ring.kind` where the ring is
+/// mapped (`ring_look`), and nowhere else: the text input and the text editor draw no ring
+/// (`focus_ring` paints it over them), so their styles do not read the indicator.
 #[cfg(feature = "widgets")]
 #[test]
-fn a_fields_focus_indicator_that_is_not_a_ring_is_unmapped() -> TestResult {
+fn a_focus_indicator_that_is_not_a_ring_is_unmapped_at_the_ring_alone() -> TestResult {
     use native_theme::next::FocusKind;
 
     for (preset, mut r) in every_preset() {
-        assert!(super::styles::text_input(&r).is_ok(), "{preset:?}");
+        assert!(super::ring_look(&r, 4.0).is_ok(), "{preset:?}");
         for kind in [FocusKind::Fill, FocusKind::Underline] {
             r.focus_ring.kind = kind;
-            let unmapped = Some(Unmapped("focus_ring.kind"));
             assert_eq!(
-                super::styles::text_input(&r).err(),
-                unmapped,
+                super::ring_look(&r, 4.0).err(),
+                Some(Unmapped("focus_ring.kind")),
                 "{preset:?} {kind:?}"
             );
-            assert_eq!(
-                super::styles::text_editor(&r).err(),
-                unmapped,
+            assert!(super::styles::text_input(&r).is_ok(), "{preset:?} {kind:?}");
+            assert!(
+                super::styles::text_editor(&r).is_ok(),
                 "{preset:?} {kind:?}"
             );
         }

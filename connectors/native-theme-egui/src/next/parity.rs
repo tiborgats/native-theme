@@ -187,11 +187,6 @@ const STATE_RULE_0: &str = "the 0.8.0 theme states no rule for the state, and eg
      entries change the property between rest and the state: egui's own (spec §10, rule 0); \
      0.7.2's resolver gave the resting value or another state's";
 
-/// A state the role writes nothing into where the theme states no rule for it.
-const STATE_KEEPS_BASE: &str = "the 0.8.0 theme states no rule for the state, and the role \
-     writes nothing there: the cell keeps its base style's value (M4.E2c); 0.7.2's resolver \
-     gave the resting value";
-
 /// Rule 0 on the text-stroke width: the theme states none for any state, and egui's own
 /// entries widen it under the pointer and on a press.
 const WIDTH_RULE_0: &str = "the 0.8.0 theme states no text-stroke width, and egui's own \
@@ -243,6 +238,17 @@ const CARD_OUTLINE: &str = "the 0.8.0 theme states no stroke or corners for the 
      (card.container(NONE)) where 0.7.2 gives a transparent zero-width outline and square \
      corners: the frame keeps egui's `Frame::group` over the 0.8.0 base style";
 
+/// The presets whose 0.8.0 focus ring states a second ring inside the first, which 0.7.2 states
+/// nowhere, and why: the atlas test checks the plugin's `FocusRing.inner` against its home,
+/// `focus_ring.inner_stroke`.
+const INNER_RING_STATED: &[(&str, &str)] = &[(
+    "windows-11",
+    "windows-11 states the focus visual's 1px inner ring in FocusStrokeColorInner, #B3FFFFFF / \
+     #B3000000 (docs/platform-facts.md §2.1.5 focus_ring_color and focus_ring_offset; \
+     Common_themeresources_any.xaml:259, :55 at microsoft-ui-xaml 8463f45), where 0.7.2 has no \
+     colour for it and states no inner ring",
+)];
+
 const DIFFERENCES: &[Difference] = &[
     d(
         "base",
@@ -273,6 +279,17 @@ const DIFFERENCES: &[Difference] = &[
         BUTTON_MIN_HEIGHT,
     ),
     d(
+        "Panel(Top)",
+        &[K],
+        ".corner_radius.*",
+        Cause::Egui,
+        "the 0.8.0 theme states no corners for the tool bar (toolbar.bar(NONE).corners), as \
+         Breeze draws no frame round it (platform-facts.md (§2.13), border.corner_radius none: \
+         CE_ToolBar is emptyControl, breezestyle.cpp:1466-1467 at breeze f0b1d75; the table of \
+         homes' listed difference), so egui's own stays (spec §10, rule 0); 0.7.2's resolver \
+         gave defaults.border.corner_radius 5, uncited",
+    ),
+    d(
         "base",
         &[M],
         ".visuals.widgets.{inactive,open}.bg_stroke.color",
@@ -295,7 +312,7 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "Checkbox/Selected",
-        &[W, M, T],
+        &[M, T],
         WIDGET_STROKES,
         Cause::OverFill,
         INSIDE,
@@ -330,8 +347,18 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "Expander",
-        &[A, W, M, T],
+        &[A, W],
         ".visuals.widgets.{noninteractive,hovered,active}.bg_stroke.color",
+        Cause::OverFill,
+        "the expander's frame (expander.container(NONE)) is a translucent stroke laid inside \
+         it in the 0.8.0 theme, where 0.7.2 stated no alignment",
+    ),
+    // the macOS headers draw no fill hovered or pressed (M2.FS4), so the frame's stroke over
+    // them is 0.7.2's there
+    d(
+        "Expander",
+        &[M, T],
+        ".visuals.widgets.noninteractive.bg_stroke.color",
         Cause::OverFill,
         "the expander's frame (expander.container(NONE)) is a translucent stroke laid inside \
          it in the 0.8.0 theme, where 0.7.2 stated no alignment",
@@ -449,27 +476,8 @@ const DIFFERENCES: &[Difference] = &[
         FRAME_INSIDE,
     ),
     d("Card", &[W], ".stroke.color", Cause::OverFill, FRAME_INSIDE),
-    d(
-        "Card",
-        &[M, T, I],
-        ".stroke.width",
-        Cause::Base,
-        CARD_OUTLINE,
-    ),
-    d(
-        "Card",
-        &[A, M, T, M3, I],
-        ".stroke.color",
-        Cause::Base,
-        CARD_OUTLINE,
-    ),
-    d(
-        "Card",
-        &[M, T, I],
-        ".corner_radius.*",
-        Cause::Base,
-        CARD_OUTLINE,
-    ),
+    d("Card", &[A, M3], ".stroke.color", Cause::Base, CARD_OUTLINE),
+    d("Card", &[T, I], ".stroke.color", Cause::Base, CARD_NO_LINE),
     d(
         "Scrollbar",
         &[M3],
@@ -478,6 +486,11 @@ const DIFFERENCES: &[Difference] = &[
         THUMB_UNSTATED,
     ),
 ];
+
+/// A card stroked as none (M2.FS4, measured).
+const CARD_NO_LINE: &str = "the 0.8.0 preset states the card's outline as none (M2.FS4, \
+     measured): the width is 0 (spec §10, rule 2), as 0.7.2's, and the colour under it the base \
+     style's, which draws nothing; 0.7.2 gave a transparent one";
 
 /// A model gap: a native preset that leaves a state's value unstated where the platform draws
 /// one, so that the mapping shows egui's own or the base style's there (spec §10, rule 0) — a
@@ -532,7 +545,10 @@ enum HomeValue {
     Color(Rgba),
     Line(Rgba),
     Width(f32),
+    /// A uniform circular corner radius, which the builder gives egui as a whole `u8`.
     Radius(f32),
+    /// An `item_spacing`, horizontal then vertical, as egui prints its `Vec2`.
+    Spacing([f32; 2]),
 }
 
 /// Whether `bit` of a part is stated for `state`: by a rule for the state (`from_state`), or,
@@ -914,9 +930,11 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(button.body(NONE).stroke.color),
     ),
+    // adwaita's unchecked box hovered: the rest fill, as libadwaita changes only its outline
+    // (_checks.scss:33-40 at libadwaita 1.10.0; next_homes.toml, row checkbox.hover_background)
     s(
         "Checkbox",
-        &[W],
+        &[A, W],
         ".visuals.widgets.hovered.bg_fill",
         home!(checkbox.indicator(HOVER).fill),
     ),
@@ -976,7 +994,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Checkbox/SelectedDisabled",
-        &[M3],
+        &[K, W, T, M3, I],
         ".visuals.widgets.inactive.fg_stroke.color",
         home!(checkbox.checkmark(DISABLED | CHECKED).color),
     ),
@@ -1091,6 +1109,12 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.active.fg_stroke.color",
         home!(toolbar.button_label(PRESSED).color),
     ),
+    s(
+        "Toolbar",
+        &[M, T, I],
+        ".visuals.widgets.{noninteractive,inactive,open}.fg_stroke.color",
+        home!(toolbar.button_label(NONE).color),
+    ),
     d(
         "base",
         &[T],
@@ -1147,54 +1171,180 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // for the state alone (`build::variant_source`)
     s(
         "Checkbox/Selected",
-        &[M, T, I],
+        &[A, W, M, T, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(checkbox.indicator(HOVER | CHECKED).stroke.color),
     ),
     s(
         "Checkbox/Selected",
-        &[M, T, I],
+        &[A, W, M, T, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(checkbox.indicator(PRESSED | CHECKED).stroke.color),
     ),
+    // windows-11's checked box hovered and pressed: AccentFillColorSecondary and
+    // AccentFillColorTertiary (CheckBox_themeresources.xaml:234, :235 at microsoft-ui-xaml
+    // 8463f45); adwaita's: libadwaita's layers over the accent, currentColor at 10 % and
+    // RGB(0 0 6 / 20%) (_checks.scss:52-59 at libadwaita 1.10.0)
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, W],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER | CHECKED).fill),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[A, W],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(PRESSED | CHECKED).fill),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[A, I],
         ".visuals.widgets.hovered.bg_stroke.width",
         home!(checkbox.indicator(HOVER | CHECKED).stroke.width),
     ),
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, I],
         ".visuals.widgets.active.bg_stroke.width",
         home!(checkbox.indicator(PRESSED | CHECKED).stroke.width),
     ),
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, W, I],
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
     // the checked box's outline width, a stroke stated as none for `CHECKED` no width
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, I],
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
         home!(checkbox.indicator(CHECKED).stroke.width),
     ),
-    // the checked box's outline, which the disabled checked cell keeps
+    // the checked box's outline, which the disabled checked cell keeps, over its disabled fill
     s(
         "Checkbox/SelectedDisabled",
-        &[I],
+        &[A],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
-    // the disabled cell keeps the outline at rest over its disabled fill
+    // where a rule states the disabled box's outline, the disabled checked box's own over its
+    // disabled fill (`build::variant_source`, `disabled_border`): windows-11's
+    // CheckBoxCheckBackgroundStrokeCheckedDisabled = ControlStrongStrokeColorDisabled
+    // (CheckBox_themeresources.xaml:465-468 at microsoft-ui-xaml 8463f45), macos-monterey's
+    // measured edge, checked or not, macos-tahoe's none (os-probe run 45345116763,
+    // `*.normal.checkbox_disabled_{off,on}` `edge_*`), ios-13's none round a checked box, its
+    // rule for `DISABLED` stating WebKit's disabled outline (RenderThemeIOS.mm:1355, :1359-1362,
+    // :1502 at WebKit 31adf9d)
+    s(
+        "Checkbox/SelectedDisabled",
+        &[W, M, T, I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(DISABLED | CHECKED).stroke.color),
+    ),
+    // the disabled checked box's own fill (M2.FS4a3; macOS, os-probe run 45345116763)
+    s(
+        "Checkbox/SelectedDisabled",
+        &[K, W, M, T, I],
+        ".visuals.widgets.inactive.bg_fill",
+        home!(checkbox.indicator(DISABLED | CHECKED).fill),
+    ),
+    // the macOS disabled box's measured fill and edge (os-probe run 45345116763,
+    // `*.normal.checkbox_disabled_off` `fill`, `edge_*`); the outline of windows-11's,
+    // CheckBoxCheckBackgroundStrokeUncheckedDisabled = ControlStrongStrokeColorDisabled
+    // (CheckBox_themeresources.xaml:220, :44 at microsoft-ui-xaml 8463f45), and of ios-13's
+    // (WebKit's checkboxRadioBorderColor disabled, as its width's entry gives it)
+    s(
+        "Checkbox/Disabled",
+        &[M, T],
+        ".visuals.widgets.inactive.bg_fill",
+        home!(checkbox.indicator(DISABLED).fill),
+    ),
+    s(
+        "Checkbox/Disabled",
+        &[W, M, T, I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(DISABLED).stroke.color),
+    ),
+    // macos-monterey's disabled checked mark: the measured one where read (light, `label`
+    // #01010140), else the disabled text, which the cell letters the mark in over a stated
+    // disabled fill (`style::variants::selected_disabled_cell`)
+    s(
+        "Checkbox/SelectedDisabled",
+        &[M],
+        ".visuals.widgets.inactive.fg_stroke.color",
+        Home {
+            path: "checkbox.checkmark(DISABLED|CHECKED).color",
+            stated: |r: &ResolvedTheme| {
+                let s = WidgetState::DISABLED | WidgetState::CHECKED;
+                r.checkbox.checkmark(s).color_stated(s) || r.checkbox.label(s).color_stated(s)
+            },
+            value: |r: &ResolvedTheme| {
+                let s = WidgetState::DISABLED | WidgetState::CHECKED;
+                let mark = r.checkbox.checkmark(s);
+                let label = r.checkbox.label(s);
+                let color = if mark.color_stated(s) {
+                    mark.color()
+                } else {
+                    label.color_stated(s).then(|| label.color()).flatten()
+                };
+                color.map(HomeValue::Color)
+            },
+        },
+    ),
+    // ios-13's check box at full opacity disabled (WebKit's `opacity: initial`, M2.FS4a3)
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.disabled_alpha",
+        Home {
+            path: "checkbox.disabled_opacity",
+            stated: |r: &ResolvedTheme| r.checkbox.disabled_opacity.is_some(),
+            value: |r: &ResolvedTheme| r.checkbox.disabled_opacity.map(HomeValue::Width),
+        },
+    ),
+    // kde-breeze's segments drawn with no line between them (platform-facts.md §2.25
+    // `separator_width`): the cell's horizontal item spacing is the stated width, the vertical
+    // the base style's, `layout.widget_gap` (`style::base`, both components the gap)
+    s(
+        "SegmentedControl",
+        &[K],
+        ".spacing.item_spacing",
+        Home {
+            path: "segmented_control.separator_width",
+            stated: |_: &ResolvedTheme| true,
+            value: |r: &ResolvedTheme| {
+                r.layout
+                    .widget_gap
+                    .map(|gap| HomeValue::Spacing([r.segmented_control.separator_width, gap]))
+            },
+        },
+    ),
+    // ios-13's disabled empty box's outline: WebKit's checkboxRadioBorderColor, secondaryLabel at
+    // checkboxRadioBorderDisabledOpacity (RenderThemeIOS.mm:1359-1362 at WebKit 31adf9d), in
+    // the width of the outline at rest (M2.FS4)
     s(
         "Checkbox/Disabled",
         &[I],
-        ".visuals.widgets.inactive.bg_stroke.color",
-        home!(checkbox.indicator(NONE).stroke.color),
+        ".visuals.widgets.inactive.bg_stroke.width",
+        home!(checkbox.indicator(DISABLED).stroke.width),
+    ),
+    // ios-13's disabled checked box, filled only (RenderThemeIOS.mm:1502 at WebKit 31adf9d):
+    // its stroke stated as none, no width
+    s(
+        "Checkbox/SelectedDisabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.width",
+        home!(checkbox.indicator(DISABLED | CHECKED).stroke.width),
+    ),
+    // ios-13's disabled empty box: WebKit's -webkit-control-background, systemBackground
+    // (RenderThemeIOS.mm:1387-1388, :1027 at WebKit 31adf9d), where 0.7.2's fill is uncited (M2.FS4)
+    s(
+        "Checkbox/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_fill",
+        home!(checkbox.indicator(DISABLED).fill),
     ),
     s(
         "ComboBox",
@@ -1343,6 +1493,278 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.active.bg_stroke.width",
         home!(tab.tab(PRESSED).stroke.width),
     ),
+    // M2.FS4b-c5 item 2: the measured macOS and iOS states (W/M2/FS4/measured.md)
+    s(
+        "Checkbox",
+        &[M, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(PRESSED).fill),
+    ),
+    s(
+        "Checkbox",
+        &[M],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER).fill),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[T],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(CHECKED | PRESSED).fill),
+    ),
+    s(
+        "ComboBox",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(combo_box.field(PRESSED).fill),
+    ),
+    s(
+        "Expander",
+        &[M, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(expander.header(PRESSED).fill),
+    ),
+    s(
+        "Expander",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(expander.header(HOVER).fill),
+    ),
+    s(
+        "Expander",
+        &[I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(expander.header_label(PRESSED).color),
+    ),
+    s(
+        "List",
+        &[M, T, I],
+        ".visuals.widgets.active.bg_fill",
+        home!(list.highlight(PRESSED).fill),
+    ),
+    s(
+        "List",
+        &[M, T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(list.highlight(HOVER).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(segmented_control.segment(PRESSED).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(segmented_control.label(PRESSED).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T, I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(sidebar.item_label(PRESSED).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(sidebar.item(PRESSED).fill),
+    ),
+    s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(sidebar.item(HOVER).fill),
+    ),
+    s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.widgets.{noninteractive,inactive,open}.fg_stroke.color",
+        home!(sidebar.item_label(NONE).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(sidebar.item_label(HOVER).color),
+    ),
+    s(
+        "Slider",
+        &[M, I],
+        ".visuals.widgets.active.bg_fill",
+        home!(slider.thumb(PRESSED).fill),
+    ),
+    s(
+        "Slider",
+        &[M],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(slider.thumb(HOVER).fill),
+    ),
+    s(
+        "Splitter",
+        &[M],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(splitter.handle(PRESSED).fill),
+    ),
+    s(
+        "Switch",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(switch.track(PRESSED).fill),
+    ),
+    s(
+        "Switch",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(switch.track(HOVER).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(tab.tab(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(tab.tab(HOVER).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T],
+        ".visuals.widgets.{inactive,open}.weak_bg_fill",
+        home!(tab.tab(NONE).fill),
+    ),
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(toolbar.button_label(PRESSED).color),
+    ),
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(toolbar.button_label(HOVER).color),
+    ),
+    // M2.FS4b-c5i4 item 2: the real toolbar's measured button fills, macos-tahoe's selected tab
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(toolbar.button(HOVER).fill),
+    ),
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(toolbar.button(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T],
+        ".visuals.selection.bg_fill",
+        home!(tab.tab(SELECTED).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T],
+        ".visuals.selection.stroke.color",
+        home!(tab.label(SELECTED).color),
+    ),
+    s("Card", &[M, T], ".fill", home!(card.container(NONE).fill)),
+    s(
+        "Card",
+        &[M],
+        ".stroke.color",
+        home!(card.container(NONE).stroke.color),
+    ),
+    s(
+        "Card",
+        &[M],
+        ".stroke.width",
+        home!(card.container(NONE).stroke.width),
+    ),
+    s(
+        "Card",
+        &[M, T, I],
+        ".corner_radius.*",
+        home!(card.container(NONE).corners),
+    ),
+    // kde-breeze's popover rounded as qqc2-desktop-style's Popup rounds it,
+    // Kirigami.Units.cornerRadius 5 (Popup.qml:46-47 at qqc2-desktop-style v6.31.0), where
+    // 0.7.2's corner_radius_lg 8 is uncited (M2.FS4)
+    s(
+        "Popover",
+        &[K],
+        ".corner_radius.*",
+        Home {
+            path: "popover.panel.corners",
+            stated: |r: &ResolvedTheme| r.popover.panel.stated.contains(PartStated::CORNERS),
+            value: |r: &ResolvedTheme| {
+                let panel = &r.popover.panel;
+                panel
+                    .stated
+                    .contains(PartStated::CORNERS)
+                    .then(|| super::radius_of(panel))
+                    .flatten()
+                    .map(HomeValue::Radius)
+            },
+        },
+    ),
+    // ios-13's text field: WebKit's `border: 1px solid -apple-system-secondary-label`
+    // (html.css:457-466 at WebKit 31adf9d), its width in every state, its colour where no rule
+    // for the state restates it.
+    s(
+        "Input",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,active,open}.bg_stroke.width",
+        home!(input.field(NONE).stroke.width),
+    ),
+    s(
+        "Input",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(input.field(NONE).stroke.color),
+    ),
+    // ios-13's empty box at rest: WebKit's -webkit-control-background, systemBackground
+    // (RenderThemeIOS.mm:1391, :1395, :1027 at WebKit 31adf9d).
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.{inactive,open}.bg_fill",
+        home!(checkbox.indicator(NONE).fill),
+    ),
+    // the measured overlay knob hovered and held (os-probe run 45252258079,
+    // `*.scroller_knob_overlay` `fill`); the base style's and the Scrollbar cell's `bg_fill` is
+    // the scroll bar's thumb (`base_style_from`, §5.9)
+    s(
+        "base",
+        &[M, T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(scrollbar.thumb(HOVER).fill),
+    ),
+    s(
+        "base",
+        &[M, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(scrollbar.thumb(PRESSED).fill),
+    ),
+    s(
+        "Scrollbar",
+        &[M, T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(scrollbar.thumb(HOVER).fill),
+    ),
+    s(
+        "Scrollbar",
+        &[M, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(scrollbar.thumb(PRESSED).fill),
+    ),
 ];
 
 /// A pop-up button or a segmented control stroked as none at rest.
@@ -1372,52 +1794,25 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     // button's fill its `weak_bg_fill`
     r0(
         "base",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(scrollbar.thumb(HOVER).fill),
-    ),
-    r0(
-        "base",
-        &[W, T],
+        &[W],
         ".visuals.widgets.active.bg_fill",
         home!(scrollbar.thumb(PRESSED).fill),
     ),
+    // ios-13 states no hovered fill for the box (WebKit's checkboxRadioBackgroundColor reads no
+    // hover state; next_homes.toml, row checkbox.hover_background, "unstated" there); the
+    // checked box's takes the combined state's only where a rule states one for HOVER alone
+    // (`build::variant_source`)
     r0(
         "Checkbox",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(checkbox.indicator(HOVER).fill),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T],
-        ".visuals.widgets.active.bg_fill",
-        home!(checkbox.indicator(PRESSED).fill),
-    ),
-    // the checked box's hover and press fill, the state asked alone (spec §2, `from_state`)
-    r0(
-        "Checkbox/Selected",
-        &[T],
+        &[I],
         ".visuals.widgets.hovered.bg_fill",
         home!(checkbox.indicator(HOVER).fill),
     ),
     r0(
         "Checkbox/Selected",
-        &[M, T],
-        ".visuals.widgets.active.bg_fill",
-        home!(checkbox.indicator(PRESSED).fill),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(checkbox.checkmark(HOVER).color),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(checkbox.checkmark(PRESSED).color),
+        &[I],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER).fill),
     ),
     // the check mark is a line in the state's `fg_stroke`, which egui's own entries widen under
     // the pointer (egui 0.37.0 `src/style.rs`, `Widgets::light`, `Widgets::dark`)
@@ -1428,74 +1823,20 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         home!(checkbox.checkmark(HOVER).stroke_width),
     ),
     r0(
-        "ComboBox",
-        &[M, T],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(combo_box.field(PRESSED).fill),
-    ),
-    r0(
-        "ComboBox",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(combo_box.label(PRESSED).color),
-    ),
-    r0(
         "Expander",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(expander.header(HOVER).fill),
-    ),
-    r0(
-        "Expander",
-        &[M, T, I],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(expander.header(PRESSED).fill),
-    ),
-    r0(
-        "Expander",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(expander.header_label(HOVER).color),
     ),
     r0(
-        "Expander",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(expander.header_label(PRESSED).color),
-    ),
-    r0(
-        "Input",
-        &[M, T],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(input.field(PRESSED).stroke.color),
-    ),
-    r0(
-        "Input",
-        &[M, T],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(input.text(HOVER).color),
-    ),
-    r0(
-        "List",
-        &[M, T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(list.highlight(HOVER).fill),
-    ),
-    r0(
-        "List",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_fill",
-        home!(list.highlight(PRESSED).fill),
-    ),
-    r0(
         "SegmentedControl",
-        &[T],
+        &[M, T],
         ".visuals.widgets.hovered.weak_bg_fill",
         home!(segmented_control.segment(HOVER).fill),
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.active.weak_bg_fill",
         home!(segmented_control.segment(PRESSED).fill),
     ),
@@ -1506,131 +1847,27 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         home!(segmented_control.label(HOVER).color),
     ),
     r0(
-        "SegmentedControl",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(segmented_control.label(PRESSED).color),
-    ),
-    r0(
-        "Sidebar",
-        &[M, T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(sidebar.item(HOVER).fill),
-    ),
-    r0(
-        "Sidebar",
-        &[M, T, I],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(sidebar.item(PRESSED).fill),
-    ),
-    r0(
         "Sidebar",
         &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(sidebar.item_label(HOVER).color),
     ),
     r0(
-        "Sidebar",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(sidebar.item_label(PRESSED).color),
-    ),
-    r0(
-        "Slider",
-        &[M, T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(slider.thumb(HOVER).fill),
-    ),
-    r0(
-        "Slider",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_fill",
-        home!(slider.thumb(PRESSED).fill),
-    ),
-    r0(
-        "Switch",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(switch.track(HOVER).fill),
-    ),
-    r0(
-        "Switch",
-        &[M, T],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(switch.track(PRESSED).fill),
-    ),
-    r0(
-        "Tab",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(tab.tab(HOVER).fill),
-    ),
-    r0(
-        "Tab",
-        &[M, T, I],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(tab.tab(PRESSED).fill),
-    ),
-    r0(
-        "Tab",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(tab.label(PRESSED).color),
-    ),
-    r0(
         "Toolbar",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
     ),
     r0(
-        "Toolbar",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(toolbar.button_label(PRESSED).color),
-    ),
-    Gap {
-        diff: d(
-            "Tab",
-            &[M, T],
-            ".visuals.selection.stroke.color",
-            Cause::StateKeepsBase,
-            STATE_KEEPS_BASE,
-        ),
-        home: home!(tab.label(SELECTED).color),
-    },
-    Gap {
-        diff: d(
-            "Splitter",
-            &[T],
-            ".visuals.widgets.hovered.fg_stroke.color",
-            Cause::StateKeepsBase,
-            STATE_KEEPS_BASE,
-        ),
-        home: home!(splitter.handle(HOVER).fill),
-    },
-    r0(
         "Splitter",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.active.fg_stroke.color",
         home!(splitter.handle(PRESSED).fill),
-    ),
-    r0(
-        "Input",
-        &[M, T],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(input.field(PRESSED).stroke.width),
     ),
     // the Scrollbar cell's thumb is the base style's `bg_fill` (`base_style_from`, §5.9)
     r0(
         "Scrollbar",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(scrollbar.thumb(HOVER).fill),
-    ),
-    r0(
-        "Scrollbar",
-        &[W, T],
+        &[W],
         ".visuals.widgets.active.bg_fill",
         home!(scrollbar.thumb(PRESSED).fill),
     ),
@@ -1918,7 +2155,8 @@ fn stated_leaf(
         HomeValue::Color(c) => Some(format!("{:?}", to_color32(c))),
         HomeValue::Line(c) => over(to_color32(c)),
         HomeValue::Width(w) => Some(format!("{w:?}")),
-        HomeValue::Radius(v) => Some(format!("{:?}", crate::convert::u8_from_f32_saturating(v))),
+        HomeValue::Radius(r) => Some(format!("{:?}", crate::convert::u8_from_f32_saturating(r))),
+        HomeValue::Spacing([x, y]) => Some(format!("{:?}", egui::vec2(x, y))),
     }
 }
 
@@ -2012,6 +2250,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
     let prefs = AccessibilityPreferences::default();
+    let mut inner_seen = Vec::new();
     for &(key, preset) in PRESETS {
         let spec = native_theme::theme::Theme::preset(key)?;
         let layout = spec.layout.clone();
@@ -2367,6 +2606,11 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                         };
                         Some(format!("{:?}", line.over(Some(new_frame.fill))))
                     }
+                    (Cause::Stated(home), _) => stated_leaf(home, new, |color| {
+                        align.map(|align| {
+                            format!("{:?}", Line { color, align }.over(Some(new_frame.fill)))
+                        })
+                    }),
                     _ => None,
                 };
                 // each side's frame over the other side's base, against egui's preset there
@@ -2400,10 +2644,43 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                 label: &label,
                 bases: None,
             };
+            // the second ring, which 0.7.2 states nowhere: on a preset [`INNER_RING_STATED`]
+            // names, the one its home gives (`focus_ring.inner_stroke`, one width and colour), the
+            // rest of the ring compared as 0.7.2's
+            let mut new_ring = new_styles.focus_ring;
+            if let Some(ring) = new_ring.as_mut() {
+                let old_inner = old_styles.focus_ring.and_then(|old| old.inner);
+                if ring.inner != old_inner {
+                    let home = match new.focus_ring.inner_stroke {
+                        native_theme::next::Stroke::Uniform { width, color, .. } => {
+                            Some(egui::Stroke::new(width, super::to_color32(color)))
+                        }
+                        _ => None,
+                    };
+                    if !INNER_RING_STATED
+                        .iter()
+                        .any(|(p, reason)| *p == key && !reason.is_empty())
+                    {
+                        tally.failures.push(format!(
+                            "{label}: FocusRing: .inner: 0.7.2 {old_inner:?}, 0.8.0 {:?}; not \
+                             listed in INNER_RING_STATED",
+                            ring.inner
+                        ));
+                    } else if home.is_none() || ring.inner != home {
+                        tally.failures.push(format!(
+                            "{label}: FocusRing: .inner: 0.8.0 {:?}, its home gives {home:?}",
+                            ring.inner
+                        ));
+                    } else {
+                        inner_seen.push(key);
+                    }
+                    ring.inner = old_inner;
+                }
+            }
             compare(
                 &side("FocusRing"),
                 &old_styles.focus_ring,
-                &new_styles.focus_ring,
+                &new_ring,
                 &|_, _| None,
                 &mut tally,
             );
@@ -2422,6 +2699,13 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         claimed,
         gaps,
     } = tally;
+    for (key, _) in INNER_RING_STATED {
+        if !inner_seen.contains(key) {
+            failures.push(format!(
+                "FocusRing .inner on {key}: listed in INNER_RING_STATED, but differs nowhere"
+            ));
+        }
+    }
     for preset in Preset::ALL {
         if !PRESETS.iter().any(|(_, p)| p == preset) {
             failures.push(format!("{preset:?}: not compared"));

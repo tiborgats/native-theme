@@ -8,7 +8,7 @@ use iced_core::border::Radius;
 use native_theme::next::{CornerRadius, Corners, PartStated, PartStyle, Stroke, StrokeAlign};
 
 use super::{Mapped, Unmapped, radius_of, stated, stroke_width_of, to_color};
-use crate::styles::{Line, LineAlign, Outline};
+use crate::styles::{Line, LineAlign, Outline, PartOutline};
 
 /// A stroke's alignment as the shared style functions take it.
 fn line_align(align: StrokeAlign, home: &'static str) -> Mapped<LineAlign> {
@@ -120,63 +120,46 @@ pub(crate) fn corner_radii(corners: &Corners, home: &'static str) -> Mapped<Radi
     }
 }
 
-/// A part's border as iced outlines a widget, of a part a resolved theme
-/// always states it for: the stroke ([`line()`]) and its width, a stated
-/// `Stroke::None` being no width in iced's own colour, and the corners
-/// ([`part_radii`]).
-pub(crate) fn outline_of(
-    part: &PartStyle,
-    color_home: &'static str,
-    width_home: &'static str,
-    corners_home: &'static str,
-) -> Mapped<Outline> {
-    let width = stroke_width(part, width_home)?;
-    Ok(Outline {
-        line: line_or_none(part, color_home)?,
-        width,
-        radius: part_radii(part, corners_home)?,
-    })
-}
-
-/// [`outline_of`] for a part whose border the table of homes allows to be
-/// unstated (`unstated_if_unset`): the stroke and its width where the stroke
-/// is stated, the corners where they are, and iced's own
-/// (`Border::default()`, no line and square corners) for each the theme
-/// leaves unstated (spec §10, rule 0).
+/// A part's border as iced outlines a widget, of a part whose border the
+/// table of homes allows to be unstated (`unstated_if_unset`): the stroke
+/// ([`line_or_none`], a stated `Stroke::None` being no width) and its width
+/// where the stroke is stated, the corners ([`part_radii`]) where they are,
+/// and iced's own (`Border::default()`, no line and square corners) for
+/// each the theme leaves unstated (spec §10, rule 0).
 pub(crate) fn outline_or_iced_of(
     part: &PartStyle,
     color_home: &'static str,
     width_home: &'static str,
     corners_home: &'static str,
 ) -> Mapped<Outline> {
-    let iced = Border::default();
-    let mut outline = Outline {
-        line: Line::outside(iced.color),
-        width: iced.width,
-        radius: iced.radius,
-    };
-    if part.stated.contains(PartStated::STROKE) {
-        outline.width = stroke_width(part, width_home)?;
-        outline.line = line_or_none(part, color_home)?;
-    }
-    if part.stated.contains(PartStated::CORNERS) {
-        outline.radius = part_radii(part, corners_home)?;
-    }
-    Ok(outline)
+    Ok(part_outline_of(part, color_home, width_home, corners_home)?.or(Border::default()))
 }
 
-/// [`outline_of`] the part at `$home`, each value's home under it.
-macro_rules! outline {
-    ($part:expr, $home:expr) => {
-        $crate::next::borders::outline_of(
-            &$part,
-            concat!($home, ".stroke.color"),
-            concat!($home, ".stroke.width"),
-            concat!($home, ".corners"),
-        )
+/// A part's border as the style function completes it with iced's own
+/// border of the widget ([`PartOutline::or`]): the stroke and its width
+/// where the stroke is stated, the corners where they are, each `None`
+/// where the theme leaves it unstated (spec §10, rule 0).
+pub(crate) fn part_outline_of(
+    part: &PartStyle,
+    color_home: &'static str,
+    width_home: &'static str,
+    corners_home: &'static str,
+) -> Mapped<PartOutline> {
+    let stroke = if part.stated.contains(PartStated::STROKE) {
+        Some((
+            line_or_none(part, color_home)?,
+            stroke_width(part, width_home)?,
+        ))
+    } else {
+        None
     };
+    let radius = if part.stated.contains(PartStated::CORNERS) {
+        Some(part_radii(part, corners_home)?)
+    } else {
+        None
+    };
+    Ok(PartOutline { stroke, radius })
 }
-pub(crate) use outline;
 
 /// [`outline_or_iced_of`] the part at `$home`, each value's home under it.
 macro_rules! outline_or_iced {
@@ -190,6 +173,19 @@ macro_rules! outline_or_iced {
     };
 }
 pub(crate) use outline_or_iced;
+
+/// [`part_outline_of`] the part at `$home`, each value's home under it.
+macro_rules! part_outline {
+    ($part:expr, $home:expr) => {
+        $crate::next::borders::part_outline_of(
+            &$part,
+            concat!($home, ".stroke.color"),
+            concat!($home, ".stroke.width"),
+            concat!($home, ".corners"),
+        )
+    };
+}
+pub(crate) use part_outline;
 
 #[cfg(test)]
 mod tests {
@@ -291,13 +287,11 @@ mod tests {
     }
 
     #[test]
-    fn an_outline_is_strict_and_the_unstated_one_is_iceds_own() -> Mapped<()> {
+    fn an_unstated_outline_property_is_iceds_own() -> Mapped<()> {
         let mut p = part(Paint::Solid(FILL), OPAQUE, StrokeAlign::Inside);
-        assert_eq!(
-            outline_of(&p, "c", "w", "r"),
-            Err(Unmapped("r")),
-            "corners unstated"
-        );
+        let outline = part_outline_of(&p, "c", "w", "r")?;
+        assert_eq!(outline.radius, None, "corners unstated");
+        assert!(outline.stroke.is_some(), "stroke stated");
         p.stated = PartStated::FILL;
         let iced = Border::default();
         assert_eq!(
@@ -306,7 +300,9 @@ mod tests {
         );
         p.stroke = Stroke::None;
         p.stated = PartStated::STROKE | PartStated::CORNERS;
-        assert_eq!(outline_of(&p, "c", "w", "r")?.over(to_color(FILL)), iced);
+        let outline = part_outline_of(&p, "c", "w", "r")?;
+        assert!(outline.stroke.is_some() && outline.radius.is_some());
+        assert_eq!(outline.or(iced).over(to_color(FILL)), iced);
         Ok(())
     }
 }

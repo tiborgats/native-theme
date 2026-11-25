@@ -71,6 +71,8 @@ use native_theme::next::{
 
 use crate::ColorMode;
 use crate::extended::OverrideColors;
+#[cfg(feature = "widgets")]
+pub use crate::focus_ring::RingLook;
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to iced (a gradient fill, a per-side
@@ -135,15 +137,12 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 /// instead (`styles::state_layer`), whose no fill paints nothing in that
 /// state rather than the fill at rest under a transparent layer.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
-    stated(fill_of(part), home)
+    stated(fill_color(part), home)
 }
 
-/// A part's fill as `fill` reads it, `None` where it is not stated, or
-/// stated as a layered paint with no fallback colour: for a reader that
-/// shows iced's own there (spec §10, rule 0). A fill stated as none is
-/// transparent, and a layered paint gives its fallback colour (spec §10,
-/// rule 2).
-pub fn fill_of(part: &PartStyle) -> Option<IcedColor> {
+/// A part's fill as [`fill`] reads it, `None` where it is not stated or
+/// has no single colour.
+pub(crate) fn fill_color(part: &PartStyle) -> Option<IcedColor> {
     if !part.stated.contains(PartStated::FILL) {
         return None;
     }
@@ -154,26 +153,40 @@ pub fn fill_of(part: &PartStyle) -> Option<IcedColor> {
     }
 }
 
-/// A part's fill where a rule states it for the queried state (its
-/// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
-/// option's unset value.
-pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
-    if part.from_state.contains(PartStated::FILL) {
+/// A part's fill as the style functions draw it, `None` where it is not
+/// stated: iced's own there (spec §10, rule 0). A fill stated as none is
+/// transparent, and a layered paint gives its fallback colour (spec §10,
+/// rule 2: each solid layer its colour, each material its fallback, the
+/// topmost opaque one).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients, which have no single colour for iced to paint (spec §10,
+/// rule 4), never iced's own in their place.
+pub fn fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
+    if part.stated.contains(PartStated::FILL) {
         fill(part, home).map(Some)
     } else {
         Ok(None)
     }
 }
 
-/// A part's fill as `state_fill` reads it, `None` where no rule states it
-/// for the queried state, or it is stated in a form iced cannot paint (a
-/// layered paint with no fallback colour). The rule is for some flag of the
-/// query, not a given one (spec §2, `from_state`).
-pub fn state_fill_of(part: &PartStyle) -> Option<IcedColor> {
-    part.from_state
-        .contains(PartStated::FILL)
-        .then(|| fill_of(part))
-        .flatten()
+/// A part's fill as [`fill_of`] reads it, where a rule states it for the
+/// queried state (its `from_state` bit); `None` where none does, a soft
+/// option's unset value. The rule is for some flag of the query, not a
+/// given one (spec §2, `from_state`).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients (spec §10, rule 4).
+pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
+    if part.from_state.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// A part's stroke colour as stated, where stated as one stroke of one
@@ -523,7 +536,7 @@ pub fn scrollbar_groove_width(r: &ResolvedTheme) -> Mapped<f32> {
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<IcedColor>> {
-    state_fill(
+    state_fill_of(
         &r.list.header(WidgetState::HOVER),
         "list.header(HOVER).fill",
     )
@@ -538,7 +551,7 @@ pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<IcedColo
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<IcedColor>> {
-    state_fill(
+    state_fill_of(
         &r.list.header(WidgetState::PRESSED),
         "list.header(PRESSED).fill",
     )
@@ -1261,31 +1274,122 @@ pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<
 /// second ring inside it (`focus_ring.inner_stroke`) and the corners of the
 /// line the offset places, between the two (`focus_ring.corners`, the
 /// field's grown by the offset where the theme states none; spec §2,
-/// `FocusIndicator`); `None` where the theme states no stroke, or one inset
-/// at the field's edge.
+/// `FocusIndicator`); `None` where the theme states no stroke. The ring is
+/// painted over the field: one inset at the field's edge (offset minus its
+/// width, libadwaita's) is the band over the field's outermost width, which
+/// the field styles leave to it ([`styles::text_input`]).
 ///
 /// # Errors
 ///
 /// [`Unmapped`] where the indicator is not a ring (`focus_ring.kind`), or a
-/// stroke is per side or the corners concentric ([`borders::corner_radii`]).
+/// stroke is per side or the corners concentric (`borders::corner_radii`).
 #[cfg(feature = "widgets")]
-pub(crate) fn ring_look(
+pub fn ring_look(r: &ResolvedTheme, radius: f32) -> Mapped<Option<RingLook>> {
+    indicator_look(&r.focus_ring, &RingHomes::GLOBAL, radius)
+}
+
+/// The homes of a focus indicator's fields, which [`Unmapped`] names where
+/// the connector cannot draw one: the global ring's (`focus_ring`), or the
+/// ring a part states of its own (`PartStyle.focus`), named at the part's
+/// `FOCUSED` state whether the part is read at `FOCUSED` or at
+/// `FOCUS_VISIBLE`, which includes it (spec §3: a query that sets
+/// `FOCUS_VISIBLE` matches the rules on `FOCUSED`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RingHomes {
+    /// The indicator's `kind`.
+    pub kind: &'static str,
+    /// Its `stroke`, stated per side.
+    pub stroke: &'static str,
+    /// Its `inner_stroke`, stated per side.
+    pub inner_stroke: &'static str,
+    /// Its `corners`, concentric.
+    pub corners: &'static str,
+}
+
+impl RingHomes {
+    /// The global ring's, `focus_ring`.
+    pub const GLOBAL: Self = Self {
+        kind: "focus_ring.kind",
+        stroke: "focus_ring.stroke",
+        inner_stroke: "focus_ring.inner_stroke",
+        corners: "focus_ring.corners",
+    };
+    /// The text field's own, `input.field`.
+    pub const INPUT: Self = Self {
+        kind: "input.field(FOCUSED).focus.kind",
+        stroke: "input.field(FOCUSED).focus.stroke",
+        inner_stroke: "input.field(FOCUSED).focus.inner_stroke",
+        corners: "input.field(FOCUSED).focus.corners",
+    };
+    /// The multi-line field's own, `text_area.field`.
+    pub const TEXT_AREA: Self = Self {
+        kind: "text_area.field(FOCUSED).focus.kind",
+        stroke: "text_area.field(FOCUSED).focus.stroke",
+        inner_stroke: "text_area.field(FOCUSED).focus.inner_stroke",
+        corners: "text_area.field(FOCUSED).focus.corners",
+    };
+}
+
+/// The focus indicator the connector draws round the part `part`, read at
+/// a focused state, with the homes of its fields (spec §2,
+/// `FocusIndicator`: a preset states `PartStyle.focus` on a focusable part
+/// where its platform's indicator has a source; where it states none, the
+/// toolkit's own stays): the part's own where the theme states one, at
+/// `homes`; none where it states that the part has none; else the global
+/// ring, `focus_ring`, at [`RingHomes::GLOBAL`].
+#[must_use]
+pub fn part_focus<'a>(
+    r: &'a ResolvedTheme,
+    part: &'a PartStyle,
+    homes: RingHomes,
+) -> Option<(&'a native_theme::next::FocusIndicator, RingHomes)> {
+    if part.stated.contains(PartStated::FOCUS) {
+        part.focus.as_deref().map(|f| (f, homes))
+    } else {
+        Some((&r.focus_ring, RingHomes::GLOBAL))
+    }
+}
+
+/// The ring [`focus_ring`] draws round a field of corner `radius` whose
+/// part, read at a focused state, is `part`: [`ring_look`] of the
+/// indicator [`part_focus`] picks, the part's own at `homes` where the
+/// theme states one; `None` where it states that the part has none.
+///
+/// # Errors
+///
+/// As [`ring_look`], at the picked indicator's homes.
+#[cfg(feature = "widgets")]
+pub fn part_ring_look(
     r: &ResolvedTheme,
+    part: &PartStyle,
+    homes: RingHomes,
     radius: f32,
-) -> Mapped<Option<crate::focus_ring::RingLook>> {
+) -> Mapped<Option<RingLook>> {
+    match part_focus(r, part, homes) {
+        Some((f, homes)) => indicator_look(f, &homes, radius),
+        None => Ok(None),
+    }
+}
+
+/// [`ring_look`] of the indicator `f`, the homes of its fields `homes`.
+#[cfg(feature = "widgets")]
+fn indicator_look(
+    f: &native_theme::next::FocusIndicator,
+    homes: &RingHomes,
+    radius: f32,
+) -> Mapped<Option<RingLook>> {
     use native_theme::next::{FocusKind, FocusTrigger};
 
-    let f = &r.focus_ring;
     if f.kind != FocusKind::Ring {
-        return Err(Unmapped("focus_ring.kind"));
+        return Err(Unmapped(homes.kind));
     }
-    let Some((width, color)) = ring_stroke(&f.stroke, "focus_ring.stroke")? else {
+    let Some((width, color)) = ring_stroke(&f.stroke, homes.stroke)? else {
         return Ok(None);
     };
-    let inner = ring_stroke(&f.inner_stroke, "focus_ring.inner_stroke")?
-        .map(|(width, color)| (color, width));
+    let inner =
+        ring_stroke(&f.inner_stroke, homes.inner_stroke)?.map(|(width, color)| (color, width));
     let corners = match &f.corners {
-        Some(corners) => Some(borders::corner_radii(corners, "focus_ring.corners")?),
+        Some(corners) => Some(borders::corner_radii(corners, homes.corners)?),
         None => None,
     };
     Ok(crate::focus_ring::ring_look_from(
@@ -1301,7 +1405,8 @@ pub(crate) fn ring_look(
 /// [`crate::focus_ring()`]: `field`, and round it while it holds the keyboard
 /// focus, the theme's focus ring, its curves the field's `corner_radius`
 /// grown by the ring's offset, or the ring's own corners where the theme
-/// states them, and the second ring inside it where the theme states one.
+/// states them, and the second ring inside it where the theme states one;
+/// painted over the field, a ring inset at its edge included.
 ///
 /// # Errors
 ///
@@ -1317,7 +1422,43 @@ where
     Message: 'a,
     Renderer: iced_core::Renderer + 'a,
 {
-    Ok(crate::focus_ring::FocusRing::new(field.into(), ring_look(r, corner_radius)?).into())
+    Ok(focus_ring_with(ring_look(r, corner_radius)?, field))
+}
+
+/// [`focus_ring`] of a ring [`ring_look`] mapped: `field`, and round it
+/// while it holds the keyboard focus, `look`; the field with no ring where
+/// `look` is `None`. A caller that draws the field alone where the ring is
+/// [`Unmapped`] asks [`ring_look`] once and hands the field here, which
+/// [`focus_ring`] cannot do, as it keeps the field it is given.
+#[cfg(feature = "widgets")]
+pub fn focus_ring_with<'a, Message, Renderer>(
+    look: Option<RingLook>,
+    field: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    crate::focus_ring::FocusRing::new(field.into(), look).into()
+}
+
+/// [`focus_ring_with`] of a field whose part's rings differ by the focus:
+/// `field`, and round it while it holds the keyboard focus, `key` for a
+/// focus that followed a key (the part read at `FOCUS_VISIBLE`) and `look`
+/// for another (the part read at `FOCUSED`), none where `look` shows for
+/// keyboard focus only ([`part_ring_look`] of each; spec §2,
+/// `FocusIndicator`'s trigger contract).
+#[cfg(feature = "widgets")]
+pub fn focus_rings_with<'a, Message, Renderer>(
+    look: Option<RingLook>,
+    key: Option<RingLook>,
+    field: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    crate::focus_ring::FocusRing::keyed(field.into(), look, key).into()
 }
 
 /// What [`spinner`] reads: its diameter, stroke width, colour and period

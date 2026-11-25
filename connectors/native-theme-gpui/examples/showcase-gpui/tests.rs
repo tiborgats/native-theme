@@ -4223,40 +4223,6 @@ fn the_selected_page_tab_curves_out_where_the_theme_states_it(cx: &mut TestAppCo
     assert!(missing.is_empty(), "no flare quad at {missing:?}");
 }
 
-/// The smallest box that hovering `at` paints and that was not painted
-/// before, and that holds `at`: the hovered element's hover fill.
-fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pixels>> {
-    let painted = |cx: &mut VisualTestContext| {
-        cx.update(|window, _| {
-            let scale = window.scale_factor();
-            scene_quads(window)
-                .into_iter()
-                .filter(|q| !q.background.is_transparent())
-                .map(|q| Bounds {
-                    origin: point(
-                        px(q.bounds.origin.x.0 / scale),
-                        px(q.bounds.origin.y.0 / scale),
-                    ),
-                    size: size(
-                        px(q.bounds.size.width.0 / scale),
-                        px(q.bounds.size.height.0 / scale),
-                    ),
-                })
-                .collect::<Vec<_>>()
-        })
-    };
-    let before = painted(cx);
-    hover(cx, at);
-    draw(cx);
-    painted(cx)
-        .into_iter()
-        .filter(|b| !before.contains(b) && b.contains(&at))
-        .min_by(|a, b| {
-            let area = |b: &Bounds<Pixels>| b.size.width.as_f32() * b.size.height.as_f32();
-            area(a).total_cmp(&area(b))
-        })
-}
-
 /// Upstream's Underline TabBar pads neither itself nor its tabs
 /// (tab/tab.rs:121-122, tab/tab_bar.rs:412-421): it leaves the inset to the
 /// container it is in. So the page TabBar is inset by
@@ -4357,10 +4323,18 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                     feature = "system-icons"
                 )) => {}
                 None => {
-                    let menu = hover_box(
-                        &mut cx,
-                        point(panel.right() - right - px(4.), tabs.center().y),
-                    );
+                    // Where the layout put it, its recorded bounds
+                    // (`chrome.page_tabs.menu`, demo::native_tab_bar's
+                    // suffix), not what a hover paints: a theme whose
+                    // hovered flat button draws no fill must not hide the
+                    // control from the test.
+                    let menu = read(&mut cx, &showcase, |this, cx| {
+                        this.info_ui
+                            .read(cx)
+                            .layout_drawn()
+                            .get("chrome.page_tabs.menu")
+                            .copied()
+                    });
                     assert!(
                         menu.is_some_and(
                             |menu| (panel.right() - menu.right() - right).abs() <= slack
@@ -14067,9 +14041,9 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
 
 /// Widget Info's listed font rows name the family gpui draws, as the
 /// inspector's Theme tab does: `typography.body.family` and the family part
-/// of `typography.body` and of `typography.monospace` are
-/// `status::family_label` of the 0.8.0 theme's stated family and
-/// `font_family`'s, under windows-11 set directly.
+/// of `typography.body`, of the switch's `switch.label(NONE)` and of
+/// `typography.monospace` are `status::family_label` of the 0.8.0 theme's
+/// stated family and `font_family`'s, under windows-11 set directly.
 /// Conditioned on the host: where the system lacks "Segoe UI" or "Cascadia
 /// Mono" and the platform names a substitute (fontconfig, feature
 /// `system-fonts`), the rows name it; elsewhere the label is the stated name
@@ -14094,6 +14068,7 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
         label(&r.typography.body.family),
         label(&r.typography.monospace.family),
     );
+    let switch = label(&r.switch.label(native_theme::next::WidgetState::NONE).family);
     let mut value = |id: &str, home: &str| {
         let row = read(&mut cx, &showcase, |_, cx| {
             let look = PanelLook::of(cx)?;
@@ -14112,7 +14087,8 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
         body
     );
     for (id, home, label) in [
-        ("basic.switches.off", "typography.body", &body),
+        ("basic.typography.body", "typography.body", &body),
+        ("basic.switches.off", "switch.label(NONE)", &switch),
         ("basic.typography.monospace", "typography.monospace", &mono),
     ] {
         let font = value(id, home);
@@ -21991,11 +21967,11 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
         ),
         Ok(SwitchLabelHome::WindowForegroundMuted) => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:488",
+            "native-theme-gpui/widgets/switch.rs:487",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:484",
+            "native-theme-gpui/widgets/switch.rs:481",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -22047,47 +22023,74 @@ fn look_findings(
     wrong
 }
 
-/// What is wrong with the focus ring `info` claims, if anything: a control
-/// that can take the focus claims `focus_ring.stroke`'s colour, read by
-/// `FocusRing::next_of` (native-theme-gpui/widgets/mod.rs:523), where the
-/// theme states a ring the controls draw --
-/// one stroke `focus_ring.stroke.width` above 0, a finite `focus_ring.offset`
-/// and nothing `widgets::focus_ring_unmapped` names -- and none otherwise.
+/// What is wrong with the focus ring `info` claims, if anything: of a
+/// control that can take the focus, the ring the widget draws round `part`
+/// (the part at the focused state the info reads it at, whose own ring's
+/// homes are `homes`) is the one `widgets::part_focus` picks, where it is a
+/// ring the controls draw -- one stroke above 0 wide, a finite offset and
+/// nothing `widgets::part_ring_unmapped` names. The global ring is claimed
+/// as `focus_ring.stroke`'s colour, read by `FocusRing::next_of`
+/// (native-theme-gpui/widgets/mod.rs:523); a ring of the part's own (spec
+/// §2, `FocusIndicator`: `PartStyle.focus`) claims no global colour, and a
+/// focus ring line names it at its home (`RingHomes::stroke`); with no ring
+/// drawn, no ring is claimed.
 #[cfg(feature = "widgets")]
 fn next_ring_findings(
     whose: &str,
     info: &WidgetInfo,
     r: &native_theme::next::ResolvedTheme,
     focusable: bool,
+    part: &native_theme::next::PartStyle,
+    homes: native_theme_gpui::widgets::RingHomes,
 ) -> Vec<String> {
-    let offset = r.focus_ring.offset;
-    let stroke = match &r.focus_ring.stroke {
-        native_theme::next::Stroke::Uniform { width, color, .. }
-            if width.is_finite() && offset.is_finite() && *width > 0.0 =>
-        {
-            Some(*color)
-        }
-        _ => None,
-    };
-    let drawn = stroke
-        .filter(|_| focusable && native_theme_gpui::widgets::focus_ring_unmapped(r).is_none());
+    use native_theme_gpui::widgets::{RingHomes, part_focus, part_ring_unmapped};
+    let drawn = part_focus(r, part, homes)
+        .filter(|_| focusable && part_ring_unmapped(r, part, homes).is_none())
+        .and_then(|(f, homes)| match &f.stroke {
+            native_theme::next::Stroke::Uniform { width, color, .. }
+                if width.is_finite() && f.offset.is_finite() && *width > 0.0 =>
+            {
+                Some((*color, homes))
+            }
+            _ => None,
+        });
     let found = claim_by_role(info, "focus ring").map(|c| (c.value, c.field, c.cited_at));
-    let expected = drawn.map(|color| {
-        (
-            crate::info::next_stated(color),
-            "focus_ring.stroke.color",
-            "native-theme-gpui/widgets/mod.rs:523",
-        )
-    });
-    if found == expected {
-        Vec::new()
-    } else {
-        vec![format!(
+    let expected = drawn
+        .filter(|(_, homes)| *homes == RingHomes::GLOBAL)
+        .map(|(color, _)| {
+            (
+                crate::info::next_stated(color),
+                "focus_ring.stroke.color",
+                "native-theme-gpui/widgets/mod.rs:523",
+            )
+        });
+    let mut wrong = Vec::new();
+    if found != expected {
+        wrong.push(format!(
             "{whose}: the focus ring claims {:?}, the theme draws {:?}",
             found.map(|(v, f, c)| (as_rgba(v), f, c)),
             expected.map(|(v, f, c)| (as_rgba(v), f, c))
-        )]
+        ));
     }
+    if let Some((_, own)) = drawn.filter(|(_, homes)| *homes != RingHomes::GLOBAL) {
+        let named = info.config.iter().any(|note| {
+            note.what == "focus ring"
+                && note.text.contains("own ring in place of the global one")
+                && note.text.contains(own.stroke)
+        });
+        if !named {
+            wrong.push(format!(
+                "{whose}: the widget draws the part's own ring, {}, which no focus ring line names: {:?}",
+                own.stroke,
+                info.config
+                    .iter()
+                    .filter(|note| note.what == "focus ring")
+                    .map(|note| note.text.as_str())
+                    .collect::<Vec<_>>()
+            ));
+        }
+    }
+    wrong
 }
 
 /// A theme-drawn Checkbox's, Radio's and Switch's info prints what the
@@ -22131,6 +22134,11 @@ fn a_theme_drawn_controls_info_prints_its_look() {
         let Some(ground) = ground else { continue };
         for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)] {
             let whose = format!("{name}, checked {checked}, disabled {disabled}");
+            let focused = if checked {
+                WidgetState::FOCUSED | WidgetState::CHECKED
+            } else {
+                WidgetState::FOCUSED
+            };
 
             let info = inputs::native_checkbox(&r, "label", checked, disabled);
             let Ok(rest) = CheckboxLook::next_of(&r, checked, disabled) else {
@@ -22163,6 +22171,8 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 &info,
                 &r,
                 !disabled,
+                &r.checkbox.indicator(focused),
+                native_theme_gpui::widgets::RingHomes::CHECKBOX,
             ));
             for (what, length) in [
                 ("indicator", look.indicator),
@@ -22257,6 +22267,9 @@ fn a_theme_drawn_controls_info_prints_its_look() {
             &info,
             &r,
             true,
+            &r.radio
+                .indicator(WidgetState::FOCUSED | WidgetState::CHECKED),
+            native_theme_gpui::widgets::RingHomes::RADIO,
         ));
         if !says(note_of(&info.config, "label gap"), &len(selected.label_gap)) {
             wrong.push(format!(
@@ -22296,6 +22309,11 @@ fn a_theme_drawn_controls_info_prints_its_look() {
         };
         for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)] {
             let whose = format!("{name}, checked {checked}, disabled {disabled}");
+            let focused = if checked {
+                WidgetState::FOCUSED | WidgetState::CHECKED
+            } else {
+                WidgetState::FOCUSED
+            };
 
             let info = inputs::native_switch(&r, "label", checked, disabled);
             let Ok(rest) = SwitchLook::next_of(&r, checked, disabled) else {
@@ -22331,6 +22349,8 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 &info,
                 &r,
                 !disabled,
+                &r.switch.track(focused),
+                native_theme_gpui::widgets::RingHomes::SWITCH,
             ));
             let thumb = note_of(&info.config, "thumb");
             let thumb_home = if checked {
@@ -22392,13 +22412,11 @@ fn a_theme_drawn_controls_info_prints_its_look() {
     );
 }
 
-/// The theme-drawn Switch's label in its info: on kde-breeze light, which
-/// states no switch label nor gap, gpui-component's own colour (the
-/// window's text, disabled `muted_foreground`, at the homes the connector
-/// fills them from), size and gap; on the same theme patched to state the
-/// label's colour, size and gap and a disabled colour, each at the
-/// switch's own home, the colour cited at the line `SwitchLook::next_of`
-/// reads it at.
+/// The theme-drawn Switch's label in its info: on kde-breeze light patched
+/// to state the label's colour, size and gap and a disabled colour, each at
+/// the switch's own home, the colour cited at the line `SwitchLook::next_of`
+/// reads it at; and on ios-13 light, which states the label but no gap, the
+/// gap gpui-component's own.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_switchs_info_reads_its_label_at_its_own_homes() {
@@ -22412,9 +22430,9 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
         Theme::preset(Preset::KdeBreeze)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
     };
-    // ios-13 states no label (no source), so its switch's label is gpui-component's own.
-    let plain =
-        Theme::preset(Preset::Ios13).resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    // Every bundled preset states its switch label (M2.FS4): the choice of gpui-component's own
+    // colour for an unstated one is the connector's `label_home`, tested on an unstated label in
+    // `widgets::switch`'s tests.
     let mut patched = breeze();
     patched.apply_patch(
         &ThemePatch::new()
@@ -22432,37 +22450,32 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
                     .label(TextPatch::new().color(Color::rgb(0.0, 0.0, 1.0))),
             ),
     );
+    // ios-13 states no switch.label_gap: the row's width sets the space (next/presets/ios.rs).
+    let ios =
+        Theme::preset(Preset::Ios13).resolve(&ThemeContext::default().with_scheme(Scheme::Light));
     let says = |text: Option<&str>, part: &str| text.is_some_and(|text| text.contains(part));
     let mut wrong = Vec::new();
-    for (r, homes, gap, size) in [
+    let stated_homes = [
         (
-            &plain,
-            [
-                (
-                    "colors.window.foreground",
-                    "native-theme-gpui/widgets/switch.rs:484",
-                ),
-                (
-                    "colors.window.foreground_muted",
-                    "native-theme-gpui/widgets/switch.rs:488",
-                ),
-            ],
-            "gap_2",
-            "text_sm",
+            "switch.label(NONE).color",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
         (
+            "switch.label(DISABLED).color",
+            "native-theme-gpui/widgets/switch.rs:439",
+        ),
+    ];
+    for (r, homes, gap, size) in [
+        (
             &patched,
-            [
-                (
-                    "switch.label(NONE).color",
-                    "native-theme-gpui/widgets/switch.rs:437",
-                ),
-                (
-                    "switch.label(DISABLED).color",
-                    "native-theme-gpui/widgets/switch.rs:439",
-                ),
-            ],
+            stated_homes,
             "switch.label_gap: 13px",
+            "switch.label(NONE).size_px 17px",
+        ),
+        (
+            &ios,
+            stated_homes,
+            "gap_2",
             "switch.label(NONE).size_px 17px",
         ),
     ] {
@@ -22603,6 +22616,8 @@ fn a_theme_drawn_sliders_info_prints_its_look() {
             &info,
             &r,
             true,
+            &r.slider.thumb(WidgetState::FOCUSED),
+            native_theme_gpui::widgets::RingHomes::SLIDER,
         ));
         for (what, home, length) in [
             ("rail", "slider.track(NONE).min_size[1]", look.track_height),
@@ -22856,15 +22871,33 @@ fn a_group_box_claims_the_card_edge_only_where_one_is_drawn() {
             (format!("{name}, its card stroked as none"), r, t)
         });
     assert!(unstroked.is_some(), "no bundled 0.8.0 variant to patch");
+    // Every bundled preset states its card's stroke (M2.FS4), so the edge of a card whose stroke
+    // is unstated is read off a container that states nothing.
+    let cases = every_next_variant()
+        .into_iter()
+        .chain(unstroked)
+        .map(|(name, r, t)| (name, r.card.container(WidgetState::NONE), Some(r), t))
+        .chain(std::iter::once((
+            "a card whose stroke the theme leaves unstated".to_owned(),
+            native_theme::next::PartStyle::default(),
+            None,
+            Theme::default(),
+        )));
     let mut branches = (false, false, false);
-    for (name, r, t) in every_next_variant().into_iter().chain(unstroked) {
-        let container = r.card.container(WidgetState::NONE);
+    for (name, container, r, t) in cases {
         for kind in [
             GroupBoxKind::Normal,
             GroupBoxKind::Fill,
             GroupBoxKind::Outline,
         ] {
-            let info = crate::info::layout::next_group_box(&t, kind, Some(&r), None, "Title");
+            let info = match &r {
+                Some(r) => crate::info::layout::next_group_box(&t, kind, Some(r), None, "Title"),
+                None => crate::info::layout::unstated_card_edge(
+                    crate::info::WidgetInfo::new("GroupBox"),
+                    &t,
+                    kind,
+                ),
+            };
             let what = kind.name();
             let line = note_of(&info.config, "edge");
             match stroke_width_of(&container) {
@@ -23298,13 +23331,17 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 }
 
 /// A Basic icon button under the pointer, where no rule states the
-/// toolbar's hovered fill (macos-tahoe, both modes), is filled as
+/// toolbar's hovered fill (macos-tahoe, both modes, with that fill stated
+/// for no state at `HOVER`: a rule of no required state, forbidding every
+/// state but `HOVER` a rest query's look depends on, restates the rest
+/// fill, which clears the `from_state` bit queried at `HOVER`, spec §2,
+/// `from_state`; every bundled preset states one), is filled as
 /// gpui-component's own toolbar button, its ghost one: `accent`, at half
 /// alpha in dark mode (spec §10, rule 0), not the flat button's
 /// `secondary_hover`; and its info claims that.
 #[gpui::test]
 fn a_hovered_tool_button_with_no_stated_fill_is_gpui_components_own(cx: &mut TestAppContext) {
-    use native_theme::next::WidgetState;
+    use native_theme::next::{PartPatch, ThemePatch, ToolbarRule, WidgetState};
     use native_theme_gpui::next::state_fill_of;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let button = "basic-icon-copy";
@@ -23315,10 +23352,21 @@ fn a_hovered_tool_button_with_no_stated_fill_is_gpui_components_own(cx: &mut Tes
         show(&mut cx, &showcase, Page::Basic);
         let r = next_theme(&mut cx, &showcase);
         assert!(r.is_some(), "{mode:?}: no 0.8.0 theme is installed");
-        let Some(r) = r else { return };
+        let Some(mut r) = r else { return };
+        let rest = r.toolbar.button(WidgetState::NONE).fill;
+        r.apply_patch(
+            &ThemePatch::new().toolbar(
+                ToolbarRule::new()
+                    .not_states(WidgetState::CHECKED | WidgetState::PRESSED | WidgetState::DISABLED)
+                    .button(PartPatch::new().fill(rest)),
+            ),
+        );
+        install_next(&mut cx, &r);
+        show(&mut cx, &showcase, Page::Basic);
         assert!(
             state_fill_of(&r.toolbar.button(WidgetState::HOVER)).is_none(),
-            "{mode:?}: macos-tahoe states the toolbar's hovered fill, so this test proves nothing"
+            "{mode:?}: the patch leaves macos-tahoe's hovered toolbar fill stated, so this test \
+             proves nothing"
         );
         let (own, flat) = cx.update(|_w, cx| {
             let t = Theme::global(cx);
@@ -23361,7 +23409,12 @@ fn a_hovered_tool_button_with_no_stated_fill_is_gpui_components_own(cx: &mut Tes
 /// paints no hover or press on a selected Button); a click turns it off, and with the pointer
 /// moved off it paints no fill (the rest fill is transparent), and its info
 /// claims the text, hover and pressed fills its neighbours claim and no
-/// checked colour; a second click checks it again.
+/// checked colour; a second click checks it again. Under ios-13 light,
+/// which states no `toolbar.button(CHECKED).fill`, it is filled as
+/// gpui-component's own selected ghost, `secondary_active` as the connector
+/// themes it (spec §10, rule 0a), never by a chain into a pressed fill, and
+/// its info claims that fill and the variant's text, the fill being the one
+/// painted (none where `secondary_active` is transparent).
 #[gpui::test]
 fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     use native_theme::next::WidgetState;
@@ -23477,6 +23530,45 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
             "{preset}: the edit button checked again is not filled with toolbar.button(CHECKED).fill"
         );
     }
+    use_light_preset(&mut cx, &showcase, "ios-13");
+    show(&mut cx, &showcase, Page::Basic);
+    let next = next_theme(&mut cx, &showcase);
+    assert!(
+        next.as_ref()
+            .is_some_and(|r| state_fill_of(&r.toolbar.button(WidgetState::CHECKED)).is_none()),
+        "ios-13 now states toolbar.button(CHECKED).fill, so this part proves nothing"
+    );
+    let own = cx.update(|_window, cx| Theme::global(cx).secondary_active);
+    assert!(read(&mut cx, &showcase, |this, _| this.basic_edit));
+    hover(&mut cx, away);
+    draw(&mut cx);
+    let painted = painted_fill(&mut cx, button);
+    let info = settle_on(&mut cx, &showcase, button);
+    let mut roles: Vec<&str> = info
+        .as_ref()
+        .map(|info| info.colors.iter().map(|c| c.role).collect())
+        .unwrap_or_default();
+    roles.sort_unstable();
+    assert_eq!(
+        roles,
+        ["selected bg", "text"],
+        "ios-13: the checked edit button's info claims colours other than the selected \
+         fill and the variant's text: {info:?}"
+    );
+    let claimed = info
+        .as_ref()
+        .and_then(|info| claim_of(info, "secondary_active"));
+    assert_eq!(
+        claimed,
+        Some(own),
+        "ios-13: the checked edit button's info does not claim gpui-component's own selected \
+         ghost, secondary_active: {info:?}"
+    );
+    assert_eq!(
+        painted,
+        claimed.filter(|fill| !fill.is_transparent()),
+        "ios-13: the checked edit button does not paint the fill its info claims: {info:?}"
+    );
 }
 
 /// Every arm of `checked_fill`, the fill a checked tool Button claims from
@@ -23546,7 +23638,11 @@ fn a_checked_tool_buttons_claimed_fill_takes_each_source_in_order() -> Result<()
 /// (button/button.rs, ButtonVariant::selected): the toolbar's
 /// `toolbar.button(PRESSED).fill` where the variant is built from the
 /// toolbar's states, and the Ghost's `secondary_active` where it fell back
-/// on the Ghost (`toolbar.button(HOVER).fill` a gradient as well).
+/// on the Ghost (`toolbar.button(HOVER).fill` a gradient as well). The
+/// pressed fill is patched to kde-breeze light's checked one, as kde-breeze
+/// states its flat button's pressed fill, from which the connector themes
+/// `secondary_active`, as the toolbar's, and the two cases would paint
+/// alike.
 #[gpui::test]
 fn a_checked_tool_button_paints_the_fill_it_claims(cx: &mut TestAppContext) {
     use crate::info::buttons::ToolVariant;
@@ -23581,12 +23677,20 @@ fn a_checked_tool_button_paints_the_fill_it_claims(cx: &mut TestAppContext) {
         ("variant's pressed fill", true, false),
         ("Ghost's pressed fill", true, true),
     ] {
-        let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
-            let mut patch = ThemePatch::new().toolbar(
-                ToolbarRule::new()
-                    .states(WidgetState::CHECKED)
-                    .button(PartPatch::new().fill(gradient())),
-            );
+        let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+            let checked = r.toolbar.button(WidgetState::CHECKED).fill;
+            let mut patch = ThemePatch::new()
+                .toolbar(
+                    ToolbarRule::new()
+                        .states(WidgetState::CHECKED)
+                        .button(PartPatch::new().fill(gradient())),
+                )
+                .toolbar(
+                    ToolbarRule::new()
+                        .states(WidgetState::PRESSED)
+                        .not_states(WidgetState::CHECKED)
+                        .button(PartPatch::new().fill(checked)),
+                );
             if unrest {
                 patch = patch.button(ButtonRule::new().body(PartPatch::new().stroke(sides())));
             }
@@ -23612,8 +23716,8 @@ fn a_checked_tool_button_paints_the_fill_it_claims(cx: &mut TestAppContext) {
         assert!(
             !applies && rest != unrest && pressed.is_some_and(|p| p != active),
             "{case}: the patched theme leaves toolbar_button_checked applying or \
-             toolbar_button_rest not as the case needs, or kde-breeze no longer states a \
-             pressed toolbar fill apart from secondary_active, so this test proves nothing"
+             toolbar_button_rest not as the case needs, or its pressed toolbar fill \
+             (kde-breeze light's checked one) is secondary_active, so this test proves nothing"
         );
         assert_eq!(
             from == ToolVariant::Toolbar,
@@ -27047,18 +27151,38 @@ fn a_disabled_checkboxs_info_claims_the_border_it_draws() {
 }
 
 /// A disabled Checkbox's info claims the fill the widget draws: under
-/// adwaita light, which states no fill for `DISABLED`, gpui-component's own
-/// disabled fill (gpui-component 0.10.0 checkbox.rs:286-290, :359-362): a
-/// checked box's the enabled home at half alpha, under a role that says so,
-/// an unchecked box's the enabled home under "fill". The showcase shows no
-/// disabled radio.
+/// adwaita light with its check box's fill stated for no state at
+/// `DISABLED` (every bundled preset states one: a rule of no required
+/// state, forbidding every state but `DISABLED` a rest query's look depends
+/// on, restates the rest fill, which clears the `from_state` bit queried at
+/// `DISABLED`, spec §2, `from_state`), gpui-component's own disabled fill
+/// (gpui-component 0.10.0 checkbox.rs:286-290, :359-362): a checked box's
+/// the enabled home at half alpha, under a role that says so, an unchecked
+/// box's the enabled home under "fill". The showcase shows no disabled
+/// radio.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_disabled_checkboxs_info_claims_the_fill_it_draws() {
     use crate::info::{inputs, next_stated};
-    use native_theme::next::{PartStated, Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    use native_theme::next::{
+        CheckboxRule, PartPatch, PartStated, Preset, Theme as NextTheme, ThemeContext, ThemePatch,
+        WidgetState,
+    };
     use native_theme_gpui::widgets::CheckboxLook;
-    let r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let boxed = r.checkbox.indicator(WidgetState::NONE).fill;
+    r.apply_patch(
+        &ThemePatch::new().checkbox(
+            CheckboxRule::new()
+                .not_states(
+                    WidgetState::CHECKED
+                        | WidgetState::INDETERMINATE
+                        | WidgetState::HOVER
+                        | WidgetState::PRESSED,
+                )
+                .indicator(PartPatch::new().fill(boxed)),
+        ),
+    );
     let ground = r.colors.window.background.map(next_stated);
     assert!(
         ground.is_some()
@@ -27067,7 +27191,7 @@ fn a_disabled_checkboxs_info_claims_the_fill_it_draws() {
                 .indicator(WidgetState::DISABLED)
                 .from_state
                 .contains(PartStated::FILL),
-        "adwaita light states no colors.window.background, or a disabled checkbox fill this test needs unstated"
+        "adwaita light states no colors.window.background, or the patch leaves a disabled checkbox fill stated, which this test needs unstated"
     );
     let Some(ground) = ground else { return };
     for (checked, role, home) in [

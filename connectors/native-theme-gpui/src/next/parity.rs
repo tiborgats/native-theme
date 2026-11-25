@@ -339,6 +339,16 @@ const DIFFERENCES: &[Difference] = &[
                  equal",
     },
     Difference {
+        leaf: "geometry::popover",
+        presets: &["kde-breeze"],
+        reason: "0.7.2 rounds kde-breeze's popover by the uncited defaults.border.\
+                 corner_radius_lg, 8; the 0.8.0 kde-breeze states popover.panel.corners 5, \
+                 the radius qqc2-desktop-style's Popup rounds its background by \
+                 (Kirigami.Units.cornerRadius, Popup.qml:46-47 at qqc2-desktop-style \
+                 v6.31.0; docs/platform-facts.md §2.26), so the refinement's corner radii are \
+                 that radius; every other field of the refinement is equal",
+    },
+    Difference {
         leaf: "geometry::dialog_max_width",
         presets: &["kde-breeze"],
         reason: "0.7.2 states dialog.max_width, which has no source (issue #4 Z2, as \
@@ -352,13 +362,14 @@ const DIFFERENCES: &[Difference] = &[
         reason: "0.7.2 fills an unstated list.hover_background with the list's own background \
                  (native-theme/src/resolve/inheritance.rs, widget-to-widget: no tint), and the \
                  connector paints a hovered list and table row with it; the 0.8.0 macOS \
-                 presets leave list.highlight(HOVER).fill unstated (native-theme/tests/\
-                 next_homes.toml, row list.hover_background, unstated_if_unset; \
-                 docs/platform-facts.md §2.15 gives no hover colour for a table row), so the \
-                 0.8.0 theme keeps gpui-component's own hovered row, its accent at 0.6 opacity \
-                 (gpui-component 0.10.0 src/theme/schema.rs, ThemeColor::apply_config), in \
-                 list_hover and table_hover, their tokens and their stored config strings \
-                 (docs/v0.8.0-spec.md §10, rule 0); every other leaf of the theme is equal",
+                 presets state list.highlight(HOVER).fill transparent, as AppKit draws a \
+                 hovered table row as at rest (os-probe run 45198750893, macOS 15 and 26, \
+                 `*.hovered.table_row` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row list.hover_background, a listed \
+                 difference), so list_hover and table_hover, their tokens and their stored \
+                 config strings are that fill (row_hover_of); every other leaf of the theme is \
+                 equal",
     },
     Difference {
         leaf: "geometry::group_box_content",
@@ -367,12 +378,18 @@ const DIFFERENCES: &[Difference] = &[
                  (docs/platform-facts.md §2.26: NSBox's fill and border are not published), and \
                  0.7.2's validation fills them with transparent, 0 and 0 \
                  (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
-                 0.8.0 macOS presets leave card.container(NONE).stroke and its corners unstated \
-                 (native-theme/tests/next_homes.toml, rows card.border.color, \
-                 card.border.line_width and card.border.corner_radius, unstated_if_unset), so the \
-                 0.8.0 refinement sets no border width, no border colour and no corner radius and \
-                 the group box keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); \
-                 every other field of the refinement is equal",
+                 0.8.0 macOS presets state NSBox's measured edge (os-probe runs 45198750893, \
+                 45208260830 and 45217592058, `*.normal.box` `edge_*`, `corner_edge_*`, \
+                 docs/evidence/os-probe/ on m2-fs4c; native-theme/tests/next_homes.toml, rows \
+                 card.border.color, card.border.line_width and card.border.corner_radius, \
+                 listed differences): on macos-monterey a 1 px line, #00000013 / #ffffff26, and \
+                 corners of 5, on macos-tahoe no line and corners of 12; and NSBox's measured \
+                 fill, #00000008 / #ffffff08 on both, where 0.7.2 gives the surface colour \
+                 (os-probe run 45252258079, `*.normal.box` `fill`; next_homes.toml, row \
+                 card.background_color, a listed difference); so the refinement's corner radius \
+                 is card.container(NONE)'s, its border width and colour the stroke's where one \
+                 is drawn (card_edge_of), and its background the container's fill; every other \
+                 field of the refinement is equal",
     },
     Difference {
         leaf: "geometry::group_box_content",
@@ -383,13 +400,14 @@ const DIFFERENCES: &[Difference] = &[
                  0.7.2's validation \
                  fills them with transparent, 0 and 0 \
                  (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
-                 0.8.0 ios-13 leaves card.container(NONE).stroke and its corners unstated \
-                 (native-theme/src/next/presets/ios.rs, `card`; native-theme/tests/\
-                 next_homes.toml, rows card.border.color, card.border.line_width and \
-                 card.border.corner_radius, unstated_if_unset), so the 0.8.0 refinement sets \
-                 no border width, no border colour and no corner radius and the group box \
-                 keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); every other \
-                 field of the refinement is equal",
+                 0.8.0 ios-13 states the .insetGrouped cell's measured edge, no line and \
+                 continuous corners of 10, drawn circular (ios-host run 45230061151, the card render, \
+                 docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d; \
+                 native-theme/tests/next_homes.toml, rows card.border.color, \
+                 card.border.line_width and card.border.corner_radius, listed differences), so \
+                 the refinement's corner radius is card.container(NONE)'s and its border 0.7.2's \
+                 width 0 in transparent (card_edge_of); every other field of the refinement is \
+                 equal",
     },
     Difference {
         leaf: "geometry::button_checked",
@@ -422,6 +440,20 @@ const DIFFERENCES: &[Difference] = &[
                  (Expander.xaml:111, Expander_themeresources.xaml:29, :5, :122-165 at \
                  microsoft-ui-xaml 8463f45), so the refinement's background is that fill; it \
                  sets nothing else",
+    },
+    Difference {
+        leaf: "geometry::accordion_hover",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macos-monterey states expander.hover_background #e0e0e5 / #444446, \
+                 uncited, and macos-tahoe states none (the refinement sets no background); the \
+                 0.8.0 presets state no fill, transparent, at rest, hovered and pressed, as \
+                 SwiftUI's DisclosureGroup draws none behind its title (os-probe run \
+                 45214606115, macOS 15 and 26, `switch-label-macos-{15,26}/measure.toml` \
+                 `*.hovered_disclosure_*` `label_changed_from_rest_px` 0, \
+                 docs/evidence/os-probe/2026-11-23-run-45214606115/ on m2-fs4d; \
+                 native-theme/tests/next_homes.toml, row expander.hover_background, a listed \
+                 difference), so the refinement's background is that fill; it sets nothing \
+                 else",
     },
     Difference {
         leaf: "geometry::accordion_hover",
@@ -510,8 +542,10 @@ const DIFFERENCES: &[Difference] = &[
                  whole fill of its state (spec §9, step 2; crate::colors::assign_buttons), and \
                  secondary_hover and secondary_active, the flat button's home \
                  (button.body(HOVER; variant=Flat), button.body(PRESSED; variant=Flat)), which \
-                 the same rules with no variant state, the same two; their tokens and their \
-                 stored config strings; every other leaf of the theme is equal",
+                 the borderless button's rules state with no fill, transparent \
+                 (docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat] absent); their tokens and their stored config strings; every \
+                 other leaf of the theme is equal",
     },
     Difference {
         leaf: "variants::ghost_button",
@@ -519,12 +553,185 @@ const DIFFERENCES: &[Difference] = &[
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
                  secondary_foreground, the flat button's home (button.body(HOVER; \
                  variant=Flat), button.body(PRESSED; variant=Flat)), which the macOS presets' \
-                 button rules with no variant state as the rest fill (hover draws nothing on \
-                 macOS) and the measured pressed fill \
-                 (docs/facts/macos/state-models.toml and docs/facts/macos/button.toml on \
-                 v0.8.0-rc1 at 78ee0efd; os-probe runs 41006842699 and 40969040283), where \
+                 borderless button rules state with no fill, transparent \
+                 (docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat] absent; os-probe runs 41006842699 and 42272240639), where \
                  0.7.2 gives #e0e0e5 / #444446 and its soft option or derived layer; \
                  secondary_foreground is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
+        presets: &["kde-breeze"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 \
+                 kde-breeze states as Breeze's flat button draws it, hovered \
+                 alphaColor(Highlight, 0), nothing, and pressed Highlight at Blend_Value 0.3 \
+                 (breezehelper.cpp:688-691, :679-680 at breeze 6.8.2; \
+                 docs/facts/kde/button.toml on v0.8.0-rc1 at 78ee0efd, row K1.24), where \
+                 0.7.2 gives the push button's hovered and pressed fills to every variant; \
+                 secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["kde-breeze"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 kde-breeze states the flat button's \
+                 own, alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691 at breeze \
+                 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at 78ee0efd, row K1.24), so \
+                 the secondary_hover slot, its token and its stored config string are \
+                 button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["kde-breeze"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 kde-breeze states the flat button's \
+                 own, Highlight at Blend_Value 0.3, a layer (breezehelper.cpp:679-680 at breeze \
+                 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at 78ee0efd, row K1.24), so \
+                 the secondary_active slot, its token and its stored config string are \
+                 button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
+        presets: &["ios-13"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 ios-13 \
+                 states as UIKit's plain button draws it, with no fill, transparent \
+                 (docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat] absent at rest and pressed, iOS host run 41020880059; hovered \
+                 as at rest), where 0.7.2 gives the push button's hovered and pressed fills to \
+                 every variant; secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["ios-13"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 ios-13 states the plain button's \
+                 own, no fill, as at rest (docs/facts/ios/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, `button.body.fill` variants [flat] absent at rest; no hovered plain \
+                 button measured), so the secondary_hover slot, its token and its stored config \
+                 string are button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other \
+                 leaf of the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["ios-13"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 ios-13 states the plain button's \
+                 own, no fill (docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, \
+                 `button.body.fill` states [pressed] variants [flat] absent, iOS host run \
+                 41020880059), so the secondary_active slot, its token and its stored config \
+                 string are button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every \
+                 other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
+        presets: &["adwaita"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 adwaita \
+                 states as libadwaita's .flat button draws it, $hover_color and $active_color, \
+                 the window text at 7 % and 16 % (_buttons.scss:250-256, _colors.scss:268-269 \
+                 at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at \
+                 78ee0efd), where 0.7.2 gives the push button's hovered and pressed fills to \
+                 every variant; secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["adwaita"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 adwaita states the flat button's \
+                 own, $hover_color, the window text at 7 % (_buttons.scss:250-251, \
+                 _colors.scss:268 at libadwaita 1.10.0; docs/facts/gnome/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd), so the secondary_hover slot, its token and its \
+                 stored config string are button.body(HOVER; variant=Flat)'s fill \
+                 (flat_fill_of); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["adwaita"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 adwaita states the flat button's \
+                 own, $active_color, the window text at 16 % (_buttons.scss:255-256, \
+                 _colors.scss:269 at libadwaita 1.10.0; docs/facts/gnome/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd), so the secondary_active slot, its token and its \
+                 stored config string are button.body(PRESSED; variant=Flat)'s fill \
+                 (flat_fill_of); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
+        presets: &["material-3"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 \
+                 material-3 states as M3's text button draws it, the state layer primary at \
+                 the hover and the pressed state layer opacity, 0.08 and 0.12, over no \
+                 container (_md-comp-button-text.scss:45-48, :57-60 at material-web 2.5.0), \
+                 where 0.7.2 gives the push button's hovered and pressed fills to every \
+                 variant; secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["material-3"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 material-3 states the text button's \
+                 own, hovered-state-layer-color primary at hovered-state-layer-opacity 0.08 \
+                 (_md-comp-button-text.scss:45-48 at material-web 2.5.0), so the \
+                 secondary_hover slot, its token and its stored config string are \
+                 button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["material-3"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 material-3 states the text \
+                 button's own, pressed-state-layer-color primary at pressed-state-layer-opacity \
+                 0.12 (_md-comp-button-text.scss:57-60 at material-web 2.5.0), so the \
+                 secondary_active slot, its token and its stored config string are \
+                 button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
+        presets: &["windows-11"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 \
+                 windows-11 states as WinUI's subtle button draws it, hovered \
+                 SubtleFillColorSecondary and pressed SubtleFillColorTertiary \
+                 (Button_themeresources.xaml:18-19 at microsoft-ui-xaml 2.5.1; \
+                 docs/facts/windows/button.toml on v0.8.0-rc1 at 78ee0efd, row W1-021), where \
+                 0.7.2 gives the push button's hovered and pressed fills to every variant; \
+                 secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["windows-11"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 windows-11 states the flat button's \
+                 own, SubtleButtonBackgroundPointerOver = SubtleFillColorSecondary \
+                 (Button_themeresources.xaml:18 at microsoft-ui-xaml 2.5.1; \
+                 docs/facts/windows/button.toml on v0.8.0-rc1 at 78ee0efd, row W1-021), so the \
+                 secondary_hover slot, its token and its stored config string are \
+                 button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["windows-11"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 windows-11 states the flat button's \
+                 own, SubtleButtonBackgroundPressed = SubtleFillColorTertiary \
+                 (Button_themeresources.xaml:19 at microsoft-ui-xaml 2.5.1; \
+                 docs/facts/windows/button.toml on v0.8.0-rc1 at 78ee0efd, row W1-021), so the \
+                 secondary_active slot, its token and its stored config string are \
+                 button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
     },
     Difference {
         leaf: "variants::ghost_button, edge",
@@ -534,19 +741,25 @@ const DIFFERENCES: &[Difference] = &[
             "windows-11",
             "macos-monterey",
             "macos-tahoe",
-            "material-3",
             "ios-13",
         ],
         reason: "0.7.2's ghost variant has no outline (no colour, no rest refinement); \
                  crate::next's edges it with the flat button's hovered stroke, \
                  button.body(HOVER; variant=Flat).stroke.color, where a rule states it for the \
-                 state, and lays it out by next::geometry::ghost_button_rest; no preset states a \
-                 flat rule yet, so the flat query returns the push button's rule (spec §1, \
-                 \"Axis values without data\"), whose hovered stroke every preset states \
-                 (variants::bordered_button's entries; kde-breeze's button.hover_border_color in \
-                 0.7.2 as well): the edge is the push button's hovered outline, \
-                 variants::hover_border's, at the hovered stroke's width inside the push \
-                 button's padding",
+                 state, and lays it out by next::geometry::ghost_button_rest, at that stroke's \
+                 width inside the push button's padding; these presets state it: kde-breeze \
+                 Breeze's flat button's hovered Highlight pen (breezehelper.cpp:688-691, \
+                 :710-712 at breeze 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, row K1.24); adwaita no flat outline of its own, so the push \
+                 button's hovered outline, as at rest (_buttons.scss:28-42 at libadwaita \
+                 1.10.0), stated for HOVER on every variant; windows-11 the subtle button's \
+                 hovered SubtleFillColorSecondary outline (docs/facts/windows/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd, row W1-021); macos-monterey, macos-tahoe and ios-13 no \
+                 outline, a transparent edge of no width (os-probe run 41006842699, \
+                 `*-flat.stroke` and `*-plain.stroke` absent; iOS host run 41020880059, \
+                 `cells.<scheme>.plain.<size>.normal.stroke` absent); material-3 states it as \
+                 none (the flat query matches the push button's HOVER rule, Stroke::None), so \
+                 no edge, as 0.7.2",
     },
     Difference {
         leaf: "geometry::button_checked",
@@ -567,22 +780,74 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "geometry::toolbar_button_checked",
         presets: &["macos-monterey", "macos-tahoe"],
-        reason: "neither model states a toolbar button's checked or pressed fill on the macOS \
-                 presets, so 0.7.2's refinement's fill is the push button's pressed one \
-                 (crate::geometry::toolbar_button_checked), and 0.8.0's gpui-component's own \
-                 selected ghost's, secondary_active (gpui-component 0.10.0 \
-                 button/button.rs:1346; spec §10, rule 0a), which crate::next installs from the \
-                 flat button's pressed fill, button.body(PRESSED; variant=Flat), and the \
-                 presets, stating no flat rule, give the push button's (spec §1, \"Axis values \
-                 without data\"); the 0.8.0 presets state the \
-                 measured pressed fill (docs/facts/macos/button.toml on v0.8.0-rc1 at \
-                 78ee0efd, `button.body.fill` states [pressed]: macos-monterey #f0f0f0 / \
-                 #ffffff5c, os-probe run 41006842699, macOS 15; macos-tahoe #0000002a / \
-                 #ffffff2a, the same run, macOS 26; native-theme/tests/next_homes.toml, row \
-                 button.active_background, a listed difference), where 0.7.2 gives \
-                 macos-monterey's soft option #d6d6db / #4e4e50 and on macos-tahoe none (no \
-                 fill); so the refinement's background is secondary_active, the flat button's \
-                 pressed fill, here button.body(PRESSED)'s; every other field of the \
+        reason: "neither model states a toolbar button's checked fill on the macOS presets, so \
+                 0.7.2's refinement's fill is the push button's pressed one \
+                 (crate::geometry::toolbar_button_checked), macos-monterey's \
+                 button.active_background #d6d6db / #4e4e50 and on macos-tahoe none (no \
+                 fill), and 0.8.0's keeps gpui-component's own selected ghost's treatment, \
+                 secondary_active (gpui-component 0.10.0 button/button.rs:1346; spec §10, \
+                 rules 0 and 0a), which crate::next installs from the flat button's pressed \
+                 fill, button.body(PRESSED; variant=Flat); the 0.8.0 macOS presets state AppKit's \
+                 borderless button's, no fill (os-probe run 41006842699, \
+                 layers-key-styles_b.toml `key.styles_b.aqua.<state>.mini-flat.fill` absent; os-probe \
+                 run 42272240639, layers-key-image_b.toml \
+                 `key.image_b.<appearance>.pressed.regular-flat.fill` absent; \
+                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat]), so a checked tool button shows no fill of its own on either \
+                 preset, light or dark: the refinement's background is transparent, \
+                 secondary_active's; every other field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar_button_checked",
+        presets: &["material-3"],
+        reason: "neither model states a toolbar button's checked fill on material-3, so 0.7.2's \
+                 refinement's fill is the push button's pressed one, button.active_background \
+                 #d0c6df / #5d566b (crate::geometry::toolbar_button_checked), and 0.8.0's keeps \
+                 gpui-component's own selected ghost's treatment, secondary_active \
+                 (gpui-component 0.10.0 button/button.rs:1346; spec §10, rules 0 and 0a), which \
+                 crate::next installs from the flat button's pressed fill, button.body(PRESSED; \
+                 variant=Flat): the 0.8.0 material-3 states M3's text button's, the pressed state \
+                 layer primary at 0.12 over no container, #6750a4 / #d0bcff at alpha 0.12 \
+                 (_md-comp-button-text.scss:57-60 at material-web 2.5.0); every other field of \
+                 the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar_button_checked",
+        presets: &["ios-13"],
+        reason: "neither model states a toolbar button's checked fill on ios-13, so 0.7.2's \
+                 refinement's fill is the push button's pressed one, button.active_background \
+                 #c7c7cc / #48484a (crate::geometry::toolbar_button_checked), and 0.8.0's keeps \
+                 gpui-component's own selected ghost's treatment, secondary_active \
+                 (gpui-component 0.10.0 button/button.rs:1346; spec §10, rules 0 and 0a), which \
+                 crate::next installs from the flat button's pressed fill, button.body(PRESSED; \
+                 variant=Flat): the 0.8.0 ios-13 states UIKit's plain button's, no fill (iOS \
+                 host run 41020880059, `ios-host-macos-15/analysis.toml` \
+                 `cells.<scheme>.plain.<size>.highlighted.fill` absent; \
+                 docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, `button.body.fill` \
+                 variants [flat], rows B-1, B-6), so a checked tool button shows no fill of its \
+                 own, light or dark: the refinement's background is transparent, \
+                 secondary_active's; every other field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar",
+        presets: &["ios-13"],
+        reason: "the 0.8.0 preset states the toolbar's button label, \
+                 toolbar.button_label(NONE).color, in the tint, a plain bar button item's \
+                 colour, #007aff / #0a84ff (docs/facts/ios/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, rows B-1, TB-4; native-theme/tests/next_homes.toml, row \
+                 toolbar.font.color, a listed difference), where 0.7.2 gives the body text, \
+                 #000000 / #ffffff; so the refinement's text colour is the tint; every other \
+                 field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 preset states the real toolbar's measured button label, \
+                 toolbar.button_label(NONE).color, #606060 / #b4b4b4 on macos-monterey, \
+                 #4d4d4d / #e9e9e9 on macos-tahoe (os-probe run 45252258079, Reduce Transparency \
+                 off, `*.normal.toolbar_button` `label`; native-theme/tests/next_homes.toml, row \
+                 toolbar.font.color, a listed difference), where 0.7.2 gives the body text; so \
+                 the refinement's text colour is the label's; every other field of the \
                  refinement is equal",
     },
     Difference {
@@ -668,7 +933,465 @@ const DIFFERENCES: &[Difference] = &[
         reason: "as geometry::select's on each: the combo box trigger's frame is the select's \
                  (crate::geometry::combobox), its border combo_box.field(NONE)'s stroke width",
     },
+    Difference {
+        leaf: "geometry::input",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 edges the text field in the default border width (0.5 px, \
+                 uncited); the 0.8.0 preset states the border WebKit's iOS style sheet gives an \
+                 input, `border: 1px solid -apple-system-secondary-label` (html.css:457-466 at \
+                 WebKit 31adf9d; native-theme/tests/next_homes.toml, rows input.border.color \
+                 and input.border.line_width, listed differences), so the refinement's border \
+                 is input.field(NONE)'s stroke width, 1 px; the refinement carries no border \
+                 colour in either model, and every other field of it is equal",
+    },
+    Difference {
+        leaf: "geometry::text_area",
+        presets: &["ios-13"],
+        reason: "as geometry::input's: WebKit's rule gives a text area the same border \
+                 (html.css:457-466; native-theme/tests/next_homes.toml, rows \
+                 text_area.border.color and text_area.border.line_width, listed differences), \
+                 so the refinement's border is text_area.field(NONE)'s stroke width, 1 px",
+    },
+    Difference {
+        leaf: INPUT_OUTLINE,
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 outlines the text field in the default border colour (the \
+                 separator, #c6c6c8 / #38383a, uncited); the 0.8.0 preset states WebKit's \
+                 `border: 1px solid -apple-system-secondary-label` (html.css:457-466 at WebKit \
+                 31adf9d), secondaryLabel #3c3c4399 / #ebebf599 \
+                 (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, \
+                 :147 at WebKit de320ba; native-theme/tests/next_homes.toml, row \
+                 input.border.color, a listed difference), so the input slot, its token and \
+                 its stored config string are input.field(NONE)'s stroke colour \
+                 (input_outline_of); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: SLIDER_THUMB,
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
+                 defaults.surface_color, #f2f2f7 / #1c1c1e; the 0.8.0 preset states UISlider's \
+                 thumb as measured, white in both schemes (ios-host run 45230061151, iOS 18.6, \
+                 `measure_lists.toml` `press1.\"<a>\".slider.normal` `fill` #ffffffff, \
+                 docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_color, a listed \
+                 difference), so the slider_thumb slot, its token and its stored config string \
+                 are slider.thumb(NONE)'s fill (slider_thumb_of); every other leaf of the theme \
+                 is equal",
+    },
+    Difference {
+        leaf: TAB_FILL,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS presets give an unselected tab the window's background \
+                 (uncited); the 0.8.0 presets state NSTabView's measured unselected tab, \
+                 #0000000d / #ffffff0d on macos-monterey, #00000013 / #ffffff13 on macos-tahoe \
+                 (os-probe run 45252258079, Reduce Transparency off, `*.normal.tab` `fill`, \
+                 docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row tab.background_color, a listed \
+                 difference), so the tab slot, its token and its stored config string are \
+                 tab.tab(NONE)'s fill; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: TAB_ACTIVE,
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe gives a selected tab the window's background (uncited); \
+                 the 0.8.0 preset states NSTabView's measured selected tab on macOS 26, on the \
+                 accent, #0077f9 / #077dff (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.tab_One` `fill`; native-theme/tests/next_homes.toml, row \
+                 tab.active_background, a listed difference), so the tab_active slot, its token \
+                 and its stored config string are tab.tab(SELECTED)'s fill; every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: TAB_ACTIVE,
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey gives a selected tab the window's background \
+                 (uncited); the 0.8.0 preset states NSTabView's measured selected tab on macOS \
+                 15, #ffffff / #ffffff49 (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.tab_One` `fill`; native-theme/tests/next_homes.toml, row \
+                 tab.active_background, a listed difference), so the tab_active slot, its token \
+                 and its stored config string are tab.tab(SELECTED)'s fill; every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: TAB_ACTIVE_TEXT,
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey letters a selected tab in the body text (uncited); the \
+                 0.8.0 preset states it as macOS 15 draws it, #262626 / #ffffffd9 (os-probe run \
+                 45252258079, `*.normal.tab_One` `label`; native-theme/tests/next_homes.toml, \
+                 row tab.active_text_color, a listed difference), so the \
+                 tab_active_foreground slot, its token and its stored config string are \
+                 tab.label(SELECTED)'s colour; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: TAB_ACTIVE_TEXT,
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe letters a selected tab in the body text (uncited); the \
+                 0.8.0 preset states it white on the accent, as macOS 26 draws it (os-probe run \
+                 45252258079, `*.normal.tab_One` `label`; native-theme/tests/next_homes.toml, \
+                 row tab.active_text_color, a listed difference), so the \
+                 tab_active_foreground slot, its token and its stored config string are \
+                 tab.label(SELECTED)'s colour; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: SCROLLBAR_THUMB_HOVER,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's hovered thumb is #60606080 / #a0a0a080 on macos-monterey and the \
+                 muted text on macos-tahoe; the 0.8.0 presets state the measured overlay knob \
+                 hovered, #6a6a6adf / #f8f8f893 on macOS 15, #00000085 / #ffffff91 on macOS 26 \
+                 (os-probe run 45252258079, `*.hovered.scroller_knob_overlay` `fill`; \
+                 native-theme/tests/next_homes.toml, row scrollbar.thumb_hover_color, a listed \
+                 difference), so the scrollbar_thumb_hover slot, its token and its stored config \
+                 string are scrollbar.thumb(HOVER)'s fill; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: SCROLLBAR_THUMB_STATES,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 presets state the measured overlay knob hovered and held alike \
+                 (os-probe run 45252258079, `*.hovered.scroller_knob_overlay`, \
+                 `*.pressed.scroller_knob_overlay` `fill`; native-theme/tests/next_homes.toml, \
+                 rows scrollbar.thumb_hover_color and scrollbar.thumb_active_color, listed \
+                 differences), where 0.7.2 gives #60606080 / #a0a0a080 and #50505090 / \
+                 #b0b0b090 on macos-monterey and the muted text on macos-tahoe; so the \
+                 geometry's thumb_hover and thumb_active are the fills of scrollbar.thumb(HOVER) \
+                 and scrollbar.thumb(PRESSED), in the compared ScrollbarGeometry and in the base \
+                 overrides alike",
+    },
+    Difference {
+        leaf: SIDEBAR_TEXT,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's sidebar text is labelColor; the 0.8.0 presets state the source-list \
+                 row's measured rest label over the material's Reduce Transparency rendering, \
+                 #494949 / #ebebeb on macos-monterey, #000000 / #ffffff on macos-tahoe \
+                 (os-probe run 45231684209, Reduce Transparency on, \
+                 `*.normal.source_list_row` `label`; native-theme/tests/next_homes.toml, row \
+                 sidebar.font.color, a listed difference), so the sidebar_foreground slot, its \
+                 token and its stored config string are sidebar.item_label(NONE)'s colour; \
+                 every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::toolbar_button",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS toolbar states no button fill; the 0.8.0 presets state the real \
+                 toolbar's measured hovered and pressed button, macos-monterey #dfdfdf / \
+                 #414141 and #d2d2d2 / #4e4e4e, macos-tahoe #f2f2f2 / #393939 and #e6e6e6 / \
+                 #484848 (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.hovered.toolbar_button`, `*.pressed.toolbar_button` `fill`; \
+                 native-theme/tests/next_homes.toml, rows toolbar.button_hover_background and \
+                 toolbar.button_active_background, listed differences), so the states' hover \
+                 and active are toolbar.button(HOVER)'s and toolbar.button(PRESSED)'s fills; \
+                 the hovered outline is equal",
+    },
 ];
+
+/// The leaf of [`DIFFERENCES`]' entry for an unselected tab's fill: the
+/// `ThemeColor` slot `tab`, its token and its stored config string, compared
+/// by [`slot_as_old`] ([`STATED_SLOTS`]).
+const TAB_FILL: &str = "to_theme: tab";
+
+/// The leaf of [`DIFFERENCES`]' entry for a selected tab's fill: the
+/// `ThemeColor` slot `tab_active`, its token and its stored config string.
+const TAB_ACTIVE: &str = "to_theme: tab_active";
+
+/// The leaf of [`DIFFERENCES`]' entry for a selected tab's label: the
+/// `ThemeColor` slot `tab_active_foreground`, its token and its stored config
+/// string.
+const TAB_ACTIVE_TEXT: &str = "to_theme: tab_active_foreground";
+
+/// The leaf of [`DIFFERENCES`]' entry for the sidebar's fill: the
+/// `ThemeColor` slot `sidebar`, its token and its stored config string.
+const SIDEBAR_FILL: &str = "to_theme: sidebar";
+
+/// The leaf of [`DIFFERENCES`]' entry for the sidebar's text: the
+/// `ThemeColor` slot `sidebar_foreground`, its token and its stored config
+/// string.
+const SIDEBAR_TEXT: &str = "to_theme: sidebar_foreground";
+
+/// The leaf of [`DIFFERENCES`]' entry for the text field's outline: the
+/// `ThemeColor` slot `input`, its token and its stored config string,
+/// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const INPUT_OUTLINE: &str = "to_theme: input";
+
+/// The leaf of [`DIFFERENCES`]' entry for the slider's thumb: the
+/// `ThemeColor` slot `slider_thumb`, its token and its stored config string,
+/// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const SLIDER_THUMB: &str = "to_theme: slider_thumb";
+
+/// The leaf of [`DIFFERENCES`]' entry for the hovered scroll bar thumb: the
+/// `ThemeColor` slot `scrollbar_thumb_hover`, its token and its stored
+/// config string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const SCROLLBAR_THUMB_HOVER: &str = "to_theme: scrollbar_thumb_hover";
+
+/// The leaf of [`DIFFERENCES`]' entry for the scroll bar's hovered and
+/// dragged thumb: `ScrollbarGeometry`'s `thumb_hover` and `thumb_active`,
+/// compared by [`thumb_states_of`], in the compared geometry and in the
+/// base overrides alike.
+const SCROLLBAR_THUMB_STATES: &str = "ScrollbarGeometry: the hovered and the dragged thumb";
+
+/// The scroll bar thumb's fills the theme states for HOVER and PRESSED, the
+/// form of [`SCROLLBAR_THUMB_STATES`]' entries; `None` where either is
+/// unstated.
+fn thumb_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
+    use native_theme::next::WidgetState;
+    Some((
+        super::state_fill_of(&new.scrollbar.thumb(WidgetState::HOVER))?,
+        super::state_fill_of(&new.scrollbar.thumb(WidgetState::PRESSED))?,
+    ))
+}
+
+/// The text field's outline as the connector reads it for the `input` slot
+/// (`to_theme`): `input.field(NONE)`'s stroke colour, the form of
+/// [`INPUT_OUTLINE`]'s entries; `None` where it is unstated.
+fn input_outline_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    let field = new.input.field(native_theme::next::WidgetState::NONE);
+    super::stroke_color(&field, "input.field(NONE).stroke.color").ok()
+}
+
+/// The leaf of [`DIFFERENCES`]' entries for the flat button's hovered fill:
+/// the `ThemeColor` slot `secondary_hover`, its token and its stored config
+/// string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const FLAT_HOVER: &str = "to_theme: secondary_hover";
+
+/// The leaf of [`DIFFERENCES`]' entries for the flat button's pressed fill:
+/// the `ThemeColor` slot `secondary_active`, its token and its stored
+/// config string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const FLAT_PRESSED: &str = "to_theme: secondary_active";
+
+/// The flat button's fill of `state` as the connector reads it for
+/// `secondary_hover` and `secondary_active` (`super::flat_button_states`):
+/// `button.body(<state>; variant=Flat)`'s fill where a rule states it for
+/// the state; `None` where none does.
+fn flat_fill_of(
+    new: &native_theme::next::ResolvedTheme,
+    state: native_theme::next::WidgetState,
+) -> Option<Hsla> {
+    let flat = native_theme::next::ButtonQuery::flat();
+    super::state_fill_of(&new.button.body(flat.state(state)))
+}
+
+/// The flat button's hovered and pressed fills ([`flat_fill_of`]), which
+/// `variants::ghost_button` reads; `None` where either is unstated.
+fn flat_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
+    use native_theme::next::WidgetState;
+    Some((
+        flat_fill_of(new, WidgetState::HOVER)?,
+        flat_fill_of(new, WidgetState::PRESSED)?,
+    ))
+}
+
+/// The slider's thumb as the connector reads it for the `slider_thumb` slot
+/// (`next::colors`): `slider.thumb(NONE)`'s fill, the form of
+/// [`SLIDER_THUMB`]'s entries; `None` where it is unstated.
+fn slider_thumb_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    let thumb = new.slider.thumb(native_theme::next::WidgetState::NONE);
+    super::fill(&thumb, "slider.thumb(NONE).fill").ok()
+}
+
+/// A `ThemeColor` slot whose listed difference is the colour the connector
+/// reads at one home of the preset, compared by [`slot_as_old`]: the leaf of
+/// its entries, what its failure names, that colour, and the slot's colour,
+/// token and stored config string, read and copied.
+struct StatedSlot {
+    leaf: &'static str,
+    what: &'static str,
+    of: fn(&native_theme::next::ResolvedTheme) -> Option<Hsla>,
+    color: fn(&ThemeColor) -> Hsla,
+    token: fn(&ThemeTokens) -> ThemeToken,
+    config: fn(&ThemeConfigColors) -> Option<SharedString>,
+    /// Copies the slot's colour and token of the second theme into the first.
+    copy: fn(&mut GpuiTheme, &GpuiTheme),
+    /// Copies the slot's stored config string of the second into the first.
+    copy_config: fn(&mut ThemeConfigColors, &ThemeConfigColors),
+}
+
+/// The slots [`DIFFERENCES`] lists as a colour stated at one home.
+const STATED_SLOTS: &[StatedSlot] = &[
+    StatedSlot {
+        leaf: SCROLLBAR_THUMB_HOVER,
+        what: "the hovered scroll bar thumb's stated fill",
+        of: |new| {
+            super::state_fill_of(&new.scrollbar.thumb(native_theme::next::WidgetState::HOVER))
+        },
+        color: |c| c.scrollbar_thumb_hover,
+        token: |t| t.scrollbar_thumb_hover,
+        config: |c| c.scrollbar_thumb_hover.clone(),
+        copy: |theme, from| {
+            theme.colors.scrollbar_thumb_hover = from.colors.scrollbar_thumb_hover;
+            theme.tokens.scrollbar_thumb_hover = from.tokens.scrollbar_thumb_hover;
+        },
+        copy_config: |config, from| {
+            config.scrollbar_thumb_hover = from.scrollbar_thumb_hover.clone();
+        },
+    },
+    StatedSlot {
+        leaf: INPUT_OUTLINE,
+        what: "the text field's stated outline",
+        of: input_outline_of,
+        color: |c| c.input,
+        token: |t| t.input,
+        config: |c| c.input.clone(),
+        copy: |theme, from| {
+            theme.colors.input = from.colors.input;
+            theme.tokens.input = from.tokens.input;
+        },
+        copy_config: |config, from| config.input = from.input.clone(),
+    },
+    StatedSlot {
+        leaf: SLIDER_THUMB,
+        what: "the slider thumb's stated fill",
+        of: slider_thumb_of,
+        color: |c| c.slider_thumb,
+        token: |t| t.slider_thumb,
+        config: |c| c.slider_thumb.clone(),
+        copy: |theme, from| {
+            theme.colors.slider_thumb = from.colors.slider_thumb;
+            theme.tokens.slider_thumb = from.tokens.slider_thumb;
+        },
+        copy_config: |config, from| config.slider_thumb = from.slider_thumb.clone(),
+    },
+    StatedSlot {
+        leaf: FLAT_HOVER,
+        what: "the flat button's stated hovered fill",
+        of: |new| flat_fill_of(new, native_theme::next::WidgetState::HOVER),
+        color: |c| c.secondary_hover,
+        token: |t| t.secondary_hover,
+        config: |c| c.secondary_hover.clone(),
+        copy: |theme, from| {
+            theme.colors.secondary_hover = from.colors.secondary_hover;
+            theme.tokens.secondary_hover = from.tokens.secondary_hover;
+        },
+        copy_config: |config, from| config.secondary_hover = from.secondary_hover.clone(),
+    },
+    StatedSlot {
+        leaf: FLAT_PRESSED,
+        what: "the flat button's stated pressed fill",
+        of: |new| flat_fill_of(new, native_theme::next::WidgetState::PRESSED),
+        color: |c| c.secondary_active,
+        token: |t| t.secondary_active,
+        config: |c| c.secondary_active.clone(),
+        copy: |theme, from| {
+            theme.colors.secondary_active = from.colors.secondary_active;
+            theme.tokens.secondary_active = from.tokens.secondary_active;
+        },
+        copy_config: |config, from| config.secondary_active = from.secondary_active.clone(),
+    },
+    StatedSlot {
+        leaf: TAB_FILL,
+        what: "the unselected tab's stated fill",
+        of: |new| super::fill_of(&new.tab.tab(native_theme::next::WidgetState::NONE)),
+        color: |c| c.tab,
+        token: |t| t.tab,
+        config: |c| c.tab.clone(),
+        copy: |theme, from| {
+            theme.colors.tab = from.colors.tab;
+            theme.tokens.tab = from.tokens.tab;
+        },
+        copy_config: |config, from| config.tab = from.tab.clone(),
+    },
+    StatedSlot {
+        leaf: TAB_ACTIVE,
+        what: "the selected tab's stated fill",
+        of: |new| super::fill_of(&new.tab.tab(native_theme::next::WidgetState::SELECTED)),
+        color: |c| c.tab_active,
+        token: |t| t.tab_active,
+        config: |c| c.tab_active.clone(),
+        copy: |theme, from| {
+            theme.colors.tab_active = from.colors.tab_active;
+            theme.tokens.tab_active = from.tokens.tab_active;
+        },
+        copy_config: |config, from| config.tab_active = from.tab_active.clone(),
+    },
+    StatedSlot {
+        leaf: TAB_ACTIVE_TEXT,
+        what: "the selected tab's stated label",
+        of: |new| super::text_color_of(&new.tab.label(native_theme::next::WidgetState::SELECTED)),
+        color: |c| c.tab_active_foreground,
+        token: |t| t.tab_active_foreground,
+        config: |c| c.tab_active_foreground.clone(),
+        copy: |theme, from| {
+            theme.colors.tab_active_foreground = from.colors.tab_active_foreground;
+            theme.tokens.tab_active_foreground = from.tokens.tab_active_foreground;
+        },
+        copy_config: |config, from| {
+            config.tab_active_foreground = from.tab_active_foreground.clone();
+        },
+    },
+    StatedSlot {
+        leaf: SIDEBAR_FILL,
+        what: "the sidebar's stated fill",
+        of: |new| super::fill_of(&new.sidebar.container(native_theme::next::WidgetState::NONE)),
+        color: |c| c.sidebar,
+        token: |t| t.sidebar,
+        config: |c| c.sidebar.clone(),
+        copy: |theme, from| {
+            theme.colors.sidebar = from.colors.sidebar;
+            theme.tokens.sidebar = from.tokens.sidebar;
+        },
+        copy_config: |config, from| config.sidebar = from.sidebar.clone(),
+    },
+    StatedSlot {
+        leaf: SIDEBAR_TEXT,
+        what: "the sidebar's stated text",
+        of: |new| {
+            super::text_color_of(
+                &new.sidebar
+                    .item_label(native_theme::next::WidgetState::NONE),
+            )
+        },
+        color: |c| c.sidebar_foreground,
+        token: |t| t.sidebar_foreground,
+        config: |c| c.sidebar_foreground.clone(),
+        copy: |theme, from| {
+            theme.colors.sidebar_foreground = from.colors.sidebar_foreground;
+            theme.tokens.sidebar_foreground = from.tokens.sidebar_foreground;
+        },
+        copy_config: |config, from| {
+            config.sidebar_foreground = from.sidebar_foreground.clone();
+        },
+    },
+];
+
+/// `theme` with its `slot` as `from`'s, where `theme` holds the colour the
+/// preset states, `stated`, light then dark (the slot's `of`): the colour
+/// and the token of the theme's mode, and the stored config string of each
+/// scheme whose `stated` is given; the colours compared by their hex
+/// strings, as an upstream rebuild of the theme from its stored config
+/// (`Theme::change`) round-trips them. `None` where `theme` does not hold
+/// it, or where it is `from`'s, the listed difference then describing
+/// nothing.
+fn slot_as_old(
+    theme: &GpuiTheme,
+    from: &GpuiTheme,
+    stated: [Option<Hsla>; 2],
+    slot: &StatedSlot,
+) -> Option<GpuiTheme> {
+    let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
+    let [light, dark] = stated;
+    let own = if theme.is_dark() { dark } else { light }?;
+    let color = (slot.color)(&theme.colors);
+    if hex(color) != hex(own)
+        || hex((slot.color)(&from.colors)) == hex(own)
+        || (slot.token)(&theme.tokens) != ThemeToken::from(color)
+    {
+        return None;
+    }
+    let mut patched = theme.clone();
+    (slot.copy)(&mut patched, from);
+    for (config, source, stated) in [
+        (&mut patched.light_theme, &from.light_theme, light),
+        (&mut patched.dark_theme, &from.dark_theme, dark),
+    ] {
+        let Some(stated) = stated else {
+            continue;
+        };
+        if (slot.config)(&config.colors) != hex(stated) {
+            return None;
+        }
+        let mut stored = (**config).clone();
+        (slot.copy_config)(&mut stored.colors, &source.colors);
+        *config = std::rc::Rc::new(stored);
+    }
+    Some(patched)
+}
 
 /// The leaf of [`DIFFERENCES`]' entries for the splitter's resize handles:
 /// `ResizableTheme`'s `handle` and `active_handle`, compared by
@@ -712,7 +1435,11 @@ const UNSTROKED_HOVER: &[&str] = &["material-3"];
 
 /// The presets of [`DIFFERENCES`]' `geometry::accordion_hover` entries on
 /// which 0.7.2 states an expander hover fill the 0.8.0 preset replaces.
-const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3"];
+const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3", "macos-monterey"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
+/// whose card fill is the measured box's, `card.container(NONE).fill`.
+const MEASURED_CARD_FILL: &[&str] = &["macos-monterey", "macos-tahoe"];
 
 /// The leaf of [`DIFFERENCES`]' entry for the push button's and the flat
 /// button's hovered and pressed fills: the `ThemeColor` slots of
@@ -868,9 +1595,53 @@ fn button_states_as(
     Some(patched)
 }
 
-/// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
-/// whose card leaves its corners unstated beside its stroke.
-const UNSTATED_CARD_CORNERS: &[&str] = &["macos-monterey", "macos-tahoe", "ios-13"];
+/// The card's edge as `geometry::group_box_content`'s entries in
+/// [`DIFFERENCES`] describe it: `card.container(NONE)`'s uniform corner
+/// radius, on either curve, as gpui draws a continuous one circular
+/// ([`super::radius_of`], spec §10 rule 2), and its uniform stroke's width
+/// and colour where it draws one (`None` for a stroke stated as none, which
+/// leaves 0.7.2's width 0 in transparent); `None` where the theme states
+/// either otherwise.
+fn card_edge_of(new: &native_theme::next::ResolvedTheme) -> Option<(f32, Option<(f32, Hsla)>)> {
+    use native_theme::next::{CornerRadius, PartStated, Stroke, WidgetState};
+    let c = new.card.container(WidgetState::NONE);
+    if !c.stated.contains(PartStated::STROKE) || !c.stated.contains(PartStated::CORNERS) {
+        return None;
+    }
+    let radius = match c.corners.radius {
+        CornerRadius::Uniform(r) => r,
+        _ => return None,
+    };
+    let border = match c.stroke {
+        Stroke::None => None,
+        Stroke::Uniform { width, color, .. } => Some((width, super::hsla(color))),
+        _ => return None,
+    };
+    Some((radius, border))
+}
+
+/// The popover panel's radius, `popover.panel.corners`, where the theme
+/// states one circular radius for every corner: the form of
+/// `geometry::popover`'s entry in [`DIFFERENCES`]; `None` otherwise.
+fn popover_radius_of(new: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    use native_theme::next::{CornerCurve, CornerRadius, PartStated};
+    let panel = &new.popover.panel;
+    if !panel.stated.contains(PartStated::CORNERS) {
+        return None;
+    }
+    match (panel.corners.radius, panel.corners.curve) {
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+        _ => None,
+    }
+}
+
+/// A hovered list row's fill where a rule states it for `HOVER`,
+/// `list.highlight(HOVER).fill` as the connector reads a state's fill
+/// ([`super::state_fill_of`]): the form of [`ROW_HOVER`]'s entries on a
+/// preset that states it; `None` where none does, gpui-component's own then.
+fn row_hover_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    super::state_fill_of(&new.list.highlight(native_theme::next::WidgetState::HOVER))
+}
 
 /// The leaf of [`DIFFERENCES`]' entry for a hovered list or table row: the
 /// `ThemeColor` slots `list_hover` and `table_hover`, their tokens and their
@@ -879,18 +1650,21 @@ const ROW_HOVER: &str = "to_theme: list_hover and table_hover";
 
 /// `theme` with its hovered list and table row as 0.7.2 paints them where
 /// the preset states no hover, the list's own fill (colour, token and the
-/// stored config's string of the theme's mode), where `theme` holds
-/// gpui-component's own hovered row there, its accent at
+/// stored config's string of the theme's mode), where `theme` holds the
+/// hovered row the preset states, `stated` ([`row_hover_of`]), or where that
+/// is `None` gpui-component's own, its accent at
 /// [`super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY`] ([`DIFFERENCES`]'
 /// [`ROW_HOVER`] entry); `None` where it does not. The colours are compared
 /// by their hex strings, which an upstream rebuild of the theme from its
 /// stored config (`Theme::change`) round-trips them through.
-fn row_hover_as_list(theme: &GpuiTheme) -> Option<GpuiTheme> {
+fn row_hover_as_list(theme: &GpuiTheme, stated: Option<Hsla>) -> Option<GpuiTheme> {
     let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
-    let own = hex(theme
-        .colors
-        .accent
-        .opacity(super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY));
+    let own = hex(stated.unwrap_or_else(|| {
+        theme
+            .colors
+            .accent
+            .opacity(super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY)
+    }));
     let config = if theme.is_dark() {
         &theme.dark_theme
     } else {
@@ -1102,7 +1876,7 @@ fn compare_theme(
     let new_theme = match report.listed(ROW_HOVER) {
         Some(listed) => {
             report.count(ROW_HOVER);
-            match row_hover_as_list(&new_theme) {
+            match row_hover_as_list(&new_theme, row_hover_of(new)) {
                 Some(patched) => patched,
                 None => {
                     report.failures.push(format!(
@@ -1155,6 +1929,32 @@ fn compare_theme(
         }
         None => new_theme,
     };
+    let mut new_theme = new_theme;
+    for slot in STATED_SLOTS {
+        let Some(listed) = report.listed(slot.leaf) else {
+            continue;
+        };
+        report.count(slot.leaf);
+        let stated = (slot.of)(new);
+        let stated = if is_dark {
+            [None, stated]
+        } else {
+            [stated, None]
+        };
+        if let Some(patched) = slot_as_old(&new_theme, &old_theme, stated, slot) {
+            new_theme = patched;
+        } else {
+            report.failures.push(format!(
+                "{}: {}: the listed difference ({}) no longer describes it: 0.7.2 {:?}, 0.8.0 \
+                 {:?}",
+                report.label,
+                slot.leaf,
+                listed.reason,
+                (slot.color)(&old_theme.colors),
+                (slot.color)(&new_theme.colors)
+            ));
+        }
+    }
     let failures = report.failures.len();
     let config = |t: &GpuiTheme, own: bool| {
         if is_dark == own {
@@ -1221,10 +2021,8 @@ fn compare_theme(
     match report.listed(ghost_button) {
         Some(listed) => {
             report.count(ghost_button);
-            let stated = button_states_of(new).map(|s| {
-                let (hover, pressed) = s.flat;
-                (o.colors.secondary_foreground, hover, pressed)
-            });
+            let stated = flat_states_of(new)
+                .map(|(hover, pressed)| (o.colors.secondary_foreground, hover, pressed));
             if stated != Some(new_ghost) {
                 report.failures.push(format!(
                     "{}: {ghost_button}: the listed difference ({}) no longer describes it: \
@@ -1364,16 +2162,38 @@ fn compare_scrollbar(
         n.track_active_border,
     );
     report.leaf("ScrollbarGeometry.thumb", o.thumb, n.thumb);
-    report.leaf(
-        "ScrollbarGeometry.thumb_hover",
-        o.thumb_hover,
-        n.thumb_hover,
-    );
-    report.leaf(
-        "ScrollbarGeometry.thumb_active",
-        o.thumb_active,
-        n.thumb_active,
-    );
+    match report.listed(SCROLLBAR_THUMB_STATES) {
+        Some(listed) => {
+            report.count(SCROLLBAR_THUMB_STATES);
+            if o.thumb_hover == n.thumb_hover
+                || o.thumb_active == n.thumb_active
+                || thumb_states_of(new) != Some((n.thumb_hover, n.thumb_active))
+            {
+                report.failures.push(format!(
+                    "{}: {SCROLLBAR_THUMB_STATES}: the listed difference ({}) no longer \
+                     describes it: 0.7.2 {:?} {:?}, 0.8.0 {:?} {:?}",
+                    report.label,
+                    listed.reason,
+                    o.thumb_hover,
+                    o.thumb_active,
+                    n.thumb_hover,
+                    n.thumb_active
+                ));
+            }
+        }
+        None => {
+            report.leaf(
+                "ScrollbarGeometry.thumb_hover",
+                o.thumb_hover,
+                n.thumb_hover,
+            );
+            report.leaf(
+                "ScrollbarGeometry.thumb_active",
+                o.thumb_active,
+                n.thumb_active,
+            );
+        }
+    }
 }
 
 /// Compare a leaf's two values, the 0.8.0 one where mapped.
@@ -1388,16 +2208,19 @@ fn compare_mapped<T: PartialEq + Debug>(
     }
 }
 
-/// Compare a combo box trigger's refinement, `geometry::select` or
-/// `geometry::combobox`: where [`DIFFERENCES`] lists `leaf` for the preset,
-/// 0.7.2's refinement with its border widths as `combo_box.field(NONE)`'s
-/// stroke width gives them, the widths differing from 0.7.2's.
-fn compare_combo_trigger(
+/// Compare a field's framed refinement, `geometry::select`,
+/// `geometry::combobox` (the frame `combo_box.field(NONE)`), `geometry::input`
+/// or `geometry::text_area` (`input.field(NONE)`, `text_area.field(NONE)`):
+/// where [`DIFFERENCES`] lists `leaf` for the preset, 0.7.2's refinement with
+/// its border widths as the frame's stroke width at `width_home` gives them,
+/// the widths differing from 0.7.2's.
+fn compare_field_frame(
     report: &mut Report,
     leaf: &'static str,
     o: gpui::StyleRefinement,
     new_refinement: super::Mapped<gpui::StyleRefinement>,
-    new: &native_theme::next::ResolvedTheme,
+    field: &native_theme::next::PartStyle,
+    width_home: &'static str,
 ) {
     let Some(n) = report.mapped(leaf, new_refinement) else {
         return;
@@ -1405,16 +2228,12 @@ fn compare_combo_trigger(
     match report.listed(leaf) {
         Some(listed) => {
             use gpui::Styled as _;
-            use native_theme::next::WidgetState;
             report.count(leaf);
-            let field = new.combo_box.field(WidgetState::NONE);
-            let stated = super::stroke_width(&field, "combo_box.field(NONE).stroke.width")
-                .ok()
-                .map(|width| {
-                    gpui::StyleRefinement::default()
-                        .border(px(width))
-                        .border_widths
-                });
+            let stated = super::stroke_width(field, width_home).ok().map(|width| {
+                gpui::StyleRefinement::default()
+                    .border(px(width))
+                    .border_widths
+            });
             let mut corrected = o.clone();
             corrected.border_widths = n.border_widths.clone();
             if o.border_widths == n.border_widths
@@ -1636,27 +2455,68 @@ fn compare_builders(
     builder!(report, old, new, scrollbar_gutter);
     builder!(report, old, new, input_group_button);
     builder!(report, old, new, editor);
-    builder!(report, old, new, input);
-    builder!(report, old, new, text_area);
+    let none = native_theme::next::WidgetState::NONE;
+    compare_field_frame(
+        report,
+        "geometry::input",
+        crate::geometry::input(Native::unscaled(old)),
+        super::builders::input(new),
+        &new.input.field(none),
+        "input.field(NONE).stroke.width",
+    );
+    compare_field_frame(
+        report,
+        "geometry::text_area",
+        crate::geometry::text_area(Native::unscaled(old)),
+        super::builders::text_area(new),
+        &new.text_area.field(none),
+        "text_area.field(NONE).stroke.width",
+    );
     builder!(report, old, new, input_height);
-    compare_combo_trigger(
+    let combo_box = new.combo_box.field(none);
+    compare_field_frame(
         report,
         "geometry::select",
         crate::geometry::select(Native::unscaled(old)),
         super::builders::select(new),
-        new,
+        &combo_box,
+        "combo_box.field(NONE).stroke.width",
     );
-    compare_combo_trigger(
+    compare_field_frame(
         report,
         "geometry::combobox",
         crate::geometry::combobox(Native::unscaled(old)),
         super::builders::combobox(new),
-        new,
+        &combo_box,
+        "combo_box.field(NONE).stroke.width",
     );
     fill_builder!(report, old, new, input_fill);
     fill_builder!(report, old, new, combo_box_fill);
     builder!(report, old, new, menu_item);
-    builder!(report, old, new, popover);
+    let popover = "geometry::popover";
+    match report.listed(popover) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(popover, super::builders::popover(new)) {
+                report.count(popover);
+                let o = crate::geometry::popover(Native::unscaled(old));
+                let expected = popover_radius_of(new).map(|radius| {
+                    let mut e = o.clone();
+                    e.corner_radii =
+                        gpui::Styled::rounded(gpui::StyleRefinement::default(), px(radius))
+                            .corner_radii;
+                    e
+                });
+                if expected.as_ref() == Some(&o) || expected != Some(n.clone()) {
+                    report.failures.push(format!(
+                        "{}: {popover}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, popover),
+    }
     let dialog = "geometry::dialog";
     match report.listed(dialog) {
         Some(listed) => {
@@ -1696,20 +2556,29 @@ fn compare_builders(
             if let Some(n) = report.mapped(group_box, super::builders::group_box_content(new)) {
                 report.count(group_box);
                 let o = crate::geometry::group_box_content(Native::unscaled(old));
-                let mut corrected = o.clone();
-                corrected.border_widths = Default::default();
-                corrected.border_color = None;
-                let mut invented = o.border_widths.top == Some(px(0.0).into())
+                let invented = o.border_widths.top == Some(px(0.0).into())
                     && o.border_color == Some(Hsla::transparent_black());
-                if UNSTATED_CARD_CORNERS.contains(&report.preset) {
+                let expected = card_edge_of(new).map(|(radius, border)| {
                     use gpui::Styled as _;
-                    corrected.corner_radii = Default::default();
-                    invented &= o.corner_radii
-                        == gpui::StyleRefinement::default()
-                            .rounded(px(0.0))
-                            .corner_radii;
-                }
-                if !invented || corrected != n {
+                    let mut e = o.clone();
+                    e.corner_radii = gpui::StyleRefinement::default()
+                        .rounded(px(radius))
+                        .corner_radii;
+                    if let Some((width, color)) = border {
+                        let s = gpui::StyleRefinement::default()
+                            .border(px(width))
+                            .border_color(color);
+                        e.border_widths = s.border_widths;
+                        e.border_color = s.border_color;
+                    }
+                    if MEASURED_CARD_FILL.contains(&report.preset) {
+                        use native_theme::next::WidgetState;
+                        e.background = super::fill_of(&new.card.container(WidgetState::NONE))
+                            .and_then(|fill| gpui::StyleRefinement::default().bg(fill).background);
+                    }
+                    e
+                });
+                if !invented || expected.as_ref() == Some(&o) || expected != Some(n.clone()) {
                     report.failures.push(format!(
                         "{}: {group_box}: the listed difference ({}) no longer describes \
                          it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -1762,7 +2631,31 @@ fn compare_builders(
         crate::geometry::title_bar_inactive(Native::unscaled(old)),
         super::builders::title_bar_inactive(new, inactive),
     );
-    builder!(report, old, new, toolbar);
+    let toolbar = "geometry::toolbar";
+    match report.listed(toolbar) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(toolbar, super::builders::toolbar(new)) {
+                use native_theme::next::{TextStated, WidgetState};
+                report.count(toolbar);
+                let o = crate::geometry::toolbar(Native::unscaled(old));
+                let label = new.toolbar.button_label(WidgetState::NONE);
+                let stated = label
+                    .stated
+                    .contains(TextStated::COLOR)
+                    .then(|| super::hsla(label.color));
+                let mut corrected = o.clone();
+                corrected.text.color = n.text.color;
+                if stated.is_none() || n.text.color != stated || corrected != n || o == n {
+                    report.failures.push(format!(
+                        "{}: {toolbar}: the listed difference ({}) no longer describes it: \
+                         0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, toolbar),
+    }
     builder!(report, old, new, icon_size_toolbar);
     builder!(report, old, new, toolbar_button_rest);
     let toolbar_checked = "geometry::toolbar_button_checked";
@@ -1795,12 +2688,37 @@ fn compare_builders(
         }
         None => builder!(report, old, new, toolbar_button_checked),
     }
-    compare_mapped(
-        report,
-        "variants::toolbar_button",
-        crate::variants::toolbar_button_states(Native::unscaled(old)),
-        super::builders::toolbar_button_states(new),
-    );
+    let toolbar_states = "variants::toolbar_button";
+    let o = crate::variants::toolbar_button_states(Native::unscaled(old));
+    match report.listed(toolbar_states) {
+        Some(listed) => {
+            if let Some(n) =
+                report.mapped(toolbar_states, super::builders::toolbar_button_states(new))
+            {
+                use native_theme::next::WidgetState;
+                report.count(toolbar_states);
+                let t = &new.toolbar;
+                let hover = super::state_fill_of(&t.button(WidgetState::HOVER));
+                let active = super::state_fill_of(&t.button(WidgetState::PRESSED));
+                let mut corrected = o;
+                corrected.hover = n.hover;
+                corrected.active = n.active;
+                if hover.is_none() || n.hover != hover || n.active != active || corrected != n {
+                    report.failures.push(format!(
+                        "{}: {toolbar_states}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => compare_mapped(
+            report,
+            toolbar_states,
+            o,
+            super::builders::toolbar_button_states(new),
+        ),
+    }
     // 0.7.2's ghost has no edge: no colour on its variant, no rest refinement.
     let ghost_edge = "variants::ghost_button, edge";
     let o = (None, gpui::StyleRefinement::default());
@@ -1809,20 +2727,23 @@ fn compare_builders(
     match report.listed(ghost_edge) {
         Some(listed) => {
             if let Some(n) = report.mapped(ghost_edge, n) {
-                use native_theme::next::WidgetState;
+                use native_theme::next::{ButtonQuery, WidgetState};
                 report.count(ghost_edge);
-                let hovered = new.button.body(WidgetState::HOVER);
-                let push = super::builders::hover_border(new).ok().flatten();
-                let rest = super::stroke_width(&hovered, "button.body(HOVER).stroke.width")
-                    .ok()
-                    .map(|w| {
-                        crate::geometry::toolbar_button_rest_from(
-                            true,
-                            w,
-                            super::padding_of(&new.button.body(WidgetState::NONE)),
-                        )
-                    });
-                if push.is_none() || n.0 != push || Some(n.1.clone()) != rest || n == o {
+                let hovered = new
+                    .button
+                    .body(ButtonQuery::flat().state(WidgetState::HOVER));
+                let flat = super::state_stroke_color_of(&hovered);
+                let rest =
+                    super::stroke_width(&hovered, "button.body(HOVER; variant=Flat).stroke.width")
+                        .ok()
+                        .map(|w| {
+                            crate::geometry::toolbar_button_rest_from(
+                                true,
+                                w,
+                                super::padding_of(&new.button.body(WidgetState::NONE)),
+                            )
+                        });
+                if flat.is_none() || n.0 != flat || Some(n.1.clone()) != rest || n == o {
                     report.failures.push(format!(
                         "{}: {ghost_edge}: the listed difference ({}) no longer describes \
                          it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -2286,21 +3207,30 @@ fn every_listed_difference_names_a_covered_preset() {
 /// pressed fills of each scheme ([`button_states_of`]), with the button
 /// state slots of [`BUTTON_STATES`] as that theme's ([`button_states_as`]),
 /// or as a failure where they are not what the connector derives from the
-/// fills. Where `handles` is given, the resize handles of gpui-base's global
+/// fills; for each of `stated`, a slot of [`STATED_SLOTS`] with that theme
+/// and the 0.8.0 preset's colour of each scheme for it, with the slot as
+/// that theme's ([`slot_as_old`]), or as a failure where it is not the
+/// stated colour. Where `handles` is given, the resize handles of gpui-base's global
 /// and of the base overrides are given as 0.7.2's of the same scheme, or as
 /// a failure where they are not the 0.8.0 preset's homes
 /// ([`resize_handles_of`], [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries) or
-/// are 0.7.2's. The styled theme itself is returned beside.
+/// are 0.7.2's. Where `thumbs` is given, the base overrides' hovered and
+/// dragged scroll bar thumb are given as 0.7.2's of the same scheme, or as a
+/// failure where they are not the 0.8.0 preset's ([`thumb_states_of`],
+/// [`DIFFERENCES`]' [`SCROLLBAR_THUMB_STATES`] entries) or are 0.7.2's. The
+/// styled theme itself is returned beside.
 fn installed(
     cx: &gpui::App,
-    row_hover_listed: bool,
+    row_hover_listed: Option<[Option<Hsla>; 2]>,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
+    stated: &[StatedPatch<'_>],
     handles: Option<SchemeHandles>,
+    thumbs: Option<SchemeThumbs>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
-    let row_hover = if row_hover_listed {
-        row_hover_as_list(styled)
+    let row_hover = if let Some([light, dark]) = row_hover_listed {
+        row_hover_as_list(styled, if is_dark { dark } else { light })
             .ok_or_else(|| format!("{ROW_HOVER}: not gpui-component's own hovered row"))
     } else {
         Ok(styled.clone())
@@ -2314,6 +3244,14 @@ fn installed(
         }
         None => Ok(theme),
     });
+    let patched = stated
+        .iter()
+        .fold(patched, |patched, (slot, from, schemes)| {
+            patched.and_then(|theme| {
+                slot_as_old(&theme, from, *schemes, slot)
+                    .ok_or_else(|| format!("{}: not {}", slot.leaf, slot.what))
+            })
+        });
     let styled_debug = patched.map_or_else(|failure| failure, |theme| format!("{theme:?}"));
     let base = gpui_base::Theme::global(cx);
     let as_old = |handle: Option<Hsla>, active: Option<Hsla>| match handles {
@@ -2332,9 +3270,25 @@ fn installed(
         }
     };
     let nt = cx.try_global::<crate::NativeTheme>();
+    let thumbs_as_old = |mut g: crate::base_layer::ScrollbarGeometry| match thumbs {
+        None => format!("{g:?}"),
+        Some([light, dark]) => {
+            let (old, homes) = if is_dark { dark } else { light };
+            let installed = (g.thumb_hover, g.thumb_active);
+            if installed != old && homes == Some(installed) {
+                (g.thumb_hover, g.thumb_active) = old;
+                format!("{g:?}")
+            } else {
+                format!(
+                    "{SCROLLBAR_THUMB_STATES}: {installed:?}, not the homes' {homes:?} beside \
+                     0.7.2's {old:?}"
+                )
+            }
+        }
+    };
     let overrides = nt
         .and_then(|nt| crate::base_overrides_for(nt, is_dark, Some(styled)))
-        .map(|(g, r)| format!("{g:?} {}", as_old(r.handle, r.active_handle)));
+        .map(|(g, r)| format!("{} {}", thumbs_as_old(g), as_old(r.handle, r.active_handle)));
     let band = nt
         .and_then(|nt| nt.source(is_dark))
         .map(crate::Variant::keyboard_focus_band);
@@ -2368,6 +3322,16 @@ type Installed = [(Vec<(&'static str, String)>, GpuiTheme); 2];
 /// and the 0.8.0 preset's homes ([`resize_handles_of`]).
 type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 
+/// The hovered and dragged scroll bar thumb of each scheme, light and dark:
+/// 0.7.2's (`crate::base_layer::scrollbar_geometry`'s `thumb_hover` and
+/// `thumb_active`) and the 0.8.0 preset's homes ([`thumb_states_of`]).
+type SchemeThumbs = [((Hsla, Hsla), Option<(Hsla, Hsla)>); 2];
+
+/// A slot of [`STATED_SLOTS`] to patch in what is installed ([`installed`]):
+/// the 0.7.2 side's styled theme at the same point and the 0.8.0 preset's
+/// colour for the slot in each scheme, light then dark.
+type StatedPatch<'a> = (&'static StatedSlot, &'a GpuiTheme, [Option<Hsla>; 2]);
+
 /// The two schemes of `key` (0.7.2) or `preset` (0.8.0) applied, light then
 /// dark, with no variant stored before: what is installed after the calls,
 /// and after an upstream switch to light mode (`Theme::change`), which the
@@ -2375,7 +3339,7 @@ type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 /// for the 0.7.2 side, and for the 0.8.0 side what the 0.7.2 side installed,
 /// whose styled themes the push button's hovered and pressed slots are
 /// patched from where [`DIFFERENCES`]' [`BUTTON_STATES`] entry names the
-/// preset.
+/// preset, and each slot of [`STATED_SLOTS`] where an entry of its leaf does.
 fn apply_both(
     cx: &mut gpui::TestAppContext,
     key: &str,
@@ -2409,10 +3373,14 @@ fn apply_both(
         }
         Ok(())
     })?;
-    let row_hover_listed = next
+    let row_hover_listed = (next
         && DIFFERENCES
             .iter()
-            .any(|d| d.leaf == ROW_HOVER && d.presets.contains(&key));
+            .any(|d| d.leaf == ROW_HOVER && d.presets.contains(&key)))
+    .then(|| {
+        let mut schemes = themes.iter().map(|(_, (_, _, _, new))| row_hover_of(new));
+        [schemes.next().flatten(), schemes.next().flatten()]
+    });
     let states = {
         let mut schemes = themes
             .iter()
@@ -2427,6 +3395,27 @@ fn apply_both(
         })
         .and_then(|old| old.get(at))
         .map(|(_, from)| (from, states))
+    };
+    let stated = |at: usize| -> Vec<StatedPatch<'_>> {
+        let Some((_, from)) = old.and_then(|old| old.get(at)) else {
+            return Vec::new();
+        };
+        STATED_SLOTS
+            .iter()
+            .filter(|slot| {
+                DIFFERENCES
+                    .iter()
+                    .any(|d| d.leaf == slot.leaf && d.presets.contains(&key))
+            })
+            .map(|slot| {
+                let mut schemes = themes.iter().map(|(_, (_, _, _, new))| (slot.of)(new));
+                (
+                    slot,
+                    from,
+                    [schemes.next().flatten(), schemes.next().flatten()],
+                )
+            })
+            .collect()
     };
     let handles_listed = next
         && DIFFERENCES
@@ -2444,9 +3433,50 @@ fn apply_both(
         Some(_) => return Err(format!("{key}: {RESIZE_HANDLES}: a scheme is missing")),
         None => None,
     };
-    let after = cx.update(|cx| installed(cx, row_hover_listed, button_states(0), handles));
+    let thumbs = (next
+        && DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == SCROLLBAR_THUMB_STATES && d.presets.contains(&key)))
+    .then(|| {
+        let mut schemes = themes.iter().map(|(_, (old, _, _, new))| {
+            let g = crate::base_layer::scrollbar_geometry(old);
+            ((g.thumb_hover, g.thumb_active), thumb_states_of(new))
+        });
+        match [schemes.next(), schemes.next()] {
+            [Some(light), Some(dark)] => Some([light, dark]),
+            _ => None,
+        }
+    });
+    let thumbs = match thumbs {
+        Some(Some(both)) => Some(both),
+        Some(None) => {
+            return Err(format!(
+                "{key}: {SCROLLBAR_THUMB_STATES}: a scheme is missing"
+            ));
+        }
+        None => None,
+    };
+    let after = cx.update(|cx| {
+        installed(
+            cx,
+            row_hover_listed,
+            button_states(0),
+            &stated(0),
+            handles,
+            thumbs,
+        )
+    });
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
-    let switched = cx.update(|cx| installed(cx, row_hover_listed, button_states(1), handles));
+    let switched = cx.update(|cx| {
+        installed(
+            cx,
+            row_hover_listed,
+            button_states(1),
+            &stated(1),
+            handles,
+            thumbs,
+        )
+    });
     Ok([after, switched])
 }
 

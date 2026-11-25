@@ -754,10 +754,46 @@ fn a_checked_boxs_hovered_outline_stated_as_none_is_no_line()
     Ok(())
 }
 
+/// The atlas of `preset` with its check box's indicator fill and stroke stated for no state at
+/// `DISABLED`, in each of the four contexts: a rule of no required state, forbidding every state
+/// but `DISABLED` a rest query's look depends on, restates that context's fill and stroke at
+/// rest, so they stay as the preset gives them and the `from_state` bits of those queried at
+/// `DISABLED` are cleared (spec §2, `from_state`: a rule without required states clears it).
+fn disabled_unstated_atlas(
+    preset: Preset,
+) -> Result<(crate::ThemeAtlas, native_theme::next::ResolvedTheme), Box<dyn std::error::Error>> {
+    use native_theme::next::CheckboxRule;
+    let others = WidgetState::CHECKED
+        | WidgetState::INDETERMINATE
+        | WidgetState::HOVER
+        | WidgetState::PRESSED;
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| {
+        let mut r = Theme::preset(preset).resolve(&ctx);
+        let rest = r.checkbox.indicator(WidgetState::NONE);
+        r.apply_patch(
+            &ThemePatch::new().checkbox(
+                CheckboxRule::new()
+                    .not_states(others)
+                    .indicator(PartPatch::new().fill(rest.fill).stroke(rest.stroke)),
+            ),
+        );
+        r
+    });
+    let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+    Ok((atlas, light))
+}
+
 /// A disabled check box, checked or not, draws the outline a rule states for the disabled
 /// state (`indicator(DISABLED).stroke`), its width and colour; where none does, it keeps its
 /// resting outline, which egui dims by `disabled_alpha` alone (spec §2, `from_state`; §10,
-/// rule 0).
+/// rule 0): on every preset, each patched to state neither the disabled indicator's fill nor
+/// its stroke ([`disabled_unstated_atlas`]), as every bundled preset states one.
 #[test]
 fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
     use native_theme::next::PartStated;
@@ -765,7 +801,6 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
     let rule = "[[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
                 indicator.stroke = { width = 3.0, color = \"#ff00ff\" }\n";
     let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
-    let mut no_rule = 0;
     for &(key, preset) in PRESETS {
         let cells = |atlas: &crate::ThemeAtlas| {
             let styles = atlas.scheme(egui::Theme::Light);
@@ -791,22 +826,18 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
                 "{key}: the {name} disabled box"
             );
         }
-        let r = Theme::preset(preset).resolve(&ThemeContext::light());
+        let (atlas, r) = disabled_unstated_atlas(preset)?;
         let stated = r.checkbox.indicator(WidgetState::DISABLED);
-        if !stated
-            .from_state
-            .intersects(PartStated::STROKE | PartStated::FILL)
-        {
-            no_rule += 1;
-            let [normal, selected, disabled, checked] = cells(&patched_light(preset, "")?);
-            assert_eq!(disabled.bg_stroke, normal.bg_stroke, "{key}: unchecked");
-            assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
-        }
+        assert!(
+            !stated
+                .from_state
+                .intersects(PartStated::STROKE | PartStated::FILL),
+            "{key}: patched, it still states a disabled indicator's stroke or fill"
+        );
+        let [normal, selected, disabled, checked] = cells(&atlas);
+        assert_eq!(disabled.bg_stroke, normal.bg_stroke, "{key}: unchecked");
+        assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
     }
-    assert!(
-        no_rule > 0,
-        "every preset states a disabled indicator's stroke or fill"
-    );
     Ok(())
 }
 
@@ -1225,7 +1256,14 @@ fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn st
         super::to_theme(light, &light_inactive, &dark, &dark_inactive)
             .map(|atlas| atlas.focus_ring(egui::Theme::Light).copied())
     };
-    let plain = ring(&light)?.ok_or("windows-11 states a ring")?;
+    let stated = ring(&light)?.ok_or("windows-11 states a ring")?;
+    assert_eq!(
+        (stated.inner.map(|inner| inner.width), stated.corners),
+        (Some(1.0), None),
+        "windows-11 states the inner ring, FocusStrokeColorInner"
+    );
+    light.focus_ring.inner_stroke = Stroke::None;
+    let plain = ring(&light)?.ok_or("the ring")?;
     assert_eq!((plain.inner, plain.corners), (None, None));
     light.focus_ring.inner_stroke = Stroke::uniform(1.0, Color::new(1.0, 1.0, 1.0, 1.0));
     light.focus_ring.corners = Some(Corners::uniform(4.0));
@@ -1676,7 +1714,7 @@ fn a_next_atlas_menu_bar_modifier_is_the_menu_cell_with_its_titles()
 /// The checked box's hovered fill by rule 0 per property (spec §10): where a rule states
 /// `checkbox.indicator(HOVER).fill` alone, the combined state's fill; where none does, egui's
 /// own hovered fill where egui's stock entries change it from rest, else the checked fill. The
-/// pressed fill, which neither theme states, follows the same rule on both.
+/// pressed fill follows the same rule.
 #[test]
 fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error::Error>> {
     let own = egui::Theme::Light.default_style();
@@ -1696,13 +1734,9 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         let unstated = |r: &native_theme::next::ResolvedTheme, s: WidgetState| {
             super::build::state_fill(&r.checkbox.indicator(s)).is_none()
         };
-        if !(unstated(&plain, WidgetState::HOVER) && unstated(&plain, WidgetState::PRESSED)) {
-            continue;
-        }
         let Some(checked) = super::build::fill(&k.indicator(WidgetState::CHECKED)) else {
             continue;
         };
-        tried.push(key);
         let checked = crate::convert::to_color32(checked);
         let cell = |atlas: &crate::ThemeAtlas| {
             atlas
@@ -1714,8 +1748,27 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         };
         let w = cell(&patched_light(preset, "")?);
         assert_eq!(w.inactive.bg_fill, checked, "{key}");
-        assert_eq!(w.hovered.bg_fill, by_rule_0(&own.hovered, checked), "{key}");
-        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+        // Every bundled preset states its pressed box (M2.FS4): where a state's fill is stated,
+        // the combined state's; where it is unstated, rule 0.
+        let expected = |state: WidgetState, own: &egui::style::WidgetVisuals| {
+            if unstated(&plain, state) {
+                Some(by_rule_0(own, checked))
+            } else {
+                super::build::fill(&k.indicator(state | WidgetState::CHECKED))
+                    .map(crate::convert::to_color32)
+            }
+        };
+        assert_eq!(
+            Some(w.hovered.bg_fill),
+            expected(WidgetState::HOVER, &own.hovered),
+            "{key}"
+        );
+        assert_eq!(
+            Some(w.active.bg_fill),
+            expected(WidgetState::PRESSED, &own.active),
+            "{key}"
+        );
+        tried.push(key);
 
         let patched = Theme::preset(preset)
             .with_patch(ThemePatch::from_toml(hover)?)
@@ -1728,12 +1781,13 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         .ok_or("the combined state has a fill")?;
         let w = cell(&patched_light(preset, hover)?);
         assert_eq!(w.hovered.bg_fill, crate::convert::to_color32(both), "{key}");
-        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+        assert_eq!(
+            Some(w.active.bg_fill),
+            expected(WidgetState::PRESSED, &own.active),
+            "{key}"
+        );
     }
-    assert!(
-        !tried.is_empty(),
-        "no preset leaves both state fills unstated"
-    );
+    assert!(!tried.is_empty(), "no preset states a checked fill");
     Ok(())
 }
 

@@ -146,13 +146,14 @@ mod tests {
     }
 
     /// A toolbar button whose hovered and pressed fills no rule states
-    /// (macos-tahoe states no toolbar button state) hovers and presses as
-    /// gpui-component's own toolbar button, its ghost one: `tokens.accent`,
-    /// at half its alpha in the dark scheme, and `tokens.button_active`, not
-    /// the flat button's `secondary_hover` and `secondary_active`; its label
-    /// and its rest are the flat button's, which are the ghost's too. The
-    /// flat button's pressed fill is patched to one of its own, which
-    /// macos-tahoe gives the push button's, so the pressed fills differ.
+    /// (material-3 states no toolbar button state's fill or stroke) hovers
+    /// and presses as gpui-component's own toolbar button, its ghost one:
+    /// `tokens.accent`, at half its alpha in the dark scheme, and
+    /// `tokens.button_active`, not the flat button's `secondary_hover` and
+    /// `secondary_active`; its label and its rest are the flat button's,
+    /// which are the ghost's too. The flat button's pressed fill is patched
+    /// to one of its own, so the pressed fills differ whatever the preset
+    /// states for it.
     #[gpui::test]
     fn an_unstated_toolbar_state_is_gpui_components_own(cx: &mut TestAppContext) {
         use native_theme::next::{
@@ -161,7 +162,7 @@ mod tests {
         cx.update(|cx| {
             gpui_component::init(cx);
             for ctx in [ThemeContext::light(), ThemeContext::dark()] {
-                let mut r = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+                let mut r = Theme::preset(Preset::Material3).resolve(&ctx);
                 r.apply_patch(
                     &ThemePatch::new().button(
                         ButtonRule::new()
@@ -177,7 +178,7 @@ mod tests {
                         hover_border: None,
                         active: None,
                     }),
-                    "macos-tahoe {:?} states a toolbar button state",
+                    "material-3 {:?} states a toolbar button state",
                     ctx.scheme
                 );
                 assert_eq!(super::super::apply(&r, cx), Ok(()));
@@ -192,14 +193,14 @@ mod tests {
                 let flat = crate::variants::ghost_button(cx);
                 assert!(
                     hover != theme.secondary_hover && active != theme.secondary_active,
-                    "macos-tahoe {:?}: the ghost's own fills are the flat button's, so this \
+                    "material-3 {:?}: the ghost's own fills are the flat button's, so this \
                      proves nothing",
                     ctx.scheme
                 );
                 assert_eq!(
                     toolbar_button(&r, cx),
                     Ok(flat.hover(hover).active(active)),
-                    "macos-tahoe {:?}",
+                    "material-3 {:?}",
                     ctx.scheme
                 );
             }
@@ -207,13 +208,11 @@ mod tests {
     }
 
     /// A ghost button whose flat hovered outline a rule states (kde-breeze's
-    /// push button's, a flat query with no flat rule returning the push
-    /// button's rule) takes it as its variant's colour, over 0.7.2's
-    /// variant; a patched flat rule's outline replaces it; and the rest
-    /// refinement lays out that rule's width inside the push button's
-    /// padding, with a transparent fill and border. (Every bundled preset
-    /// states a hovered push button stroke, so none leaves the outline
-    /// unstated.)
+    /// flat button's Highlight pen, its push button's hovered outline too)
+    /// takes it as its variant's colour, over 0.7.2's variant; a patched flat
+    /// rule's outline replaces it; and the rest refinement lays out that
+    /// rule's width inside the push button's padding, with a transparent fill
+    /// and border.
     #[gpui::test]
     fn a_stated_flat_hover_outline_edges_the_ghost(cx: &mut TestAppContext) {
         use native_theme::next::{

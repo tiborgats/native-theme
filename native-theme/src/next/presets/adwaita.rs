@@ -29,7 +29,9 @@
 //! and `popover_bg_color`, the card's, the dialog's and the popover's
 //! panels; `foreground` is every `*_fg_color` of those surfaces, the window
 //! text the preset letters its widgets in, and the tooltip's text with
-//! `tooltip_bg` (§7: one text colour for the eight surfaces); `accent` is
+//! `tooltip_bg` (§7: one text colour for the eight surfaces), and with it the
+//! toolbar's and the flat button's hovered, pressed and checked layers of
+//! the window text (`currentColor` at 7, 16 and 10 %); `accent` is
 //! `accent_bg_color`, the accent's fill and the tab's active indicator, from
 //! which the focus ring is derived again through `adw_standalone`; `error`,
 //! `warning` and `success` are `destructive_bg_color`, `warning_bg_color`
@@ -50,14 +52,16 @@
 //! palette's `accent`, `selection_bg`, `info`, and with the accent its text
 //! (`accent_fg`, `selection_fg`), which are then the preset's.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
+//! Defined by the preset (spec §1, "Axis values without data"): the variants
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and
+//! `ButtonVariant::Flat` (libadwaita's `.flat` button), a list's alternate
 //! rows (`ListKind::alternate`), the two orientations of the scroll bar and
 //! of the slider's groove, no control size, and the contrast levels `Normal`
-//! and `High`. `High` states one value of its own, the focus ring's alpha 0.8,
-//! which the focused text field's outline takes too
-//! ([`FOCUS_RING_ALPHA_HIGH`]); every other value at `High` is `Normal`'s, as
-//! no source the builder reads states it. A query for anything else returns
+//! and `High`. `High` states two values of its own, the focus ring's alpha
+//! 0.8, which the focused text field's outline takes too
+//! ([`FOCUS_RING_ALPHA_HIGH`]), and the disabled opacity 0.4, which the
+//! disabled switch's label takes too ([`DISABLED_OPACITY_HIGH`]); every other
+//! value at `High` is `Normal`'s, as no source the builder reads states it. A query for anything else returns
 //! the part's base style. A maximized or full-screen window has no data of
 //! its own: its frame and title bar are the normal window's.
 //!
@@ -231,16 +235,12 @@ struct SchemeColors {
     /// The paned separator's line, in every state.
     splitter_line: Color,
     switch_hover_off: Color,
-    switch_hover_on: Color,
     switch_thumb: Color,
     /// The switch's thumb when off, where stated; unstated, 0.7.2's
     /// `switch.unchecked_thumb_background` is `thumb_background`.
     switch_thumb_off: Option<Color>,
     tooltip_background: Color,
     tooltip_foreground: Color,
-    toolbar_button_hover: Color,
-    toolbar_button_pressed: Color,
-    toolbar_button_checked: Color,
     /// The active window's title bar, where stated; unstated, 0.7.2's
     /// `window.title_bar_background` is `defaults.surface_color`.
     title_bar_background: Option<Color>,
@@ -424,8 +424,6 @@ const LIGHT: SchemeColors = SchemeColors {
     splitter_line: srgb8(0x0000_061f),
     // `switch.hover_unchecked_background`: 0.7.2 adwaita.toml (uncited)
     switch_hover_off: srgb8(0xc8c8_c8ff),
-    // `switch.hover_checked_background`: 0.7.2 adwaita.toml (uncited)
-    switch_hover_on: srgb8(0x2e78_ccff),
     // `switch.thumb_background`: 0.7.2 adwaita.toml (uncited)
     switch_thumb: srgb8(0xffff_ffff),
     switch_thumb_off: None,
@@ -433,16 +431,6 @@ const LIGHT: SchemeColors = SchemeColors {
     tooltip_background: srgb8(0x2e34_36ff),
     // `tooltip.font.color`: 0.7.2 adwaita.toml (uncited)
     tooltip_foreground: srgb8(0xffff_ffff),
-    // `toolbar.button_hover_background`: platform-facts.md (§2.13): the toolbar look of an image,
-    // image-text or arrow button (_toolbars.scss:2-8): :hover, $hover_color, the window text
-    // #000006cc at 7 %, a layer (_colors.scss:268, _buttons.scss:250-251 at libadwaita 1.10.0)
-    toolbar_button_hover: srgb8(0x0000_060e),
-    // `toolbar.button_active_background`: platform-facts.md (§2.13): :active, $active_color, the
-    // window text at 16 % (_colors.scss:269, _buttons.scss:254-256)
-    toolbar_button_pressed: srgb8(0x0000_0621),
-    // `toolbar.button_checked_background`: platform-facts.md (§2.13): :checked, the window text at
-    // 10 % (_colors.scss:270, _buttons.scss:259-260)
-    toolbar_button_checked: srgb8(0x0000_0614),
     title_bar_background: None,
     card_background: None,
 };
@@ -601,8 +589,6 @@ const DARK: SchemeColors = SchemeColors {
     splitter_line: srgb8(0xffff_ff26),
     // `switch.hover_unchecked_background`: 0.7.2 adwaita.toml (uncited)
     switch_hover_off: srgb8(0x5656_5aff),
-    // `switch.hover_checked_background`: 0.7.2 adwaita.toml (uncited)
-    switch_hover_on: srgb8(0x2e78_ccff),
     // `switch.thumb_background`: 0.7.2 adwaita.toml (uncited)
     switch_thumb: srgb8(0xffff_ffff),
     // `switch.unchecked_thumb_background`: platform-facts.md (§2.21): $slider_color, white 80% over
@@ -612,16 +598,6 @@ const DARK: SchemeColors = SchemeColors {
     tooltip_background: srgb8(0x3a3a_3eff),
     // `tooltip.font.color`: 0.7.2 adwaita.toml (uncited)
     tooltip_foreground: srgb8(0xffff_ffff),
-    // `toolbar.button_hover_background`: platform-facts.md (§2.13): the toolbar look of an image,
-    // image-text or arrow button (_toolbars.scss:2-8): :hover, $hover_color, the window text
-    // #ffffff at 7 %, a layer (_colors.scss:268, _buttons.scss:250-251 at libadwaita 1.10.0)
-    toolbar_button_hover: srgb8(0xffff_ff12),
-    // `toolbar.button_active_background`: platform-facts.md (§2.13): :active, $active_color, the
-    // window text at 16 % (_colors.scss:269, _buttons.scss:254-256)
-    toolbar_button_pressed: srgb8(0xffff_ff29),
-    // `toolbar.button_checked_background`: platform-facts.md (§2.13): :checked, the window text at
-    // 10 % (_colors.scss:270, _buttons.scss:259-260)
-    toolbar_button_checked: srgb8(0xffff_ff1a),
     // `window.title_bar_background`: platform-facts.md (§2.2): headerbar fills
     // --headerbar-bg-color = headerbar_bg_color #2e2e32 (libadwaita 1.10.0 _header-bar.scss:3,
     // _colors.scss:103)
@@ -728,13 +704,83 @@ const SHADOW_ENABLED: bool = true;
 // disabled mechanism
 const DISABLED_OPACITY: f32 = 0.5;
 
+/// The opacity of a disabled control under `Contrast::High`: libadwaita's
+/// `--disabled-opacity: 40%` under `prefers-contrast: more` (libadwaita
+/// 1.10.0 `_colors.scss:323-328`).
+const DISABLED_OPACITY_HIGH: f32 = 0.4;
+
 /// The focus ring's width.
-// `defaults.focus_ring_width`: 0.7.2 adwaita.toml (uncited)
+// `defaults.focus_ring_width`: platform-facts.md (§2.1.5): focus_ring_width: libadwaita CSS 2px
+// (`focus-ring($width: 2px)`, _drawing.scss at libadwaita 1.10.0)
 const FOCUS_RING_WIDTH: f32 = 2.0;
 
 /// The focus ring's offset from the control's edge.
-// `defaults.focus_ring_offset`: 0.7.2 adwaita.toml (uncited)
+// `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: libadwaita CSS -2px,
+// inset (`$offset: -$width`, _drawing.scss at libadwaita 1.10.0)
 const FOCUS_RING_OFFSET: f32 = -2.0;
+
+/// The primary (suggested-action) button's ring offset: `%opaque_button`
+/// includes `focus-ring($outer: true, $offset: 1px)` (_buttons.scss:158 at
+/// libadwaita 1.10.0), which `.suggested-action` extends (:220-221).
+const PRIMARY_BUTTON_FOCUS_RING_OFFSET: f32 = 1.0;
+
+/// The alpha of `currentColor` in the layer over a hovered checked or mixed
+/// check, radio or switch: `color-mix(in srgb, currentColor 10%,
+/// transparent)` (_checks.scss:58, _switch.scss:45 at libadwaita 1.10.0).
+const CHECKED_HOVER_LAYER_ALPHA: f32 = 0.1;
+
+/// The alpha of the window text a hovered toolbar or flat button is filled
+/// with: $hover_color, `color-mix(in srgb, currentColor 7%, transparent)`
+/// (_colors.scss:268, _buttons.scss:250-251 at libadwaita 1.10.0;
+/// platform-facts.md (§2.13)).
+const TOOLBAR_BUTTON_HOVER_ALPHA: f32 = 0.07;
+
+/// The alpha of the window text a pressed toolbar or flat button is filled
+/// with: $active_color, currentColor 16 % (_colors.scss:269,
+/// _buttons.scss:254-256 at libadwaita 1.10.0; platform-facts.md (§2.13)).
+const TOOLBAR_BUTTON_PRESSED_ALPHA: f32 = 0.16;
+
+/// The alpha of the window text a checked toolbar or flat button is filled
+/// with: $selected_color, currentColor 10 % (_colors.scss:270,
+/// _buttons.scss:259-260 at libadwaita 1.10.0; platform-facts.md (§2.13)).
+const TOOLBAR_BUTTON_CHECKED_ALPHA: f32 = 0.1;
+
+/// The alpha of the window text a hovered checked flat button is filled
+/// with: `background: $selected_hover_color` (_buttons.scss:262-263 at
+/// libadwaita 1.10.0), `color-mix(in srgb, currentColor 13%, transparent)`
+/// (_colors.scss:271;
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
+const FLAT_CHECKED_HOVER_ALPHA: f32 = 0.13;
+
+/// The alpha of the window text a pressed checked flat button is filled
+/// with: `background: $selected_active_color` (_buttons.scss:267-268 at
+/// libadwaita 1.10.0), `color-mix(in srgb, currentColor 19%, transparent)`
+/// (_colors.scss:272;
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
+const FLAT_CHECKED_PRESSED_ALPHA: f32 = 0.19;
+
+/// The layer over a pressed checked or mixed check, radio or switch:
+/// `RGB(0 0 6 / 20%)` (_checks.scss:59, _switch.scss:46 at libadwaita
+/// 1.10.0), 20 % of 255 being 51 exactly.
+const CHECKED_PRESSED_LAYER: Color = srgb8(0x0000_0633);
+
+/// The switch's ring offset: `switch` includes `focus-ring($offset: 1px,
+/// $outer: true)` (_switch.scss:18 at libadwaita 1.10.0), outside the track.
+const SWITCH_FOCUS_RING_OFFSET: f32 = 1.0;
+
+/// The slider thumb's ring offset: `scale` includes `focus-ring("> trough >
+/// slider", $offset: 0)` (_scale.scss:29 at libadwaita 1.10.0).
+const SLIDER_THUMB_FOCUS_RING_OFFSET: f32 = 0.0;
+
+/// A segment's ring offset: a toggle group's `> toggle` includes
+/// `focus-ring($outer: true, $offset: 0)` (_toggle-group.scss:28, :63 at
+/// libadwaita 1.10.0).
+const SEGMENT_FOCUS_RING_OFFSET: f32 = 0.0;
+
+/// The expander header's ring offset: the header is a `%boxed_list_row`
+/// (_lists.scss:524-526 at libadwaita 1.10.0), which includes
+/// `focus-ring($offset: -1px)` (:343-344).
+const EXPANDER_HEADER_FOCUS_RING_OFFSET: f32 = -1.0;
 
 /// The focus ring's alpha: libadwaita's `$focus_border_color`, the
 /// standalone accent at 50 % (libadwaita 1.10.0 `_colors.scss:260`, `:307`;
@@ -1225,7 +1271,8 @@ const COMBO_BOX_PADDING_VERTICAL: f32 = 5.0;
 const SEGMENT_HEIGHT: f32 = 28.0;
 
 /// The separator between segments.
-// `segmented_control.separator_width`: 0.7.2 adwaita.toml (uncited)
+// `segmented_control.separator_width`: AdwToggleGroup's `> separator` (_toggle-group.scss:141-159
+// at libadwaita 1.10.0) is a GtkSeparator, `min-width: 1px; min-height: 1px` (_misc.scss:21-24)
 const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
 
 /// A segment's padding left and right.
@@ -1313,6 +1360,16 @@ const fn srgb8(rgba: u32) -> Color {
 /// (`Rgba::from_f32`: each channel clamped, times 255, rounded).
 fn translucent(c: Color, alpha: f32) -> Color {
     let [r, g, b, a] = c.with_alpha(alpha).to_srgb8();
+    Color::from_srgb8(r, g, b, a)
+}
+
+/// `c` with its alpha multiplied by `alpha`, held in 8 bits as
+/// [`translucent`] holds it: libadwaita's `color-mix(in srgb, currentColor
+/// <alpha>, transparent)` of the text `c`, a toolbar button's layer
+/// (platform-facts.md (§2.13): #0000060e, #00000621, #00000614 light,
+/// #ffffff12, #ffffff29, #ffffff1a dark).
+fn layer_of(c: Color, alpha: f32) -> Color {
+    let [r, g, b, a] = c.mul_alpha(alpha).to_srgb8();
     Color::from_srgb8(r, g, b, a)
 }
 
@@ -1572,7 +1629,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout, ctx.direction),
         card: card(c, &colors),
-        expander: expander(c, &typography, ctx.direction),
+        expander: expander(c, &colors, &typography, ctx.direction),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
@@ -1590,7 +1647,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// `src/resolve/inheritance.rs`, `resolve_defaults_internal`); the caret and
 /// the disabled text are the window's text (`input.caret_color`,
 /// `defaults.disabled_text_color`); the info status is the accent. Under
-/// `Contrast::High` the focus ring is its colour at [`FOCUS_RING_ALPHA_HIGH`].
+/// `Contrast::High` the focus ring is its colour at [`FOCUS_RING_ALPHA_HIGH`]
+/// and the disabled opacity [`DISABLED_OPACITY_HIGH`].
 ///
 /// The active palette `palette`, whose colours `c` holds already, states
 /// the roles its slots name (spec §7, "The roles a palette states"): the
@@ -1685,7 +1743,10 @@ fn roles(
         link_visited: None,
         disabled_text: c.window_foreground,
         shadow: c.shadow,
-        disabled_opacity: DISABLED_OPACITY,
+        disabled_opacity: match contrast {
+            Contrast::High => DISABLED_OPACITY_HIGH,
+            Contrast::Normal | Contrast::Increased => DISABLED_OPACITY,
+        },
         error: status(c.error, c.error_foreground),
         warning: status(c.warning, c.warning_foreground),
         success: status(c.success, c.success_foreground),
@@ -1898,6 +1959,22 @@ fn corners(radius: f32) -> PartProp {
     PartProp::Corners(Corners::uniform(radius))
 }
 
+/// A part's own focus ring: the global one's width and colour
+/// (`$focus_border_color`, `colors.focus_ring`) at the part's `offset`, where
+/// libadwaita includes `focus-ring` with an `$offset` of its own (the global
+/// ring is the mixin's default, `-$width`, _drawing.scss:12 at libadwaita
+/// 1.10.0); its trigger unstated, as the global ring's.
+fn focus_ring(roles: &ColorRoles, offset: f32) -> PartProp {
+    PartProp::Focus(Some(Arc::new(FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(FOCUS_RING_WIDTH, roles.focus_ring),
+        Stroke::None,
+        offset,
+        None,
+        None,
+    ))))
+}
+
 /// A widget's label: the UI font (0.7.2: a widget's font is `defaults.font`
 /// where unstated, `resolve_font_inheritance`) without its line height, which
 /// no 0.7.2 widget font has, in `color` where given, else in the UI font's.
@@ -1930,6 +2007,12 @@ fn button(
     let primary = || {
         RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
             variant: Some(ButtonVariant::Primary),
+            shape: None,
+        })
+    };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
             shape: None,
         })
     };
@@ -1967,7 +2050,50 @@ fn button(
                 }),
             border(roles, BUTTON_BORDER_WIDTH),
         )
-        .rule(primary(), [fill(roles.accent.fill)])
+        .rule(
+            primary(),
+            [
+                fill(roles.accent.fill),
+                focus_ring(roles, PRIMARY_BUTTON_FOCUS_RING_OFFSET),
+            ],
+        )
+        // The flat button (`.flat`, `%button_basic_flat`), after the push button's rules so that
+        // its own win (_buttons.scss:234-273 at libadwaita 1.10.0; `docs/facts/gnome/button.toml`
+        // on `v0.8.0-rc1` at `78ee0efd`): at rest `background: transparent` and `box-shadow:
+        // none` (:236, :239); hovered, pressed and checked the toolbar button's layers of the
+        // window text, $hover_color, $active_color and $selected_color (:250-260); checked and
+        // hovered or pressed the window text at FLAT_CHECKED_HOVER_ALPHA and
+        // FLAT_CHECKED_PRESSED_ALPHA (:262-268).
+        .rule(
+            flat(WidgetState::NONE),
+            [PartProp::Fill(Paint::None), PartProp::Shadows(None)],
+        )
+        .rule(
+            flat(WidgetState::HOVER),
+            [fill(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))],
+        )
+        .rule(
+            flat(WidgetState::PRESSED),
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_PRESSED_ALPHA,
+            ))],
+        )
+        .rule(
+            flat(WidgetState::CHECKED),
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_CHECKED_ALPHA,
+            ))],
+        )
+        .rule(
+            flat(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(c.row_foreground.mul_alpha(FLAT_CHECKED_HOVER_ALPHA))],
+        )
+        .rule(
+            flat(WidgetState::CHECKED | WidgetState::PRESSED),
+            [fill(c.row_foreground.mul_alpha(FLAT_CHECKED_PRESSED_ALPHA))],
+        )
         .build();
     // `button.hover_text_color`, `active_text_color`: 0.7.2 adwaita.toml (uncited);
     // `checked_text_color`: platform-facts.md (§2.3), "no :checked rule sets a label colour"; each
@@ -2001,17 +2127,21 @@ fn button(
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both: its unchecked fill in its outline at the default
 /// border width (0.7.2: `checkbox.border.line_width` is
-/// `defaults.border.line_width` where unstated), no shadow, padded; under the
-/// pointer the hover fill and, unchecked, the hover outline; checked, the accent (0.7.2:
+/// `defaults.border.line_width` where unstated), no shadow, padded; unchecked
+/// under the pointer, the hover outline alone; checked, the accent (0.7.2:
 /// `checkbox.checked_background` is `defaults.accent_color` where unstated)
-/// in the default border colour (`checkbox.border.color`). No disabled fill:
-/// a disabled check is its enabled self at the disabled opacity
-/// (`checkbox.unchecked_background`'s citation).
+/// with no outline (`box-shadow: none`, _checks.scss:52-56 at libadwaita
+/// 1.10.0; the outline is the inset box-shadow, :27), hovered and pressed
+/// libadwaita's layers over it ([`checked_layers`]). Disabled, the rest
+/// fill: a disabled check is its enabled self at the disabled opacity
+/// (`checkbox.unchecked_background`'s citation; `check:disabled, radio:disabled`
+/// change no colour, _checks.scss:62-64).
 fn indicator(
     c: &SchemeColors,
     roles: &ColorRoles,
     layout: &LayoutMetrics,
 ) -> RuleBuilder<PartStyle, PartProp> {
+    let [checked_hover, checked_pressed] = checked_layers(roles);
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.checkbox_background),
@@ -2026,19 +2156,57 @@ fn indicator(
             PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
             PartProp::MaxSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
         ])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
-        // An unchecked check or radio under the pointer: its outline $trough_hover_color
-        // (_checks.scss:20-35 at libadwaita 1.10.0); a checked one keeps its checked look.
+        // An unchecked check or radio under the pointer: its outline $trough_hover_color, its fill
+        // as at rest, `&:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0
+        // 2px $trough_hover_color; } }` (_checks.scss:33-40 at libadwaita 1.10.0), where 0.7.2
+        // filled it with an uncited `button_hover`; the rest fill stated for HOVER (spec §2,
+        // `from_state`); a checked one keeps its checked look.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.checkbox_background)],
+        )
         .rule(
             RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
             [stroke(layout.border_width, c.trough_hover)],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(roles.accent.fill)]
-                .into_iter()
-                .chain(border(roles, layout.border_width)),
+            [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
         )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [fill(checked_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [fill(checked_pressed)],
+        )
+        // Disabled, the fill as at rest, stated for DISABLED (spec §2, `from_state`): `check,
+        // radio { &:disabled { filter: Opacity(var(--disabled-opacity)); } }` fades the control and
+        // changes no colour (_checks.scss:20, :62-64 at libadwaita 1.10.0); a checked one keeps
+        // its checked fill.
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [fill(c.checkbox_background)],
+        )
+}
+
+/// libadwaita's layers over a checked or mixed check, radio or switch,
+/// laid over the accent's fill as the state's whole fill (spec §9, step 2):
+/// hovered, `currentColor`, the accent's text (`color:
+/// var(--accent-fg-color)`), at [`CHECKED_HOVER_LAYER_ALPHA`]; pressed,
+/// [`CHECKED_PRESSED_LAYER`] (`&:checked, &:indeterminate { &:hover {
+/// background-image: … } &:active { … } }`, _checks.scss:52-59;
+/// `&:checked`, _switch.scss:41-46 at libadwaita 1.10.0).
+fn checked_layers(roles: &ColorRoles) -> [Color; 2] {
+    [
+        roles
+            .accent
+            .foreground
+            .mul_alpha(CHECKED_HOVER_LAYER_ALPHA)
+            .composite_over(roles.accent.fill),
+        CHECKED_PRESSED_LAYER.composite_over(roles.accent.fill),
+    ]
 }
 
 /// The label of a check box or a radio button: the UI font in its colour;
@@ -2062,9 +2230,10 @@ fn checkbox(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
-    // Hovered and pressed, the mark as at rest: a checked check's `color:
+    // Hovered, pressed and disabled, the mark as at rest: a checked or mixed check's `color:
     // var(--accent-fg-color)` holds in every state, :hover and :active lay a layer over the box,
-    // not the mark (_checks.scss:52-60, :70 at libadwaita 1.10.0).
+    // not the mark, and :disabled changes no colour, only the control's opacity
+    // (_checks.scss:52-64, :70, :80 at libadwaita 1.10.0).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base([
             IconProp::Color(roles.accent.foreground),
@@ -2074,17 +2243,33 @@ fn checkbox(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
+                RuleSelector::on(WidgetState::DISABLED),
             ],
             [IconProp::Color(roles.accent.foreground)],
         )
         .build();
     // An unchecked box pressed: $trough_active_color and no outline (_checks.scss:42-44). A
-    // checked box keeps its checked look.
+    // checked box keeps its checked look. A mixed box is drawn as a checked one, the accent with
+    // no outline, hovered and pressed under the checked one's layers, in every state
+    // (`&:checked, &:indeterminate`, _checks.scss:52-59).
+    let [checked_hover, checked_pressed] = checked_layers(roles);
     let indicator = indicator(c, roles, layout)
         .base([corners(CHECKBOX_CORNER_RADIUS)])
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
             [fill(c.trough_active), PartProp::Stroke(Stroke::None)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::INDETERMINATE),
+            [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::INDETERMINATE),
+            [fill(checked_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::INDETERMINATE),
+            [fill(checked_pressed)],
         )
         .build();
     CheckboxWidget::new(
@@ -2106,12 +2291,18 @@ fn radio(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> RadioWidget {
+    // Disabled, the dot as at rest: `:disabled` changes no colour, only the control's opacity
+    // (_checks.scss:52-55, :62-64, :76 at libadwaita 1.10.0).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.accent.foreground),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(roles.accent.foreground)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
@@ -2471,6 +2662,7 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             fill(c.slider_thumb),
             PartProp::MinSize([Some(SLIDER_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
+            focus_ring(roles, SLIDER_THUMB_FOCUS_RING_OFFSET),
         ])
         .rules(
             [
@@ -2747,18 +2939,29 @@ fn toolbar(
             )),
         ])
         .build();
+    // `toolbar.button_hover_background`, `button_active_background`, `button_checked_background`:
+    // platform-facts.md (§2.13): the toolbar look of an image, image-text or arrow button
+    // (_toolbars.scss:2-8 at libadwaita 1.10.0): :hover $hover_color, :active $active_color and
+    // :checked $selected_color, layers of the window text at 7, 16 and 10 % (_colors.scss:268-270,
+    // _buttons.scss:250-260).
     let button = RuleBuilder::new(PartStyle::default())
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.toolbar_button_hover)],
+            [fill(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.toolbar_button_pressed)],
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_PRESSED_ALPHA,
+            ))],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.toolbar_button_checked)],
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_CHECKED_ALPHA,
+            ))],
         )
         .build();
     let button_icon = RuleBuilder::new(IconStyle::default())
@@ -2917,6 +3120,7 @@ fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) ->
 /// the row's free width.
 fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
+    let [checked_hover, checked_pressed] = checked_layers(roles);
     let track = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.frame),
@@ -2924,6 +3128,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
             corners(SWITCH_TRACK_RADIUS),
             PartProp::MinSize(size),
             PartProp::MaxSize(size),
+            focus_ring(roles, SWITCH_FOCUS_RING_OFFSET),
         ])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
@@ -2933,15 +3138,29 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.switch_hover_off)],
         )
+        // An on switch hovered and pressed: libadwaita's layers over the accent
+        // ([`checked_layers`]; `&:checked { &:hover …; &:active … }`, _switch.scss:41-46 at
+        // libadwaita 1.10.0), where 0.7.2 took its uncited `switch.hover_checked_background`.
         .rule(
             RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
-            [fill(c.switch_hover_on)],
+            [fill(checked_hover)],
         )
         // `switch:active`: $trough_active_color (_switch.scss:9 at libadwaita 1.10.0); a checked
-        // switch keeps its checked look.
+        // switch takes its pressed layer.
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
             [fill(c.trough_active)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [fill(checked_pressed)],
+        )
+        // Disabled, the off track as at rest, stated for DISABLED (spec §2, `from_state`):
+        // `switch:disabled { filter: Opacity(var(--disabled-opacity)); }` fades the control and
+        // changes no colour (_switch.scss:20-22 at libadwaita 1.10.0); an on one keeps the accent.
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [fill(c.frame)],
         )
         .build();
     let thumb = RuleBuilder::new(PartStyle::default())
@@ -2966,7 +3185,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
         WidgetOrigin::Native,
         track,
         thumb,
-        switch_label(c, typography),
+        switch_label(c, typography, roles.disabled_opacity),
         // `label_side`, `label_gap_stretches`: libadwaita's labelled switch is `AdwSwitchRow`, its
         // title first and expanding (adw-action-row.ui:40-43), the switch a suffix at the row's
         // end (adw-switch-row.c:161; adw-action-row.ui:91-94, at libadwaita 1.10.0).
@@ -2985,10 +3204,14 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
 /// body font, whose family, size and weight its rule leaves (:146-151); a
 /// hovered, pressed or on row changes only its background and the switch's
 /// (:75-78, :592-601; _switch.scss:8-9, :36-55; adw-switch-row.c:217-227);
-/// insensitive, on or off, the title fades to [`DISABLED_OPACITY`]
-/// (`label:disabled { filter: Opacity(var(--disabled-opacity)) }`,
-/// _labels.scss:8-10; _colors.scss:320).
-fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+/// insensitive, on or off, the title fades to `disabled_opacity`, the
+/// contrast's (`label:disabled { filter: Opacity(var(--disabled-opacity)) }`,
+/// _labels.scss:8-10; _colors.scss:320, :327).
+fn switch_label(
+    c: &SchemeColors,
+    typography: &Typography,
+    disabled_opacity: f32,
+) -> RuleSet<TextStyle, TextProp> {
     let same = [
         RuleSelector::on(WidgetState::HOVER),
         RuleSelector::on(WidgetState::PRESSED),
@@ -2999,7 +3222,7 @@ fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle,
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(
-                c.row_foreground.mul_alpha(DISABLED_OPACITY),
+                c.row_foreground.mul_alpha(disabled_opacity),
             )],
         )
         .build()
@@ -3161,6 +3384,7 @@ fn segmented_control(
                 Edges::symmetric(SEGMENT_PADDING_VERTICAL, SEGMENT_PADDING_HORIZONTAL),
                 direction,
             )),
+            focus_ring(roles, SEGMENT_FOCUS_RING_OFFSET),
         ])
         // Hovered and pressed, no outline: a toggle's :hover, :active and .keyboard-activating
         // set only its background (_toggle-group.scss:65-71 at libadwaita 1.10.0), its inset
@@ -3196,12 +3420,19 @@ fn segmented_control(
             [TextProp::Color(c.segment_selected_foreground)],
         )
         .build();
+    // The line between toggles: AdwToggleGroup's `> separator` (_toggle-group.scss:141-159 at
+    // libadwaita 1.10.0) draws GtkSeparator's `background: $border_color` (_misc.scss:21-22), the
+    // splitter's line (currentColor at --border-opacity, `splitter_line`); a separator the group
+    // marks `.hidden` draws nothing (_toggle-group.scss:152-154), which the model has no state for.
+    let separator = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.splitter_line)])
+        .build();
     SegmentedControlWidget::new(
         WidgetOrigin::Native,
         track,
         segment,
         label,
-        RuleBuilder::new(PartStyle::default()).build(),
+        separator,
         SEGMENT_SEPARATOR_WIDTH,
         // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
         // unstated.
@@ -3223,9 +3454,15 @@ fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
 }
 
 /// The expander: the boxed list's outline and corners; a header of a least
-/// height, padded, its hover fill; the arrow's size and colour, side and gap;
-/// the content unindented; the frame drawn.
-fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> ExpanderWidget {
+/// height, padded, its hover fill, its own focus ring 1 px inside it; the
+/// arrow's size and colour, side and gap; the content unindented; the frame
+/// drawn.
+fn expander(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    direction: Direction,
+) -> ExpanderWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base([
             stroke(EXPANDER_BORDER_WIDTH, EXPANDER_BORDER),
@@ -3239,6 +3476,7 @@ fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> 
                 Edges::symmetric(EXPANDER_PADDING_VERTICAL, EXPANDER_PADDING_HORIZONTAL),
                 direction,
             )),
+            focus_ring(roles, EXPANDER_HEADER_FOCUS_RING_OFFSET),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
         // Pressed: the header is a %boxed_list_row (_lists.scss:524-526), whose activatable

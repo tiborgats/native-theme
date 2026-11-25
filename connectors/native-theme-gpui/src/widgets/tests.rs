@@ -6699,36 +6699,43 @@ fn a_tab_ring_offset_or_corners_the_inset_cannot_place_is_unmapped() {
 }
 
 /// A disabled checked box's mark is read at its own home where a rule states
-/// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`), not
-/// in the label's disabled colour; a theme that states none takes
-/// gpui-component's own treatment, the enabled mark at half alpha (spec §10,
-/// rule 0), not the label's disabled colour.
+/// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`;
+/// kde-breeze: the Disabled View text; macos-tahoe: the measured mark), not in
+/// the label's disabled colour, and a radio button's dot likewise; a theme
+/// that states none (macos-monterey dark, whose mark was not read) gets
+/// gpui-component's own disabled mark, the checked mark at half its opacity
+/// (spec §10, rule 0).
 #[test]
 fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
-    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    use native_theme::next::{IconStated, Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    let disabled = WidgetState::DISABLED | WidgetState::CHECKED;
     for ctx in [ThemeContext::light(), ThemeContext::dark()] {
-        let r = NextTheme::preset(Preset::Material3).resolve(&ctx);
-        let surface = crate::next::hsla(
-            r.checkbox
-                .checkmark(WidgetState::DISABLED | WidgetState::CHECKED)
-                .color,
-        );
-        let look = CheckboxLook::next_of(&r, true, true)?;
-        assert_eq!(look.mark, surface, "{ctx:?}");
-        assert_ne!(look.mark, look.label, "{ctx:?}");
-
+        for preset in [Preset::Material3, Preset::KdeBreeze, Preset::MacosTahoe] {
+            let r = NextTheme::preset(preset).resolve(&ctx);
+            let stated = crate::next::hsla(r.checkbox.checkmark(disabled).color);
+            let look = CheckboxLook::next_of(&r, true, true)?;
+            assert_eq!(look.mark, stated, "{preset:?} {ctx:?}");
+            assert_ne!(look.mark, look.label, "{preset:?} {ctx:?}");
+        }
         let kde = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
-        let look = CheckboxLook::next_of(&kde, true, true)?;
-        let enabled = CheckboxLook::next_of(&kde, true, false)?;
+        let dot = crate::next::fill(&kde.radio.dot(disabled), "radio.dot(DISABLED|CHECKED).fill")?;
         assert_eq!(
-            look.mark,
-            enabled
-                .mark
-                .opacity(super::checkbox::DISABLED_INDICATOR_ALPHA),
+            CheckboxLook::next_radio(&kde, true, true)?.mark,
+            dot,
             "{ctx:?}"
         );
-        assert_ne!(look.mark, look.label, "{ctx:?}");
     }
+    let mac = NextTheme::preset(Preset::MacosMonterey).resolve(&ThemeContext::dark());
+    assert!(
+        !mac.checkbox
+            .checkmark(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+    );
+    let enabled = CheckboxLook::next_of(&mac, true, false)?;
+    let look = CheckboxLook::next_of(&mac, true, true)?;
+    assert_eq!(look.mark, enabled.mark.opacity(0.5));
+    assert_ne!(look.mark, enabled.mark);
     Ok(())
 }
 
@@ -6860,14 +6867,51 @@ fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crat
     Ok(())
 }
 
+/// `r` with its check box's and radio's indicator fill, and the check box's
+/// mark colour, stated for no state at `DISABLED`: a rule of no required
+/// state, forbidding every state but `DISABLED` a rest query's look depends
+/// on, restates them at rest, so they stay as `r` gives them and the
+/// `from_state` bits of those queried at `DISABLED` are cleared (spec §2,
+/// `from_state`: a rule without required states clears it). Every bundled
+/// preset states a disabled indicator's fill, adwaita its rest fill and its
+/// mark as enabled (libadwaita fades a disabled check and changes no colour,
+/// _checks.scss:62-64 at libadwaita 1.10.0).
+fn disabled_look_unstated(r: &mut native_theme::next::ResolvedTheme) {
+    use native_theme::next::{
+        CheckboxRule, IconPatch, PartPatch, RadioRule, ThemePatch, WidgetState,
+    };
+    let others = WidgetState::CHECKED
+        | WidgetState::INDETERMINATE
+        | WidgetState::HOVER
+        | WidgetState::PRESSED;
+    let boxed = r.checkbox.indicator(WidgetState::NONE).fill;
+    let mark = r.checkbox.checkmark(WidgetState::NONE).color;
+    let round = r.radio.indicator(WidgetState::NONE).fill;
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(
+                CheckboxRule::new()
+                    .not_states(others)
+                    .indicator(PartPatch::new().fill(boxed))
+                    .checkmark(IconPatch::new().color(mark)),
+            )
+            .radio(
+                RadioRule::new()
+                    .not_states(others)
+                    .indicator(PartPatch::new().fill(round)),
+            ),
+    );
+}
+
 /// A disabled check box and radio, checked or not, are filled with the fill
 /// a rule states for `DISABLED` (spec §2, `from_state`), read at the
 /// control's checked state, and where no rule does with gpui-component's
 /// own disabled fill (spec §10, rule 0): a checked box's and a radio's,
 /// checked or not, the enabled fill at half alpha, an unchecked box's its
 /// enabled fill (gpui-component 0.10.0 checkbox.rs:286-290, :359-362;
-/// radio.rs:193-200). Adwaita states none; patched to state a sentinel fill
-/// for each control's `DISABLED`, that fill.
+/// radio.rs:193-200). Adwaita, its disabled fill unstated
+/// ([`disabled_look_unstated`]); patched to state a sentinel fill for each
+/// control's `DISABLED`, that fill.
 #[test]
 fn a_disabled_indicator_takes_the_fill_stated_for_the_disabled_state() -> crate::next::Mapped<()> {
     use native_theme::next::{
@@ -6882,6 +6926,7 @@ fn a_disabled_indicator_takes_the_fill_stated_for_the_disabled_state() -> crate:
         }
     };
     let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    disabled_look_unstated(&mut r);
     assert!(
         !r.checkbox
             .indicator(WidgetState::DISABLED)
@@ -6892,7 +6937,8 @@ fn a_disabled_indicator_takes_the_fill_stated_for_the_disabled_state() -> crate:
                 .indicator(WidgetState::DISABLED)
                 .from_state
                 .contains(PartStated::FILL),
-        "adwaita light now states a disabled indicator fill, which this test needs unstated"
+        "adwaita light, patched, states a disabled indicator fill, which this test needs \
+         unstated"
     );
     for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
         let enabled = look(&r, radio, checked, false)?.fill;
@@ -7079,9 +7125,11 @@ fn a_stated_state_is_drawn_over_gpui_components_own_treatment() -> crate::next::
 
 /// A mixed check box is drawn as a checked one where a 0.8.0 theme states no
 /// rule for `INDETERMINATE`, as gpui-component draws it (gpui-component
-/// 0.10.0 checkbox.rs:354-358; spec §10, rule 0): so on every preset, none of
-/// which states one. Adwaita light, which states no rule for a disabled
-/// indicator's fill or stroke or a disabled mark, patched to state a fill, a
+/// 0.10.0 checkbox.rs:354-358; spec §10, rule 0): so on every preset, each
+/// of which that states one states the checked box's look for it. Adwaita
+/// light, its disabled fill and mark unstated ([`disabled_look_unstated`]), which
+/// then states no rule for a disabled indicator's fill or stroke or a
+/// disabled mark, patched to state a fill, a
 /// stroke and a mark colour for `INDETERMINATE`: the mixed box draws those,
 /// a checked one does not, and disabled it draws them at half alpha; patched
 /// further to state others for `DISABLED`, disabled it draws those, read at
@@ -7106,6 +7154,7 @@ fn a_mixed_box_draws_the_look_stated_for_the_indeterminate_state() -> crate::nex
         }
     }
     let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    disabled_look_unstated(&mut r);
     let off = r.checkbox.indicator(WidgetState::DISABLED).from_state;
     assert!(
         !off.contains(PartStated::FILL)
@@ -7115,8 +7164,8 @@ fn a_mixed_box_draws_the_look_stated_for_the_indeterminate_state() -> crate::nex
                 .checkmark(WidgetState::DISABLED)
                 .from_state
                 .contains(IconStated::COLOR),
-        "adwaita light now states a disabled indicator fill, stroke or mark, which this test \
-         needs unstated"
+        "adwaita light, its disabled look unstated, states a disabled indicator fill, stroke or \
+         mark, which this test needs unstated"
     );
     let Some(width) =
         crate::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE)).filter(|w| *w > 0.)

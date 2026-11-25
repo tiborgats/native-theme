@@ -6,10 +6,11 @@ use std::sync::Arc;
 use iced_core::Background;
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    ButtonRule, ButtonVariant, CheckboxRule, Color, ComboBoxRule, Corners, ExpanderRule, InputRule,
-    LinkRule, MenuRule, Paint, PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme,
-    ScrollbarRule, SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule,
-    TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
+    ButtonRule, ButtonVariant, CheckboxRule, Color, ComboBoxRule, Corners, ExpanderRule,
+    GradientStop, InputRule, LinkRule, MaterialKind, MaterialSpec, MenuRule, Paint, PaintLayer,
+    PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ScrollbarRule, SegmentedControlRule,
+    ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule, TextPatch, TextStated, Theme,
+    ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
 
 use super::super::borders::{line, line_or_none};
@@ -116,20 +117,134 @@ fn a_toolbar_button_fades_its_label_by_a_stated_opacity() -> TestResult {
     const OPACITY: f32 = 0.5;
     for (preset, r) in every_preset() {
         let mut b = super::button_source(&r)?;
-        b.disabled_label = None;
         b.disabled_opacity = Some(OPACITY);
-        let t = super::toolbar_button_source(&r)?;
+        let mut t = super::toolbar_button_source(&r)?;
+        let labels = t
+            .labels
+            .as_mut()
+            .ok_or("the 0.8.0 source names the toolbar's labels")?;
+        labels.disabled = None;
+        let rest = labels.rest;
         let theme = to_theme(&r)?;
+        let rest = rest.unwrap_or(
+            iced_widget::button::secondary(&theme, iced_widget::button::Status::Active).text_color,
+        );
         let style = crate::styles::toolbar_button_from(&b, &t, false)(
             &theme,
             iced_widget::button::Status::Disabled,
         );
         assert_eq!(
             style.text_color,
-            crate::styles::faded(b.label, OPACITY),
+            crate::styles::faded(rest, OPACITY),
             "{preset:?}"
         );
     }
+    Ok(())
+}
+
+/// A toolbar button is lettered in `toolbar.button_label(<state>)`, the
+/// label at rest iced's own where the toolbar states none (spec §10, rule
+/// 0), never in the push button's labels.
+#[test]
+fn a_toolbar_button_reads_the_toolbar_labels() -> TestResult {
+    use iced_widget::button::Status;
+    let push = IcedColor::from_rgb8(0xf0, 0xa0, 0x14);
+    let (mut stated, mut left) = (0, 0);
+    for (preset, r) in every_preset() {
+        let mut b = super::button_source(&r)?;
+        b.label = Some(push);
+        b.hover_label = Some(push);
+        b.active_label = Some(push);
+        b.checked_label = Some(push);
+        b.disabled_label = Some(push);
+        let t = super::toolbar_button_source(&r)?;
+        let labels = t
+            .labels
+            .ok_or("the 0.8.0 source names the toolbar's labels")?;
+        let theme = to_theme(&r)?;
+        let style = crate::styles::toolbar_button_from(&b, &t, false);
+        let rest = style(&theme, Status::Active).text_color;
+        match labels.rest {
+            Some(label) => {
+                stated += 1;
+                assert_eq!(rest, label, "{preset:?}: the stated label at rest");
+            }
+            None => {
+                left += 1;
+                assert_eq!(
+                    rest,
+                    iced_widget::button::secondary(&theme, Status::Active).text_color,
+                    "{preset:?}: iced's own label at rest"
+                );
+            }
+        }
+        for (status, label) in [
+            (Status::Hovered, labels.hover),
+            (Status::Pressed, labels.pressed),
+            (Status::Disabled, labels.disabled),
+        ] {
+            let drawn = style(&theme, status).text_color;
+            if let Some(label) = label {
+                assert_eq!(drawn, label, "{preset:?} {status:?}: the stated label");
+            }
+            assert_ne!(drawn, push, "{preset:?} {status:?}: not the push button's");
+        }
+        assert_ne!(rest, push, "{preset:?}: not the push button's");
+    }
+    assert!(
+        stated > 0,
+        "a stated label at rest covered ({left} left to iced)"
+    );
+    Ok(())
+}
+
+/// A toolbar button is outlined as the toolbar's own button (spec §5, the
+/// toolbar's `button` part), never as the push button: its corners
+/// `toolbar.button(NONE)`'s, iced's own neutral class's where unstated, and
+/// a hovered stroke a rule states drawn at that stroke's width, on every
+/// preset with the push button's corners and stroke patched apart.
+#[test]
+fn a_toolbar_button_is_outlined_as_its_own_part() -> TestResult {
+    use iced_widget::button::{Status, secondary};
+    const WIDTH: f32 = 3.0;
+    let patch = ThemePatch::new()
+        .button(
+            ButtonRule::new().body(
+                PartPatch::new()
+                    .corners(Corners::uniform(7.0))
+                    .stroke(Stroke::uniform(5.0, DISTINCT)),
+            ),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::HOVER)
+                .button(PartPatch::new().stroke(Stroke::uniform(WIDTH, LABEL))),
+        );
+    let (mut stated, mut left) = (0, 0);
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::toolbar_button(&r, false)?;
+        let rest = r.toolbar.button(WidgetState::NONE);
+        let own = secondary(&theme, Status::Active).border.radius;
+        let expected = if rest.stated.contains(PartStated::CORNERS) {
+            stated += 1;
+            super::super::borders::part_radii(&rest, "corners")?
+        } else {
+            left += 1;
+            own
+        };
+        for status in [Status::Active, Status::Hovered, Status::Pressed] {
+            assert_eq!(
+                style(&theme, status).border.radius,
+                expected,
+                "{preset:?} {status:?} corners"
+            );
+        }
+        let hovered = style(&theme, Status::Hovered).border;
+        assert_eq!(hovered.width, WIDTH, "{preset:?} hovered width");
+        assert_eq!(hovered.color, to_color(LABEL), "{preset:?} hovered colour");
+    }
+    assert!(left > 0, "iced's own corners covered ({stated} stated)");
     Ok(())
 }
 
@@ -181,11 +296,63 @@ fn a_field_with_no_disabled_opacity_is_drawn_as_stated() -> TestResult {
             Background::Color(expected_fill),
             "{preset:?}"
         );
-        assert_eq!(
-            style.value,
-            text_color(&r.input.text(WidgetState::DISABLED), "text")?,
-            "{preset:?}"
+        let text = r.input.text(WidgetState::DISABLED);
+        if text.from_state.contains(TextStated::COLOR) {
+            assert_eq!(style.value, text_color(&text, "text")?, "{preset:?}");
+        }
+    }
+    Ok(())
+}
+
+/// A disabled field's value is the colour a rule for `DISABLED` states
+/// (`input.text(DISABLED)`, `text_area.text(DISABLED)`); where none does,
+/// iced's own disabled value, which `text_input::default` and
+/// `text_editor::default` change from the value at rest (spec §2,
+/// `from_state`; §10, rule 0), never the value at rest the query returns.
+#[test]
+fn a_disabled_fields_value_is_stated_for_the_state_else_iceds_own() -> TestResult {
+    let rest = ThemePatch::new()
+        .input(InputRule::new().text(TextPatch::new().color(DISTINCT)))
+        .text_area(InputRule::new().text(TextPatch::new().color(DISTINCT)));
+    let stated = rest
+        .clone()
+        .input(
+            InputRule::new()
+                .states(WidgetState::DISABLED)
+                .text(TextPatch::new().color(LABEL)),
+        )
+        .text_area(
+            InputRule::new()
+                .states(WidgetState::DISABLED)
+                .text(TextPatch::new().color(LABEL)),
         );
+    for (patch, rule) in [(&rest, false), (&stated, true)] {
+        for (preset, mut r) in every_preset_with(patch) {
+            r.input.disabled_opacity = None;
+            r.text_area.disabled_opacity = None;
+            let theme = to_theme(&r)?;
+            let what = format!("{preset:?} rule {rule}");
+            let input = super::text_input(&r)?(&theme, iced_widget::text_input::Status::Disabled);
+            let editor =
+                super::text_editor(&r)?(&theme, iced_widget::text_editor::Status::Disabled);
+            let (own_input, own_editor) = (
+                iced_widget::text_input::default(&theme, iced_widget::text_input::Status::Disabled)
+                    .value,
+                iced_widget::text_editor::default(
+                    &theme,
+                    iced_widget::text_editor::Status::Disabled,
+                )
+                .value,
+            );
+            if rule {
+                assert_eq!(input.value, to_color(LABEL), "{what} input");
+                assert_eq!(editor.value, to_color(LABEL), "{what} editor");
+            } else {
+                assert_eq!(input.value, own_input, "{what} input");
+                assert_eq!(editor.value, own_editor, "{what} editor");
+                assert_ne!(input.value, to_color(DISTINCT), "{what} input");
+            }
+        }
     }
     Ok(())
 }
@@ -231,6 +398,116 @@ fn a_layered_fill_is_drawn_in_its_fallback() -> TestResult {
     let theme = to_theme(&r)?;
     let style = super::text_input(&r)?(&theme, iced_widget::text_input::Status::Active);
     assert_eq!(style.background, Background::Color(to_color(DISTINCT)));
+    Ok(())
+}
+
+/// A backdrop material of the case, `fallback` its colour for a toolkit
+/// without backdrop blur.
+fn material(fallback: Color) -> PaintLayer {
+    PaintLayer::Material(MaterialSpec::new(
+        MaterialKind::Acrylic,
+        30.0,
+        Color::TRANSPARENT,
+        1.0,
+        0.0,
+        0.0,
+        fallback,
+    ))
+}
+
+/// A material is drawn in its fallback colour (spec §10, rule 2: "render
+/// `material.fallback`"), on the surface it lies on whatever that is.
+#[test]
+fn a_material_fill_is_drawn_in_its_fallback() -> TestResult {
+    let patch = ThemePatch::new().input(
+        InputRule::new().field(PartPatch::new().fill(Paint::layers(vec![material(DISTINCT)]))),
+    );
+    let r = Theme::preset(Preset::Adwaita)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let theme = to_theme(&r)?;
+    let style = super::text_input(&r)?(&theme, iced_widget::text_input::Status::Active);
+    assert_eq!(style.background, Background::Color(to_color(DISTINCT)));
+    Ok(())
+}
+
+/// A translucent solid over a material is drawn in the topmost opaque
+/// layer's colour, the material's fallback, not flattened onto a surface.
+#[test]
+fn a_solid_over_a_material_is_drawn_in_the_topmost_opaque_layer() -> TestResult {
+    use iced_widget::button::Status;
+    let layers = Paint::layers(vec![
+        material(DISTINCT),
+        PaintLayer::Solid {
+            color: Color::new(1.0, 1.0, 1.0, 0.5),
+            blend: Default::default(),
+        },
+    ]);
+    let patch = ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().fill(layers)));
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::button(&r)?(&theme, Status::Active);
+        assert_eq!(
+            background_color(style.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// Layers that are all gradients have no single colour: a style iced
+/// draws in one colour reports them `Unmapped` at their home (spec §10,
+/// rule 4), never iced's own fill in their place.
+#[test]
+fn an_all_gradient_fill_is_unmapped() -> TestResult {
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: DISTINCT,
+            },
+            GradientStop {
+                offset: 1.0,
+                color: LABEL,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let fill = PartPatch::new().fill(gradient);
+    let patch = ThemePatch::new()
+        .button(ButtonRule::new().body(fill.clone()))
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::HOVER)
+                .body(fill.clone()),
+        )
+        .toolbar(ToolbarRule::new().bar(fill.clone()))
+        .input(InputRule::new().field(fill));
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::super::fill_of(&r.button.body(WidgetState::NONE), "at rest"),
+        Err(super::super::Unmapped("at rest"))
+    );
+    assert_eq!(
+        super::super::state_fill_of(&r.button.body(WidgetState::HOVER), "hovered"),
+        Err(super::super::Unmapped("hovered"))
+    );
+    assert_eq!(
+        super::button(&r).err(),
+        Some(super::super::Unmapped("button.body(NONE).fill"))
+    );
+    assert_eq!(
+        super::text_input(&r).err(),
+        Some(super::super::Unmapped("input.field(NONE).fill"))
+    );
+    assert_eq!(
+        super::toolbar(&r).err(),
+        Some(super::super::Unmapped("toolbar.bar(NONE).fill"))
+    );
     Ok(())
 }
 
@@ -298,7 +575,11 @@ fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
                 .body(every_state())
                 .label(TextPatch::new().color(LABEL)),
         )
-        .toolbar(ToolbarRule::new().button(every_state()));
+        .toolbar(
+            ToolbarRule::new()
+                .button(every_state())
+                .button_label(TextPatch::new().color(LABEL)),
+        );
     let fill = Some(Background::Color(to_color(DISTINCT)));
     let label = to_color(LABEL);
     let mut changed = 0;
@@ -507,6 +788,87 @@ fn a_checked_rule_alone_leaves_the_hovered_state_to_iceds_change() -> TestResult
             Background::Color(to_color(LABEL)),
             "{preset:?}"
         );
+    }
+    Ok(())
+}
+
+/// A disabled check box, checked or not, is stroked in what a rule for
+/// `DISABLED` states (asked with that flag alone, spec §2, `from_state`);
+/// where none does, its border colour is iced's own change, which iced's
+/// own box makes when disabled (iced_widget 0.14.2 `checkbox::primary`:
+/// `background.weak` unchecked, `background.strong` checked), the theme's
+/// at rest where iced's palette makes none, and its width the theme's at
+/// rest. The box is not faded here (no disabled opacity).
+#[test]
+fn a_disabled_check_box_is_stroked_as_stated_else_iceds_own() -> TestResult {
+    use iced_widget::checkbox::{Status, primary};
+    const DISABLED_STROKE: Color = Color::new(0.7, 0.1, 0.2, 1.0);
+    let base = ThemePatch::new().checkbox(
+        CheckboxRule::new().indicator(
+            PartPatch::new()
+                .fill(Paint::Solid(DISTINCT))
+                .stroke(Stroke::uniform(2.0, LABEL)),
+        ),
+    );
+    let stated = base.clone().checkbox(
+        CheckboxRule::new()
+            .states(WidgetState::DISABLED)
+            .indicator(PartPatch::new().stroke(Stroke::uniform(2.0, DISABLED_STROKE))),
+    );
+    let mut iceds = 0;
+    for (patch, rule) in [(&base, false), (&stated, true)] {
+        for (preset, mut r) in every_preset_with(patch) {
+            r.checkbox.disabled_opacity = None;
+            let theme = to_theme(&r)?;
+            let style = super::checkbox(&r)?;
+            for is_checked in [false, true] {
+                let what = format!("{preset:?} checked {is_checked} rule {rule}");
+                let status = Status::Disabled { is_checked };
+                let border = style(&theme, status).border;
+                let own_rest = primary(&theme, Status::Active { is_checked }).border;
+                let own = primary(&theme, status).border;
+                let expected = if rule {
+                    to_color(DISABLED_STROKE)
+                } else if own.color != own_rest.color {
+                    iceds += 1;
+                    own.color
+                } else {
+                    to_color(LABEL)
+                };
+                assert_eq!(border.color, expected, "{what}");
+                assert_eq!(border.width, 2.0, "{what}");
+            }
+        }
+    }
+    assert!(iceds > 0, "iced's own disabled border covered");
+    Ok(())
+}
+
+/// A vertical slider's rail is as wide as the vertical track
+/// (`slider.track(NONE; orientation=Vertical).min_size[0]`), a horizontal
+/// one's as tall as the horizontal track (`min_size[1]`), each from its own
+/// orientation's query.
+#[test]
+fn a_vertical_sliders_rail_is_the_vertical_tracks_width() -> TestResult {
+    use iced_widget::slider::Status;
+    use native_theme::next::Orientation;
+    let patch = ThemePatch::new()
+        .slider(
+            SliderRule::new()
+                .orientation(Orientation::Vertical)
+                .track(PartPatch::new().min_size([Some(9.0), Some(31.0)])),
+        )
+        .slider(
+            SliderRule::new()
+                .orientation(Orientation::Horizontal)
+                .track(PartPatch::new().min_size([Some(37.0), Some(5.0)])),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let vertical = super::vertical_slider(&r)?(&theme, Status::Active);
+        assert_eq!(vertical.rail.width, 9.0, "{preset:?}");
+        let horizontal = super::slider(&r)?(&theme, Status::Active);
+        assert_eq!(horizontal.rail.width, 5.0, "{preset:?}");
     }
     Ok(())
 }
@@ -753,7 +1115,7 @@ fn a_scroller_no_state_rule_states_is_iceds_own() -> TestResult {
         .scrollbar(ScrollbarRule::new().thumb(PartPatch::new().fill(Paint::Solid(DISTINCT))));
     for (preset, r) in every_preset_with(&base) {
         let theme = to_theme(&r)?;
-        let style = super::scrollable(&r)?;
+        let style = super::scrollable(&r, WidgetState::NONE)?;
         for status in [hovered, dragged] {
             let own = iced_widget::scrollable::default(&theme, status);
             assert_eq!(
@@ -771,7 +1133,7 @@ fn a_scroller_no_state_rule_states_is_iceds_own() -> TestResult {
     for (preset, r) in every_preset_with(&stated) {
         let theme = to_theme(&r)?;
         assert_eq!(
-            super::scrollable(&r)?(&theme, hovered)
+            super::scrollable(&r, WidgetState::NONE)?(&theme, hovered)
                 .vertical_rail
                 .scroller
                 .background,
@@ -801,8 +1163,8 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
     };
     for (preset, r) in every_preset() {
         let theme = to_theme(&r)?;
-        let rest = r.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
-        let border = super::scrollable(&r)?(&theme, active)
+        let rest = r.scrollbar.thumb(WidgetState::NONE);
+        let border = super::scrollable(&r, WidgetState::NONE)?(&theme, active)
             .vertical_rail
             .scroller
             .border;
@@ -847,7 +1209,7 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
     for (preset, mut r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
         r.scrollbar.overlay_mode = false;
-        let style = super::scrollable(&r)?;
+        let style = super::scrollable(&r, WidgetState::NONE)?;
         let at_rest = style(&theme, active).vertical_rail.scroller.border;
         assert_eq!(
             at_rest.color,
@@ -869,11 +1231,54 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
         assert_eq!(under.horizontal_rail.scroller.border, at_rest, "{preset:?}");
 
         r.scrollbar.overlay_mode = true;
-        let hidden = super::scrollable(&r)?(&theme, active)
+        let hidden = super::scrollable(&r, WidgetState::NONE)?(&theme, active)
             .vertical_rail
             .scroller
             .border;
         assert_eq!(hidden.width, 0.0, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// A scroller at rest in the view that has the focus is that view's handle,
+/// `thumb(NONE)`: a rule stated for `UNFOCUSED_VIEW` alone does not paint it;
+/// in a view without the focus it is `thumb(UNFOCUSED_VIEW)`, that rule's
+/// (spec §3, `WidgetState`; spec §5, `S3`).
+#[test]
+fn a_scroller_at_rest_is_the_handle_of_its_views_focus() -> TestResult {
+    use iced_widget::scrollable::Status;
+    let active = Status::Active {
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let unfocused = Color::new(0.9, 0.1, 0.1, 1.0);
+    let patch = ThemePatch::new()
+        .scrollbar(ScrollbarRule::new().thumb(PartPatch::new().fill(Paint::Solid(DISTINCT))))
+        .scrollbar(
+            ScrollbarRule::new()
+                .states(WidgetState::UNFOCUSED_VIEW)
+                .thumb(PartPatch::new().fill(Paint::Solid(unfocused))),
+        );
+    for (preset, mut r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        r.scrollbar.overlay_mode = false;
+        let scroller = super::scrollable(&r, WidgetState::NONE)?(&theme, active)
+            .vertical_rail
+            .scroller;
+        assert_eq!(
+            background_color(Some(scroller.background)),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let unfocused_scroller =
+            super::scrollable(&r, WidgetState::UNFOCUSED_VIEW)?(&theme, active)
+                .vertical_rail
+                .scroller;
+        assert_eq!(
+            background_color(Some(unfocused_scroller.background)),
+            Some(to_color(unfocused)),
+            "{preset:?}"
+        );
     }
     Ok(())
 }
@@ -1055,14 +1460,17 @@ fn a_segment_separator_is_the_separator_parts_fill_where_stated() -> TestResult 
     for (preset, r) in every_preset() {
         let style = super::segment_separator(&r, false)?(&to_theme(&r)?);
         let track = r.segmented_control.track(WidgetState::NONE);
+        let separator = r.segmented_control.separator(WidgetState::NONE);
         // a track stated with no stroke gives no line (the test below)
-        let outline =
-            if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None) {
-                None
-            } else {
-                Some(line(&track, "stroke")?.color)
-            };
-        assert_eq!(background_color(style.background), outline, "{preset:?}");
+        let expected = if separator.stated.contains(PartStated::FILL) {
+            Some(fill(&separator, "separator(NONE).fill")?)
+        } else if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None)
+        {
+            None
+        } else {
+            Some(line(&track, "stroke")?.color)
+        };
+        assert_eq!(background_color(style.background), expected, "{preset:?}");
     }
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().separator(PartPatch::new().fill(Paint::Solid(DISTINCT))),
@@ -1086,15 +1494,18 @@ fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestR
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().track(PartPatch::new().stroke(Stroke::None)),
     );
+    let mut tested = 0;
     for (preset, r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
-        assert!(
-            !r.segmented_control
-                .separator(WidgetState::NONE)
-                .stated
-                .contains(PartStated::FILL),
-            "{preset:?}: no separator fill stated"
-        );
+        // a preset that states the separator's fill draws that line (the test above)
+        if r.segmented_control
+            .separator(WidgetState::NONE)
+            .stated
+            .contains(PartStated::FILL)
+        {
+            continue;
+        }
+        tested += 1;
         let separator = super::segment_separator(&r, false)?(&theme);
         assert_eq!(separator.background, None, "{preset:?}");
         assert_eq!(
@@ -1112,6 +1523,7 @@ fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestR
             "{preset:?}"
         );
     }
+    assert!(tested > 0, "no preset leaves the separator's fill unstated");
     Ok(())
 }
 
@@ -1189,6 +1601,41 @@ fn a_switch_thumb_no_hover_rule_states_is_iceds_own() -> TestResult {
         }
     }
     assert!(iceds > 0, "iced's own thumb covered");
+    Ok(())
+}
+
+/// A switch's thumb is outlined in the stroke its own state states, on and
+/// off, at rest and under the pointer: a checked thumb's stated outline is
+/// the checked one, not the off thumb's (spec §10, rule 0, per property).
+#[test]
+fn a_switch_thumb_is_outlined_in_its_own_states_stroke() -> TestResult {
+    use iced_widget::toggler::Status;
+    let off = Color::new(0.9, 0.1, 0.1, 1.0);
+    let on = Color::new(0.1, 0.1, 0.9, 1.0);
+    let patch = ThemePatch::new()
+        .switch(SwitchRule::new().thumb(PartPatch::new().stroke(Stroke::uniform(1.0, off))))
+        .switch(
+            SwitchRule::new()
+                .states(WidgetState::CHECKED)
+                .thumb(PartPatch::new().stroke(Stroke::uniform(2.0, on))),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::toggler(&r)?;
+        for (is_toggled, colour, width) in [(false, off, 1.0), (true, on, 2.0)] {
+            for status in [
+                Status::Active { is_toggled },
+                Status::Hovered { is_toggled },
+            ] {
+                let drawn = style(&theme, status);
+                assert_eq!(
+                    (drawn.foreground_border_color, drawn.foreground_border_width),
+                    (to_color(colour), width),
+                    "{preset:?} {status:?}"
+                );
+            }
+        }
+    }
     Ok(())
 }
 
@@ -1393,23 +1840,27 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
     for (preset, r) in every_preset() {
         let theme = to_theme(&r)?;
         let primary = super::button_primary(&r)?;
-        let plain = super::button(&r)?;
-        let label = r.button.label(WidgetState::CHECKED);
-        let checked_label = label
-            .from_state
-            .contains(TextStated::COLOR)
-            .then(|| text_color(&label, "label"))
-            .transpose()?;
-        for (stated, style, counted) in [
+        let stated_label = |label: native_theme::next::TextStyle| {
+            label
+                .from_state
+                .contains(TextStated::COLOR)
+                .then(|| text_color(&label, "label"))
+                .transpose()
+        };
+        type Styled = Box<dyn Fn(&iced_core::theme::Theme, Status) -> iced_widget::button::Style>;
+        for (stated, checked_label, style, unchecked, counted) in [
             (
                 r.button.body(WidgetState::CHECKED),
-                Box::new(super::button_toggle(&r, true)?)
-                    as Box<dyn Fn(&iced_core::theme::Theme, Status) -> iced_widget::button::Style>,
+                stated_label(r.button.label(WidgetState::CHECKED))?,
+                Box::new(super::button_toggle(&r, true)?) as Styled,
+                Box::new(super::button(&r)?) as Styled,
                 &mut unstated.0,
             ),
             (
                 r.toolbar.button(WidgetState::CHECKED),
+                stated_label(r.toolbar.button_label(WidgetState::CHECKED))?,
                 Box::new(super::toolbar_button(&r, true)?),
+                Box::new(super::toolbar_button(&r, false)?),
                 &mut unstated.1,
             ),
         ] {
@@ -1430,13 +1881,13 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
                 );
                 assert_eq!(
                     checked.border.radius,
-                    plain(&theme, status).border.radius,
+                    unchecked(&theme, status).border.radius,
                     "{preset:?} {status:?}"
                 );
             }
             assert_ne!(
                 style(&theme, Status::Active).background,
-                plain(&theme, Status::Active).background,
+                unchecked(&theme, Status::Active).background,
                 "{preset:?}"
             );
         }
@@ -1497,9 +1948,36 @@ fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestRe
             ToolbarRule::new()
                 .states(WidgetState::CHECKED)
                 .button(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::PRESSED)
+                .button_label(TextPatch::new().color(LABEL)),
         );
-    let mut covered = 0;
+    let (mut covered, mut toolbars) = (0, 0);
     for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let pressed = r.toolbar.button_label(WidgetState::PRESSED);
+        assert!(pressed.from_state.contains(TextStated::COLOR), "{preset:?}");
+        // the toolbar button is lettered in the toolbar's own labels
+        if !r
+            .toolbar
+            .button_label(WidgetState::CHECKED)
+            .from_state
+            .contains(TextStated::COLOR)
+        {
+            toolbars += 1;
+            let at_rest = text_color(&r.toolbar.button_label(WidgetState::NONE), "label")?;
+            assert_ne!(at_rest, to_color(LABEL), "{preset:?}");
+            let toolbar = super::toolbar_button(&r, true)?;
+            for status in [Status::Active, Status::Hovered, Status::Pressed] {
+                assert_eq!(
+                    toolbar(&theme, status).text_color,
+                    at_rest,
+                    "{preset:?} {status:?}"
+                );
+            }
+        }
         let pressed = r.button.label(WidgetState::PRESSED);
         assert!(pressed.from_state.contains(TextStated::COLOR), "{preset:?}");
         assert_eq!(
@@ -1517,23 +1995,20 @@ fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestRe
         covered += 1;
         let at_rest = text_color(&r.button.label(WidgetState::NONE), "label")?;
         assert_ne!(at_rest, to_color(LABEL), "{preset:?}");
-        let theme = to_theme(&r)?;
         let toggle = super::button_toggle(&r, true)?;
-        let toolbar = super::toolbar_button(&r, true)?;
         for status in [Status::Active, Status::Hovered, Status::Pressed] {
             assert_eq!(
                 toggle(&theme, status).text_color,
                 at_rest,
                 "{preset:?} {status:?}"
             );
-            assert_eq!(
-                toolbar(&theme, status).text_color,
-                at_rest,
-                "{preset:?} {status:?}"
-            );
         }
     }
     assert!(covered > 0, "a theme with no checked label covered");
+    assert!(
+        toolbars > 0,
+        "a theme with no checked toolbar label covered"
+    );
     Ok(())
 }
 
@@ -1602,38 +2077,45 @@ fn a_field_stroke_no_hover_or_focus_rule_states_is_iceds_own() -> TestResult {
     Ok(())
 }
 
-/// The field styles read the focus ring's colour from its stroke
-/// (`focus_ring.stroke`), as `next::focus_ring` does, not from the colour
-/// role: an inset ring of a stated colour is the focused field's border in
-/// that colour, whatever `colors.focus_ring` is.
+/// A focus ring inset at the field's edge (offset minus its width) is
+/// painted over the field, not drawn as its border (spec §2,
+/// `FocusIndicator`): the focused field's border is the one it has with
+/// the ring off its edge, and the ring is the band over the field's
+/// outermost width, its outer corners the field's, in the colour of the
+/// ring's stroke (`focus_ring.stroke`), whatever `colors.focus_ring` is.
 #[test]
-fn a_field_takes_its_inset_rings_colour_from_the_rings_stroke() -> TestResult {
+fn an_inset_ring_is_the_band_over_the_field_not_its_border() -> TestResult {
+    use iced_core::border::Radius;
+    use iced_core::{Point, Rectangle, Size};
     use iced_widget::{text_editor, text_input};
     let opaque = Color::new(0.6, 0.1, 0.4, 1.0);
-    let mut covered = 0;
+    let field = Rectangle::new(Point::new(10.0, 20.0), Size::new(100.0, 30.0));
     for (preset, mut r) in every_preset() {
         r.colors.focus_ring = DISTINCT;
         r.focus_ring.stroke = Stroke::uniform(2.0, opaque);
+        let borders = |r: &ResolvedTheme| -> Result<_, super::super::Unmapped> {
+            let theme = to_theme(r)?;
+            let focused = |is_hovered| text_input::Status::Focused { is_hovered };
+            let editor = |is_hovered| text_editor::Status::Focused { is_hovered };
+            Ok([false, true].map(|hovered| {
+                (
+                    super::text_input(r).map(|s| s(&theme, focused(hovered)).border),
+                    super::text_editor(r).map(|s| s(&theme, editor(hovered)).border),
+                )
+            }))
+        };
+        r.focus_ring.offset = 1.0;
+        let off_the_edge = borders(&r)?;
         r.focus_ring.offset = -2.0;
-        let theme = to_theme(&r)?;
-        let input =
-            super::text_input(&r)?(&theme, text_input::Status::Focused { is_hovered: false })
-                .border;
-        let editor =
-            super::text_editor(&r)?(&theme, text_editor::Status::Focused { is_hovered: false })
-                .border;
-        let unstated =
-            |part: native_theme::next::PartStyle| !part.from_state.contains(PartStated::STROKE);
-        if unstated(r.input.field(WidgetState::FOCUSED)) {
-            covered += 1;
-            assert_eq!(input.color, to_color(opaque), "text_input {preset:?}");
-        }
-        if unstated(r.text_area.field(WidgetState::FOCUSED)) {
-            covered += 1;
-            assert_eq!(editor.color, to_color(opaque), "text_editor {preset:?}");
-        }
+        assert_eq!(borders(&r)?, off_the_edge, "{preset:?}");
+
+        let look = super::super::ring_look(&r, 5.0)?.ok_or("the inset ring")?;
+        let (ring, _) = look.quad(field).ok_or("the inset ring's quad")?;
+        assert_eq!(ring.bounds, field, "{preset:?}");
+        assert_eq!(ring.border.width, 2.0, "{preset:?}");
+        assert_eq!(ring.border.color, to_color(opaque), "{preset:?}");
+        assert_eq!(ring.border.radius, Radius::from(5.0), "{preset:?}");
     }
-    assert!(covered > 0, "a field with no focused stroke covered");
     Ok(())
 }
 
@@ -1746,5 +2228,1347 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> TestResult {
         layered_would_differ > 0,
         "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
     );
+    Ok(())
+}
+
+/// iced's own container's look, which a panel keeps per property where the
+/// theme leaves it unstated: no fill, the inherited text colour, no line
+/// and square corners (`container::Style::default()`).
+fn iced_container() -> iced_widget::container::Style {
+    iced_widget::container::Style::default()
+}
+
+/// The tooltip and the dialog keep iced's own container's look per property
+/// (spec §10, rule 0), not as a whole: with the panel's fill unstated, no
+/// fill and the theme's text colour and border; with the text colour
+/// unstated, the inherited one and the theme's fill; with the panel's
+/// stroke and corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_tooltip_and_a_dialog_keep_iceds_own_per_property() -> TestResult {
+    let unfilled = |part: &mut native_theme::next::PartStyle| {
+        part.stated = part.stated.difference(PartStated::FILL);
+    };
+    let unlined = |part: &mut native_theme::next::PartStyle| {
+        part.stated = part
+            .stated
+            .difference(PartStated::STROKE | PartStated::CORNERS);
+    };
+    let uncoloured = |text: &mut native_theme::next::TextStyle| {
+        text.stated = text.stated.difference(TextStated::COLOR);
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let tooltip = super::tooltip(&r)?(&theme);
+        let dialog = super::dialog(&r)?(&theme);
+        let iced = iced_container();
+
+        let mut t = r.clone();
+        unfilled(&mut t.tooltip.panel);
+        unfilled(&mut t.dialog.panel);
+        let (tip, dlg) = (super::tooltip(&t)?(&theme), super::dialog(&t)?(&theme));
+        assert_eq!(tip.background, iced.background, "{preset:?} tooltip fill");
+        assert_eq!(
+            tip.text_color, tooltip.text_color,
+            "{preset:?} tooltip text"
+        );
+        assert_eq!(dlg.background, iced.background, "{preset:?} dialog fill");
+        assert_eq!(dlg.text_color, dialog.text_color, "{preset:?} dialog text");
+
+        let mut t = r.clone();
+        uncoloured(&mut t.tooltip.text);
+        uncoloured(&mut t.dialog.body);
+        let (tip, dlg) = (super::tooltip(&t)?(&theme), super::dialog(&t)?(&theme));
+        assert_eq!(tip.text_color, iced.text_color, "{preset:?} tooltip text");
+        assert_eq!(
+            tip.background, tooltip.background,
+            "{preset:?} tooltip fill"
+        );
+        assert_eq!(dlg.text_color, iced.text_color, "{preset:?} dialog text");
+        assert_eq!(dlg.background, dialog.background, "{preset:?} dialog fill");
+
+        let mut t = r.clone();
+        unlined(&mut t.tooltip.panel);
+        unlined(&mut t.dialog.panel);
+        let (tip, dlg) = (super::tooltip(&t)?(&theme), super::dialog(&t)?(&theme));
+        assert_eq!(tip.border, iced.border, "{preset:?} tooltip border");
+        assert_eq!(
+            tip.background, tooltip.background,
+            "{preset:?} tooltip fill"
+        );
+        assert_eq!(dlg.border, iced.border, "{preset:?} dialog border");
+        assert_eq!(dlg.background, dialog.background, "{preset:?} dialog fill");
+    }
+    Ok(())
+}
+
+/// The toolbar keeps iced's own container's look per property (spec §10,
+/// rule 0): a stated bar fill is drawn whether or not the theme states the
+/// button label's colour, and a stated label colour whether or not it
+/// states the fill, each unstated one iced's own.
+#[test]
+fn a_toolbar_keeps_iceds_own_per_property() -> TestResult {
+    let filled = ThemePatch::new()
+        .toolbar(ToolbarRule::new().bar(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    let lettered =
+        ThemePatch::new().toolbar(ToolbarRule::new().button_label(TextPatch::new().color(LABEL)));
+    let iced = iced_container();
+    for (preset, r) in every_preset_with(&filled) {
+        let theme = to_theme(&r)?;
+        let bar = super::toolbar(&r)?(&theme);
+        assert_eq!(
+            background_color(bar.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let label = super::text_color_of(&r.toolbar.button_label(WidgetState::NONE));
+        assert_eq!(bar.text_color, label.or(iced.text_color), "{preset:?}");
+    }
+    for (preset, r) in every_preset_with(&lettered) {
+        let theme = to_theme(&r)?;
+        let bar = super::toolbar(&r)?(&theme);
+        assert_eq!(bar.text_color, Some(to_color(LABEL)), "{preset:?}");
+        let fill = super::super::fill_of(&r.toolbar.bar(WidgetState::NONE), "toolbar")?;
+        assert_eq!(
+            background_color(bar.background),
+            fill.or(background_color(iced.background)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// The card keeps iced's own container's look per property (spec §10,
+/// rule 0): a stated fill is drawn with the theme's border, iced's own
+/// where the theme states none, and a card whose border is iced's own still
+/// draws its stated fill.
+#[test]
+fn a_card_keeps_iceds_own_per_property() -> TestResult {
+    use native_theme::next::CardRule;
+    let filled = ThemePatch::new()
+        .card(CardRule::new().container(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    for (preset, r) in every_preset_with(&filled) {
+        let theme = to_theme(&r)?;
+        let card = super::container_card(&r)?(&theme);
+        assert_eq!(
+            background_color(card.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let container = r.card.container(WidgetState::NONE);
+        if !container
+            .stated
+            .intersects(PartStated::STROKE | PartStated::CORNERS)
+        {
+            assert_eq!(card.border, iced_container().border, "{preset:?}");
+        }
+    }
+    Ok(())
+}
+
+/// The plain and the primary button keep iced's own class's look at rest
+/// per property (spec §10, rule 0), not as a whole: with the fill at rest
+/// unstated, iced's own fill and the theme's label; with the label
+/// unstated, iced's own label and the theme's fill; with the stroke and the
+/// corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_button_keeps_iceds_own_per_property_at_rest() -> TestResult {
+    use crate::styles::{ButtonSource, PartOutline, button_from, button_primary_from};
+    use iced_widget::button::{Status, primary, secondary};
+    let unlined = PartOutline {
+        stroke: None,
+        radius: None,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let b = super::button_source(&r)?;
+        let at_rest = |source: &ButtonSource| button_from(source)(&theme, Status::Active);
+        let stated = at_rest(&b);
+        let own = secondary(&theme, Status::Active);
+
+        let s = at_rest(&ButtonSource {
+            background: None,
+            ..b
+        });
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+        let s = at_rest(&ButtonSource { label: None, ..b });
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+        let s = at_rest(&ButtonSource {
+            border: unlined,
+            ..b
+        });
+        assert_eq!(s.border, own.border, "{preset:?} border");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let at_rest = |source: &ButtonSource| button_primary_from(source)(&theme, Status::Active);
+        let stated = at_rest(&b);
+        let own = primary(&theme, Status::Active);
+        let s = at_rest(&ButtonSource {
+            primary_background: None,
+            ..b
+        });
+        assert_eq!(s.background, own.background, "{preset:?} primary fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} primary label");
+        let s = at_rest(&ButtonSource {
+            primary_label: None,
+            ..b
+        });
+        assert_eq!(s.text_color, own.text_color, "{preset:?} primary label");
+        assert_eq!(s.background, stated.background, "{preset:?} primary fill");
+        let s = at_rest(&ButtonSource {
+            primary_border: unlined,
+            ..b
+        });
+        assert_eq!(s.border, own.border, "{preset:?} primary border");
+        assert_eq!(s.background, stated.background, "{preset:?} primary fill");
+    }
+    Ok(())
+}
+
+/// The link keeps iced's own text button's look per property (spec §10,
+/// rule 0): with the fill at rest unstated, iced's own fill and the
+/// theme's label; with the label at rest unstated, iced's own label and
+/// the theme's fill; with the disabled label unstated, iced's own disabled
+/// label.
+#[test]
+fn a_link_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{LinkSource, button_link_from};
+    use iced_widget::button::{Status, text};
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let l = super::link_source(&r)?;
+        let at = |source: &LinkSource, status| button_link_from(source)(&theme, status);
+        let stated = at(&l, Status::Active);
+        let own = text(&theme, Status::Active);
+
+        let s = at(
+            &LinkSource {
+                background: None,
+                ..l
+            },
+            Status::Active,
+        );
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+        let s = at(&LinkSource { label: None, ..l }, Status::Active);
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+        let s = at(
+            &LinkSource {
+                disabled_label: None,
+                ..l
+            },
+            Status::Disabled,
+        );
+        assert_eq!(
+            s.text_color,
+            text(&theme, Status::Disabled).text_color,
+            "{preset:?} disabled label"
+        );
+    }
+    Ok(())
+}
+
+/// The check box keeps iced's own box's look per property (spec §10, rule
+/// 0): with the fill at rest unstated, iced's own fill and the theme's
+/// label; with the label unstated, iced's own and the theme's fill; with
+/// the mark unstated, iced's own mark; with the stroke, its width and the
+/// corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_check_box_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{CheckboxSource, checkbox_from};
+    use iced_widget::checkbox::{Status, primary};
+    let (off, on) = (
+        Status::Active { is_checked: false },
+        Status::Active { is_checked: true },
+    );
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let c = super::checkbox_source(&r)?;
+        let ground = IcedColor::WHITE;
+        let at = |source: &CheckboxSource, status| checkbox_from(source, ground)(&theme, status);
+        let stated = at(&c, off);
+
+        let mut fills = c.fills;
+        fills.unchecked = None;
+        let s = at(&CheckboxSource { fills, ..c }, off);
+        assert_eq!(
+            s.background,
+            primary(&theme, off).background,
+            "{preset:?} fill"
+        );
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = at(&CheckboxSource { label: None, ..c }, off);
+        assert_eq!(
+            s.text_color,
+            primary(&theme, off).text_color,
+            "{preset:?} label"
+        );
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let s = at(&CheckboxSource { mark: None, ..c }, on);
+        assert_eq!(
+            s.icon_color,
+            primary(&theme, on).icon_color,
+            "{preset:?} mark"
+        );
+
+        let mut fills = c.fills;
+        fills.unchecked_border = None;
+        let s = at(
+            &CheckboxSource {
+                fills,
+                border_width: None,
+                border_radius: None,
+                ..c
+            },
+            off,
+        );
+        assert_eq!(s.border, primary(&theme, off).border, "{preset:?} border");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The radio keeps iced's own radio's look per property (spec §10, rule
+/// 0): with the fill at rest unstated, iced's own fill and the theme's
+/// label; with the label unstated, iced's own and the theme's fill; with
+/// the dot unstated, iced's own dot; with the stroke and its width
+/// unstated, iced's own border and the theme's fill.
+#[test]
+fn a_radio_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::radio_from;
+    use iced_widget::radio::{Status, default};
+    let off = Status::Active { is_selected: false };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let (fills, dot, label, width) = super::radio_source(&r)?;
+        let own = default(&theme, off);
+        let stated = radio_from(fills, dot, label, width)(&theme, off);
+
+        let mut unfilled = fills;
+        unfilled.unchecked = None;
+        let s = radio_from(unfilled, dot, label, width)(&theme, off);
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = radio_from(fills, dot, None, width)(&theme, off);
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let s = radio_from(fills, None, label, width)(&theme, off);
+        assert_eq!(s.dot_color, own.dot_color, "{preset:?} dot");
+
+        let mut unlined = fills;
+        unlined.unchecked_border = None;
+        let s = radio_from(unlined, dot, label, None)(&theme, off);
+        assert_eq!(
+            (s.border_color, s.border_width),
+            (own.border_color, own.border_width),
+            "{preset:?} border"
+        );
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The switch keeps iced's own switch's look per property (spec §10, rule
+/// 0), on and off: with the track at rest unstated, iced's own track and
+/// the theme's thumb; with the thumb at rest unstated, iced's own thumb and
+/// the theme's track.
+#[test]
+fn a_switch_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{SwitchSource, toggler_from};
+    use iced_widget::toggler::{Status, default};
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let source = super::switch_source(&r)?;
+        for is_toggled in [false, true] {
+            let status = Status::Active { is_toggled };
+            let at = |source: &SwitchSource| toggler_from(source, IcedColor::WHITE)(&theme, status);
+            let stated = at(&source);
+            let own = default(&theme, status);
+
+            let s = at(&SwitchSource {
+                checked_background: None,
+                unchecked_background: None,
+                ..source
+            });
+            assert_eq!(
+                s.background, own.background,
+                "{preset:?} {is_toggled} track"
+            );
+            assert_eq!(
+                s.foreground, stated.foreground,
+                "{preset:?} {is_toggled} thumb"
+            );
+
+            let s = at(&SwitchSource {
+                thumb_background: None,
+                unchecked_thumb_background: None,
+                ..source
+            });
+            assert_eq!(
+                s.foreground, own.foreground,
+                "{preset:?} {is_toggled} thumb"
+            );
+            assert_eq!(
+                s.background, stated.background,
+                "{preset:?} {is_toggled} track"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The combo box's field keeps iced's own field's look per property (spec
+/// §10, rule 0): with the fill at rest unstated, iced's own fill and the
+/// theme's label; with the label unstated, iced's own and the theme's fill;
+/// with the placeholder unstated, iced's own; with the stroke and the
+/// corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_pick_list_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{PartOutline, PickListSource, pick_list_from};
+    use iced_widget::pick_list::{Status, default};
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let c = super::pick_list_source(&r)?;
+        let at = |source: &PickListSource| pick_list_from(source)(&theme, Status::Active);
+        let stated = at(&c);
+        let own = default(&theme, Status::Active);
+
+        let s = at(&PickListSource {
+            background: None,
+            ..c
+        });
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = at(&PickListSource { label: None, ..c });
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let s = at(&PickListSource {
+            placeholder: None,
+            ..c
+        });
+        assert_eq!(
+            s.placeholder_color, own.placeholder_color,
+            "{preset:?} placeholder"
+        );
+
+        let s = at(&PickListSource {
+            border: PartOutline {
+                stroke: None,
+                radius: None,
+            },
+            ..c
+        });
+        assert_eq!(s.border, own.border, "{preset:?} border");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The drop-down menu keeps iced's own menu's look per property (spec §10,
+/// rule 0): with the panel's fill unstated, iced's own fill and the theme's
+/// label; with the label unstated, iced's own label and the theme's fill.
+#[test]
+fn a_menu_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{MenuSource, menu_from};
+    use iced_widget::overlay::menu::default;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let m = super::menu_source(&r)?;
+        let stated = menu_from(&m)(&theme);
+        let own = default(&theme);
+
+        let s = menu_from(&MenuSource {
+            background: None,
+            ..m
+        })(&theme);
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = menu_from(&MenuSource { label: None, ..m })(&theme);
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The text area and the text field keep iced's own field's look per
+/// property (spec §10, rule 0): with the fill at rest unstated, iced's own
+/// fill and the theme's value; with the value unstated, iced's own and the
+/// theme's fill; with the disabled value or the placeholder unstated,
+/// iced's own; with the stroke and the corners unstated, iced's own border
+/// and the theme's fill.
+#[test]
+fn a_text_area_and_a_text_field_keep_iceds_own_per_property() -> TestResult {
+    use crate::styles::{InputSource, PartOutline, text_editor_from, text_input_from};
+    macro_rules! per_property {
+        ($preset:expr, $theme:expr, $source:expr, $from:ident, $widget:ident) => {{
+            use iced_widget::$widget::{Status, default};
+            let (preset, theme, i) = ($preset, $theme, $source);
+            let at = |source: InputSource, status| $from(&source)(theme, status);
+            let stated = at(i, Status::Active);
+            let own = default(theme, Status::Active);
+            let what = stringify!($widget);
+
+            let s = at(
+                InputSource {
+                    background: None,
+                    ..i
+                },
+                Status::Active,
+            );
+            assert_eq!(s.background, own.background, "{preset:?} {what} fill");
+            assert_eq!(s.value, stated.value, "{preset:?} {what} value");
+
+            let s = at(InputSource { text: None, ..i }, Status::Active);
+            assert_eq!(s.value, own.value, "{preset:?} {what} value");
+            assert_eq!(s.background, stated.background, "{preset:?} {what} fill");
+
+            let s = at(
+                InputSource {
+                    placeholder: None,
+                    ..i
+                },
+                Status::Active,
+            );
+            assert_eq!(
+                s.placeholder, own.placeholder,
+                "{preset:?} {what} placeholder"
+            );
+
+            let s = at(
+                InputSource {
+                    disabled_text: None,
+                    ..i
+                },
+                Status::Disabled,
+            );
+            assert_eq!(
+                s.value,
+                default(theme, Status::Disabled).value,
+                "{preset:?} {what} disabled value"
+            );
+
+            let s = at(
+                InputSource {
+                    border: PartOutline {
+                        stroke: None,
+                        radius: None,
+                    },
+                    ..i
+                },
+                Status::Active,
+            );
+            assert_eq!(s.border, own.border, "{preset:?} {what} border");
+            assert_eq!(s.background, stated.background, "{preset:?} {what} fill");
+        }};
+    }
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        per_property!(
+            preset,
+            &theme,
+            super::text_area_source(&r)?,
+            text_editor_from,
+            text_editor
+        );
+        per_property!(
+            preset,
+            &theme,
+            super::text_input_source(&r)?,
+            text_input_from,
+            text_input
+        );
+    }
+    Ok(())
+}
+
+/// The slider keeps iced's own slider's look per property (spec §10, rule
+/// 0), along either axis: with the thumb's fill unstated, iced's own and
+/// the theme's rail; with the filled rail unstated, iced's own and the
+/// theme's thumb; with the rest of the rail unstated, iced's own.
+#[test]
+fn a_slider_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{SliderSource, slider_from};
+    use iced_widget::slider::{Status, default};
+    use native_theme::next::Orientation;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = default(&theme, Status::Active);
+        for orientation in [Orientation::Horizontal, Orientation::Vertical] {
+            let source = super::slider_source(&r, orientation)?;
+            let at = |source: &SliderSource| slider_from(source)(&theme, Status::Active);
+            let stated = at(&source);
+
+            let s = at(&SliderSource {
+                thumb_color: None,
+                ..source
+            });
+            assert_eq!(
+                s.handle.background, own.handle.background,
+                "{preset:?} {orientation:?} thumb"
+            );
+            assert_eq!(
+                s.rail.backgrounds, stated.rail.backgrounds,
+                "{preset:?} {orientation:?} rail"
+            );
+
+            let s = at(&SliderSource {
+                fill_color: None,
+                ..source
+            });
+            assert_eq!(
+                s.rail.backgrounds.0, own.rail.backgrounds.0,
+                "{preset:?} {orientation:?} filled rail"
+            );
+            assert_eq!(
+                s.handle.background, stated.handle.background,
+                "{preset:?} {orientation:?} thumb"
+            );
+
+            let s = at(&SliderSource {
+                track_color: None,
+                ..source
+            });
+            assert_eq!(
+                s.rail.backgrounds.1, own.rail.backgrounds.1,
+                "{preset:?} {orientation:?} rail"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The progress bar keeps iced's own bar's look per property (spec §10,
+/// rule 0): with the track's fill unstated, iced's own track and the
+/// theme's bar; with the bar's fill unstated, iced's own bar and the
+/// theme's track; with the stroke and the corners unstated, iced's own
+/// border.
+#[test]
+fn a_progress_bar_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{PartOutline, progress_bar_from};
+    use iced_widget::progress_bar::primary;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let (track, filled, border) = super::progress_bar_source(&r)?;
+        let stated = progress_bar_from(track, filled, border)(&theme);
+        let own = primary(&theme);
+
+        let s = progress_bar_from(None, filled, border)(&theme);
+        assert_eq!(s.background, own.background, "{preset:?} track");
+        assert_eq!(s.bar, stated.bar, "{preset:?} bar");
+
+        let s = progress_bar_from(track, None, border)(&theme);
+        assert_eq!(s.bar, own.bar, "{preset:?} bar");
+        assert_eq!(s.background, stated.background, "{preset:?} track");
+
+        let unlined = PartOutline {
+            stroke: None,
+            radius: None,
+        };
+        let s = progress_bar_from(track, filled, unlined)(&theme);
+        assert_eq!(s.border, own.border, "{preset:?} border");
+    }
+    Ok(())
+}
+
+/// The scrollable keeps iced's own scrollable's look per property (spec
+/// §10, rule 0), in a view with the focus and in one without: with the
+/// scroller's fill at rest unstated, iced's own scroller and the theme's
+/// rail; with the rail's fill unstated, iced's own rail and the theme's
+/// scroller. The pointer is over the view, not a scroller, which shows a
+/// floating bar at rest.
+#[test]
+fn a_scrollable_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{ScrollbarSource, scrollable_from};
+    use iced_widget::scrollable::{Status, default};
+    let over_the_view = Status::Hovered {
+        is_horizontal_scrollbar_hovered: false,
+        is_vertical_scrollbar_hovered: false,
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let at_rest = Status::Active {
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = default(&theme, over_the_view);
+        let own_scroller = default(&theme, at_rest).vertical_rail.scroller.background;
+        for view in [WidgetState::NONE, WidgetState::UNFOCUSED_VIEW] {
+            let source = super::scrollbar_source(&r, view)?;
+            let at = |source: &ScrollbarSource| scrollable_from(source)(&theme, over_the_view);
+            let stated = at(&source);
+
+            let s = at(&ScrollbarSource {
+                thumb: None,
+                ..source
+            });
+            assert_eq!(
+                s.vertical_rail.scroller.background, own_scroller,
+                "{preset:?} {view:?} scroller"
+            );
+            assert_eq!(
+                s.vertical_rail.background, stated.vertical_rail.background,
+                "{preset:?} {view:?} rail"
+            );
+
+            let s = at(&ScrollbarSource {
+                track: None,
+                ..source
+            });
+            assert_eq!(
+                s.vertical_rail.background, own.vertical_rail.background,
+                "{preset:?} {view:?} rail"
+            );
+            assert_eq!(
+                s.vertical_rail.scroller.background, stated.vertical_rail.scroller.background,
+                "{preset:?} {view:?} scroller"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The segmented control keeps iced's own look per property (spec §10,
+/// rule 0), the group iced's own container's and a segment iced's own
+/// button's (`button::Style::default()`): with the group fill unstated, no
+/// fill and the theme's label; with the outline unstated, iced's own border
+/// and the theme's fill; with an unselected segment's label unstated,
+/// iced's own and the selected one's as stated; with the selected
+/// segment's fill or label unstated, iced's own and the other as stated.
+#[test]
+fn a_segmented_control_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{
+        PartOutline, SegmentPosition, SegmentedSource, segment_from, segmented_control_from,
+    };
+    use iced_widget::button::Status;
+    let group = iced_container();
+    let own = iced_widget::button::Style::default();
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let source = super::segmented_source(&r)?;
+        let control = |s: &SegmentedSource| segmented_control_from(s, false)(&theme);
+        let segment = |s: &SegmentedSource, selected: bool| {
+            segment_from(s, selected, SegmentPosition::Middle)(&theme, Status::Active)
+        };
+        let stated = control(&source);
+        let (stated_off, stated_on) = (segment(&source, false), segment(&source, true));
+
+        let s = SegmentedSource {
+            background: None,
+            ..source
+        };
+        assert_eq!(control(&s).background, group.background, "{preset:?} fill");
+        assert_eq!(
+            control(&s).text_color,
+            stated.text_color,
+            "{preset:?} label"
+        );
+
+        let s = SegmentedSource {
+            border: PartOutline {
+                stroke: None,
+                radius: None,
+            },
+            ..source
+        };
+        assert_eq!(control(&s).border, group.border, "{preset:?} border");
+        assert_eq!(control(&s).background, stated.background, "{preset:?} fill");
+
+        let s = SegmentedSource {
+            label: None,
+            ..source
+        };
+        assert_eq!(control(&s).text_color, group.text_color, "{preset:?} label");
+        assert_eq!(
+            segment(&s, false).text_color,
+            own.text_color,
+            "{preset:?} segment label"
+        );
+        assert_eq!(
+            segment(&s, true).text_color,
+            stated_on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = SegmentedSource {
+            active_background: None,
+            ..source
+        };
+        assert_eq!(
+            segment(&s, true).background,
+            own.background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            segment(&s, true).text_color,
+            stated_on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = SegmentedSource {
+            active_text_color: None,
+            ..source
+        };
+        assert_eq!(
+            segment(&s, true).text_color,
+            own.text_color,
+            "{preset:?} selected label"
+        );
+        assert_eq!(
+            segment(&s, true).background,
+            stated_on.background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            segment(&s, false).text_color,
+            stated_off.text_color,
+            "{preset:?} segment label"
+        );
+    }
+    Ok(())
+}
+
+/// The expander keeps iced's own look per property (spec §10, rule 0):
+/// with the header's label unstated, iced's own header's
+/// (`button::Style::default()`), at rest and disabled, and the frame's
+/// outline as stated; with the frame's stroke and corners unstated, iced's
+/// own container's border and the header's label as stated.
+#[test]
+fn an_expander_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{ExpanderSource, PartOutline, expander_frame_from, expander_from};
+    use iced_widget::button::Status;
+    let own = iced_widget::button::Style::default();
+    let unlined = PartOutline {
+        stroke: None,
+        radius: None,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let x = ExpanderSource {
+            frame_enabled: Some(true),
+            ..super::expander_source(&r)?
+        };
+        let stated_frame = expander_frame_from(&x)(&theme);
+
+        let s = ExpanderSource { label: None, ..x };
+        for status in [Status::Active, Status::Disabled] {
+            assert_eq!(
+                expander_from(&s)(&theme, status).text_color,
+                own.text_color,
+                "{preset:?} {status:?} label"
+            );
+        }
+        assert_eq!(
+            expander_frame_from(&s)(&theme).border,
+            stated_frame.border,
+            "{preset:?} frame"
+        );
+
+        let s = ExpanderSource {
+            border: unlined,
+            ..x
+        };
+        assert_eq!(
+            expander_frame_from(&s)(&theme).border,
+            iced_container().border,
+            "{preset:?} frame"
+        );
+        assert_eq!(
+            expander_from(&s)(&theme, Status::Active).text_color,
+            expander_from(&x)(&theme, Status::Active).text_color,
+            "{preset:?} label"
+        );
+    }
+    Ok(())
+}
+
+/// The pane grid keeps iced's own split per property (spec §10, rule 0):
+/// with the hovered handle's fill unstated, iced's own hovered and picked
+/// split colours at the theme's divider width; with it stated, that fill
+/// at the same width; the drop region iced's own either way.
+#[test]
+fn a_pane_grid_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::pane_grid_from;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = iced_widget::pane_grid::default(&theme);
+        let width = r.splitter.divider_width;
+        let handle = r.splitter.handle(WidgetState::HOVER);
+        let grid = super::pane_grid(&r)?(&theme);
+        let expected = super::super::fill_of(&handle, "handle")?;
+        assert_eq!(
+            grid.hovered_split.color,
+            expected.unwrap_or(own.hovered_split.color),
+            "{preset:?}"
+        );
+
+        let s = pane_grid_from(None, width)(&theme);
+        assert_eq!(s.hovered_split.color, own.hovered_split.color, "{preset:?}");
+        assert_eq!(s.picked_split.color, own.picked_split.color, "{preset:?}");
+        assert_eq!(s.hovered_split.width, width, "{preset:?}");
+        assert_eq!(s.picked_split.width, width, "{preset:?}");
+        assert_eq!(s.hovered_region, own.hovered_region, "{preset:?}");
+
+        let s = pane_grid_from(Some(to_color(DISTINCT)), width)(&theme);
+        assert_eq!(s.picked_split.color, to_color(DISTINCT), "{preset:?}");
+        assert_eq!(s.hovered_split.width, width, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// The application's style keeps the theme's base style per property
+/// (spec §10, rule 0): with the window frame's fill unstated, the base
+/// style's background; the text colour the base style's either way.
+#[test]
+fn an_application_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::application_from;
+    use iced_core::theme::Base;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let base = theme.base();
+        let frame = r.window.frame(native_theme::next::WindowState::default());
+        let stated = super::application(&r)?(&theme);
+        assert_eq!(
+            stated.background_color,
+            super::super::fill_of(&frame, "frame")?.unwrap_or(base.background_color),
+            "{preset:?}"
+        );
+        assert_eq!(stated.text_color, base.text_color, "{preset:?}");
+
+        let s = application_from(None)(&theme);
+        assert_eq!(s.background_color, base.background_color, "{preset:?}");
+        assert_eq!(s.text_color, base.text_color, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// The toolbar's rule keeps iced's own rule per property (spec §10, rule
+/// 0): the bar's stroke colour where stated, else iced's own rule's colour;
+/// the corners, the fill mode and the snapping iced's own either way.
+#[test]
+fn a_toolbar_rule_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::rule_from;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = iced_widget::rule::default(&theme);
+        let bar = r.toolbar.bar(WidgetState::NONE);
+        let stated = super::toolbar_rule(&r)?(&theme);
+        assert_eq!(
+            stated.color,
+            super::super::stroke_color_of(&bar).unwrap_or(own.color),
+            "{preset:?}"
+        );
+
+        let s = rule_from(None)(&theme);
+        assert_eq!(s.color, own.color, "{preset:?}");
+        assert_eq!(s.radius, own.radius, "{preset:?}");
+        assert_eq!(s.fill_mode, own.fill_mode, "{preset:?}");
+        assert_eq!(s.snap, own.snap, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// A toolbar stroke stated as none is drawn as none (spec §10, rule 0): the
+/// rule under the bar is transparent, its corners, fill mode and snapping
+/// iced's own rule's; on every preset with a rule stating no stroke.
+#[test]
+fn a_toolbar_stroke_stated_none_draws_no_rule() -> TestResult {
+    let patch = ThemePatch::from_toml("[[widgets.toolbar.rules]]\nbar.stroke = \"none\"\n")?;
+    for (preset, r) in every_preset_with(&patch) {
+        let bar = r.toolbar.bar(WidgetState::NONE);
+        assert!(bar.stated.contains(PartStated::STROKE), "{preset:?}");
+        assert_eq!(bar.stroke, Stroke::None, "{preset:?}");
+        let theme = to_theme(&r)?;
+        let own = iced_widget::rule::default(&theme);
+        let s = super::toolbar_rule(&r)?(&theme);
+        assert_eq!(s.color, IcedColor::TRANSPARENT, "{preset:?}");
+        assert_eq!(s.radius, own.radius, "{preset:?}");
+        assert_eq!(s.fill_mode, own.fill_mode, "{preset:?}");
+        assert_eq!(s.snap, own.snap, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// The `iced_aw` card keeps `iced_aw`'s own card's look per property (spec
+/// §10, rule 0): with the fill unstated, its own fill and the theme's
+/// text; with the window's foreground unstated, its own text colours and
+/// close icon and the theme's fill.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_card_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{CardSource, card_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let c = super::aw::card_source(&r)?;
+        let at = |source: &CardSource| card_from(source)(&theme, Status::Active);
+        let stated = at(&c);
+        let own = iced_aw::style::card::primary(&theme, Status::Active);
+
+        let s = at(&CardSource {
+            background: None,
+            ..c
+        });
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.body_text_color, stated.body_text_color, "{preset:?} text");
+
+        let s = at(&CardSource { label: None, ..c });
+        assert_eq!(
+            (
+                s.head_text_color,
+                s.body_text_color,
+                s.foot_text_color,
+                s.close_color
+            ),
+            (
+                own.head_text_color,
+                own.body_text_color,
+                own.foot_text_color,
+                own.close_color
+            ),
+            "{preset:?} text"
+        );
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The `iced_aw` menu bar keeps `iced_aw`'s own look per property (spec
+/// §10, rule 0): with the bar's fill unstated, its own bar and the theme's
+/// menu panel; with the panel's fill unstated, its own panel and the
+/// theme's bar.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_menu_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{MenuSource, menu_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let m = super::aw::menu_source(&r)?;
+        let at = |source: &MenuSource| menu_from(source)(&theme, Status::Active);
+        let stated = at(&m);
+        let own = iced_aw::style::menu_bar::primary(&theme, Status::Active);
+
+        let s = at(&MenuSource { bar: None, ..m });
+        assert_eq!(s.bar_background, own.bar_background, "{preset:?} bar");
+        assert_eq!(
+            s.menu_background, stated.menu_background,
+            "{preset:?} panel"
+        );
+
+        let s = at(&MenuSource { panel: None, ..m });
+        assert_eq!(s.menu_background, own.menu_background, "{preset:?} panel");
+        assert_eq!(s.bar_background, stated.bar_background, "{preset:?} bar");
+    }
+    Ok(())
+}
+
+/// The `iced_aw` tab bar keeps `iced_aw`'s own look per property (spec
+/// §10, rule 0), each in the status `iced_aw` draws it in (`Active` the
+/// selected tab, `Disabled` one at rest): with the strip's fill unstated,
+/// its own strip; with a tab's fill or label unstated, its own for that
+/// tab, and the other tab's as stated.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_tab_bar_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{TabBarSource, tab_bar_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let t = super::aw::tab_bar_source(&r)?;
+        let at = |source: &TabBarSource, status| tab_bar_from(source)(&theme, status);
+        let (on, off) = (at(&t, Status::Active), at(&t, Status::Disabled));
+        let own_on = iced_aw::style::tab_bar::primary(&theme, Status::Active);
+        let own_off = iced_aw::style::tab_bar::primary(&theme, Status::Disabled);
+
+        let s = TabBarSource {
+            bar_background: None,
+            ..t
+        };
+        assert_eq!(
+            at(&s, Status::Active).background,
+            own_on.background,
+            "{preset:?} strip"
+        );
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+
+        let s = TabBarSource {
+            background: None,
+            ..t
+        };
+        assert_eq!(
+            at(&s, Status::Disabled).tab_label_background,
+            own_off.tab_label_background,
+            "{preset:?} fill"
+        );
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+
+        let s = TabBarSource {
+            active_background: None,
+            ..t
+        };
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            own_on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).tab_label_background,
+            off.tab_label_background,
+            "{preset:?} fill"
+        );
+
+        let s = TabBarSource { label: None, ..t };
+        let s_off = at(&s, Status::Disabled);
+        assert_eq!(
+            (s_off.text_color, s_off.icon_color),
+            (own_off.text_color, own_off.icon_color),
+            "{preset:?} label"
+        );
+        assert_eq!(
+            at(&s, Status::Active).text_color,
+            on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = TabBarSource {
+            active_label: None,
+            ..t
+        };
+        let s_on = at(&s, Status::Active);
+        assert_eq!(
+            (s_on.text_color, s_on.icon_color),
+            (own_on.text_color, own_on.icon_color),
+            "{preset:?} selected label"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).text_color,
+            off.text_color,
+            "{preset:?} label"
+        );
+    }
+    Ok(())
+}
+
+/// An `iced_aw` sidebar item under the pointer is lettered, its icon too, in
+/// the label a rule for `HOVER` states (`sidebar.item_label(HOVER).color`),
+/// on every preset; with no such rule, in the label at rest.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn a_hovered_aw_sidebar_item_takes_the_stated_hover_label() -> TestResult {
+    use iced_aw::style::Status;
+    use native_theme::next::SidebarRule;
+    let patch = ThemePatch::new().sidebar(
+        SidebarRule::new()
+            .states(WidgetState::HOVER)
+            .item_label(TextPatch::new().color(LABEL)),
+    );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let hovered = super::aw::sidebar(&r)?(&theme, Status::Hovered);
+        assert_eq!(hovered.text_color, to_color(LABEL), "{preset:?} label");
+        assert_eq!(hovered.icon_color, to_color(LABEL), "{preset:?} icon");
+    }
+    for (preset, r) in every_preset() {
+        if r.sidebar
+            .item_label(WidgetState::HOVER)
+            .from_state
+            .contains(TextStated::COLOR)
+        {
+            continue;
+        }
+        let theme = to_theme(&r)?;
+        let style = super::aw::sidebar(&r)?;
+        let (hovered, rest) = (
+            style(&theme, Status::Hovered),
+            style(&theme, Status::Disabled),
+        );
+        assert_eq!(hovered.text_color, rest.text_color, "{preset:?} label");
+    }
+    Ok(())
+}
+
+/// The `iced_aw` sidebar keeps `iced_aw`'s own look per property (spec
+/// §10, rule 0), each in the status `iced_aw` draws it in (`Active` the
+/// selected item, `Disabled` one at rest): with the panel's fill unstated,
+/// its own panel and item at rest; with the selected item's fill or a
+/// label unstated, its own for that item, and the other's as stated.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_sidebar_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{ListSource, sidebar_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let l = super::aw::sidebar_source(&r)?;
+        let at = |source: &ListSource, status| sidebar_from(source)(&theme, status);
+        let (on, off) = (at(&l, Status::Active), at(&l, Status::Disabled));
+        let own_on = iced_aw::style::sidebar::primary(&theme, Status::Active);
+        let own_off = iced_aw::style::sidebar::primary(&theme, Status::Disabled);
+
+        let s = ListSource {
+            background: None,
+            ..l
+        };
+        let s_off = at(&s, Status::Disabled);
+        assert_eq!(
+            (s_off.background, s_off.tab_label_background),
+            (own_off.background, own_off.tab_label_background),
+            "{preset:?} panel"
+        );
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+
+        let s = ListSource {
+            selection_background: None,
+            ..l
+        };
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            own_on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).background,
+            off.background,
+            "{preset:?} panel"
+        );
+
+        let s = ListSource { label: None, ..l };
+        let s_off = at(&s, Status::Disabled);
+        assert_eq!(
+            (s_off.text_color, s_off.icon_color),
+            (own_off.text_color, own_off.icon_color),
+            "{preset:?} label"
+        );
+        assert_eq!(
+            at(&s, Status::Active).text_color,
+            on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = ListSource {
+            selection_label: None,
+            ..l
+        };
+        let s_on = at(&s, Status::Active);
+        assert_eq!(
+            (s_on.text_color, s_on.icon_color),
+            (own_on.text_color, own_on.icon_color),
+            "{preset:?} selected label"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).text_color,
+            off.text_color,
+            "{preset:?} label"
+        );
+    }
+    Ok(())
+}
+
+/// The `iced_aw` selection list keeps `iced_aw`'s own look per property
+/// (spec §10, rule 0), each in the status `iced_aw` draws it in: with the
+/// list's fill unstated, its own and the theme's label; with a row's label
+/// unstated at rest, selected or disabled, its own in that status and the
+/// other rows' as stated; with the selected row's fill unstated, its own
+/// and the theme's list fill.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_selection_list_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{ListSource, selection_list_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let l = super::aw::list_source(&r)?;
+        let at = |source: &ListSource, status| selection_list_from(source)(&theme, status);
+        let own = |status| iced_aw::style::selection_list::primary(&theme, status);
+        let stated = |status| at(&l, status);
+
+        let s = ListSource {
+            background: None,
+            ..l
+        };
+        assert_eq!(
+            at(&s, Status::Active).background,
+            own(Status::Active).background,
+            "{preset:?} fill"
+        );
+        assert_eq!(
+            at(&s, Status::Active).text_color,
+            stated(Status::Active).text_color,
+            "{preset:?} label"
+        );
+
+        let s = ListSource {
+            selection_background: None,
+            ..l
+        };
+        assert_eq!(
+            at(&s, Status::Selected).background,
+            own(Status::Selected).background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            at(&s, Status::Active).background,
+            stated(Status::Active).background,
+            "{preset:?} fill"
+        );
+
+        for (s, status, other) in [
+            (
+                ListSource { label: None, ..l },
+                Status::Active,
+                Status::Selected,
+            ),
+            (
+                ListSource {
+                    selection_label: None,
+                    ..l
+                },
+                Status::Selected,
+                Status::Active,
+            ),
+            (
+                ListSource {
+                    disabled_label: None,
+                    ..l
+                },
+                Status::Disabled,
+                Status::Active,
+            ),
+        ] {
+            assert_eq!(
+                at(&s, status).text_color,
+                own(status).text_color,
+                "{preset:?} {status:?} label"
+            );
+            assert_eq!(
+                at(&s, other).text_color,
+                stated(other).text_color,
+                "{preset:?} {other:?} label"
+            );
+        }
+    }
     Ok(())
 }
