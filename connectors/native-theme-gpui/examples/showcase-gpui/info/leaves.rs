@@ -279,12 +279,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.icons.edit",
         &["toolbar.button(CHECKED).fill"],
-        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button",
+        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button; where that refinement cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names), it is not applied and the selected Button keeps next::geometry::toolbar_button_rest's transparent fill where that applies, else its variant's selected fill (button/button.rs, ButtonVariant::selected)",
     ),
     (
         "basic.icons.edit",
         &["button.label(CHECKED).color"],
-        "gpui: toolbar.button_label(CHECKED).color where a rule states it for CHECKED, else button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill; where neither label is stated, none, the variant's own foreground",
+        "gpui: toolbar.button_label(CHECKED).color where a rule states it for CHECKED, else button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill; where neither label is stated, none, the variant's own foreground; where that refinement cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names), the variant's own foreground too",
     ),
     (
         "basic.icons.edit",
@@ -294,12 +294,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.status_bar.toggle",
         &["button.body(CHECKED).fill"],
-        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle)",
+        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
     ),
     (
         "chrome.status_bar.toggle",
         &["button.label(CHECKED).color"],
-        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle)",
+        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
     ),
     (
         "chrome.toolbar.",
