@@ -10,7 +10,10 @@
 import XCTest
 
 final class PressTests: XCTestCase {
-    let holdSeconds = 4.0
+    // 4 s let the touch end before the screenshot arrived in 11 and 40
+    // presses of the list set's two press runs on iOS 18.6 (run 45512794102),
+    // past the host's five retakes.
+    let holdSeconds = 8.0
     let waitSeconds = 900.0
 
     func testPress() throws {
