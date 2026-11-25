@@ -399,6 +399,18 @@
           }
         },
         {
+          "states": [
+            "disabled"
+          ],
+          "body": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#070707",
+              "align": "outside"
+            }
+          }
+        },
+        {
           "variant": "flat",
           "body": {
             "fill": "#030303",

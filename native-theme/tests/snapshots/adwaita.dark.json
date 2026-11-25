@@ -798,6 +798,17 @@
         },
         {
           "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#303034"
+          }
+        },
+        {
+          "states": [
             "pressed"
           ],
           "not_states": [
@@ -968,6 +979,17 @@
           "indicator": {
             "fill": "srgb(0.16627452, 0.41411766, 0.72, 1)"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#303034"
+          }
         }
       ]
     },
@@ -1093,6 +1115,17 @@
           ],
           "track": {
             "fill": "srgb(0.16627452, 0.41411766, 0.72, 1)"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "track": {
+            "fill": "#4a4a4e"
           }
         }
       ]

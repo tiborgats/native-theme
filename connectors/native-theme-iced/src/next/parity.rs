@@ -1616,6 +1616,12 @@ const CHECKED_DISABLED_MARK_OR_LABEL: Home = Home {
     },
 };
 
+/// adwaita's disabled check box, its rest fill stated for DISABLED
+/// (_checks.scss:62-64 at libadwaita 1.10.0): the mark of the unchecked box
+/// in the disabled label's colour on it.
+const ADWAITA_CHECK_DISABLED: [Stated; 1] =
+    [set(at!(DISABLED), Field::IconColor, CHECK_DISABLED_MARK)];
+
 /// The macOS disabled check box (os-probe run 45345116763,
 /// `*.normal.checkbox_disabled_{off,on}`): the measured fills, the rest and
 /// checked outlines over them, the marks on them.
@@ -2397,6 +2403,7 @@ const DIFFERENCES: &[Difference] = &[
             &ADWAITA_UNCHECKED_HOVER,
             &ADWAITA_CHECKED_HOVER,
             &ADWAITA_CHECK,
+            &ADWAITA_CHECK_DISABLED,
         ],
     ),
     stated_fields(

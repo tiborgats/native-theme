@@ -1154,7 +1154,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // the checked box's outline, which the disabled checked cell keeps, over its disabled fill
     s(
         "Checkbox/SelectedDisabled",
-        &[W, M, T, I],
+        &[A, W, M, T, I],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),

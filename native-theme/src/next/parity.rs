@@ -2691,12 +2691,17 @@ pub(crate) fn gnome_cases() -> Vec<(
     ];
     // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
     // whose value is libadwaita's hover layer over the preset's accent, currentColor at 10 % over
-    // #3584e4 (`_switch.scss:41-45` at 1.10.0), which a case's other accent replaces.
-    const ACCENT: [&str; 1] = ["switch.hover_checked_background"];
-    const ACCENT_DISABLED_OPACITY: [&str; 9] = [
+    // #3584e4 (`_switch.scss:41-45` at 1.10.0), which a case's other accent replaces; so is the
+    // disabled checked box's and radio's fill, the checked one's accent (`_checks.scss:62-64`).
+    const ACCENT: [&str; 2] = [
+        "checkbox.disabled_background",
+        "switch.hover_checked_background",
+    ];
+    const ACCENT_DISABLED_OPACITY: [&str; 10] = [
         "defaults.disabled_opacity",
         "button.disabled_opacity",
         "checkbox.disabled_opacity",
+        "checkbox.disabled_background",
         "input.disabled_opacity",
         "slider.disabled_opacity",
         "switch.disabled_opacity",

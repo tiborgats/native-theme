@@ -2111,8 +2111,8 @@ fn button(
 /// `checkbox.checked_background` is `defaults.accent_color` where unstated)
 /// with no outline (`box-shadow: none`, _checks.scss:52-56 at libadwaita
 /// 1.10.0; the outline is the inset box-shadow, :27), hovered and pressed
-/// libadwaita's layers over it ([`checked_layers`]). No disabled fill: a
-/// disabled check is its enabled self at the disabled opacity
+/// libadwaita's layers over it ([`checked_layers`]). Disabled, the rest
+/// fill: a disabled check is its enabled self at the disabled opacity
 /// (`checkbox.unchecked_background`'s citation; `check:disabled, radio:disabled`
 /// change no colour, _checks.scss:62-64).
 fn indicator(
@@ -2159,6 +2159,14 @@ fn indicator(
         .rule(
             RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
             [fill(checked_pressed)],
+        )
+        // Disabled, the fill as at rest, stated for DISABLED (spec §2, `from_state`): `check,
+        // radio { &:disabled { filter: Opacity(var(--disabled-opacity)); } }` fades the control and
+        // changes no colour (_checks.scss:20, :62-64 at libadwaita 1.10.0); a checked one keeps
+        // its checked fill.
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [fill(c.checkbox_background)],
         )
 }
 
@@ -3114,6 +3122,13 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
         .rule(
             RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
             [fill(checked_pressed)],
+        )
+        // Disabled, the off track as at rest, stated for DISABLED (spec §2, `from_state`):
+        // `switch:disabled { filter: Opacity(var(--disabled-opacity)); }` fades the control and
+        // changes no colour (_switch.scss:20-22 at libadwaita 1.10.0); an on one keeps the accent.
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [fill(c.frame)],
         )
         .build();
     let thumb = RuleBuilder::new(PartStyle::default())

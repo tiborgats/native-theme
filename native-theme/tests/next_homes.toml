@@ -788,9 +788,9 @@ homes = [
     "radio.indicator(DISABLED|CHECKED).fill",
 ]
 null_reference = "CHECKED"
-difference_presets = ["kde-breeze", "windows-11", "material-3", "ios-13", "macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2 has one disabled fill for a checked and an unchecked indicator; 0.8.0 states the checked one as each source draws it: kde-breeze the Disabled Button under the Disabled Highlight at 0.3 (a box that is not CheckOff keeps the highlight overlay), windows-11 AccentFillColorDisabled, ios-13 WebKit's opaqueTertiaryFill (and its unchecked one WebKit's -webkit-control-background, systemBackground, where 0.7.2's value is uncited); material-3's radio button no fill, disabled or checked (material-web draws a ring and a dot only); macos-monterey and macos-tahoe: 0.7.2 states none (the rest fills); 0.8.0 states the measured disabled box and circle, on macos-monterey one fill checked or not (not the accent), on macos-tahoe the unchecked fill and, checked, the default accent's disabled fill"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_background), breezehelper.cpp:862, :865-869, :1012-1019 at breeze f0b1d75, kcolorscheme.cpp:317-320 at kcolorscheme 27066d4; windows-11: CheckBoxCheckBackgroundFillCheckedDisabled, RadioButtonOuterEllipseCheckedFillDisabled = AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :60; RadioButton_themeresources.xaml:149, :33), AccentFillColorDisabled #37000000 / #28FFFFFF (Common_themeresources_any.xaml:242, :38 at microsoft-ui-xaml 8463f45); material-3: radio/internal/radio.ts:108-120 at material-web cbd34a8; ios-13: RenderThemeIOS.mm:1027, :1372, :1387-1388, :1502, :1561-1563 at WebKit 31adf9d, ios-18 expected.txt:7, :9, :90-93; macos-monterey, macos-tahoe: os-probe run 45345116763 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-24-run-45345116763/ on m2-fs4c), `*.normal.checkbox_disabled_{off,on}`, `*.normal.radio_disabled_{off,on}` `fill`"
+difference_presets = ["kde-breeze", "windows-11", "material-3", "ios-13", "macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2 has one disabled fill for a checked and an unchecked indicator; 0.8.0 states the checked one as each source draws it: kde-breeze the Disabled Button under the Disabled Highlight at 0.3 (a box that is not CheckOff keeps the highlight overlay), windows-11 AccentFillColorDisabled, ios-13 WebKit's opaqueTertiaryFill (and its unchecked one WebKit's -webkit-control-background, systemBackground, where 0.7.2's value is uncited); material-3's radio button no fill, disabled or checked (material-web draws a ring and a dot only); macos-monterey and macos-tahoe: 0.7.2 states none (the rest fills); 0.8.0 states the measured disabled box and circle, on macos-monterey one fill checked or not (not the accent), on macos-tahoe the unchecked fill and, checked, the default accent's disabled fill; adwaita: 0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the unchecked check's and radio's rest fill for DISABLED, as libadwaita fades a disabled check and changes no colour (spec §2, from_state), a checked one keeping its checked fill"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_background), breezehelper.cpp:862, :865-869, :1012-1019 at breeze f0b1d75, kcolorscheme.cpp:317-320 at kcolorscheme 27066d4; windows-11: CheckBoxCheckBackgroundFillCheckedDisabled, RadioButtonOuterEllipseCheckedFillDisabled = AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :60; RadioButton_themeresources.xaml:149, :33), AccentFillColorDisabled #37000000 / #28FFFFFF (Common_themeresources_any.xaml:242, :38 at microsoft-ui-xaml 8463f45); material-3: radio/internal/radio.ts:108-120 at material-web cbd34a8; ios-13: RenderThemeIOS.mm:1027, :1372, :1387-1388, :1502, :1561-1563 at WebKit 31adf9d, ios-18 expected.txt:7, :9, :90-93; macos-monterey, macos-tahoe: os-probe run 45345116763 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-24-run-45345116763/ on m2-fs4c), `*.normal.checkbox_disabled_{off,on}`, `*.normal.radio_disabled_{off,on}` `fill`; adwaita: check, radio { &:disabled { filter: Opacity(var(--disabled-opacity)); } } (_checks.scss:20, :62-64 at libadwaita 1.10.0)"
 
 [row.difference_values.kde-breeze]
 "checkbox.indicator(DISABLED).fill" = { light = "#f0f0f0", dark = "#272a2e" }
@@ -827,6 +827,12 @@ difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_backgr
 "radio.indicator(DISABLED).fill" = { light = "#0000000d", dark = "#ffffff0d" }
 "checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#0076f470", dark = "#0982ff70" }
 "radio.indicator(DISABLED|CHECKED).fill" = { light = "#0076f470", dark = "#0982ff70" }
+
+[row.difference_values.adwaita]
+"checkbox.indicator(DISABLED).fill" = { light = "#ffffff", dark = "#303034" }
+"radio.indicator(DISABLED).fill" = { light = "#ffffff", dark = "#303034" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = "#3584e4"
+"radio.indicator(DISABLED|CHECKED).fill" = "#3584e4"
 
 [[row]]
 key = "checkbox.unchecked_background"
@@ -2555,6 +2561,10 @@ note = "0.7.2 doc: None = the enabled colour"
 [[row]]
 key = "switch.disabled_unchecked_background"
 homes = ["switch.track(DISABLED).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 leaves it unset (the rest track by inheritance, no rule); 0.8.0 states adwaita's off track at rest for DISABLED, as libadwaita fades a disabled switch and changes no colour (spec §2, from_state)"
+difference_citation = "adwaita: switch { &:disabled { filter: Opacity(var(--disabled-opacity)); } } (_switch.scss:20-22 at libadwaita 1.10.0)"
+difference_values = { "adwaita" = { light = "#d5d5d5", dark = "#4a4a4e" } }
 
 [[row]]
 key = "switch.disabled_thumb_color"

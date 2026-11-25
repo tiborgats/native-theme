@@ -353,7 +353,7 @@ struct SchemeColors {
     /// not draw it on the accent; `None` where it does.
     tab_selected_off_accent: Option<(Color, Color)>,
     sidebar_background: Color,
-    sidebar_foreground: Option<Color>,
+    sidebar_foreground: Color,
     /// A pressed source-list row's fill, measured on the default accent;
     /// `None` where it is the selection's or another accent is laid over
     /// ([`drop_accent_measurements`]).
@@ -623,7 +623,7 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // 45252258079, macOS 15, Reduce Transparency off, `*.normal.source_list_row` `fill`, `label`),
     // where the Reduce Transparency on reading #f6f6f6 stood (run 40320895749)
     sidebar_background: srgb8(0xdddd_ddff),
-    sidebar_foreground: Some(srgb8(0x4242_42ff)),
+    sidebar_foreground: srgb8(0x4242_42ff),
     // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent (measured, os-probe run
     // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x2d92_fbff)),
@@ -920,7 +920,7 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
     // on reading #383838 stood (run 40320895749)
     sidebar_background: srgb8(0x4242_42ff),
-    sidebar_foreground: Some(srgb8(0xecec_ecff)),
+    sidebar_foreground: srgb8(0xecec_ecff),
     // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent (measured, os-probe run
     // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x378c_e5ff)),
@@ -1219,7 +1219,7 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
     // on reading #f6f6f6 stood (run 40320895749)
     sidebar_background: srgb8(0xdddd_ddff),
-    sidebar_foreground: Some(srgb8(0x0000_00ff)),
+    sidebar_foreground: srgb8(0x0000_00ff),
     // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent (measured, os-probe run
     // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x0069_eeff)),
@@ -1514,7 +1514,7 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
     // on reading #383838 stood (run 40320895749)
     sidebar_background: srgb8(0x4242_42ff),
-    sidebar_foreground: Some(srgb8(0xffff_ffff)),
+    sidebar_foreground: srgb8(0xffff_ffff),
     // `sidebar.item(PRESSED).fill`: #219bff, on the default accent (measured, os-probe run
     // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x219b_ffff)),
@@ -2769,7 +2769,7 @@ fn lay_palette_over(c: &mut SchemeColors, p: &Palette, explicit_accent: bool) {
     c.sidebar_background = p.sidebar_bg;
     c.tooltip_background = p.tooltip_bg;
     c.foreground = p.foreground;
-    c.sidebar_foreground = Some(p.foreground);
+    c.sidebar_foreground = p.foreground;
     c.tooltip_foreground = p.foreground;
     c.muted = p.foreground_muted;
     c.border = p.border;
@@ -4227,7 +4227,7 @@ fn sidebar(
     // Hovered, the label as at rest (the same capture); pressed, the selection's text, white over
     // the pressed fill (`*.pressed.source_list_row` `label`, the reads of os-probe run
     // 45208260830).
-    let rest_label = label(&typography.body, c.sidebar_foreground);
+    let rest_label = label(&typography.body, Some(c.sidebar_foreground));
     let (selectors, color) = rest_color_rules(&rest_label, [WidgetState::HOVER]);
     let item_label = RuleBuilder::new(rest_label)
         .rules(selectors, color)

@@ -2309,8 +2309,8 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// the accent's text, disabled the disabled text. Under high contrast the
 /// fill is the button face and the label and the outline the button text
 /// ([`HighContrast`]), hovered and pressed the highlight text behind the
-/// highlight, the outline hovered the highlight and pressed the highlight
-/// text.
+/// highlight, the outline hovered the highlight, pressed the highlight text
+/// and disabled the grey text.
 /// The flat variant is WinUI's subtle button, which has no checked form:
 /// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
 /// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
@@ -2402,6 +2402,16 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.control_fill_disabled)],
+        )
+        // Disabled under high contrast, the outline the grey text: ButtonBorderBrushDisabled and
+        // AccentButtonBorderBrushDisabled = SystemControlDisabledTransparentBrush
+        // (Button_themeresources.xaml:89, :65 at microsoft-ui-xaml 8463f45), there
+        // SystemColorGrayTextColor (generic.xaml:2032 at 8463f45).
+        .rules(
+            hc.gray_text
+                .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+            hc.gray_text
+                .map(|color| outside_stroke(layout.border_width, color)),
         )
         // The flat button, WinUI's subtle button (SubtleButtonStyle), after the push button's
         // rules so that its own win, each from its resources (Button_themeresources.xaml:17-28,
