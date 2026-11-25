@@ -1,0 +1,6 @@
+aqua.normal.toolbar_button: over_grey: 2045 px over 2, max 188.0; window: 132 px over 2, max 180.0
+aqua.hovered.toolbar_button: over_grey: 2029 px over 2, max 191.0; window: 135 px over 2, max 184.0
+aqua.pressed.toolbar_button: over_grey: 2039 px over 2, max 195.0; window: 141 px over 2, max 188.0
+darkAqua.normal.toolbar_button: over_grey: 1921 px over 2, max 48.5; window: 1669 px over 2, max 18.1
+darkAqua.hovered.toolbar_button: over_grey: 1928 px over 2, max 39.9; window: 1668 px over 2, max 15.6
+darkAqua.pressed.toolbar_button: over_grey: 1925 px over 2, max 32.0; window: 1636 px over 2, max 14.3

@@ -601,14 +601,15 @@ final class Host: NSObject, NSApplicationDelegate {
         return finish(setup.text, captures: captures, notes: notes, failures: failures)
     }
 
-    /// Writes switch-label.toml from `text` (the environment, the colours and
-    /// the items), `captures`, `notes` and `failures`; true where a step
-    /// failed.
+    /// Writes switch-label.toml from `notes` and `failures` (top-level keys,
+    /// so first: a key after a table header belongs to that table), then
+    /// `text` (the environment, the colours and the items) and `captures`;
+    /// true where a step failed.
     nonisolated func finish(_ text: String, captures: [String], notes: [String], failures: [String]) -> Bool {
         var failures = failures
-        let whole = text + captures.joined(separator: "\n")
-            + "notes = [\(notes.map(quoted).joined(separator: ", "))]\n"
-            + "failures = [\(failures.map(quoted).joined(separator: ", "))]\n"
+        let whole = "notes = [\(notes.map(quoted).joined(separator: ", "))]\n"
+            + "failures = [\(failures.map(quoted).joined(separator: ", "))]\n\n"
+            + text + captures.joined(separator: "\n")
         do {
             try whole.write(toFile: "\(out)/switch-label.toml", atomically: true, encoding: .utf8)
         } catch {

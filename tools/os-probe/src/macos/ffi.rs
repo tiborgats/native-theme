@@ -568,9 +568,11 @@ pub(super) fn rgba_png(width: usize, height: usize, pixels: &[u8]) -> Result<Vec
     png_data(&tagged)
 }
 
-/// What the toolbar delegate hands its toolbar: the items, made beforehand.
+/// What the toolbar delegate hands its toolbar: the items, made beforehand,
+/// and the identifiers of those that can be selected.
 pub(super) struct ToolbarItems {
     items: Vec<Retained<NSToolbarItem>>,
+    selectable: Vec<Retained<NSString>>,
 }
 
 define_class!(
@@ -611,6 +613,11 @@ define_class!(
         fn allowed_identifiers(&self, _toolbar: &NSToolbar) -> Retained<NSArray<NSString>> {
             self.identifiers()
         }
+
+        #[unsafe(method_id(toolbarSelectableItemIdentifiers:))]
+        fn selectable_identifiers(&self, _toolbar: &NSToolbar) -> Retained<NSArray<NSString>> {
+            NSArray::from_retained_slice(&self.ivars().selectable)
+        }
     }
 );
 
@@ -620,7 +627,17 @@ impl ToolbarDelegate {
         mtm: MainThreadMarker,
         items: Vec<Retained<NSToolbarItem>>,
     ) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(ToolbarItems { items });
+        Self::with_selectable(mtm, items, Vec::new())
+    }
+
+    /// A delegate that gives a toolbar `items`, in order, of which those
+    /// whose identifiers are in `selectable` can be selected.
+    pub(super) fn with_selectable(
+        mtm: MainThreadMarker,
+        items: Vec<Retained<NSToolbarItem>>,
+        selectable: Vec<Retained<NSString>>,
+    ) -> Retained<Self> {
+        let this = Self::alloc(mtm).set_ivars(ToolbarItems { items, selectable });
         // SAFETY: NSObject's `init` on an allocated instance whose ivars are
         // set, as objc2's `define_class!` documents.
         unsafe { msg_send![super(this), init] }

@@ -129,6 +129,55 @@ const OTHER_FRAME: NSRect = NSRect::new(NSPoint::new(860.0, 560.0), NSSize::new(
 /// animates in has settled before the capture.
 const HOVER_STEPS: u32 = 20;
 
+/// The steps `CursorMove::WarpWaitPost` pumps between the warp and the
+/// mouse-moved: 400 ms, longer than the 0.25 s for which Quartz suppresses
+/// local events after a warp by default (`CGSetLocalEventsSuppressionInterval`,
+/// CGRemoteOperation.h).
+const WARP_WAIT_STEPS: u32 = 8;
+
+/// How a cursor move puts the cursor on its target and makes AppKit see it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum CursorMove {
+    /// `CGWarpMouseCursorPosition` to the target, then a mouse-moved CGEvent
+    /// posted there at the HID event tap at once.
+    WarpPost,
+    /// A mouse-moved CGEvent posted at the target at the HID event tap, no
+    /// warp: the posted event moves the cursor.
+    Post,
+    /// The warp, `WARP_WAIT_STEPS` pump steps, then the mouse-moved.
+    WarpWaitPost,
+}
+
+impl CursorMove {
+    const ALL: [CursorMove; 3] = [
+        CursorMove::WarpPost,
+        CursorMove::Post,
+        CursorMove::WarpWaitPost,
+    ];
+
+    fn name(self) -> &'static str {
+        match self {
+            CursorMove::WarpPost => "warp_post",
+            CursorMove::Post => "post",
+            CursorMove::WarpWaitPost => "warp_wait_post",
+        }
+    }
+
+    fn warps(self) -> bool {
+        self != CursorMove::Post
+    }
+}
+
+/// How every cursor move of the passes moves the cursor.
+const CURSOR_MOVE: CursorMove = CursorMove::WarpPost;
+
+/// The captures a settled state takes (`Pass::settled_shot`), each
+/// `SETTLED_GAP_STEPS` pump steps after the one before.
+const SETTLED_TRIES: u32 = 10;
+
+/// The pump steps between two captures of a settled state.
+const SETTLED_GAP_STEPS: u32 = 6;
+
 /// How long after the mouse-down the click capture is taken.
 const CLICK_CAPTURE_DELAY: std::time::Duration = std::time::Duration::from_millis(1000);
 
@@ -463,6 +512,9 @@ struct Sheet {
     cases: Vec<Case>,
     /// Whether the hovered and clicked states are captured.
     pointer_states: bool,
+    /// Whether each capture is taken settled (`Pass::settled_shot`): the
+    /// look of the toolbar sheet's glass button follows what lies behind it.
+    settled: bool,
     /// The rows or columns the OS has no control for, and the sheet's layout.
     notes: Table,
 }
@@ -632,6 +684,7 @@ fn push_sheet_in(
         backdrop,
         cases,
         pointer_states: true,
+        settled: false,
         notes,
     })
 }
@@ -748,6 +801,7 @@ fn style_sheet_with(
         backdrop,
         cases,
         pointer_states: extra == Extra::None,
+        settled: false,
         notes,
     })
 }
@@ -1062,6 +1116,10 @@ fn park_text(parking: Parking) -> String {
 
 fn states_table() -> Table {
     let mut states = Table::new();
+    let hover_moves = format!(
+        "the sheet holding the glass buttons, after hovered: per glass button and per way of moving the cursor (cursor.move: warp_post, the warp and the mouse-moved posted at once, as hovered; post, the mouse-moved alone, no warp; warp_wait_post, the warp, the run loop pumped {} ms (events_before_post), then the mouse-moved) the cursor parked, moved to the button's centre that way and the window captured over its background (hovered-<button>-<move>.png), with the events counted and diff_from_normal as hovered",
+        PUMP_STEP.saturating_mul(WARP_WAIT_STEPS).as_millis()
+    );
     for (state, how) in [
         (
             "normal",
@@ -1080,6 +1138,7 @@ fn states_table() -> Table {
             "hovered",
             "push sheet and the three style sheets (styles_a to styles_c), key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)",
         ),
+        ("hover_moves", hover_moves.as_str()),
         (
             "clicked",
             "push sheet and the style sheets' NSComboButtons, key mode, over the window's background: per plain and default push button and per combo button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up",
@@ -1586,6 +1645,50 @@ impl Pass<'_> {
         );
         out::put_table(t, "hovered", hovered);
 
+        let glass: Vec<&Case> = sheet
+            .cases
+            .iter()
+            .filter(|c| c.kind == Style::Glass.name())
+            .collect();
+        if !glass.is_empty() {
+            let mut moves = Table::new();
+            for case in glass {
+                let mut per_case = Table::new();
+                for how in CursorMove::ALL {
+                    let mut h = Table::new();
+                    out::put_table(&mut h, "cursor_parked", self.park(window, Parking::Buttons));
+                    out::put_table(
+                        &mut h,
+                        "cursor",
+                        self.move_cursor_by(window, centre(window, case), how),
+                    );
+                    let rep = self.shot(
+                        window,
+                        &mut h,
+                        dir,
+                        rel,
+                        &format!("hovered-{}-{}.png", case.name, how.name()),
+                    );
+                    diffs(
+                        &mut h,
+                        "diff_from_normal",
+                        normal,
+                        rep.as_ref(),
+                        &[case],
+                        window,
+                    );
+                    out::put_table(&mut per_case, how.name(), h);
+                }
+                out::put_table(&mut moves, &case.name, per_case);
+            }
+            out::put_table(
+                &mut moves,
+                "cursor_parked",
+                self.park(window, Parking::Buttons),
+            );
+            out::put_table(t, "hover_moves", moves);
+        }
+
         let mut clicked = Table::new();
         for case in sheet.cases.iter().filter(|c| c.clickable) {
             let mut c = Table::new();
@@ -1743,7 +1846,12 @@ impl Pass<'_> {
             if let Some(b) = backdrop.byte() {
                 out::put(target, "requested", out::text(hex([b, b, b, 0xff])));
             }
-            let rgba = self.shot(window, target, dir, rel, &file);
+            let rgba = if sheet.settled {
+                out::put(target, "backdrop", out::text(backdrop.key()));
+                self.settled_shot(window, target, dir, rel, &file)
+            } else {
+                self.shot(window, target, dir, rel, &file)
+            };
             let sampled = rgba.as_ref().and_then(|rgba| {
                 let ratio = px_ratio(rgba.width, frame.width);
                 let x = pixel_index(point.x, ratio, isize::try_from(rgba.width).ok()?)?;
@@ -1980,14 +2088,21 @@ impl Pass<'_> {
         NSPoint::new(p.x, self.primary_height - p.y)
     }
 
-    /// Where the window at `target` (AppKit's screen points; read with
-    /// `windowNumberAtPoint:` before anything is posted) is `window`: warp
-    /// the cursor there, post a mouse-moved event there and pump the run
-    /// loop `HOVER_STEPS` steps, counting the mouse events AppKit
-    /// dispatches; where the cursor then is. Where it is another window,
-    /// nothing is warped or posted and the move is the error.
+    /// `move_cursor_by` with the passes' own `CURSOR_MOVE`.
     fn move_cursor(&self, window: &NSWindow, target: NSPoint) -> Table {
+        self.move_cursor_by(window, target, CURSOR_MOVE)
+    }
+
+    /// Where the window at `target` (AppKit's screen points; read with
+    /// `windowNumberAtPoint:` before anything is posted) is `window`: move
+    /// the cursor there as `how` says (`CursorMove`) and pump the run loop
+    /// `HOVER_STEPS` steps, counting the mouse events AppKit dispatches;
+    /// where the cursor then is, and the error where it is not the target or
+    /// not over `window`. Where the window at the target is another window,
+    /// nothing is warped or posted and the move is the error.
+    fn move_cursor_by(&self, window: &NSWindow, target: NSPoint, how: CursorMove) -> Table {
         let mut t = Table::new();
+        out::put(&mut t, "move", out::text(how.name()));
         let at = self.quartz(target);
         out::put(
             &mut t,
@@ -2012,19 +2127,28 @@ impl Pass<'_> {
             );
             return t;
         }
-        let warp = CGWarpMouseCursorPosition(at);
-        out::put(
-            &mut t,
-            "CGWarpMouseCursorPosition",
-            out::int(i64::from(warp.0)),
-        );
-        if warp.0 != 0 {
-            add_error(
+        if how.warps() {
+            let warp = CGWarpMouseCursorPosition(at);
+            out::put(
                 &mut t,
-                &format!(
-                    "CGWarpMouseCursorPosition returned {}, not kCGErrorSuccess",
-                    warp.0
-                ),
+                "CGWarpMouseCursorPosition",
+                out::int(i64::from(warp.0)),
+            );
+            if warp.0 != 0 {
+                add_error(
+                    &mut t,
+                    &format!(
+                        "CGWarpMouseCursorPosition returned {}, not kCGErrorSuccess",
+                        warp.0
+                    ),
+                );
+            }
+        }
+        if how == CursorMove::WarpWaitPost {
+            out::put_table(
+                &mut t,
+                "events_before_post",
+                pump_counting(self.app, WARP_WAIT_STEPS),
             );
         }
         let moved =
@@ -2042,6 +2166,15 @@ impl Pass<'_> {
             "mouseLocation_screen_xy",
             out::floats(&[location.x, location.y]),
         );
+        if location != target {
+            add_error(
+                &mut t,
+                &format!(
+                    "after the move the cursor is at ({}, {}), not at the target ({}, {})",
+                    location.x, location.y, target.x, target.y
+                ),
+            );
+        }
         let under =
             NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(location, 0, self.mtm);
         let under_ours = under == window.windowNumber();
@@ -2206,6 +2339,33 @@ impl Pass<'_> {
         read_capture(t, captured, &path, &format!("{rel}/{file}"))
     }
 
+    /// The window captured `SETTLED_TRIES` times, `SETTLED_GAP_STEPS` pump
+    /// steps apart, to `<stem>-try<n>.png`, and the first capture that is
+    /// pixel for pixel the one before it copied to `<dir>/<file>`
+    /// (`settled_pick`); the key reads are the last capture's.
+    fn settled_shot(
+        &self,
+        window: &NSWindow,
+        t: &mut Table,
+        dir: &Path,
+        rel: &str,
+        file: &str,
+    ) -> Option<Rgba> {
+        let mut tries = Vec::new();
+        for n in 1..=SETTLED_TRIES {
+            if n > 1 {
+                self.settle(window, SETTLED_GAP_STEPS);
+            }
+            let name = try_name(file, n);
+            let before = (window.isKeyWindow(), self.app.isActive());
+            let captured = screencapture(window.windowNumber(), &dir.join(&name));
+            let after = (window.isKeyWindow(), self.app.isActive());
+            self.record_key(t, before, after);
+            tries.push((name, captured));
+        }
+        settled_pick(t, dir, rel, file, tries)
+    }
+
     /// Record the window's key status and the application's activity read
     /// before and after a capture.
     fn record_key(&self, t: &mut Table, before: (bool, bool), after: (bool, bool)) {
@@ -2232,7 +2392,7 @@ impl Pass<'_> {
     ) -> Option<Rgba> {
         let at = self.quartz(centre(window, case));
         let file = format!("clicked-{}.png", case.name);
-        let rgba = self.click_at(t, window, dir, rel, &file, at, false);
+        let rgba = self.click_at(t, window, dir, rel, &file, at, false, false);
         out::put(
             t,
             "highlighted_after",
@@ -2258,6 +2418,10 @@ impl Pass<'_> {
     /// not. Where the timer has posted no release `CLICK_WAIT_STEPS` pump
     /// steps after the capture, the second thread posts it to the probe's
     /// process alone, so the tracking ends (`release_by_watchdog`, an error).
+    /// Where `settled` is set the second thread takes `SETTLED_TRIES`
+    /// captures during the press, `SETTLED_GAP_STEPS` pump steps apart, and
+    /// the first that is pixel for pixel the one before it is the press's
+    /// (`settled_pick`).
     #[allow(clippy::too_many_arguments)]
     fn click_at(
         &self,
@@ -2268,6 +2432,7 @@ impl Pass<'_> {
         file: &str,
         at: NSPoint,
         escape: bool,
+        settled: bool,
     ) -> Option<Rgba> {
         let path: PathBuf = dir.join(file);
         let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
@@ -2300,14 +2465,26 @@ impl Pass<'_> {
         };
         let before = (window.isKeyWindow(), self.app.isActive());
         let number = window.windowNumber();
-        let worker_path = path.clone();
+        let names: Vec<String> = if settled {
+            (1..=SETTLED_TRIES).map(|n| try_name(file, n)).collect()
+        } else {
+            vec![file.to_owned()]
+        };
+        let worker_dir = dir.to_path_buf();
         let captured_flag = Arc::new(AtomicBool::new(false));
         let worker_flag = Arc::clone(&captured_flag);
         let released = Arc::new(AtomicBool::new(false));
         let worker_released = Arc::clone(&released);
         let worker = std::thread::spawn(move || {
             std::thread::sleep(CLICK_CAPTURE_DELAY);
-            let captured = screencapture(number, &worker_path);
+            let mut captured = Vec::new();
+            for (n, name) in names.into_iter().enumerate() {
+                if n > 0 {
+                    std::thread::sleep(PUMP_STEP.saturating_mul(SETTLED_GAP_STEPS));
+                }
+                let result = screencapture(number, &worker_dir.join(&name));
+                captured.push((name, result));
+            }
             worker_flag.store(true, Ordering::Release);
             let start = std::time::Instant::now();
             while !worker_released.load(Ordering::Acquire) {
@@ -2407,9 +2584,15 @@ impl Pass<'_> {
         let steps = pump(self.app, CLICK_WAIT_STEPS, || worker.is_finished());
         timer.invalidate();
         out::put(t, "wait_steps", out::int(i64::from(steps)));
-        let (captured, watchdog) = worker
-            .join()
-            .unwrap_or_else(|_| (Err("the capture thread panicked".to_owned()), None));
+        let (mut captured, watchdog) = worker.join().unwrap_or_else(|_| {
+            (
+                vec![(
+                    file.to_owned(),
+                    Err("the capture thread panicked".to_owned()),
+                )],
+                None,
+            )
+        });
         for (k, v) in release.reads.take() {
             t.insert(k, v);
         }
@@ -2433,7 +2616,14 @@ impl Pass<'_> {
                 "before the mouse-down and after the mouse-up: the main thread is in the button's mouse tracking while the capture is taken",
             ),
         );
-        read_capture(t, captured, &path, &format!("{rel}/{file}"))
+        if settled {
+            return settled_pick(t, dir, rel, file, captured);
+        }
+        let result = match captured.pop() {
+            Some((_, result)) => result,
+            None => Err("the capture thread took no capture".to_owned()),
+        };
+        read_capture(t, result, &path, &format!("{rel}/{file}"))
     }
 }
 
@@ -2915,6 +3105,90 @@ fn read_capture(
     }
 }
 
+/// The file of a settled state's `n`th capture: `<stem>-try<n>.png` for
+/// `file` `<stem>.png`.
+fn try_name(file: &str, n: u32) -> String {
+    let stem = file.strip_suffix(".png").unwrap_or(file);
+    format!("{stem}-try{n}.png")
+}
+
+/// The index of the first frame that is pixel for pixel the one before it,
+/// a missing frame matching none.
+fn first_settled(frames: &[Option<Rgba>]) -> Option<usize> {
+    frames
+        .windows(2)
+        .position(|w| matches!(w, [Some(a), Some(b)] if a == b))
+        .map(|i| i.saturating_add(1))
+}
+
+/// A settled state's captures (`tries`: each file and how its capture
+/// went) decoded in order; the first one that is pixel for pixel the one
+/// before it (`first_settled`) copied to `<dir>/<file>` and read into `t`
+/// as one capture is, with `settle`: the captures taken, the one taken
+/// (`settled_at`, from 1), each try's file. Where none is, nothing is
+/// copied, the last capture is read and the state's error says so.
+fn settled_pick(
+    t: &mut Table,
+    dir: &Path,
+    rel: &str,
+    file: &str,
+    tries: Vec<(String, Result<(), String>)>,
+) -> Option<Rgba> {
+    let mut settle = Table::new();
+    out::put(&mut settle, "captures", raw(tries.len()));
+    out::put(
+        &mut settle,
+        "files",
+        out::array(
+            tries
+                .iter()
+                .map(|(name, _)| out::text(format!("{rel}/{name}")))
+                .collect(),
+        ),
+    );
+    let mut frames = Vec::new();
+    let mut last = Table::new();
+    let mut names = Vec::new();
+    for (name, captured) in tries {
+        last = Table::new();
+        let path = dir.join(&name);
+        frames.push(read_capture(
+            &mut last,
+            captured,
+            &path,
+            &format!("{rel}/{name}"),
+        ));
+        names.push(name);
+    }
+    let picked = first_settled(&frames);
+    match picked.and_then(|i| Some((i, names.get(i)?))) {
+        Some((i, name)) => {
+            out::put(&mut settle, "settled_at", raw(i.saturating_add(1)));
+            out::put_table(t, "settle", settle);
+            let path = dir.join(file);
+            let copied = std::fs::copy(dir.join(name), &path)
+                .map(|_| ())
+                .map_err(|e| format!("cannot copy the settled capture {name} to {file}: {e}"));
+            read_capture(t, copied, &path, &format!("{rel}/{file}"))
+        }
+        None => {
+            out::put_table(t, "settle", settle);
+            for (k, v) in last {
+                t.insert(k, v);
+            }
+            add_error(
+                t,
+                &format!(
+                    "not settled: no capture of {} taken {} ms apart is pixel for pixel the one before it",
+                    frames.len(),
+                    PUMP_STEP.saturating_mul(SETTLED_GAP_STEPS).as_millis()
+                ),
+            );
+            frames.pop().flatten()
+        }
+    }
+}
+
 /// The pixels of `frame` (window points from the top left, grown by
 /// `DIFF_MARGIN`) whose bytes differ between `a` and `b`.
 fn diff_table(a: &Rgba, b: &Rgba, frame: NSRect, window: NSSize) -> Value {
@@ -3081,6 +3355,31 @@ mod tests {
         assert_eq!(
             t.get("error").and_then(Value::as_str),
             Some("unavailable: first; and second")
+        );
+    }
+
+    fn frame(byte: u8) -> Option<Rgba> {
+        Some(Rgba::from_pixels(1, 1, vec![[byte, byte, byte, 0xff]]))
+    }
+
+    #[test]
+    fn the_settled_capture_is_the_first_that_repeats_the_one_before() {
+        assert_eq!(
+            first_settled(&[frame(1), frame(2), frame(2), frame(2)]),
+            Some(2)
+        );
+        assert_eq!(first_settled(&[frame(1), frame(1)]), Some(1));
+        assert_eq!(first_settled(&[frame(1), frame(2), frame(1)]), None);
+        assert_eq!(first_settled(&[None, None, frame(3)]), None);
+        assert_eq!(first_settled(&[frame(1)]), None);
+        assert_eq!(first_settled(&[]), None);
+    }
+
+    #[test]
+    fn a_try_is_named_after_its_state_and_number() {
+        assert_eq!(
+            try_name("normal-over-black.png", 3),
+            "normal-over-black-try3.png"
         );
     }
 }

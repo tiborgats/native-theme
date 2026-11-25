@@ -54,3 +54,16 @@ What the run shows:
 
 The values are in `.superpowers/sdd/v0.8.0-plan/M2/FS4/measured.md`, sections "iOS (iOS-host pass)" and "switch
 label", iOS.
+
+## The SwiftUI `Toggle`'s pressed label on iOS 26.5, read again (M2.FS4c10)
+
+Run 45230061151's `measure_lists.py` found each state's label ink box in that state's own capture, left of the
+`UISwitch`'s frame. On iOS 26.5 the pressed switch's thumb grows left past that frame, so the pressed states' boxes took
+the thumb too (`label_ink_box_px` [52, 29, 705, 148] and [52, 29, 711, 148] in light, 136 high in dark, where the label
+is [52, 59, 169, 98]), and the `Toggle`'s pressed label compared equal to no UIKit state. `analysis/measure_lists.py`
+is that script with one change: a state other than normal crops its label at the normal state's box (same run,
+appearance and specimen). Run on both artifacts (downloaded with `gh run download 45516795085`): iOS 18.6's output is
+byte for byte the committed one; iOS 26.5's differs only in those four boxes (now [52, 59, 169, 98]) and in
+`press1.<appearance>.switch_form.{normal,pressed}.label_vs_uikit_row`, now `['normal', 'pressed']` in both appearances:
+the SwiftUI `Toggle`'s label, at rest and pressed, equals the UIKit list row's at rest and pressed within 3 levels.
+`ios-host-macos-26/measure_lists.toml` is the new output.

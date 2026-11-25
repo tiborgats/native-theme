@@ -1,0 +1,43 @@
+docs/evidence/os-probe/2026-11-25-run-45537062519/os-probe-macos-26-button/button-pass/probe.toml
+  styles_b aqua
+    mini-glass hovered: moved 1 entered 1 exited 0, 590 px, max 10
+      warp_post: moved 1 entered 1 exited 0, 590 px, max 10
+      post: moved 1 entered 1 exited 0, 590 px, max 10
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 590 px, max 10
+    small-glass hovered: moved 1 entered 1 exited 1, 1061 px, max 10
+      warp_post: moved 1 entered 1 exited 0, 1061 px, max 10
+      post: moved 1 entered 1 exited 0, 1061 px, max 10
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 1061 px, max 10
+    regular-glass hovered: moved 1 entered 1 exited 1, 1500 px, max 10
+      warp_post: moved 1 entered 1 exited 0, 1500 px, max 10
+      post: moved 1 entered 1 exited 0, 1500 px, max 10
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 1500 px, max 10
+    large-glass hovered: moved 1 entered 1 exited 1, 1758 px, max 10
+      warp_post: moved 1 entered 1 exited 0, 1758 px, max 10
+      post: moved 1 entered 1 exited 0, 1758 px, max 10
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 1758 px, max 10
+    extraLarge-glass hovered: moved 1 entered 1 exited 1, 2503 px, max 10
+      warp_post: moved 1 entered 1 exited 0, 2503 px, max 10
+      post: moved 1 entered 1 exited 0, 2503 px, max 10
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 2503 px, max 10
+  styles_b darkAqua
+    mini-glass hovered: moved 1 entered 1 exited 0, 594 px, max 22
+      warp_post: moved 1 entered 1 exited 0, 594 px, max 22
+      post: moved 1 entered 1 exited 0, 594 px, max 22
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 594 px, max 22
+    small-glass hovered: moved 1 entered 1 exited 1, 1090 px, max 22
+      warp_post: moved 1 entered 1 exited 0, 1090 px, max 22
+      post: moved 1 entered 1 exited 0, 1090 px, max 22
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 1090 px, max 22
+    regular-glass hovered: moved 1 entered 1 exited 1, 1548 px, max 23
+      warp_post: moved 1 entered 1 exited 0, 1548 px, max 23
+      post: moved 1 entered 1 exited 0, 1548 px, max 23
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 1548 px, max 23
+    large-glass hovered: moved 1 entered 1 exited 1, 1808 px, max 22
+      warp_post: moved 1 entered 1 exited 0, 1808 px, max 22
+      post: moved 1 entered 1 exited 0, 1808 px, max 22
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 1808 px, max 22
+    extraLarge-glass hovered: moved 1 entered 1 exited 1, 2552 px, max 22
+      warp_post: moved 1 entered 1 exited 0, 2552 px, max 22
+      post: moved 1 entered 1 exited 0, 2552 px, max 22
+      warp_wait_post: moved 1 entered 1 exited 0 (before the post: moved 0 entered 0 exited 0), 2552 px, max 22

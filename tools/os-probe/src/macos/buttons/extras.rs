@@ -291,7 +291,7 @@ fn item_renders(
 }
 
 /// The superviews of the `NSToolbarImageView`s below `view`, in walk order.
-fn collect_image_item_views(
+pub(super) fn collect_image_item_views(
     view: &NSView,
     depth: u32,
     found: &mut Vec<objc2::rc::Retained<NSView>>,
