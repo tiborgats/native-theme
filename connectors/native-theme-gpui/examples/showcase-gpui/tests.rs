@@ -20033,6 +20033,41 @@ fn the_open_theme_menu_is_dumped_with_its_rows(cx: &mut TestAppContext) {
     );
 }
 
+/// The macOS presets state no fill for the scroll thumb at rest, so the
+/// List's scroll bar and its thumb route their rest fills to what gpui draws
+/// there, gpui-component's own `scrollbar_thumb`, as the Theme Map's
+/// `scrollbar_thumb` token says (`next::thumb_at_rest`).
+#[test]
+fn the_thumb_at_rest_names_upstreams_own_where_unstated() {
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(preset).resolve(&ctx);
+            for state in [WidgetState::NONE, WidgetState::UNFOCUSED_VIEW] {
+                assert_eq!(
+                    native_theme_gpui::next::fill_of(&r.scrollbar.thumb(state), "thumb"),
+                    Ok(None),
+                    "{preset:?} {:?} states a thumb fill at rest {state:?}, so this proves nothing",
+                    ctx.scheme
+                );
+            }
+        }
+    }
+    for id in ["basic.list.scrollbar", "basic.list.scrollbar.thumb"] {
+        for home in [
+            "scrollbar.thumb(NONE).fill",
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+        ] {
+            let how = crate::info::leaves::how(id, home).unwrap_or_default();
+            assert!(
+                how.contains("where it does not, gpui-component's own scrollbar_thumb")
+                    && how.contains("thumb_at_rest"),
+                "{id} {home}: {how:?}"
+            );
+        }
+    }
+}
+
 /// Every home of every element of the list has the line saying how gpui
 /// applies it (`info::leaves`), so Widget Info never shows the fallback.
 #[test]

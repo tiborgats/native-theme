@@ -2204,7 +2204,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "scrollbar.thumb(NONE).fill",
             "scrollbar.thumb(UNFOCUSED_VIEW).fill",
         ],
-        "gpui: gpui-base's thumb at rest is scrollbar.thumb(UNFOCUSED_VIEW).fill, the handle of a view without the focus, which is the plain thumb, scrollbar.thumb(NONE).fill, on a theme with no rule for that state (native-theme-gpui next/mod.rs, thumb_at_rest; base_layer::scrollbar_styles)",
+        "gpui: gpui-base's thumb at rest is scrollbar.thumb(UNFOCUSED_VIEW).fill, the handle of a view without the focus, which is the plain thumb, scrollbar.thumb(NONE).fill, on a theme with no rule for that state, where the theme states it; where it does not, gpui-component's own scrollbar_thumb (native-theme-gpui next/mod.rs, thumb_at_rest; base_layer::scrollbar_styles)",
     ),
     (
         "",

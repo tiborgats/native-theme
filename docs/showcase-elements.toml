@@ -792,8 +792,9 @@ homes = ["status_bar.bar.fill", "status_bar.bar.stroke.color", "status_bar.bar.s
 states = ["Normal"]
 sample = { fill = [0.6, 0.5], border = [0.6, 0.0, 0.0, 0.5] }
 
-# The side-panel toggle shows the panel open: a flat button that is checked (docs/v0.8.0-spec.md
-# §10, rule 0a). Each connector draws it in button.body(CHECKED; variant=Flat).fill and
+# The side-panel toggle shows the panel open: a flat button that is checked
+# (docs/v0.8.0-spec.md §10, rule 0a). Each connector draws it in
+# button.body(CHECKED; variant=Flat).fill and
 # button.label(CHECKED; variant=Flat).color where a rule states them for the checked state, else
 # in its toolkit's own selected look, never in another state's colours. `button.checked_*` are a
 # raised button's leaves in 0.7.2 (Breeze fills a checked flat button apart,
