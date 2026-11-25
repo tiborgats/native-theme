@@ -5422,6 +5422,12 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       `docs/facts/macos/button.toml` and `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`). Since M2.FS3 the
       ios-13 push button states its checked fill, its checked and pressed fill and its checked label, which the
       **ios-13** item above still names among the unstated values.
+      On macos-monterey and macos-tahoe gpui draws such a button as an unchecked one. Its checked fill falls back to
+      `secondary_active` (`toolbar_button_checked` in `native-theme-gpui/src/next/builders.rs`), which is the flat
+      button's pressed fill, and since `8ace5c2a2` that fill is measured as none (transparent). This is read from the
+      code, not run. The FS4 probe lane reads the toolbar-bezel button as an on toggle (M2.FS4c13), and the CHECKED
+      fill it gives closes this. The NSToolbar image item's selected look (runs 45537062519, 45542850219) is another
+      widget and is not a source for `toolbar.button` (`M2/FS4/measured.md`, section "M2.FS4c11 → specimen").
 
 ### Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts
 - [ ] [1.0] For the maintainer to decide. Under `--capture`, `--screenshot` and `--dump-layout` on macOS, gpui's keyboard shield stops ⌘Q, ⌘H, ⌥⌘H, ⌘M and ⌘W too, which are its own keymap bindings: a key equivalent reaches gpui's window first (gpui-pre-macos 0.3.9 `src/window.rs:2572-2574`, `handle_key_equivalent`, and `:2659-2668`, the event reported as handled where it did not propagate), and the shield stops every keystroke (`cx.intercept_keystrokes`, gpui-pre 0.3.9 `src/window.rs:6075-6092`, installed by the gpui showcase's `apply_cli_args`). The egui showcase leaves AppKit's predefined items (Close, Quit, Hide, Hide Others, Minimize) running there, as its `shields_keyboard` doc says since M9c B1 FR-M3 (d2e34ccc), and drops only the showcase's own menu actions. Read from the source, not run on macOS. Settle before 1.0 whether the two shields cover the same keys.
