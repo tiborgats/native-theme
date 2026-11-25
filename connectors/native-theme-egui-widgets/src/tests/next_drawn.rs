@@ -56,6 +56,9 @@ enum Differs {
     /// The dividers between the segments ([`dividers_closed`]): each painted in 0.7.2 and none in
     /// 0.8.0, the frame and every shape after one the dividers' width nearer the start.
     Dividers,
+    /// The dividers' colour alone ([`divider_fills_masked`]): 0.7.2 paints them in the outline's
+    /// colour, 0.8.0 in the one the theme states for them.
+    DividerFill,
     /// What each of these lets differ, at once, each of them one that changes no place
     /// ([`masked`]).
     Each(&'static [Differs]),
@@ -251,6 +254,18 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["kde-breeze"],
         differs: Differs::Dividers,
         reason: KDE_SEGMENTED,
+    },
+    Difference {
+        case: "segmented control",
+        presets: &["adwaita"],
+        differs: Differs::DividerFill,
+        reason: SEPARATOR_FILL,
+    },
+    Difference {
+        case: "segmented control disabled",
+        presets: &["adwaita"],
+        differs: Differs::DividerFill,
+        reason: SEPARATOR_FILL,
     },
     Difference {
         case: "segmented control disabled",
@@ -596,6 +611,15 @@ const MACOS_SWITCH: &str = "the label's side and gap: the 0.8.0 macOS presets st
      states neither and the label lies after the track at the scope's own icon_spacing, 2 pt \
      nearer; crate::next::parity, switch::Geometry.leading and .label_gap";
 
+/// adwaita's segmented control dividers (material-3's separator fill is its outline's colour,
+/// drawn alike).
+const SEPARATOR_FILL: &str = "the dividers' colour: 0.7.2 states the dividers no colour of \
+     their own, so the control paints them in its outline's; the 0.8.0 adwaita states \
+     AdwToggleGroup's `> separator`, GtkSeparator's `background: $border_color` \
+     (_toggle-group.scss:141-159, _misc.scss:21-22 at libadwaita 1.10.0), \
+     segmented_control.separator(NONE).fill, which the control paints them in; \
+     crate::next::parity, segmented_control::Look.separator";
+
 /// The macOS presets' disabled switch label.
 const MACOS_SWITCH_DISABLED: &str = "the label's side, gap and colour: as MACOS_SWITCH gives, \
      and the disabled switch label (switch.label(DISABLED)) in labelColor as at rest, \
@@ -865,6 +889,7 @@ fn masked(
         Differs::Ring => both(rings_masked),
         Differs::Fill => both(fills_masked),
         Differs::Dot => both(|s| fallbacks_masked(&dots_masked(s))),
+        Differs::DividerFill => divider_fills_masked(a, b),
         Differs::Each(each) => each
             .iter()
             .try_fold((a.to_vec(), b.to_vec()), |(a, b), d| masked(*d, &a, &b)),
@@ -926,6 +951,7 @@ fn alike_but(
         | Differs::Ring
         | Differs::Fill
         | Differs::Dot
+        | Differs::DividerFill
         | Differs::Each(_) => ra == rb && masked(differs, a, b).is_some_and(|(a, b)| a == b),
         Differs::Gap => {
             // the row's background spans the row, which the gap's change widens
@@ -1240,20 +1266,7 @@ fn rings_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
 /// listed difference, an outline colour, leaves to compare.
 fn outlines_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
     let none = egui::Color32::TRANSPARENT;
-    let outlines: Vec<egui::Color32> = shapes
-        .iter()
-        .filter_map(|shape| match shape {
-            egui::Shape::Rect(r) if r.stroke.width > 0.0 => Some(r.stroke.color),
-            egui::Shape::Circle(c) if c.stroke.width > 0.0 => Some(c.stroke.color),
-            egui::Shape::Ellipse(e) if e.stroke.width > 0.0 => Some(e.stroke.color),
-            egui::Shape::LineSegment { stroke, .. } if stroke.width > 0.0 => Some(stroke.color),
-            egui::Shape::Path(p) if p.stroke.width > 0.0 => match p.stroke.color {
-                egui::epaint::ColorMode::Solid(c) => Some(c),
-                _ => None,
-            },
-            _ => None,
-        })
-        .collect();
+    let outlines = outline_colours(shapes);
     shapes
         .iter()
         .cloned()
@@ -1272,6 +1285,53 @@ fn outlines_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
                 _ => {}
             }
             shape
+        })
+        .collect()
+}
+
+/// The dividers' colour alone: each rect `a` (0.7.2) fills in one of its outlines' colours (the
+/// segmented control's dividers, [`outlines_masked`]) and the rect `b` (0.8.0) draws in its
+/// place, at the same rect with the same corners and no stroke, both filled transparent, every
+/// other value kept. `None` where the two draw a different number of shapes.
+fn divider_fills_masked(
+    a: &[egui::Shape],
+    b: &[egui::Shape],
+) -> Option<(Vec<egui::Shape>, Vec<egui::Shape>)> {
+    if a.len() != b.len() {
+        return None;
+    }
+    let none = egui::Color32::TRANSPARENT;
+    let outlines = outline_colours(a);
+    let (mut a, mut b) = (a.to_vec(), b.to_vec());
+    for (old, new) in a.iter_mut().zip(b.iter_mut()) {
+        if let (egui::Shape::Rect(old), egui::Shape::Rect(new)) = (old, new)
+            && outlines.contains(&old.fill)
+            && old.rect == new.rect
+            && old.corner_radius == new.corner_radius
+            && old.stroke.width == 0.0
+            && new.stroke.width == 0.0
+        {
+            old.fill = none;
+            new.fill = none;
+        }
+    }
+    Some((a, b))
+}
+
+/// The colours of the outlines `shapes` stroke.
+fn outline_colours(shapes: &[egui::Shape]) -> Vec<egui::Color32> {
+    shapes
+        .iter()
+        .filter_map(|shape| match shape {
+            egui::Shape::Rect(r) if r.stroke.width > 0.0 => Some(r.stroke.color),
+            egui::Shape::Circle(c) if c.stroke.width > 0.0 => Some(c.stroke.color),
+            egui::Shape::Ellipse(e) if e.stroke.width > 0.0 => Some(e.stroke.color),
+            egui::Shape::LineSegment { stroke, .. } if stroke.width > 0.0 => Some(stroke.color),
+            egui::Shape::Path(p) if p.stroke.width > 0.0 => match p.stroke.color {
+                egui::epaint::ColorMode::Solid(c) => Some(c),
+                _ => None,
+            },
+            _ => None,
         })
         .collect()
 }
@@ -2475,6 +2535,37 @@ fn a_segmented_control_takes_its_stated_padding_and_hover_layer() -> TestResult 
         look.hover,
         Some(egui::Color32::from_rgb(255, 0, 255)),
         "{preset:?}"
+    );
+    Ok(())
+}
+
+/// A segmented control paints its dividers in the colour `segmented_control.separator(NONE)`'s
+/// fill states, not in its outline's.
+#[test]
+fn a_segmented_control_paints_its_dividers_in_the_separator_fill() -> TestResult {
+    use crate::segmented_control::Look;
+    let magenta = egui::Color32::from_rgb(255, 0, 255);
+    let patch = "[[widgets.segmented_control.rules]]\nstates = []\nseparator.fill = \"#ff00ff\"\n";
+    // adwaita: its dividers are a point wide (kde-breeze's are none).
+    assert_eq!(
+        Look::next_of(&patched(Preset::Adwaita, patch)?).separator,
+        Some(magenta)
+    );
+    let ctx = patched_installed(Preset::Adwaita, patch)?;
+    let add = |ui: &mut egui::Ui| ui.add(SegmentedControl::new(&mut 1, ["Day", "Week"]));
+    let _ = response(&ctx, at(1.0), add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    let parts = Parts::of(&r).ok_or("no parts")?;
+    let divider = parts
+        .get("divider_0")
+        .ok_or("no divider between the two segments")?;
+    let painted = out.shapes.iter().any(|clipped| match &clipped.shape {
+        egui::Shape::Rect(s) => s.fill == magenta && s.rect.intersects(divider),
+        _ => false,
+    });
+    assert!(
+        painted,
+        "no divider painted in the separator fill at {divider:?}"
     );
     Ok(())
 }

@@ -179,6 +179,18 @@ const DIFFERENCES: &[Difference] = &[
                  fill",
     },
     Difference {
+        leaf: "segmented_control::Look.separator",
+        presets: &["adwaita", "material-3"],
+        reason: "0.7.2 states the dividers no colour of their own (the control painted them in \
+                 its outline's); 0.8.0's adwaita states AdwToggleGroup's `> separator`, \
+                 GtkSeparator's `background: $border_color` (_toggle-group.scss:141-159, \
+                 _misc.scss:21-22 at libadwaita 1.10.0), and 0.8.0's material-3 the segments' \
+                 shared outline, outline-color = outline \
+                 (v0_192/_md-comp-outlined-segmented-button.scss:65-66 at material-web \
+                 cbd34a8), each segmented_control.separator(NONE).fill, which the control \
+                 paints its dividers in; next_drawn, SEPARATOR_FILL",
+    },
+    Difference {
         leaf: "slider::Look.thumb_hover_color",
         presets: &["macos-monterey"],
         reason: "0.7.2's macos-monterey states an uncited hover fill (#e0e0e0); 0.8.0's states \
@@ -489,7 +501,7 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         SegmentedLook,
         Some(SegmentedLook::of(old)),
         Some(SegmentedLook::next_of(new)),
-        [background, hover, padded]
+        [background, hover, padded, separator]
     );
     compare!(
         report,

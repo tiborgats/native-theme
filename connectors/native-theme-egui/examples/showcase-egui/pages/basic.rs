@@ -594,14 +594,50 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     // the theme states none.
     let min = button_min_size(r);
     let plain = |text: egui::RichText| Button::new(text);
-    let primary = |text: egui::RichText| Button::new(text).selected(true);
+    // The primary button: egui's selected button, outlined per call (`Button::stroke`, which
+    // overrides egui's on-hover effects) in the state of its previous response, kept in the
+    // page's memory as the dialog's default button's below, in the pen [`primary_pen`] reads;
+    // focused, and where the theme states no pen, the button scope's own.
+    let primary_key = egui::Id::unique(("basic state", "basic.buttons.primary"));
+    let primary_was = ui
+        .ctx()
+        .data(|d| d.get_temp::<(bool, bool, bool)>(primary_key))
+        .unwrap_or_default();
+    let primary_at = |(hovered, pressed, focused): (bool, bool, bool)| {
+        let state = if pressed {
+            NextState::PRESSED
+        } else if hovered {
+            NextState::HOVER
+        } else {
+            NextState::NONE
+        };
+        let pen = r.filter(|_| !focused).and_then(|r| primary_pen(r, state));
+        move |text: egui::RichText| {
+            let button = Button::new(text).selected(true);
+            match pen {
+                Some(pen) => button.stroke(pen),
+                None => button,
+            }
+        }
+    };
 
     heading(reg, ui, "basic.buttons.heading", "Buttons");
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.default", "button (enabled)", normal);
         text_button(reg, ui, kind, ("Button", min), plain, true);
         let kind = ("basic.buttons.primary", "button (suggested action)", normal);
-        text_button(reg, ui, kind, ("Primary", min), primary, true);
+        let primary = primary_at(primary_was);
+        let response = text_button(reg, ui, kind, ("Primary", min), primary, true);
+        let now = (
+            response.hovered(),
+            response.is_pointer_button_down_on(),
+            response.has_focus(),
+        );
+        if now != primary_was {
+            // drawn from the previous response: one more pass shows the state it is in now
+            ui.ctx().request_repaint();
+        }
+        ui.ctx().data_mut(|d| d.insert_temp(primary_key, now));
     });
     ui.horizontal_wrapped(|ui| {
         let kind = (
@@ -694,7 +730,10 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 };
                 text_button(reg, ui, kind, ("OK", min), own, true)
             }
-            None => text_button(reg, ui, kind, ("OK", min), primary, true),
+            None => {
+                let primary = primary_at((hovered, pressed, focused));
+                text_button(reg, ui, kind, ("OK", min), primary, true)
+            }
         };
         let now = (
             response.hovered(),
@@ -1432,6 +1471,26 @@ fn separator(reg: &mut Registry, ui: &mut egui::Ui) {
 fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     heading(reg, ui, "basic.list.heading", "List");
     list(reg, state, atlas, ui);
+}
+
+/// The primary button's outline in `state` (`NONE`, `HOVER` or `PRESSED`) of the installed
+/// 0.8.0 theme `r`: `button.body(<state>; variant=Primary).stroke.color` in the width
+/// `button.body(NONE; variant=Primary).stroke.width`, each where stated as one stroke of one
+/// colour; none where the width is not positive; `None` where the theme states either in no form
+/// egui can draw, and the button scope's own stays (spec §10, rule 0).
+fn primary_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
+    let at = |state| {
+        r.button
+            .body(native_theme::next::ButtonQuery::primary().with_state(state))
+    };
+    match (
+        next::stroke_width_of(&at(NextState::NONE)),
+        next::stroke_color_of(&at(state)),
+    ) {
+        (Some(width), _) if width <= 0.0 => Some(egui::Stroke::NONE),
+        (Some(width), Some(colour)) => Some(egui::Stroke::new(width, colour)),
+        _ => None,
+    }
 }
 
 /// The outline a rule of the installed 0.8.0 theme `r` states for a toolbar button in `state`

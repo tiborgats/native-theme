@@ -662,10 +662,15 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      the window is not focused, list.item_label's query with UNFOCUSED_VIEW where a rule states \
      it for that state (pages::basic::RowLook::of)";
 
-/// The route of a home of the primary button's own variant: egui reads none of them.
-const PRIMARY_VARIANT_UNREAD: &str = "not drawn: the primary button is drawn as egui's selected \
-     Button in the button scope (pages::basic, primary), outlined and rounded as the push \
-     button, by button.body(NONE) and its hovered and pressed states";
+/// The route of the primary button's own outline, which the Basic page hands its button per call.
+const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline at \
+     rest, hovered and pressed, button.body(<state>; variant=Primary).stroke.color in \
+     button.body(NONE; variant=Primary).stroke.width where stated, else the button scope's own; \
+     focused, the scope's own (pages::basic, primary_pen)";
+/// The route of the primary button's own corners: egui reads them nowhere.
+const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
+     the button scope (pages::basic, primary), rounded as the push button, by \
+     button.body(NONE).corners";
 
 /// The route of the scroll bar thumb's corners, which the atlas writes as the scroll bar scope's
 /// radius, which no `mapping.toml` row holds.
@@ -678,11 +683,11 @@ const UNFOCUSED_THUMB_CORNERS: &str = "not reachable: egui rounds the thumb alik
      thumb_radius)";
 
 /// The route of the segmented control's separator colour on a divider: the companion crate's
-/// control draws its dividers in its outline's colour.
-const SEGMENT_DIVIDER_UNREAD: &str = "not drawn: native-theme-egui-widgets SegmentedControl \
-     (docs/archive/todo_egui-widgets-spec.md §4.4) paints its dividers in its outline's colour, \
-     the scope's segmented_control.track(NONE).stroke.color (native-theme-egui-widgets \
-     segmented_control.rs, Outline::paint_lines)";
+/// control paints its dividers in it.
+const SEGMENT_DIVIDER: &str = "egui: native-theme-egui-widgets SegmentedControl paints its \
+     dividers in it where stated, else in its outline's colour, the scope's \
+     segmented_control.track(NONE).stroke.color (native-theme-egui-widgets segmented_control.rs, \
+     Look::next_of, Outline::paint_lines)";
 
 /// The route of a flat button's hovered outline (the side-panel toggle, the Pages menu button,
 /// the Copy box), which `next::flat_button` lays over the scope's hovered entry per call, not
@@ -706,8 +711,9 @@ const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline press
 /// `chrome::menu_panel` paints, the side-panel toggle's checked look, which `chrome::ghost_button`
 /// lays over egui's selected button, the flat buttons' hovered and pressed outlines, which
 /// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
-/// primary button's own variant and the segmented control's separator colour, which egui reads
-/// none of, and
+/// primary button's own outline, which `pages::basic` hands its button, the segmented control's
+/// separator colour, which the companion crate's control paints its dividers in, the primary
+/// button's own corners, which egui reads none of, and
 /// the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
@@ -816,27 +822,27 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.buttons.primary",
         "button.body(NONE; variant=Primary).stroke.color",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "basic.buttons.primary",
         "button.body(HOVER; variant=Primary).stroke.color",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "basic.buttons.primary",
         "button.body(PRESSED; variant=Primary).stroke.color",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "basic.buttons.primary",
         "button.body(NONE; variant=Primary).corners",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_CORNERS_UNREAD,
     ),
     (
         "basic.buttons.primary",
         "button.body(NONE; variant=Primary).stroke.width",
-        PRIMARY_VARIANT_UNREAD,
+        PRIMARY_OUTLINE,
     ),
     (
         "chrome.status_bar.toggle",
@@ -907,12 +913,12 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.segmented.divider_1",
         "segmented_control.separator(NONE).fill",
-        SEGMENT_DIVIDER_UNREAD,
+        SEGMENT_DIVIDER,
     ),
     (
         "basic.segmented.divider_2",
         "segmented_control.separator(NONE).fill",
-        SEGMENT_DIVIDER_UNREAD,
+        SEGMENT_DIVIDER,
     ),
     (
         "chrome.side_panel.settings.theme",

@@ -143,8 +143,10 @@ off by default as there. This crate adds none of its own.
 * A bare `link` has no visited colour (egui's `Link` carries no URL), and
   egui underlines every link on hover or focus.
 * On macOS the spinner is an arc, not fins: the theme states no fin geometry.
-* A segmented control's dividers are its border's colour: the theme states
-  their width and no colour of their own.
+* A segmented control's dividers are drawn in the colour a 0.8.0 theme states
+  for them (`segmented_control.separator(NONE).fill`); where it states none,
+  and under the 0.7.2 model, which states their width and no colour of their
+  own, in its border's colour.
 * No slider tick marks.
 
 ## Links

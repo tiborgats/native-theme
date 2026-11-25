@@ -1145,6 +1145,57 @@ fn the_open_toggle_is_outlined_in_the_checked_flat_pen() -> Result<(), String> {
     Ok(())
 }
 
+/// The Basic page's primary button is outlined at rest in the pen the theme states for the
+/// primary variant, `button.body(NONE; variant=Primary).stroke`, not in the push button's, and
+/// its Widget Info routes that home to the call that draws it.
+#[test]
+fn the_primary_button_is_outlined_in_its_own_pen() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState,
+    };
+    let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
+    let patch = |_: &native_theme::next::ResolvedTheme| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Primary)
+                    .states(WidgetState::NONE)
+                    .body(PartPatch::new().stroke(Stroke::uniform(1.0, magenta))),
+            ),
+        )
+    };
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", patch)?;
+    harness.run_steps(SETTLE);
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some("basic.buttons.primary"))
+        .map(|record| record.rect)
+        .ok_or("the primary button records nothing")?;
+    let pen = egui::Stroke::new(1.0, native_theme_egui::next::to_color32(magenta));
+    let strokes: Vec<egui::Stroke> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) if shape.rect == rect => Some(shape.stroke),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(strokes, [pen], "the primary button's frame at {rect:?}");
+    let manifest = Manifest::parse(MANIFEST)?;
+    let how = crate::info::listed_how(
+        &manifest,
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).stroke.color",
+        &[],
+    );
+    assert!(how.contains("primary_pen"), "{how}");
+    Ok(())
+}
+
 /// The side-panel toggle's icon takes the colour the theme states for the flat button's icon
 /// in the state it is in, `button.icon(CHECKED; variant=Flat).color` while on and
 /// `button.icon(NONE; variant=Flat).color` while off; kde-breeze states none, and the icon is
