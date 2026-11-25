@@ -85,7 +85,10 @@
 //!   checked fill over the hovered and the pressed ones, and the checked and
 //!   pressed fill over it, as UIKit draws a selected toggle, highlighted or
 //!   not, in fills of its own (`docs/facts/ios/button.toml` on `v0.8.0-rc1`
-//!   at `78ee0efd`), under the primary and the disabled fills. Its label: the
+//!   at `78ee0efd`), under the primary and the disabled fills; on the plain
+//!   button no fill over the disabled fill, and its own checked and disabled
+//!   fill over that, as UIKit draws a selected disabled plain button (the
+//!   same facts, ios-host run 42267206298). Its label: the
 //!   checked colour over the pressed one, and the checked and pressed colour
 //!   over it, as UIKit draws a highlighted selected toggle's title in a
 //!   colour of its own (the same facts), the primary text over them, the
@@ -269,6 +272,8 @@ struct SchemeColors {
     button_checked_foreground: Color,
     /// A checked toggle's label while pressed, under the default tint.
     button_checked_pressed_foreground: Color,
+    /// A checked plain button's fill while disabled.
+    plain_checked_disabled: Color,
     disabled_fill: Color,
     disabled_label: Color,
     row_hover: Color,
@@ -401,6 +406,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // the same, pressed: the default tint at 0xbf (the same run,
     // `cells.light.gray.*.selected_highlighted.label_fill`, the plain style the same)
     button_checked_pressed_foreground: srgb8(0x007a_ffbf),
+    // a checked plain button's fill while disabled (measured, ios-host run 42267206298,
+    // `ios-host-macos-15/render_read_buttons.toml`,
+    // `cells.light.plain__states_disabled_combinations.medium.disabled_selected.fill`;
+    // `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`, rows B-1, B-7, TB-4)
+    plain_checked_disabled: srgb8(0x7878_801f),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0xe5e5_ea80),
@@ -575,6 +585,11 @@ const DARK: SchemeColors = SchemeColors {
     // the same, pressed: #2390ff (the same run,
     // `cells.dark.gray.*.selected_highlighted.label_fill`, the plain style the same)
     button_checked_pressed_foreground: srgb8(0x2390_ffff),
+    // a checked plain button's fill while disabled (measured, ios-host run 42267206298,
+    // `ios-host-macos-15/render_read_buttons.toml`,
+    // `cells.dark.plain__states_disabled_combinations.medium.disabled_selected.fill`;
+    // `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`, rows B-1, B-7, TB-4)
+    plain_checked_disabled: srgb8(0x7878_803d),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0x2c2c_2e80),
@@ -1452,7 +1467,8 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// on `v0.8.0-rc1` at `78ee0efd`): they do not follow the accent, and under
 /// another accent a checked button keeps the default tint's blue. The flat
 /// variant is UIKit's plain button, with no outline in any state and no fill
-/// but when checked, where it draws the toggle's selected fill.
+/// but when checked, where it draws the toggle's selected fill, and checked
+/// and disabled its own measured fill.
 fn button(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -1499,7 +1515,8 @@ fn button(
         // plain button was measured and the push button's hover fill is 0.7.2's uncited push
         // button value. Before the checked rules: a checked plain button draws the toggle's
         // selected fill (the same facts, `button.body.fill` states [checked] variants
-        // [flat, toggle], row B-7); disabled below, after the push button's disabled fill.
+        // [flat, toggle], row B-7); disabled below, after the push button's disabled fill, and
+        // checked and disabled its own measured fill (`plain_checked_disabled`).
         .rules(
             [
                 flat(WidgetState::NONE),
@@ -1522,6 +1539,10 @@ fn button(
             [fill(c.disabled_fill)],
         )
         .rule(flat(WidgetState::DISABLED), [PartProp::Fill(Paint::None)])
+        .rule(
+            flat(WidgetState::DISABLED | WidgetState::CHECKED),
+            [fill(c.plain_checked_disabled)],
+        )
         // The flat variant, UIKit's plain button, draws no outline, after the push button's rules
         // so that its own win (measured, iOS host run 41020880059, analysis.toml
         // `cells.<scheme>.plain.<size>.normal.stroke` absent; `docs/facts/ios/button.toml` on

@@ -4581,8 +4581,9 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 }
 
 /// The toolbar: Breeze's tools area in the Header set's colour with its line
-/// at its own width, the default radius (0.7.2: `toolbar.border`'s radius is
-/// `defaults.border.corner_radius` where unstated), no shadow and
+/// at its own width, no corners stated (Breeze draws no frame round the tool
+/// bar, platform-facts.md (§2.13), where 0.7.2 took
+/// `defaults.border.corner_radius`), no shadow and
 /// ToolBar_ItemMargin's padding; its items edge to edge. Its buttons are
 /// flat, rounded as the push button's frame
 /// ([`TOOLBAR_BUTTON_CORNER_RADIUS`]): nothing at rest; hovered, a transparent fill outlined in Highlight;
@@ -4605,7 +4606,9 @@ fn toolbar(
         .base([
             fill(c.toolbar_background),
             PartProp::Stroke(Stroke::uniform(TOOLBAR_BORDER_WIDTH, c.toolbar_border)),
-            corners(layout),
+            // `toolbar.border.corner_radius`: platform-facts.md (§2.13): none, Breeze draws no
+            // frame round the tool bar (CE_ToolBar is emptyControl, breezestyle.cpp:1466-1467 at
+            // breeze f0b1d75): unstated
             // `toolbar.border.shadow_enabled`: platform-facts.md §2.13 border.shadow_enabled:
             // CE_ToolBar paints nothing, no shadow
             PartProp::Shadows(None),

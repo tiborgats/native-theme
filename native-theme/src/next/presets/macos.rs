@@ -668,10 +668,10 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // #f6f6f6, `label`, `ink`)
     sidebar_background: srgb8(0xf6f6_f6ff),
     sidebar_foreground: srgb8(0x4949_49ff),
-    // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent, over the sidebar's material on
-    // the runners' black desktop (measured, os-probe run 45252258079, macOS 15, Reduce
-    // Transparency off, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: Some(srgb8(0x2d92_fbff)),
+    // `sidebar.item(PRESSED).fill`: #0064e1, on the default accent, over the material's Reduce
+    // Transparency rendering, as the sidebar's fill (measured, os-probe run 45231684209, macOS 15,
+    // Reduce Transparency on, `aqua.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x0064_e1ff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 26/255 (measured,
     // renders/aqua/switch-regular-off@2x.png); over background_color #d4d4d4
     switch_unchecked: srgb8(0x0000_001a),
@@ -982,10 +982,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `label`, `ink`)
     sidebar_background: srgb8(0x3838_38ff),
     sidebar_foreground: srgb8(0xebeb_ebff),
-    // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent, over the sidebar's material on
-    // the runners' black desktop (measured, os-probe run 45252258079, macOS 15, Reduce
-    // Transparency off, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: Some(srgb8(0x378c_e5ff)),
+    // `sidebar.item(PRESSED).fill`: #0059d1, on the default accent, over the material's Reduce
+    // Transparency rendering, as the sidebar's fill (measured, os-probe run 45231684209, macOS 15,
+    // Reduce Transparency on, `darkAqua.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x0059_d1ff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 26/255 (measured,
     // renders/darkAqua/switch-regular-off@2x.png); over background_color #474747
     switch_unchecked: srgb8(0xffff_ff1a),
@@ -1301,10 +1301,10 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // #f6f6f6, `label`, `ink`)
     sidebar_background: srgb8(0xf6f6_f6ff),
     sidebar_foreground: srgb8(0x0000_00ff),
-    // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent, over the sidebar's material on
-    // the runners' black desktop (measured, os-probe run 45252258079, macOS 26, Reduce
-    // Transparency off, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: Some(srgb8(0x0069_eeff)),
+    // `sidebar.item(PRESSED).fill`: #0076fb, on the default accent, over the material's Reduce
+    // Transparency rendering, as the sidebar's fill (measured, os-probe run 45231684209, macOS 26,
+    // Reduce Transparency on, `aqua.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x0076_fbff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #e6e6e6
     switch_unchecked: srgb8(0x0000_0019),
@@ -1616,10 +1616,10 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // #383838, `label`, `ink`)
     sidebar_background: srgb8(0x3838_38ff),
     sidebar_foreground: srgb8(0xffff_ffff),
-    // `sidebar.item(PRESSED).fill`: #219bff, on the default accent, over the sidebar's material on
-    // the runners' black desktop (measured, os-probe run 45252258079, macOS 26, Reduce
-    // Transparency off, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: Some(srgb8(0x219b_ffff)),
+    // `sidebar.item(PRESSED).fill`: #1c96ff, on the default accent, over the material's Reduce
+    // Transparency rendering, as the sidebar's fill (measured, os-probe run 45231684209, macOS 26,
+    // Reduce Transparency on, `darkAqua.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x1c96_ffff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #343434
     switch_unchecked: srgb8(0xffff_ff19),
@@ -2910,15 +2910,17 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// the default accent the first two equal, within one level, the pressed
 /// checked button's mix of the accent by [`BUTTON_CHECKED_PRESSED_MIX`]
 /// (#006be1 light; #1f8aff and #1e8aff dark), the row's does not (#0069ee /
-/// #219bff). Under one other accent, the red one, macOS 26's checked box and
+/// #219bff, read with Reduce Transparency off over the material on the
+/// black desktop). Under one other accent, the red one, macOS 26's checked box and
 /// slider follow that mix again (#c53236 / #ff676b and #c53136 / #ff676a,
 /// within one level of it), the row's does not (os-probe run 45345116763,
 /// `controls-accent`, `*.pressed.checkbox_on`, `*.pressed.slider_knob`,
 /// `*.pressed.source_list_row` `fill`); macOS 15's checked box was read
 /// under it and does not follow the mix: in dark #fc4e55 pressed, where the
-/// mix of its rest fill #ec3f44 gives #ee565a, 14 levels off (the same run,
+/// mix of its rest fill #ec3f44 gives #ee5256, 14 levels off (the same run,
 /// `darkAqua.highlighted.checkbox_on`, `darkAqua.normal.checkbox_on`
-/// `fill`), in light a gradient; its filled track not read.
+/// `fill`; `analysis/accent_mix.txt`), in light a gradient; its filled track
+/// not read.
 /// One accent besides the default does not show the function for every
 /// accent, so they are dropped, not derived: the checked box and the slider
 /// keep their rest fill pressed

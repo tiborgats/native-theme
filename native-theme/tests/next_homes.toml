@@ -2303,6 +2303,10 @@ homes = ["toolbar.bar(NONE).stroke.color"]
 key = "toolbar.border.corner_radius"
 homes = ["toolbar.bar(NONE).corners"]
 note = "Corners::uniform(radius)"
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2 takes defaults.border.corner_radius, 5, uncited; Breeze draws no frame round the tool bar, so 0.8.0 states no corners"
+difference_citation = "platform-facts.md (§2.13), toolbar `border.corner_radius` (none): CE_ToolBar is emptyControl (breezestyle.cpp:1466-1467 at breeze f0b1d75)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "toolbar.border.line_width"

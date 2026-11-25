@@ -241,9 +241,6 @@ struct SchemeColors {
     switch_thumb_off: Option<Color>,
     tooltip_background: Color,
     tooltip_foreground: Color,
-    toolbar_button_hover: Color,
-    toolbar_button_pressed: Color,
-    toolbar_button_checked: Color,
     /// The active window's title bar, where stated; unstated, 0.7.2's
     /// `window.title_bar_background` is `defaults.surface_color`.
     title_bar_background: Option<Color>,
@@ -434,16 +431,6 @@ const LIGHT: SchemeColors = SchemeColors {
     tooltip_background: srgb8(0x2e34_36ff),
     // `tooltip.font.color`: 0.7.2 adwaita.toml (uncited)
     tooltip_foreground: srgb8(0xffff_ffff),
-    // `toolbar.button_hover_background`: platform-facts.md (§2.13): the toolbar look of an image,
-    // image-text or arrow button (_toolbars.scss:2-8): :hover, $hover_color, the window text
-    // #000006cc at 7 %, a layer (_colors.scss:268, _buttons.scss:250-251 at libadwaita 1.10.0)
-    toolbar_button_hover: srgb8(0x0000_060e),
-    // `toolbar.button_active_background`: platform-facts.md (§2.13): :active, $active_color, the
-    // window text at 16 % (_colors.scss:269, _buttons.scss:254-256)
-    toolbar_button_pressed: srgb8(0x0000_0621),
-    // `toolbar.button_checked_background`: platform-facts.md (§2.13): :checked, the window text at
-    // 10 % (_colors.scss:270, _buttons.scss:259-260)
-    toolbar_button_checked: srgb8(0x0000_0614),
     title_bar_background: None,
     card_background: None,
 };
@@ -611,16 +598,6 @@ const DARK: SchemeColors = SchemeColors {
     tooltip_background: srgb8(0x3a3a_3eff),
     // `tooltip.font.color`: 0.7.2 adwaita.toml (uncited)
     tooltip_foreground: srgb8(0xffff_ffff),
-    // `toolbar.button_hover_background`: platform-facts.md (§2.13): the toolbar look of an image,
-    // image-text or arrow button (_toolbars.scss:2-8): :hover, $hover_color, the window text
-    // #ffffff at 7 %, a layer (_colors.scss:268, _buttons.scss:250-251 at libadwaita 1.10.0)
-    toolbar_button_hover: srgb8(0xffff_ff12),
-    // `toolbar.button_active_background`: platform-facts.md (§2.13): :active, $active_color, the
-    // window text at 16 % (_colors.scss:269, _buttons.scss:254-256)
-    toolbar_button_pressed: srgb8(0xffff_ff29),
-    // `toolbar.button_checked_background`: platform-facts.md (§2.13): :checked, the window text at
-    // 10 % (_colors.scss:270, _buttons.scss:259-260)
-    toolbar_button_checked: srgb8(0xffff_ff1a),
     // `window.title_bar_background`: platform-facts.md (§2.2): headerbar fills
     // --headerbar-bg-color = headerbar_bg_color #2e2e32 (libadwaita 1.10.0 _header-bar.scss:3,
     // _colors.scss:103)
@@ -1386,6 +1363,16 @@ fn translucent(c: Color, alpha: f32) -> Color {
     Color::from_srgb8(r, g, b, a)
 }
 
+/// `c` with its alpha multiplied by `alpha`, held in 8 bits as
+/// [`translucent`] holds it: libadwaita's `color-mix(in srgb, currentColor
+/// <alpha>, transparent)` of the text `c`, a toolbar button's layer
+/// (platform-facts.md (§2.13): #0000060e, #00000621, #00000614 light,
+/// #ffffff12, #ffffff29, #ffffff1a dark).
+fn layer_of(c: Color, alpha: f32) -> Color {
+    let [r, g, b, a] = c.mul_alpha(alpha).to_srgb8();
+    Color::from_srgb8(r, g, b, a)
+}
+
 /// libadwaita's `.caption`: 82 % of the base font, platform-facts.md
 /// (§1.4.1), the size of `typography.caption` under the system's UI font (spec
 /// §8, "The GNOME part").
@@ -1445,9 +1432,6 @@ fn lay_palette_over(c: &mut SchemeColors, p: &Palette, scheme: Scheme) {
     c.tooltip_background = p.tooltip_bg;
     c.window_foreground = p.foreground;
     c.row_foreground = p.foreground;
-    c.toolbar_button_hover = p.foreground.mul_alpha(TOOLBAR_BUTTON_HOVER_ALPHA);
-    c.toolbar_button_pressed = p.foreground.mul_alpha(TOOLBAR_BUTTON_PRESSED_ALPHA);
-    c.toolbar_button_checked = p.foreground.mul_alpha(TOOLBAR_BUTTON_CHECKED_ALPHA);
     c.tooltip_foreground = p.foreground;
     c.window_foreground_muted = p.foreground_muted;
     c.window_border = p.border;
@@ -2084,9 +2068,24 @@ fn button(
             flat(WidgetState::NONE),
             [PartProp::Fill(Paint::None), PartProp::Shadows(None)],
         )
-        .rule(flat(WidgetState::HOVER), [fill(c.toolbar_button_hover)])
-        .rule(flat(WidgetState::PRESSED), [fill(c.toolbar_button_pressed)])
-        .rule(flat(WidgetState::CHECKED), [fill(c.toolbar_button_checked)])
+        .rule(
+            flat(WidgetState::HOVER),
+            [fill(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))],
+        )
+        .rule(
+            flat(WidgetState::PRESSED),
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_PRESSED_ALPHA,
+            ))],
+        )
+        .rule(
+            flat(WidgetState::CHECKED),
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_CHECKED_ALPHA,
+            ))],
+        )
         .rule(
             flat(WidgetState::CHECKED | WidgetState::HOVER),
             [fill(c.row_foreground.mul_alpha(FLAT_CHECKED_HOVER_ALPHA))],
@@ -2940,18 +2939,29 @@ fn toolbar(
             )),
         ])
         .build();
+    // `toolbar.button_hover_background`, `button_active_background`, `button_checked_background`:
+    // platform-facts.md (§2.13): the toolbar look of an image, image-text or arrow button
+    // (_toolbars.scss:2-8 at libadwaita 1.10.0): :hover $hover_color, :active $active_color and
+    // :checked $selected_color, layers of the window text at 7, 16 and 10 % (_colors.scss:268-270,
+    // _buttons.scss:250-260).
     let button = RuleBuilder::new(PartStyle::default())
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.toolbar_button_hover)],
+            [fill(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.toolbar_button_pressed)],
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_PRESSED_ALPHA,
+            ))],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.toolbar_button_checked)],
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_CHECKED_ALPHA,
+            ))],
         )
         .build();
     let button_icon = RuleBuilder::new(IconStyle::default())

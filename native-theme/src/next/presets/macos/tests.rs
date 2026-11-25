@@ -1484,8 +1484,9 @@ fn the_selected_tab_s_fill_follows_the_accent_where_it_is_drawn_on_it() {
 }
 
 /// The disabled checked box's and circle's fill measured on macOS 26's
-/// default accent drops under another accent, and they keep their checked
-/// fill disabled; macOS 15's, which is not on the accent, stays.
+/// default accent drops under another accent, and they then take the
+/// checked button's disabled fill, the accent's mix at alpha 0x70; macOS
+/// 15's, which is not on the accent, stays.
 #[test]
 fn the_disabled_checked_fill_measured_on_the_default_accent_drops_under_another() -> TestResult {
     let checked_disabled = WidgetState::CHECKED | WidgetState::DISABLED;
@@ -1526,7 +1527,8 @@ fn the_disabled_checked_fill_measured_on_the_default_accent_drops_under_another(
                 "{scheme:?}"
             );
         }
-        // Under the system's red accent (`controlAccentColor` #e0383e / #ff5257), within 2
+        // Under the system's red accent (`controlAccentColor` #e0383e / #ff5257, os-probe run
+        // 40348854007, `os-probe-macos-26/accent-red/probe.toml`), within 2
         // levels of what os-probe run 45345116763 reads (`controls-accent`, macOS 26,
         // `*.normal.checkbox_disabled_on` `fill` #d6363d71 / #ff5b5d70).
         let (accent, read) = match scheme {
@@ -1705,6 +1707,26 @@ fn an_unfocused_views_selected_row_is_unemphasized() {
                 .item_label(ListQuery::new(unfocused.union(WidgetState::DISABLED)))
                 .color,
             theme.colors.disabled_text,
+            "{preset:?} {scheme:?}"
+        );
+    }
+}
+
+/// A pressed sidebar row is the source-list row's pressed fill over the
+/// material's Reduce Transparency rendering, as the sidebar's own fill, not
+/// the reading over the material on the black desktop (os-probe run
+/// 45231684209, Reduce Transparency on, `*.pressed.source_list_row` `fill`):
+/// #0064e1 / #0059d1 on macOS 15, #0076fb / #1c96ff on macOS 26.
+#[test]
+fn a_pressed_sidebar_row_is_read_over_the_reduce_transparency_rendering() {
+    for ((preset, scheme), rgb) in every_scheme()
+        .into_iter()
+        .zip([0x0064e1, 0x0059d1, 0x0076fb, 0x1c96ff])
+    {
+        let theme = Theme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
+        assert_eq!(
+            solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+            Some(hex(rgb)),
             "{preset:?} {scheme:?}"
         );
     }

@@ -418,6 +418,16 @@
           }
         },
         {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "#7878801f"
+          }
+        },
+        {
           "variant": "flat",
           "body": {
             "stroke": "none"

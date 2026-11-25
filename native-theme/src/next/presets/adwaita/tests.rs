@@ -379,6 +379,34 @@ fn a_checked_toolbar_button_keeps_its_fill() {
     }
 }
 
+/// The toolbar button's hovered, pressed and checked layers, derived from
+/// the window text, are libadwaita's in 8 bits: platform-facts.md (§2.13),
+/// #0000060e, #00000621, #00000614 light and #ffffff12, #ffffff29, #ffffff1a
+/// dark.
+#[test]
+fn the_toolbar_button_layers_are_the_platform_facts_values() {
+    for (theme, want) in both_schemes().iter().zip([
+        [
+            [0x00, 0x00, 0x06, 0x0e],
+            [0x00, 0x00, 0x06, 0x21],
+            [0x00, 0x00, 0x06, 0x14],
+        ],
+        [
+            [0xff, 0xff, 0xff, 0x12],
+            [0xff, 0xff, 0xff, 0x29],
+            [0xff, 0xff, 0xff, 0x1a],
+        ],
+    ]) {
+        let got = [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+        ]
+        .map(|state| solid(&theme.toolbar.button(state).fill).map(Color::to_srgb8));
+        assert_eq!(got, want.map(Some), "{:?}", theme.context.scheme);
+    }
+}
+
 #[test]
 fn an_inactive_window_has_the_inactive_title_bar() {
     for ctx in [ThemeContext::light(), ThemeContext::dark()] {
@@ -701,15 +729,16 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
                 FLAT_CHECKED_PRESSED_ALPHA,
             ),
         ] {
-            let layer = Some(p.foreground.mul_alpha(alpha));
+            let layer = Some(p.foreground.mul_alpha(alpha).to_srgb8());
             assert_eq!(
-                solid(&theme.button.body(ButtonQuery::flat().state(state)).fill),
+                solid(&theme.button.body(ButtonQuery::flat().state(state)).fill)
+                    .map(Color::to_srgb8),
                 layer,
                 "{scheme:?} flat {state:?}"
             );
             if !state.contains(WidgetState::CHECKED) || state == WidgetState::CHECKED {
                 assert_eq!(
-                    solid(&theme.toolbar.button(state).fill),
+                    solid(&theme.toolbar.button(state).fill).map(Color::to_srgb8),
                     layer,
                     "{scheme:?} toolbar {state:?}"
                 );

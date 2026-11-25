@@ -515,6 +515,20 @@ fn a_toolbar_button_is_rounded_as_the_push_button_s_frame() {
     }
 }
 
+/// The tool bar states no corners: Breeze draws no frame round it
+/// (platform-facts.md (§2.13), `border.corner_radius` none).
+#[test]
+fn the_toolbar_states_no_corners() {
+    for theme in both_schemes() {
+        let bar = theme.toolbar.bar(WidgetState::NONE);
+        assert!(
+            !bar.stated.contains(PartStated::CORNERS),
+            "{:?}",
+            theme.context.scheme
+        );
+    }
+}
+
 #[test]
 fn a_hovered_selected_sidebar_item_is_the_selected_item() {
     for theme in both_schemes() {

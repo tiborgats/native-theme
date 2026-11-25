@@ -21678,6 +21678,13 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         "ios-13: the checked edit button's info claims colours other than the selected \
          fill and the variant's text: {info:?}"
     );
+    assert_eq!(
+        info.as_ref()
+            .and_then(|info| claim_of(info, "active_background")),
+        pressed,
+        "ios-13: the checked edit button's info does not claim the painted fill, the push \
+         button's pressed fill, as button.active_background: {info:?}"
+    );
 }
 
 /// A disabled refined field's edge swatch is the colour painted: the

@@ -586,7 +586,10 @@ fn a_checked_button_has_the_selected_toggle_s_colours() {
 
 /// The plain button draws no fill and no outline at rest, hovered, pressed
 /// and disabled, each stated for its state; checked, the toggle's selected
-/// fill, and checked and pressed, its pressed one.
+/// fill, and checked and pressed, its pressed one; checked and disabled, its
+/// measured fill, #7878801f light and #7878803d dark (ios-host run
+/// 42267206298, `ios-host-macos-15/render_read_buttons.toml`,
+/// `cells.<scheme>.plain__states_disabled_combinations.medium.disabled_selected.fill`).
 #[test]
 fn a_flat_button_has_no_fill_but_the_checked_one() {
     use crate::next::style::PartStated;
@@ -597,7 +600,6 @@ fn a_flat_button_has_no_fill_but_the_checked_one() {
             WidgetState::HOVER,
             WidgetState::PRESSED,
             WidgetState::DISABLED,
-            WidgetState::DISABLED | WidgetState::CHECKED,
         ] {
             let body = flat(state);
             assert_eq!(
@@ -624,7 +626,20 @@ fn a_flat_button_has_no_fill_but_the_checked_one() {
             flat(WidgetState::CHECKED | WidgetState::PRESSED).fill,
             Paint::Solid(c.button_checked_pressed)
         );
+        let checked_disabled = flat(WidgetState::DISABLED | WidgetState::CHECKED);
+        assert_eq!(
+            (&checked_disabled.fill, &checked_disabled.stroke),
+            (&Paint::Solid(c.plain_checked_disabled), &Stroke::None)
+        );
+        assert!(checked_disabled.from_state.contains(PartStated::FILL));
     }
+    assert_eq!(
+        [
+            LIGHT.plain_checked_disabled.to_srgb8(),
+            DARK.plain_checked_disabled.to_srgb8()
+        ],
+        [[0x78, 0x78, 0x80, 0x1f], [0x78, 0x78, 0x80, 0x3d]]
+    );
 }
 
 /// The card's corners are the `.insetGrouped` cell's: 10 pt on the

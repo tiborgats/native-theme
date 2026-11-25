@@ -279,6 +279,17 @@ const DIFFERENCES: &[Difference] = &[
         BUTTON_MIN_HEIGHT,
     ),
     d(
+        "Panel(Top)",
+        &[K],
+        ".corner_radius.*",
+        Cause::Egui,
+        "the 0.8.0 theme states no corners for the tool bar (toolbar.bar(NONE).corners), as \
+         Breeze draws no frame round it (platform-facts.md (§2.13), border.corner_radius none: \
+         CE_ToolBar is emptyControl, breezestyle.cpp:1466-1467 at breeze f0b1d75; the table of \
+         homes' listed difference), so egui's own stays (spec §10, rule 0); 0.7.2's resolver \
+         gave defaults.border.corner_radius 5, uncited",
+    ),
+    d(
         "base",
         &[M],
         ".visuals.widgets.{inactive,open}.bg_stroke.color",
