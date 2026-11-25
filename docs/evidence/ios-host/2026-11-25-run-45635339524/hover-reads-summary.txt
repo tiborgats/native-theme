@@ -1,0 +1,296 @@
+== macos-15 bar_plain light system
+  #17 held=True left=0.254894
+    rest text/ink/bg: ('#007affff', '#007affff', '#f7f8f7ff')
+    over: [(0.071, '#007affff', '#007affff', '#f7f8f7ff', 969, 54), (0.177, '#007affff', '#007affff', '#f7f8f7ff', 1414, 248)]
+    after-leave ink/bg: [('#007affff', '#f7f8f7ff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+  #10 held=True left=0.242488
+    rest text/ink/bg: ('#007affff', '#007affff', '#f7f8f7ff')
+    over: [(0.111, '#007affff', '#007affff', '#f7f8f7ff', 1069, 98)]
+    after-leave ink/bg: [('#007affff', '#f7f8f7ff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+== macos-15 bar_plain light white
+  #19 held=True left=0.227006
+    rest text/ink/bg: ('#007affff', '#007affff', '#f7f8f7ff')
+    over: [(0.072, '#007affff', '#007affff', '#f7f8f7ff', 1059, 92), (0.14, '#007affff', '#007affff', '#f7f8f7ff', 1313, 242)]
+    after-leave ink/bg: [('#007affff', '#f7f8f7ff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UILumaTrackingBackdropView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+== macos-15 outline_header dark black
+  #30 held=False left=0.072764
+    rest text/ink/bg: ('#ebebf599', '#8d8d93ff', '#000000ff')
+    over: [(0.002, '#ebebf599', '#8d8d93ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#8d8d93ff', '#000000ff')]
+== macos-15 outline_header dark white
+  #21 held=False left=0.031609
+    rest text/ink/bg: ('#ebebf599', '#f3f3f9ff', '#ffffffff')
+    over: [(0.0, '#ebebf599', '#f3f3f9ff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#f3f3f9ff', '#ffffffff')]
+== macos-15 outline_header light system
+  #10 held=False left=0.090895
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.002, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+  #11 held=False left=0.062301
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.001, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+  #12 held=True left=0.154824
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.002, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0), (0.105, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+== macos-15 outline_header light white
+  #14 held=False left=0.09804
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.005, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0), (0.057, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+  #15 held=False left=0.044138
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.001, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+== macos-15 segmented_control dark system
+  #20 held=False left=0.134363
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#1c1c1fff')
+    over: [(0.044, '#ffffffff', '#ffffffff', '#1c1c1fff', 277, 12)]
+    after-leave ink/bg: [('#ffffffff', '#1c1c1fff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+== macos-15 segmented_control dark white
+  #23 held=False left=0.112937
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#dedee1ff')
+    over: [(0.042, '#ffffffff', '#ffffffff', '#dedee1ff', 267, 10)]
+    after-leave ink/bg: [('#ffffffff', '#dedee1ff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+== macos-15 segmented_control light system
+  #0 held=False left=0.330105
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.095, '#000000ff', '#000000ff', '#eeeeefff', 394, 30)]
+    after-leave ink/bg: [('#000000ff', '#eeeeefff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+  #1 held=False left=0.106979
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.05, '#000000ff', '#000000ff', '#eeeeefff', 442, 63)]
+    after-leave ink/bg: [('#000000ff', '#eeeeefff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+== macos-15 segmented_control light white
+  #4 held=False left=0.111414
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.039, '#000000ff', '#000000ff', '#eeeeefff', 410, 38)]
+    after-leave ink/bg: [('#000000ff', '#eeeeefff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+  #5 held=False left=0.107022
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.031, '#000000ff', '#000000ff', '#eeeeefff', 183, 6)]
+    after-leave ink/bg: [('#000000ff', '#eeeeefff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+  #6 held=True left=0.163415
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.059, '#000000ff', '#000000ff', '#eeeeefff', 0, 0), (0.107, '#000000ff', '#000000ff', '#eeeeefff', 506, 213)]
+    after-leave ink/bg: [('#000000ff', '#eeeeefff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+== macos-15 sidebar_row dark white
+  #27 held=False left=0.042911
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#ffffffff')
+    over: [(0.001, '#ffffffff', '#ffffffff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#ffffffff', '#ffffffff')]
+== macos-15 sidebar_row light black
+  #4 held=False left=0.024572
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#000000ff')
+    over: [(0.001, '#000000ff', '#000000ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#000000ff')]
+== macos-26 bar_plain light black
+  #17 held=True left=0.369602
+    rest text/ink/bg: ('#0091ffff', '#f4f3f4ff', '#131313ff')
+    over: [(0.15, '#0091ffff', '#eeedeeff', '#121212ff', 1584, 219), (0.27, '#0091ffff', '#e4e4e4ff', '#111111ff', 4229, 227)]
+    after-leave ink/bg: [('#e0e0e0ff', '#111111ff'), ('#e1e1e1ff', '#111111ff'), ('#e8e7e8ff', '#121212ff'), ('#efeeefff', '#121212ff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.096584:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.618496:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.792869:sh=0.0
+== macos-26 bar_plain light system
+  #15 held=False left=0.001164
+    rest text/ink/bg: ('#0088ffff', '#191918ff', '#fdfdfdff')
+    over: []
+    after-leave ink/bg: [('#191918ff', '#fdfdfdff')]
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 bar_plain light white
+  #18 held=True left=0.256754
+    rest text/ink/bg: ('#0088ffff', '#191918ff', '#fdfdfdff')
+    over: [(0.072, '#0088ffff', '#191918ff', '#f9f9f9ff', 3839, 188), (0.159, '#0088ffff', '#181817ff', '#f0f0f0ff', 4004, 229)]
+    after-leave ink/bg: [('#171716ff', '#e9e9e9ff'), ('#171716ff', '#eaeaeaff'), ('#171716ff', '#ebebebff'), ('#181817ff', '#f7f7f7ff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UILumaTrackingBackdropView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.178576:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.317288:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.628527:sh=0.0
+  #14 held=True left=0.617516
+    rest text/ink/bg: ('#0088ffff', '#191918ff', '#fdfdfdff')
+    over: [(0.239, '#0088ffff', '#191918ff', '#f9f9f9ff', 3839, 188), (0.39, '#0088ffff', '#171716ff', '#ecececff', 4268, 230), (0.459, '#0088ffff', '#171716ff', '#eaeaeaff', 4267, 230)]
+    after-leave ink/bg: [('#171716ff', '#e9e9e9ff'), ('#191918ff', '#f9f9f9ff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerInteractionAssistantEffectContainerView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.224314:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.743255:sh=0.0
+== macos-26 outline_header dark black
+  #29 held=False left=0.143181
+    rest text/ink/bg: ('#ebebf599', '#8d8d93ff', '#000000ff')
+    over: [(0.001, '#ebebf599', '#8d8d93ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#8d8d93ff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 outline_header dark system
+  #28 held=True left=0.298759
+    rest text/ink/bg: ('#ebebf599', '#8d8d93ff', '#000000ff')
+    over: [(0.006, '#ebebf599', '#8d8d93ff', '#000000ff', 0, 0), (0.138, '#ebebf599', '#8d8d93ff', '#000000ff', 0, 0), (0.218, '#ebebf599', '#8d8d93ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#8d8d93ff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+  #21 held=False left=0.164933
+    rest text/ink/bg: ('#ebebf599', '#8d8d93ff', '#000000ff')
+    over: [(0.006, '#ebebf599', '#8d8d93ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#8d8d93ff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 outline_header light system
+  #7 held=False left=0.164972
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.001, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+  #8 held=False left=0.04368
+    rest text/ink/bg: ('#3c3c4399', '#8a8a8eff', '#ffffffff')
+    over: [(0.001, '#3c3c4399', '#8a8a8eff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#8a8a8eff', '#ffffffff')]
+== macos-26 segmented_control dark black
+  #20 held=True left=0.325088
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#1c1c1fff')
+    over: [(0.082, '#ffffffff', '#ffffffff', '#1f1f22ff', 1535, 110), (0.241, '#ffffffff', '#ffffffff', '#2c2c2fff', 1576, 219)]
+    after-leave ink/bg: [('#ffffffff', '#1e1e21ff'), ('#ffffffff', '#212124ff'), ('#ffffffff', '#242427ff'), ('#ffffffff', '#2c2c2fff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.062777:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.523585:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.880709:sh=0.0
+  #16 held=True left=0.260995
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#1c1c1fff')
+    over: [(0.06, '#ffffffff', '#ffffffff', '#252528ff', 1559, 216), (0.204, '#ffffffff', '#ffffffff', '#2a2a2dff', 1577, 219)]
+    after-leave ink/bg: [('#ffffffff', '#1e1e21ff'), ('#ffffffff', '#202023ff'), ('#ffffffff', '#252528ff'), ('#ffffffff', '#2c2c2fff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.040068:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.11544:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.766575:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.796999:sh=0.0
+== macos-26 segmented_control dark system
+  #19 held=True left=0.266182
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#1c1c1fff')
+    over: [(0.079, '#ffffffff', '#ffffffff', '#232326ff', 1555, 206), (0.181, '#ffffffff', '#ffffffff', '#2a2a2dff', 1576, 219)]
+    after-leave ink/bg: [('#ffffffff', '#1d1d20ff'), ('#ffffffff', '#1e1e21ff'), ('#ffffffff', '#242427ff'), ('#ffffffff', '#2b2b2eff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.049961:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.513008:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.735032:sh=0.0
+== macos-26 segmented_control dark white
+  #21 held=True left=0.384933
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#dedee1ff')
+    over: [(0.062, '#ffffffff', '#ffffffff', '#dfdfe2ff', 459, 31), (0.226, '#ffffffff', '#ffffffff', '#e0e0e3ff', 1528, 32)]
+    after-leave ink/bg: [('#ffffffff', '#e1e1e3ff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.564261:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.83155:sh=0.0
+== macos-26 segmented_control light system
+  #0 held=False left=0.004732
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: []
+    after-leave ink/bg: [('#000000ff', '#eeeeefff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+  #1 held=True left=0.466588
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.064, '#000000ff', '#000000ff', '#e9e9eaff', 1540, 149), (0.264, '#000000ff', '#000000ff', '#dddddeff', 1575, 230)]
+    after-leave ink/bg: [('#000000ff', '#dbdbdcff'), ('#000000ff', '#ececedff'), ('#000000ff', '#eeeeefff')]
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.096904:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.895474:sh=0.0
+== macos-26 segmented_control light white
+  #3 held=True left=0.437093
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#eeeeefff')
+    over: [(0.094, '#000000ff', '#000000ff', '#e6e6e7ff', 1559, 226), (0.318, '#000000ff', '#000000ff', '#dcdcddff', 1573, 230)]
+    after-leave ink/bg: [('#000000ff', '#dbdbdcff'), ('#000000ff', '#e8e8e9ff'), ('#000000ff', '#ebebecff'), ('#000000ff', '#eeeeefff')]
+    effect UIView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect UIView:plusL:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerEffectPlatterView:absent:bg=absent:vbg=absent:op=1.0:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.002153:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.317179:sh=0.0
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.944218:sh=0.0
+== macos-26 sidebar_row dark black
+  #25 held=False left=0.047184
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#000000ff')
+    over: [(0.001, '#ffffffff', '#ffffffff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#ffffffff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 sidebar_row dark system
+  #22 held=False left=0.080127
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#000000ff')
+    over: [(0.009, '#ffffffff', '#ffffffff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#ffffffff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+  #23 held=False left=0.081469
+    rest text/ink/bg: ('#ffffffff', '#ffffffff', '#000000ff')
+    over: [(0.001, '#ffffffff', '#ffffffff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#ffffffff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 sidebar_row light black
+  #6 held=False left=0.10623
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#000000ff')
+    over: [(0.003, '#000000ff', '#000000ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+  #7 held=False left=0.065129
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#000000ff')
+    over: [(0.001, '#000000ff', '#000000ff', '#000000ff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#000000ff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 sidebar_row light system
+  #4 held=False left=0.065465
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#ffffffff')
+    over: [(0.002, '#000000ff', '#000000ff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#ffffffff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+== macos-26 sidebar_row light white
+  #9 held=False left=0.119205
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#ffffffff')
+    over: [(0.002, '#000000ff', '#000000ff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#ffffffff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+  #10 held=False left=0.088956
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#ffffffff')
+    over: [(0.001, '#000000ff', '#000000ff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#ffffffff')]
+    effect _UIPointerLensView:absent:bg=absent:vbg=absent:op=0.0:sh=0.0
+  #5 held=False left=0.039971
+    rest text/ink/bg: ('#000000ff', '#000000ff', '#ffffffff')
+    over: [(0.0, '#000000ff', '#000000ff', '#ffffffff', 0, 0)]
+    after-leave ink/bg: [('#000000ff', '#ffffffff')]

@@ -50,13 +50,19 @@
 // press mode's machinery with a pointer in place of the touch, on the hover
 // set (hoverSpecimens: the list set's segment, `.sidebar` row and
 // outline-disclosure header, and a titled bar button item in a UIToolbar),
-// each hovered over every solve backdrop beside its rest. The UI test moves
-// the pointer to the window's corner, then hovers the armed target's centre
-// (`XCUICoordinate.hover()`, iOS 15+); a UIHoverGestureRecognizer on the
-// specimen's view reports the pointer, the capture follows as the press
-// mode's (`held_until_screenshot`: the pointer still over the view when the
-// screenshot arrived), and a target whose view saw no hover within
-// `hoverWaitSeconds` is recorded as `[[hover_not_seen]]` and is a failure.
+// each hovered over every solve backdrop. The UI test moves the pointer to
+// the window's corner, then hovers the armed target's centre
+// (`XCUICoordinate.hover()`, iOS 15+), again and again until the app arms the
+// next one; a UIHoverGestureRecognizer on the specimen's view reports the
+// pointer. The pointer does not stay for a simulator screenshot (run
+// 45622616324), so the app reads the target itself: at rest when armed, and
+// at each of `hoverReadTimes` after the recognizer began, the window drawn
+// over the cell (draw/), the label's properties and pixels beside the rest
+// read's, and the pointer effect's views and layers, as one
+// `[[hover_read]]`. A read counts where the pointer was still over the
+// target at a read `hoverHoldSeconds` or later, else it is retaken; a target
+// whose view saw no hover within `hoverWaitSeconds` is recorded as
+// `[[hover_not_seen]]` and is a failure.
 //
 // `focus<N>` (run.sh, `simctl launch` on an iPad): the styles at medium and the
 // system type, normal and focused, as the `run` mode draws them: whether
@@ -153,8 +159,22 @@ let noSize: SizeChoice = ("default", .medium)
 let settleSeconds = 2.0
 let pressSettleSeconds = 1.5
 let pressRearmSeconds = 0.5
-// The hover mode's wait for the pointer to reach an armed target's view.
-let hoverWaitSeconds = 30.0
+// The hover mode's wait for the pointer to reach an armed target's view: the
+// UI test hovers it again and again meanwhile, about 11 s a try (a hover took
+// about 5.5 s in run 45622616324's UI test log, the corner's and the
+// target's), as the hover recognizer began for 0-5 of 24 targets' one try
+// there.
+let hoverWaitSeconds = 60.0
+// The hover mode's reads of a target once the pointer is over it (the hover
+// recognizer's `.began`), in seconds after it: the pointer left within
+// pressSettleSeconds in run 45622616324, and UIKit's pointer effect was gone
+// by 0.52 s there. A read counts where the pointer was still over the target
+// at a read `hoverHoldSeconds` or more after it arrived; else it is retaken.
+let hoverReadTimes = [0.0, 0.05, 0.1, 0.2, 0.3, 0.5]
+let hoverHoldSeconds = 0.1
+// A pixel of a hover read differs from the rest read where a channel differs
+// by more than this many levels (compare.swift's `tolerance`).
+let hoverChangeLevels = 1
 
 // A screenshot whose margins hold more than `overlayPixels` pixels differing
 // from the system background by more than `overlayLevels` in a channel, or
@@ -1379,6 +1399,101 @@ let symbolScales: [(name: String, scale: UIImage.SymbolScale)] = [
 
 let symbolNames = ["star", "circle", "square.and.arrow.up", "chevron.backward"]
 
+/// One read of the hover mode (HostViewController.hoverShot): the window's
+/// pixels over the cell, the read label's box in them (pixels), and the
+/// properties read, as TOML lines.
+struct HoverShot {
+    let phase: String
+    let time: Double?
+    let over: Bool
+    let image: UIImage?
+    let labelBox: CGRect?
+    let lines: [String]
+}
+
+/// The hover mode's pixel reads of `box` (pixels; the whole draw where nil)
+/// in an opaque draw beside its rest draw, as TOML lines named `prefix`_…:
+/// where `ink`, the box's commonest colour (`_background`) and the pixel
+/// farthest from it in the sum of the three channels' differences (`_ink`,
+/// with its position); and the pixels that differ from the rest draw by more
+/// than hoverChangeLevels in a channel: their count, the largest difference
+/// and their bounds.
+func hoverPixels(_ image: CGImage, rest: CGImage?, box: CGRect?, prefix: String, ink: Bool) -> [String] {
+    guard let bytes = samples(image) else { return ["\(prefix)_pixels = \(quoted("the draw does not decode"))"] }
+    let width = image.width
+    let whole = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+    let area = (box ?? whole).intersection(whole)
+    guard !area.isNull, !area.isEmpty else { return ["\(prefix)_pixels = \(quoted("outside the draw"))"] }
+    let xs = Int(area.minX.rounded())..<Int(area.maxX.rounded())
+    let ys = Int(area.minY.rounded())..<Int(area.maxY.rounded())
+    func offset(_ x: Int, _ y: Int, in data: [UInt8]) -> Int? {
+        let at = (y * width + x) * 4
+        return at >= 0 && at + 3 < data.count ? at : nil
+    }
+    func hex(_ data: [UInt8], _ at: Int) -> String {
+        "#" + (at..<at + 4).map { String(format: "%02x", Int(data[$0])) }.joined()
+    }
+    var lines: [String] = []
+    if ink {
+        var counts: [UInt32: Int] = [:]
+        var commonest: (key: UInt32, count: Int, at: Int)?
+        for y in ys {
+            for x in xs {
+                guard let at = offset(x, y, in: bytes) else { continue }
+                let key = (0..<4).reduce(UInt32(0)) { ($0 << 8) | UInt32(bytes[at + $1]) }
+                let count = (counts[key] ?? 0) + 1
+                counts[key] = count
+                if count > (commonest?.count ?? 0) { commonest = (key, count, at) }
+            }
+        }
+        if let background = commonest {
+            var farthest: (distance: Int, at: Int, x: Int, y: Int)?
+            for y in ys {
+                for x in xs {
+                    guard let at = offset(x, y, in: bytes) else { continue }
+                    let distance = (0..<3).reduce(0) { $0 + abs(Int(bytes[at + $1]) - Int(bytes[background.at + $1])) }
+                    if distance > (farthest?.distance ?? -1) { farthest = (distance, at, x, y) }
+                }
+            }
+            lines.append("\(prefix)_background = \(quoted(hex(bytes, background.at)))")
+            lines.append("\(prefix)_background_px_count = \(background.count)")
+            if let farthest {
+                lines.append("\(prefix)_ink = \(quoted(hex(bytes, farthest.at)))")
+                lines.append("\(prefix)_ink_px = [\(farthest.x), \(farthest.y)]")
+                lines.append("\(prefix)_ink_distance_levels = \(farthest.distance)")
+            }
+        }
+    }
+    guard let rest else { return lines }
+    guard rest.width == image.width, rest.height == image.height, let restBytes = samples(rest) else {
+        return lines + ["\(prefix)_changed = \(quoted("the rest draw differs in size or does not decode"))"]
+    }
+    var changed = 0
+    var largest = 0
+    var bounds: (minX: Int, minY: Int, maxX: Int, maxY: Int)?
+    for y in ys {
+        for x in xs {
+            guard let at = offset(x, y, in: bytes), let restAt = offset(x, y, in: restBytes) else { continue }
+            func channel(_ index: Int) -> Int { abs(Int(bytes[at + index]) - Int(restBytes[restAt + index])) }
+            let difference = max(channel(0), channel(1), channel(2))
+            guard difference > hoverChangeLevels else { continue }
+            changed += 1
+            largest = max(largest, difference)
+            if let old = bounds {
+                bounds = (min(old.minX, x), min(old.minY, y), max(old.maxX, x), max(old.maxY, y))
+            } else {
+                bounds = (x, y, x, y)
+            }
+        }
+    }
+    lines.append("\(prefix)_changed_px = \(changed)")
+    lines.append("\(prefix)_largest_change_levels = \(largest)")
+    lines.append(
+        "\(prefix)_changed_bounds_px = "
+            + (bounds.map { "[\($0.minX), \($0.minY), \($0.maxX - $0.minX + 1), \($0.maxY - $0.minY + 1)]" } ?? absent))
+    return lines
+}
+
 final class HostViewController: UIViewController {
     private let pressMode: Bool
     /// The hover mode: the press mode with a pointer in place of the touch.
@@ -1427,6 +1542,13 @@ final class HostViewController: UIViewController {
     private var pressMarker: UIView?
     /// The press mode's [[motion]] tables (IP-motion).
     private var motions: [String] = []
+    /// The hover mode's read of the armed target: the label it reads, its
+    /// rest read (taken when armed), whether a read is under way, and when
+    /// the pointer left (CACurrentMediaTime).
+    private weak var hoverLabelView: UILabel?
+    private var hoverRest: HoverShot?
+    private var hoverReading = false
+    private var hoverLeft: Double?
 
     init() {
         let arguments = Array(CommandLine.arguments.dropFirst())
@@ -2045,6 +2167,10 @@ final class HostViewController: UIViewController {
         pressNumber += 1
         if hoverMode {
             let number = armedNumber
+            hoverReading = false
+            hoverLeft = nil
+            hoverLabelView = hoverLabel(sample)
+            hoverRest = hoverShot(cell, phase: "rest", time: nil, over: false)
             DispatchQueue.main.asyncAfter(deadline: .now() + hoverWaitSeconds) { [weak self] in
                 self?.hoverNotSeen(number)
             }
@@ -2073,7 +2199,7 @@ final class HostViewController: UIViewController {
     /// The hover mode: the target armed as `number` saw no pointer within
     /// `hoverWaitSeconds`; recorded, a failure, and the next one armed.
     private func hoverNotSeen(_ number: Int) {
-        guard !finished, let cell = armed, armedNumber == number, !touchDown, !captured else { return }
+        guard !finished, let cell = armed, armedNumber == number, !touchDown, !captured, !hoverReading else { return }
         entries.append(
             """
             [[hover_not_seen]]
@@ -2087,6 +2213,233 @@ final class HostViewController: UIViewController {
         if !pressQueue.isEmpty { pressQueue.removeFirst() }
         pressRetakes = 0
         scheduleArm()
+    }
+
+    /// The label the hover mode reads: of the specimen's shown labels with
+    /// text, the one nearest the hovered point (the press target's centre,
+    /// where the UI test hovers), or the first where the specimen has no
+    /// press target (the bar item, alone in its toolbar).
+    private func hoverLabel(_ sample: Sample) -> UILabel? {
+        var labels: [UILabel] = []
+        func visit(_ view: UIView) {
+            if let label = view as? UILabel, !label.isHidden, !(label.text ?? "").isEmpty { labels.append(label) }
+            for child in view.subviews { visit(child) }
+        }
+        visit(sample.view)
+        guard let target = sample.pressTarget?() else { return labels.first }
+        let point = target.convert(CGPoint(x: target.bounds.midX, y: target.bounds.midY), to: nil)
+        func distance(_ label: UILabel) -> CGFloat {
+            let frame = label.convert(label.bounds, to: nil)
+            return hypot(
+                max(frame.minX - point.x, 0, point.x - frame.maxX), max(frame.minY - point.y, 0, point.y - frame.maxY))
+        }
+        return labels.min { distance($0) < distance($1) }
+    }
+
+    /// The hover mode: the pointer is over the armed target. Reads it at each
+    /// of hoverReadTimes after now, then counts the target read where the
+    /// pointer was still over it at a read hoverHoldSeconds or later, or
+    /// retakes it.
+    private func beginHoverRead() {
+        guard !hoverReading, let cell = armed else { return }
+        hoverReading = true
+        let number = armedNumber
+        let start = CACurrentMediaTime()
+        var shots: [HoverShot] = []
+        for (index, time) in hoverReadTimes.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + time) { [weak self] in
+                guard let self, !self.finished, self.armedNumber == number else { return }
+                shots.append(
+                    self.hoverShot(
+                        cell, phase: "t\(Int((time * 1000).rounded()))ms", time: CACurrentMediaTime() - start,
+                        over: self.touchDown))
+                guard index == hoverReadTimes.count - 1 else { return }
+                self.endHoverRead(cell, number: number, start: start, shots: shots)
+            }
+        }
+    }
+
+    /// The hover mode's reads done: one [[hover_read]] table with the rest
+    /// read and each hover read as a [[hover_read.sample]], their draws
+    /// written; the next target armed, or this one retaken.
+    private func endHoverRead(_ cell: Cell, number: Int, start: CFTimeInterval, shots: [HoverShot]) {
+        hoverReading = false
+        let page = pages[pageIndex]
+        let held = shots.contains { shot in shot.over && shot.time.map { $0 >= hoverHoldSeconds } == true }
+        var text = """
+            [[hover_read]]
+            page = \(quoted(page.path))
+            cell = \(quoted(cell.name))
+            press_number = \(number)
+            label_text = \(hoverLabelView?.text.map(quoted) ?? absent)
+            pointer_left_after_s = \(hoverLeft.map { precise($0 - start) } ?? absent)
+            hold_seconds = \(precise(hoverHoldSeconds))
+            held = \(held)
+
+            """
+        let rest = hoverRest
+        for shot in [rest].compactMap({ $0 }) + shots {
+            let name = "draw/\(page.path)/\(cell.name)-hover\(number)-\(shot.phase).png"
+            var lines = [
+                "[[hover_read.sample]]",
+                "phase = \(quoted(shot.phase))",
+                "t_s = \(shot.time.map(precise) ?? absent)",
+                "pointer_over = \(shot.over)",
+                "draw = \(quoted(name))",
+            ]
+            lines += shot.lines
+            if let image = shot.image {
+                write(image, to: name)
+                if let cgImage = image.cgImage {
+                    let restImage = shot.phase == "rest" ? nil : rest?.image?.cgImage
+                    if let box = shot.labelBox {
+                        lines += hoverPixels(cgImage, rest: restImage, box: box, prefix: "label", ink: true)
+                    }
+                    lines += hoverPixels(cgImage, rest: restImage, box: nil, prefix: "cell", ink: false)
+                }
+            }
+            text += lines.joined(separator: "\n") + "\n\n"
+        }
+        entries.append(text)
+        if held {
+            if !pressQueue.isEmpty { pressQueue.removeFirst() }
+            pressRetakes = 0
+            scheduleArm()
+        } else {
+            retakePress("the pointer left before \(hoverHoldSeconds) s")
+        }
+    }
+
+    /// One hover read of `cell`: the window drawn over the cell's frame
+    /// (drawHierarchy of the window, without a screen update, so a pointer
+    /// effect drawn outside the specimen's views is in it too), the read
+    /// label's properties and box, the press target's cell state where it
+    /// is a list cell, and every view in the window whose class names a
+    /// pointer effect (Pointer, Platter, Portal), with its layers.
+    private func hoverShot(_ cell: Cell, phase: String, time: Double?, over: Bool) -> HoverShot {
+        let scale = pixelScale
+        var image: UIImage?
+        var lines: [String] = []
+        let window = view.window
+        if let window {
+            let frame = cell.view.convert(cell.view.bounds, to: window)
+            let format = UIGraphicsImageRendererFormat(for: cell.view.traitCollection)
+            format.scale = scale
+            format.opaque = true
+            format.preferredRange = .standard
+            var succeeded = false
+            image = UIGraphicsImageRenderer(size: frame.size, format: format).image { _ in
+                succeeded = window.drawHierarchy(
+                    in: window.bounds.offsetBy(dx: -frame.minX, dy: -frame.minY), afterScreenUpdates: false)
+            }
+            if !succeeded {
+                failures.append("\(pages[pageIndex].path)/\(cell.name) hover \(phase): drawHierarchy returned false")
+            }
+        } else {
+            failures.append("\(pages[pageIndex].path)/\(cell.name) hover \(phase): no window")
+        }
+        var labelBox: CGRect?
+        if let label = hoverLabelView {
+            let traits = label.traitCollection
+            let shown = label.layer.presentation() ?? label.layer
+            let frame = label.convert(label.bounds, to: cell.view)
+            let box = CGRect(
+                x: (frame.minX * scale).rounded(), y: (frame.minY * scale).rounded(),
+                width: (frame.width * scale).rounded(), height: (frame.height * scale).rounded())
+            labelBox = box
+            let filters = (shown.filters ?? []).map { filterName($0) }.joined(separator: ", ")
+            let fields: [String] = [
+                "class = \(quoted(String(describing: type(of: label))))",
+                "text = \(label.text.map(quoted) ?? absent)",
+                "text_color = \(colorValue(label.textColor, traits))",
+                "highlighted = \(label.isHighlighted)",
+                "highlighted_text_color = \(colorValue(label.highlightedTextColor, traits))",
+                "tint = \(colorValue(label.tintColor, traits))",
+                "hidden = \(label.isHidden)",
+                "alpha = \(number(label.alpha))",
+                "layer_opacity = \(number(CGFloat(shown.opacity)))",
+                "compositing_filter = \(filterName(shown.compositingFilter))",
+                "filters = [\(filters)]",
+                "in_window = \(label.window != nil)",
+                "frame_in_cell_pt = \(rectangle(frame))",
+            ]
+            lines.append("label = { \(fields.joined(separator: ", ")) }")
+            lines.append("label_px = \(rectangle(box))")
+        } else {
+            lines.append("label = \(absent)")
+        }
+        if let listCell = cell.sample?.pressTarget?() as? UICollectionViewCell {
+            let traits = listCell.traitCollection
+            lines.append("cell_state = \(quoted(String(describing: listCell.configurationState)))")
+            lines.append(
+                "cell_background = "
+                    + (listCell.backgroundConfiguration.map {
+                        colorValue(
+                            $0.updated(for: listCell.configurationState).resolvedBackgroundColor(
+                                for: listCell.tintColor), traits)
+                    } ?? absent))
+        }
+        var effects: [String] = []
+        var visited = 0
+        func visit(_ shownView: UIView) {
+            guard visited < 4000 else { return }
+            visited += 1
+            let name = String(describing: type(of: shownView))
+            if name.contains("Pointer") || name.contains("Platter") || name.contains("Portal") {
+                effects += pointerLayers(shownView, in: window)
+                return
+            }
+            for child in shownView.subviews { visit(child) }
+        }
+        if let window { visit(window) }
+        lines.append("pointer_layers = [\(effects.joined(separator: ", "))]")
+        return HoverShot(phase: phase, time: time, over: over, image: image, labelBox: labelBox, lines: lines)
+    }
+
+    /// A pointer effect's view's layers, depth first (at most 40): each one's
+    /// view and layer class, its presentation's fill, opacity, transform,
+    /// corners, shadow and filters, and its frame in the window.
+    private func pointerLayers(_ effect: UIView, in window: UIWindow?) -> [String] {
+        var lines: [String] = []
+        let root = String(describing: type(of: effect))
+        func visit(_ layer: CALayer, path: String) {
+            guard lines.count < 40 else { return }
+            let shown = layer.presentation() ?? layer
+            let t = shown.transform
+            let transform = [t.m11, t.m12, t.m21, t.m22, t.m41, t.m42].map { precise(Double($0)) }
+            let owner = layer.delegate as? UIView
+            let effectName = (layer.delegate as? UIVisualEffectView)?.effect.map {
+                quoted(String(describing: type(of: $0)))
+            } ?? absent
+            let filters = (shown.filters ?? []).map { filterName($0) }.joined(separator: ", ")
+            let delegate = layer.delegate.map { quoted(String(describing: type(of: $0))) } ?? absent
+            let viewBackground = owner.map { colorValue($0.backgroundColor, $0.traitCollection) } ?? absent
+            let frame = window.map { rectangle(layer.convert(layer.bounds, to: $0.layer)) } ?? absent
+            let fields: [String] = [
+                "view = \(quoted(root))",
+                "layer = \(quoted(path))",
+                "class = \(quoted(String(describing: type(of: layer))))",
+                "delegate = \(delegate)",
+                "hidden = \(shown.isHidden)",
+                "opacity = \(precise(Double(shown.opacity)))",
+                "background = \(colorValue(shown.backgroundColor))",
+                "view_background = \(viewBackground)",
+                "frame_in_window_pt = \(frame)",
+                "transform = [\(transform.joined(separator: ", "))]",
+                "corner_radius_pt = \(number(shown.cornerRadius))",
+                "shadow_opacity = \(precise(Double(shown.shadowOpacity)))",
+                "shadow_radius_pt = \(number(shown.shadowRadius))",
+                "shadow_offset_pt = \(pair(shown.shadowOffset))",
+                "shadow_color = \(colorValue(shown.shadowColor))",
+                "compositing_filter = \(filterName(shown.compositingFilter))",
+                "filters = [\(filters)]",
+                "effect = \(effectName)",
+            ]
+            lines.append("{ \(fields.joined(separator: ", ")) }")
+            for (index, sublayer) in (layer.sublayers ?? []).enumerated() { visit(sublayer, path: "\(path).\(index)") }
+        }
+        visit(effect.layer, path: "0")
+        return lines
     }
 
     /// Records a button's layers at `phase` (rest, press, release): their
@@ -2146,6 +2499,10 @@ final class HostViewController: UIViewController {
         guard !touchDown else { return }
         recordMotion(sender, phase: "press", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 1.0])
         touchDown = true
+        if hoverMode {
+            beginHoverRead()
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + pressSettleSeconds) { [weak self] in
             self?.capturePress()
         }
@@ -2154,6 +2511,10 @@ final class HostViewController: UIViewController {
     private func touchEnded(_ sender: UIView) {
         guard touchDown else { return }
         touchDown = false
+        if hoverMode {
+            if hoverReading && hoverLeft == nil { hoverLeft = CACurrentMediaTime() }
+            return
+        }
         if captured {
             recordMotion(sender, phase: "release", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.45])
             if !pressQueue.isEmpty { pressQueue.removeFirst() }
@@ -2271,13 +2632,6 @@ final class HostViewController: UIViewController {
             entries.insert(screenEntry(source: source), at: 0)
         }
         captured = true
-        if hoverMode {
-            // The pointer leaves only when the UI test moves it for the next
-            // target: the next one is armed now.
-            if !pressQueue.isEmpty { pressQueue.removeFirst() }
-            pressRetakes = 0
-            scheduleArm()
-        }
     }
 
     // MARK: the index

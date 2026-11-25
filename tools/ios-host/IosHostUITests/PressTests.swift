@@ -8,7 +8,7 @@
 // `press-done`. Where the run's name starts with `hover` (the app's hover
 // mode, on an iPad), each element is hovered instead: the pointer moved to
 // the window's corner, then to the element's centre (`XCUICoordinate.hover()`,
-// iOS 15+), left there until the app arms the next one.
+// iOS 15+), again until the app arms the next one.
 
 import XCTest
 
@@ -18,6 +18,10 @@ final class PressTests: XCTestCase {
     // past the host's five retakes.
     let holdSeconds = 8.0
     let waitSeconds = 900.0
+    // A hover try (the corner's and the target's) took about 11 s in run
+    // 45622616324's log, so the app's 60 s wait (hoverWaitSeconds) gives
+    // about 5; the cap only bounds the loop should the app not move on.
+    let hoverTries = 10
 
     func testPress() throws {
         let environment = ProcessInfo.processInfo.environment
@@ -58,9 +62,25 @@ final class PressTests: XCTestCase {
                     break
                 }
                 // From the page's margin, so the pointer moves onto the
-                // target even where it already lies there (a retake).
-                app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(CGVector(dx: 4, dy: 4)).hover()
-                centre.hover()
+                // target even where it already lies there (a retake); again
+                // while the target stays armed, as the pointer leaves on its
+                // own (run 45622616324) and the app reads the target only
+                // once the pointer has stayed on it. The target's centre is
+                // taken once, relative to the app: the app takes the
+                // identifier away once it has read the target, which can be
+                // during a try, and a coordinate of the element then fails
+                // the test (run 45632490596).
+                let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+                let frame = target.frame
+                let appFrame = app.frame
+                let point = origin.withOffset(
+                    CGVector(dx: frame.midX - appFrame.minX, dy: frame.midY - appFrame.minY))
+                var tries = 0
+                repeat {
+                    origin.withOffset(CGVector(dx: 4, dy: 4)).hover()
+                    point.hover()
+                    tries += 1
+                } while tries < hoverTries && target.exists && !done.exists
             } else {
                 centre.press(forDuration: holdSeconds)
             }
