@@ -8723,12 +8723,14 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_t
 /// Whether Widget Info lists the element of id `id` by its 0.8.0 homes, a
 /// row per home routed by [`home_route`], rather than by its 0.7.2 leaves:
 /// the Basic list's, the Basic table's and the Basic page's tabs' elements,
-/// and the page tabs' and the inspector's tab rows and tabs.
+/// the page tabs' and the inspector's tab rows and tabs, and the window
+/// menus' elements.
 fn home_keyed(id: &str) -> bool {
     id.starts_with("basic.list.")
         || id.starts_with("basic.table.")
         || id.starts_with("basic.tabs.")
         || tab_element(id)
+        || id.starts_with("chrome.menu")
 }
 
 /// The keys of `element`'s Widget Info rows, which [`iced_route`] routes:
@@ -10425,74 +10427,71 @@ fn list_shape_route(
     })
 }
 
-/// The route of a window menu's layout leaf `leaf` under `r`, the installed
-/// 0.8.0 theme, of a title of the menu bar where `title`
+/// The route of a window menu's layout home `home` under `r`, the
+/// installed 0.8.0 theme, of a title of the menu bar where `title`
 /// ([`next_title_padding`]), else of a menu's row ([`next_menu_row_padding`],
-/// [`next_menu_row_height`]): what is drawn of the leaf's 0.8.0 home,
-/// naming it, or that the home is unstated and what is drawn in its place.
-/// `None` for a leaf neither lays out.
+/// [`next_menu_row_height`]): what is drawn of the home, naming what it
+/// reads, or that it is unstated and what is drawn in its place. `None` for
+/// a home neither lays out.
 fn menu_layout_route(
     r: &native_theme::next::ResolvedTheme,
-    leaf: &str,
+    home: &str,
     title: bool,
 ) -> Option<String> {
     let item = r.menu.item(WidgetState::NONE);
-    let [bar_top, bar_right, bar_bottom, bar_left] =
-        iced_next::padding_of(&r.menu_bar.item(WidgetState::NONE));
-    let side = ["top", "right", "bottom", "left"]
+    let bar = iced_next::padding_of(&r.menu_bar.item(WidgetState::NONE));
+    let sides = ["top", "right", "bottom", "left"];
+    let side = sides
         .into_iter()
-        .zip([bar_top, bar_right, bar_bottom, bar_left])
-        .find(|(s, _)| leaf == format!("menu.border.padding_{s}_px"));
-    let route = match leaf {
-        "menu.font" => "the row's Text in menu.item_label(NONE) (Typeset::next_text), measured \
-                        in it for the menu's width (next_drawn_font)"
+        .zip(bar)
+        .find(|(s, _)| home == format!("menu.item(NONE).padding.{s}"));
+    if let Some((s, stated)) = sides
+        .into_iter()
+        .zip(bar)
+        .find(|(s, _)| home == format!("menu_bar.item(NONE).padding.{s}"))
+    {
+        return Some(match stated {
+            Some(_) => format!(
+                "next_title_padding: the title button's {s} padding, \
+                 menu_bar.item(NONE).padding.{s}"
+            ),
+            None => format!(
+                "not drawn: menu_bar.item(NONE).padding.{s} is unstated; next_title_padding \
+                 takes the rows' {s} padding"
+            ),
+        });
+    }
+    let route = match home {
+        "menu.item_label(NONE)" => "the row's Text in menu.item_label(NONE) \
+                                    (Typeset::next_text), measured in it for the menu's width \
+                                    (next_drawn_font)"
             .to_owned(),
-        "menu.bar_padding_horizontal_px" if bar_left.is_none() && bar_right.is_none() => {
-            "not drawn: menu_bar.item(NONE).padding.left and .right are unstated; \
-             next_title_padding takes the rows' left and right padding"
-                .to_owned()
-        }
-        "menu.bar_padding_horizontal_px" => {
-            "next_title_padding: the title button's left and right padding, the sides of \
-             menu_bar.item(NONE).padding stated, the rows' where unstated"
-                .to_owned()
-        }
-        "menu.bar_padding_vertical_px" if bar_top.is_none() && bar_bottom.is_none() => {
-            "not drawn: menu_bar.item(NONE).padding.top and .bottom are unstated; \
-             next_title_padding takes the rows' top and bottom padding"
-                .to_owned()
-        }
-        "menu.bar_padding_vertical_px" => {
-            "next_title_padding: the title button's top and bottom padding, the sides of \
-             menu_bar.item(NONE).padding stated, the rows' where unstated"
-                .to_owned()
-        }
-        "menu.row_height_px" if item.max_size[1].is_none() => {
+        "menu.item(NONE).max_size[1]" if item.max_size[1].is_none() => {
             "not drawn: menu.item(NONE).max_size[1] is unstated; next_menu_row_height takes \
              menu.item(NONE).min_size[1], where stated, or the row's content"
                 .to_owned()
         }
-        "menu.row_height_px" => {
+        "menu.item(NONE).max_size[1]" => {
             "next_menu_row_height: the row button's height, menu.item(NONE).max_size[1], grown \
              above a text scale of 1 to hold its line and padding"
                 .to_owned()
         }
-        "menu.min_row_height_px" if item.max_size[1].is_some() => {
+        "menu.item(NONE).min_size[1]" if item.max_size[1].is_some() => {
             "not drawn: menu.item(NONE).max_size[1] is stated, and next_menu_row_height draws \
              it in this one's place"
                 .to_owned()
         }
-        "menu.min_row_height_px" if item.min_size[1].is_none() => {
+        "menu.item(NONE).min_size[1]" if item.min_size[1].is_none() => {
             "not drawn: menu.item(NONE).min_size[1] is unstated; next_menu_row_height leaves \
              the row its content's height"
                 .to_owned()
         }
-        "menu.min_row_height_px" => {
+        "menu.item(NONE).min_size[1]" => {
             "next_menu_row_height: the row button's least height, menu.item(NONE).min_size[1], \
              grown to its line box and padding"
                 .to_owned()
         }
-        "separator.line_width_px" if !title => {
+        "separator.thickness" if !title => {
             "rule::horizontal's thickness, separator.thickness".to_owned()
         }
         _ => match side {
@@ -10619,12 +10618,14 @@ fn tab_layout_route(
     Some(route)
 }
 
-/// The route of a window menu's colour leaf `leaf` under `r`, of a title of
-/// the menu bar where `title` ([`menu_title`]), else of a menu's row or
-/// panel ([`menu_row`], [`menu_bar_style`]): what the function draws of
-/// the leaf's 0.8.0 home, naming it, or that the home is unstated and what
-/// is drawn in its place. `None` for a leaf neither reads.
-fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) -> Option<String> {
+/// The route of a window menu's colour home `home` under `r`, of a title
+/// of the menu bar where `title` ([`menu_title`]), else of a menu's row or
+/// panel ([`menu_row`], [`menu_bar_style`]): what the function draws of the
+/// home, naming what it reads, or that it is unstated and what is drawn in
+/// its place. `None` for a home neither reads. A row's pressed colours,
+/// listed at `menu.item(HOVER|PRESSED)`, are drawn from the pressed state
+/// asked alone, `menu.item(PRESSED)` (spec §2), which the route names.
+fn menu_route(r: &native_theme::next::ResolvedTheme, home: &str, title: bool) -> Option<String> {
     let (m, b) = (&r.menu, &r.menu_bar);
     let fill = |part: PartStyle| drawn_state_fill(&part).is_some();
     let ink = |text: TextStyle| iced_next::state_text_color_of(&text).is_some();
@@ -10635,117 +10636,129 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) ->
     let bar_hover = item(&b.item(hover), "menu_bar.item(HOVER).fill");
     let mut fills = vec![
         (
-            "menu.background_color",
+            "menu.panel(NONE).fill",
             iced_next::fill_of(&m.panel(WidgetState::NONE), "menu.panel(NONE).fill"),
         ),
         (
-            "menu.hover_background",
+            "menu.item(HOVER).fill",
             item(&m.item(hover), "menu.item(HOVER).fill"),
         ),
-        ("menu.bar_hover_background", bar_hover),
+        ("menu_bar.item(HOVER).fill", bar_hover),
         (
-            "menu.bar_open_background",
+            "menu_bar.item(OPEN).fill",
             item(&b.item(WidgetState::OPEN), "menu_bar.item(OPEN).fill"),
         ),
         (
-            "menu.active_background",
+            "menu.item(HOVER|PRESSED).fill",
             item(&m.item(pressed), "menu.item(PRESSED).fill"),
         ),
     ];
     if title {
-        fills.push(("menu.hover_background", bar_hover));
+        fills.push(("menu.item(HOVER).fill", bar_hover));
     }
-    if let Some(line) = unmapped_fill_route(leaf, &fills) {
+    if let Some(line) = unmapped_fill_route(home, &fills) {
         return Some(line);
     }
-    let route = match leaf {
-        "menu.background_color" if drawn_fill(&m.panel(WidgetState::NONE)).is_some() => {
+    let route = match home {
+        "menu.panel(NONE).fill" if drawn_fill(&m.panel(WidgetState::NONE)).is_some() => {
             "menu_bar_style: menu_background, menu.panel(NONE).fill"
         }
-        "menu.background_color" => {
+        "menu.panel(NONE).fill" => {
             "not drawn: menu.panel(NONE).fill is unstated, so the panel is iced_aw's own \
              (menu_bar::primary)"
         }
-        "menu.font.color"
+        "menu.item_label(NONE).color"
             if iced_next::text_color_of(&m.item_label(WidgetState::NONE)).is_none() =>
         {
             "not drawn: menu.item_label(NONE).color is unstated, so the label at rest is iced's \
              own flat button's (button::text)"
         }
-        "menu.font.color" if title => "menu_title: text_color at rest, menu.item_label(NONE).color",
-        "menu.font.color" => "menu_row: text_color at rest, menu.item_label(NONE).color",
-        "menu.hover_background" if !fill(m.item(hover)) => {
+        "menu.item_label(NONE).color" if title => {
+            "menu_title: text_color at rest, menu.item_label(NONE).color"
+        }
+        "menu.item_label(NONE).color" => {
+            "menu_row: text_color at rest, menu.item_label(NONE).color"
+        }
+        "menu.item(HOVER).fill" if !fill(m.item(hover)) => {
             "not drawn: menu.item(HOVER).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
-        "menu.hover_background" if title && fill(b.item(hover)) => {
+        "menu.item(HOVER).fill" if title && fill(b.item(hover)) => {
             "not drawn: menu_bar.item(HOVER).fill is stated, and menu_title fills a lit title \
              from it and menu_bar.item(OPEN).fill"
         }
-        "menu.hover_background" if title => {
+        "menu.item(HOVER).fill" if title => {
             "menu_title: the Hovered fill, and the open one where menu_bar.item(OPEN).fill is \
              unstated, menu.item(HOVER).fill, where menu_bar.item(HOVER).fill is unstated"
         }
-        "menu.hover_background" => "menu_row: the Hovered fill, menu.item(HOVER).fill",
-        "menu.hover_text_color" if !ink(m.item_label(hover)) => {
+        "menu.item(HOVER).fill" => "menu_row: the Hovered fill, menu.item(HOVER).fill",
+        "menu.item_label(HOVER).color" if !ink(m.item_label(hover)) => {
             "not drawn: menu.item_label(HOVER).color is unstated, so the Hovered label is iced's \
              own flat button's (button::text)"
         }
-        "menu.hover_text_color"
+        "menu.item_label(HOVER).color"
             if title && ink(b.item_label(hover)) && ink(b.item_label(WidgetState::OPEN)) =>
         {
             "not drawn: menu_bar.item_label(HOVER).color and menu_bar.item_label(OPEN).color are \
              stated, and menu_title letters a lit title in them"
         }
-        "menu.hover_text_color" if title => {
+        "menu.item_label(HOVER).color" if title => {
             "menu_title: the lit text_color, menu.item_label(HOVER).color, where \
              menu_bar.item_label(HOVER).color or menu_bar.item_label(OPEN).color is unstated"
         }
-        "menu.hover_text_color" => "menu_row: the Hovered text_color, menu.item_label(HOVER).color",
-        "menu.bar_hover_background" if fill(b.item(hover)) => {
+        "menu.item_label(HOVER).color" => {
+            "menu_row: the Hovered text_color, menu.item_label(HOVER).color"
+        }
+        "menu_bar.item(HOVER).fill" if fill(b.item(hover)) => {
             "menu_title: the Hovered fill, menu_bar.item(HOVER).fill"
         }
-        "menu.bar_hover_background" => {
+        "menu_bar.item(HOVER).fill" => {
             "not drawn: menu_bar.item(HOVER).fill is unstated; menu_title takes \
              menu.item(HOVER).fill under the pointer"
         }
-        "menu.bar_open_background" if fill(b.item(WidgetState::OPEN)) => {
+        "menu_bar.item(OPEN).fill" if fill(b.item(WidgetState::OPEN)) => {
             "menu_title: the fill while its menu is open and while pressed, \
              menu_bar.item(OPEN).fill"
         }
-        "menu.bar_open_background" => {
+        "menu_bar.item(OPEN).fill" => {
             "not drawn: menu_bar.item(OPEN).fill is unstated; menu_title takes the hover fill \
              while its menu is open and while pressed"
         }
-        "menu.bar_hover_text_color"
-            if ink(b.item_label(hover)) || ink(b.item_label(WidgetState::OPEN)) =>
-        {
-            "menu_title: the text_color under the pointer, menu_bar.item_label(HOVER).color, \
-             and while pressed and while its menu is open, menu_bar.item_label(OPEN).color, \
-             each where stated"
+        "menu_bar.item_label(HOVER).color" if ink(b.item_label(hover)) => {
+            "menu_title: the text_color under the pointer, menu_bar.item_label(HOVER).color"
         }
-        "menu.bar_hover_text_color" => {
-            "not drawn: menu_bar.item_label(HOVER).color and menu_bar.item_label(OPEN).color are \
-             unstated; menu_title takes menu.item_label(HOVER).color"
+        "menu_bar.item_label(HOVER).color" => {
+            "not drawn: menu_bar.item_label(HOVER).color is unstated; menu_title takes \
+             menu.item_label(HOVER).color under the pointer"
         }
-        "menu.hover_border_color" if !stroke(m.item(hover)) => {
+        "menu_bar.item_label(OPEN).color" if ink(b.item_label(WidgetState::OPEN)) => {
+            "menu_title: the text_color while its menu is open and while pressed, \
+             menu_bar.item_label(OPEN).color"
+        }
+        "menu_bar.item_label(OPEN).color" => {
+            "not drawn: menu_bar.item_label(OPEN).color is unstated; menu_title takes \
+             menu.item_label(HOVER).color while its menu is open and while pressed"
+        }
+        "menu.item(HOVER).stroke.color" if !stroke(m.item(hover)) => {
             "not drawn: menu.item(HOVER).stroke is unstated, and menu_row outlines no row, as \
              iced's own flat button (button::text) outlines none"
         }
-        "menu.hover_border_color" => "menu_row: the Hovered border, menu.item(HOVER).stroke.color",
-        "menu.active_background" if !fill(m.item(pressed)) => {
+        "menu.item(HOVER).stroke.color" => {
+            "menu_row: the Hovered border, menu.item(HOVER).stroke.color"
+        }
+        "menu.item(HOVER|PRESSED).fill" if !fill(m.item(pressed)) => {
             "not drawn: menu.item(PRESSED).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
-        "menu.active_background" => "menu_row: the Pressed fill, menu.item(PRESSED).fill",
-        "menu.active_text_color" if !ink(m.item_label(pressed)) => {
+        "menu.item(HOVER|PRESSED).fill" => "menu_row: the Pressed fill, menu.item(PRESSED).fill",
+        "menu.item_label(HOVER|PRESSED).color" if !ink(m.item_label(pressed)) => {
             "not drawn: menu.item_label(PRESSED).color is unstated, so the Pressed label is \
              iced's own flat button's (button::text)"
         }
-        "menu.active_text_color" => {
+        "menu.item_label(HOVER|PRESSED).color" => {
             "menu_row: the Pressed text_color, menu.item_label(PRESSED).color"
         }
-        "popover.border.color" if menu_frame(r).stated.contains(PartStated::STROKE) => {
+        "popover.panel.stroke.color" if menu_frame(r).stated.contains(PartStated::STROKE) => {
             if m.panel(WidgetState::NONE)
                 .stated
                 .contains(PartStated::STROKE)
@@ -10756,13 +10769,124 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) ->
                 "menu_bar_style: menu_border.color, popover.panel.stroke.color"
             }
         }
-        "popover.border.color" => {
+        "popover.panel.stroke.color" => {
             "not drawn: popover.panel.stroke is unstated, so the panel's frame is iced_aw's own \
              (menu_bar::primary)"
         }
         _ => return None,
     };
     Some(route.to_owned())
+}
+
+/// The route of the home `home` of a window menu's element of the list's
+/// id `id` under `r`, the installed 0.8.0 theme: a colour of a title, a
+/// row or the panel ([`menu_route`]), a title's or a row's length
+/// ([`menu_layout_route`]), else the menu bar's, the panel's frame and
+/// padding, a row's corners and outline width, a separator's. `None` for a
+/// home none of them reads.
+fn menu_home_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -> Option<String> {
+    let title = id.starts_with("chrome.menu_bar.");
+    if let Some(route) = menu_route(r, home, title).or_else(|| menu_layout_route(r, home, title)) {
+        return Some(route);
+    }
+    let sides = ["top", "right", "bottom", "left"];
+    let panel = iced_next::padding_of(&r.menu.panel(WidgetState::NONE));
+    let panel_side = |prefix: &str| {
+        sides
+            .into_iter()
+            .zip(panel)
+            .find(|(side, _)| home == format!("{prefix}.{side}"))
+    };
+    if let Some((side, stated)) = panel_side("menu.panel(NONE).padding") {
+        return Some(match stated {
+            Some(_) => format!(
+                "menu_popup_padding: Menu::padding's {side}, menu.panel(NONE).padding.{side}, \
+                 plus the width of the panel's frame (menu_frame)"
+            ),
+            None => format!(
+                "not drawn: menu.panel(NONE).padding.{side} is unstated; menu_popup_padding \
+                 takes popover.panel.padding.{side}"
+            ),
+        });
+    }
+    if let Some((side, stated)) = panel_side("popover.panel.padding") {
+        return Some(match stated {
+            Some(_) => format!(
+                "not drawn: menu.panel(NONE).padding.{side} is stated, and menu_popup_padding \
+                 pads the panel by it"
+            ),
+            None => format!(
+                "menu_popup_padding: Menu::padding's {side}, popover.panel.padding.{side} plus \
+                 the width of the panel's frame (menu_frame); iced_aw's 5 (AW_MENU_PADDING) \
+                 where unstated"
+            ),
+        });
+    }
+    let route = match home {
+        "menu_bar.bar(NONE).fill" => {
+            "menu_bar_style: bar_background, menu_bar.bar(NONE).fill; menu_bar_row: the row \
+             container's background round the bar, its margins too, toolbar.bar(NONE).fill \
+             (none, iced's own container, where unstated)"
+                .to_owned()
+        }
+        "layout.container_margin" if id == "chrome.menu_bar" => format!(
+            "the row's left and right padding; MENU_BAR_PADDING, {MENU_BAR_PADDING}px, gpui's \
+             showcase constant, where unstated"
+        ),
+        "menu.item(NONE).corners" => format!(
+            "{}: the {}'s border radius, menu.item(NONE).corners, else \
+             menu.panel(NONE).corners, iced's own flat button's (button::text) where both are \
+             unstated (menu_item_radius)",
+            if title { "menu_title" } else { "menu_row" },
+            if title { "title" } else { "row" },
+        ),
+        "menu.panel(NONE).corners"
+            if iced_next::radius_of(&r.menu.item(WidgetState::NONE)).is_some() =>
+        {
+            "not drawn: menu.item(NONE).corners is stated, and menu_item_radius rounds the \
+             title or row by it"
+                .to_owned()
+        }
+        "menu.panel(NONE).corners" => format!(
+            "{}: the {}'s border radius where menu.item(NONE).corners is unstated, \
+             menu.panel(NONE).corners, iced's own flat button's (button::text) where it is \
+             unstated too (menu_item_radius)",
+            if title { "menu_title" } else { "menu_row" },
+            if title { "title" } else { "row" },
+        ),
+        "layout.border_width" => {
+            "menu_row: the Hovered border's width, menu.item(HOVER).stroke.width, where a HOVER \
+             rule states the stroke, and the Pressed one's, menu.item(PRESSED).stroke.width, \
+             where a PRESSED rule states it"
+                .to_owned()
+        }
+        "menu.icon_text_gap" => "not reachable: no iced menu draws an icon".to_owned(),
+        "menu.separator(NONE).fill" => {
+            "line_style: the rule's colour, menu.separator(NONE).fill".to_owned()
+        }
+        "popover.panel.corners" => {
+            "menu_bar_style: menu_border.radius, menu.panel(NONE).corners where stated, else \
+             popover.panel.corners, iced_aw's own where both are unstated"
+                .to_owned()
+        }
+        "popover.panel.stroke.width" => {
+            "menu_bar_style: menu_border.width, the stroke's of menu_frame (menu.panel(NONE), \
+             else popover.panel), iced_aw's own where unstated"
+                .to_owned()
+        }
+        "popover.panel.shadows" => {
+            "menu_bar_style: menu_shadow, the first outset layer of menu.panel(NONE).shadows, \
+             else of popover.panel.shadows, iced_aw's own where both are unstated"
+                .to_owned()
+        }
+        "typography.line_height_multiplier" => format!(
+            "next_text: the {}'s line box, menu.item_label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)",
+            if title { "title" } else { "row" },
+        ),
+        _ => return None,
+    };
+    Some(route)
 }
 
 /// The icon the flat button of the list with id `id` shows in its label's
@@ -11093,6 +11217,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         table_route(r, home, id == "basic.table.frame").or_else(|| table_layout_route(r, id, home))
     } else if tab_element(id) {
         tab_home_route(r, id, home)
+    } else if under("chrome.menu") {
+        menu_home_route(r, id, home)
     } else {
         None
     };
@@ -11278,28 +11404,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .into_iter()
             .find(|s| field == format!("border.padding_{s}_px"))
     };
-    if (under("chrome.menu") || under("chrome.page_tabs.menu"))
-        && let Some(route) = menu_layout_route(state.next_shown(), leaf, under("chrome.menu_bar."))
-    {
-        return if route.starts_with("not drawn") {
-            route
-        } else {
-            format!("iced: {route}")
-        };
-    }
-    if (table == "menu" || under("chrome.menu"))
-        && let Some(route) = menu_route(state.next_shown(), leaf, under("chrome.menu_bar."))
-    {
-        return if route.starts_with("not drawn") {
-            route
-        } else {
-            format!("iced: {route}")
-        };
-    }
-    // The window menus' panel padding, top, right, bottom, left, where the
-    // 0.8.0 theme states it ([`menu_popup_padding`]).
-    let [panel_top, _, _, panel_left] =
-        iced_next::padding_of(&state.next_shown().menu.panel(WidgetState::NONE));
     let line: Cow<'static, str> = match (table, field) {
         // ---- button ----
         ("button", "font") if under("basic.buttons.") => {
@@ -11639,83 +11743,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("combo_box", f) if side(f).is_some() => {
             "combo_box_padding: PickList::padding, the side plus the line width".into()
-        }
-        // ---- menu and popover ----
-        ("menu", "font") => "the row's text size and theme_font".into(),
-        ("menu", "border.corner_radius_px") if under("chrome.menu_bar.") => {
-            "menu_title: the title's border radius, menu.item(NONE).corners, else \
-             menu.panel(NONE).corners, iced's own flat button's (button::text) where both are \
-             unstated"
-                .into()
-        }
-        ("menu", "border.corner_radius_px") => {
-            "menu_row: the row's border radius, menu.item(NONE).corners, else \
-             menu.panel(NONE).corners, iced's own flat button's (button::text) where both are \
-             unstated"
-                .into()
-        }
-        ("defaults", "border.line_width_px") if under("chrome.menu.") => {
-            "menu_row: the Hovered border's width, menu.item(HOVER).stroke.width, where a HOVER \
-             rule states the stroke, and the Pressed one's, menu.item(PRESSED).stroke.width, \
-             where a PRESSED rule states it"
-                .into()
-        }
-        ("menu", "icon_text_gap_px") => "not reachable: no iced menu draws an icon".into(),
-        ("menu", "panel_padding_horizontal_px") if panel_left.is_none() => {
-            "not drawn: menu.panel(NONE).padding.left is unstated; menu_popup_padding takes \
-             popover.panel.padding's left and right"
-                .into()
-        }
-        ("menu", "panel_padding_horizontal_px") => {
-            "menu_popup_padding: Menu::padding's left and right, menu.panel(NONE).padding.left \
-             and .right, plus the width of the panel's frame (menu_frame)"
-                .into()
-        }
-        ("menu", "panel_padding_vertical_px") if panel_top.is_none() => {
-            "not drawn: menu.panel(NONE).padding.top is unstated; menu_popup_padding takes \
-             popover.panel.padding's top and bottom"
-                .into()
-        }
-        ("menu", "panel_padding_vertical_px") => {
-            "menu_popup_padding: Menu::padding's top and bottom, menu.panel(NONE).padding.top \
-             and .bottom, plus the width of the panel's frame (menu_frame)"
-                .into()
-        }
-        ("menu", "separator_color") => {
-            "line_style: the rule's colour, menu.separator(NONE).fill".into()
-        }
-        ("menu", f) if side(f).is_some() => "Button::padding, iced's own on an unstated side".into(),
-        ("popover", "border.corner_radius_px") => {
-            "menu_bar_style: menu_border.radius, menu.panel(NONE).corners where stated, else \
-             popover.panel.corners, iced_aw's own where both are unstated"
-                .into()
-        }
-        ("popover", "border.line_width_px") => {
-            "menu_bar_style: menu_border.width, the stroke's of menu_frame (menu.panel(NONE), \
-             else popover.panel), iced_aw's own where unstated"
-                .into()
-        }
-        ("popover", "border.shadow_enabled") => {
-            "menu_bar_style: menu_shadow, the first outset layer of menu.panel(NONE).shadows, \
-             else of popover.panel.shadows, iced_aw's own where both are unstated"
-                .into()
-        }
-        ("popover", f)
-            if under("chrome.menu.")
-                && match side(f) {
-                    Some("top" | "bottom") => panel_top.is_some(),
-                    Some(_) => panel_left.is_some(),
-                    None => false,
-                } =>
-        {
-            "not drawn: the side's menu.panel(NONE).padding is stated, and menu_popup_padding \
-             pads the panel by it"
-                .into()
-        }
-        ("popover", f) if side(f).is_some() => {
-            "menu_popup_padding: Menu::padding, popover.panel.padding's side plus the width of \
-             the panel's frame (menu_frame); iced_aw's 5 where unstated"
-                .into()
         }
         // ---- toolbar ----
         ("toolbar", "bar_height_px") => {
@@ -12080,20 +12107,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("window", "background_color") if id == "chrome.window" => {
             "surface: the window container's background, window.frame(normal).fill".into()
         }
-        ("toolbar", "background_color") if id == "chrome.menu_bar" => {
-            "menu_bar_style: bar_background, menu_bar.bar(NONE).fill; menu_bar_row: the row \
-             container's background round the bar, its margins too, toolbar.bar(NONE).fill \
-             (none, iced's own container, where unstated)"
-                .into()
-        }
         ("window", "background_color") => "surface: the window container's background, which \
                                            shows through, window.frame(normal).fill"
             .into(),
-        ("layout", "container_margin_px") if id == "chrome.menu_bar" => format!(
-            "the row's left and right padding; MENU_BAR_PADDING, {MENU_BAR_PADDING}px, gpui's \
-             showcase constant, where unstated"
-        )
-        .into(),
         ("layout", "widget_gap_px") if id == "chrome.side_panel.settings" => format!(
             "Column::spacing between the rows and between each label and its control; \
              THEME_SETTINGS_GAP, {THEME_SETTINGS_GAP}px, gpui's showcase constant, where \
@@ -33689,15 +33705,15 @@ mod tests {
                 "list.header(NONE).fill",
             ),
             (
-                menu_route(&patched, "menu.background_color", false),
+                menu_route(&patched, "menu.panel(NONE).fill", false),
                 "menu.panel(NONE).fill",
             ),
             (
-                menu_route(&patched, "menu.bar_hover_background", true),
+                menu_route(&patched, "menu_bar.item(HOVER).fill", true),
                 "menu_bar.item(HOVER).fill",
             ),
             (
-                menu_route(&patched, "menu.hover_background", true),
+                menu_route(&patched, "menu.item(HOVER).fill", true),
                 "menu_bar.item(HOVER).fill",
             ),
         ] {
@@ -35810,9 +35826,9 @@ mod tests {
     }
 
     /// M9-069, M9-144 (M9b T5 fix round 1): the open menu's
-    /// `popover.border.padding_*`, `menu.panel_padding_*` and
-    /// `.shadow_enabled` lines name the function that pads and shadows its
-    /// panel, which the leaf's 0.8.0 home restated on the theme moves (the
+    /// `popover.panel.padding.*`, `menu.panel(NONE).padding.*` and
+    /// `popover.panel.shadows` lines name the function that pads and shadows
+    /// its panel, which the home restated on the theme moves (the
     /// menu panel's or the popover's padding grown 3 a side, the popover's
     /// shadows none), and the "Not themeable" shadow line shows only where
     /// the menu keeps iced_aw's shadow, neither `menu.panel(NONE)` nor
@@ -35837,10 +35853,10 @@ mod tests {
         let r = state.next_shown().clone();
         let mut failures = Vec::new();
         let mut overridden = 0;
-        for leaf in element.leaves.iter().filter(|l| {
-            l.starts_with("popover.border.padding_")
-                || l.starts_with("menu.panel_padding_")
-                || l.ends_with("shadow_enabled")
+        for leaf in route_keys(element).iter().filter(|l| {
+            l.starts_with("popover.panel.padding.")
+                || l.starts_with("menu.panel(NONE).padding.")
+                || *l == "popover.panel.shadows"
         }) {
             let route = iced_route(&state, element, leaf);
             let functions = if route.starts_with("not drawn: ") {
@@ -35852,10 +35868,10 @@ mod tests {
             if functions.is_empty() && !route.starts_with("not drawn: ") {
                 failures.push(format!("{leaf}: \"{route}\" names no function"));
             }
-            // The leaf's 0.8.0 home restated: the menu panel's or the
-            // popover's padding grown, or the popover's shadows none.
+            // The home restated: the menu panel's or the popover's padding
+            // grown, or the popover's shadows none.
             let patch = match leaf.as_str() {
-                l if l.ends_with("shadow_enabled") => {
+                "popover.panel.shadows" => {
                     "[widgets.popover]\npanel.shadows = \"none\"\n".to_owned()
                 }
                 l => {
@@ -42878,7 +42894,7 @@ mod tests {
         assert!(toolbar.contains("TOOLBAR_PADDING"), "{toolbar}");
         let gap = route_of(&state, "chrome.toolbar", "toolbar.item_gap_px");
         assert!(gap.contains("TOOLBAR_GAP"), "{gap}");
-        let menu_bar = route_of(&state, "chrome.menu_bar", "layout.container_margin_px");
+        let menu_bar = route_of(&state, "chrome.menu_bar", "layout.container_margin");
         assert!(menu_bar.contains("MENU_BAR_PADDING"), "{menu_bar}");
         for (leaf, upstream) in [
             ("status_bar.border.padding_top_px", "py_1"),
