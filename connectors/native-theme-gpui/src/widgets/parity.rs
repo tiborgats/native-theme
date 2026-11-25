@@ -134,25 +134,49 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "CheckboxLook::of mark disabled",
-        presets: &["macos-monterey", "macos-tahoe"],
-        reason: "these 0.8.0 presets state no checkbox.checkmark(DISABLED).color, so a \
-                 disabled box's mark keeps gpui-component's own treatment (spec §10, rule 0): \
-                 the enabled mark, checkbox.checkmark(CHECKED).color, at half alpha \
-                 (primary_foreground.opacity(0.5), gpui-component 0.10.0 checkbox.rs:230-234), \
+        presets: &["macos-tahoe"],
+        reason: "the 0.8.0 macos-tahoe states the measured disabled checked box's mark for \
+                 DISABLED, #fefefe80 light and #fdffff80 dark (os-probe run 45345116763, \
+                 macOS 26, `*.normal.checkbox_disabled_on` `label`), where the 0.7.2 look drew \
+                 it in the label's disabled colour where a disabled fill is stated, else as \
+                 enabled; the look reads checkbox.checkmark(DISABLED|CHECKED).color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of mark disabled",
+        presets: &["macos-monterey"],
+        reason: "the 0.8.0 macos-monterey states the measured disabled checked box's mark for \
+                 DISABLED in light, #01010140 (os-probe run 45345116763, macOS 15, \
+                 `*.normal.checkbox_disabled_on` `label`), and none in dark, where the run \
+                 read no one colour (`label` non_uniform_fill): light, the look reads \
+                 checkbox.checkmark(DISABLED|CHECKED).color; dark, the mark keeps \
+                 gpui-component's own treatment (spec §10, rule 0), the enabled mark, \
+                 checkbox.checkmark(CHECKED).color, at half alpha \
+                 (primary_foreground.opacity(0.5), gpui-component 0.10.0 checkbox.rs:230-234); \
                  where the 0.7.2 look drew it in the label's disabled colour where a disabled \
-                 fill is stated, else as enabled; the 0.8.0 look is compared to that home at \
-                 half alpha (Report::moved)",
+                 fill is stated, else as enabled",
     },
     Difference {
         leaf: "CheckboxLook::radio mark disabled",
-        presets: &["macos-monterey", "macos-tahoe"],
-        reason: "as the check box's (CheckboxLook::of mark disabled): these 0.8.0 presets state \
-                 no radio.dot(DISABLED).fill, and gpui-component's radio draws the same mark \
-                 through checkbox_check_icon, dimmed to half alpha when disabled \
-                 (gpui-component 0.10.0 radio.rs:249-256, checkbox.rs:230-234), so a \
-                 disabled radio's dot is radio.dot(CHECKED).fill at half alpha, where the \
-                 0.7.2 look drew it in the label's disabled colour where a disabled fill is \
-                 stated, else as enabled",
+        presets: &["macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of mark disabled): the 0.8.0 macos-tahoe \
+                 states the measured disabled checked radio's dot for DISABLED, the check box's \
+                 mark colour, #fefefe80 light and #fdffff80 dark (os-probe run 45345116763, \
+                 macOS 26, `*.normal.radio_disabled_on` `label`), where the 0.7.2 look drew it \
+                 in the label's disabled colour where a disabled fill is stated, else as \
+                 enabled; the look reads radio.dot(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio mark disabled",
+        presets: &["macos-monterey"],
+        reason: "as the check box's (CheckboxLook::of mark disabled): the 0.8.0 macos-monterey \
+                 states the measured disabled checked radio's dot for DISABLED in light, \
+                 #01010140 (os-probe run 45345116763, macOS 15, `*.normal.radio_disabled_on` \
+                 `label`), read at radio.dot(DISABLED|CHECKED).fill, and none in dark (not \
+                 read), where gpui-component's radio draws the same mark through \
+                 checkbox_check_icon, dimmed to half alpha when disabled (gpui-component \
+                 0.10.0 radio.rs:249-256, checkbox.rs:230-234), so the dark disabled dot is \
+                 radio.dot(CHECKED).fill at half alpha; where the 0.7.2 look drew it in the \
+                 label's disabled colour where a disabled fill is stated, else as enabled",
     },
     Difference {
         leaf: "CheckboxLook::radio label disabled",
@@ -312,7 +336,7 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "CheckboxLook::of border disabled",
-        presets: &["kde-breeze", "adwaita", "material-3"],
+        presets: &["adwaita", "material-3"],
         reason: "these 0.8.0 presets state no checkbox.indicator(DISABLED).stroke, so a \
                  disabled box keeps gpui-component's own treatment (spec §10, rule 0): its \
                  enabled border, checkbox.indicator(CHECKED).stroke.color checked and \
@@ -323,14 +347,30 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "CheckboxLook::of border disabled",
+        presets: &["kde-breeze"],
+        reason: "as adwaita's and material-3's: the 0.8.0 kde-breeze states no \
+                 checkbox.indicator(DISABLED).stroke, so a disabled box keeps \
+                 gpui-component's own treatment (spec §10, rule 0), its enabled border at half \
+                 alpha, where the 0.7.2 look kept the enabled border. kde-breeze does state a \
+                 disabled checked box's frame for DISABLED|CHECKED, Breeze's Disabled \
+                 Highlight #e3e5e7 / #1f2124 (`indicator` in native-theme/src/next/presets/ \
+                 kde.rs, switch_disabled_on_frame), which the look does not reach: by spec §2's \
+                 from_state contract a connector keeping its own treatment of DISABLED asks \
+                 the query with that flag alone, and a rule for DISABLED|CHECKED does not set \
+                 its bit there; a spec question, not a connector fix",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border disabled",
         presets: &["windows-11"],
         reason: "the 0.8.0 windows-11 states WinUI's disabled box's outline, \
                  CheckBoxCheckBackgroundStrokeUncheckedDisabled and …StrokeCheckedDisabled = \
                  ControlStrongStrokeColorDisabled, #37000000 / #28ffffff \
                  (CheckBox_themeresources.xaml:220, :44, :224, set at :465-468 at \
-                 microsoft-ui-xaml 8463f45), where the 0.7.2 look kept the enabled border; \
-                 gpui-component's half alpha of the rest border would give #00000039 in \
-                 light; the look reads checkbox.indicator(DISABLED).stroke.color and \
+                 microsoft-ui-xaml 8463f45; XAML's #AARRGGBB, alpha first: #RRGGBBAA \
+                 #00000037 / #ffffff28), where the 0.7.2 look kept the enabled border; \
+                 gpui-component's half alpha of the rest border would give #00000039 \
+                 (#RRGGBBAA, alpha last) in light; the look reads \
+                 checkbox.indicator(DISABLED).stroke.color and \
                  checkbox.indicator(DISABLED|CHECKED).stroke.color",
     },
     Difference {
@@ -355,12 +395,22 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "CheckboxLook::radio border disabled",
-        presets: &["kde-breeze", "adwaita"],
-        reason: "as the check box's (CheckboxLook::of border disabled): these 0.8.0 presets \
-                 state no radio.indicator(DISABLED).stroke, and gpui-component dims a disabled \
+        presets: &["adwaita"],
+        reason: "as the check box's (CheckboxLook::of border disabled): the 0.8.0 adwaita \
+                 states no radio.indicator(DISABLED).stroke, and gpui-component dims a disabled \
                  radio's border_color, radio.indicator(CHECKED).stroke.color checked and \
                  radio.indicator(NONE).stroke.color unchecked, to half alpha \
                  (gpui-component 0.10.0 radio.rs:193-200)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border disabled",
+        presets: &["kde-breeze"],
+        reason: "as the check box's (CheckboxLook::of border disabled, kde-breeze): no \
+                 radio.indicator(DISABLED).stroke is stated, so gpui-component dims a disabled \
+                 radio's border_color to half alpha (gpui-component 0.10.0 radio.rs:193-200); \
+                 the Disabled Highlight frame kde-breeze states for DISABLED|CHECKED \
+                 (#e3e5e7 / #1f2124, switch_disabled_on_frame) is not reached by the query \
+                 with DISABLED alone (spec §2, from_state), a spec question",
     },
     Difference {
         leaf: "CheckboxLook::radio border disabled",
@@ -369,8 +419,9 @@ const DIFFERENCES: &[Difference] = &[
                  RadioButtonOuterEllipseStrokeDisabled = ControlStrongStrokeColorDisabled \
                  (RadioButton_themeresources.xaml:137, :21 at microsoft-ui-xaml 8463f45), \
                  checked …CheckedStrokeDisabled = AccentFillColorDisabled (set at :326-330), \
-                 #37000000 / #28ffffff both, where the 0.7.2 look kept the enabled border; the \
-                 look reads radio.indicator(DISABLED).stroke.color and \
+                 #37000000 / #28ffffff both (XAML's #AARRGGBB, alpha first), where the 0.7.2 \
+                 look kept the enabled border; the look reads \
+                 radio.indicator(DISABLED).stroke.color and \
                  radio.indicator(DISABLED|CHECKED).stroke.color",
     },
     Difference {
@@ -514,15 +565,12 @@ const DIFFERENCES: &[Difference] = &[
         leaf: "CheckboxLook::of outline",
         presets: &["adwaita", "windows-11"],
         reason: "0.7.2's adwaita and windows-11 outline a checked box in the default border \
-                 colour, ios-13 every box in its uncited default line (the separator); 0.8.0's \
-                 adwaita states none round a checked box, as libadwaita draws a checked or mixed \
+                 colour; 0.8.0's adwaita states none round a checked box, as libadwaita draws a checked or mixed \
                  check with `box-shadow: none`, its only outline (_checks.scss:27, :52-56 at \
                  libadwaita 1.10.0); windows-11 outlines it in AccentFillColorDefault, the \
                  accent's fill, #0067c0 / #4cc2ff (CheckBoxCheckBackgroundStrokeChecked, \
-                 CheckBox_themeresources.xaml:221, :45 at microsoft-ui-xaml 8463f45); ios-13 \
-                 strokes an empty box in checkboxRadioBorderColor (secondaryLabel) and a checked \
-                 one in none (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit \
-                 31adf9d) (native-theme/tests/next_homes.toml, rows checkbox.border.color and \
+                 CheckBox_themeresources.xaml:221, :45 at microsoft-ui-xaml 8463f45) \
+                 (native-theme/tests/next_homes.toml, rows checkbox.border.color and \
                  checkbox.unchecked_border_color, listed differences); the look reads \
                  checkbox.indicator(CHECKED).stroke.color and checkbox.indicator(NONE).stroke.color",
     },
