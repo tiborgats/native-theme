@@ -35,9 +35,9 @@
 //!
 //! - Sidebar switches theme presets, palettes, color modes, and icon sets at
 //!   runtime — no restart needed. Watch how every widget re-themes together.
-//!   The iced theme is built from the 0.8.0 model; the pages not yet moved
-//!   to it read the 0.7.2 theme of the same choice, the preset alone under a
-//!   palette (`State::install_in_mode`).
+//!   The iced theme, the pages and the chrome are built from the 0.8.0
+//!   model's theme of the choice, with the palette laid over it
+//!   (`State::install_in_mode`).
 //! - Hover the Widget Info inspector to see which `ResolvedTheme` fields
 //!   drive the widget currently under the mouse.
 //! - The Theme Map tab exposes iced's 6-field `Palette` plus `Extended`
@@ -1282,14 +1282,6 @@ impl PartialEq for ThemeChoice {
 
 impl Eq for ThemeChoice {}
 
-/// The preset the showcase starts with where the 0.8.0 model's read of the
-/// desktop (`next::Theme::from_system`) fails: the platform's own, never
-/// another platform's, the one that read builds on (`Preset::detect`, which
-/// the gpui showcase falls back to too).
-fn platform_fallback_preset() -> &'static str {
-    Preset::detect().as_str()
-}
-
 /// The accessibility preferences of `ctx`, as the connector reads a 0.8.0
 /// theme's context back as them (docs/v0.8.0-spec.md §5, the table of
 /// homes: `reduce_motion` is a motion other than `Full`, `high_contrast` a
@@ -1395,8 +1387,8 @@ impl ContrastHeld {
 /// (`next::Theme::preset`) -- in the mode `is_dark` names, for an active
 /// window, left to right as the showcase lays itself out, with `prefs` as
 /// its text scale, motion, contrast and reduced transparency: the
-/// accessibility preferences the 0.7.2 theme of the same choice is shown
-/// with, the OS's with the user's over them. A preference set keeps the
+/// accessibility preferences applied, the OS's with the user's over them
+/// ([`State::preferences`]). A preference set keeps the
 /// desktop's own level where that is one of its kind (a contrast
 /// `Increased`, a motion `None`), as the gpui showcase's
 /// (`Showcase::next_context`).
@@ -1831,8 +1823,8 @@ struct State {
     accessibility: native_theme_iced::AccessibilityPreferences,
     /// The OS's accessibility preferences as last read: those of the kept
     /// `next_system` read's context ([`preferences_of`]), or, where the
-    /// startup read failed and none has succeeded since,
-    /// `detect::accessibility_preferences()`.
+    /// last read failed, `detect::accessibility_preferences()` as detected
+    /// then.
     os_accessibility: native_theme_iced::AccessibilityPreferences,
     /// The preferences the user set in the Preferences dialog, each `None`
     /// until set there.
@@ -1845,8 +1837,8 @@ struct State {
     current_icon_theme: Option<String>,
     /// The platform preset the OS theme builds on, which the theme picker's
     /// `default` row names ([`State::default_label`]): the kept read's
-    /// (`next::Theme::preset_id`), [`platform_fallback_preset`] where the
-    /// startup read failed; updated at each read of the OS theme.
+    /// (`next::Theme::preset_id`), the platform's (`Preset::detect`) where
+    /// the startup read failed; updated at each read of the OS theme.
     default_preset: String,
     /// The Theme row's combo box ([`theme_picker`]): its rows,
     /// [`theme_choices`] of `default_preset`, rebuilt where that changes
@@ -2091,7 +2083,7 @@ impl State {
     /// model reads them through `read_next_system` installed in the scheme
     /// the read reports (the colour mode is System), the OS's preferences
     /// those of the read's context ([`preferences_of`]); where that read
-    /// fails, the platform's preset ([`platform_fallback_preset`]) with the
+    /// fails, the platform's preset (`Preset::detect`) with the
     /// OS's preferences as `detect::accessibility_preferences()` detects
     /// them, and the failure in the banner. The theme is installed through
     /// [`State::install_in_mode`], as every later switch is.
@@ -2099,45 +2091,50 @@ impl State {
         read_next_system: fn() -> native_theme::next::Result<native_theme::next::Theme>,
     ) -> Self {
         let color_mode = AppColorMode::System;
-        let fallback_key = platform_fallback_preset();
-        let (system_preset, os_accessibility, initial_error, fallback_choice, next_system) =
+        let (start_preset, os_accessibility, initial_error, fallback_choice, next_system) =
             match read_next_system() {
                 Ok(system) => (
-                    system.preset_id().as_str().to_string(),
+                    system.preset_id(),
                     preferences_of(system.context()),
                     None,
                     None,
                     Ok(system),
                 ),
-                // The platform's preset. The theme picker names what is
+                // The platform's preset, the one the failed read builds on
+                // (`Preset::detect`, never another platform's, as the gpui
+                // showcase falls back to). The theme picker names what is
                 // drawn, so a mode change installs that preset again
                 // instead of reading the OS theme.
-                Err(e) => (
-                    fallback_key.to_string(),
-                    native_theme::detect::accessibility_preferences(),
-                    Some(format!(
-                        "OS theme failed: {e}. Using {fallback_key} fallback."
-                    )),
-                    Some(ThemeChoice::Preset(fallback_key.to_string())),
-                    Err(format!("Failed to load OS theme: {e}")),
-                ),
+                Err(e) => {
+                    let fallback = Preset::detect();
+                    let key = fallback.as_str();
+                    (
+                        fallback,
+                        native_theme::detect::accessibility_preferences(),
+                        Some(format!("OS theme failed: {e}. Using {key} fallback.")),
+                        Some(ThemeChoice::Preset(key.to_string())),
+                        Err(format!("Failed to load OS theme: {e}")),
+                    )
+                }
             };
+        let system_preset = start_preset.as_str().to_string();
+        let read_failed = next_system.is_err();
         let is_dark = match &next_system {
             Ok(system) => system.context().scheme == Scheme::Dark,
             Err(_) => color_mode.is_dark(),
         };
-        // The platform's preset on the 0.8.0 model, so the state is whole
-        // before the install below replaces it with the 0.8.0 theme of the
-        // choice the showcase starts with: its iced theme, and its icon set
-        // and icon theme.
+        // The preset the showcase starts on, alone on the 0.8.0 model, so
+        // the state is whole before the install below replaces it with the
+        // 0.8.0 theme of the choice the showcase starts with: its iced
+        // theme, and its icon set and icon theme.
         let start_next = match NextInstall::new(
-            native_theme::next::Theme::preset(Preset::detect()),
+            native_theme::next::Theme::preset(start_preset),
             None,
             &next_context(None, is_dark, &os_accessibility),
         ) {
             Ok(next) => next,
             Err(e) => {
-                eprintln!("Fatal: the {fallback_key} fallback failed ({e}). Cannot start.");
+                eprintln!("Fatal: the {system_preset} preset failed ({e}). Cannot start.");
                 std::process::exit(1);
             }
         };
@@ -2342,6 +2339,12 @@ impl State {
             state.error_message = initial_error;
         } else {
             let failed = state.error_message.take();
+            let fallback = if read_failed {
+                start_preset
+            } else {
+                Preset::detect()
+            };
+            let fallback_key = fallback.as_str();
             if !state.install_in_mode(ThemeChoice::Preset(fallback_key.to_string()), color_mode) {
                 eprintln!(
                     "Fatal: {} and the {fallback_key} fallback also failed ({}). Cannot start.",
@@ -2542,15 +2545,14 @@ impl State {
             rows::icon_rows(self.current_icon_set, it_opt, &self.installed_themes);
 
         // Every install reloads the icons, a colour-mode switch too. Each
-        // icon is coloured in `defaults.text_color` as it loads: a
-        // freedesktop, SF Symbols or Segoe Fluent icon by its loader
-        // (`color_opt`), which no public step recolours afterwards, and a
-        // Material or Lucide icon as its handle is built (`load_all_icons`);
-        // and every bundled preset states another `defaults.text_color` in
-        // each mode. A theme switch between two presets of one icon set and
-        // text colour (catppuccin-frappe and catppuccin-latte light) needs it
-        // too: the Basic page's Spinner takes the installed 0.8.0 theme's
-        // `spinner.color`, which a switch of the same text colour can change.
+        // icon is coloured in the installed 0.8.0 theme's
+        // `colors.window.foreground` as it loads: a freedesktop, SF Symbols
+        // or Segoe Fluent icon by its loader (`color_opt`), which no public
+        // step recolours afterwards, and a Material or Lucide icon as its
+        // handle is built (`load_all_icons`). A switch that keeps that
+        // colour needs it too: the Basic page's Spinner takes the theme's
+        // `spinner.color`, a field of its own, which such a switch can
+        // change.
         self.reload_icons();
         true
     }
@@ -2574,9 +2576,12 @@ impl State {
     /// Read the OS theme again, as Reload System Theme and the theme
     /// watcher's event ask, and install the current theme again over it: the
     /// OS theme from the new read, a preset with the OS's preferences as now
-    /// read. A read that fails leaves the OS theme installed as it was; a
-    /// preset, which needs no read, is installed again, in the OS's mode as
-    /// now detected under System. The error is in the banner either way.
+    /// read. A read that fails leaves the OS theme installed as it was; the
+    /// OS's accessibility preferences are then detected again
+    /// (`detect::accessibility_preferences()`, as the gpui showcase's
+    /// `os_preferences` does), and a preset, which needs no read, is
+    /// installed again with them, in the OS's mode as now detected under
+    /// System. The error is in the banner either way.
     fn reload_system_theme(&mut self) {
         let failed = (self.detect_icon_theme)().is_err();
         native_theme::detect::invalidate_caches();
@@ -2588,6 +2593,7 @@ impl State {
                 self.rebuild_theme();
             }
             Err(error) => {
+                self.os_accessibility = native_theme::detect::accessibility_preferences();
                 if matches!(self.current_choice, ThemeChoice::Preset(_)) {
                     self.rebuild_theme();
                 }
@@ -2635,7 +2641,7 @@ impl State {
     /// context they give ([`next_context`]) and its iced theme installed,
     /// its icons and spinner loaded again in its colours
     /// ([`State::reload_icons`]: High contrast can change the window's text
-    /// colour), and the 0.7.2 theme's pages read them. Where the connector
+    /// colour), and the pages draw the new resolve. Where the connector
     /// cannot build the iced theme of the new resolve, the error is in the
     /// banner and the installed one stays.
     fn apply_preferences(&mut self) {
@@ -2664,8 +2670,8 @@ impl State {
 
     /// The desktop's settings as the 0.8.0 model reads them
     /// (`next::Theme::from_system`), read where no read is kept
-    /// (`State::next_system`); the error to report, as the 0.7.2 read's is
-    /// reported, where the read failed. The failure is kept as the settings
+    /// (`State::next_system`); the error to report in the banner where the
+    /// read failed. The failure is kept as the settings
     /// are, so a preset switch or a preference change does not read the
     /// desktop again; Reload System Theme does.
     fn next_system(&mut self) -> Result<&native_theme::next::Theme, String> {
@@ -24997,7 +25003,6 @@ mod tests {
     #[test]
     fn a_failed_os_theme_read_keeps_the_installed_theme() {
         const TEST: &str = "a_failed_os_theme_read_keeps_the_installed_theme";
-        let failing_read = failing_next_read;
         let preset = match native_theme::theme::Theme::list_presets_for_platform().first() {
             Some(info) => info.key,
             None => panic!("this platform offers no preset"),
@@ -25007,7 +25012,7 @@ mod tests {
             &mut under_preset,
             Message::ThemeSelected(ThemeChoice::Preset(preset.to_string())),
         );
-        let mut cases = vec![
+        let cases = [
             (
                 format!("Reload System Theme under {preset}"),
                 under_preset,
@@ -25015,19 +25020,17 @@ mod tests {
             ),
             (
                 "a switch to default after the startup fallback".to_string(),
-                State::starting_with(failing_read),
+                State::starting_with(failing_next_read),
                 Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
             ),
-        ];
-        if let Some(state) = started_with_os(TEST, || os_read_with(|_| {})) {
-            cases.push((
+            (
                 "Reload System Theme under default".to_string(),
-                state,
+                started_with_os(TEST, || os_read_with(|_| {})),
                 Message::ReloadSystemTheme,
-            ));
-        }
+            ),
+        ];
         for (case, mut state, message) in cases {
-            state.read_next_system = failing_read;
+            state.read_next_system = failing_next_read;
             state.error_message = None;
             let before = shown(&state);
             let _ = update(&mut state, message);
@@ -25043,7 +25046,7 @@ mod tests {
         } else {
             AppColorMode::Dark
         };
-        let mut state = State::starting_with(failing_read);
+        let mut state = State::starting_with(failing_next_read);
         let choice = ThemeChoice::Preset(preset.to_string());
         assert!(
             state.install_in_mode(choice.clone(), other),
@@ -25067,6 +25070,32 @@ mod tests {
         );
     }
 
+    /// Reload System Theme whose read fails detects the OS's accessibility
+    /// preferences again (`detect::accessibility_preferences()`, as the gpui
+    /// showcase's `os_preferences` does) and installs the preset again with
+    /// them, never with the ones kept from before the reload.
+    #[test]
+    fn a_failed_reload_detects_the_os_preferences_again() {
+        let mut state = State::starting_with(failing_next_read);
+        let detected = native_theme::detect::accessibility_preferences();
+        let mut kept = detected.clone();
+        kept.text_scaling_factor = detected.text_scaling_factor + 1.0;
+        state.os_accessibility = kept;
+        let _ = update(&mut state, Message::ReloadSystemTheme);
+        assert_eq!(
+            state.os_accessibility, detected,
+            "the OS's preferences after a failed reload"
+        );
+        assert_eq!(
+            state.accessibility, detected,
+            "the preferences the preset is installed again with"
+        );
+        assert!(
+            state.error_message.is_some(),
+            "the failed reload reported nothing"
+        );
+    }
+
     /// A 0.8.0 read of the desktop that fails at startup leaves the
     /// platform's own preset drawn (the one that read builds on,
     /// `Preset::detect`, never another platform's),
@@ -25076,7 +25105,6 @@ mod tests {
     /// again, in the mode chosen.
     #[test]
     fn the_startup_fallback_is_the_platform_preset_in_every_mode() {
-        let failing_read = failing_next_read;
         fn installed(state: &State) -> (ThemeChoice, AppColorMode, Option<String>) {
             (
                 state.current_choice.clone(),
@@ -25092,11 +25120,15 @@ mod tests {
             "the startup fallback {key} is not a preset of this platform"
         );
         let fallback = ThemeChoice::Preset(key.to_string());
-        let mut state = State::starting_with(failing_read);
+        let mut state = State::starting_with(failing_next_read);
         assert_eq!(state.current_choice, fallback, "the picker at startup");
         assert!(
-            state.error_message.is_some(),
-            "the failed OS-theme read at startup reported nothing"
+            state
+                .error_message
+                .as_deref()
+                .is_some_and(|e| e.ends_with(&format!("Using {key} fallback."))),
+            "the failed OS-theme read at startup does not say the {key} fallback is used: {:?}",
+            state.error_message
         );
         let ctx = if state.is_dark {
             ThemeContext::dark()
@@ -25129,7 +25161,7 @@ mod tests {
             "a colour-mode change after the startup fallback"
         );
 
-        let mut state = State::starting_with(failing_read);
+        let mut state = State::starting_with(failing_next_read);
         apply_cli_args(&mut state, &command_line(&[("--variant", other_name)]));
         assert_eq!(
             installed(&state),
@@ -25148,19 +25180,18 @@ mod tests {
 
     /// The showcase started with `read` as its 0.8.0 read of the desktop,
     /// a fake one ([`os_read_with`]), which does not fail: its failure fails
-    /// the test, named by `test`. `Some` always, so a test reads as one that
-    /// may be skipped did.
+    /// the test, named by `test`.
     fn started_with_os(
         test: &str,
         read: fn() -> native_theme::next::Result<native_theme::next::Theme>,
-    ) -> Option<State> {
+    ) -> State {
         let state = State::starting_with(read);
         assert!(
             state.error_message.is_none(),
             "{test}: the fake read did not install: {:?}",
             state.error_message
         );
-        Some(state)
+        state
     }
 
     /// A fake 0.8.0 read of the desktop, the same on every host: the
@@ -25183,46 +25214,47 @@ mod tests {
         Ok(native_theme::next::Theme::preset(preset).with_context(ctx))
     }
 
+    /// The icon theme a fake read of a light KDE desktop states
+    /// ([`the_os_theme_takes_each_modes_icon_theme`]'s), a name no preset
+    /// gives.
+    const READ_ICON_THEME: &str = "the-read-icon-theme";
+
     /// Under `default`, each colour mode draws its icons from that mode's
-    /// icon theme, the desktop's read resolved in the mode's scheme, as the
-    /// `kde-breeze` preset names one per scheme: Dark chosen on a light
-    /// desktop takes `breeze-dark`, not the light scheme's `breeze`.
+    /// icon theme, the desktop's read resolved in the mode's scheme: the
+    /// icon theme the system states where it was read in that scheme, the
+    /// preset's own in the other, as `kde-breeze` drops the system's icon
+    /// theme in the scheme it was not read in. Dark chosen on a light
+    /// desktop takes the preset's `breeze-dark`, not the light desktop's
+    /// icon theme.
     #[test]
     fn the_os_theme_takes_each_modes_icon_theme() -> Result<(), String> {
         fn breeze_light() -> native_theme::next::Result<native_theme::next::Theme> {
-            os_read_of(Preset::KdeBreeze, |_| {})
+            let mut system = native_theme::next::SystemOverrides::default();
+            system.scheme = Some(Scheme::Light);
+            system.icon_theme = Some(Arc::from(READ_ICON_THEME));
+            os_read_of(Preset::KdeBreeze, |_| {}).map(|read| read.with_system_overrides(system))
         }
-        let icon_theme = |ctx: ThemeContext| {
-            native_theme::next::Theme::preset(Preset::KdeBreeze)
-                .resolve(&ctx)
-                .icons
-                .theme
-                .as_deref()
-                .map(str::to_owned)
-        };
-        let (light, dark) = (
-            icon_theme(ThemeContext::light()),
-            icon_theme(ThemeContext::dark()),
-        );
-        if (light.as_deref(), dark.as_deref()) != (Some("breeze"), Some("breeze-dark")) {
+        let dark = native_theme::next::Theme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::dark())
+            .icons
+            .theme
+            .as_deref()
+            .map(str::to_owned);
+        if dark.as_deref() != Some("breeze-dark") {
             return Err(format!(
-                "kde-breeze names the icon themes {light:?} and {dark:?} on the 0.8.0 model, \
-                 not breeze and breeze-dark"
+                "kde-breeze names the dark icon theme {dark:?} on the 0.8.0 model, not \
+                 breeze-dark"
             ));
         }
-        let Some(mut state) =
-            started_with_os("the_os_theme_takes_each_modes_icon_theme", breeze_light)
-        else {
-            return Ok(());
-        };
+        let mut state = started_with_os("the_os_theme_takes_each_modes_icon_theme", breeze_light);
         assert_eq!(
             state.current_icon_theme.as_deref(),
-            Some("breeze"),
+            Some(READ_ICON_THEME),
             "the OS theme in its own (light) mode"
         );
         for (mode, wanted) in [
             (AppColorMode::Dark, "breeze-dark"),
-            (AppColorMode::Light, "breeze"),
+            (AppColorMode::Light, READ_ICON_THEME),
         ] {
             let _ = update(&mut state, Message::ColorModeSelected(mode));
             assert_eq!(
@@ -25256,12 +25288,10 @@ mod tests {
         fn unscaled() -> native_theme::next::Result<native_theme::next::Theme> {
             os_read_with(|ctx| ctx.text_scale = 1.0)
         }
-        let Some(mut state) = started_with_os(
+        let mut state = started_with_os(
             "a_preference_set_by_the_user_survives_every_install",
             unscaled,
-        ) else {
-            return;
-        };
+        );
         let os = state.accessibility.clone();
         let set = match TEXT_SCALES
             .iter()
@@ -25318,12 +25348,10 @@ mod tests {
         fn not_requested() -> native_theme::next::Result<native_theme::next::Theme> {
             os_read_with(|ctx| ctx.motion = MotionPreference::Full)
         }
-        let Some(mut state) = started_with_os(
+        let mut state = started_with_os(
             "an_os_motion_request_stops_the_animations_whatever_the_switch_shows",
             requested,
-        ) else {
-            return;
-        };
+        );
         let _ = update(&mut state, Message::ReduceMotionToggled(false));
         assert!(!state.accessibility.reduce_motion, "the switch shows off");
         assert!(
@@ -25338,12 +25366,10 @@ mod tests {
             "the Reduce motion row does not say that the OS's request wins"
         );
 
-        let Some(mut state) = started_with_os(
+        let mut state = started_with_os(
             "an_os_motion_request_stops_the_animations_whatever_the_switch_shows",
             not_requested,
-        ) else {
-            return;
-        };
+        );
         assert!(
             !state.motion_reduced(),
             "neither the OS nor the switch asks"
@@ -25357,9 +25383,9 @@ mod tests {
         static OS_READS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     }
 
-    /// The OS theme as this host reads it, counted in [`OS_READS`], its text
-    /// scale the number of the read, so a test sees which read the installed
-    /// preferences come from.
+    /// A fake read of the OS theme ([`os_read_with`]), counted in
+    /// [`OS_READS`], its text scale the number of the read, so a test sees
+    /// which read the installed preferences come from.
     fn counted_read() -> native_theme::next::Result<native_theme::next::Theme> {
         let read = OS_READS.with(|reads| {
             reads.set(reads.get() + 1);
@@ -25377,12 +25403,10 @@ mod tests {
     fn a_mode_switch_under_the_os_theme_reads_nothing() {
         let reads = || OS_READS.with(std::cell::Cell::get);
         OS_READS.with(|reads| reads.set(0));
-        let Some(mut state) = started_with_os(
+        let mut state = started_with_os(
             "a_mode_switch_under_the_os_theme_reads_nothing",
             counted_read,
-        ) else {
-            return;
-        };
+        );
         assert_eq!(reads(), 1, "startup");
         let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Dark));
         assert_eq!(reads(), 1, "a switch to Dark under the OS theme");
@@ -25412,10 +25436,10 @@ mod tests {
         );
     }
 
-    /// The OS theme as this host reads it, counted in [`OS_READS`] as
-    /// [`counted_read`] counts, its text scale the number of the read: the
-    /// first read in Light, every later one in Dark, as an OS switched to
-    /// Dark after the showcase started reads.
+    /// A fake read of the OS theme ([`os_read_with`]), counted in
+    /// [`OS_READS`] as [`counted_read`] counts, its text scale the number of
+    /// the read: the first read in Light, every later one in Dark, as an OS
+    /// switched to Dark after the showcase started reads.
     #[cfg(feature = "watch")]
     fn read_turning_dark() -> native_theme::next::Result<native_theme::next::Theme> {
         let read = OS_READS.with(|reads| {
@@ -25443,12 +25467,10 @@ mod tests {
     fn the_os_theme_is_watched_in_every_colour_mode() {
         let reads = || OS_READS.with(std::cell::Cell::get);
         OS_READS.with(|reads| reads.set(0));
-        let Some(mut state) = started_with_os(
+        let mut state = started_with_os(
             "the_os_theme_is_watched_in_every_colour_mode",
             read_turning_dark,
-        ) else {
-            return;
-        };
+        );
         assert!(!state.is_dark, "startup in the first read's mode, Light");
         for mode in AppColorMode::ALL {
             let _ = update(&mut state, Message::ColorModeSelected(mode));
@@ -25477,19 +25499,39 @@ mod tests {
     /// The iced theme's `is_dark` (which the window's title bar follows) is
     /// the mode the theme was installed in, not iced's guess from its
     /// background: on every install path, an OS theme read in the dark
-    /// scheme included.
+    /// scheme with a light window background included.
     #[test]
     fn the_iced_theme_is_dark_in_the_mode_installed() {
+        /// A fake read in the dark scheme whose window background is the
+        /// same preset's in the light scheme, so a mode guessed from the
+        /// background is light.
         fn light_dark_variant() -> native_theme::next::Result<native_theme::next::Theme> {
+            let light_bg = native_theme::next::Theme::preset(Preset::detect())
+                .resolve(&ThemeContext::light())
+                .colors
+                .window
+                .background;
             os_read_with(|ctx| ctx.scheme = Scheme::Dark)
+                .map(|read| read.with_transform(move |r| r.colors.window.background = light_bg))
         }
         let drawn_dark = |state: &State| theme(state).extended_palette().is_dark;
-        let Some(mut state) = started_with_os(
+        let mut state = started_with_os(
             "the_iced_theme_is_dark_in_the_mode_installed",
             light_dark_variant,
-        ) else {
-            return;
-        };
+        );
+        let light_bg = native_theme::next::Theme::preset(Preset::detect())
+            .resolve(&ThemeContext::light())
+            .colors
+            .window
+            .background;
+        assert_eq!(
+            (
+                state.next_resolved.is_dark(),
+                state.next_resolved.colors.window.background
+            ),
+            (true, light_bg),
+            "the read resolved in the dark scheme with the light background"
+        );
         assert!(state.is_dark, "startup in the read's own mode, Dark");
         assert!(drawn_dark(&state), "the OS theme at startup, in Dark");
         for mode in [
@@ -30884,20 +30926,20 @@ mod tests {
     /// as cards, are padded as the page's cards are, by the sides
     /// `card.container(NONE).padding` states inside its stroke
     /// ([`next_card_padding`]): under kde-breeze and windows-11, which state
-    /// a card padding, the Right-aligned box's label is the stated side plus
-    /// the line in from its box's left and top, read from the 0.8.0 theme.
+    /// a card padding and a card stroke width, the Right-aligned box's label
+    /// is the stated side plus the stated line in from its box's left and
+    /// top, read from the 0.8.0 theme.
     #[test]
     fn the_spacing_boxes_take_the_cards_padding() {
         for preset in ["kde-breeze", "windows-11"] {
             let state = page_state(preset, Tab::Display);
-            assert!(
-                matches!(
-                    iced_next::padding_of(&state.next_resolved.card.container(WidgetState::NONE)),
-                    [Some(_), _, _, Some(_)]
-                ),
-                "{preset} states no card padding"
-            );
-            let pad = next_card_padding(&state.next_resolved);
+            let card = state.next_resolved.card.container(WidgetState::NONE);
+            let ([Some(top), _, _, Some(left)], Some(line)) = (
+                iced_next::padding_of(&card),
+                iced_next::stroke_width_of(&card),
+            ) else {
+                panic!("{preset} states no card padding or no card stroke width");
+            };
             let mut ui = interface(&state);
             let frame = probe_bounds(&mut ui, probes::DISPLAY_SPACING_BOX);
             let label = match texts(&mut ui)
@@ -30908,8 +30950,8 @@ mod tests {
                 None => panic!("{preset}: the Right-aligned box has no label"),
             };
             for (side, inset, want) in [
-                ("left", label.x - frame.x, pad.left),
-                ("top", label.y - frame.y, pad.top),
+                ("left", label.x - frame.x, left + line),
+                ("top", label.y - frame.y, top + line),
             ] {
                 assert!(
                     (inset - want).abs() < 0.01,
@@ -40283,11 +40325,15 @@ mod tests {
     /// `each` over every bundled preset the Theme row installs, the 0.8.0
     /// model's, in both modes, installed in a state as the Theme row
     /// installs it ([`State::install_in_mode`]): the state, its combination
-    /// (`<preset>/<mode>`) and the page widgets' infos its pages build.
+    /// (`<preset>/<mode>`) and the page widgets' infos its pages build. The
+    /// state starts on a fake read of the desktop ([`os_read_with`]) with the
+    /// default accessibility preferences as the OS's, so the context every
+    /// preset is resolved in is the same on every host.
     fn over_bundled_infos(mut each: impl FnMut(&State, &str, &[String])) {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
-            ..State::default()
+            os_accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..started_with_os("over_bundled_infos", || os_read_with(|_| {}))
         };
         for preset in Preset::ALL {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
@@ -46274,7 +46320,7 @@ thing(0);
     /// `none` takes the palette off again, the preset's own window
     /// background back.
     #[test]
-    fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String> {
+    fn a_palette_recolours_the_iced_theme_and_locks_its_mode() -> Result<(), String> {
         let mut state = next_state()?;
         let installed = |state: &State| -> Result<Color, String> {
             native_theme_iced::next::to_theme(&state.next_resolved)
@@ -46361,24 +46407,6 @@ thing(0);
         assert!(!held.by_palette);
         assert!(high_contrast_text(&state).ends_with(&held.sentence()));
         Ok(())
-    }
-
-    /// Where the 0.8.0 model cannot read the desktop, the showcase starts on
-    /// the platform's preset in both models and says why, as where the
-    /// 0.7.2 read fails.
-    #[test]
-    fn a_failed_08_desktop_read_starts_on_the_platform_preset() {
-        let state = State::starting_with(failing_next_read);
-        let key = platform_fallback_preset();
-        assert_eq!(state.current_choice, ThemeChoice::Preset(key.to_owned()));
-        assert!(
-            state
-                .error_message
-                .as_deref()
-                .is_some_and(|e| e.ends_with(&format!("Using {key} fallback."))),
-            "{:?}",
-            state.error_message
-        );
     }
 
     /// The support helpers of the 0.8.0 model read the installed 0.8.0
