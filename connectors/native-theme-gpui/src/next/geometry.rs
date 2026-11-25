@@ -149,6 +149,18 @@ pub fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::ghost_button_rest(r)
 }
 
+/// [`ghost_button_rest`] for a flat `Button` that keeps the padding the
+/// toolkit gives it, a 0.8.0 builder with no 0.7.2 one: where a rule states
+/// `button.body(HOVER; variant=Flat).stroke.color`, a transparent fill and a
+/// transparent border of that hovered stroke's width, and no padding side;
+/// nothing where none does. For a Button the theme states no padding of,
+/// which [`button`] does not refine (a small Button, a button an input group
+/// sizes): upstream's own padding stays (spec §10, rule 0), and the border
+/// lies around it.
+pub fn ghost_button_rest_own_padding(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::ghost_button_rest_own_padding(r)
+}
+
 /// A flat `Button` that is on (`selected(true)`), a 0.8.0 builder with no
 /// 0.7.2 one, after its box: where a rule states the checked flat body's
 /// stroke, `button.body(CHECKED; variant=Flat).stroke`, a border of that
@@ -288,6 +300,41 @@ mod tests {
                     s.background.is_none()
                 )),
                 Ok((pen, w.flatten(), w.flatten(), true)),
+                "kde-breeze {:?}",
+                ctx.scheme
+            );
+        }
+    }
+
+    /// kde-breeze states the flat button's hovered outline: a flat Button
+    /// that keeps its own padding is refined at rest as one padded by
+    /// `button.body(NONE)` is, a transparent fill and a transparent border of
+    /// the hovered stroke's width, but with no padding side.
+    #[test]
+    fn a_flat_button_keeping_its_padding_takes_the_rest_edge_alone() {
+        use gpui::{AbsoluteLength, px};
+        use native_theme::next::ButtonQuery;
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+            let hovered = r.button.body(ButtonQuery::flat().state(WidgetState::HOVER));
+            let width = super::super::stroke_width_of(&hovered).filter(|w| *w > 0.0);
+            let padded = ghost_button_rest(&r);
+            assert!(
+                super::super::state_stroke_color_of(&hovered).is_some()
+                    && width.is_some()
+                    && padded.as_ref().is_ok_and(|s| s.padding.left.is_some()),
+                "kde-breeze {:?} states no flat hover outline or no push button padding, so \
+                 this proves nothing",
+                ctx.scheme
+            );
+            let Ok(mut expected) = padded else { return };
+            expected.padding = StyleRefinement::default().padding;
+            let own = ghost_button_rest_own_padding(&r);
+            assert_eq!(own.as_ref(), Ok(&expected), "kde-breeze {:?}", ctx.scheme);
+            let w = width.map(|w| AbsoluteLength::Pixels(px(w)));
+            assert_eq!(
+                own.map(|s| (s.border_widths.left, s.border_color, s.padding.left)),
+                Ok((w, Some(Hsla::transparent_black()), None)),
                 "kde-breeze {:?}",
                 ctx.scheme
             );
@@ -515,6 +562,10 @@ mod tests {
                 builders::title_bar_inactive(&r, &inactive)
             );
             assert_eq!(ghost_button_rest(&r), builders::ghost_button_rest(&r));
+            assert_eq!(
+                ghost_button_rest_own_padding(&r),
+                builders::ghost_button_rest_own_padding(&r)
+            );
             for disabled in [false, true] {
                 assert_eq!(input_fill(&r, disabled), builders::input_fill(&r, disabled));
                 assert_eq!(

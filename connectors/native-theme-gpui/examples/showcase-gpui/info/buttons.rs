@@ -424,12 +424,13 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorCla
 
 /// The outline of a Ghost Button built with
 /// `native_theme_gpui::next::variants::ghost_button` under `native` and
-/// refined by `next::geometry::ghost_button_rest`, as its colour and width:
+/// refined by `next::geometry::ghost_button_rest` (or, keeping its own
+/// padding, `ghost_button_rest_own_padding`), as its colour and width:
 /// `button.body(HOVER; variant=Flat).stroke.color` where a rule states it
 /// for the state, the variant's colour, at the refinement's width, the
 /// hovered flat body's stroke width; `None` where no rule states it, or the
 /// width is 0.
-fn ghost_outline(native: Option<&NextTheme>) -> Option<(Hsla, f32)> {
+pub(crate) fn ghost_outline(native: Option<&NextTheme>) -> Option<(Hsla, f32)> {
     let hovered = native?
         .button
         .body(ButtonQuery::flat().state(WidgetState::HOVER));

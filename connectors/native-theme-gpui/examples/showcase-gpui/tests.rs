@@ -41,22 +41,23 @@ use crate::{
     DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT,
     FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER,
     FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL,
-    INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
-    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_FOLDER_TAB_DISABLED,
-    LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS, LAYOUT_GROUP_BOX_NORMAL,
-    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID,
-    LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED, LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR,
-    LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
-    OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
-    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
-    PAGE_WIDTH_PX, POINTER_SHIELD, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG,
-    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
-    PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_PALETTE,
-    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
-    STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
-    TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_GROUP_COPY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_INFO,
+    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB,
+    LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
+    LAYOUT_FOLDER_TAB_DISABLED, LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS,
+    LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
+    LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
+    LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK,
+    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
+    OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
+    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, POINTER_SHIELD,
+    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT,
+    PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
+    PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_PALETTE, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE,
+    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
+    WINDOW_SIZE, WINDOW_TITLE,
 };
 use native_theme::icons::IconSetChoice;
 
@@ -3475,6 +3476,147 @@ fn the_page_tabs_menu_draws_the_flat_hover_outline(cx: &mut TestAppContext) {
         "the hovered page row's menu Button is edged in {hovered:?}, not \
          button.body(HOVER; variant=Flat).stroke.color {outline:?}"
     );
+}
+
+/// The colour and width, in scaled pixels, of each quad inside the box the
+/// element tagged `selector` lays out that is edged in a colour.
+fn edged_quads(cx: &mut VisualTestContext, selector: &'static str) -> Vec<(gpui::Hsla, f32)> {
+    let bounds = bounds_of(cx, selector);
+    cx.update(|window, _| {
+        let bounds = bounds.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                q.bounds.left() >= bounds.left()
+                    && q.bounds.top() >= bounds.top()
+                    && q.bounds.right() <= bounds.right()
+                    && q.bounds.bottom() <= bounds.bottom()
+                    && q.border_widths.top.0 > 0.
+                    && !q.border_color.is_transparent()
+            })
+            .map(|q| (q.border_color, q.bounds.size.width.0))
+            .collect()
+    })
+}
+
+/// A Copy box's selector, its [`edged_quads`] at rest, and the same under
+/// the pointer.
+type CopyBoxEdges = (&'static str, Vec<(gpui::Hsla, f32)>, Vec<(gpui::Hsla, f32)>);
+
+/// The two Copy boxes that are Buttons, with the Inputs page shown and the
+/// Inspector showing the input groups' info, which is no element of the
+/// list: the input group's Copy and the Inspector's.
+fn copy_box_edges(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [CopyBoxEdges; 2] {
+    let info = settle_on(cx, showcase, "inputs-input-groups");
+    assert!(
+        info.as_ref().is_some_and(|info| info.listed.is_none()),
+        "the Inspector shows no info, or one of an element of the list, whose Copy box is no \
+         Button: {info:?}"
+    );
+    let group = bounds_of(cx, INPUTS_GROUP_COPY).center();
+    hover(cx, group);
+    draw(cx);
+    let group_hovered = edged_quads(cx, INPUTS_GROUP_COPY);
+    let inspector_rest = edged_quads(cx, INSPECTOR_COPY);
+    let inspector = bounds_of(cx, INSPECTOR_COPY).center();
+    hover(cx, inspector);
+    draw(cx);
+    let inspector_hovered = edged_quads(cx, INSPECTOR_COPY);
+    let group_rest = edged_quads(cx, INPUTS_GROUP_COPY);
+    [
+        (INPUTS_GROUP_COPY, group_rest, group_hovered),
+        (INSPECTOR_COPY, inspector_rest, inspector_hovered),
+    ]
+}
+
+/// The input group's Copy and the Inspector's are the 0.8.0 flat button
+/// (`next::variants::ghost_button`, refined by
+/// `next::geometry::ghost_button_rest_own_padding`): under kde-breeze light,
+/// which states the flat button's hovered outline, each is edged in
+/// `button.body(HOVER; variant=Flat).stroke.color` under the pointer and in
+/// no colour at rest. Each keeps the padding the group or upstream gives it,
+/// which the theme states none for, the edge lying around it: with that
+/// outline patched to a width of 3 px, each hovered box is twice the
+/// widths' difference wider, where a padding less the width would keep its
+/// size (spec §10, rule 0).
+#[gpui::test]
+fn the_copy_boxes_draw_the_flat_hover_outline_around_their_own_padding(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, PartPatch, ResolvedTheme, Stroke, ThemePatch,
+        WidgetState,
+    };
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
+    const PATCHED_WIDTH: f32 = 3.0;
+    let flat_outline = |r: &ResolvedTheme| {
+        let hovered = r.button.body(ButtonQuery::flat().state(WidgetState::HOVER));
+        state_stroke_color_of(&hovered).zip(stroke_width_of(&hovered))
+    };
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Inputs);
+    let stated = next_theme(&mut cx, &showcase).and_then(|r| flat_outline(&r));
+    assert!(
+        stated.is_some_and(|(c, w)| !c.is_transparent() && w > 0.0 && w != PATCHED_WIDTH),
+        "kde-breeze light states no flat hover outline, or one {PATCHED_WIDTH} px wide, so this \
+         test proves nothing: {stated:?}"
+    );
+    let Some((outline, width)) = stated else {
+        return;
+    };
+    let stated_edges = copy_box_edges(&mut cx, &showcase);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Inputs, |r| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Flat)
+                    .states(WidgetState::HOVER)
+                    .body(
+                        PartPatch::new()
+                            .stroke(Stroke::uniform(PATCHED_WIDTH, r.colors.window.foreground?)),
+                    ),
+            ),
+        )
+    });
+    let patched = r.as_ref().and_then(flat_outline);
+    assert!(
+        patched.is_some_and(|(c, w)| c != outline && w == PATCHED_WIDTH),
+        "the patch does not state a flat hover outline {PATCHED_WIDTH} px wide in another colour: \
+         {patched:?}"
+    );
+    let Some((patched_outline, _)) = patched else {
+        return;
+    };
+    let patched_edges = copy_box_edges(&mut cx, &showcase);
+    let scale = cx.update(|window, _| window.scale_factor());
+    let edge = |edges: &[(gpui::Hsla, f32)], colour| {
+        edges.iter().find(|(c, _)| *c == colour).map(|(_, w)| *w)
+    };
+    for ((name, rest, hovered), (_, patched_rest, patched_hovered)) in
+        stated_edges.iter().zip(&patched_edges)
+    {
+        assert!(
+            rest.is_empty() && patched_rest.is_empty(),
+            "{name}: the Copy box at rest is edged in {rest:?}, patched in {patched_rest:?}"
+        );
+        let widths = edge(hovered, outline).zip(edge(patched_hovered, patched_outline));
+        assert!(
+            widths.is_some(),
+            "{name}: the hovered Copy box is edged in {hovered:?}, not \
+             button.body(HOVER; variant=Flat).stroke.color {outline:?}, and patched in \
+             {patched_hovered:?}, not {patched_outline:?}"
+        );
+        let Some((box_width, patched_width)) = widths else {
+            return;
+        };
+        let grown = patched_width - box_width;
+        let expected = 2.0 * (PATCHED_WIDTH - width) * scale;
+        assert!(
+            (grown - expected).abs() < 0.01,
+            "{name}: with the outline {width} px wide the hovered Copy box is {box_width} wide, \
+             {PATCHED_WIDTH} px wide {patched_width}: it grew by {grown}, not {expected}, so its \
+             padding is not its own"
+        );
+    }
 }
 
 /// The page row's menu icon, the chosen set's ChevronDown, is

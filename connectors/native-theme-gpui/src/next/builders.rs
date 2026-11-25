@@ -892,6 +892,21 @@ pub(crate) fn ghost_hover_border(r: &ResolvedTheme) -> Mapped<Option<Hsla>> {
 /// padding, which [`button`] gives the Button, less that width
 /// ([`geometry::toolbar_button_rest_from`]); nothing where it states none.
 pub(crate) fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    ghost_rest_within(r, padding_of(&r.button.body(WidgetState::NONE)))
+}
+
+/// [`super::geometry::ghost_button_rest_own_padding`]: where
+/// [`ghost_hover_border`] states the outline, a transparent fill and a
+/// transparent border of the hovered flat body's stroke width, and no
+/// padding side, so the Button's own stands; nothing where it states none.
+pub(crate) fn ghost_button_rest_own_padding(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    ghost_rest_within(r, [None; 4])
+}
+
+/// The rest of [`ghost_button_rest`] and [`ghost_button_rest_own_padding`],
+/// the padding sides `padding` less the hovered flat body's stroke width
+/// ([`geometry::toolbar_button_rest_from`]).
+fn ghost_rest_within(r: &ResolvedTheme, padding: [Option<f32>; 4]) -> Mapped<StyleRefinement> {
     if ghost_hover_border(r)?.is_none() {
         return Ok(StyleRefinement::default());
     }
@@ -899,7 +914,7 @@ pub(crate) fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     Ok(geometry::toolbar_button_rest_from(
         true,
         stroke_width(&hovered, "button.body(HOVER; variant=Flat).stroke.width")?,
-        padding_of(&r.button.body(WidgetState::NONE)),
+        padding,
     ))
 }
 

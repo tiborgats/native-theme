@@ -167,7 +167,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "not drawn: the showcase builds the Copy box as the 0.7.2 ghost, variants::ghost_button, which has no outline colour of its own and no width to draw one at, so it is edged in none under the pointer or pressed (inspector.rs; native-theme-gpui/variants.rs, ghost_button)",
+        "not drawn: a listed element's Copy box is the panel's own box, not a Button, which takes the hovered and pressed fill and text colours but lays out no border, so it is edged in none under the pointer or pressed (inspector.rs, listed_info)",
     ),
     (
         "chrome.info.copy",

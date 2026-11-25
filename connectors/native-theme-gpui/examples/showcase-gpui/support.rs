@@ -352,7 +352,10 @@ pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedThe
 /// `variants::ghost_button`, the variant that builder starts from, with no
 /// state of the theme's over it. With it, what it is built from, which the
 /// tool button's info claims its colours by and which says the home lacked
-/// (`info::buttons::ToolVariant`).
+/// (`info::buttons::ToolVariant`). The fallback is not the flat button's
+/// 0.8.0 look ([`ghost_variant`]): it runs only where the toolbar's own homes
+/// cannot be drawn, and reports that, and the flat button's outline would
+/// draw another element's homes on a tool button.
 pub(crate) fn toolbar_variant(cx: &App) -> (ButtonCustomVariant, ToolVariant) {
     match next_resolved(cx).map(|r| native_theme_gpui::next::variants::toolbar_button(r, cx)) {
         Some(Ok(variant)) => (variant, ToolVariant::Toolbar),

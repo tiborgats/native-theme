@@ -106,7 +106,7 @@ use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, variants};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _};
 
 use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
@@ -121,11 +121,12 @@ use crate::support::{
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
-    CHROME_SPLITTER_LINE, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
-    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
-    PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
+    CHROME_SPLITTER_LINE, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, INPUTS_GROUP_COPY,
+    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE,
+    OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE,
+    OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY,
+    PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
+    STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
@@ -5003,7 +5004,7 @@ pub(crate) fn input_groups(
 ) -> Stateful<Div> {
     // `Button::icon` takes an `Icon` (`ButtonIcon`) alone (button/button.rs).
     let copy_icon = states.copy_icon.svg_only();
-    let mut groups_info = info::inputs::input_groups(cx.theme())
+    let mut groups_info = info::inputs::input_groups(cx.theme(), next_resolved(cx))
         .instance(
             "search icon",
             states.search_icon.note("the first field's addon is empty"),
@@ -5029,15 +5030,24 @@ pub(crate) fn input_groups(
     // inside a group, with a hover of `theme.muted` (`input/group.rs:556-595`):
     // a grey that under Breeze is barely distinguishable from the field,
     // while every button around it hovers blue. A custom variant makes
-    // upstream skip that repaint.
+    // upstream skip that repaint: the 0.8.0 flat button's, edged in its
+    // hovered outline where the theme states one, around the padding the
+    // group gives the button, since the theme states none for it.
     let copy = next_native_info(
         InputGroupButton::new("input-group-copy"),
         cx,
         next::geometry::input_group_button,
         "input_group_button",
         &mut groups_info,
+    );
+    let copy = next_native_info(
+        copy,
+        cx,
+        next::geometry::ghost_button_rest_own_padding,
+        "ghost_button_rest_own_padding",
+        &mut groups_info,
     )
-    .custom(variants::ghost_button(cx))
+    .custom(ghost_variant(cx))
     .when_some(copy_icon.icon(), |button, icon| button.icon(icon))
     .label("Copy")
     .tooltip("Copy the field to the clipboard")
@@ -5069,7 +5079,7 @@ pub(crate) fn input_groups(
                 .addon(
                     InputGroupAddon::new("input-group-trailing-addon")
                         .align(InputGroupAddonAlignment::InlineEnd)
-                        .child(copy),
+                        .child(probe(INPUTS_GROUP_COPY, copy)),
                 )
                 .refine_style(&frame),
         )

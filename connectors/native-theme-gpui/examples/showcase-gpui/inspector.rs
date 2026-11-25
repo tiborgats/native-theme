@@ -16,7 +16,7 @@ use gpui_component::{
     label::Label,
     v_flex, window_paddings,
 };
-use native_theme_gpui::{ActiveNativeTheme as _, next, variants};
+use native_theme_gpui::{ActiveNativeTheme as _, next};
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::next::status::defined_size;
 use native_theme_showcase_support::next::{info as next_info, values as next_values};
@@ -29,7 +29,8 @@ use crate::demo::TabBarKind;
 use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, next_stated};
 use crate::support::{
-    NativeStyled, drawn_state_fill, frame_drawer, next_metric, with_gap, with_padding,
+    NativeStyled, drawn_state_fill, frame_drawer, ghost_variant, next_geometry, next_metric,
+    refined, with_gap, with_padding,
 };
 use crate::{
     INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
@@ -159,18 +160,26 @@ impl Inspector {
                             .debug_selector(|| INSPECTOR_TITLE.into())
                             .child(Label::new(title).text_sm().font_semibold()),
                     )
-                    // The Buttons page's Ghost, as the toolbar's buttons are.
+                    // The 0.8.0 flat button, edged in its hovered outline
+                    // where the theme states one. The theme states no
+                    // padding for this small box, so upstream's stays and
+                    // the edge lies around it.
                     .child(probe(
                         INSPECTOR_COPY,
-                        demo::labelled(
-                            &self.ui,
-                            cx,
-                            Button::new("inspector-copy"),
-                            "inspector-copy",
-                            "Copy",
+                        refined(
+                            demo::labelled(
+                                &self.ui,
+                                cx,
+                                Button::new("inspector-copy"),
+                                "inspector-copy",
+                                "Copy",
+                            )
+                            .small(),
+                            next_geometry(cx, next::geometry::ghost_button_rest_own_padding)
+                                .and_then(Result::ok)
+                                .as_ref(),
                         )
-                        .small()
-                        .custom(variants::ghost_button(cx))
+                        .custom(ghost_variant(cx))
                         .on_click(move |_, _, cx| {
                             cx.write_to_clipboard(ClipboardItem::new_string(copied.clone()))
                         }),

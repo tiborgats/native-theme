@@ -752,7 +752,9 @@ const DIFFERENCES: &[Difference] = &[
                  crate::next's edges it with the flat button's hovered stroke, \
                  button.body(HOVER; variant=Flat).stroke.color, where a rule states it for the \
                  state, and lays it out by next::geometry::ghost_button_rest, at that stroke's \
-                 width inside the push button's padding; these presets state it: kde-breeze \
+                 width inside the push button's padding, or by \
+                 next::geometry::ghost_button_rest_own_padding around the padding a Button the \
+                 theme states none for keeps; these presets state it: kde-breeze \
                  Breeze's flat button's hovered Highlight pen (breezehelper.cpp:688-691, \
                  :710-712 at breeze 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at \
                  78ee0efd, row K1.24); adwaita no flat outline of its own, so the push \
@@ -3932,6 +3934,13 @@ fn every_next_function_succeeds_on_every_covered_preset(cx: &mut gpui::TestAppCo
                 l,
                 "geometry::ghost_button_rest",
                 super::geometry::ghost_button_rest(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "geometry::ghost_button_rest_own_padding",
+                super::geometry::ghost_button_rest_own_padding(&r)
             );
             for disabled in [false, true] {
                 succeeds!(

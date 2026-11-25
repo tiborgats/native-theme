@@ -484,6 +484,10 @@ pub(crate) const INPUTS_FIELD_HEIGHT_ONLY: &str = "inputs-field-height-only";
 /// The id and debug selector of the Inputs page's Textarea, whose own
 /// height `the_textarea_keeps_its_own_height` measures.
 pub(crate) const INPUTS_TEXTAREA: &str = "inputs-textarea";
+/// The debug selector of the Inputs page's input group Copy button, which
+/// `the_copy_boxes_draw_the_flat_hover_outline_around_their_own_padding`
+/// hovers and measures.
+pub(crate) const INPUTS_GROUP_COPY: &str = "inputs-group-copy";
 
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside

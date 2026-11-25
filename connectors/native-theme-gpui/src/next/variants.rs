@@ -93,7 +93,10 @@ pub fn default_button(r: &ResolvedTheme, cx: &App) -> Mapped<Option<ButtonCustom
 /// outlined variant goes with its companion
 /// [`geometry::ghost_button_rest`](super::geometry::ghost_button_rest),
 /// refined after [`geometry::button`](super::geometry::button): it hides both
-/// at rest and lays the border out inside the button's padding. Until a
+/// at rest and lays the border out inside the button's padding. A Button
+/// that keeps the toolkit's own padding takes
+/// [`geometry::ghost_button_rest_own_padding`](super::geometry::ghost_button_rest_own_padding)
+/// instead, which lays the border out around that padding. Until a
 /// preset states a flat rule, a flat query returns the push button's rule
 /// (spec §1, "Axis values without data"), so the outline is the push
 /// button's hovered stroke.
