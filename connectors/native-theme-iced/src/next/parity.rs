@@ -628,6 +628,13 @@ const SIDEBAR_HOVER: &str = "the theme states no fill for the hovered sidebar it
      sidebar item's fill); no rule for HOVER states sidebar.item's fill, and the fill is \
      iced_aw's own for the status";
 
+/// The reason of a hovered sidebar item lettered in its own label.
+const SIDEBAR_HOVER_LABEL: &str = "0.7.2 has no label for a hovered sidebar item, and its \
+     connector lettered it in sidebar.font.color; the 0.8.0 preset states \
+     sidebar.item_label(HOVER).color by a rule for HOVER, from the source its comment there \
+     cites, and the hovered item and its icon are lettered in it (docs/v0.8.0-spec.md §2, \
+     from_state; §10, rule 0)";
+
 /// The reason of a hovered list row 0.7.2's resolver fills in.
 const LIST_HOVER: &str = "the theme states no fill and no label for the hovered row: 0.7.2's \
      preset leaves list.hover_background and list.hover_text_color unset and its resolver \
@@ -886,15 +893,24 @@ const TOOLBAR_LABELS: &str = "0.7.2's connector lettered the toolbar button in t
      one), never the push button's labels (docs/v0.8.0-spec.md §2, from_state; §10, rules 0 \
      and 0a)";
 
-/// A toolbar button lettered in the toolbar's own labels on `presets`
-/// ([`TOOLBAR_LABELS`]).
+/// The reason of a toolbar button outlined as the toolbar's own button.
+const TOOLBAR_OUTLINE: &str = "0.7.2's connector outlined the toolbar button at the push \
+     button's border width and corner radius (button.border), 0.7.2 having no toolbar button \
+     border; the 0.8.0 theme's toolbar button is a part of its own, toolbar.button \
+     (docs/v0.8.0-spec.md §5, the 27-widget contract table), so the button is outlined by \
+     toolbar.button(NONE)'s stroke and corners, each iced's own secondary button's where \
+     unstated, and a state's stroke a rule states for the state at that stroke's own width, \
+     never the push button's (docs/v0.8.0-spec.md §10, rule 0)";
+
+/// A toolbar button lettered in the toolbar's own labels and outlined as
+/// its own button on `presets` ([`TOOLBAR_LABELS`], [`TOOLBAR_OUTLINE`]).
 const fn toolbar_labels(presets: &'static [&'static str]) -> Difference {
     Difference {
         leaf: "toolbar_button",
         presets,
         listed: Listed::aligned(LineAlign::Outside),
         stated: &[],
-        reason: &[TOOLBAR_LABELS],
+        reason: &[TOOLBAR_LABELS, TOOLBAR_OUTLINE],
     }
 }
 
@@ -1126,61 +1142,6 @@ macro_rules! button_stroke {
         )
     };
 }
-
-/// A toolbar button's outline width, the button's at rest
-/// (`button.body(NONE)`), in every status, checked or not.
-macro_rules! toolbar_widths {
-    () => {
-        [
-            set(
-                at!(NONE),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(DISABLED),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(HOVER),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(PRESSED),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(CHECKED),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(DISABLED | CHECKED),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(HOVER | CHECKED),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-            set(
-                at!(PRESSED | CHECKED),
-                Field::BorderWidth,
-                home!(width, button.body(NONE)),
-            ),
-        ]
-    };
-}
-
-/// A toolbar button's outline width ([`toolbar_widths`]).
-const TOOLBAR_WIDTHS: [Stated; 8] = toolbar_widths!();
-
-/// macos-tahoe's toolbar button: [`TOOLBAR_WIDTHS`].
-const TAHOE_TOOLBAR: &[&[Stated]] = &[&TOOLBAR_WIDTHS];
 
 /// A button's hovered and pressed stroke colour.
 const STATE_STROKES: &[&[Stated]] = &[&[button_stroke!(HOVER;), button_stroke!(PRESSED;)]];
@@ -1659,13 +1620,24 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         TOGGLE_PRESSED_STROKE,
     ),
-    unfilled_toolbar(&["macos-tahoe", "ios-13"]).stating(
-        TAHOE_TOOLBAR,
-        &[TOOLBAR_STATE_FILLS, CHECKED, STATED, TOOLBAR_LABELS],
+    unfilled_toolbar(&["macos-tahoe", "ios-13", "macos-monterey"]).stating(
+        &[],
+        &[
+            TOOLBAR_STATE_FILLS,
+            CHECKED,
+            TOOLBAR_LABELS,
+            TOOLBAR_OUTLINE,
+        ],
     ),
-    unfilled_toolbar(&["macos-monterey"])
-        .stating(&[], &[TOOLBAR_STATE_FILLS, CHECKED, TOOLBAR_LABELS]),
-    unfilled_toolbar(&["material-3"]).stating(&[], &[TOOLBAR_STATE_FILLS, CHECKED, TOOLBAR_LABELS]),
+    unfilled_toolbar(&["material-3"]).stating(
+        &[],
+        &[
+            TOOLBAR_STATE_FILLS,
+            CHECKED,
+            TOOLBAR_LABELS,
+            TOOLBAR_OUTLINE,
+        ],
+    ),
     toolbar_labels(&["kde-breeze", "adwaita", "windows-11"]),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
@@ -2188,6 +2160,14 @@ const DIFFERENCES: &[Difference] = &[
         (false, false),
         &[INSIDE, SIDEBAR_HOVER],
     ),
+    // iced_aw: sidebar.item_label(HOVER), which material-3 states.
+    Difference {
+        leaf: "aw::sidebar",
+        presets: &["material-3"],
+        listed: Listed::aligned(LineAlign::Outside),
+        stated: &[],
+        reason: &[SIDEBAR_HOVER_LABEL],
+    },
     // iced_aw: list.container(NONE)'s stroke, list.highlight(HOVER) and
     // list.item_label(HOVER).
     inside("aw::selection_list", &["windows-11"]),
@@ -2999,6 +2979,7 @@ fn compare_styles(
         checked: super::state_text_color_of(&label(WidgetState::CHECKED)),
         disabled: super::state_text_color_of(&label(WidgetState::DISABLED)),
     };
+    let toolbar_outline = super::styles::toolbar_outline(new).ok();
     stated_style!(
         report,
         themes,
@@ -3038,6 +3019,7 @@ fn compare_styles(
                 };
                 let t = ToolbarButtonSource {
                     labels: Some(toolbar_labels),
+                    outline: toolbar_outline,
                     ..t.listed(l)
                 };
                 o::toolbar_button_from(&b, &t, checked)
@@ -3754,7 +3736,15 @@ fn compare_aw(
         "aw::sidebar",
         leaves(o::sidebar(old), aw_leaves::sidebar),
         n::sidebar(new).map(|f| leaves(f, aw_leaves::sidebar)),
-        |l: Listed| leaves(o::sidebar_from(&sidebar.listed(l)), aw_leaves::sidebar),
+        |l: Listed| leaves(
+            o::sidebar_from(&ListSource {
+                hover_label: super::state_text_color_of(
+                    &new.sidebar.item_label(WidgetState::HOVER)
+                ),
+                ..sidebar.listed(l)
+            }),
+            aw_leaves::sidebar
+        ),
         statuses
     );
     let list = ListSource::of_list(old);
