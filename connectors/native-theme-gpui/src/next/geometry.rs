@@ -20,10 +20,10 @@
 //! the connector's parity test lists the difference with its reason. A
 //! stroke is drawn as the crate's README says under *Limits*.
 
-use gpui::{Pixels, StyleRefinement};
+use gpui::{Hsla, Pixels, StyleRefinement};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
-use native_theme::next::ResolvedTheme;
+use native_theme::next::{ResolvedTheme, WidgetState};
 
 use super::{Mapped, builders};
 
@@ -103,8 +103,6 @@ builders! {
     dialog_max_width -> Option<Pixels>;
     input_height -> StyleRefinement;
     button_disabled -> StyleRefinement;
-    button_checked -> StyleRefinement;
-    toolbar_button_rest -> StyleRefinement;
     toolbar_button_checked -> StyleRefinement;
     default_button_rest -> Option<StyleRefinement>;
     list_item_selected -> StyleRefinement;
@@ -121,6 +119,35 @@ builders! {
 /// window's fill of `r`.
 pub fn title_bar_inactive(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::title_bar_inactive(r, inactive)
+}
+
+/// [`crate::geometry::button_checked`], from the 0.8.0 model: a Button that
+/// is on (`selected(true)`) filled with `button.body(CHECKED).fill` and
+/// lettered in `button.label(CHECKED).color`, each where a rule states it
+/// for `CHECKED`, else unset, so gpui-component's own selected fill and
+/// label stand (gpui-component 0.10.0 `button/button.rs`,
+/// `ButtonVariant::selected`). Where 0.7.2's builder stands in for an
+/// unstated checked pair with the pressed one, this takes no other state's
+/// value: which state looks like which is the theme's to state (spec §10,
+/// rule 0a). Upstream replays the refinement over its selected style.
+pub fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::button_checked(r)
+}
+
+/// [`crate::geometry::toolbar_button_rest`], from the 0.8.0 model: where a
+/// rule states the toolbar's hovered outline,
+/// `toolbar.button(HOVER).stroke.color`, a transparent fill and a
+/// transparent border of `button.body(NONE).stroke.width`, each stated side
+/// of `button.body(NONE)`'s padding less that width, floored at 0; then the
+/// toolbar button's capsule at rest, `toolbar.button(NONE)`'s fill and
+/// corners, each where stated (spec §10, rule 0), the fill over the
+/// outline's transparent one. Upstream replays the refinement over the
+/// selected and disabled styles, and its hover and press styles lie over it
+/// (gpui-component 0.10.0 `button/button.rs`, `RenderOnce for Button`).
+/// Apply it after the tool box, before [`toolbar_button_checked`] and
+/// [`toolbar_button_disabled`].
+pub fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::toolbar_button_rest(r)
 }
 
 /// [`crate::geometry::input_fill`], from the 0.8.0 model.
@@ -147,6 +174,54 @@ pub fn combo_box_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefineme
 /// Button keeping the size [`button`], which it is refined after, gives it.
 pub fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::ghost_button_rest(r)
+}
+
+/// [`ghost_button_rest`] for a flat `Button` that keeps the padding the
+/// toolkit gives it, a 0.8.0 builder with no 0.7.2 one: where a rule states
+/// `button.body(HOVER; variant=Flat).stroke.color`, a transparent fill and a
+/// transparent border of that hovered stroke's width, and no padding side;
+/// nothing where none does. For a Button the theme states no padding of,
+/// which [`button`] does not refine (a small Button, a button an input group
+/// sizes): upstream's own padding stays (spec §10, rule 0), and the border
+/// lies around it.
+pub fn ghost_button_rest_own_padding(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::ghost_button_rest_own_padding(r)
+}
+
+/// A flat `Button` that is on (`selected(true)`), a 0.8.0 builder with no
+/// 0.7.2 one, after its box: where a rule states the checked flat body's
+/// stroke, `button.body(CHECKED; variant=Flat).stroke`, a border of that
+/// width in that colour, each stated side of `button.body(NONE)`'s padding
+/// less the width, floored at 0, and no fill; nothing where none does.
+/// Upstream lays out a border width only for the Default and outline
+/// variants and replays the refinement over its selected style
+/// (gpui-component 0.10.0 `button/button.rs:727-732`, `:836-842`), so this
+/// gives the selected ghost its edge and keeps its size. A selected Button
+/// takes no hover or press style, so the edge stays under the pointer and
+/// pressed (the crate's README, *Limits*).
+pub fn ghost_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::ghost_button_checked(r)
+}
+
+/// The disabled state of a toolbar `Button` built on
+/// [`next::variants::toolbar_button`](super::variants::toolbar_button), a
+/// 0.8.0 builder with no 0.7.2 one, applied after [`toolbar_button_rest`]:
+/// `toolbar.button(DISABLED)`'s fill and corners, each where a rule states
+/// it for the state; nothing where none does, and the rest refinement, which
+/// upstream replays over the disabled style, stands. A disabled Button only.
+pub fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::toolbar_button_disabled(r)
+}
+
+/// The colour of a toolbar Button's icon in `state`, a 0.8.0 builder with no
+/// 0.7.2 one: `toolbar.button_icon(NONE).color` at rest where stated,
+/// `toolbar.button_icon(state).color` in another state where a rule states
+/// it for the state; `None` where neither, and the icon keeps the Button's
+/// text colour. Give it to the `Icon` (`Styled::text_color`) of a Button
+/// built in `state`: an `Icon` takes one colour, so it stays under the
+/// pointer and pressed (the crate's README, *Limits*).
+pub fn toolbar_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
+    builders::toolbar_button_icon_color(r, state)
 }
 
 #[cfg(test)]
@@ -217,6 +292,219 @@ mod tests {
                     ctx.scheme
                 );
             }
+        }
+    }
+
+    /// kde-breeze's checked flat button is edged in the pen its preset states
+    /// for it, `button.body(CHECKED; variant=Flat).stroke` (Breeze's plain
+    /// button pen, not the hovered Highlight one), at that stroke's width,
+    /// with no fill over the selected style's.
+    #[test]
+    fn a_checked_flat_button_takes_the_stated_checked_outline() {
+        use gpui::{AbsoluteLength, px};
+        use native_theme::next::ButtonQuery;
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+            let flat = |state| r.button.body(ButtonQuery::flat().state(state));
+            let checked = flat(WidgetState::CHECKED);
+            let pen = super::super::state_stroke_color_of(&checked);
+            let width = super::super::stroke_width_of(&checked);
+            assert!(
+                pen.is_some()
+                    && width.is_some_and(|w| w > 0.0)
+                    && pen != super::super::state_stroke_color_of(&flat(WidgetState::HOVER)),
+                "kde-breeze {:?} states no checked flat outline apart from the hovered one, \
+                 so this proves nothing",
+                ctx.scheme
+            );
+            let style = ghost_button_checked(&r);
+            let w = width.map(|w| Some(AbsoluteLength::Pixels(px(w))));
+            assert_eq!(
+                style.as_ref().map(|s| (
+                    s.border_color,
+                    s.border_widths.top,
+                    s.border_widths.left,
+                    s.background.is_none()
+                )),
+                Ok((pen, w.flatten(), w.flatten(), true)),
+                "kde-breeze {:?}",
+                ctx.scheme
+            );
+        }
+    }
+
+    /// kde-breeze states the flat button's hovered outline: a flat Button
+    /// that keeps its own padding is refined at rest as one padded by
+    /// `button.body(NONE)` is, a transparent fill and a transparent border of
+    /// the hovered stroke's width, but with no padding side.
+    #[test]
+    fn a_flat_button_keeping_its_padding_takes_the_rest_edge_alone() {
+        use gpui::{AbsoluteLength, px};
+        use native_theme::next::ButtonQuery;
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+            let hovered = r.button.body(ButtonQuery::flat().state(WidgetState::HOVER));
+            let width = super::super::stroke_width_of(&hovered).filter(|w| *w > 0.0);
+            let padded = ghost_button_rest(&r);
+            assert!(
+                super::super::state_stroke_color_of(&hovered).is_some()
+                    && width.is_some()
+                    && padded.as_ref().is_ok_and(|s| s.padding.left.is_some()),
+                "kde-breeze {:?} states no flat hover outline or no push button padding, so \
+                 this proves nothing",
+                ctx.scheme
+            );
+            let Ok(mut expected) = padded else { return };
+            expected.padding = StyleRefinement::default().padding;
+            let own = ghost_button_rest_own_padding(&r);
+            assert_eq!(own.as_ref(), Ok(&expected), "kde-breeze {:?}", ctx.scheme);
+            let w = width.map(|w| AbsoluteLength::Pixels(px(w)));
+            assert_eq!(
+                own.map(|s| (s.border_widths.left, s.border_color, s.padding.left)),
+                Ok((w, Some(Hsla::transparent_black()), None)),
+                "kde-breeze {:?}",
+                ctx.scheme
+            );
+        }
+    }
+
+    /// The macOS toolbar button's capsule at rest and disabled:
+    /// macos-tahoe's rest fill #ffffff / #252525 and pill corners, its
+    /// disabled fill the same capsule; macos-monterey no rest fill, 5 px
+    /// corners, and no fill disabled (os-probe run 45634379188, toolbar
+    /// states sheet, as the presets state them).
+    #[test]
+    fn a_macos_toolbar_button_takes_its_rest_and_disabled_capsule() {
+        use gpui::{Styled as _, px};
+        use native_theme::next::Color;
+        let rgb = |rgb: u32| {
+            let [_, red, green, blue] = rgb.to_be_bytes();
+            super::super::hsla(Color::from_srgb8(red, green, blue, u8::MAX))
+        };
+        let tahoe_radius = StyleRefinement::default()
+            .rounded(px(super::super::PILL_RADIUS))
+            .corner_radii;
+        let monterey_radius = StyleRefinement::default().rounded(px(5.0)).corner_radii;
+        for (ctx, capsule) in [
+            (ThemeContext::light(), 0xffffff_u32),
+            (ThemeContext::dark(), 0x252525),
+        ] {
+            let tahoe = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+            let rest = toolbar_button_rest(&tahoe);
+            let want = StyleRefinement::default().bg(rgb(capsule)).background;
+            assert_eq!(
+                rest.as_ref().map(|s| (&s.background, &s.corner_radii)),
+                Ok((&want, &tahoe_radius)),
+                "macos-tahoe {:?}",
+                ctx.scheme
+            );
+            assert_eq!(
+                toolbar_button_disabled(&tahoe).map(|s| s.background),
+                Ok(want),
+                "macos-tahoe {:?}",
+                ctx.scheme
+            );
+            let monterey = Theme::preset(Preset::MacosMonterey).resolve(&ctx);
+            let rest = toolbar_button_rest(&monterey);
+            assert_eq!(
+                rest.as_ref().map(|s| (&s.background, &s.corner_radii)),
+                Ok((&None, &monterey_radius)),
+                "macos-monterey {:?}",
+                ctx.scheme
+            );
+            assert_eq!(
+                toolbar_button_disabled(&monterey).map(|s| s.background),
+                Ok(StyleRefinement::default()
+                    .bg(super::super::hsla(Color::TRANSPARENT))
+                    .background),
+                "macos-monterey {:?}",
+                ctx.scheme
+            );
+        }
+    }
+
+    /// A toolbar button's icon is tinted in the colour the macOS presets
+    /// state at rest, the image-only button's glyph (os-probe run
+    /// 45634379188, `controls-toolbar_states_sheet.toml`,
+    /// `aqua.normal.toolbar_image` `ink`): macos-monterey #676767 / #aeaeae,
+    /// macos-tahoe #4d4d4d / #e9e9e9; checked and disabled, which no rule
+    /// states, it is not tinted, and keeps the Button's text colour; nor on
+    /// kde-breeze, which states no icon colour.
+    #[test]
+    fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() {
+        use native_theme::next::Color;
+        let rgb = |rgb: u32| {
+            let [_, red, green, blue] = rgb.to_be_bytes();
+            super::super::hsla(Color::from_srgb8(red, green, blue, u8::MAX))
+        };
+        for (preset, light, dark) in [
+            (Preset::MacosMonterey, 0x676767_u32, 0xaeaeae_u32),
+            (Preset::MacosTahoe, 0x4d4d4d, 0xe9e9e9),
+        ] {
+            for (ctx, want) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+                let r = Theme::preset(preset).resolve(&ctx);
+                assert_eq!(
+                    toolbar_button_icon_color(&r, WidgetState::NONE),
+                    Some(rgb(want)),
+                    "{preset:?} {:?}",
+                    ctx.scheme
+                );
+                for state in [WidgetState::CHECKED, WidgetState::DISABLED] {
+                    assert_eq!(
+                        toolbar_button_icon_color(&r, state),
+                        None,
+                        "{preset:?} {:?} {state:?}",
+                        ctx.scheme
+                    );
+                }
+            }
+        }
+        let kde = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        assert_eq!(toolbar_button_icon_color(&kde, WidgetState::NONE), None);
+    }
+
+    /// A checked button whose checked fill and label no rule states
+    /// (macos-monterey states neither, its checked toggle unmeasured) is
+    /// refined with neither, so gpui-component's own selected look stands,
+    /// not with the pressed pair the preset states (spec §10, rule 0a).
+    #[test]
+    fn an_unstated_checked_button_takes_no_pressed_pair() {
+        use native_theme::next::WidgetState;
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::MacosMonterey).resolve(&ctx);
+            let b = &r.button;
+            assert_eq!(
+                super::super::state_fill_of(
+                    &b.body(WidgetState::CHECKED),
+                    "button.body(CHECKED).fill"
+                ),
+                Ok(None),
+                "macos-monterey {:?} states a checked fill",
+                ctx.scheme
+            );
+            assert_eq!(
+                super::super::state_text_color_of(&b.label(WidgetState::CHECKED)),
+                None,
+                "macos-monterey {:?} states a checked label",
+                ctx.scheme
+            );
+            assert!(
+                matches!(
+                    super::super::state_fill_of(
+                        &b.body(WidgetState::PRESSED),
+                        "button.body(PRESSED).fill"
+                    ),
+                    Ok(Some(_))
+                ),
+                "macos-monterey {:?} states no pressed fill, so this proves nothing",
+                ctx.scheme
+            );
+            assert_eq!(
+                button_checked(&r),
+                Ok(StyleRefinement::default()),
+                "macos-monterey {:?}",
+                ctx.scheme
+            );
         }
     }
 
@@ -300,7 +588,13 @@ mod tests {
                 title_bar_inactive(&r, &inactive),
                 builders::title_bar_inactive(&r, &inactive)
             );
+            assert_eq!(button_checked(&r), builders::button_checked(&r));
+            assert_eq!(toolbar_button_rest(&r), builders::toolbar_button_rest(&r));
             assert_eq!(ghost_button_rest(&r), builders::ghost_button_rest(&r));
+            assert_eq!(
+                ghost_button_rest_own_padding(&r),
+                builders::ghost_button_rest_own_padding(&r)
+            );
             for disabled in [false, true] {
                 assert_eq!(input_fill(&r, disabled), builders::input_fill(&r, disabled));
                 assert_eq!(
@@ -310,7 +604,13 @@ mod tests {
             }
             names = compared;
         }
-        names.extend(["title_bar_inactive", "input_fill", "combo_box_fill"]);
+        names.extend([
+            "title_bar_inactive",
+            "input_fill",
+            "combo_box_fill",
+            "button_checked",
+            "toolbar_button_rest",
+        ]);
         let old: Vec<&str> = include_str!("../geometry.rs")
             .lines()
             .filter_map(|line| line.strip_prefix("pub fn "))

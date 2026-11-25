@@ -466,7 +466,7 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "button_checked",
-        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, the pressed pair (button.body(PRESSED).fill, button.label(PRESSED).color) where no rule states them for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where neither fill is stated the refinement sets none, and upstream's selected fill stands",
+        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, each where a rule states it for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where a rule states neither, the refinement sets none and upstream's selected fill or label stands: its fill ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, the toolkit's own selected fill themed, and its label button_foreground, not the pressed label (spec §10, rule 0a)",
     ),
     (
         "default_button_rest",
@@ -475,11 +475,19 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
     (
         "toolbar_button_rest",
-        "where a rule states toolbar.button(HOVER).stroke.color, a transparent fill and a transparent border button.body(NONE).stroke.width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline",
+        "where a rule states toolbar.button(HOVER).stroke.color, a transparent fill and a transparent border button.body(NONE).stroke.width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline. Then toolbar.button(NONE).fill as the fill and toolbar.button(NONE).corners as the radius, each where stated, which upstream replays over the selected and disabled styles and its hover and press styles lie over",
     ),
     (
         "ghost_button_rest",
         "where a rule states button.body(HOVER; variant=Flat).stroke.color, the colour next::variants::ghost_button gives its custom variant, a transparent fill and a transparent border that hovered flat body's stroke width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline",
+    ),
+    (
+        "ghost_button_rest_own_padding",
+        "where a rule states button.body(HOVER; variant=Flat).stroke.color, the colour next::variants::ghost_button gives its custom variant, a transparent fill and a transparent border that hovered flat body's stroke width wide, and no padding: a custom variant draws its colour as the border in every state and lays out no width of its own (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest; the theme states no padding for this Button, so the padding upstream gives it stays (spec §10, rule 0) and the border lies around it; nothing where no rule states the outline",
+    ),
+    (
+        "ghost_button_checked",
+        "where a rule states button.body(CHECKED; variant=Flat).stroke, a border of that width in that colour, and each padding side button.body(NONE) states less that width, on a selected flat Button: a custom variant lays out no border width and the Button replays the refinement over its selected style (button/button.rs, RenderOnce for Button), so this edges the selected ghost and keeps its size, and the edge stays under the pointer and pressed, where a selected Button takes no hover or press style; no fill, so the selected style's stands; nothing where no rule states the outline",
     ),
     (
         "toolbar_button_checked",

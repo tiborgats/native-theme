@@ -1626,17 +1626,25 @@ mod tests {
         Ok(())
     }
 
-    /// `button.checked_text_color` and `button.checked_background`: without
-    /// a rule for `CHECKED` the pressed pair stands in.
+    /// The 0.7.2 helper, `geometry::button_checked_from`, stands in for an
+    /// unset checked label or fill with the pressed one, and with neither
+    /// pair sets nothing; `state_text_color` gives a colour only where its
+    /// `from_state` bit says a rule for the state wrote it, not where the
+    /// colour is stated at rest alone.
     #[test]
-    fn a_checked_pair_without_a_state_rule_is_the_pressed_pair() -> Mapped<()> {
+    fn the_checked_helper_falls_back_on_the_pressed_pair_and_a_state_colour_needs_its_rule()
+    -> Mapped<()> {
+        assert_eq!(
+            crate::geometry::button_checked_from(None, None, None, None),
+            StyleRefinement::default()
+        );
         let mut label = TextStyle::default();
         label.color = RED;
         label.stated = TextStated::COLOR;
         assert_eq!(state_text_color(&label, "checked label")?, None);
         let checked = crate::geometry::button_checked_from(
             state_text_color(&label, "checked label")?,
-            hsla(GREEN),
+            Some(hsla(GREEN)),
             state_fill_of(&filled(RED, false), "checked body")?,
             state_fill_of(&filled(BLUE, true), "pressed body")?,
         );

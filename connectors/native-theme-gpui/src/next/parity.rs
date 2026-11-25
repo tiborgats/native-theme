@@ -752,7 +752,9 @@ const DIFFERENCES: &[Difference] = &[
                  crate::next's edges it with the flat button's hovered stroke, \
                  button.body(HOVER; variant=Flat).stroke.color, where a rule states it for the \
                  state, and lays it out by next::geometry::ghost_button_rest, at that stroke's \
-                 width inside the push button's padding; these presets state it: kde-breeze \
+                 width inside the push button's padding, or by \
+                 next::geometry::ghost_button_rest_own_padding around the padding a Button the \
+                 theme states none for keeps; these presets state it: kde-breeze \
                  Breeze's flat button's hovered Highlight pen (breezehelper.cpp:688-691, \
                  :710-712 at breeze 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at \
                  78ee0efd, row K1.24); adwaita no flat outline of its own, so the push \
@@ -771,16 +773,15 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["macos-monterey"],
         reason: "neither model states a checked toggle on macos-monterey (a checked toggle in \
                  a key window of macOS 12-15 draws a gradient, pending U141 in \
-                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd), so the refinement is \
-                 the pressed pair that stands in for it (crate::geometry::button_checked); the \
-                 0.8.0 preset states the measured pressed fill, #f0f0f0 / #ffffff5c, and the \
-                 light scheme's measured pressed label, #242424 (the same file, \
-                 `button.body.fill` and `button.label.text.fill` states [pressed]; os-probe run \
-                 41006842699, macOS 15; native-theme/tests/next_homes.toml, rows \
-                 button.active_background and button.active_text_color, listed differences), \
-                 where 0.7.2 gives its soft option #d6d6db / #4e4e50 and the rest label; so the \
-                 refinement's background and text colour are those of button.body(PRESSED) and \
-                 button.label(PRESSED)",
+                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd), so 0.7.2's \
+                 refinement is the pressed pair that stands in for it \
+                 (crate::geometry::button_checked), its soft option #d6d6db / #4e4e50 and the \
+                 rest label; 0.8.0's takes no other state's fill or label for an unstated \
+                 CHECKED (docs/v0.8.0-spec.md §10, rule 0a) and sets neither, so \
+                 gpui-component's own selected fill and label stand (gpui-component 0.10.0 \
+                 button/button.rs, ButtonVariant::selected): button_active, which crate::next \
+                 installs from the push button's pressed fill, button.body(PRESSED).fill, and \
+                 button_foreground, not the pressed label; the refinement is empty",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",
@@ -803,8 +804,28 @@ const DIFFERENCES: &[Difference] = &[
                  toolbar.button(CHECKED).stroke stated as none, as that toggle draws no outline \
                  (the same run, `toolbar_bezel_fitted-toolbar_states_sheet.toml` \
                  `*.toolbar_toggle_on` `edge_*`; next_homes.toml, row \
-                 toolbar.button_checked_border_color, a listed difference); every other field \
-                 of the refinement is equal",
+                 toolbar.button_checked_border_color, a listed difference). The checked \
+                 button's hovered and pressed fills the presets state, toolbar.button(CHECKED | \
+                 HOVER).fill and toolbar.button(CHECKED | PRESSED).fill, and their labels, are \
+                 not drawn: a selected Button takes no hover or press style (gpui-component \
+                 0.10.0 button/button.rs:733, :758; the crate's README, Limits), so the checked \
+                 fill and label stay under the pointer and pressed. Every other field of the refinement is \
+                 equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar_button_rest",
+        presets: &["kde-breeze", "macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 states no toolbar button corners or rest fill of its own, so its \
+                 refinement sets neither; the 0.8.0 presets state the toolbar button's corners, \
+                 toolbar.button(NONE).corners, kde-breeze 5 px, the push button frame's (Breeze \
+                 Frame_FrameRadius, breezemetrics.h at breeze f0b1d75, as the preset cites it), \
+                 macos-monterey 5 px and macos-tahoe a capsule, drawn as the full radius, and \
+                 macos-tahoe the rest capsule's fill, toolbar.button(NONE).fill #ffffff / \
+                 #252525 (os-probe run 45634379188, macOS 15 and 26, \
+                 `toolbar_bezel_fitted-toolbar_states_sheet.toml` `corner_*`, toolbar states \
+                 sheet `*.normal.toolbar_button` `fill`), so the refinement's corner radii are \
+                 those and its background that fill (docs/v0.8.0-spec.md §10, rule 0); every \
+                 other field of the refinement is equal",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",
@@ -1495,7 +1516,8 @@ fn resize_handles_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, H
 }
 
 /// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries on
-/// which no model states a checked toggle, so the pressed pair stands in.
+/// which no model states a checked toggle, so 0.7.2's pressed pair stands in
+/// and 0.8.0 sets nothing.
 const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
 
 /// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
@@ -2479,15 +2501,8 @@ fn compare_builders(
                     && old.button.checked_text_color.is_none()
                     && state_fill(&b.body(WidgetState::CHECKED)).is_none()
                     && super::state_text_color_of(&b.label(WidgetState::CHECKED)).is_none();
-                let pressed = super::text_color_of(&b.label(WidgetState::PRESSED)).map(|text| {
-                    crate::geometry::button_checked_from(
-                        None,
-                        text,
-                        None,
-                        state_fill(&b.body(WidgetState::PRESSED)),
-                    )
-                });
-                if !unstated || n.background.is_none() || pressed.as_ref() != Some(&n) {
+                let pressed = old.button.active_background.is_some();
+                if !unstated || !pressed || n != gpui::StyleRefinement::default() {
                     report.failures.push(format!(
                         "{}: {button_checked}: the listed difference ({}) no longer \
                          describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -2746,7 +2761,40 @@ fn compare_builders(
         None => builder!(report, old, new, toolbar),
     }
     builder!(report, old, new, icon_size_toolbar);
-    builder!(report, old, new, toolbar_button_rest);
+    let toolbar_rest = "geometry::toolbar_button_rest";
+    match report.listed(toolbar_rest) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(toolbar_rest, super::builders::toolbar_button_rest(new))
+            {
+                use gpui::Styled as _;
+                use native_theme::next::WidgetState;
+                report.count(toolbar_rest);
+                let o = crate::geometry::toolbar_button_rest(Native::unscaled(old));
+                let rest = new.toolbar.button(WidgetState::NONE);
+                let radii = super::radius_of(&rest)
+                    .map(|r| gpui::StyleRefinement::default().rounded(px(r)).corner_radii);
+                let background = match super::fill_color(&rest) {
+                    Some(fill) => gpui::StyleRefinement::default().bg(fill).background,
+                    None => o.background.clone(),
+                };
+                let mut corrected = o.clone();
+                corrected.background = n.background.clone();
+                corrected.corner_radii = n.corner_radii.clone();
+                if radii != Some(n.corner_radii.clone())
+                    || background != n.background
+                    || corrected != n
+                    || o == n
+                {
+                    report.failures.push(format!(
+                        "{}: {toolbar_rest}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, toolbar_button_rest),
+    }
     let toolbar_checked = "geometry::toolbar_button_checked";
     match report.listed(toolbar_checked) {
         Some(listed) => {
@@ -3888,6 +3936,13 @@ fn every_next_function_succeeds_on_every_covered_preset(cx: &mut gpui::TestAppCo
                 l,
                 "geometry::ghost_button_rest",
                 super::geometry::ghost_button_rest(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "geometry::ghost_button_rest_own_padding",
+                super::geometry::ghost_button_rest_own_padding(&r)
             );
             for disabled in [false, true] {
                 succeeds!(

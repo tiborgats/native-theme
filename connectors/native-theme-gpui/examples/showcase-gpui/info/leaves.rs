@@ -28,12 +28,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.buttons.toggle_on",
         &["button.body(PRESSED).fill"],
-        "gpui: next::geometry::button_checked's bg where button.body(CHECKED).fill is unstated (demo::toggle_button)",
+        "gpui: where no rule states button.body(CHECKED).fill, ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill: gpui-component's own selected fill, themed, since next::geometry::button_checked then sets no fill (spec §10, rule 0a; button/button.rs, ButtonVariant::selected; demo::toggle_button); where one does, that checked fill over it",
     ),
     (
         "basic.buttons.toggle_on",
         &["button.label(PRESSED).color"],
-        "gpui: next::geometry::button_checked's text colour where button.label(CHECKED).color is unstated (demo::toggle_button)",
+        "not drawn: where button.label(CHECKED).color is unstated next::geometry::button_checked sets no text colour and gpui-component's own selected label, button_foreground, stands, not the pressed label (spec §10, rule 0a; button/button.rs, ButtonVariant::selected; demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
@@ -163,11 +163,13 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.info.copy",
-        &[
-            "button.body(HOVER).stroke.color",
-            "button.body(PRESSED).stroke.color",
-        ],
-        "not drawn: the showcase builds the Copy box as the 0.7.2 ghost, variants::ghost_button, which has no outline colour of its own and no width to draw one at, so it is edged in none under the pointer or pressed (inspector.rs; native-theme-gpui/variants.rs, ghost_button)",
+        &["button.body(HOVER).stroke.color"],
+        "gpui: the Copy box's border under the pointer, where a rule states it for the state, button.body(HOVER).stroke.width wide and transparent at rest, the width taken off each stated padding side so the box keeps its size (inspector.rs, listed_info)",
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(PRESSED).stroke.color"],
+        "gpui: the Copy box's border while pressed, where a rule states it for the state, at the hovered stroke's width; where none does, the box's own treatment, the hover style gpui keeps under the press (inspector.rs, listed_info)",
     ),
     (
         "chrome.info.copy",
@@ -177,22 +179,22 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.top"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.right"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.bottom"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     (
         "chrome.info.copy",
         &["button.body(NONE).padding.left"],
-        "gpui: pads the Copy box's text (inspector.rs)",
+        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
     ),
     // --- button: the pages menu, variants::ghost_button --------------------------
     (
@@ -279,12 +281,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.icons.edit",
         &["toolbar.button(CHECKED).fill"],
-        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button",
+        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button; where that refinement cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names), it is not applied and the selected Button keeps next::geometry::toolbar_button_rest's fill where that applies, toolbar.button(NONE).fill where stated, else its transparent one where the toolbar's outline is stated, and otherwise its variant's selected fill (button/button.rs, ButtonVariant::selected); its corners are toolbar.button(NONE).corners where stated, which that rest refinement sets",
     ),
     (
         "basic.icons.edit",
         &["button.label(CHECKED).color"],
-        "gpui: toolbar.button_label(CHECKED).color where a rule states it for CHECKED, else button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill; where neither label is stated, none, the variant's own foreground",
+        "gpui: toolbar.button_label(CHECKED).color where a rule states it for CHECKED, else button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill; where neither label is stated, none, the variant's own foreground; where that refinement cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names), the variant's own foreground too",
     ),
     (
         "basic.icons.edit",
@@ -294,12 +296,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.status_bar.toggle",
         &["button.body(CHECKED).fill"],
-        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle)",
+        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
     ),
     (
         "chrome.status_bar.toggle",
         &["button.label(CHECKED).color"],
-        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle)",
+        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
     ),
     (
         "chrome.toolbar.",

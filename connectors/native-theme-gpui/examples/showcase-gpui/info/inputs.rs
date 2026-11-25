@@ -328,8 +328,10 @@ pub fn rows_textarea(t: &Theme, taken: FieldTaken) -> WidgetInfo {
 }
 
 /// The three `InputGroup`s, which report as one. Their geometry lines are
-/// recorded where `demo::input_groups` applies the builders.
-pub fn input_groups(t: &Theme) -> WidgetInfo {
+/// recorded where `demo::input_groups` applies the builders. `native` is
+/// the installed 0.8.0 theme, whose flat hovered outline edges the Copy
+/// button (`super::buttons::ghost_outline`).
+pub fn input_groups(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("InputGroup")
         .color(claim(
             "border",
@@ -353,6 +355,17 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
     } else {
         info.config("focus ring", NO_BAND)
     };
+    let info = match super::buttons::ghost_outline(native) {
+        Some((colour, width)) => info.config(
+            "addon button outline",
+            format!(
+                "button.body(HOVER; variant=Flat).stroke.color {}, {}px wide, on the Copy button under the pointer and while pressed: next::variants::ghost_button's colour, which upstream paints as the border (button/button.rs, ButtonVariant::border_color, Custom arm), at next::geometry::ghost_button_rest_own_padding's width, around the padding the group gives the button (input/group.rs, InputGroupButton::render_in_group); none at rest, where that refinement makes the border transparent",
+                super::as_rgba(colour),
+                px_text(width)
+            ),
+        ),
+        None => info,
+    };
     info.color(claim(
             "addon text",
             "muted_foreground",
@@ -366,7 +379,7 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
             "native-theme-gpui/variants.rs:63",
         ))
         .not_themeable("addon padding", "inner (Tier U)")
-        .not_themeable("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)")
+        .not_themeable("addon button", "native_theme_gpui::next::variants::ghost_button (support::ghost_variant): flat idle, hover = secondary_hover (the platform's button.hover_background), edged in the flat button's hovered outline where a rule states it; native_theme_gpui::variants::ghost_button where no 0.8.0 theme is installed or it states that outline in a form gpui cannot take. The theme states no padding for it, so it keeps the group's. Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)")
         .instance("groups", "a Search icon of the chosen icon theme before the field, a Copy button after it, and a note under a textarea. geometry::input refines the two single-line groups; the textarea group keeps upstream's frame")
         .instance("padding", "none from geometry::input: the showcase leaves out its padding sides, because the refinement lands on the group's frame and the Input inside it keeps its own padding (input/group.rs, render_control) -- padding the frame too would inset the field twice")
         .instance("copy", "puts the second group's text on the clipboard and says so in a notification")

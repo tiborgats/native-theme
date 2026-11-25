@@ -106,7 +106,7 @@ use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, variants};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _};
 
 use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
@@ -121,11 +121,12 @@ use crate::support::{
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
-    CHROME_SPLITTER_LINE, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
-    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
-    PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
+    CHROME_SPLITTER_LINE, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, INPUTS_GROUP_COPY,
+    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE,
+    OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE,
+    OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY,
+    PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
+    STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
@@ -1679,7 +1680,7 @@ pub(crate) fn toolbar_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(cx, glyph_at(icon, size), false, &mut button_info)
     });
     let dispatched = action.boxed_clone();
     let button = next_native_info(
@@ -1793,7 +1794,7 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
             "icon_size_toolbar",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(cx, glyph_at(icon, size), false, &mut button_info)
     });
     let button = next_native_info(
         refined(
@@ -1988,9 +1989,16 @@ pub(crate) fn panel_toggle(
     // Selected, it is not refined at rest: upstream replays the refinement
     // over the selected style (button/button.rs, RenderOnce for Button), so
     // `ghost_button_rest`'s transparent fill would hide the selected one, and
-    // a selected Button takes no hover or press style to outline.
+    // a selected Button takes no hover or press style to outline; it is
+    // edged in the checked flat body's stroke instead, where stated.
     let button = if open {
-        button
+        next_native_info(
+            button,
+            cx,
+            next::geometry::ghost_button_checked,
+            "ghost_button_checked",
+            &mut button_info,
+        )
     } else {
         ButtonKind::Ghost.at_rest(button, cx, &mut button_info)
     };
@@ -4986,7 +4994,7 @@ pub(crate) fn input_groups(
 ) -> Stateful<Div> {
     // `Button::icon` takes an `Icon` (`ButtonIcon`) alone (button/button.rs).
     let copy_icon = states.copy_icon.svg_only();
-    let mut groups_info = info::inputs::input_groups(cx.theme())
+    let mut groups_info = info::inputs::input_groups(cx.theme(), next_resolved(cx))
         .instance(
             "search icon",
             states.search_icon.note("the first field's addon is empty"),
@@ -5012,15 +5020,24 @@ pub(crate) fn input_groups(
     // inside a group, with a hover of `theme.muted` (`input/group.rs:556-595`):
     // a grey that under Breeze is barely distinguishable from the field,
     // while every button around it hovers blue. A custom variant makes
-    // upstream skip that repaint.
+    // upstream skip that repaint: the 0.8.0 flat button's, edged in its
+    // hovered outline where the theme states one, around the padding the
+    // group gives the button, since the theme states none for it.
     let copy = next_native_info(
         InputGroupButton::new("input-group-copy"),
         cx,
         next::geometry::input_group_button,
         "input_group_button",
         &mut groups_info,
+    );
+    let copy = next_native_info(
+        copy,
+        cx,
+        next::geometry::ghost_button_rest_own_padding,
+        "ghost_button_rest_own_padding",
+        &mut groups_info,
     )
-    .custom(variants::ghost_button(cx))
+    .custom(ghost_variant(cx))
     .when_some(copy_icon.icon(), |button, icon| button.icon(icon))
     .label("Copy")
     .tooltip("Copy the field to the clipboard")
@@ -5052,7 +5069,7 @@ pub(crate) fn input_groups(
                 .addon(
                     InputGroupAddon::new("input-group-trailing-addon")
                         .align(InputGroupAddonAlignment::InlineEnd)
-                        .child(copy),
+                        .child(probe(INPUTS_GROUP_COPY, copy)),
                 )
                 .refine_style(&frame),
         )
@@ -11173,7 +11190,7 @@ fn tool_button_box(cx: &App) -> Option<StyleRefinement> {
 
 /// [`tool_button_box`] under the 0.8.0 theme `r`.
 fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
-    let info::buttons::ToolBox { sides, radius } = info::buttons::ToolBox::of(r);
+    let info::buttons::ToolBox { sides, radius, .. } = info::buttons::ToolBox::of(r);
     let style = match radius {
         Some(radius) => StyleRefinement::default().rounded(px(radius.max(0.))),
         None => StyleRefinement::default(),
@@ -11187,15 +11204,48 @@ fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
     next_padded(style, sides, None::<Pixels>, None)
 }
 
+/// A tool button's icon `glyph`, built at rest or, `checked`, in
+/// `CHECKED`, in the colour `next::geometry::toolbar_button_icon_color`
+/// gives the installed 0.8.0 theme for that state, `toolbar.button_icon`'s;
+/// as it is where that gives none, or before `next::apply` ran: the Button's
+/// text colour then, and an image its own. Its info says so in an "icon
+/// colour" line.
+fn tool_icon_tinted(cx: &App, glyph: Glyph, checked: bool, button_info: &mut WidgetInfo) -> Glyph {
+    let state = if checked {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
+    match next_value(cx, |r| next::geometry::toolbar_button_icon_color(r, state)).flatten() {
+        Some(colour) if !matches!(glyph, Glyph::Raster(..)) => {
+            let home = if checked {
+                "toolbar.button_icon(CHECKED).color, a rule stating it for the state"
+            } else {
+                "toolbar.button_icon(NONE).color"
+            };
+            *button_info = button_info.clone().instance(
+                "icon colour",
+                format!(
+                    "{home} {}, given the Icon by next::geometry::toolbar_button_icon_color: an Icon takes one colour, so it stays under the pointer and pressed (native-theme-gpui README, Limits)",
+                    as_rgba(colour)
+                ),
+            );
+            glyph.text_color(colour)
+        }
+        _ => glyph,
+    }
+}
+
 /// A toggle button that is on: a Default Button reading `label`, refined by
 /// `geometry::button`, shown selected, and refined by
 /// `geometry::button_checked` -- filled with `button.body(CHECKED).fill` and
-/// lettered in `button.label(CHECKED).color`, the pressed pair where no rule
-/// states them for the state. Upstream's selected style would fill it with its
-/// `button_active` token and letter it in `button_foreground`
-/// (button/button.rs, `ButtonVariant::selected`); the Button replays the
-/// caller's style over that state (button/button.rs, `RenderOnce for
-/// Button`, `styles.selected`), so these win.
+/// lettered in `button.label(CHECKED).color`, each where a rule states it for
+/// the state. Upstream's selected style fills it with its `button_active`
+/// token and letters it in `button_foreground` (button/button.rs,
+/// `ButtonVariant::selected`), which stand where no rule does (spec §10,
+/// rule 0a); the Button replays the caller's style over that state
+/// (button/button.rs, `RenderOnce for Button`, `styles.selected`), so the
+/// stated ones win.
 pub(crate) fn toggle_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -11230,7 +11280,6 @@ pub(crate) fn toggle_button(
             "state",
             toggle_state_line(
                 drawn_state_fill(&b.body(WidgetState::CHECKED)).is_some(),
-                drawn_state_fill(&b.body(WidgetState::PRESSED)).is_some(),
                 next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some(),
             ),
         );
@@ -11241,25 +11290,18 @@ pub(crate) fn toggle_button(
 }
 
 /// The toggle button's "state" line: what its checked fill and label are
-/// painted with, from which of `button.body(CHECKED).fill`,
-/// `button.body(PRESSED).fill` and `button.label(CHECKED).color` the theme
-/// states.
-pub(crate) fn toggle_state_line(
-    checked_fill: bool,
-    pressed_fill: bool,
-    checked_label: bool,
-) -> String {
+/// painted with, from which of `button.body(CHECKED).fill` and
+/// `button.label(CHECKED).color` the theme states.
+pub(crate) fn toggle_state_line(checked_fill: bool, checked_label: bool) -> String {
     let fill = if checked_fill {
         "button.body(CHECKED).fill"
-    } else if pressed_fill {
-        "button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill"
     } else {
-        "gpui-component's own button_active token: the theme states neither button.body(CHECKED).fill nor button.body(PRESSED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected)"
+        "ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, gpui-component's own selected fill: no rule states button.body(CHECKED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected; spec §10, rule 0a)"
     };
     let text = if checked_label {
         "button.label(CHECKED).color"
     } else {
-        "button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+        "gpui-component's own button_foreground: no rule states button.label(CHECKED).color, so geometry::button_checked sets no text colour, not the pressed label"
     };
     format!("selected: on, filled with {fill} and lettered in {text}")
 }
@@ -11396,7 +11438,7 @@ pub(crate) fn icon_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(cx, glyph_at(icon, size), selected, &mut button_info)
     });
     let button = next_native_info(
         refined(
