@@ -17,7 +17,7 @@ use super::{
     stroke_color_of, stroke_width_of,
 };
 use crate::demo::{ButtonKind, ButtonState};
-use crate::support::ChromeIcon;
+use crate::support::{ChromeIcon, drawn_state_fill};
 
 /// What a Button of `kind` paints at rest: its fill, where it has one, and
 /// its label.
@@ -734,7 +734,10 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
         .colors(stated_claim(
             "bg",
             "button.body(DEFAULT).fill",
-            state_fill_of(&r.button.body(WidgetState::DEFAULT)),
+            state_fill_of(
+                &r.button.body(WidgetState::DEFAULT),
+                "button.body(DEFAULT).fill",
+            ),
             "native-theme-gpui/next/builders.rs:112",
         ))
         .colors(stated_claim(
@@ -780,7 +783,10 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
         .colors(stated_claim(
             "hover",
             "button.body(DEFAULT).fill",
-            state_fill_of(&r.button.body(WidgetState::DEFAULT)),
+            state_fill_of(
+                &r.button.body(WidgetState::DEFAULT),
+                "button.body(DEFAULT).fill",
+            ),
             "native-theme-gpui/next/builders.rs:862",
         ))
         .color(claim(
@@ -996,36 +1002,52 @@ pub(super) fn native_toolbar(
         t.secondary_foreground,
         "native-theme-gpui/variants.rs:62",
     ));
-    let info = match stated_claim(
-        "hover bg",
-        "toolbar.button(HOVER).fill",
-        states.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::HOVER))),
-        "native-theme-gpui/next/builders.rs:712",
-    ) {
-        Some(hover) => info.color(hover),
-        None if from == ToolVariant::Toolbar => info.color(own_toolbar_hover(t)),
-        None => info.color(claim(
+    let hover = states
+        .map(|r| {
+            stated_claim(
+                "hover bg",
+                "toolbar.button(HOVER).fill",
+                state_fill_of(
+                    &r.toolbar.button(WidgetState::HOVER),
+                    "toolbar.button(HOVER).fill",
+                ),
+                "native-theme-gpui/next/builders.rs:712",
+            )
+        })
+        .unwrap_or_default();
+    let info = info.colors(hover.or_own(if from == ToolVariant::Toolbar {
+        own_toolbar_hover(t)
+    } else {
+        claim(
             "hover bg",
             "secondary_hover",
             t.secondary_hover,
             "native-theme-gpui/variants.rs:63",
-        )),
-    };
-    let info = match stated_claim(
-        "active bg",
-        "toolbar.button(PRESSED).fill",
-        states.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::PRESSED))),
-        "native-theme-gpui/next/builders.rs:716",
-    ) {
-        Some(active) => info.color(active),
-        None if from == ToolVariant::Toolbar => info.color(own_toolbar_active(t)),
-        None => info.color(claim(
+        )
+    }));
+    let active = states
+        .map(|r| {
+            stated_claim(
+                "active bg",
+                "toolbar.button(PRESSED).fill",
+                state_fill_of(
+                    &r.toolbar.button(WidgetState::PRESSED),
+                    "toolbar.button(PRESSED).fill",
+                ),
+                "native-theme-gpui/next/builders.rs:716",
+            )
+        })
+        .unwrap_or_default();
+    let info = info.colors(active.or_own(if from == ToolVariant::Toolbar {
+        own_toolbar_active(t)
+    } else {
+        claim(
             "active bg",
             "secondary_active",
             t.secondary_active,
             "native-theme-gpui/variants.rs:64",
-        )),
-    };
+        )
+    }));
     let edge = edge_claim(
         "border, hovered or pressed",
         "toolbar.button(HOVER).stroke.color",
@@ -1092,7 +1114,8 @@ impl ToolVariant {
 /// back, the flat button's, as [`native_toolbar`] claims them.
 pub(super) fn toolbar_fill(native: Option<&NextTheme>, from: ToolVariant) -> String {
     let states = from.states(native);
-    let ruled = |state| states.is_some_and(|r| state_fill_of(&r.toolbar.button(state)).is_some());
+    let ruled =
+        |state| states.is_some_and(|r| drawn_state_fill(&r.toolbar.button(state)).is_some());
     let own = from == ToolVariant::Toolbar;
     let hover = match (ruled(WidgetState::HOVER), own) {
         (true, _) => "toolbar.button(HOVER).fill",
@@ -1186,7 +1209,7 @@ pub(crate) fn checked_fill(
     cleared: bool,
     states: bool,
 ) -> CheckedFill {
-    let stated = |part: &PartStyle| state_fill_of(part).is_some();
+    let stated = |part: &PartStyle| drawn_state_fill(part).is_some();
     if applied && stated(checked) {
         CheckedFill::Checked
     } else if applied {
@@ -1225,7 +1248,10 @@ fn toolbar_checked_colors(
             let fill = stated_claim(
                 "checked fill",
                 "toolbar.button(CHECKED).fill",
-                state_fill_of(&r.toolbar.button(WidgetState::CHECKED)),
+                state_fill_of(
+                    &r.toolbar.button(WidgetState::CHECKED),
+                    "toolbar.button(CHECKED).fill",
+                ),
                 "native-theme-gpui/next/builders.rs:685",
             );
             // The builder applies, so it states the pressed text it falls
@@ -1251,7 +1277,14 @@ fn toolbar_checked_colors(
                 (CheckedFill::Pressed, Some(r)) => stated_claim(
                     "selected bg",
                     "toolbar.button(PRESSED).fill",
-                    state_fill_of(&r.toolbar.button(WidgetState::PRESSED)),
+                    // `checked_fill` gives `Pressed` only where the fill
+                    // is drawn, so it is no `Unmapped` here.
+                    state_fill_of(
+                        &r.toolbar.button(WidgetState::PRESSED),
+                        "toolbar.button(PRESSED).fill",
+                    )
+                    .ok()
+                    .flatten(),
                     "native-theme-gpui/next/builders.rs:716",
                 ),
                 (CheckedFill::Own, Some(_)) => Some(claim(

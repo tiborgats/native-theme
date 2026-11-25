@@ -114,9 +114,9 @@ use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, next_native_
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, contrast_held, demo_border_width, ghost_variant,
-    next_geometry, next_inactive, next_metric, next_resolved, next_value, refined,
-    requested_preferences, toolbar_variant, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, contrast_held, demo_border_width, drawn_fill,
+    drawn_state_fill, ghost_variant, next_geometry, next_inactive, next_metric, next_resolved,
+    next_value, refined, requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -505,7 +505,7 @@ pub(crate) fn menu_hover_of(
     label: &native_theme::next::TextStyle,
     t: &gpui_component::theme::Theme,
 ) -> (Hsla, Hsla) {
-    let fill = next::state_fill_of(hovered);
+    let fill = drawn_state_fill(hovered);
     let text = next::state_text_color_of(hovered_label)
         .or_else(|| fill.and_then(|_| next::text_color_of(label)));
     (
@@ -610,7 +610,7 @@ impl MenuLook {
     ) -> Self {
         let (m, bar) = (&r.menu, &r.menu_bar);
         let rows = MenuRowsLook::of(parts, t, px(0.));
-        let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER)).unwrap_or(rows.hover);
+        let bar_hover = drawn_state_fill(&bar.item(WidgetState::HOVER)).unwrap_or(rows.hover);
         let bar_hover_text = next::state_text_color_of(&bar.item_label(WidgetState::HOVER))
             .unwrap_or(rows.hover_text);
         let padding = next::padding_of(&parts.rest);
@@ -620,8 +620,7 @@ impl MenuLook {
             item: next::geometry::menu_item(r).ok(),
             title_text,
             bar_hover,
-            bar_open: next::state_fill_of(&bar.item(WidgetState::OPEN))
-                .unwrap_or(t.secondary_active),
+            bar_open: drawn_state_fill(&bar.item(WidgetState::OPEN)).unwrap_or(t.secondary_active),
             bar_hover_text,
             bar_open_text: next::state_text_color_of(&bar.item_label(WidgetState::OPEN))
                 .or(title_text),
@@ -630,7 +629,7 @@ impl MenuLook {
             row_height: parts.rest.max_size[1].map(px),
             min_row_height: parts.rest.min_size[1].map(px),
             text_scaled_up: r.context.text_scale > 1.0,
-            separator: next::fill_of(&m.separator(WidgetState::NONE)).unwrap_or(t.border),
+            separator: drawn_fill(&m.separator(WidgetState::NONE)).unwrap_or(t.border),
             popup_padding: padding_over(
                 next::padding_of(&parts.panel),
                 next::padding_of(&parts.popover),
@@ -1280,7 +1279,7 @@ pub(crate) fn menu_bar(
     h_flex()
         .px(container_margin.unwrap_or(MENU_BAR_PADDING))
         .when_some(
-            resolved.and_then(|r| next::fill_of(&r.menu_bar.bar(WidgetState::NONE))),
+            resolved.and_then(|r| drawn_fill(&r.menu_bar.bar(WidgetState::NONE))),
             |row, fill| row.bg(fill),
         )
         .child(app_menus(ui, cx, info::MenuHost::Row, menus))
@@ -2777,18 +2776,18 @@ impl SegmentedLook {
         let track = s.track(WidgetState::NONE);
         let segment = s.segment(WidgetState::NONE);
         Self {
-            track: next::fill_of(&track),
+            track: drawn_fill(&track),
             frame: next::stroke_color_of(&track).zip(next::stroke_width_of(&track)),
             radius: next::radius_of(&track),
             segment_height: segment.min_size[1],
             padding: next::padding_of(&segment),
-            selected: next::fill_of(&s.segment(WidgetState::SELECTED)),
-            hover: next::state_fill_of(&s.segment(WidgetState::HOVER)),
+            selected: drawn_fill(&s.segment(WidgetState::SELECTED)),
+            hover: drawn_state_fill(&s.segment(WidgetState::HOVER)),
             font: s.label(WidgetState::NONE),
             text: next::text_color_of(&s.label(WidgetState::NONE)),
             selected_text: next::text_color_of(&s.label(WidgetState::SELECTED)),
             hover_text: next::state_text_color_of(&s.label(WidgetState::HOVER)),
-            separator: next::fill_of(&s.separator(WidgetState::NONE)),
+            separator: drawn_fill(&s.separator(WidgetState::NONE)),
             separator_width: s.separator_width,
         }
     }
@@ -3101,7 +3100,7 @@ pub(crate) fn resize_handles(
                 let s = &r.splitter;
                 (
                     px(s.divider_width),
-                    next::fill_of(&s.handle(WidgetState::HOVER)),
+                    drawn_fill(&s.handle(WidgetState::HOVER)),
                 )
             });
             let line_info = info::resize_handle(&base, between, native);
@@ -4639,7 +4638,7 @@ impl FieldSurface {
     ) -> Option<Self> {
         let line = SurfaceLine::of(rest)?;
         Some(Self {
-            fill: next::fill_of(rest)?,
+            fill: drawn_fill(rest)?,
             hover: next::state_stroke_color_of(hovered).or(line.colour),
             line,
         })
@@ -5715,13 +5714,16 @@ pub(crate) fn combo_look(r: &native_theme::next::ResolvedTheme) -> Result<ComboL
     next::geometry::combo_box_fill(r, false).map_err(|unstated| unstated.home())?;
     let rest = r.combo_box.field(WidgetState::NONE);
     let hovered = r.combo_box.field(WidgetState::HOVER);
-    let background = next::fill_of(&rest).ok_or("combo_box.field(NONE).fill")?;
+    let background = next::fill_of(&rest, "combo_box.field(NONE).fill")
+        .map_err(|unmapped| unmapped.home())?
+        .ok_or("combo_box.field(NONE).fill")?;
     Ok(ComboLook {
         background,
         edge: next::stroke_color_of(&rest),
         width: next::stroke_width_of(&rest).ok_or("combo_box.field(NONE).stroke")?,
         radius: next::radius_of(&rest).ok_or("combo_box.field(NONE).corners")?,
-        hover: next::state_fill_of(&hovered)
+        hover: next::state_fill_of(&hovered, "combo_box.field(HOVER).fill")
+            .map_err(|unmapped| unmapped.home())?
             .map(|hover| native_theme_gpui::layer_over(background, hover)),
         hover_edge: next::state_stroke_color_of(&hovered),
     })
@@ -8778,7 +8780,7 @@ impl ExpanderLook {
                 .stated
                 .contains(native_theme::next::IconStated::SIZE)
                 .then_some(arrow.size),
-            hover: next::state_fill_of(&e.header(WidgetState::HOVER)),
+            hover: drawn_state_fill(&e.header(WidgetState::HOVER)),
             header_height: header.min_size[1],
             padding: next::padding_of(&header),
             arrow_side: e.arrow_side,
@@ -10057,14 +10059,14 @@ impl MenuRowsLook {
         let radius = menu_frame_value(&p.panel, &p.popover, next::radius_of);
         let (hover, hover_text) = menu_hover_of(&p.hovered, &p.hovered_label, &p.label, t);
         Self {
-            background: next::fill_of(&p.panel).unwrap_or(t.popover),
+            background: drawn_fill(&p.panel).unwrap_or(t.popover),
             text: next::text_color_of(&p.label).unwrap_or(t.popover_foreground),
             hover,
             hover_text,
             edge: next::state_stroke_color_of(&p.hovered)
                 .zip(edge_width)
                 .map(|(colour, width)| (colour, px(width))),
-            active: next::state_fill_of(&p.pressed),
+            active: drawn_state_fill(&p.pressed),
             active_text: next::state_text_color_of(&p.pressed_label),
             pressed_edge: menu_pressed_edge(&p.pressed),
             radius: next::radius_of(&p.rest).map(px),
@@ -11153,8 +11155,8 @@ pub(crate) fn toggle_button(
         button_info = button_info.instance(
             "state",
             toggle_state_line(
-                next::state_fill_of(&b.body(WidgetState::CHECKED)).is_some(),
-                next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some(),
+                drawn_state_fill(&b.body(WidgetState::CHECKED)).is_some(),
+                drawn_state_fill(&b.body(WidgetState::PRESSED)).is_some(),
                 next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some(),
             ),
         );
@@ -11599,8 +11601,12 @@ pub(crate) fn selection_pair(
     r: &native_theme::next::ResolvedTheme,
     window_active: bool,
 ) -> Result<(Hsla, Hsla), &'static str> {
-    let fill = next::fill_of(&r.list.highlight(WidgetState::SELECTED))
-        .ok_or("list.highlight(SELECTED).fill")?;
+    let fill = next::fill_of(
+        &r.list.highlight(WidgetState::SELECTED),
+        "list.highlight(SELECTED).fill",
+    )
+    .map_err(|unmapped| unmapped.home())?
+    .ok_or("list.highlight(SELECTED).fill")?;
     let text = next::text_color_of(&r.list.item_label(WidgetState::SELECTED))
         .ok_or("list.item_label(SELECTED).color")?;
     match inactive_selection_differs(r).filter(|_| !window_active) {
@@ -11691,7 +11697,9 @@ impl<'a> TableLook<'a> {
         padding.padding = next::geometry::list_item(r)
             .map_err(|unstated| unstated.home())?
             .padding;
-        let section_hover = next::state_fill_of(&l.header(WidgetState::HOVER));
+        let section_hover =
+            next::state_fill_of(&l.header(WidgetState::HOVER), "list.header(HOVER).fill")
+                .map_err(|unmapped| unmapped.home())?;
         let hovered = l.highlight(WidgetState::HOVER);
         let grid = info::next_stated(l.grid_color);
         Ok(Self {
@@ -11703,17 +11711,26 @@ impl<'a> TableLook<'a> {
             header_height: next::geometry::list_header_height(r)
                 .map_err(|unstated| unstated.home())?,
             header: (
-                next::fill_of(&l.header(WidgetState::NONE)).ok_or("list.header(NONE).fill")?,
+                next::fill_of(&l.header(WidgetState::NONE), "list.header(NONE).fill")
+                    .map_err(|unmapped| unmapped.home())?
+                    .ok_or("list.header(NONE).fill")?,
                 next::text_color_of(&header_label).ok_or("list.header_label(NONE).color")?,
             ),
             sections: SectionFills::of(
                 section_hover,
-                next::state_fill_of(&l.header(WidgetState::PRESSED)),
+                next::state_fill_of(&l.header(WidgetState::PRESSED), "list.header(PRESSED).fill")
+                    .map_err(|unmapped| unmapped.home())?,
             ),
             grid,
-            header_line: next::fill_of(&l.header_separator(WidgetState::NONE)).unwrap_or(grid),
+            header_line: next::fill_of(
+                &l.header_separator(WidgetState::NONE),
+                "list.header_separator(NONE).fill",
+            )
+            .map_err(|unmapped| unmapped.home())?
+            .unwrap_or(grid),
             item_text: next::text_color_of(&item_label).ok_or("list.item_label(NONE).color")?,
-            hover_fill: next::fill_of(&hovered),
+            hover_fill: next::fill_of(&hovered, "list.highlight(HOVER).fill")
+                .map_err(|unmapped| unmapped.home())?,
             hover_text: next::state_text_color_of(&l.item_label(WidgetState::HOVER)),
             hover_edge: info::stroke_width_of(&hovered)
                 .filter(|width| *width > 0.0)

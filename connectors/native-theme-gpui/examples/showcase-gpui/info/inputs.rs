@@ -21,7 +21,7 @@ use super::{
     stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
-use crate::support::SampleIcon;
+use crate::support::{SampleIcon, drawn_state_fill};
 
 /// A refined, enabled field's surface, which the showcase draws under the
 /// field (`demo::text_field`), its line `width` wide: `r`'s
@@ -470,7 +470,7 @@ pub fn native_number_input(
         .colors(stated_claim(
             "bg",
             "input.field(NONE).fill",
-            fill_of(&r.input.field(WidgetState::NONE)),
+            fill_of(&r.input.field(WidgetState::NONE), "input.field(NONE).fill"),
             "showcase",
         ));
     // The frame takes geometry::input's stroke width; a 0 width draws no
@@ -830,13 +830,20 @@ pub fn switch(
         (true, false, Some(r)) => info.colors(stated_claim(
             "on track",
             "switch.track(CHECKED).fill",
-            fill_of(&r.switch.track(WidgetState::CHECKED)),
+            fill_of(
+                &r.switch.track(WidgetState::CHECKED),
+                "switch.track(CHECKED).fill",
+            ),
             "showcase",
         )),
         (true, true, Some(r)) => info.colors(stated_claim(
             "on track, at 50%",
             "switch.track(CHECKED).fill",
-            fill_of(&r.switch.track(WidgetState::CHECKED)).map(|fill| fill.opacity(0.5)),
+            fill_of(
+                &r.switch.track(WidgetState::CHECKED),
+                "switch.track(CHECKED).fill",
+            )
+            .map(|fill| fill.map(|fill| fill.opacity(0.5))),
             "showcase",
         )),
         _ => info,
@@ -1046,7 +1053,7 @@ pub(crate) fn switch_hover_stated(r: &NextTheme, checked: bool) -> bool {
     if checked {
         hover.from_state.contains(PartStated::FILL)
     } else {
-        state_fill_of(&hover).is_some()
+        drawn_state_fill(&hover).is_some()
     }
 }
 
@@ -1533,7 +1540,7 @@ fn native_indicator(
     // fill.
     // Checked, the fill resolved at HOVER|CHECKED, claimed where it is not the
     // checked fill, the only case the look draws one.
-    let hover_stated = state_fill_of(&indicator(WidgetState::HOVER)).is_some();
+    let hover_stated = drawn_state_fill(&indicator(WidgetState::HOVER)).is_some();
     let info = info.colors(match (radio, hover_stated || checked) {
         (false, true) if checked => stated_claim(
             "hover, checkbox.indicator(HOVER|CHECKED).fill in place of the fill",
@@ -1849,7 +1856,7 @@ pub fn native_radio_column(
         "native-theme-gpui/widgets/checkbox.rs:353",
     ));
     let info = info.colors(
-        if state_fill_of(&r.radio.indicator(WidgetState::HOVER)).is_some() {
+        if drawn_state_fill(&r.radio.indicator(WidgetState::HOVER)).is_some() {
             stated_claim(
                 "unselected hover, radio.indicator(HOVER).fill over an unselected fill",
                 "radio.indicator(HOVER).fill",
@@ -2293,7 +2300,7 @@ pub fn native_slider(r: &NextTheme, vertical: bool, range: bool) -> WidgetInfo {
             "native-theme-gpui/widgets/slider.rs:304",
         ));
     let info = info.colors(
-        if state_fill_of(&r.slider.thumb(WidgetState::HOVER)).is_some() {
+        if drawn_state_fill(&r.slider.thumb(WidgetState::HOVER)).is_some() {
             stated_claim(
                 "hover, slider.thumb(HOVER).fill over the thumb",
                 "slider.thumb(HOVER).fill",
@@ -2559,7 +2566,10 @@ pub fn combo_fill(
                 .colors(stated_claim(
                     "trigger fill",
                     "combo_box.field(NONE).fill",
-                    fill_of(&r.combo_box.field(WidgetState::NONE)),
+                    fill_of(
+                        &r.combo_box.field(WidgetState::NONE),
+                        "combo_box.field(NONE).fill",
+                    ),
                     "showcase",
                 ))
                 .colors(edge_claim(
@@ -2572,7 +2582,10 @@ pub fn combo_fill(
                 .colors(stated_claim(
                     "hover layer, over the fill",
                     "combo_box.field(HOVER).fill",
-                    state_fill_of(&r.combo_box.field(WidgetState::HOVER)),
+                    state_fill_of(
+                        &r.combo_box.field(WidgetState::HOVER),
+                        "combo_box.field(HOVER).fill",
+                    ),
                     "showcase",
                 ))
                 .colors(edge_claim(

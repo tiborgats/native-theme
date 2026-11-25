@@ -1571,7 +1571,13 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<&NextTheme>) -> Widge
         let info = notes(info.color(value));
         let branch = branch_note(
             token,
-            state_fill_of(&r.button.body(WidgetState::PRESSED)).is_some(),
+            matches!(
+                state_fill_of(
+                    &r.button.body(WidgetState::PRESSED),
+                    "button.body(PRESSED).fill"
+                ),
+                Ok(Some(_))
+            ),
             r.list
                 .highlight(WidgetState::HOVER)
                 .stated
