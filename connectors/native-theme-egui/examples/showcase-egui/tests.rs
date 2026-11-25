@@ -13790,7 +13790,8 @@ fn a_toolbar_button_at_rest_is_the_stated_capsule() -> Result<(), String> {
 /// `from_state`), so macos-tahoe's checked icon is never loaded in its resting #4d4d4d, in any
 /// state. kde-breeze states none, and the icon keeps the colour it is loaded in. So the Basic
 /// page's Copy, a bundled Material icon, is painted from another texture under the pointer than
-/// at rest.
+/// at rest. The Copy icon is a bundled Material one, so the test needs that set.
+#[cfg(feature = "material-icons")]
 #[test]
 fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     use crate::demo::tool_icon_color;
@@ -13858,6 +13859,8 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
 /// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
 /// icon is not the texture it is painted from unchecked at rest, loaded in the resting
 /// `toolbar.button_icon(NONE).color` #4d4d4d, since no rule states a colour for `CHECKED`.
+/// The icon is a bundled Material one, so the test needs that set.
+#[cfg(feature = "material-icons")]
 #[test]
 fn the_checked_edit_icon_is_not_loaded_in_the_resting_icon_colour() -> Result<(), String> {
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
