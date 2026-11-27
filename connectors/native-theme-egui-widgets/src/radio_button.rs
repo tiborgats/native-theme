@@ -4,7 +4,7 @@ use native_theme_egui::convert::{clamp_length, to_color32, unit_interval};
 use native_theme_egui::egui;
 use native_theme_egui::native_theme::next::{
     PartStated, PartStyle, ResolvedTheme as NextResolvedTheme, Stroke as NextStroke, StrokeAlign,
-    TextStated, WidgetState,
+    StyleQuery, TextStated, WidgetState,
 };
 use native_theme_egui::next::{stroke_color_of, stroke_width_of, text_color_of};
 use native_theme_egui::{Note, ResolvedTheme, Role, ThemeAtlas};
@@ -152,12 +152,14 @@ pub(crate) struct Over {
 
 impl Over {
     /// The radio of `r`, `checked` or not, `disabled` or not, at rest, hovered and pressed. A
-    /// hovered or pressed value is read where a rule for that state states it (the part
-    /// queried with the state's flag alone, spec §2, `from_state`); else it is taken as the
-    /// connector takes an unstated state (spec §10, rule 0): egui's own where egui's own
-    /// entries change it between rest and that state, else the radio's at rest. A disabled
-    /// radio's values are read where a rule for `DISABLED` states them, the scope's disabled
-    /// cell elsewhere (its disabled colours, faded as egui fades a disabled widget).
+    /// hovered or pressed value is read where the theme states it for that state (the part
+    /// queried with the state's flag alone, or at its own state asking the flag, spec §2,
+    /// `from_state`, the two queries); else it is taken as the connector takes an unstated
+    /// state (spec §10, rule 0): egui's own where egui's own entries change it between rest and
+    /// that state, else the radio's at rest. A disabled radio's values, its label's colour
+    /// among them, are read where the theme states them for `DISABLED` by the same two queries,
+    /// the scope's disabled cell elsewhere (its disabled colours, faded as egui fades a
+    /// disabled widget).
     pub(crate) fn next_of(r: &NextResolvedTheme, checked: bool, disabled: bool) -> Self {
         Self::next_noted(r, checked, disabled, &mut Vec::new())
     }
@@ -178,38 +180,44 @@ impl Over {
         if disabled {
             base |= WidgetState::DISABLED;
         }
-        // Each read at `base | state`, where a rule for `ruled` alone states it (`NONE`: always);
-        // `homes` the indicator's and the dot's fills there.
-        let mut entry =
-            |state: WidgetState, rule: WidgetState, homes: (&'static str, &'static str)| {
-                let indicator = radio.indicator(base | state);
-                let dot = radio.dot(base | state | WidgetState::CHECKED);
-                let (ruled_dot, ruled) = (radio.dot(rule), radio.indicator(rule));
-                let at = |part: &PartStyle, bit: PartStated| {
-                    rule == WidgetState::NONE || part.from_state.contains(bit)
-                };
-                let stroke = match (&indicator.stroke, stroke_color_of(&indicator)) {
-                    (NextStroke::Uniform { align, .. }, Some(colour)) => Some((colour, *align)),
-                    _ => None,
-                };
-                let (fill_home, dot_home) = homes;
-                Entry {
-                    fill: if at(&ruled, PartStated::FILL) {
-                        next::fill(&indicator, fill_home, unmapped)
-                    } else {
-                        None
-                    },
-                    stroke_width: at(&ruled, PartStated::STROKE)
-                        .then(|| stroke_width_of(&indicator))
-                        .flatten(),
-                    stroke: at(&ruled, PartStated::STROKE).then_some(stroke).flatten(),
-                    dot: if at(&ruled_dot, PartStated::FILL) {
-                        next::fill(&dot, dot_home, unmapped)
-                    } else {
-                        None
-                    },
-                }
+        // Each read at `base | state` asking `rule`, where the theme states it for `rule` (`NONE`:
+        // always): the part queried with `rule` alone, or that query, has the bit (spec §2,
+        // `from_state`, the two queries); `homes` the indicator's and the dot's fills there.
+        let mut entry = |state: WidgetState,
+                         rule: WidgetState,
+                         homes: (&'static str, &'static str)| {
+            let indicator = radio.indicator(StyleQuery::new(base | state).asking(rule));
+            let dot = radio.dot(StyleQuery::new(base | state | WidgetState::CHECKED).asking(rule));
+            let (ruled_dot, ruled) = (radio.dot(rule), radio.indicator(rule));
+            let at = |alone: &PartStyle, own: &PartStyle, bit: PartStated| {
+                rule == WidgetState::NONE
+                    || alone.from_state.contains(bit)
+                    || own.from_state.contains(bit)
             };
+            let stroke = match (&indicator.stroke, stroke_color_of(&indicator)) {
+                (NextStroke::Uniform { align, .. }, Some(colour)) => Some((colour, *align)),
+                _ => None,
+            };
+            let (fill_home, dot_home) = homes;
+            Entry {
+                fill: if at(&ruled, &indicator, PartStated::FILL) {
+                    next::fill(&indicator, fill_home, unmapped)
+                } else {
+                    None
+                },
+                stroke_width: at(&ruled, &indicator, PartStated::STROKE)
+                    .then(|| stroke_width_of(&indicator))
+                    .flatten(),
+                stroke: at(&ruled, &indicator, PartStated::STROKE)
+                    .then_some(stroke)
+                    .flatten(),
+                dot: if at(&ruled_dot, &dot, PartStated::FILL) {
+                    next::fill(&dot, dot_home, unmapped)
+                } else {
+                    None
+                },
+            }
+        };
         let (none, off) = (WidgetState::NONE, WidgetState::DISABLED);
         let (hover, press) = (WidgetState::HOVER, WidgetState::PRESSED);
         let (rest, hovered, pressed) = match (disabled, checked) {
@@ -284,9 +292,12 @@ impl Over {
                 ),
             ),
         };
-        let label = (!disabled || radio.label(off).from_state.contains(TextStated::COLOR))
-            .then(|| text_color_of(&radio.label(base)))
-            .flatten();
+        let label_at = radio.label(StyleQuery::new(base).asking(off));
+        let label = (!disabled
+            || radio.label(off).from_state.contains(TextStated::COLOR)
+            || label_at.from_state.contains(TextStated::COLOR))
+        .then(|| text_color_of(&label_at))
+        .flatten();
         Self {
             rest,
             hovered,

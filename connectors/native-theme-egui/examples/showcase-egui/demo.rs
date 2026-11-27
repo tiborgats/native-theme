@@ -2097,8 +2097,9 @@ pub(crate) fn remember_state<S: ResponseState>(
 /// The colour `toolbar.button_icon(<state>).color` of the installed 0.8.0 theme `r` states for a
 /// toolbar button's icon in the state `(hovered, pressed)` of its previous response: pressed
 /// `PRESSED`, else hovered `HOVER`, else at rest, where the theme states it. Checked
-/// (`checked`), only where a rule states the colour for `CHECKED` (asked alone, spec §2,
-/// `from_state`), and then the `(<state> | CHECKED)` query's: a colour stated at rest is not
+/// (`checked`), only where the theme states the colour for `CHECKED` (asked alone, or at
+/// `(<state> | CHECKED)` asking `CHECKED`, spec §2, `from_state`, the two queries), and then
+/// the `(<state> | CHECKED)` query's: a colour stated at rest is not
 /// the checked state's, which keeps egui's selected look (spec §10, rules 0 and 0a); unchecked,
 /// the icon loads in one colour and egui changes it in no state, so a colour stated at rest
 /// holds under the pointer and pressed (rule 0). `None` where it states none, or none is
@@ -2119,15 +2120,19 @@ pub(crate) fn tool_icon_color(
         WidgetState::NONE
     };
     if checked {
+        let icon = r.toolbar.button_icon(
+            native_theme::next::StyleQuery::new(state | WidgetState::CHECKED)
+                .asking(WidgetState::CHECKED),
+        );
         if !r
             .toolbar
             .button_icon(WidgetState::CHECKED)
             .from_state
             .contains(IconStated::COLOR)
+            && !icon.from_state.contains(IconStated::COLOR)
         {
             return None;
         }
-        let icon = r.toolbar.button_icon(state | WidgetState::CHECKED);
         return Some(native_theme_egui::next::to_color32(icon.color));
     }
     let icon = r.toolbar.button_icon(state);

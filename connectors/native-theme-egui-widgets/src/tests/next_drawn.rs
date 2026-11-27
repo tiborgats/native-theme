@@ -156,7 +156,7 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "radio on disabled",
         presets: &["kde-breeze"],
-        differs: Differs::Each(&[Differs::Fill, Differs::Dot]),
+        differs: Differs::Each(&[Differs::Fill, Differs::Outline, Differs::Dot]),
         reason: KDE_RADIO_DISABLED,
     },
     Difference {
@@ -534,7 +534,12 @@ const KDE_RADIO_DISABLED: &str = "a checked circle's fill and the dot's colour: 
      :1012-1019, :40 at breeze f0b1d75; breezemetrics.h:176; platform-facts.md §2.5), and its \
      dot in palette.text() of the Disabled group, Disabled [Colors:View] ForegroundNormal \
      (#aaabac / #606263: breezehelper.cpp:938, :1059 at breeze f0b1d75; platform-facts.md \
-     §2.1.6); the label is lettered in its own colour, as before";
+     §2.1.6); a checked circle's outline: 0.7.2 keeps the checked one's #3daee9, the 0.8.0 \
+     kde-breeze's rule for DISABLED | CHECKED states the frame of a checked radio, \
+     palette.highlight() of the Disabled group, the Disabled Highlight (#e3e5e7 / #1f2124: \
+     breezehelper.cpp:853-854, :1005-1006 at breeze f0b1d75; platform-facts.md §2.5, §2.21), \
+     which the query at that state asking DISABLED states (spec §2, from_state); the label is \
+     lettered in its own colour, as before";
 
 /// adwaita's checked radio.
 const ADWAITA_RADIO_CHECKED: &str = "a checked circle's outline: 0.7.2's adwaita outlines it \
@@ -2885,5 +2890,124 @@ fn an_expander_takes_its_stated_frame_indent_gap_and_side() -> TestResult {
         unframed > 0,
         "every preset frames its expander: the test proves nothing"
     );
+    Ok(())
+}
+
+/// A site that keeps egui's own treatment of the flag `s` on a part it draws at `s | t`, `read`
+/// from the theme, takes the theme's value where the theme states it for `s` by either of spec
+/// §2's two queries (`from_state`), on every preset with `widget`'s `property` first stated by a
+/// rule of no state (`base`), which clears the bit of the query at `s` alone, and then a rule as
+/// `home_patch_toml` (`tools/showcase-support`) states a home: a rule for `s | t` alone, stating
+/// `value`, is drawn at `s | t` (`drawn`), and a rule for `t` alone leaves egui's own treatment
+/// (`None`). Each preset and rule that reads otherwise is pushed to `misses`.
+fn two_flag_site<T: PartialEq + std::fmt::Debug>(
+    misses: &mut Vec<String>,
+    site: &str,
+    (widget, property): (&str, &str),
+    [s, t]: [&str; 2],
+    [base, value]: [&str; 2],
+    drawn: T,
+    read: impl Fn(&NextResolved) -> Option<T>,
+) -> TestResult {
+    let base = format!("[[widgets.{widget}.rules]]\nstates = []\n{property} = {base}\n");
+    for (states, expected) in [
+        (format!("\"{s}\", \"{t}\""), Some(drawn)),
+        (format!("\"{t}\""), None),
+    ] {
+        let patch = format!(
+            "{base}[[widgets.{widget}.rules]]\nstates = [{states}]\n{property} = {value}\n"
+        );
+        for &(key, preset) in crate::next::parity::PRESETS {
+            let got = read(&patched(preset, &patch)?);
+            if got != expected {
+                misses.push(format!(
+                    "{site}, {key}: a rule for [{states}] reads {got:?}, not {expected:?}"
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The switch's and the radio's looks keep egui's own treatment of a flag over a value stated
+/// for a state with another flag only where the theme states nothing for the flag by either of
+/// the two queries ([`two_flag_site`]).
+#[test]
+fn a_rule_for_two_flags_states_the_value_for_the_flag_asked() -> TestResult {
+    use crate::radio_button::Over;
+    use crate::switch::Look;
+    let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
+    let colours = ["\"#101010\"", "\"#ff00ff\""];
+    let lines = [
+        "{ width = 1.0, color = \"#101010\" }",
+        "{ width = 2.0, color = \"#ff00ff\" }",
+    ];
+    let (hover_checked, press_checked) = (["hover", "checked"], ["pressed", "checked"]);
+    let disabled_checked = ["disabled", "checked"];
+    let mut misses = Vec::new();
+    two_flag_site(
+        &mut misses,
+        "switch hovered checked track",
+        ("switch", "track.fill"),
+        hover_checked,
+        colours,
+        magenta,
+        |r| Look::next_of(r)?.hover_checked_background,
+    )?;
+    two_flag_site(
+        &mut misses,
+        "radio hovered checked fill",
+        ("radio", "indicator.fill"),
+        hover_checked,
+        colours,
+        magenta,
+        |r| Over::next_of(r, true, false).hovered.fill,
+    )?;
+    two_flag_site(
+        &mut misses,
+        "radio pressed checked fill",
+        ("radio", "indicator.fill"),
+        press_checked,
+        colours,
+        magenta,
+        |r| Over::next_of(r, true, false).pressed.fill,
+    )?;
+    two_flag_site(
+        &mut misses,
+        "radio hovered checked dot",
+        ("radio", "dot.fill"),
+        hover_checked,
+        colours,
+        magenta,
+        |r| Over::next_of(r, true, false).hovered.dot,
+    )?;
+    two_flag_site(
+        &mut misses,
+        "radio disabled checked outline",
+        ("radio", "indicator.stroke"),
+        disabled_checked,
+        lines,
+        magenta,
+        |r| Over::next_of(r, true, true).rest.stroke.map(|(c, _)| c),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "radio disabled checked outline width",
+        ("radio", "indicator.stroke"),
+        disabled_checked,
+        lines,
+        2.0,
+        |r| Over::next_of(r, true, true).rest.stroke_width,
+    )?;
+    two_flag_site(
+        &mut misses,
+        "radio disabled checked label",
+        ("radio", "label.color"),
+        disabled_checked,
+        colours,
+        magenta,
+        |r| Over::next_of(r, true, true).label,
+    )?;
+    assert!(misses.is_empty(), "{misses:#?}");
     Ok(())
 }

@@ -60,6 +60,18 @@ pub(crate) fn state_fill(
         .flatten()
 }
 
+/// Whether the theme states the property `bit` for a flag of a part drawn at a state holding it
+/// with other flags (spec §2, `from_state`, the two queries): `alone`, the part queried with the
+/// flag as its only state flag, or `own`, the part's own query asking the flag, has the bit.
+fn stated_for(alone: &PartStyle, own: &PartStyle, bit: PartStated) -> bool {
+    alone.from_state.contains(bit) || own.from_state.contains(bit)
+}
+
+/// [`stated_for`] of an icon.
+fn icon_stated_for(alone: &IconStyle, own: &IconStyle, bit: IconStated) -> bool {
+    alone.from_state.contains(bit) || own.from_state.contains(bit)
+}
+
 /// [`fill`] with the home a note names it by.
 fn fill_at(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Read<Rgba> {
     fill(part, home, notes).map(|c| (c, home))
@@ -1178,10 +1190,10 @@ struct MarkedHomes {
 /// rule states them for the flag; its outline colour, the flag's query's, transparent for one
 /// stated as none (spec §10, rule 2), so the box does not keep the unchecked box's over its own
 /// fill; its mark's width where a rule states it for the flag; and under the pointer and
-/// pressed, each of fill, outline and mark width the combined state's where a rule states it
-/// for `HOVER` or `PRESSED` asked alone, else `None`, and the box keeps egui's own treatment of
-/// the hover or the press (spec §2, `from_state`: a connector that keeps its own treatment of
-/// one flag over a value stated for another asks that flag alone).
+/// pressed, each of fill, outline and mark width the combined state's where the theme states it
+/// for `HOVER` or `PRESSED`, else `None`, and the box keeps egui's own treatment of the hover or
+/// the press (spec §2, `from_state`: a connector that keeps its own treatment of one flag asks
+/// the two queries, the flag alone and the combined state asking it; [`stated_for`]).
 fn marked_box(
     k: &CheckboxWidget,
     flag: WidgetState,
@@ -1190,25 +1202,24 @@ fn marked_box(
 ) -> MarkedBox {
     use WidgetState as S;
     let part = k.indicator(flag);
+    // the box at `state | flag`, asking `state`
+    let own = |state: WidgetState| k.indicator(StyleQuery::new(state | flag).asking(state));
     let stated_fill = |state: WidgetState, home: &'static str, notes: &mut Vec<Note>| {
-        k.indicator(state)
-            .from_state
-            .contains(PartStated::FILL)
-            .then(|| fill_at(&k.indicator(state | flag), home, notes))
+        let own = own(state);
+        stated_for(&k.indicator(state), &own, PartStated::FILL)
+            .then(|| fill_at(&own, home, notes))
             .flatten()
     };
     let stated_line = |state: WidgetState, home: &'static str, notes: &mut Vec<Note>| {
-        k.indicator(state)
-            .from_state
-            .contains(PartStated::STROKE)
-            .then(|| line_of(&k.indicator(state | flag), home, notes))
+        let own = own(state);
+        stated_for(&k.indicator(state), &own, PartStated::STROKE)
+            .then(|| line_of(&own, home, notes))
     };
-    // the mark's width where a rule states it for `asked`, the query `at`'s
+    // the mark's width where a rule states it for `asked`, the query `at`'s asking it
     let mark_width = |asked: WidgetState, at: WidgetState, home: &'static str| {
-        k.checkmark(asked)
-            .from_state
-            .contains(IconStated::STROKE_WIDTH)
-            .then(|| k.checkmark(at).stroke_width)
+        let own = k.checkmark(StyleQuery::new(at).asking(asked));
+        icon_stated_for(&k.checkmark(asked), &own, IconStated::STROKE_WIDTH)
+            .then_some(own.stroke_width)
             .flatten()
             .map(|v| (v, home))
     };
@@ -1237,14 +1248,17 @@ fn marked_box(
 }
 
 /// The mixed check box of the 0.8.0 theme `r`, as a rule states it for `INDETERMINATE`: the
-/// box ([`marked_box`]) and its mark's colour at rest and, where a rule states one for `HOVER`
-/// or `PRESSED` asked alone, the combined state's.
+/// box ([`marked_box`]) and its mark's colour at rest and, where the theme states one for
+/// `HOVER` or `PRESSED` by the two queries ([`stated_for`]), the combined state's.
 pub(crate) fn mixed_box(r: &ResolvedTheme, notes: &mut Vec<Note>) -> MixedBox {
     use WidgetState as S;
     let k = &r.checkbox;
     let flag = S::INDETERMINATE;
     let state_mark = |state: WidgetState| {
-        state_icon_color(&k.checkmark(state)).and_then(|_| icon_color(&k.checkmark(state | flag)))
+        let own = k.checkmark(StyleQuery::new(state | flag).asking(state));
+        icon_stated_for(&k.checkmark(state), &own, IconStated::COLOR)
+            .then(|| icon_color(&own))
+            .flatten()
     };
     MixedBox {
         look: marked_box(
@@ -1280,9 +1294,10 @@ pub(crate) fn mixed_box(r: &ResolvedTheme, notes: &mut Vec<Note>) -> MixedBox {
 /// [`VariantSource`] of the 0.8.0 model. A disabled or checked value is the one a rule states
 /// for that state. The checked box's fill and outline under the pointer or pressed keep egui's
 /// own treatment of the hover or the press, each property apart, unless the theme states one
-/// for it (spec §2, `from_state`: the state asked alone), and are then the combined state's
-/// value; a checked box's disabled fill, mark and outline likewise. The disabled box takes the
-/// outline a rule states for the disabled state, else keeps its resting one.
+/// for it (spec §2, `from_state`: the state alone, or the combined state asking it;
+/// [`stated_for`]), and are then the combined state's value; a checked box's disabled fill,
+/// mark and outline likewise, and the checked switch's disabled track. The disabled box takes
+/// the outline a rule states for the disabled state, else keeps its resting one.
 pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> VariantSource {
     use WidgetState as S;
     let b = &r.button;
@@ -1290,6 +1305,10 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
     let k = &r.checkbox;
     let i = &r.input;
     let primary_disabled = ButtonQuery::primary().with_state(S::DISABLED);
+    let off_on = StyleQuery::new(S::DISABLED | S::CHECKED).asking(S::DISABLED);
+    let (box_off, box_off_on) = (k.indicator(S::DISABLED), k.indicator(off_on));
+    let mark_off_on = k.checkmark(off_on);
+    let track_off_on = r.switch.track(off_on);
     VariantSource {
         button: disabled(
             &b.label(S::DISABLED),
@@ -1350,35 +1369,32 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                 },
                 notes,
             ),
-            disabled_fill: k
-                .indicator(S::DISABLED)
-                .from_state
-                .contains(PartStated::FILL)
+            disabled_fill: stated_for(&box_off, &box_off_on, PartStated::FILL)
                 .then(|| {
                     fill_at(
-                        &k.indicator(S::DISABLED | S::CHECKED),
+                        &box_off_on,
                         "checkbox.indicator(DISABLED|CHECKED).fill",
                         notes,
                     )
                 })
                 .flatten(),
-            disabled_mark: state_icon_color(&k.checkmark(S::DISABLED))
-                .and_then(|_| icon_color(&k.checkmark(S::DISABLED | S::CHECKED))),
-            disabled_border: k
-                .indicator(S::DISABLED)
-                .from_state
-                .contains(PartStated::STROKE)
-                .then(|| {
-                    let part = k.indicator(S::DISABLED | S::CHECKED);
-                    (
-                        line_of(
-                            &part,
-                            "checkbox.indicator(DISABLED|CHECKED).stroke.width",
-                            notes,
-                        ),
-                        edge(&part).1,
-                    )
-                }),
+            disabled_mark: icon_stated_for(
+                &k.checkmark(S::DISABLED),
+                &mark_off_on,
+                IconStated::COLOR,
+            )
+            .then(|| icon_color(&mark_off_on))
+            .flatten(),
+            disabled_border: stated_for(&box_off, &box_off_on, PartStated::STROKE).then(|| {
+                (
+                    line_of(
+                        &box_off_on,
+                        "checkbox.indicator(DISABLED|CHECKED).stroke.width",
+                        notes,
+                    ),
+                    edge(&box_off_on).1,
+                )
+            }),
         },
         input: Disabled {
             text: state_text_color(&i.text(S::DISABLED)),
@@ -1403,11 +1419,13 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                 "switch.track(DISABLED).fill",
                 notes,
             ),
-            state_fill(
-                &r.switch.track(S::DISABLED | S::CHECKED),
-                "switch.track(DISABLED|CHECKED).fill",
-                notes,
-            ),
+            stated_for(
+                &r.switch.track(S::DISABLED),
+                &track_off_on,
+                PartStated::FILL,
+            )
+            .then(|| fill(&track_off_on, "switch.track(DISABLED|CHECKED).fill", notes))
+            .flatten(),
         ],
         menu: state_text_color(&r.menu.item_label(S::DISABLED)),
         list: state_text_color(&r.list.item_label(S::DISABLED)),

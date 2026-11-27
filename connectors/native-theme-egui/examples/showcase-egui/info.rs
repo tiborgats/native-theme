@@ -876,13 +876,13 @@ pub(crate) const EDIT_ICON_CHECKED: &str = "egui: per call, the colour the edit 
 /// The route of the edit switch's icon colour while on under the pointer.
 pub(crate) const EDIT_ICON_HOVER_CHECKED: &str = "egui: per call, the colour the edit switch's \
      icon loads in while on under the pointer, in the state of its previous response, where a \
-     rule states toolbar.button_icon(CHECKED).color for CHECKED (demo::tool_icon_color, \
-     demo::loaded_in)";
+     rule states toolbar.button_icon(CHECKED).color for CHECKED, or one for HOVER | CHECKED \
+     states this colour (the query asking CHECKED; demo::tool_icon_color, demo::loaded_in)";
 /// The route of the edit switch's icon colour while on and pressed.
 pub(crate) const EDIT_ICON_PRESSED_CHECKED: &str = "egui: per call, the colour the edit switch's \
      icon loads in while on and pressed, in the state of its previous response, where a rule \
-     states toolbar.button_icon(CHECKED).color for CHECKED (demo::tool_icon_color, \
-     demo::loaded_in)";
+     states toolbar.button_icon(CHECKED).color for CHECKED, or one for PRESSED | CHECKED states \
+     this colour (the query asking CHECKED; demo::tool_icon_color, demo::loaded_in)";
 
 /// The homes of the side-panel toggle's checked outline, fill and label under the pointer and
 /// pressed, its flat outline's hovered width and focused pen, and of its icon's colour, which

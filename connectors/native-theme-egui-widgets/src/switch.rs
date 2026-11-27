@@ -3,7 +3,7 @@
 use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui::{self, AtomExt as _, accesskit};
 use native_theme_egui::native_theme::next::{
-    LabelSide, PartStyle, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
+    LabelSide, PartStyle, ResolvedTheme as NextResolvedTheme, StyleQuery, TextStated, WidgetState,
 };
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
 use native_theme_egui::{Note, ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
@@ -310,9 +310,9 @@ impl Look {
     /// `switch.track` and `switch.thumb` at `NONE`, `CHECKED`, `DISABLED` and
     /// `DISABLED|CHECKED`, a disabled one asked at its state directly (egui has no disabled
     /// switch whose treatment an unstated value would keep, so spec §2's one-flag query does
-    /// not apply); a hovered track's fill where a rule for `HOVER` states it (read at
-    /// `HOVER|CHECKED` on a checked switch, as the query with that flag alone says, spec §2,
-    /// `from_state`); the label's colour at `switch.label`, else the body text's
+    /// not apply); a hovered track's fill where the theme states it for `HOVER` (read at
+    /// `HOVER|CHECKED` on a checked switch, where the query with that flag alone or the one at
+    /// `HOVER|CHECKED` asking it says so, spec §2, `from_state`); the label's colour at `switch.label`, else the body text's
     /// (`typography.body.color`), a hovered and a pressed one's at `switch.label(HOVER)` and
     /// `switch.label(PRESSED)` where a rule for that state states it, else egui's own hovered
     /// and pressed label colours ([`Self::hover_text`], [`Self::pressed_text`]), a
@@ -356,7 +356,10 @@ impl Look {
             fill(&thumb(off_on), "switch.thumb(DISABLED|CHECKED).fill");
         let hover_checked_background = next::ruled_fill(
             &hover,
-            &track(WidgetState::HOVER | WidgetState::CHECKED),
+            &sw.track(
+                StyleQuery::new(WidgetState::HOVER | WidgetState::CHECKED)
+                    .asking(WidgetState::HOVER),
+            ),
             "switch.track(HOVER|CHECKED).fill",
             unmapped,
         );

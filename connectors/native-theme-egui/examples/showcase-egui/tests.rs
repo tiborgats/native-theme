@@ -14281,6 +14281,46 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     Ok(())
 }
 
+/// A checked toolbar button's icon keeps egui's selected look only where the theme states its
+/// colour for `CHECKED` by neither of spec §2's two queries (`from_state`): on every preset
+/// with `toolbar.button_icon`'s colour first stated by a rule of no state, which clears the bit
+/// of the query at `CHECKED` alone, a rule for `HOVER | CHECKED` (`PRESSED | CHECKED`) alone
+/// colours the hovered (pressed) checked icon, as `home_patch_toml` (`tools/showcase-support`)
+/// states that home, and a rule for `HOVER` (`PRESSED`) alone does not
+/// (`demo::tool_icon_color`).
+#[test]
+fn a_checked_tool_icon_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
+    use crate::demo::tool_icon_color;
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    let magenta = Some(egui::Color32::from_rgb(0xff, 0, 0xff));
+    let base = "[[widgets.toolbar.rules]]\nstates = []\nbutton_icon.color = \"#101010\"\n";
+    let mut misses = Vec::new();
+    for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
+        for (states, expected) in [
+            (format!("\"{flag}\", \"checked\""), magenta),
+            (format!("\"{flag}\""), None),
+        ] {
+            let patch = format!(
+                "{base}[[widgets.toolbar.rules]]\nstates = [{states}]\nbutton_icon.color = \"#ff00ff\"\n"
+            );
+            let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+            for &preset in Preset::ALL {
+                let r = Theme::preset(preset)
+                    .with_patch(patch.clone())
+                    .resolve(&ThemeContext::light());
+                let got = tool_icon_color(Some(&r), was, true);
+                if got != expected {
+                    misses.push(format!(
+                        "{preset:?}, a rule for [{states}]: {got:?}, not {expected:?}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
 /// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
 /// icon is not the texture it is painted from unchecked at rest, loaded in the resting
 /// `toolbar.button_icon(NONE).color` #4d4d4d: it takes the colour the rule for `CHECKED`

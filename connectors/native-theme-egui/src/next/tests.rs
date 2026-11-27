@@ -1011,7 +1011,10 @@ fn disabled_unstated_atlas(
 /// state (`indicator(DISABLED).stroke`), its width and colour; where none does, it keeps its
 /// resting outline, which egui dims by `disabled_alpha` alone (spec §2, `from_state`; §10,
 /// rule 0): on every preset, each patched to state neither the disabled indicator's fill nor
-/// its stroke ([`disabled_unstated_atlas`]), as every bundled preset states one.
+/// its stroke ([`disabled_unstated_atlas`]), as every bundled preset states one; the checked box
+/// still draws the outline a rule for `DISABLED | CHECKED` states, which the query at that state
+/// asking `DISABLED` says (spec §2, `from_state`, the two queries), as the unpatched preset
+/// draws it (kde-breeze's frame, windows-11's outline).
 #[test]
 fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
     use native_theme::next::PartStated;
@@ -1019,6 +1022,7 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
     let rule = "[[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
                 indicator.stroke = { width = 3.0, color = \"#ff00ff\" }\n";
     let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    let mut asked = 0;
     for &(key, preset) in PRESETS {
         let cells = |atlas: &crate::ThemeAtlas| {
             let styles = atlas.scheme(egui::Theme::Light);
@@ -1054,8 +1058,26 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
         );
         let [normal, selected, disabled, checked] = cells(&atlas);
         assert_eq!(disabled.bg_stroke, normal.bg_stroke, "{key}: unchecked");
-        assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
+        let own = r.checkbox.indicator(
+            native_theme::next::StyleQuery::new(WidgetState::DISABLED | WidgetState::CHECKED)
+                .asking(WidgetState::DISABLED),
+        );
+        if own.from_state.contains(PartStated::STROKE) {
+            asked += 1;
+            let [_, _, _, stock] = cells(&patched_light(preset, "")?);
+            assert_eq!(
+                checked.bg_stroke, stock.bg_stroke,
+                "{key}: checked, its rule for DISABLED | CHECKED"
+            );
+        } else {
+            assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
+        }
     }
+    assert!(
+        asked > 0 && asked < PRESETS.len(),
+        "{asked} presets state the disabled checked box's outline by a rule for DISABLED | CHECKED: \
+         the test reaches one branch only"
+    );
     Ok(())
 }
 
@@ -2229,5 +2251,175 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::
         layered_would_differ > 0,
         "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
     );
+    Ok(())
+}
+
+/// A site that keeps egui's own treatment of the flag `s` on a part it draws at `s | t`, `read`
+/// from the theme, takes the theme's value where the theme states it for `s` by either of spec
+/// §2's two queries (`from_state`), on every preset with `widget`'s `property` first stated by a
+/// rule of no state (`base`), which clears the bit of the query at `s` alone, and then a rule as
+/// `home_patch_toml` (`tools/showcase-support`) states a home: a rule for `s | t` alone, stating `value`, is drawn
+/// at `s | t` (`drawn`), and a rule for `t` alone leaves egui's own treatment (`None`). Each
+/// preset and rule that reads otherwise is pushed to `misses`.
+fn two_flag_site<T: PartialEq + std::fmt::Debug>(
+    misses: &mut Vec<String>,
+    site: &str,
+    (widget, property): (&str, &str),
+    [s, t]: [&str; 2],
+    [base, value]: [&str; 2],
+    drawn: T,
+    read: impl Fn(&native_theme::next::ResolvedTheme) -> Option<T>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let base = format!("[[widgets.{widget}.rules]]\nstates = []\n{property} = {base}\n");
+    for (states, expected) in [
+        (format!("\"{s}\", \"{t}\""), Some(drawn)),
+        (format!("\"{t}\""), None),
+    ] {
+        let patch = format!(
+            "{base}[[widgets.{widget}.rules]]\nstates = [{states}]\n{property} = {value}\n"
+        );
+        for &(key, preset) in PRESETS {
+            let r = Theme::preset(preset)
+                .with_patch(ThemePatch::from_toml(&patch)?)
+                .resolve(&ThemeContext::light());
+            let got = read(&r);
+            if got != expected {
+                misses.push(format!(
+                    "{site}, {key}: a rule for [{states}] reads {got:?}, not {expected:?}"
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The check box's, the mixed box's and the switch's sources keep egui's own treatment of a
+/// flag over a value stated for a state with another flag only where the theme states nothing
+/// for the flag by either of the two queries ([`two_flag_site`]).
+#[test]
+fn a_rule_for_two_flags_states_the_value_for_the_flag_asked()
+-> Result<(), Box<dyn std::error::Error>> {
+    let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
+    let [base, value] = ["\"#101010\"", "\"#ff00ff\""];
+    let [base_line, line] = [
+        "{ width = 1.0, color = \"#101010\" }",
+        "{ width = 2.0, color = \"#ff00ff\" }",
+    ];
+    let colour = |c: (crate::convert::Rgba, &str)| crate::convert::to_color32(c.0);
+    let source =
+        |r: &native_theme::next::ResolvedTheme| super::build::variant_source(r, &mut Vec::new());
+    let mixed = |r: &native_theme::next::ResolvedTheme| super::build::mixed_box(r, &mut Vec::new());
+    let fill = ("checkbox", "indicator.fill");
+    let stroke = ("checkbox", "indicator.stroke");
+    let mark = ("checkbox", "checkmark.color");
+    let (hover_checked, press_checked) = (["hover", "checked"], ["pressed", "checked"]);
+    let disabled_checked = ["disabled", "checked"];
+    let mut misses = Vec::new();
+    two_flag_site(
+        &mut misses,
+        "checked hovered fill",
+        fill,
+        hover_checked,
+        [base, value],
+        magenta,
+        |r| source(r).checked.look.state_fill[0].map(colour),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked pressed fill",
+        fill,
+        press_checked,
+        [base, value],
+        magenta,
+        |r| source(r).checked.look.state_fill[1].map(colour),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked hovered outline",
+        stroke,
+        hover_checked,
+        [base_line, line],
+        magenta,
+        |r| {
+            source(r).checked.look.state_border[0]
+                .and_then(|l| l.color)
+                .map(crate::convert::to_color32)
+        },
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked hovered mark width",
+        ("checkbox", "checkmark.stroke_width"),
+        hover_checked,
+        ["1.0", "4.0"],
+        4.0,
+        |r| source(r).checked.look.mark_width[1].map(|w| w.0),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "mixed hovered fill",
+        fill,
+        ["hover", "indeterminate"],
+        [base, value],
+        magenta,
+        |r| mixed(r).look.state_fill[0].map(colour),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "mixed pressed mark",
+        mark,
+        ["pressed", "indeterminate"],
+        [base, value],
+        magenta,
+        |r| mixed(r).mark[2].map(crate::convert::to_color32),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked disabled fill",
+        fill,
+        disabled_checked,
+        [base, value],
+        magenta,
+        |r| source(r).checked.disabled_fill.map(colour),
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked disabled mark",
+        mark,
+        disabled_checked,
+        [base, value],
+        magenta,
+        |r| {
+            source(r)
+                .checked
+                .disabled_mark
+                .map(crate::convert::to_color32)
+        },
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked disabled outline",
+        stroke,
+        disabled_checked,
+        [base_line, line],
+        magenta,
+        |r| {
+            source(r)
+                .checked
+                .disabled_border
+                .and_then(|(l, _)| l.color)
+                .map(crate::convert::to_color32)
+        },
+    )?;
+    two_flag_site(
+        &mut misses,
+        "checked disabled switch track",
+        ("switch", "track.fill"),
+        disabled_checked,
+        [base, value],
+        magenta,
+        |r| source(r).switch[1].map(crate::convert::to_color32),
+    )?;
+    assert!(misses.is_empty(), "{misses:#?}");
     Ok(())
 }
