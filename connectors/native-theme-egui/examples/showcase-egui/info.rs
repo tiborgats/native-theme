@@ -739,7 +739,7 @@ pub(crate) const FLAT_HOVER_WIDTH: &str = "egui: per call, the flat button's out
      demo::flat)";
 
 /// The tool buttons, by id, whose elements and icons' elements take [`TOOL_BUTTON_ROUTES`].
-const TOOL_BUTTONS: [&str; 7] = [
+const TOOL_BUTTONS: [&str; 8] = [
     "chrome.toolbar.command_palette",
     "chrome.toolbar.reload_theme",
     "chrome.toolbar.preferences",
@@ -747,6 +747,7 @@ const TOOL_BUTTONS: [&str; 7] = [
     "basic.icons.paste",
     "basic.icons.delete",
     "basic.icons.edit",
+    "basic.icons.save",
 ];
 
 /// The side-panel toggle, whose element and its icon's take [`TOGGLE_ROUTES`].
@@ -1052,6 +1053,78 @@ pub(crate) const TOGGLE_FOCUS_PEN: &str = "egui: per call, the toggle's outline 
 /// button's own corners, which egui reads none of, and
 /// the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
+    // Save, the disabled tool button (pages::basic::icon_buttons), in the toolbar's Disabled cell.
+    (
+        "basic.icons.save",
+        "toolbar.button(DISABLED).fill",
+        SAVE_DISABLED_FILL,
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button(DISABLED).corners",
+        SAVE_DISABLED_CORNERS,
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button(NONE).fill",
+        SAVE_REST_FILL,
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button(NONE).corners",
+        SAVE_REST_CORNERS,
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button(HOVER).stroke.color",
+        "not drawn: egui draws a disabled button in its resting entry alone, never hovered \
+         (egui-0.37.0 src/ui.rs:1713-1724, Ui::add_enabled)",
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button_label(DISABLED).color",
+        SAVE_DISABLED_LABEL,
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button_label(NONE).color",
+        SAVE_REST_LABEL,
+    ),
+    (
+        "basic.icons.save.icon",
+        "toolbar.button_label(NONE).color",
+        SAVE_REST_LABEL,
+    ),
+    (
+        "basic.icons.save",
+        "colors.disabled_opacity",
+        "egui: the toolbar scope's visuals.disabled_alpha, the base style's, by which egui \
+         multiplies the disabled button's painter opacity, its fill, label and icon \
+         (native-theme-egui style/base.rs; egui-0.37.0 src/ui.rs:523-529, Ui::disable)",
+    ),
+    (
+        "basic.icons.save",
+        "button.disabled_opacity",
+        "not drawn: the toolbar scope is no button scope, and its disabled_alpha is the base \
+         style's, colors.disabled_opacity (native-theme-egui style/variants.rs, disabled_cell)",
+    ),
+    (
+        "basic.icons.save",
+        "colors.window.foreground_muted",
+        "not drawn: egui letters a disabled tool button in the scope's label and loads its icon \
+         in the colour a rule states for DISABLED, else in that label, each faded by \
+         disabled_alpha, not in a muted colour (demo::disabled_tool_icon_color)",
+    ),
+    (
+        "basic.icons.save",
+        "toolbar.button_icon(DISABLED).color",
+        SAVE_ICON_DISABLED,
+    ),
+    (
+        "basic.icons.save.icon",
+        "toolbar.button_icon(DISABLED).color",
+        SAVE_ICON_DISABLED,
+    ),
     (
         "basic.list.frame",
         "list.container(NONE).corners",
@@ -1597,6 +1670,54 @@ pub(crate) const EDIT_PRESSED_PEN: &str = "egui: per call, the edit switch's out
 pub(crate) const EDIT_PRESSED_UNDER_POINTER: &str = "not drawn: egui asks the edit switch's pressed outline \
      as toolbar.button(PRESSED|CHECKED), a pressed response being egui's active entry whether \
      the pointer is over it or not (pages::basic::tool_pen)";
+
+/// Save's fill, the disabled tool button's, in the toolbar's Disabled cell.
+pub(crate) const SAVE_DISABLED_FILL: &str = "egui: the toolbar scope's Disabled cell's resting \
+     fill, visuals.widgets.inactive.weak_bg_fill, the entry egui draws a disabled button in, where \
+     a rule states it for DISABLED (native-theme-egui style/variants.rs, disabled_cell); per call, \
+     demo::next_disabled_toolbar_button keeps the cell's fill where the theme states one for \
+     DISABLED, by a rule for the state or at rest, else transparent, as a Ghost; faded by the \
+     scope's disabled_alpha (egui-0.37.0 src/ui.rs:523-529, Ui::disable)";
+
+/// Save's corners, the Disabled cell's.
+pub(crate) const SAVE_DISABLED_CORNERS: &str = "egui: the toolbar scope's Disabled cell's \
+     corner_radius, where a rule states it for DISABLED; else the Normal cell's, \
+     toolbar.button(NONE).corners where stated (native-theme-egui style/variants.rs, \
+     disabled_cell)";
+
+/// Save's fill where no rule states the disabled one: the rest capsule's, kept by the cell.
+pub(crate) const SAVE_REST_FILL: &str = "egui: where no rule states \
+     toolbar.button(DISABLED).fill, the disabled button's fill: the Disabled cell keeps the Normal \
+     cell's resting fill, and demo::next_disabled_toolbar_button keeps it, the theme's answer \
+     for DISABLED being the fill at rest (native-theme-egui style/variants.rs, disabled_cell)";
+
+/// Save's corners where no rule states the disabled ones, as [`SAVE_REST_FILL`].
+pub(crate) const SAVE_REST_CORNERS: &str = "egui: where no rule states \
+     toolbar.button(DISABLED).corners, the Disabled cell's corner_radius, which it keeps from the \
+     Normal cell's rest capsule (native-theme-egui style/variants.rs, disabled_cell; \
+     style/roles.rs, the toolbar's rest capsule)";
+
+/// Save's label disabled, which the Disabled cell writes none of.
+pub(crate) const SAVE_DISABLED_LABEL: &str = "not drawn: the Disabled toolbar cell writes no \
+     label colour; egui letters a disabled tool button in the scope's label at rest, faded by \
+     disabled_alpha, shown only where the set has no icon for it (native-theme-egui \
+     style/variants.rs, disabled_cell)";
+
+/// Save's icon colour, per call.
+pub(crate) const SAVE_ICON_DISABLED: &str = "egui: per call, the colour the icon loads in, where \
+     a rule states it for DISABLED; else the icon loads in the scope's text colour, \
+     toolbar.button_label(NONE).color where stated; faded with the button by the scope's \
+     disabled_alpha (demo::disabled_tool_icon_color, demo::loaded_in; egui-0.37.0 \
+     src/ui.rs:523-529, Ui::disable)";
+
+/// Save's label colour at rest, which the Disabled cell keeps: its label's, and its icon's where
+/// no rule states the disabled icon colour.
+pub(crate) const SAVE_REST_LABEL: &str = "egui: the toolbar scope's label colour, which the \
+     Disabled cell keeps, faded by its disabled_alpha: the label's where the set has no icon for \
+     the button, and the colour the icon loads in where no rule states \
+     toolbar.button_icon(DISABLED).color (native-theme-egui next/build.rs, ToolbarCell panel; \
+     demo::disabled_tool_icon_color, demo::role_image; egui-0.37.0 src/ui.rs:523-529, \
+     Ui::disable)";
 
 /// The On toggle's fill under the pointer, per call in `pages::basic::toggle_on_in`.
 pub(crate) const TOGGLE_ON_HOVER_FILL: &str = "egui: per call, Button::fill, the toggle's fill while on \

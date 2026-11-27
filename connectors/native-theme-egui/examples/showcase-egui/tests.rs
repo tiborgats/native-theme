@@ -12407,6 +12407,41 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     // An element's own routes, by its id, before the tool buttons' and the toggle's.
     let own: &[(&str, &str, &str)] = &[
         (
+            "basic.icons.save",
+            "toolbar.button(DISABLED).fill",
+            i::SAVE_DISABLED_FILL,
+        ),
+        (
+            "basic.icons.save",
+            "toolbar.button(DISABLED).corners",
+            i::SAVE_DISABLED_CORNERS,
+        ),
+        (
+            "basic.icons.save",
+            "toolbar.button(NONE).fill",
+            i::SAVE_REST_FILL,
+        ),
+        (
+            "basic.icons.save",
+            "toolbar.button(NONE).corners",
+            i::SAVE_REST_CORNERS,
+        ),
+        (
+            "basic.icons.save",
+            "toolbar.button_label(DISABLED).color",
+            i::SAVE_DISABLED_LABEL,
+        ),
+        (
+            "basic.icons.save",
+            "toolbar.button_icon(DISABLED).color",
+            i::SAVE_ICON_DISABLED,
+        ),
+        (
+            "basic.icons.save.icon",
+            "toolbar.button_icon(DISABLED).color",
+            i::SAVE_ICON_DISABLED,
+        ),
+        (
             "basic.icons.edit",
             "toolbar.button(NONE).fill",
             i::EDIT_REST_FILL,
@@ -14326,6 +14361,166 @@ fn the_checked_edit_icon_is_not_loaded_in_the_resting_icon_colour() -> Result<()
     assert_ne!(
         checked, rest,
         "the checked Edit icon is loaded in the resting icon colour"
+    );
+    Ok(())
+}
+
+/// The Basic page's Save, a disabled tool button, under macos-tahoe light, a bundled Material
+/// icon: its icon loads in `toolbar.button_icon(DISABLED).color`, #bfbfbf (os-probe run
+/// 45634379188, `aqua.normal.toolbar_image_disabled` `icon`; native-theme/src/next/presets/
+/// macos.rs, `toolbar_icon_disabled`), not the rest #4d4d4d, and it is framed in
+/// `toolbar.button(DISABLED).fill`, #ffffff, macos-tahoe dimming by no opacity
+/// (`colors.disabled_opacity` 1, docs/platform-facts.md §2.1.6); the pointer over it leaves that
+/// frame, egui drawing a disabled button in its resting entry alone. With the disabled fill and
+/// icon colour patched to marks for `DISABLED` alone, it is framed in the fill mark, the fill the
+/// connector's Disabled toolbar cell gives the scope, and its icon is painted from the texture
+/// Save's icon loaded in the icon mark takes. Each painted texture is the one a load of Save's
+/// key in that colour returns in the same context, a cache hit, so an icon loaded in any other
+/// colour fails. A colour stated at rest alone (kde-breeze patched) gives no disabled icon colour.
+#[cfg(feature = "material-icons")]
+#[test]
+fn the_disabled_tool_button_takes_the_stated_disabled_look() -> Result<(), String> {
+    use native_theme::icons::IconRole;
+    use native_theme::next::{
+        Color, IconPatch, IconStated, Paint, PartPatch, Preset, Theme, ThemeContext, ThemePatch,
+        ToolbarRule, WidgetState,
+    };
+    use native_theme_egui::icons::{IconKey, custom_icon_to_image};
+    const ID: &str = "basic.icons.save";
+    let grey = |v: u8| egui::Color32::from_rgb(v, v, v);
+    let tahoe = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
+    assert_eq!(
+        crate::demo::disabled_tool_icon_color(&tahoe),
+        Some(grey(0xbf))
+    );
+    assert_eq!(
+        crate::demo::tool_icon_color(Some(&tahoe), (false, false), false),
+        Some(grey(0x4d))
+    );
+    assert_eq!(tahoe.colors.disabled_opacity, 1.0);
+    // A colour stated by a rule that requires no state is stated at rest, not for DISABLED.
+    let mut rest_only = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    rest_only.apply_patch(
+        &ThemePatch::new().toolbar(
+            ToolbarRule::new()
+                .button_icon(IconPatch::new().color(Color::from_srgb8(0x9b, 0x57, 0x13, 0xff))),
+        ),
+    );
+    assert!(
+        rest_only
+            .toolbar
+            .button_icon(WidgetState::DISABLED)
+            .stated
+            .contains(IconStated::COLOR)
+    );
+    assert_eq!(
+        crate::demo::disabled_tool_icon_color(&rest_only),
+        None,
+        "a colour stated at rest is taken for the disabled icon"
+    );
+    // The frame's fills and the icon's textures painted inside Save's place.
+    let painted = |harness: &Harness<'_, App>| {
+        let place = place_of(harness, ID);
+        let mut fills = Vec::new();
+        let mut textures = Vec::new();
+        for clipped in &harness.output().shapes {
+            if let egui::Shape::Rect(r) = &clipped.shape
+                && place.expand(1.0).contains_rect(r.rect)
+            {
+                match &r.brush {
+                    Some(brush) => textures.push(brush.fill_texture_id),
+                    None if r.rect.width() + 2.0 >= place.width() => fills.push(r.fill),
+                    None => {}
+                }
+            }
+        }
+        (fills, textures)
+    };
+    // The texture of Save's icon loaded in `colour` as the page loads it (`demo::role_image` in
+    // `demo::loaded_in`), at the shown theme's toolbar icon size, from the chosen set and theme,
+    // as egui paints it: at the pixel size of its square, its aspect not kept
+    // (egui-0.37.0 src/widgets/image.rs, Image::paint_at).
+    let loaded_in = |harness: &Harness<'_, App>, colour| -> Result<egui::TextureId, String> {
+        let app = harness.state();
+        let r = app.atlas.next_shown(&harness.ctx).ok_or("no 0.8.0 theme")?;
+        let size = crate::demo::tool_icon_size(Some(r)).ok_or("no toolbar icon size")?;
+        let (set, icon_theme) = app.chosen_icons();
+        let role = IconRole::ActionSave;
+        let mut key = IconKey::role(role, set).size(size).tint(colour);
+        if let Some(name) = icon_theme.as_deref() {
+            key = key.icon_theme(name);
+        }
+        let image =
+            custom_icon_to_image(&harness.ctx, &role, &key).ok_or("the set has no Save icon")?;
+        let side = (harness.ctx.pixels_per_point() * size).round() as u32;
+        let hint = egui::SizeHint::Size {
+            width: side,
+            height: side,
+            maintain_aspect_ratio: false,
+        };
+        let source = image.source(&harness.ctx).clone();
+        match source.load(&harness.ctx, egui::TextureOptions::default(), hint) {
+            Ok(egui::load::TexturePoll::Ready { texture }) => Ok(texture.id),
+            Ok(egui::load::TexturePoll::Pending { .. }) => {
+                Err("Save's icon is still loading".to_owned())
+            }
+            Err(error) => Err(format!("Save's icon is not loaded: {error}")),
+        }
+    };
+    let settle = |harness: &mut Harness<'static, App>| {
+        harness.state_mut().settings.icon = IconSetChoice::Material;
+        harness.run_steps(SETTLE);
+        harness.remove_cursor();
+        harness.run_steps(3);
+    };
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
+    settle(&mut harness);
+    let (fills, textures) = painted(&harness);
+    assert_eq!(
+        fills,
+        [grey(0xff)],
+        "Save is not framed in toolbar.button(DISABLED).fill"
+    );
+    assert_eq!(
+        textures,
+        [loaded_in(&harness, grey(0xbf))?],
+        "Save's icon is not loaded in toolbar.button_icon(DISABLED).color"
+    );
+    let at = place_of(&harness, ID).center();
+    harness.hover_at(at);
+    harness.run_steps(3);
+    assert_eq!(
+        painted(&harness).0,
+        [grey(0xff)],
+        "Save under the pointer leaves its disabled frame"
+    );
+
+    let fill = Color::from_srgb8(0x13, 0x57, 0x9b, 0xff);
+    let icon = Color::from_srgb8(0x9b, 0x57, 0x13, 0xff);
+    let patch = ThemePatch::new().toolbar(
+        ToolbarRule::new()
+            .states(WidgetState::DISABLED)
+            .button(PartPatch::new().fill(Paint::Solid(fill)))
+            .button_icon(IconPatch::new().color(icon)),
+    );
+    let pair = harness.state().atlas.clone().patched(&patch)?;
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt_pair(&ctx, pair);
+    harness.run_steps(4);
+    settle(&mut harness);
+    let (marked_fills, marked_textures) = painted(&harness);
+    assert_eq!(
+        marked_fills,
+        [egui::Color32::from_rgb(0x13, 0x57, 0x9b)],
+        "Save is not framed in the patched toolbar.button(DISABLED).fill"
+    );
+    assert_eq!(
+        marked_textures,
+        [loaded_in(
+            &harness,
+            egui::Color32::from_rgb(0x9b, 0x57, 0x13)
+        )?],
+        "Save's icon is not loaded in the patched toolbar.button_icon(DISABLED).color"
     );
     Ok(())
 }

@@ -1529,8 +1529,8 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
     demo::state_pen(&r.toolbar.button(state))
 }
 
-/// The Icons group's first row: four icon-only tool buttons, as the toolbar's
-/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete and Edit at
+/// The Icons group's first row: five icon-only tool buttons, as the toolbar's
+/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete, Edit and Save at
 /// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`demo::tool_icon_size`]; where it
 /// states none, each button's label in place of its icon, which its Widget Info names), in the
 /// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
@@ -1543,7 +1543,10 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
 /// response, each one the theme leaves unstated egui's own, which its Widget Info names; and
 /// lined in the pen a rule states for the checked state at rest (`toolbar.button(CHECKED)`),
 /// under the pointer (`CHECKED | HOVER`) and pressed (`CHECKED | PRESSED`), each unstated one the
-/// scope's own ([`tool_pen`]).
+/// scope's own ([`tool_pen`]). Save is disabled, the one that is never enabled, in the toolbar's
+/// Disabled cell ([`demo::next_disabled_toolbar_button`]), its icon loaded in
+/// `toolbar.button_icon(DISABLED).color` where a rule states it for the state
+/// ([`demo::disabled_tool_icon_color`]).
 fn icon_buttons(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -1580,7 +1583,7 @@ fn icon_buttons(
             // of tool buttons is not, and a wrapping row takes its first line's height from it
             // when it opens (`egui/src/ui.rs:2376-2379`).
             ui.spacing_mut().interact_size.y = 0.0;
-            // Wrapping onto a further line where the column is too narrow for the four.
+            // Wrapping onto a further line where the column is too narrow for the five.
             ui.horizontal_wrapped(|ui| {
                 let spacing = ui.spacing_mut();
                 spacing.item_spacing.y = spacing.item_spacing.x;
@@ -1707,6 +1710,52 @@ fn icon_buttons(
                         reg.note_last(what, &note);
                     }
                 }
+                reg.tag(id, &response);
+                remember_width(ui, id, response.rect);
+                if let Some(size) = size.filter(|_| drawn) {
+                    crate::chrome::place_icon(reg, ui, id, &response, size);
+                }
+                // Save, disabled: the one toolbar button that is never enabled, in the toolbar's
+                // Disabled cell, its capsule `toolbar.button(DISABLED)`'s where stated
+                // (`demo::next_disabled_toolbar_button`), added disabled (`Ui::add_enabled`),
+                // which egui draws in its resting entry, faded by the cell's `disabled_alpha`.
+                let id = "basic.icons.save";
+                let (mut drawn, mut filled) = (false, false);
+                wrap_before(ui, id);
+                let response = demo::scoped(
+                    reg,
+                    ui,
+                    Role::Toolbar,
+                    RoleVariant::Disabled,
+                    "icon button, disabled",
+                    |ui| {
+                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                        filled = demo::next_disabled_toolbar_button(ui, padding, r);
+                        let tint = r.and_then(demo::disabled_tool_icon_color);
+                        let image =
+                            demo::loaded_in(ui, tint, |ui| image_at(ui, IconRole::ActionSave));
+                        drawn = image.is_some();
+                        let button = match image {
+                            Some(image) => Button::image(image),
+                            None => Button::new("Save"),
+                        };
+                        let r = ui.add_enabled(false, button);
+                        r.widget_info(|| {
+                            egui::WidgetInfo::labeled(egui::Role::Button, false, "Save")
+                        });
+                        r
+                    },
+                );
+                if filled {
+                    reg.note_last(
+                        "border",
+                        "transparent, the border's width kept, as a Ghost button's; its fill \
+                         toolbar.button(DISABLED).fill, which the theme states",
+                    );
+                } else {
+                    reg.ghost_last();
+                }
+                unsized_note(reg);
                 reg.tag(id, &response);
                 remember_width(ui, id, response.rect);
                 if let Some(size) = size.filter(|_| drawn) {

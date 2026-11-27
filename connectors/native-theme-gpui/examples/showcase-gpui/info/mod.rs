@@ -493,6 +493,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
         "toolbar_button_checked",
         "toolbar.button(CHECKED).fill, lettered in toolbar.button_label(CHECKED).color, else button.label(CHECKED).color, where a rule states it for the checked state, else in the variant's own foreground, not a pressed label of the theme's, on a selected toolbar Button built on next::variants::toolbar_button; where no rule states the checked fill, gpui-component's own selected ghost's, secondary_active (button/button.rs, ButtonVariant::selected, Ghost arm), with no text colour, not a pressed fill of the theme's (spec §10, rule 0a): a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style. Its border colour is toolbar.button(CHECKED).stroke.color where a rule states it, at toolbar_button_rest's width, and stays under the pointer and pressed, where a selected Button takes no hover or press style",
     ),
+    (
+        "toolbar_button_disabled",
+        "toolbar.button(DISABLED).fill as the fill and toolbar.button(DISABLED).corners as the radius, each where a rule states it for the disabled state, on a disabled toolbar Button built on next::variants::toolbar_button, after toolbar_button_rest: the Button replays both refinements over its disabled style (button/button.rs, RenderOnce for Button), so the rest capsule stands where no rule states the disabled one, and gpui-component's own disabled fill, the variant's colour at 15 % (button/button.rs, ButtonVariant::disabled), where neither is stated; no text colour, so a disabled Button is lettered in its own muted_foreground at half alpha",
+    ),
     ("icon_size_small", "icons.sizes.small"),
     ("icon_size_dialog", "icons.sizes.dialog"),
     (

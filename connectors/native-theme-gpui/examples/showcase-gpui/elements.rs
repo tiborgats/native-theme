@@ -133,6 +133,7 @@ const LISTED: &[(&str, &str)] = &[
     ("basic-icon-paste", "basic.icons.paste"),
     ("basic-icon-delete", "basic.icons.delete"),
     ("basic-icon-edit", "basic.icons.edit"),
+    ("basic-icon-save", "basic.icons.save"),
     ("basic-icon-small", "basic.icons.small"),
     ("basic-icon-toolbar", "basic.icons.toolbar"),
     ("basic-icon-large", "basic.icons.large"),

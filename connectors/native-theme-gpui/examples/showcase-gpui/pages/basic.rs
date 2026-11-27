@@ -738,6 +738,7 @@ impl Showcase {
                                     drawn: &self.role_chrome_icon(role),
                                     listed,
                                     selected: false,
+                                    disabled: false,
                                 },
                                 None::<fn(&gpui::ClickEvent, &mut Window, &mut gpui::App)>,
                             )
@@ -753,8 +754,24 @@ impl Showcase {
                                 drawn: &self.role_chrome_icon(IconRole::ActionEdit),
                                 listed: "basic.icons.edit.icon",
                                 selected: self.basic_edit,
+                                disabled: false,
                             },
                             Some(on_edit),
+                        ))
+                        // Save, disabled: the one toolbar button that is
+                        // never enabled, so the page shows the disabled look.
+                        .child(demo::icon_button(
+                            ui,
+                            cx,
+                            demo::IconButton {
+                                id: "basic-icon-save",
+                                name: "Save",
+                                drawn: &self.role_chrome_icon(IconRole::ActionSave),
+                                listed: "basic.icons.save.icon",
+                                selected: false,
+                                disabled: true,
+                            },
+                            None::<fn(&gpui::ClickEvent, &mut Window, &mut gpui::App)>,
                         ))
                         .into_any_element(),
                     row()

@@ -2002,6 +2002,12 @@ entry = "toolbar.button_icon(CHECKED).color"
 kind = "no receiver"
 why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
 
+[homes."toolbar.button_icon(DISABLED).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(DISABLED).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
+
 [homes."toolbar.button_icon(HOVER).color"]
 named = "UNREAD_HOMES"
 entry = "toolbar.button_icon(HOVER).color"

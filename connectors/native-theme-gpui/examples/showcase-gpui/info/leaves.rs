@@ -304,6 +304,55 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: the ChevronDown of the chosen set, none mixed in (Showcase::sample_icon)",
     ),
     // --- button: the icon-only buttons, next::variants::toolbar_button and ghost_button
+    // Save, the disabled one (demo::icon_button, `disabled`).
+    (
+        "basic.icons.save",
+        &["toolbar.button(DISABLED).fill"],
+        "gpui: next::geometry::toolbar_button_disabled's bg, where a rule states it for DISABLED, over next::geometry::toolbar_button_rest's, both replayed over gpui-component's disabled style (demo::icon_button; native-theme-gpui next/builders.rs, toolbar_button_disabled; gpui-component 0.10.0 button/button.rs:834-850, styles)",
+    ),
+    (
+        "basic.icons.save",
+        &["toolbar.button(DISABLED).corners"],
+        "gpui: next::geometry::toolbar_button_disabled's corner radius, where a rule states it for DISABLED, over next::geometry::toolbar_button_rest's, both replayed over gpui-component's disabled style (demo::icon_button; native-theme-gpui next/builders.rs, toolbar_button_disabled; gpui-component 0.10.0 button/button.rs:834-850, styles)",
+    ),
+    (
+        "basic.icons.save",
+        &["toolbar.button(NONE).fill"],
+        "gpui: next::geometry::toolbar_button_rest's bg, where stated, over the outline's transparent one, replayed over gpui-component's disabled style, toolbar.button(DISABLED).fill laid over it where a rule states that; where none is, the disabled style's own, the variant's colour at 15 % (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles; :1374-1383, ButtonVariant::disabled)",
+    ),
+    (
+        "basic.icons.save",
+        &["toolbar.button(NONE).corners"],
+        "gpui: next::geometry::toolbar_button_rest's corner radius, where stated, replayed over gpui-component's disabled style, toolbar.button(DISABLED).corners laid over it where a rule states that (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)",
+    ),
+    (
+        "basic.icons.save",
+        &["toolbar.button(HOVER).stroke.color"],
+        "gpui: where a rule states it, next::geometry::toolbar_button_rest lays out a transparent border of button.body(NONE).stroke.width, each stated padding side less it; its colour is not drawn: a disabled Button takes no hover style (gpui-component 0.10.0 button/button.rs:733, disabled)",
+    ),
+    (
+        "basic.icons.save",
+        &[
+            "toolbar.button_label(NONE).color",
+            "toolbar.button_label(DISABLED).color",
+        ],
+        "not drawn: no builder reads the toolbar's labels; a disabled Button is lettered in gpui-component's own disabled text colour, muted_foreground at half alpha, its label shown only where the set has no icon for it (gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled)",
+    ),
+    (
+        "basic.icons.save",
+        &["colors.window.foreground_muted"],
+        "gpui: ThemeColor muted_foreground, which next::apply sets from it: gpui-component letters a disabled Button in it at half alpha, the label's colour where the set has no icon for it and the icon's where no rule tints it for DISABLED (gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled; src/icon.rs, into_svg)",
+    ),
+    (
+        "basic.icons.save",
+        &["colors.disabled_opacity", "button.disabled_opacity"],
+        "not drawn: gpui-component dims a disabled Button by its own disabled colours, not by an opacity, and next::geometry::button_disabled, which fades by button.disabled_opacity, is the push button's (gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled; demo::icon_button)",
+    ),
+    (
+        "basic.icons.save",
+        &["toolbar.button_icon(DISABLED).color"],
+        "gpui: the SVG Icon's colour, next::geometry::toolbar_button_icon_color in DISABLED, where a rule states it for DISABLED; else the disabled Button's text colour, muted_foreground at half alpha (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, into_svg; button/button.rs:1374-1385, ButtonVariant::disabled)",
+    ),
     (
         "basic.icons.edit",
         &["toolbar.button(CHECKED).fill"],
