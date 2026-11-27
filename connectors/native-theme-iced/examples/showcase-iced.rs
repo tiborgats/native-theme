@@ -9585,6 +9585,8 @@ fn tool_icon_route(
             | "button.label(HOVER).color"
             | "button.label(PRESSED).color"
             | "button.label(CHECKED).color"
+            | "toolbar.button_label(HOVER).color"
+            | "toolbar.button_label(PRESSED).color"
             | "toolbar.button_label(CHECKED).color"
             | "toolbar.button_label(HOVER|CHECKED).color"
             | "toolbar.button_label(PRESSED|CHECKED).color"
@@ -9691,6 +9693,13 @@ fn tool_icon_colour_route(
 const ICON_FOR_LABEL: &str = "not drawn: the set's icon stands in for the label, its colour \
                               fixed as it loads (icon_button)";
 
+/// The route of a flat button's label colour where it shows the set's icon
+/// in the label's place, loaded in the colour the theme states for the icon
+/// ([`flat_icon_stated`]).
+const FLAT_ICON_IN_ITS_OWN_COLOUR: &str = "not drawn: the set's icon stands in for the label, \
+     loaded in the colour the theme states for the icon, button.icon(<state>;variant=Flat).color \
+     (icon_colour)";
+
 /// The route of a flat button's colour where its icon is an OS icon
 /// theme's, which keeps the colours its loader gives it.
 const OS_ICON_COLOURS: &str = "not drawn: an OS icon theme's icon keeps the colours it loads in";
@@ -9744,6 +9753,17 @@ fn ghost_route(
         iced_next::state_text_color_of(&b.label(flat(WidgetState::CHECKED))).is_some();
     let edge = |state: WidgetState| b.body(flat(state)).from_state.contains(PartStated::STROKE);
     let (hover_edge, pressed_edge) = (edge(WidgetState::HOVER), edge(WidgetState::PRESSED));
+    let checked_edge = edge(WidgetState::CHECKED);
+    let label_home = matches!(
+        home,
+        "button.label(NONE).color"
+            | "button.label(HOVER).color"
+            | "button.label(PRESSED).color"
+            | "button.label(CHECKED).color"
+    );
+    if label_home && icon && !os_icon && flat_icon_stated(r, selected).is_some() {
+        return FLAT_ICON_IN_ITS_OWN_COLOUR.to_owned();
+    }
     if let Some(line) = unmapped_fill_route(
         home,
         &[
@@ -9949,19 +9969,39 @@ fn ghost_route(
                  button.label(CHECKED;variant=Flat).color"
             }
         },
+        "button.body(HOVER).stroke.color" if hover_edge && selected && checked_edge => {
+            "ghost_button: the open toggle's Hovered border's colour, the theme's answer for \
+             (CHECKED|HOVER;variant=Flat), a rule stating its stroke for CHECKED, which \
+             button.body(HOVER;variant=Flat).stroke.color gives where its rule follows every rule \
+             for CHECKED, on the bounds over the padding (next_edge)"
+        }
+        "button.body(PRESSED).stroke.color" if pressed_edge && selected && checked_edge => {
+            "ghost_button: the open toggle's Pressed border's colour, the theme's answer for \
+             (CHECKED|PRESSED;variant=Flat), a rule stating its stroke for CHECKED, which \
+             button.body(PRESSED;variant=Flat).stroke.color gives where its rule follows every \
+             rule for CHECKED, on the bounds over the padding (next_edge)"
+        }
         "button.body(HOVER).stroke.color" if hover_edge => {
-            "ghost_button: the Hovered border's colour, selected or not, \
-             button.body(HOVER;variant=Flat).stroke.color, on the bounds over the padding \
-             (next_edge)"
+            "ghost_button: the Hovered border's colour, button.body(HOVER;variant=Flat).stroke.color, \
+             on the bounds over the padding (next_edge)"
+        }
+        "button.body(HOVER).stroke.color" if selected && checked_edge => {
+            "not drawn: button.body(HOVER;variant=Flat).stroke is unstated, so ghost_button \
+             outlines the open toggle under the pointer by the theme's answer for \
+             (CHECKED|HOVER;variant=Flat), the stroke a rule states for CHECKED"
+        }
+        "button.body(PRESSED).stroke.color" if !pressed_edge && selected && checked_edge => {
+            "not drawn: button.body(PRESSED;variant=Flat).stroke is unstated, so ghost_button \
+             outlines the open toggle pressed by the theme's answer for \
+             (CHECKED|PRESSED;variant=Flat), the stroke a rule states for CHECKED"
         }
         "button.body(HOVER).stroke.color" => {
             "not drawn: button.body(HOVER;variant=Flat).stroke is unstated, so the Hovered \
              border is iced's own flat button's (button::text)"
         }
         "button.body(PRESSED).stroke.color" if pressed_edge => {
-            "ghost_button: the Pressed border's colour, selected or not, \
-             button.body(PRESSED;variant=Flat).stroke.color, on the bounds over the padding \
-             (next_edge)"
+            "ghost_button: the Pressed border's colour, button.body(PRESSED;variant=Flat).stroke.color, \
+             on the bounds over the padding (next_edge)"
         }
         "button.body(PRESSED).stroke.color" => {
             "not drawn: button.body(PRESSED;variant=Flat).stroke is unstated, so the Pressed \
@@ -10038,6 +10078,15 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     // The icon of the button an element is, or is the icon of.
     let own_icon = ghost_icon(state, id.strip_suffix(".icon").unwrap_or(id));
     let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
+    // What a rule states for the flat button's checked state alone, which
+    // the open toggle's states take ([`ghost_button`]).
+    let checked_part = r.button.body(self::flat(WidgetState::CHECKED));
+    let checked_edge = checked_part.from_state.contains(PartStated::STROKE);
+    let checked_fill = drawn_state_fill(&checked_part).is_some();
+    let checked_label =
+        iced_next::state_text_color_of(&r.button.label(self::flat(WidgetState::CHECKED))).is_some();
+    // Edit, the edit-mode switch, while it is on.
+    let edit_on = id == "basic.icons.edit" && state.basic_edit;
     let colour = ghost_home(home).is_some() || home == "sidebar.item_label(NONE).color";
     if colour && id == "chrome.info.copy" {
         return Some(copy_route(r, home));
@@ -10076,40 +10125,231 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              where a rule states it for the state, on the bounds over the padding (next_edge); \
              iced's own flat button's (button::text) where none does"
         }
+        "button.body(HOVER; variant=Flat).stroke.width" if flat && selected && checked_edge => {
+            "not drawn: the toggle is open and a rule states button.body(CHECKED;variant=Flat).stroke \
+             for CHECKED, so ghost_button outlines it under the pointer by the theme's answer for \
+             button.body(CHECKED|HOVER;variant=Flat), its width included (next_edge)"
+        }
+        "button.body(HOVER; variant=Flat).stroke.width" if flat => {
+            "ghost_button: the Hovered border's width, button.body(HOVER;variant=Flat).stroke's \
+             where a rule states it for the state, on the bounds over the padding (next_edge); \
+             iced's own flat button's (button::text) where none does"
+        }
         "button.body(CHECKED; variant=Flat).stroke.color"
         | "button.body(CHECKED; variant=Flat).stroke.width"
         | "button.body(HOVER|CHECKED; variant=Flat).stroke.color"
         | "button.body(HOVER|CHECKED; variant=Flat).stroke.width"
         | "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
         | "button.body(PRESSED|CHECKED; variant=Flat).stroke.width"
+        | "button.body(HOVER|CHECKED; variant=Flat).fill"
+        | "button.body(PRESSED|CHECKED; variant=Flat).fill"
+        | "button.label(HOVER|CHECKED; variant=Flat).color"
+        | "button.label(PRESSED|CHECKED; variant=Flat).color"
+            if flat && !selected =>
+        {
+            "not drawn: the toggle is closed, and ghost_button draws the checked look only while \
+             it is open"
+        }
+        "button.body(CHECKED; variant=Flat).stroke.color"
+        | "button.body(CHECKED; variant=Flat).stroke.width"
+        | "button.body(HOVER|CHECKED; variant=Flat).stroke.color"
+        | "button.body(HOVER|CHECKED; variant=Flat).stroke.width"
+        | "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
+        | "button.body(PRESSED|CHECKED; variant=Flat).stroke.width"
+            if flat && !checked_edge =>
+        {
+            "not drawn: no rule states button.body(CHECKED;variant=Flat).stroke for CHECKED, so \
+             ghost_button outlines the open toggle as the closed one in the same status, by \
+             button.body(HOVER;variant=Flat).stroke and button.body(PRESSED;variant=Flat).stroke"
+        }
+        "button.body(CHECKED; variant=Flat).stroke.color"
+        | "button.body(CHECKED; variant=Flat).stroke.width"
             if flat =>
         {
-            "not drawn: ghost_button outlines the open toggle as the closed one in the same \
-             status, by button.body(HOVER;variant=Flat).stroke and \
-             button.body(PRESSED;variant=Flat).stroke, and reads no checked flat outline"
+            "ghost_button: the open toggle's border at rest, \
+             button.body(CHECKED;variant=Flat).stroke.color and its width, as iced draws it over \
+             the checked fill (next_edge)"
+        }
+        "button.body(HOVER|CHECKED; variant=Flat).stroke.color"
+        | "button.body(HOVER|CHECKED; variant=Flat).stroke.width"
+            if flat =>
+        {
+            "ghost_button: the open toggle's Hovered border, the theme's answer for \
+             button.body(CHECKED|HOVER;variant=Flat).stroke.color and its width, a rule stating \
+             button.body(CHECKED;variant=Flat).stroke.color for CHECKED (next_edge)"
+        }
+        "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
+        | "button.body(PRESSED|CHECKED; variant=Flat).stroke.width"
+            if flat =>
+        {
+            "ghost_button: the open toggle's Pressed border, the theme's answer for \
+             button.body(CHECKED|PRESSED;variant=Flat).stroke.color and its width, a rule stating \
+             button.body(CHECKED;variant=Flat).stroke.color for CHECKED (next_edge)"
+        }
+        "button.body(HOVER|CHECKED; variant=Flat).fill"
+        | "button.body(PRESSED|CHECKED; variant=Flat).fill"
+            if flat && !checked_fill =>
+        {
+            "not drawn: no rule states button.body(CHECKED;variant=Flat).fill for CHECKED, so \
+             ghost_button fills the open toggle as the connector's primary button in the same \
+             status (iced_next::styles::button_primary, iced's own button::primary where the \
+             connector maps none; spec §10, rule 0a)"
+        }
+        "button.body(HOVER|CHECKED; variant=Flat).fill" if flat => {
+            "ghost_button: the open toggle's Hovered fill, the theme's answer for \
+             button.body(CHECKED|HOVER;variant=Flat).fill, a rule stating \
+             button.body(CHECKED;variant=Flat).fill for CHECKED"
+        }
+        "button.body(PRESSED|CHECKED; variant=Flat).fill" if flat => {
+            "ghost_button: the open toggle's Pressed fill, the theme's answer for \
+             button.body(CHECKED|PRESSED;variant=Flat).fill, a rule stating \
+             button.body(CHECKED;variant=Flat).fill for CHECKED"
+        }
+        "button.label(HOVER|CHECKED; variant=Flat).color"
+        | "button.label(PRESSED|CHECKED; variant=Flat).color"
+            if flat && own_icon.is_some() && state.chrome_icons.system =>
+        {
+            OS_ICON_COLOURS
+        }
+        "button.label(HOVER|CHECKED; variant=Flat).color"
+        | "button.label(PRESSED|CHECKED; variant=Flat).color"
+            if flat && own_icon.is_some() =>
+        {
+            ICON_FOR_LABEL
+        }
+        "button.label(HOVER|CHECKED; variant=Flat).color"
+        | "button.label(PRESSED|CHECKED; variant=Flat).color"
+            if flat && !checked_label =>
+        {
+            "not drawn: no rule states button.label(CHECKED;variant=Flat).color for CHECKED, so \
+             ghost_button letters the open toggle in the label at rest on a stated checked fill, \
+             else in the connector's primary button's label in the same status (spec §10, rule 0a)"
+        }
+        "button.label(HOVER|CHECKED; variant=Flat).color" if flat => {
+            "ghost_button: the open toggle's Hovered text_color, the theme's answer for \
+             button.label(CHECKED|HOVER;variant=Flat).color, a rule stating \
+             button.label(CHECKED;variant=Flat).color for CHECKED"
+        }
+        "button.label(PRESSED|CHECKED; variant=Flat).color" if flat => {
+            "ghost_button: the open toggle's Pressed text_color, the theme's answer for \
+             button.label(CHECKED|PRESSED;variant=Flat).color, a rule stating \
+             button.label(CHECKED;variant=Flat).color for CHECKED"
         }
         "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color"
         | "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width"
+        | "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color"
+        | "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width"
             if flat =>
         {
             "not reachable: iced's button takes no keyboard focus, so it has no focused status \
              to draw an outline in"
         }
-        "button.icon(NONE; variant=Flat).color" | "button.icon(CHECKED; variant=Flat).color"
+        "button.icon(NONE; variant=Flat).color"
+        | "button.icon(CHECKED; variant=Flat).color"
+        | "button.icon(HOVER|CHECKED; variant=Flat).color"
+        | "button.icon(PRESSED|CHECKED; variant=Flat).color"
             if flat && own_icon.is_some() && state.chrome_icons.system =>
         {
             OS_ICON_COLOURS
         }
-        "button.icon(NONE; variant=Flat).color" | "button.icon(CHECKED; variant=Flat).color"
+        "button.icon(NONE; variant=Flat).color"
+        | "button.icon(CHECKED; variant=Flat).color"
+        | "button.icon(HOVER|CHECKED; variant=Flat).color"
+        | "button.icon(PRESSED|CHECKED; variant=Flat).color"
             if flat && own_icon.is_none() =>
         {
             "not drawn: the toggle shows its label, the icon set having no icon for it"
         }
-        "button.icon(NONE; variant=Flat).color" | "button.icon(CHECKED; variant=Flat).color"
+        "button.icon(NONE; variant=Flat).color"
+        | "button.icon(CHECKED; variant=Flat).color"
+        | "button.icon(HOVER|CHECKED; variant=Flat).color"
+        | "button.icon(PRESSED|CHECKED; variant=Flat).color"
+            if flat && matches!(own_icon, Some(IconData::Rgba { .. })) =>
+        {
+            "not drawn: the icon is an image, which takes no tint (iced_widget 0.14.2 \
+             src/image.rs)"
+        }
+        "button.icon(HOVER|CHECKED; variant=Flat).color"
+        | "button.icon(PRESSED|CHECKED; variant=Flat).color"
             if flat =>
         {
-            "not drawn: icon_colour loads the toggle's icon in the label ghost_button gives it \
-             at rest, closed or open, and no style reads the flat button's icon colour"
+            "not reachable: iced draws a flat button's icon in the one colour it loads in, in \
+             every status (the connector's README, Limits)"
+        }
+        "button.icon(NONE; variant=Flat).color" if flat && selected => {
+            "not drawn: the toggle is open, and icon_colour loads its icon in \
+             button.icon(CHECKED;variant=Flat).color where a rule states it for CHECKED, a colour \
+             stated at rest being no checked one, else in the label ghost_button gives the open \
+             toggle at rest"
+        }
+        "button.icon(NONE; variant=Flat).color" if flat => {
+            "icon_colour: the icon's colour, set as it loads, in every status, \
+             button.icon(NONE;variant=Flat).color where stated, else the label ghost_button gives \
+             the closed toggle at rest (icon_button)"
+        }
+        "button.icon(CHECKED; variant=Flat).color" if flat && !selected => {
+            "not drawn: the toggle is closed, and icon_colour loads its icon in \
+             button.icon(NONE;variant=Flat).color where stated, else in the label at rest"
+        }
+        "button.icon(CHECKED; variant=Flat).color" if flat => {
+            "icon_colour: the icon's colour while open, set as it loads, in every status, \
+             button.icon(CHECKED;variant=Flat).color where a rule states it for CHECKED, else \
+             the label ghost_button gives the open toggle at rest (icon_button)"
+        }
+        "toolbar.button(NONE).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: button::Style::border.width at rest and in each \
+             status whose stroke no rule states a width for, toolbar.button(NONE).stroke.width, \
+             iced's own neutral class's where unstated (toolbar_outline)"
+        }
+        "toolbar.button(HOVER).stroke.width" | "toolbar.button(PRESSED).stroke.width"
+            if edit_on =>
+        {
+            "not drawn: the switch is on, and iced_next::styles::toolbar_button draws it under \
+             the pointer and pressed at toolbar.button(HOVER|CHECKED)'s and \
+             toolbar.button(PRESSED|HOVER|CHECKED)'s width where a rule states each, else the \
+             rest width (toolbar_outline)"
+        }
+        "toolbar.button(HOVER).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: the Hovered border's width where a rule states \
+             toolbar.button(HOVER).stroke for the state, else the rest width (toolbar_outline)"
+        }
+        "toolbar.button(PRESSED).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: the Pressed border's width where a rule states \
+             toolbar.button(PRESSED).stroke for the state, else the rest width (toolbar_outline)"
+        }
+        "toolbar.button(CHECKED).stroke.width"
+        | "toolbar.button(HOVER|CHECKED).stroke.width"
+        | "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width"
+            if tool && !edit_on =>
+        {
+            "not drawn: the switch is off, and iced_next::styles::toolbar_button draws a checked \
+             button's widths only while it is on (toolbar_outline)"
+        }
+        "toolbar.button(CHECKED).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: the checked button's border width at rest where \
+             a rule states toolbar.button(CHECKED).stroke for the state, else the rest width \
+             (toolbar_outline)"
+        }
+        "toolbar.button(HOVER|CHECKED).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: the checked button's Hovered border width where \
+             a rule states toolbar.button(HOVER|CHECKED).stroke for the state, else the rest \
+             width (toolbar_outline)"
+        }
+        "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: the checked button's Pressed border width, iced's \
+             pressed status being under the pointer, where a rule states \
+             toolbar.button(PRESSED|HOVER|CHECKED).stroke for the state, else the rest width \
+             (toolbar_outline)"
+        }
+        "toolbar.button(PRESSED|CHECKED).stroke.width" if tool && !edit_on => {
+            "not drawn: the switch is off, and iced_next::styles::toolbar_button draws a checked \
+             button's widths only while it is on (toolbar_outline)"
+        }
+        "toolbar.button(PRESSED|CHECKED).stroke.width" if tool => {
+            "iced_next::styles::toolbar_button: the checked button's Pressed border width, asked \
+             as toolbar.button(PRESSED|HOVER|CHECKED), iced's pressed status being under the \
+             pointer, which a rule stating the stroke for PRESSED|CHECKED reaches; else the rest \
+             width (toolbar_outline)"
         }
         "button.body(NONE).stroke.width" if tool => {
             "not drawn: on the 0.8.0 model iced_next::styles::toolbar_button edges a tool button by \
@@ -11585,6 +11825,12 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
             "styles::button_default: button::Style::border.width where the theme states no \
              button.body(DEFAULT).fill, the button then styles::button_primary's, \
              button.body(NONE; variant=Primary).stroke.width, painted over the padding"
+                .to_owned()
+        }
+        "button.body(NONE; variant=Primary).corners" if default => {
+            "styles::button_default: button::Style::border.radius where the theme states no \
+             button.body(DEFAULT).fill, the button then styles::button_primary's, \
+             button.body(NONE; variant=Primary).corners"
                 .to_owned()
         }
         "button.body(NONE).corners" | "button.body(NONE).stroke.width" if primary => format!(

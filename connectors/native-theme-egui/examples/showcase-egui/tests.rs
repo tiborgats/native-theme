@@ -12388,11 +12388,14 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
 }
 
 /// The tool buttons' and the side-panel toggle's own homes, the primary and the dialog's
-/// default button's own outline and the Copy box's hovered width, which no `mapping.toml` row
-/// holds, are routed to the call that applies them, not shown as held by no row: each such home
-/// a listed tool button, its icon, the toggle, its icon, the two buttons and the Copy box list
-/// names the call that reads it ([`crate::info::TOOL_BUTTON_ROUTES`],
-/// [`crate::info::TOGGLE_ROUTES`], the per-call routes).
+/// default button's own outline and corners, the On toggle's hovered and pressed checked looks
+/// and the Copy box's hovered width, which no `mapping.toml` row holds (the list's
+/// `model_only_homes`), are routed to the call that applies them, not shown as held by no row:
+/// each such home a listed tool button, its icon, the toggle, its icon, the three buttons, the
+/// On toggle's label and the Copy box list is pinned to its own call, which its route names,
+/// drawn or saying why not ([`crate::info::TOOL_BUTTON_ROUTES`],
+/// [`crate::info::TOGGLE_ROUTES`], the per-call routes); a model-only home of theirs pinned to no
+/// call fails.
 #[test]
 fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), String> {
     let manifest = Manifest::parse(MANIFEST)?;
@@ -12400,65 +12403,199 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         native_theme_egui::Role::Button,
         RoleVariant::Normal,
     )];
-    let calls: [(&str, &[&str]); 5] = [
+    const CAPSULE: &str = "style/roles.rs, the toolbar's rest capsule";
+    const TOOL_PEN: &str = "pages::basic::tool_pen";
+    const EDIT_LOOK: &str = "pages::basic::edit_look_at";
+    const TOOL_ICON: &str = "demo::tool_icon_color";
+    const CHECKED_PENS: &str = "chrome::toggle_checked_pens";
+    const TOGGLE_ICON: &str = "chrome::toggle_icon_colour";
+    const TOGGLE_LOOK: &str = "chrome::toggle_checked_in";
+    const FLAT: &str = "next::flat_button";
+    const PRIMARY_PEN: &str = "primary_pen";
+    const TOGGLE_ON: &str = "pages::basic::toggle_on_in";
+    let pinned: [(&str, &str); 56] = [
+        ("toolbar.button(NONE).fill", CAPSULE),
+        ("toolbar.button(NONE).corners", CAPSULE),
+        ("toolbar.button(NONE).stroke.color", "ToolbarCell rest"),
+        ("toolbar.button(NONE).stroke.width", "ToolbarCell rest"),
         (
-            "toolbar.button(NONE)",
-            &["style/roles.rs, the toolbar's rest capsule"],
+            "toolbar.button(HOVER).stroke.width",
+            "ToolbarCell button_border",
         ),
-        ("toolbar.button(", &["pages::basic::edit_look_at"]),
-        ("toolbar.button_label(", &["pages::basic::edit_look_at"]),
-        ("toolbar.button_icon(", &["demo::tool_icon_color"]),
         (
-            "button.",
-            &[
-                "chrome::toggle_checked_pens",
-                "chrome::toggle_icon_colour",
-                "primary_pen",
-                "next::flat_button",
-            ],
+            "toolbar.button(PRESSED).stroke.width",
+            "ToolbarCell button_border",
         ),
+        (
+            "toolbar.button_label(HOVER).color",
+            "ToolbarCell button_text",
+        ),
+        (
+            "toolbar.button_label(PRESSED).color",
+            "ToolbarCell button_text",
+        ),
+        ("toolbar.button(CHECKED).stroke.width", TOOL_PEN),
+        ("toolbar.button(HOVER|CHECKED).stroke.width", TOOL_PEN),
+        ("toolbar.button(PRESSED|CHECKED).stroke.color", TOOL_PEN),
+        ("toolbar.button(PRESSED|CHECKED).stroke.width", TOOL_PEN),
+        (
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
+            TOOL_PEN,
+        ),
+        (
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width",
+            TOOL_PEN,
+        ),
+        ("toolbar.button(HOVER|CHECKED).fill", EDIT_LOOK),
+        ("toolbar.button(PRESSED|CHECKED).fill", EDIT_LOOK),
+        ("toolbar.button_label(CHECKED).color", EDIT_LOOK),
+        ("toolbar.button_label(HOVER|CHECKED).color", EDIT_LOOK),
+        ("toolbar.button_label(PRESSED|CHECKED).color", EDIT_LOOK),
+        ("toolbar.button_icon(NONE).color", TOOL_ICON),
+        ("toolbar.button_icon(HOVER).color", TOOL_ICON),
+        ("toolbar.button_icon(PRESSED).color", TOOL_ICON),
+        ("toolbar.button_icon(CHECKED).color", TOOL_ICON),
+        ("toolbar.button_icon(HOVER|CHECKED).color", TOOL_ICON),
+        ("toolbar.button_icon(PRESSED|CHECKED).color", TOOL_ICON),
+        (
+            "button.body(CHECKED; variant=Flat).stroke.color",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(CHECKED; variant=Flat).stroke.width",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(HOVER|CHECKED; variant=Flat).stroke.color",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(HOVER|CHECKED; variant=Flat).stroke.width",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(PRESSED|CHECKED; variant=Flat).stroke.color",
+            CHECKED_PENS,
+        ),
+        (
+            "button.body(PRESSED|CHECKED; variant=Flat).stroke.width",
+            CHECKED_PENS,
+        ),
+        ("button.icon(NONE; variant=Flat).color", TOGGLE_ICON),
+        ("button.icon(CHECKED; variant=Flat).color", TOGGLE_ICON),
+        (
+            "button.icon(HOVER|CHECKED; variant=Flat).color",
+            TOGGLE_ICON,
+        ),
+        (
+            "button.icon(PRESSED|CHECKED; variant=Flat).color",
+            TOGGLE_ICON,
+        ),
+        ("button.body(HOVER; variant=Flat).stroke.width", FLAT),
+        (
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+            FLAT,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+            FLAT,
+        ),
+        ("button.body(HOVER|CHECKED; variant=Flat).fill", TOGGLE_LOOK),
+        (
+            "button.body(PRESSED|CHECKED; variant=Flat).fill",
+            TOGGLE_LOOK,
+        ),
+        (
+            "button.label(HOVER|CHECKED; variant=Flat).color",
+            TOGGLE_LOOK,
+        ),
+        (
+            "button.label(PRESSED|CHECKED; variant=Flat).color",
+            TOGGLE_LOOK,
+        ),
+        (
+            "button.body(NONE; variant=Primary).stroke.color",
+            PRIMARY_PEN,
+        ),
+        (
+            "button.body(NONE; variant=Primary).stroke.width",
+            PRIMARY_PEN,
+        ),
+        (
+            "button.body(HOVER; variant=Primary).stroke.color",
+            PRIMARY_PEN,
+        ),
+        (
+            "button.body(HOVER; variant=Primary).stroke.width",
+            PRIMARY_PEN,
+        ),
+        (
+            "button.body(PRESSED; variant=Primary).stroke.color",
+            PRIMARY_PEN,
+        ),
+        (
+            "button.body(PRESSED; variant=Primary).stroke.width",
+            PRIMARY_PEN,
+        ),
+        ("button.body(NONE; variant=Primary).corners", "pages::basic"),
+        ("button.body(HOVER).stroke.width", FLAT),
+        ("button.body(HOVER|CHECKED).fill", TOGGLE_ON),
+        ("button.body(PRESSED|CHECKED).fill", TOGGLE_ON),
+        ("button.label(HOVER|CHECKED).color", TOGGLE_ON),
+        ("button.label(PRESSED|CHECKED).color", TOGGLE_ON),
     ];
-    let homes = [
-        "toolbar.button(NONE).fill",
-        "toolbar.button(NONE).corners",
-        "toolbar.button(HOVER|CHECKED).fill",
-        "toolbar.button(PRESSED|CHECKED).fill",
-        "toolbar.button_label(CHECKED).color",
-        "toolbar.button_label(HOVER|CHECKED).color",
-        "toolbar.button_label(PRESSED|CHECKED).color",
-        "toolbar.button_icon(",
-        "; variant=Flat)",
-        "; variant=Primary).stroke",
-        "button.body(HOVER).stroke.width",
-    ];
+    let model_only: Vec<String> = native_theme_showcase_support::elements::model_only_homes()?
+        .into_iter()
+        .map(|entry| entry.home)
+        .collect();
     let mut checked = 0usize;
     let mut wrong = Vec::new();
     for element in listed_elements().iter().filter(|e| {
         e.id.starts_with("chrome.toolbar.")
             || e.id.starts_with("basic.icons.")
             || e.id.starts_with("chrome.status_bar.toggle")
+            || e.id.starts_with("basic.buttons.toggle_on")
             || e.id == "basic.buttons.primary"
             || e.id == "basic.buttons.dialog_default"
             || e.id == "chrome.info.copy"
     }) {
-        for home in element
-            .homes
-            .iter()
-            .filter(|h| homes.iter().any(|listed| h.contains(listed)) && !h.ends_with(".size"))
-        {
+        for home in element.homes.iter().filter(|h| model_only.contains(h)) {
             checked += 1;
+            let Some((_, call)) = pinned.iter().find(|(pinned, _)| pinned == home) else {
+                wrong.push(format!("{} {home}: pinned to no call", element.id));
+                continue;
+            };
             let how = crate::info::listed_how(&manifest, &element.id, home, &seams);
-            let call = calls
-                .iter()
-                .find(|(prefix, _)| home.starts_with(prefix))
-                .is_some_and(|(_, names)| names.iter().any(|name| how.contains(name)));
-            if !how.starts_with("egui: ") || !call {
-                wrong.push(format!("{} {home}: {how:?}", element.id));
+            let routed = how.starts_with("egui: ") || how.starts_with("not drawn: ");
+            if !routed || !how.contains(call) {
+                wrong.push(format!("{} {home} ({call}): {how:?}", element.id));
             }
         }
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
     assert!(checked > 0, "no listed element lists such a home");
+    // Another element that listed one of their homes would not take their route.
+    for (element, routes) in [
+        ("chrome.page_tabs.menu", &crate::info::TOGGLE_ROUTES[..]),
+        (
+            "basic.buttons.default",
+            &crate::info::TOOL_BUTTON_ROUTES[..],
+        ),
+        ("basic.icons.heading", &crate::info::TOOL_BUTTON_ROUTES[..]),
+    ] {
+        for (home, line) in routes {
+            let how = crate::info::listed_how(&manifest, element, home, &seams);
+            assert_ne!(how, *line, "{element} takes the route of {home}");
+        }
+    }
     Ok(())
 }
 

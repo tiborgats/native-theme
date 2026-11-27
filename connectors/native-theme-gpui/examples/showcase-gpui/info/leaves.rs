@@ -38,6 +38,16 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         ],
         "not reachable: a selected Button takes no hover or press style, so the toggle that is on draws no hover border (gpui-component/button/button.rs, RenderOnce for Button)",
     ),
+    (
+        "basic.buttons.toggle_on",
+        &[
+            "button.body(HOVER|CHECKED).fill",
+            "button.body(PRESSED|CHECKED).fill",
+            "button.label(HOVER|CHECKED).color",
+            "button.label(PRESSED|CHECKED).color",
+        ],
+        "not reachable: a selected Button takes no hover or press style, so the toggle that is on keeps next::geometry::button_checked's fill and text colour under the pointer and pressed (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected; native-theme-gpui README, Limits)",
+    ),
     // --- button: a dialog's default button, next::variants::default_button ----------
     (
         "basic.buttons.dialog_default",
@@ -48,8 +58,9 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER; variant=Primary).stroke.width",
             "button.body(PRESSED; variant=Primary).stroke.color",
             "button.body(PRESSED; variant=Primary).stroke.width",
+            "button.body(NONE; variant=Primary).corners",
         ],
-        "gpui: not applied — where the theme states no button.body(DEFAULT).fill the Button is .primary(), edged at rest by next::geometry::button's button.body(NONE), no variant asked (native-theme-gpui next/builders.rs, button), and under the pointer and pressed in the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); where it states one, next::variants::default_button's frame",
+        "gpui: not applied — where the theme states no button.body(DEFAULT).fill the Button is .primary(), rounded by next::geometry::button's button.body(NONE) and edged by it at rest, no variant asked (native-theme-gpui next/builders.rs, button), and under the pointer and pressed in the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); where it states one, next::variants::default_button's frame",
     ),
     (
         "basic.buttons.dialog_default",
@@ -341,50 +352,84 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)",
     ),
     (
-        "chrome.toolbar.",
-        &["toolbar.button(NONE).fill"],
-        "gpui: next::geometry::toolbar_button_rest's bg at rest, where stated, over the outline's transparent one; upstream replays it over the selected and disabled styles and lays its hover and press styles over it (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)",
-    ),
-    (
-        "basic.icons.",
-        &["toolbar.button(NONE).fill"],
-        "gpui: next::geometry::toolbar_button_rest's bg at rest, where stated, over the outline's transparent one; upstream replays it over the selected and disabled styles and lays its hover and press styles over it (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)",
-    ),
-    (
-        "chrome.toolbar.",
-        &["toolbar.button(NONE).corners"],
-        "gpui: next::geometry::toolbar_button_rest's corner radius, where stated, which upstream replays over every state (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)",
-    ),
-    (
-        "basic.icons.",
-        &["toolbar.button(NONE).corners"],
-        "gpui: next::geometry::toolbar_button_rest's corner radius, where stated, which upstream replays over every state (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)",
-    ),
-    (
-        "chrome.toolbar.",
-        &["toolbar.button_icon(NONE).color"],
-        "gpui: the SVG Icon's colour, next::geometry::toolbar_button_icon_color at rest, where stated; else the Button's text colour (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, into_svg)",
-    ),
-    (
-        "basic.icons.",
-        &["toolbar.button_icon(NONE).color"],
-        "gpui: the SVG Icon's colour, next::geometry::toolbar_button_icon_color at rest, where stated; else the Button's text colour (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, into_svg)",
-    ),
-    (
-        "chrome.toolbar.",
+        "basic.icons.edit",
         &[
             "toolbar.button_icon(HOVER).color",
             "toolbar.button_icon(PRESSED).color",
         ],
-        "not reachable: an Icon takes one colour, so the tint at rest stays under the pointer and pressed (gpui-component 0.10.0 src/icon.rs, Styled for Icon; native-theme-gpui README, Limits)",
+        "not reachable: an Icon takes one colour, the tint of the state its Button is built in, so it stays under the pointer and pressed: while the switch is off the tint at rest, toolbar.button_icon(NONE).color's where stated; while it is on toolbar.button_icon(CHECKED).color's where a rule states it for CHECKED (gpui-component 0.10.0 src/icon.rs, Styled for Icon; demo::tool_icon_tinted; native-theme-gpui README, Limits)",
+    ),
+    (
+        "basic.icons.edit",
+        &["toolbar.button(CHECKED).stroke.width"],
+        "not drawn: next::geometry::toolbar_button_checked's border is drawn at next::geometry::toolbar_button_rest's width, button.body(NONE).stroke.width (native-theme-gpui next/builders.rs, toolbar_button_checked)",
+    ),
+    (
+        "basic.icons.edit",
+        &[
+            "toolbar.button(HOVER|CHECKED).stroke.width",
+            "toolbar.button(PRESSED|CHECKED).stroke.color",
+            "toolbar.button(PRESSED|CHECKED).stroke.width",
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width",
+        ],
+        "not reachable: a selected Button takes no hover or press style, so the switch while on keeps toolbar.button(CHECKED).stroke.color at next::geometry::toolbar_button_rest's width under the pointer and pressed (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected)",
+    ),
+    (
+        "chrome.toolbar.",
+        &["toolbar.button(NONE).fill"],
+        TOOL_REST_FILL,
     ),
     (
         "basic.icons.",
-        &[
-            "toolbar.button_icon(HOVER).color",
-            "toolbar.button_icon(PRESSED).color",
-        ],
-        "not reachable: an Icon takes one colour, so the tint at rest stays under the pointer and pressed (gpui-component 0.10.0 src/icon.rs, Styled for Icon; native-theme-gpui README, Limits)",
+        &["toolbar.button(NONE).fill"],
+        TOOL_REST_FILL,
+    ),
+    (
+        "chrome.toolbar.",
+        &["toolbar.button(NONE).corners"],
+        TOOL_REST_CORNERS,
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button(NONE).corners"],
+        TOOL_REST_CORNERS,
+    ),
+    (
+        "chrome.toolbar.",
+        &["toolbar.button_icon(NONE).color"],
+        TOOL_ICON_REST,
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button_icon(NONE).color"],
+        TOOL_ICON_REST,
+    ),
+    ("chrome.toolbar.", TOOL_ICON_STATES, TOOL_ICON_STATE_TINT),
+    ("basic.icons.", TOOL_ICON_STATES, TOOL_ICON_STATE_TINT),
+    ("chrome.toolbar.", TOOL_REST_EDGE_HOMES, TOOL_REST_EDGE),
+    ("basic.icons.", TOOL_REST_EDGE_HOMES, TOOL_REST_EDGE),
+    ("chrome.toolbar.", TOOL_STATE_WIDTHS, TOOL_STATE_WIDTH),
+    ("basic.icons.", TOOL_STATE_WIDTHS, TOOL_STATE_WIDTH),
+    (
+        "chrome.toolbar.",
+        &["toolbar.button_label(HOVER).color"],
+        CUSTOM_NO_HOVER_TEXT,
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button_label(HOVER).color"],
+        CUSTOM_NO_HOVER_TEXT,
+    ),
+    (
+        "chrome.toolbar.",
+        &["toolbar.button_label(PRESSED).color"],
+        PRESSED_KEEPS_TEXT,
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button_label(PRESSED).color"],
+        PRESSED_KEEPS_TEXT,
     ),
     (
         "chrome.status_bar.toggle",
@@ -415,10 +460,41 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.status_bar.toggle",
         &[
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+        ],
+        "not reachable: a focused Button's border is gpui-component's own focus style, ThemeColor ring, not a stroke the theme states for the state (styled.rs, focus_style)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(HOVER; variant=Flat).stroke.width"],
+        "gpui: next::geometry::ghost_button_rest's border width while the side panel is closed, the hovered flat body's, where a rule states button.body(HOVER; variant=Flat).stroke.color, transparent at rest and coloured under the pointer and pressed, each stated padding side less it; while it is open the toggle is selected and edged by next::geometry::ghost_button_checked instead (native-theme-gpui next/builders.rs, ghost_rest_within; demo::panel_toggle)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &[
+            "button.body(HOVER|CHECKED; variant=Flat).fill",
+            "button.body(PRESSED|CHECKED; variant=Flat).fill",
+            "button.label(HOVER|CHECKED; variant=Flat).color",
+            "button.label(PRESSED|CHECKED; variant=Flat).color",
+        ],
+        "not reachable: a selected Button takes no hover or press style, so the open toggle keeps demo::ghost_checked_variant's fill and text colour under the pointer and pressed (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected; native-theme-gpui README, Limits)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &[
             "button.icon(NONE; variant=Flat).color",
             "button.icon(CHECKED; variant=Flat).color",
         ],
-        "not drawn: the toggle's Icon is not tinted, and takes the Button's text colour, closed and open (demo::panel_toggle; gpui-component 0.10.0 src/icon.rs, into_svg)",
+        "gpui: the SVG Icon's colour, next::geometry::ghost_button_icon_color in the state the toggle is built in, while the side panel is closed button.icon(NONE; variant=Flat).color where stated, while it is open button.icon(CHECKED; variant=Flat).color where a rule states it for CHECKED; else the Button's text colour (demo::tool_icon_tinted, demo::panel_toggle; gpui-component 0.10.0 src/icon.rs, into_svg)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &[
+            "button.icon(HOVER|CHECKED; variant=Flat).color",
+            "button.icon(PRESSED|CHECKED; variant=Flat).color",
+        ],
+        "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)",
     ),
     (
         "chrome.status_bar.toggle",
@@ -3149,6 +3225,50 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: ThemeColor background (colors.rs): the window's fill (Showcase::render)",
     ),
 ];
+
+// --- the tool buttons' lines, one text for the toolbar's and the Basic page's ---------------
+
+/// A tool button's fill at rest.
+const TOOL_REST_FILL: &str = "gpui: next::geometry::toolbar_button_rest's bg at rest, where stated, over the outline's transparent one; upstream replays it over the selected and disabled styles and lays its hover and press styles over it (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)";
+
+/// A tool button's corners.
+const TOOL_REST_CORNERS: &str = "gpui: next::geometry::toolbar_button_rest's corner radius, where stated, which upstream replays over every state (native-theme-gpui next/builders.rs, toolbar_capsule; gpui-component 0.10.0 button/button.rs:834-850, styles)";
+
+/// A tool button's icon colour at rest.
+const TOOL_ICON_REST: &str = "gpui: the SVG Icon's colour, next::geometry::toolbar_button_icon_color at rest, where stated; else the Button's text colour (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, into_svg)";
+
+/// A tool button's icon colours under the pointer and pressed.
+const TOOL_ICON_STATES: &[&str] = &[
+    "toolbar.button_icon(HOVER).color",
+    "toolbar.button_icon(PRESSED).color",
+];
+
+/// Why [`TOOL_ICON_STATES`] are not drawn.
+const TOOL_ICON_STATE_TINT: &str = "not reachable: an Icon takes one colour, so the tint at rest stays under the pointer and pressed (gpui-component 0.10.0 src/icon.rs, Styled for Icon; native-theme-gpui README, Limits)";
+
+/// A tool button's own outline at rest.
+const TOOL_REST_EDGE_HOMES: &[&str] = &[
+    "toolbar.button(NONE).stroke.color",
+    "toolbar.button(NONE).stroke.width",
+];
+
+/// Why [`TOOL_REST_EDGE_HOMES`] are not drawn.
+const TOOL_REST_EDGE: &str = "not drawn: next::geometry::toolbar_button_rest's border at rest is transparent, button.body(NONE).stroke.width wide, where a rule states toolbar.button(HOVER).stroke.color, and none elsewhere; no builder reads the toolbar button's own outline at rest (native-theme-gpui next/builders.rs, toolbar_button_rest)";
+
+/// A tool button's outline widths under the pointer and pressed.
+const TOOL_STATE_WIDTHS: &[&str] = &[
+    "toolbar.button(HOVER).stroke.width",
+    "toolbar.button(PRESSED).stroke.width",
+];
+
+/// Why [`TOOL_STATE_WIDTHS`] are not drawn.
+const TOOL_STATE_WIDTH: &str = "not drawn: a tool button's border is next::geometry::toolbar_button_rest's in every state, button.body(NONE).stroke.width wide, which next::variants::toolbar_button colours under the pointer and pressed (native-theme-gpui next/builders.rs, toolbar_button_rest)";
+
+/// Why a Custom variant's label under the pointer is not drawn.
+const CUSTOM_NO_HOVER_TEXT: &str = "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)";
+
+/// Why a pressed Button's label is not drawn.
+const PRESSED_KEEPS_TEXT: &str = "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1315-1319, text_color)";
 
 /// The line for `home` of the element `element`, per [`HOW`].
 pub fn how(element: &str, home: &str) -> Option<&'static str> {

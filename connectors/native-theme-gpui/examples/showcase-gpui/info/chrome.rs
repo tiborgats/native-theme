@@ -1624,14 +1624,16 @@ fn action_tooltip(
 }
 
 /// The "icon" line of a tool button that draws `icon` as its child: why a
-/// child, and the colour it shows.
+/// child, and the colour it shows: the tint an "icon colour" line names
+/// where the theme states one (`demo::tool_icon_tinted`), else the text
+/// colour.
 pub(crate) fn child_icon_line(icon: &ChromeIcon) -> String {
     let colour = if icon.is_raster() {
         format!(
             "is pixels, or an SVG in several colours, drawn as an image (gpui::img), {RASTER_ICON_COLOUR}"
         )
     } else {
-        "takes the text colour above".to_string()
+        "is tinted in the colour the \"icon colour\" line names where that line is shown, else takes the text colour above".to_string()
     };
     format!(
         "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and {colour}"
