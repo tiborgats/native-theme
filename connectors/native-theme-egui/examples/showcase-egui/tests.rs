@@ -14868,8 +14868,8 @@ fn the_disabled_tool_button_takes_the_stated_disabled_look() -> Result<(), Strin
 /// The Basic page's Save, a disabled tool button, under kde-breeze, material-3 and windows-11
 /// light, a bundled Material icon: each states `toolbar.button_label(DISABLED).color` and none
 /// `toolbar.button_icon(DISABLED).color`, so the toolbar's Disabled cell letters it in that
-/// label, `inactive.fg_stroke` and `noninteractive.fg_stroke`, and its icon, loaded in the
-/// scope's text colour, is painted from the texture Save's icon loaded in that label takes (a
+/// label (the lib's `a_disabled_tool_button_is_lettered_in_the_disabled_label`), and its icon,
+/// loaded in the scope's text colour, is painted from the texture Save's icon loaded in that label takes (a
 /// cache hit of the same key in the same context, so an icon loaded in any other colour fails),
 /// not the label at rest.
 #[cfg(feature = "material-icons")]
@@ -14879,7 +14879,6 @@ fn the_disabled_tool_button_takes_the_stated_disabled_label() -> Result<(), Stri
     use native_theme::next::{IconStated, TextStated, WidgetState};
     use native_theme_egui::icons::{IconKey, custom_icon_to_image};
     use native_theme_egui::next::to_color32;
-    use native_theme_egui::{Role, RoleVariant};
     const ID: &str = "basic.icons.save";
     for preset in ["kde-breeze", "material-3", "windows-11"] {
         let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
@@ -14913,18 +14912,6 @@ fn the_disabled_tool_button_takes_the_stated_disabled_label() -> Result<(), Stri
         if want == rest {
             return Err(format!("{preset}: the disabled label is the label at rest"));
         }
-        let mut cell = egui::Style::default();
-        harness
-            .state()
-            .atlas
-            .role_modifier(egui::Theme::Light, Role::Toolbar, RoleVariant::Disabled)
-            .apply(&mut cell);
-        let w = &cell.visuals.widgets;
-        assert_eq!(
-            [w.inactive.fg_stroke.color, w.noninteractive.fg_stroke.color],
-            [want; 2],
-            "{preset}: the Disabled toolbar cell is not lettered in the disabled label"
-        );
         let size = crate::demo::tool_icon_size(Some(&r)).ok_or("no toolbar icon size")?;
         let (set, icon_theme) = harness.state().chosen_icons();
         let role = IconRole::ActionSave;

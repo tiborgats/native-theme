@@ -151,6 +151,49 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
     Ok(())
 }
 
+/// The toolbar's Disabled cell letters a disabled tool button in
+/// `toolbar.button_label(DISABLED).color`, `inactive.fg_stroke` and `noninteractive.fg_stroke`
+/// (the label, and the scope's text colour an icon loads in), where a rule states it for
+/// `DISABLED`, which kde-breeze, material-3 and windows-11 do (N47); on a preset that states
+/// none the cell keeps the Normal cell's labels.
+#[test]
+fn a_disabled_tool_button_is_lettered_in_the_disabled_label() {
+    use native_theme::next::TextStated;
+    for &(key, preset) in PRESETS {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(preset).resolve(&ctx);
+            let label = r.toolbar.button_label(WidgetState::DISABLED);
+            let stated = label.from_state.contains(TextStated::COLOR);
+            if matches!(key, "kde-breeze" | "material-3" | "windows-11") {
+                assert!(stated, "{key} {:?} states no disabled label", ctx.scheme);
+            }
+            let mut notes = Vec::new();
+            let source = super::build::variant_source(&r, &mut notes);
+            let normal = egui::Style::default();
+            let cell = crate::style::variants::disabled_cell(
+                crate::Role::Toolbar,
+                &normal,
+                &source,
+                &mut notes,
+            );
+            let w = cell.map(|c| {
+                let w = &c.visuals.widgets;
+                [w.inactive.fg_stroke.color, w.noninteractive.fg_stroke.color]
+            });
+            let own = &normal.visuals.widgets;
+            let want = if stated {
+                [super::to_color32(label.color); 2]
+            } else {
+                [
+                    own.inactive.fg_stroke.color,
+                    own.noninteractive.fg_stroke.color,
+                ]
+            };
+            assert_eq!(w, Some(want), "{key} {:?}", ctx.scheme);
+        }
+    }
+}
+
 /// A checked toolbar button's fill stated as layers that are all gradients for `CHECKED |
 /// HOVER` alone, over macos-tahoe light, is `Unmapped` at that home under the pointer, and the
 /// resting and pressed fills and every label stay as the preset states them: each value is read

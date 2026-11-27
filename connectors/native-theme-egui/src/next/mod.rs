@@ -525,7 +525,6 @@ impl CheckedToolButton {
     /// The fill and the label colour in the state of the button's previous
     /// response: pressed, the pressed one's; else hovered, the hovered one's;
     /// else the resting one's.
-    #[must_use]
     pub fn at(
         &self,
         hovered: bool,
