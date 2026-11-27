@@ -216,8 +216,8 @@ mod tests {
         assert!(size_of::<Paint>() <= 24);
         assert!(size_of::<Stroke>() <= 32);
         assert!(size_of::<PartStyle>() <= 256);
-        assert_eq!(size_of::<StyleQuery<()>>(), 8);
-        assert_eq!(size_of::<StyleQuery<ButtonKind>>(), 12);
+        assert_eq!(size_of::<StyleQuery<()>>(), 12);
+        assert_eq!(size_of::<StyleQuery<ButtonKind>>(), 16);
     }
 
     fn assert_send_sync_clone_debug<T: Clone + std::fmt::Debug + Send + Sync>() {}

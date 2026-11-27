@@ -530,6 +530,96 @@ fn the_toolbar_states_no_corners() {
 }
 
 #[test]
+fn asked_about_disabled_the_disabled_checked_indicators_state_their_frame() {
+    let disabled = WidgetState::DISABLED;
+    let disabled_checked = StyleQuery::<()>::new(disabled | WidgetState::CHECKED);
+    let asking = disabled_checked.asking(disabled);
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let c = match scheme {
+            Scheme::Light => LIGHT,
+            Scheme::Dark => DARK,
+        };
+        // The switch's track: the `DISABLED | CHECKED` rule requires `DISABLED`, so its outline
+        // is the theme's for that state.
+        let track = theme.switch.track(asking);
+        assert_eq!(
+            outline_color(&track.stroke),
+            Some(c.switch_disabled_on_frame),
+            "{scheme:?}"
+        );
+        assert!(track.from_state.contains(PartStated::STROKE), "{scheme:?}");
+        assert_eq!(track, theme.switch.track(disabled_checked), "{scheme:?}");
+        // The switch's thumb: its outline comes from the `CHECKED` rule, which does not require
+        // `DISABLED`, so asked about it the outline is not the theme's for that state; the
+        // `DISABLED` rule's fill is.
+        let thumb = theme.switch.thumb(asking);
+        assert!(
+            theme
+                .switch
+                .thumb(disabled_checked)
+                .from_state
+                .contains(PartStated::STROKE),
+            "{scheme:?}"
+        );
+        assert!(!thumb.from_state.contains(PartStated::STROKE), "{scheme:?}");
+        assert!(thumb.from_state.contains(PartStated::FILL), "{scheme:?}");
+        // The disabled indicators, asked with the flag alone: the `DISABLED` rule states the fill
+        // alone, so only the asking query reaches the frame.
+        for (part, alone) in [
+            ("checkbox", theme.checkbox.indicator(disabled)),
+            ("radio", theme.radio.indicator(disabled)),
+        ] {
+            assert!(
+                !alone.from_state.contains(PartStated::STROKE),
+                "{scheme:?} {part}"
+            );
+            assert!(
+                alone.from_state.contains(PartStated::FILL),
+                "{scheme:?} {part}"
+            );
+        }
+        // The checked and the mixed indicators: each `DISABLED | on` rule requires `DISABLED`,
+        // so their frame is the theme's for that state.
+        for (part, at) in [
+            ("checkbox", WidgetState::CHECKED),
+            ("checkbox", WidgetState::INDETERMINATE),
+            ("radio", WidgetState::CHECKED),
+        ] {
+            let shown = StyleQuery::<()>::new(disabled | at);
+            let asked = shown.asking(disabled);
+            let (unasked, indicator) = match part {
+                "radio" => (theme.radio.indicator(shown), theme.radio.indicator(asked)),
+                _ => (
+                    theme.checkbox.indicator(shown),
+                    theme.checkbox.indicator(asked),
+                ),
+            };
+            assert!(
+                indicator.from_state.contains(PartStated::STROKE),
+                "{scheme:?} {part} {at:?}"
+            );
+            assert_eq!(
+                outline_color(&indicator.stroke),
+                Some(c.switch_disabled_on_frame),
+                "{scheme:?} {part} {at:?}"
+            );
+            assert_eq!(indicator.stroke, unasked.stroke, "{scheme:?} {part} {at:?}");
+            assert_eq!(indicator.fill, unasked.fill, "{scheme:?} {part} {at:?}");
+            assert_eq!(indicator.stated, unasked.stated, "{scheme:?} {part} {at:?}");
+        }
+        assert_eq!(
+            theme.checkbox.indicator(disabled).from_state,
+            theme
+                .checkbox
+                .indicator(StyleQuery::<()>::new(disabled).asking(disabled))
+                .from_state,
+            "{scheme:?}"
+        );
+    }
+}
+
+#[test]
 fn a_hovered_selected_sidebar_item_is_the_selected_item() {
     for theme in both_schemes() {
         let scheme = theme.context.scheme;

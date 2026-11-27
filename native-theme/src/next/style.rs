@@ -130,16 +130,43 @@ impl RippleSpec {
 /// the theme: it holds its neutral default and a connector keeps the
 /// toolkit's own value.
 ///
-/// A property whose bit in [`from_state`](Self::from_state) is set got its
-/// value from a rule whose `required_states` is not empty, i.e. a value the
-/// theme states *for this state*. A query returns the resting value for a
-/// state without a rule, and a value stated equal to the resting one looks
-/// the same, so the bit says which it is. Where it is clear for a state the
-/// toolkit has its own treatment of (a pressed fill, a hover outline), the
-/// theme states nothing for that state and a connector keeps the toolkit's
-/// own treatment, exactly as for an unstated property; where it is set, the
-/// theme's value is drawn. A rule that matches by variant, size, surface,
-/// position or orientation alone sets no bit.
+/// For a query that asks about no flag ([`StyleQuery::asked`] empty, the
+/// default), a property whose bit in [`from_state`](Self::from_state) is set
+/// got its value from a rule whose `required_states` is not empty, i.e. a
+/// value the theme states *for this state*. A query returns the resting value
+/// for a state without a rule, and a value stated equal to the resting one
+/// looks the same, so the bit says which it is. A rule that matches by
+/// variant, size, surface, position or orientation alone sets no bit.
+///
+/// The bit says that a rule for some flag of the query wrote the value, not
+/// for which flag: `indicator(CHECKED | HOVER)` has `FILL` set by the
+/// `CHECKED` rule. A query can ask about flags ([`StyleQuery::asking`]): then
+/// only a rule that requires every asked flag sets the bit, a matching rule
+/// that requires states but not every asked flag leaves it, and one without
+/// required states clears it. The bit of an asking query says that the theme
+/// states the property for the asked flags in this query, not that their
+/// rule wrote last.
+///
+/// A connector that keeps its own treatment of one flag `S` (a pressed fill,
+/// a hover outline, a disabled fade) on a part it draws at the state `Q` asks
+/// two queries:
+/// - the part's query with `S` as its only state flag
+///   (`indicator(HOVER).from_state`): a rule for `S` states the property, and
+///   with it for every combination with `S`; which value a combination draws
+///   is the preset's order, exceptions and exclusive groups;
+/// - the part's own query asking `S`
+///   (`indicator(StyleQuery::new(DISABLED | CHECKED).asking(DISABLED)).from_state`):
+///   a rule that requires `S` together with other flags of `Q` states it, for
+///   that combination.
+///
+/// Where the property's bit is set in either, the theme's value, the own
+/// query's, is drawn; where it is clear in both, the theme states nothing for
+/// `S` and the toolkit's own treatment stays, exactly as for an unstated
+/// property. Where `Q` is `S` alone the two are one query: asking a query's
+/// only flag changes nothing.
+///
+/// [`StyleQuery::asked`]: crate::next::StyleQuery::asked
+/// [`StyleQuery::asking`]: crate::next::StyleQuery::asking
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct PartStyle {
@@ -174,7 +201,8 @@ pub struct PartStyle {
     /// Which properties the theme states.
     pub stated: PartStated, // 4 B  which properties the theme states
     /// Which properties got their value from a rule that requires a state
-    /// flag of the query.
+    /// flag of the query; for a query asking about flags, which the theme
+    /// states for them.
     pub from_state: PartStated, // 4 B
 } // Total <= 256 B (240 B as laid out by rustc 1.100, `from_state` included); zero heap allocation on Clone.
 
@@ -271,8 +299,11 @@ bit_set!(PartStated, u32);
 /// The style of a part's text.
 ///
 /// A property whose bit in [`stated`](Self::stated) is clear is not stated by
-/// the theme, and one whose bit in [`from_state`](Self::from_state) is set
-/// got its value from a rule that requires a state, as for [`PartStyle`].
+/// the theme. The bit of a property in [`from_state`](Self::from_state) says
+/// what it says for [`PartStyle`]: for a query that asks about no flag, that a
+/// rule requiring a state wrote the value; for a query asking about flags,
+/// that the theme states it for them in this query; and a connector keeping
+/// its own treatment of one flag asks the two queries described there.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct TextStyle {
@@ -314,7 +345,8 @@ pub struct TextStyle {
     /// Which properties the theme states.
     pub stated: TextStated,
     /// Which properties got their value from a rule that requires a state
-    /// flag of the query.
+    /// flag of the query; for a query asking about flags, which the theme
+    /// states for them.
     pub from_state: TextStated,
 }
 
@@ -498,8 +530,11 @@ impl Default for FontWidth {
 /// The style of a part's icon.
 ///
 /// A property whose bit in [`stated`](Self::stated) is clear is not stated by
-/// the theme, and one whose bit in [`from_state`](Self::from_state) is set
-/// got its value from a rule that requires a state, as for [`PartStyle`].
+/// the theme. The bit of a property in [`from_state`](Self::from_state) says
+/// what it says for [`PartStyle`]: for a query that asks about no flag, that a
+/// rule requiring a state wrote the value; for a query asking about flags,
+/// that the theme states it for them in this query; and a connector keeping
+/// its own treatment of one flag asks the two queries described there.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct IconStyle {
@@ -520,7 +555,8 @@ pub struct IconStyle {
     /// Which properties the theme states.
     pub stated: IconStated, // e.g. `SIZE` clear where no source states the glyph's size (issue #4 `Z3`)
     /// Which properties got their value from a rule that requires a state
-    /// flag of the query.
+    /// flag of the query; for a query asking about flags, which the theme
+    /// states for them.
     pub from_state: IconStated,
 }
 

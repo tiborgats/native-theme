@@ -365,12 +365,19 @@ pub enum Orientation {
     Vertical,
 }
 
-/// Single generic draw-loop query (`Copy`, 8 B for `V = ()`, 12 B for `ButtonQuery`/`ListQuery`).
+/// Single generic draw-loop query (`Copy`, 12 B for `V = ()`, 16 B for `ButtonQuery`/`ListQuery`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct StyleQuery<V = ()> {
     /// The widget's state.
     pub state: WidgetState,
+    /// The flags the connector asks `from_state` about; empty by default, and
+    /// then every state rule sets the bit. Where not empty, only a rule whose
+    /// required states contain all of them sets a `from_state` bit, a rule
+    /// that requires other states leaves it, and one without required states
+    /// clears it; `FOCUS_VISIBLE` counts as `FOCUSED`, here and in the rule's
+    /// required states.
+    pub asked: WidgetState,
     /// The control size.
     pub size: ControlSize,
     /// The surface it is drawn on.
@@ -389,6 +396,7 @@ impl<V: Default> StyleQuery<V> {
     pub fn new(state: WidgetState) -> Self {
         Self {
             state,
+            asked: WidgetState::NONE,
             size: ControlSize::default(),
             surface: Surface::default(),
             position: GroupPosition::default(),
@@ -410,6 +418,16 @@ impl<V> StyleQuery<V> {
     #[must_use]
     pub fn with_state(mut self, flag: WidgetState) -> Self {
         self.state |= flag;
+        self
+    }
+
+    /// This query asking about `flags`: a property's `from_state` bit says
+    /// that the theme states it for them in this query (a rule requiring all
+    /// of them wrote it, and no later rule without required states did). It
+    /// changes no value and no `stated` bit.
+    #[must_use]
+    pub fn asking(mut self, flags: WidgetState) -> Self {
+        self.asked = flags;
         self
     }
 

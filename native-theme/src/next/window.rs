@@ -274,6 +274,7 @@ impl WindowChrome {
 fn caption_query(kind: CaptionButtonKind, state: WidgetState) -> StyleQuery<CaptionButtonKind> {
     StyleQuery {
         state,
+        asked: WidgetState::NONE,
         size: ControlSize::default(),
         surface: Surface::default(),
         position: GroupPosition::default(),
