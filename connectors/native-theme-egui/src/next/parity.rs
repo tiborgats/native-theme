@@ -1834,7 +1834,67 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.active.bg_fill",
         home!(scrollbar.thumb(PRESSED).fill),
     ),
+    d(
+        "base",
+        &[A],
+        ".visuals.widgets.inactive.weak_bg_fill",
+        Cause::Stated(home!(button.body(NONE).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
+    d(
+        "base",
+        &[A],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        Cause::Stated(home!(button.body(HOVER).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
+    d(
+        "base",
+        &[A],
+        ".visuals.widgets.active.weak_bg_fill",
+        Cause::Stated(home!(button.body(PRESSED).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
+    d(
+        "Button",
+        &[A],
+        ".visuals.widgets.{inactive,open}.weak_bg_fill",
+        Cause::Stated(home!(button.body(NONE).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
+    d(
+        "Button",
+        &[A],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        Cause::Stated(home!(button.body(HOVER).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
+    d(
+        "Button",
+        &[A],
+        ".visuals.widgets.active.weak_bg_fill",
+        Cause::Stated(home!(button.body(PRESSED).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
+    d(
+        "Button/Disabled",
+        &[A],
+        ".visuals.widgets.inactive.weak_bg_fill",
+        Cause::Stated(home!(button.body(NONE).fill)),
+        ADWAITA_BUTTON_FILLS,
+    ),
 ];
+
+/// adwaita's push button filled from libadwaita's own table.
+const ADWAITA_BUTTON_FILLS: &str = "the 0.8.0 adwaita states the push button's fills in one \
+     form, libadwaita's own table: the window text at `$button_color` 10 %, \
+     `$button_hover_color` 15 % and `$button_active_color` 30 %, translucent \
+     (_buttons.scss:1-6, :28-55 at libadwaita 1.10.0; docs/facts/gnome/button.toml on \
+     v0.8.0-rc1 at 78ee0efd; native-theme/tests/next_homes.toml, rows button.background_color, \
+     button.hover_background and button.active_background, listed differences), the Disabled \
+     cell keeping the rest fill (libadwaita fades a disabled button whole, `filter: Opacity`, \
+     and states no disabled fill); 0.7.2 states the rest fill laid over the window, opaque, and \
+     its hovered and pressed fills as uncited solids";
 
 /// A pop-up button or a segmented control stroked as none at rest.
 const NO_OUTLINE_AT_REST: &str = "macos-tahoe states the pop-up button's and the segmented \

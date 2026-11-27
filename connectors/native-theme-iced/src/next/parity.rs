@@ -1364,6 +1364,93 @@ const TOGGLE_CHECKED_FILLS: [Stated; 2] = [
     ),
 ];
 
+/// The push button's fill of `$s`, faded by `button.disabled_opacity` as the
+/// style fades a disabled button that states no disabled fill
+/// (`crate::styles::faded`).
+macro_rules! faded_button_fill {
+    ($($s:ident)|+) => {
+        Home {
+            path: concat!(
+                "button.body(", stringify!($($s)|+), ").fill, faded by button.disabled_opacity"
+            ),
+            value: |t| faded_button_fill(home!(fill, button.body($($s)|+)), t),
+        }
+    };
+}
+
+/// `home`'s fill faded by `button.disabled_opacity` ([`faded_button_fill!`]).
+#[cfg(feature = "widgets")]
+fn faded_button_fill(home: Home, t: &native_theme::next::ResolvedTheme) -> Option<Value> {
+    match (home.value)(t)? {
+        Value::Color(fill) => Some(Value::Color(crate::styles::faded(
+            fill,
+            t.button.disabled_opacity?,
+        ))),
+        _ => None,
+    }
+}
+
+/// The style functions, which alone read a disabled button's fill, are
+/// compared with the `widgets` feature only: no value without it.
+#[cfg(not(feature = "widgets"))]
+fn faded_button_fill(_: Home, _: &native_theme::next::ResolvedTheme) -> Option<Value> {
+    None
+}
+
+/// adwaita's push button fills from libadwaita's own table, at rest, under
+/// the pointer, pressed and disabled ([`ADWAITA_BUTTON_FILLS`]).
+const ADWAITA_FILLS: [Stated; 4] = [
+    set(at!(NONE), Field::Background, home!(fill, button.body(NONE))),
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, button.body(HOVER)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::Background,
+        home!(fill, button.body(PRESSED)),
+    ),
+    set(at!(DISABLED), Field::Background, faded_button_fill!(NONE)),
+];
+
+/// adwaita's checked toggle's fill from libadwaita's own table, and
+/// disabled ([`ADWAITA_BUTTON_FILLS`]).
+const ADWAITA_CHECKED_FILLS: [Stated; 2] = [
+    set(
+        at!(CHECKED),
+        Field::Background,
+        home!(fill, button.body(CHECKED)),
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::Background,
+        faded_button_fill!(CHECKED),
+    ),
+];
+
+/// adwaita's push button and toggle: [`ADWAITA_FILLS`].
+const ADWAITA_BUTTON: &[&[Stated]] = &[&ADWAITA_FILLS];
+
+/// adwaita's toggle: [`ADWAITA_FILLS`], [`ADWAITA_CHECKED_FILLS`] and
+/// [`TOGGLE_CHECKED_FILLS`].
+const ADWAITA_TOGGLE: &[&[Stated]] = &[
+    &ADWAITA_FILLS,
+    &ADWAITA_CHECKED_FILLS,
+    &TOGGLE_CHECKED_FILLS,
+];
+
+/// The reason of adwaita's push button fills.
+const ADWAITA_BUTTON_FILLS: &str = "the 0.8.0 adwaita states the push button's fills in one \
+     form, libadwaita's own table: the window text at `$button_color` 10 %, \
+     `$button_hover_color` 15 %, `$button_active_color` 30 % and `$button_checked_color` 30 %, \
+     translucent (_buttons.scss:1-6, :28-55 at libadwaita 1.10.0; docs/facts/gnome/button.toml \
+     on v0.8.0-rc1 at 78ee0efd; native-theme/tests/next_homes.toml, rows \
+     button.background_color, button.hover_background, button.active_background and \
+     button.checked_background, listed differences), a disabled one its fill faded by \
+     button.disabled_opacity (`filter: Opacity`); 0.7.2 states the rest fill laid over the \
+     window, opaque, and its hovered, pressed and checked fills as uncited solids";
+
 /// A checked toggle's label under the pointer and pressed, the theme's
 /// answers for `CHECKED | HOVER` and `CHECKED | PRESSED`
 /// ([`CHECKED_STATES`]).
@@ -2396,13 +2483,12 @@ const DIFFERENCES: &[Difference] = &[
     ),
     stated_fields("button_toggle", &["windows-11"], LineAlign::Outside, &[])
         .stating(WINDOWS_TOGGLE, &[STATED, CHECKED_STATES]),
-    stated_fields(
-        "button_toggle",
-        &["kde-breeze", "adwaita"],
-        LineAlign::Outside,
-        &[],
-    )
-    .stating(CHECKED_TOGGLE_FILLS, &[CHECKED_STATES]),
+    stated_fields("button_toggle", &["kde-breeze"], LineAlign::Outside, &[])
+        .stating(CHECKED_TOGGLE_FILLS, &[CHECKED_STATES]),
+    stated_fields("button", &["adwaita"], LineAlign::Outside, &[])
+        .stating(ADWAITA_BUTTON, &[ADWAITA_BUTTON_FILLS]),
+    stated_fields("button_toggle", &["adwaita"], LineAlign::Outside, &[])
+        .stating(ADWAITA_TOGGLE, &[ADWAITA_BUTTON_FILLS, CHECKED_STATES]),
     toolbar_labels(&["macos-tahoe"]).stating(
         &[&TOOLBAR_FILLS, &TOOLBAR_CHECKED_FILL, &TOOLBAR_REST_FILL],
         &[
