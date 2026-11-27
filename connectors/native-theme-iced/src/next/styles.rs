@@ -10,7 +10,7 @@ use iced_core::theme::Theme;
 use iced_core::{Shadow, Vector};
 use native_theme::next::{
     ButtonQuery, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
-    StyleQuery, TextStyle, WidgetState, WindowState,
+    StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
 use super::borders::{
@@ -47,6 +47,14 @@ pub(crate) fn state_layer(part: &PartStyle, home: &'static str) -> Mapped<Option
     }
 }
 
+/// The query at `state` asking `flag` (`StyleQuery::asking`): the second
+/// of the spec's two queries for a flag the connector keeps its own
+/// treatment of, a part drawn at a state wider than the flag (spec §2,
+/// `from_state`).
+fn asking(state: WidgetState, flag: WidgetState) -> StyleQuery {
+    StyleQuery::new(state).asking(flag)
+}
+
 /// [`ButtonSource`] of the 0.8.0 model. A state option no rule states for
 /// its state (its `from_state` bit clear) is `None`, and the state is then
 /// iced's own for that status (spec §2, `from_state`). A button that states
@@ -79,7 +87,10 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
         )?,
         checked_disabled_background: flagged(
             &b.body(WidgetState::DISABLED),
-            &b.body(WidgetState::DISABLED | WidgetState::CHECKED),
+            &b.body(
+                ButtonQuery::new(WidgetState::DISABLED | WidgetState::CHECKED)
+                    .asking(WidgetState::DISABLED),
+            ),
             PartStated::FILL,
             |p| fill(p, "button.body(DISABLED|CHECKED).fill"),
         )?,
@@ -97,8 +108,8 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
         )?,
         checked_label,
         checked_states: checked_states(
-            |state| b.body(state),
-            |state| b.label(state),
+            |query: ButtonQuery| b.body(query),
+            |query: ButtonQuery| b.label(query),
             (checked_background, checked_label),
             (
                 "button.body(CHECKED|HOVER).fill",
@@ -171,26 +182,39 @@ pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
 /// [`CheckedStates`] of the 0.8.0 model, of a button whose part in a state
 /// is `body`'s and whose label is `label`'s: a checked button's fill under
 /// the pointer and pressed is asked of the theme only where it states the
-/// checked fill for `CHECKED` alone (`checked`'s fill, spec §2,
-/// `from_state`), and its label only where it states the checked label so
-/// (`checked`'s label); each then the theme's answer for `CHECKED | HOVER`
-/// and `CHECKED | PRESSED` (spec §10, rule 0: "what the theme states for
-/// the state is laid over"). Where it does not, the checked button is
-/// iced's own way of showing the state in every status (spec §10, rule 0a).
-/// `homes` are the hovered and the pressed fill's.
-fn checked_states(
-    body: impl Fn(WidgetState) -> PartStyle,
-    label: impl Fn(WidgetState) -> TextStyle,
+/// checked fill for `CHECKED`, by the spec's two queries (spec §2,
+/// `from_state`): `CHECKED` alone (`checked`'s fill), or the state's own
+/// query asking `CHECKED`; its label only where it states the checked label
+/// so (`checked`'s label, or the state's own query); each then the theme's
+/// answer for `CHECKED | HOVER` and `CHECKED | PRESSED` (spec §10, rule 0:
+/// "what the theme states for the state is laid over"). Where it does not,
+/// the checked button is iced's own way of showing the state in every
+/// status (spec §10, rule 0a). `homes` are the hovered and the pressed
+/// fill's.
+fn checked_states<V: Default>(
+    body: impl Fn(StyleQuery<V>) -> PartStyle,
+    label: impl Fn(StyleQuery<V>) -> TextStyle,
     checked: (Option<iced_core::Color>, Option<iced_core::Color>),
     homes: (&'static str, &'static str),
 ) -> Mapped<CheckedStates> {
     let (checked_fill, checked_label) = checked;
-    let fill = |state: WidgetState, home| match checked_fill {
-        Some(_) => fill_of(&body(WidgetState::CHECKED | state), home),
-        None => Ok(None),
+    let at = |state: WidgetState| {
+        StyleQuery::<V>::new(WidgetState::CHECKED | state).asking(WidgetState::CHECKED)
     };
-    let label_in =
-        |state: WidgetState| checked_label.and(text_color_of(&label(WidgetState::CHECKED | state)));
+    let fill = |state: WidgetState, home| {
+        let part = body(at(state));
+        if checked_fill.is_some() || part.from_state.contains(PartStated::FILL) {
+            fill_of(&part, home)
+        } else {
+            Ok(None)
+        }
+    };
+    let label_in = |state: WidgetState| {
+        let text = label(at(state));
+        (checked_label.is_some() || text.from_state.contains(TextStated::COLOR))
+            .then(|| text_color_of(&text))
+            .flatten()
+    };
     Ok(CheckedStates {
         hover_background: fill(WidgetState::HOVER, homes.0)?,
         pressed_background: fill(WidgetState::PRESSED, homes.1)?,
@@ -230,8 +254,8 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
         )?,
         checked_background,
         checked_states: checked_states(
-            |state| t.button(state),
-            |state| t.button_label(state),
+            |query: StyleQuery| t.button(query),
+            |query: StyleQuery| t.button_label(query),
             (checked_background, checked_label),
             (
                 "toolbar.button(CHECKED|HOVER).fill",
@@ -599,7 +623,10 @@ macro_rules! check_fills {
     ($w:expr, $home:literal) => {{
         let w = $w;
         let hover = w.indicator(WidgetState::HOVER);
-        let checked_hover = w.indicator(WidgetState::HOVER | WidgetState::CHECKED);
+        let checked_hover = w.indicator(asking(
+            WidgetState::HOVER | WidgetState::CHECKED,
+            WidgetState::HOVER,
+        ));
         Ok::<CheckFills, Unmapped>(CheckFills {
             checked: fill_of(
                 &w.indicator(WidgetState::CHECKED),
@@ -642,25 +669,24 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
     let c = &r.checkbox;
     let rest = c.indicator(WidgetState::NONE);
     let mark = c.checkmark(WidgetState::CHECKED);
+    let disabled = c.indicator(WidgetState::DISABLED);
+    let disabled_on = asking(
+        WidgetState::DISABLED | WidgetState::CHECKED,
+        WidgetState::DISABLED,
+    );
     Ok(CheckboxSource {
         fills: check_fills!(c, "checkbox")?,
-        disabled_background: state_fill_of(
-            &c.indicator(WidgetState::DISABLED),
-            "checkbox.indicator(DISABLED).fill",
-        )?,
+        disabled_background: state_fill_of(&disabled, "checkbox.indicator(DISABLED).fill")?,
         checked_disabled_background: flagged(
-            &c.indicator(WidgetState::DISABLED),
-            &c.indicator(WidgetState::DISABLED | WidgetState::CHECKED),
+            &disabled,
+            &c.indicator(disabled_on),
             PartStated::FILL,
             |p| fill(p, "checkbox.indicator(DISABLED|CHECKED).fill"),
         )?,
-        disabled_border: state_line(
-            &c.indicator(WidgetState::DISABLED),
-            "checkbox.indicator(DISABLED).stroke.color",
-        )?,
+        disabled_border: state_line(&disabled, "checkbox.indicator(DISABLED).stroke.color")?,
         checked_disabled_border: flagged(
-            &c.indicator(WidgetState::DISABLED),
-            &c.indicator(WidgetState::DISABLED | WidgetState::CHECKED),
+            &disabled,
+            &c.indicator(disabled_on),
             PartStated::STROKE,
             |p| line_or_none(p, "checkbox.indicator(DISABLED|CHECKED).stroke.color"),
         )?,
@@ -670,9 +696,10 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
             .contains(IconStated::COLOR)
             .then(|| to_color(mark.color)),
         disabled_mark: {
-            let checked = c.checkmark(WidgetState::DISABLED | WidgetState::CHECKED);
+            let checked = c.checkmark(disabled_on);
             (c.checkmark(WidgetState::DISABLED)
                 .from_state
+                .union(checked.from_state)
                 .contains(IconStated::COLOR)
                 && checked.stated.contains(IconStated::COLOR))
             .then(|| to_color(checked.color))
@@ -796,9 +823,9 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
     let [thumb_diameter, _] = thumb_on.min_size;
     let [unchecked_thumb_diameter, _] = thumb_off.min_size;
     let hover = WidgetState::HOVER;
-    let hover_on = WidgetState::HOVER | WidgetState::CHECKED;
+    let hover_on = asking(hover | WidgetState::CHECKED, hover);
     let disabled = WidgetState::DISABLED;
-    let disabled_on = WidgetState::DISABLED | WidgetState::CHECKED;
+    let disabled_on = asking(disabled | WidgetState::CHECKED, disabled);
     Ok(SwitchSource {
         disabled_opacity: s.disabled_opacity,
         checked_background: fill_of(&on, "switch.track(CHECKED).fill")?,

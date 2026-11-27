@@ -37,7 +37,8 @@ const REGENERATE_HOMES: &str =
 /// The state queries the 0.8.0 style functions ask that the table of homes
 /// names for no colour leaf (the homes of `crate::next::styles`' `Unmapped`
 /// sources): a variant's outline, a disabled or pressed state 0.7.2 had no
-/// field for; the colour homes of the same kind docs/showcase-elements.toml
+/// field for, a checked indicator's fill under the pointer and a disabled
+/// checked box's mark, each asked at its two flags; the colour homes of the same kind docs/showcase-elements.toml
 /// lists that none of them asks, which [`UNREAD_HOMES`] names: a flat
 /// button's focused and checked looks, a flat button's icon, a toolbar
 /// button's icon; and a home docs/showcase-elements.toml lists in a state
@@ -66,11 +67,14 @@ const QUERIED_HOMES: &[&str] = &[
     "button.label(HOVER|CHECKED; variant=Flat).color",
     "button.label(PRESSED|CHECKED).color",
     "button.label(PRESSED|CHECKED; variant=Flat).color",
+    "checkbox.checkmark(DISABLED|CHECKED).color",
     "checkbox.indicator(DISABLED).stroke.color",
     "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+    "checkbox.indicator(HOVER|CHECKED).fill",
     "expander.header(PRESSED).fill",
     "link.container(PRESSED).fill",
     "menu.panel(NONE).stroke.color",
+    "radio.indicator(HOVER|CHECKED).fill",
     "scrollbar.thumb(HOVER).stroke.color",
     "scrollbar.thumb(NONE).stroke.color",
     "scrollbar.thumb(PRESSED).stroke.color",
@@ -112,13 +116,6 @@ struct UnreadHome {
     kind: &'static str,
     why: &'static str,
 }
-
-/// Why a home of two flags the 0.8.0 path reads through `flagged` moves no
-/// row in any preset.
-const TWO_FLAGS: &str = "read only where a rule for the first flag alone states the \
-     property (`flagged`, src/next/borders.rs; spec §2, `from_state`), which no platform \
-     preset does; a rule for both flags alone stays unseen by that query, the two-flag gap \
-     SQ1 settles";
 
 /// Why iced draws no disabled radio button.
 const NO_DISABLED_RADIO: &str = "iced 0.14's radio has no disabled status (iced_widget \
@@ -288,11 +285,6 @@ const UNREAD_HOMES: &[UnreadHome] = &[
         why: SWITCH_LABEL,
     },
     UnreadHome {
-        home: "switch.thumb(HOVER|CHECKED).fill",
-        kind: "ruled",
-        why: TWO_FLAGS,
-    },
-    UnreadHome {
         home: "window.frame(normal).fill",
         kind: "no patch",
         why: "`ThemePatch::from_toml` takes no `widgets.window` table (the walk's patch for it \
@@ -313,17 +305,7 @@ struct ExceptedHome {
 
 /// The `except` entries of the export that a reason explains, each held to
 /// the walk by `every_colour_home_moves_a_row_or_is_named`.
-const EXCEPTED_HOMES: &[ExceptedHome] = &[ExceptedHome {
-    home: "checkbox.indicator(DISABLED|CHECKED).stroke.color",
-    row: "styles::checkbox.border",
-    preset: "kde-breeze",
-    why: "kde-breeze states a disabled checked box's frame for DISABLED|CHECKED, Breeze's \
-         Disabled Highlight (`indicator` in native-theme/src/next/presets/kde.rs, \
-         switch_disabled_on_frame), and no stroke for DISABLED alone, so the border reads it \
-         only where a rule for DISABLED alone states the stroke (`flagged`, \
-         src/next/borders.rs; spec §2, `from_state`): a colour stated at the home does not \
-         move it on kde-breeze, the two-flag gap, the spec question SQ1, not a connector fix",
-}];
+const EXCEPTED_HOMES: &[ExceptedHome] = &[];
 
 /// Two opaque colours and a translucent one stated at a home in turn: a row
 /// that reads the home tells them apart, one composited under an opaque

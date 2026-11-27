@@ -54,18 +54,20 @@ pub(crate) fn state_line(part: &PartStyle, home: &'static str) -> Mapped<Option<
     }
 }
 
-/// `read` of the part `at` gives, where a rule states its `property` for
-/// the state of the query `flag` gives, queried with that flag alone (spec
-/// §2, `from_state`); `None` where none does. A value a rule for another
-/// flag of `at`'s query states (a checked box's fill under the pointer) is
-/// not this state's.
+/// `read` of the part `at` gives, where the theme states its `property`
+/// for a flag the connector keeps its own treatment of, by the spec's two
+/// queries (spec §2, `from_state`): `flag`, the part queried with that flag
+/// alone, or `at`, the part's own query asking that flag
+/// (`StyleQuery::asking`), has the bit; `None` where neither does. A value
+/// a rule for another flag of `at`'s query states (a checked box's fill
+/// under the pointer) is not this state's.
 pub(crate) fn flagged<T>(
     flag: &PartStyle,
     at: &PartStyle,
     property: PartStated,
     read: impl FnOnce(&PartStyle) -> Mapped<T>,
 ) -> Mapped<Option<T>> {
-    if flag.from_state.contains(property) {
+    if flag.from_state.contains(property) || at.from_state.contains(property) {
         read(at).map(Some)
     } else {
         Ok(None)

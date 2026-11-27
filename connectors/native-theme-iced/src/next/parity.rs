@@ -64,7 +64,7 @@
 use std::fmt::Debug;
 
 use iced_core::theme::Theme;
-use native_theme::next::{ButtonQuery, PartStyle, Preset, ThemeContext, WidgetState};
+use native_theme::next::{ButtonQuery, PartStyle, Preset, StyleQuery, ThemeContext, WidgetState};
 
 use super::LineAlign;
 use crate::{ColorMode, ResolvedTheme};
@@ -135,20 +135,16 @@ const DISABLED_STROKE: &str = "the theme states no stroke for the disabled check
      is iced's own for the status, its width the theme's at rest, which iced does not change \
      (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
 
-/// kde-breeze's disabled check box: no stroke for DISABLED alone, a
-/// checked box's frame stated for `DISABLED | CHECKED`, which the query
-/// with DISABLED alone does not reach.
+/// kde-breeze's disabled check box not checked: no stroke for DISABLED,
+/// by either of the spec's two queries.
 const KDE_DISABLED_STROKE: &str = "kde-breeze's rule for DISABLED states checkbox.indicator's \
-     fill and no stroke (the from_state bit clear when queried with DISABLED alone), so a \
-     disabled box's border colour is iced's own for the status (iced_widget 0.14.2 \
-     src/checkbox.rs, fn primary), its width the theme's at rest, where 0.7.2's connector drew \
-     it in its outline at rest, checked or not. kde-breeze does state a disabled checked box's \
-     frame, for DISABLED|CHECKED: Breeze's Disabled Highlight #e3e5e7 / #1f2124 (`indicator` \
-     in native-theme/src/next/presets/kde.rs, switch_disabled_on_frame), which the connector \
-     does not reach: by spec §2's from_state contract a connector keeping its own treatment of \
-     DISABLED asks the query with that flag alone, and a rule for DISABLED|CHECKED does not set \
-     its bit there; the two-flag gap, the spec question SQ1, not a connector fix \
-     (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+     fill and no stroke (the from_state bit clear when queried with DISABLED alone, the box's \
+     own query), so a disabled box's border colour, not checked, is iced's own for the status \
+     (iced_widget 0.14.2 src/checkbox.rs, fn primary), its width the theme's at rest, where \
+     0.7.2's connector drew it in its outline at rest. The disabled checked box's frame is \
+     stated, for DISABLED|CHECKED (Breeze's Disabled Highlight #e3e5e7 / #1f2124, `indicator` \
+     in native-theme/src/next/presets/kde.rs, switch_disabled_on_frame), and drawn: its query \
+     asking DISABLED has the bit (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
 
 /// A `Style` field the 0.8.0 preset states at a home where 0.7.2's
 /// resolver gave another value: in the statuses of state `at` (the
@@ -256,6 +252,13 @@ struct Home {
     value: fn(&native_theme::next::ResolvedTheme) -> Option<Value>,
 }
 
+/// The query at `state` asking `flag`: the second of the spec's two
+/// queries for a flag the builder keeps iced's own treatment of, read at a
+/// state wider than the flag (spec §2, `from_state`).
+fn asked(state: WidgetState, flag: WidgetState) -> StyleQuery {
+    StyleQuery::new(state).asking(flag)
+}
+
 impl Debug for Home {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.path)
@@ -339,9 +342,10 @@ mod read {
 /// The [`Home`] `<widget>.<part>(<STATE>).<property>`, read by [`read`]'s
 /// `<property>` (`fill`, `stroke`, `width`, a text style's `color`);
 /// `<STATE>` one state or several joined by `|`; `; Primary` the primary
-/// button's variant; `by <FLAG>` read at `<STATE>` where a rule for `<FLAG>`
-/// alone states it, as the builder reads a checked box under the pointer
-/// (`borders::flagged`).
+/// button's variant; `by <FLAG>` read at `<STATE>` where the theme states it
+/// for `<FLAG>` by the spec's two queries, `<FLAG>` alone or `<STATE>`
+/// asking `<FLAG>` ([`asked`]), as the builder reads a checked box under the
+/// pointer (`borders::flagged`); `by NONE` where it is stated at rest.
 macro_rules! home {
     ($r:ident, $w:ident . $p:ident ($($s:ident)|+)) => {
         Home {
@@ -369,6 +373,18 @@ macro_rules! home {
             },
         }
     };
+    ($r:ident, $w:ident . $p:ident ($($s:ident)|+) by NONE) => {
+        Home {
+            path: concat!(
+                stringify!($w), ".", stringify!($p), "(", stringify!($($s)|+), ").",
+                stringify!($r), " where a rule for NONE states it"
+            ),
+            value: |t| {
+                let f = WidgetState::NONE;
+                read::$r(&t.$w.$p($(WidgetState::$s)|+), &t.$w.$p(f), f)
+            },
+        }
+    };
     ($r:ident, $w:ident . $p:ident ($($s:ident)|+) by $f:ident) => {
         Home {
             path: concat!(
@@ -376,8 +392,10 @@ macro_rules! home {
                 stringify!($r), " where a rule for ", stringify!($f), " states it"
             ),
             value: |t| {
-                let f = WidgetState::$f;
-                read::$r(&t.$w.$p($(WidgetState::$s)|+), &t.$w.$p(f), f)
+                let (f, s) = (WidgetState::$f, $(WidgetState::$s)|+);
+                let part = t.$w.$p(s);
+                read::$r(&part, &t.$w.$p(f), f)
+                    .or_else(|| read::$r(&part, &t.$w.$p(asked(s, f)), f))
             },
         }
     };
@@ -1956,9 +1974,10 @@ const CHECK_DISABLED_MARK: Home = Home {
 };
 
 /// The mark of a disabled checked box whose disabled mark and fill the theme
-/// states (`checkbox.checkmark(DISABLED)`, `checkbox.indicator(DISABLED)`):
-/// the mark's own colour on the checked box's disabled fill, faded as one
-/// widget over the window.
+/// states (`checkbox.checkmark(DISABLED)`, `checkbox.indicator(DISABLED)`,
+/// or their `DISABLED | CHECKED` queries asking DISABLED): the mark's own
+/// colour on the checked box's disabled fill, faded as one widget over the
+/// window.
 const CHECKED_DISABLED_MARK: Home = Home {
     path: "checkbox.checkmark(DISABLED|CHECKED).color on \
            checkbox.indicator(DISABLED|CHECKED).fill, faded as one over \
@@ -1971,6 +1990,7 @@ const CHECKED_DISABLED_MARK: Home = Home {
         if !c
             .checkmark(WidgetState::DISABLED)
             .from_state
+            .union(c.checkmark(asked(state, WidgetState::DISABLED)).from_state)
             .contains(IconStated::COLOR)
             || !mark.stated.contains(IconStated::COLOR)
         {
@@ -1980,8 +2000,9 @@ const CHECKED_DISABLED_MARK: Home = Home {
     },
 };
 
-/// A disabled box's mark in `color` on `checkbox.indicator(state)`, where a
-/// rule for DISABLED states the box's fill.
+/// A disabled box's mark in `color` on `checkbox.indicator(state)`, where
+/// the theme states the box's fill for DISABLED (`indicator(DISABLED)`, or
+/// `indicator(state)` asking DISABLED).
 fn disabled_mark(
     t: &native_theme::next::ResolvedTheme,
     state: WidgetState,
@@ -1991,6 +2012,7 @@ fn disabled_mark(
     if !c
         .indicator(WidgetState::DISABLED)
         .from_state
+        .union(c.indicator(asked(state, WidgetState::DISABLED)).from_state)
         .contains(native_theme::next::PartStated::FILL)
     {
         return None;
@@ -2071,28 +2093,28 @@ const IOS_RADIO_FILL: [Stated; 1] = [set(
 )];
 
 /// A disabled check box's outline, `checkbox.indicator(DISABLED|state)`'s
-/// stroke (`state` `NONE` or `CHECKED`) where a rule for DISABLED states it,
-/// laid over the box's disabled fill (`indicator(DISABLED|state)` where a
-/// rule for DISABLED states one, else the fill at rest), the two faded as
-/// one widget over the window by `checkbox.disabled_opacity`
-/// (`crate::styles::checkbox_from`); `None` where no rule for DISABLED
-/// states the stroke, the outline then iced's own ([`DISABLED_STROKE`]).
+/// stroke (`state` `NONE` or `CHECKED`) where the theme states it for
+/// DISABLED by the spec's two queries (`indicator(DISABLED)`, or
+/// `indicator(DISABLED|state)` asking DISABLED: [`asked`]), laid over the
+/// box's disabled fill (`indicator(DISABLED|state)` where the theme states
+/// one so, else the fill at rest), the two faded as one widget over the
+/// window by `checkbox.disabled_opacity` (`crate::styles::checkbox_from`);
+/// `None` where neither query states the stroke, the outline then iced's
+/// own ([`DISABLED_STROKE`]).
 #[cfg(feature = "widgets")]
 fn disabled_outline(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
     use native_theme::next::PartStated;
     let c = &t.checkbox;
-    let gate = c.indicator(WidgetState::DISABLED);
-    if !gate.from_state.contains(PartStated::STROKE) {
+    let at = WidgetState::DISABLED.union(state);
+    let ruled = c
+        .indicator(WidgetState::DISABLED)
+        .from_state
+        .union(c.indicator(asked(at, WidgetState::DISABLED)).from_state);
+    if !ruled.contains(PartStated::STROKE) {
         return None;
     }
-    let line = super::borders::line_or_none(
-        &c.indicator(WidgetState::DISABLED.union(state)),
-        "the stated stroke",
-    )
-    .ok()?;
-    let disabled = gate.from_state.contains(PartStated::FILL);
-    let fill = if disabled {
-        let at = WidgetState::DISABLED.union(state);
+    let line = super::borders::line_or_none(&c.indicator(at), "the stated stroke").ok()?;
+    let fill = if ruled.contains(PartStated::FILL) {
         super::fill_of(&c.indicator(at), indicator_fill_home(at))
     } else {
         super::fill_of(&c.indicator(state), indicator_fill_home(state))
@@ -3044,7 +3066,7 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["kde-breeze"],
         LineAlign::Outside,
-        &[&[CHECKED_DISABLED[0], CHECKED_DISABLED[2]]],
+        &[&CHECKED_DISABLED],
     )
     .disabled_stroke(&[STATED, KDE_DISABLED_STROKE]),
     stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK])
