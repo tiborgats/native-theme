@@ -2180,8 +2180,10 @@ sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 id = "basic.icons.save.icon"
 name = "Icon"
 parent = "basic.icons.save"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(DISABLED).color"]
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.font.color"]
+# homes: toolbar.button_label(NONE).color, the colour egui and iced load the icon in where no
+#          rule states toolbar.button_icon(DISABLED).color (iced through its Disabled label).
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(DISABLED).color", "toolbar.button_label(NONE).color"]
 states = ["Disabled"]
 part = true
 

@@ -1529,8 +1529,8 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
     demo::state_pen(&r.toolbar.button(state))
 }
 
-/// The Icons group's first row: four icon-only tool buttons, as the toolbar's
-/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete and Edit at
+/// The Icons group's first row: five icon-only tool buttons, as the toolbar's
+/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete, Edit and Save at
 /// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`demo::tool_icon_size`]; where it
 /// states none, each button's label in place of its icon, which its Widget Info names), in the
 /// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
@@ -1543,7 +1543,10 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
 /// response, each one the theme leaves unstated egui's own, which its Widget Info names; and
 /// lined in the pen a rule states for the checked state at rest (`toolbar.button(CHECKED)`),
 /// under the pointer (`CHECKED | HOVER`) and pressed (`CHECKED | PRESSED`), each unstated one the
-/// scope's own ([`tool_pen`]).
+/// scope's own ([`tool_pen`]). Save is disabled, the one that is never enabled, in the toolbar's
+/// Disabled cell ([`demo::next_disabled_toolbar_button`]), its icon loaded in
+/// `toolbar.button_icon(DISABLED).color` where a rule states it for the state
+/// ([`demo::disabled_tool_icon_color`]).
 fn icon_buttons(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -1580,7 +1583,7 @@ fn icon_buttons(
             // of tool buttons is not, and a wrapping row takes its first line's height from it
             // when it opens (`egui/src/ui.rs:2376-2379`).
             ui.spacing_mut().interact_size.y = 0.0;
-            // Wrapping onto a further line where the column is too narrow for the four.
+            // Wrapping onto a further line where the column is too narrow for the five.
             ui.horizontal_wrapped(|ui| {
                 let spacing = ui.spacing_mut();
                 spacing.item_spacing.y = spacing.item_spacing.x;
