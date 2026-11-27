@@ -28,15 +28,28 @@ fn the_constant_colours_are_their_8_bit_channels() {
 }
 
 /// The push button's and the text field's outlines lie outside their fills
-/// (`InnerBorderEdge`), the primary button's inside (`OuterBorderEdge`).
+/// (`InnerBorderEdge`), the primary button's inside (`OuterBorderEdge`), as
+/// a toolkit of one border colour draws them (`Stroke::prevailing`).
 #[test]
 fn the_default_button_and_the_text_field_fill_to_the_outline_s_inner_edge() {
-    let align = |stroke: &Stroke| match stroke {
-        Stroke::Uniform { align, .. } => Some(*align),
+    let align = |stroke: &Stroke| match stroke.prevailing() {
+        Stroke::Uniform { align, .. } => Some(align),
         _ => None,
     };
     for theme in both_schemes() {
         let rest = ButtonQuery::new(WidgetState::NONE);
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                align(&theme.combo_box.field(state).stroke),
+                Some(StrokeAlign::Outside),
+                "{state:?}"
+            );
+        }
         assert_eq!(
             align(&theme.button.body(rest).stroke),
             Some(StrokeAlign::Outside)
@@ -305,9 +318,9 @@ fn the_neutral_elevation_borders_are_control_stroke_color_default() {
         let edges = |t: &ResolvedTheme| {
             [WidgetState::NONE, WidgetState::HOVER, WidgetState::DISABLED].map(|state| {
                 [
-                    stroke_color(&t.button.body(ButtonQuery::new(state)).stroke),
-                    stroke_color(&t.input.field(state).stroke),
-                    stroke_color(&t.combo_box.field(state).stroke),
+                    stroke_color(&t.button.body(ButtonQuery::new(state)).stroke.prevailing()),
+                    stroke_color(&t.input.field(state).stroke.prevailing()),
+                    stroke_color(&t.combo_box.field(state).stroke.prevailing()),
                 ]
             })
         };
@@ -354,15 +367,204 @@ fn the_accent_elevation_border_is_control_stroke_color_on_accent_default() {
             let tool = |state| theme.toolbar.button(state).stroke;
             let tool_edge = Stroke::uniform(TOOLBAR_TOGGLE_BORDER_WIDTH, on_accent);
             for state in [WidgetState::NONE, WidgetState::HOVER] {
-                assert_eq!(primary(state), edge, "{scheme:?} {state:?}");
-                assert_eq!(push(checked | state), edge, "{scheme:?} {state:?}");
-                assert_eq!(tool(checked | state), tool_edge, "{scheme:?} {state:?}");
+                assert_eq!(primary(state).prevailing(), edge, "{scheme:?} {state:?}");
+                assert_eq!(
+                    push(checked | state).prevailing(),
+                    edge,
+                    "{scheme:?} {state:?}"
+                );
+                assert_eq!(
+                    tool(checked | state).prevailing(),
+                    tool_edge,
+                    "{scheme:?} {state:?}"
+                );
             }
             for state in [WidgetState::PRESSED, WidgetState::DISABLED] {
                 assert_eq!(primary(state), Stroke::None, "{scheme:?} {state:?}");
                 assert_eq!(push(checked | state), Stroke::None, "{scheme:?} {state:?}");
                 assert_eq!(tool(checked | state), Stroke::None, "{scheme:?} {state:?}");
             }
+        }
+    }
+}
+
+/// A per-side outline `width` wide in `align`: `edge` on the top side where
+/// `top`, else on the bottom, `sides` on the other three.
+fn edge_stroke(width: f32, sides: Color, edge: Color, top: bool, align: StrokeAlign) -> Stroke {
+    let side = |color| StrokeSide {
+        width,
+        paint: Paint::Solid(color),
+    };
+    let (top_side, bottom_side) = if top {
+        (side(edge), side(sides))
+    } else {
+        (side(sides), side(edge))
+    };
+    Stroke::sides(top_side, side(sides), bottom_side, side(sides), align)
+}
+
+/// WinUI's elevation borders state their edge per side: the push button's
+/// and the combo box's `ControlElevationBorderBrush` at rest and hovered,
+/// `ControlStrokeColorSecondary` on the bottom in light and on the top in
+/// dark (the dark brush is not flipped), #29000000 / #18FFFFFF
+/// (Common_themeresources_any.xaml:244, :40); the text field's and the text
+/// area's `TextControlElevationBorderBrush` at rest, hovered and pressed,
+/// `ControlStrongStrokeColorDefault` on the bottom, #72000000 / #8BFFFFFF
+/// (:252, :48); the primary button's, a checked push button's and a checked
+/// toolbar button's `AccentControlElevationBorderBrush` at rest and hovered,
+/// `ControlStrokeColorOnAccentSecondary` on the bottom, #66000000 /
+/// #23000000 (:246, :42), inside the edge. The other three sides are the
+/// uniform outline's colour, width and alignment, which
+/// `Stroke::prevailing` gives back; the flat and absent outlines stay
+/// uniform or none, and the combo box's outline lies outside its fill in
+/// every state (`InnerBorderEdge`, Border's default).
+#[test]
+fn the_elevation_borders_state_their_edge_per_side() {
+    let on_accent = srgb8(0xffff_ff14);
+    for (scheme, neutral, neutral_edge, top, accent_edge, text_edge) in [
+        (
+            Scheme::Light,
+            srgb8(0x0000_000f),
+            srgb8(0x0000_0029),
+            false,
+            srgb8(0x0000_0066),
+            srgb8(0x0000_0072),
+        ),
+        (
+            Scheme::Dark,
+            srgb8(0xffff_ff12),
+            srgb8(0xffff_ff18),
+            true,
+            srgb8(0x0000_0023),
+            srgb8(0xffff_ff8b),
+        ),
+    ] {
+        let theme =
+            Theme::preset(Preset::Windows11).resolve(&ThemeContext::default().with_scheme(scheme));
+        let width = theme.layout.border_width;
+        let outside = StrokeAlign::Outside;
+        let inside = StrokeAlign::Inside;
+        let elevated = edge_stroke(width, neutral, neutral_edge, top, outside);
+        let text = edge_stroke(width, neutral, text_edge, false, outside);
+        let accent = edge_stroke(width, on_accent, accent_edge, false, inside);
+        let tool_accent = edge_stroke(
+            TOOLBAR_TOGGLE_BORDER_WIDTH,
+            on_accent,
+            accent_edge,
+            false,
+            inside,
+        );
+        let flat = Stroke::uniform_aligned(width, neutral, outside);
+        let push = |state| theme.button.body(ButtonQuery::new(state)).stroke;
+        let primary = |state| {
+            theme
+                .button
+                .body(ButtonQuery::primary().state(state))
+                .stroke
+        };
+        let checked = WidgetState::CHECKED;
+        for state in [WidgetState::NONE, WidgetState::HOVER] {
+            let rows = [
+                ("push", push(state), &elevated),
+                ("combo", theme.combo_box.field(state).stroke, &elevated),
+                ("input", theme.input.field(state).stroke, &text),
+                ("text area", theme.text_area.field(state).stroke, &text),
+                ("primary", primary(state), &accent),
+                ("checked", push(checked | state), &accent),
+                (
+                    "tool",
+                    theme.toolbar.button(checked | state).stroke,
+                    &tool_accent,
+                ),
+            ];
+            for (name, got, want) in rows {
+                assert_eq!(&got, want, "{scheme:?} {state:?} {name}");
+            }
+        }
+        for field in [&theme.input, &theme.text_area] {
+            assert_eq!(field.field(WidgetState::PRESSED).stroke, text, "{scheme:?}");
+            assert_eq!(
+                field.field(WidgetState::DISABLED).stroke,
+                flat,
+                "{scheme:?}"
+            );
+        }
+        for (got, three) in [
+            (&elevated, Stroke::uniform_aligned(width, neutral, outside)),
+            (&text, Stroke::uniform_aligned(width, neutral, outside)),
+            (&accent, Stroke::uniform(width, on_accent)),
+            (
+                &tool_accent,
+                Stroke::uniform(TOOLBAR_TOGGLE_BORDER_WIDTH, on_accent),
+            ),
+        ] {
+            assert_eq!(got.prevailing(), three, "{scheme:?}");
+        }
+        for state in [
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::HOVER,
+        ] {
+            assert_eq!(push(state), flat, "{scheme:?} {state:?}");
+        }
+        for state in [WidgetState::PRESSED, WidgetState::DISABLED] {
+            assert_eq!(
+                theme.combo_box.field(state).stroke,
+                flat,
+                "{scheme:?} {state:?}"
+            );
+            assert_eq!(push(checked | state), Stroke::None, "{scheme:?} {state:?}");
+            assert_eq!(primary(state), Stroke::None, "{scheme:?} {state:?}");
+        }
+    }
+}
+
+/// Under a palette the neutral elevation borders are the palette's `border`
+/// on four sides, one uniform stroke, and the accent elevation border keeps
+/// WinUI's colours per side.
+#[test]
+fn a_palette_s_border_is_the_neutral_elevation_border_on_four_sides() {
+    for (scheme, accent_edge) in [
+        (Scheme::Light, srgb8(0x0000_0066)),
+        (Scheme::Dark, srgb8(0x0000_0023)),
+    ] {
+        let p = distinct_palette(scheme);
+        let theme = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ThemeContext::default().with_scheme(scheme));
+        let width = theme.layout.border_width;
+        let border = Stroke::uniform_aligned(width, p.border, StrokeAlign::Outside);
+        let accent = edge_stroke(
+            width,
+            srgb8(0xffff_ff14),
+            accent_edge,
+            false,
+            StrokeAlign::Inside,
+        );
+        for state in [WidgetState::NONE, WidgetState::HOVER] {
+            assert_eq!(
+                theme.button.body(ButtonQuery::new(state)).stroke,
+                border,
+                "{scheme:?} {state:?}"
+            );
+            assert_eq!(theme.combo_box.field(state).stroke, border, "{scheme:?}");
+            assert_eq!(theme.input.field(state).stroke, border, "{scheme:?}");
+            assert_eq!(
+                theme
+                    .button
+                    .body(ButtonQuery::new(state | WidgetState::CHECKED))
+                    .stroke,
+                accent,
+                "{scheme:?} {state:?}"
+            );
+            assert_eq!(
+                theme
+                    .button
+                    .body(ButtonQuery::primary().state(state))
+                    .stroke,
+                accent,
+                "{scheme:?} {state:?}"
+            );
         }
     }
 }
@@ -1186,6 +1388,19 @@ fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
     let combo = |t: &ResolvedTheme, state| stroke_color(&t.combo_box.field(state).stroke);
     assert_eq!(combo(&high, WidgetState::NONE), Some(button_text));
     assert_eq!(combo(&high, WidgetState::DISABLED), Some(gray));
+    let width = high.layout.border_width;
+    for (state, color) in [
+        (WidgetState::NONE, button_text),
+        (WidgetState::HOVER, highlight),
+        (WidgetState::PRESSED, highlight),
+        (WidgetState::DISABLED, gray),
+    ] {
+        assert_eq!(
+            high.combo_box.field(state).stroke,
+            Stroke::uniform_aligned(width, color, StrokeAlign::Outside),
+            "{state:?}"
+        );
+    }
     let partial = Theme::preset(Preset::Windows11)
         .with_system_overrides(high_contrast_system(button_text, None, gray))
         .resolve(&ctx);
@@ -1197,6 +1412,56 @@ fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
             "{state:?}"
         );
         assert_eq!(combo(&partial, state), Some(button_text), "{state:?}");
+    }
+}
+
+/// Under high contrast every outline is uniform, also where the system
+/// states some of its colours alone (no highlight, no window text): the
+/// hovered push button's, the primary button's, a checked push button's and
+/// a checked toolbar button's, the text field's and the combo box's state no
+/// elevation edge.
+#[test]
+fn a_partial_high_contrast_states_no_elevation_edge() {
+    let [button_text, gray] = [2, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let partial = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(button_text, None, gray))
+        .resolve(&ctx);
+    assert_eq!(partial.context.contrast, Contrast::High);
+    let checked = WidgetState::CHECKED;
+    for state in [
+        WidgetState::NONE,
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+    ] {
+        let rows = [
+            ("push", partial.button.body(ButtonQuery::new(state)).stroke),
+            (
+                "primary",
+                partial
+                    .button
+                    .body(ButtonQuery::primary().state(state))
+                    .stroke,
+            ),
+            (
+                "checked",
+                partial
+                    .button
+                    .body(ButtonQuery::new(checked | state))
+                    .stroke,
+            ),
+            ("tool", partial.toolbar.button(checked | state).stroke),
+            ("input", partial.input.field(state).stroke),
+            ("text area", partial.text_area.field(state).stroke),
+            ("combo", partial.combo_box.field(state).stroke),
+        ];
+        for (name, got) in rows {
+            assert!(
+                matches!(got, Stroke::None | Stroke::Uniform { .. }),
+                "{state:?} {name}: {got:?}"
+            );
+        }
     }
 }
 

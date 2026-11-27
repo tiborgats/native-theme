@@ -547,8 +547,8 @@ const CENTER: &str = "the part's border is a translucent pen centred on the edge
 const MACOS: &[&str] = &["macos-monterey", "macos-tahoe"];
 
 /// The macOS presets and windows-11, whose surface strokes are translucent
-/// and inside the box (windows-11's push button and text field strokes lie
-/// outside it, `StrokeAlign::Outside`, and do not differ).
+/// and inside the box (windows-11's push button, text field and combo box
+/// strokes lie outside it, `StrokeAlign::Outside`, and do not differ).
 const MACOS_WINDOWS: &[&str] = &["windows-11", "macos-monterey", "macos-tahoe"];
 
 /// The reason of a hovered status the 0.8.0 theme states nothing for.
@@ -1773,8 +1773,8 @@ const PRIMARY_STATE_STROKES: &[&[Stated]] = &[&[
 const W11_BUTTON: &[&[Stated]] = &[&BUTTON_OUTLINE];
 
 /// The reason of windows-11's elevation borders (N38).
-const W11_ELEVATION: &str = "windows-11's elevation borders take WinUI's colours in the \
-     uniform form, the colour of the brush's three sides (N38): the push button's, the text \
+const W11_ELEVATION: &str = "windows-11's elevation borders take WinUI's colours per side, \
+     three sides of one colour and the brush's edge (N38): the push button's, the text \
      field's and the combo box's outline at rest, hovered and disabled \
      ControlStrokeColorDefault #0F000000 / #12FFFFFF (ControlElevationBorderBrush, \
      TextControlElevationBorderBrush; Common_themeresources_any.xaml:243, :39 at \
@@ -1788,7 +1788,10 @@ const W11_ELEVATION: &str = "windows-11's elevation borders take WinUI's colours
      (native-theme/tests/next_homes.toml, \
      rows button.border.color, input.border.color, text_area.border.color, \
      combo_box.border.color, toolbar.button_checked_border_color, listed differences); the \
-     connector lays each over the fill the status paints";
+     edge of each brush is not drawn (Stroke::prevailing); the push button's, the text \
+     field's and the combo box's strokes lie outside the fill (StrokeAlign::Outside, the \
+     combo box's Border's default InnerBorderEdge), handed to iced as stated, and the \
+     connector lays the accent strokes, inside the edge, over the fill the status paints";
 
 /// A toggle on windows-11: [`BUTTON_OUTLINE`], checked [`W11_CHECKED_OUTLINE`],
 /// and checked [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
@@ -3348,8 +3351,8 @@ const DIFFERENCES: &[Difference] = &[
         States::STATED,
     )
     .stating(&[&COMBO_OUTLINE], &[OPEN, STATED]),
-    open(&["windows-11"], LineAlign::Inside, States::STATED)
-        .stating(&[&COMBO_OUTLINE], &[INSIDE, OPEN, STATED, W11_ELEVATION]),
+    open(&["windows-11"], LineAlign::Outside, States::STATED)
+        .stating(&[&COMBO_OUTLINE], &[OPEN, STATED, W11_ELEVATION]),
     open(&["macos-monterey"], LineAlign::Inside, States::STATED)
         .stating(&[&COMBO_HOVER], &[INSIDE, OPEN, STATED]),
     // switch.thumb(HOVER): no preset states a hovered thumb; windows-11 and

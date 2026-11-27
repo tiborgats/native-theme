@@ -358,7 +358,7 @@ fn a_three_and_one_stroke_draws_as_its_prevailing_colour() -> Result<(), Box<dyn
 }
 
 /// A stroke read is handed to egui over the fill under it by its alignment: windows-11's primary
-/// button outline, `#0000000f` laid `Inside`, composited over the primary fill; the same colour
+/// button outline, `#14FFFFFF` laid `Inside`, composited over the primary fill; the same colour
 /// laid `Outside`, or over no fill, as stated.
 #[test]
 fn a_translucent_inside_stroke_is_handed_over_the_fill() -> Result<(), String> {
@@ -374,7 +374,7 @@ fn a_translucent_inside_stroke_is_handed_over_the_fill() -> Result<(), String> {
     };
     assert!(
         matches!(
-            part.stroke,
+            part.stroke.prevailing(),
             Stroke::Uniform {
                 align: StrokeAlign::Inside,
                 ..

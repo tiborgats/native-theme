@@ -1546,6 +1546,41 @@ mod tests {
         Ok(())
     }
 
+    /// windows-11's elevation borders read as the colour of their three
+    /// sides, their edge marked as not drawn: the push button's at rest on
+    /// the bottom in light and on the top in dark, hovered as stated for
+    /// `HOVER`, the checked button's on the bottom; disabled the flat outline
+    /// stated at rest, unmarked.
+    #[test]
+    fn a_windows_11_elevation_border_marks_its_edge() -> Result {
+        for (ctx, rest, hover, checked, disabled) in [
+            (
+                ThemeContext::light(),
+                "#0000000f (bottom side #00000029 not drawn)",
+                "#0000000f (bottom side #00000029 not drawn)",
+                "#ffffff14 (bottom side #00000066 not drawn)",
+                "#0000000f (stated at rest)",
+            ),
+            (
+                ThemeContext::dark(),
+                "#ffffff12 (top side #ffffff18 not drawn)",
+                "#ffffff12 (top side #ffffff18 not drawn)",
+                "#ffffff14 (bottom side #00000023 not drawn)",
+                "#ffffff12 (stated at rest)",
+            ),
+        ] {
+            let r = Theme::preset(Preset::Windows11).resolve(&ctx);
+            let json = theme_json(&r)?;
+            let value = |home: &str| text(&r, &json, home);
+            assert_eq!(value("button.body(NONE).stroke.color")?, rest);
+            assert_eq!(value("button.body(HOVER).stroke.color")?, hover);
+            assert_eq!(value("button.body(CHECKED).stroke.color")?, checked);
+            assert_eq!(value("button.body(DISABLED).stroke.color")?, disabled);
+            assert_eq!(value("button.body(NONE).stroke.width")?, "1 px");
+        }
+        Ok(())
+    }
+
     /// A home of no known name is an error: an unknown widget, part, state,
     /// axis, property, global or window getter. A static part's property it
     /// leaves unstated, and a global that is null, are not stated.

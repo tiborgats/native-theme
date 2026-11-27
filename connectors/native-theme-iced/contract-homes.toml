@@ -854,7 +854,7 @@ leaves = ["combo_box.hover_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Hovered"] },
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::pick_list.border", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::pick_list.border", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."combo_box.field(HOVER).stroke.color"]
@@ -869,7 +869,7 @@ leaves = ["combo_box.background_color"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Active"] },
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::pick_list.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::pick_list.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."combo_box.field(NONE).stroke.color"]
@@ -882,7 +882,7 @@ moves = [
 leaves = ["combo_box.open_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
-  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."combo_box.field(OPEN).stroke.color"]
@@ -895,7 +895,7 @@ moves = [
 leaves = ["combo_box.open_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."combo_box.field(OPEN|HOVER).stroke.color"]

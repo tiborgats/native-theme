@@ -177,9 +177,15 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         case: "combo box",
-        presets: &["windows-11", "macos-monterey"],
+        presets: &["macos-monterey"],
         differs: Differs::Outline,
         reason: COMBO_CELL,
+    },
+    Difference {
+        case: "combo box",
+        presets: &["windows-11"],
+        differs: Differs::Outline,
+        reason: WINDOWS_COMBO,
     },
     Difference {
         case: "combo box disabled",
@@ -690,6 +696,16 @@ const COMBO_CELL: &str = "the button's outline colour alone differs: it is the c
      ComboBox cell's bg_stroke, whose translucent border lies inside the part in the 0.8.0 theme \
      and is composited over its fill (native-theme-egui, next::parity, the ComboBox and \
      ComboBox/Disabled entries of its differences)";
+
+/// windows-11's combo box outlined in the elevation border's colour, outside its fill.
+const WINDOWS_COMBO: &str = "the outline's colour alone differs, in dark: combo_box.field's \
+     stroke, which 0.7.2's windows-11 takes from the default border, CardStrokeColorDefault \
+     #19000000, and the 0.8.0 preset states as the three sides of WinUI's \
+     ControlElevationBorderBrush, ControlStrokeColorDefault #12FFFFFF (its edge not drawn; \
+     native-theme/tests/next_homes.toml, row combo_box.border.color, a listed difference), laid \
+     outside the fill, as Border's default BackgroundSizing, InnerBorderEdge, lays it (the \
+     combo box's Background border states none), so handed to egui as stated, not composited \
+     over the fill; in light both are #0F000000";
 
 /// windows-11's disabled combo box keeps its rest outline, the elevation border's colour.
 const WINDOWS_COMBO_DISABLED: &str = "the outline's colour alone differs, in dark: a disabled \
