@@ -1331,6 +1331,45 @@ fn a_windows_checked_or_disabled_button_takes_the_stated_outline() -> TestResult
     Ok(())
 }
 
+/// A checked stroke stated at a width other than the unchecked button's at
+/// rest, which the checked toggle is drawn at, is reported not mapped at its
+/// width's home (spec §10, rule 4), at rest and hovered: windows-11 patched
+/// with a 3 px checked stroke over its 1 px rest one.
+#[test]
+fn a_checked_stroke_of_another_width_is_not_mapped() -> TestResult {
+    const PATCHED_WIDTH: f32 = 3.0;
+    let ctx = ThemeContext::light();
+    let stock = Theme::preset(Preset::Windows11);
+    let plain = stock.clone().resolve(&ctx);
+    assert_ne!(
+        super::super::stroke_width_of(&plain.button.body(WidgetState::NONE)),
+        Some(PATCHED_WIDTH),
+        "the rest stroke is the patched width, so this proves nothing"
+    );
+    assert!(super::button_toggle(&plain, true).is_ok());
+    let red = Color::new(1.0, 0.0, 0.0, 1.0);
+    for (state, home) in [
+        (WidgetState::CHECKED, "button.body(CHECKED).stroke.width"),
+        (
+            WidgetState::CHECKED | WidgetState::HOVER,
+            "button.body(HOVER|CHECKED).stroke.width",
+        ),
+    ] {
+        let patch = ThemePatch::new().button(
+            ButtonRule::new()
+                .states(state)
+                .body(PartPatch::new().stroke(Stroke::uniform(PATCHED_WIDTH, red))),
+        );
+        let r = stock.clone().with_patch(patch).resolve(&ctx);
+        assert_eq!(
+            super::button_toggle(&r, true).err(),
+            Some(super::super::Unmapped(home)),
+            "{state:?}"
+        );
+    }
+    Ok(())
+}
+
 /// A scroller under the pointer or dragged is iced's own where no rule
 /// states the thumb's fill for the state, and the theme's where one does.
 #[test]

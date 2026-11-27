@@ -11310,13 +11310,16 @@ pub(crate) fn toggle_button(
     id: &'static str,
     label: &'static str,
 ) -> Stateful<Div> {
-    let mut button_info = info::buttons::button(
-        cx.theme(),
-        ButtonKind::Default,
-        ButtonState::Idle,
-        false,
-        false,
-        None,
+    let mut button_info = info::buttons::checked_toggle(
+        info::buttons::button(
+            cx.theme(),
+            ButtonKind::Default,
+            ButtonState::Idle,
+            false,
+            false,
+            None,
+            button_theme(cx),
+        ),
         button_theme(cx),
     );
     let button = next_native_info(

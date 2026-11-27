@@ -865,8 +865,10 @@ pub(crate) fn toggle_on_in(
 /// theme states the stroke for the checked flag by spec §2's two queries (`from_state`: a rule
 /// for `on`, or the state's own query asking `on`'s flag), as [`toggle_on_in`] takes the colours,
 /// since `Button::stroke` overrides every on-hover effect (spec §10, rule 0). `None` where it
-/// states the stroke by neither, or in a form egui cannot draw, and egui's own selected button's
-/// pen stays (`visuals.selection.stroke`, rule 0a).
+/// states the stroke by neither, or for the state in a form egui cannot draw, never another
+/// state's pen, and egui's own selected button's pen stays: the widget state's
+/// `visuals.widgets.*.bg_stroke`, which egui keeps for a selected button (egui 0.37.0
+/// `src/style.rs`, `Style::interact_selectable`; rule 0a).
 pub(crate) fn toggle_on_pen(
     r: Option<&native_theme::next::ResolvedTheme>,
     on: native_theme::next::ButtonQuery,
@@ -884,10 +886,10 @@ pub(crate) fn toggle_on_pen(
         return pen.map(|pen| (rest, pen));
     };
     let part = r.button.body(on.with_state(flag).asking(on.state));
-    let stated = pen.is_some() || part.from_state.contains(PartStated::STROKE);
-    match stated.then(|| demo::stated_pen(&part)).flatten() {
-        Some(own) => Some((part, own)),
-        None => pen.map(|pen| (rest, pen)),
+    if pen.is_some() || part.from_state.contains(PartStated::STROKE) {
+        demo::stated_pen(&part).map(|own| (part, own))
+    } else {
+        None
     }
 }
 

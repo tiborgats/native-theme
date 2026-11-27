@@ -130,8 +130,10 @@ pub fn title_bar_inactive(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped
 /// unstated checked pair with the pressed one, this takes no other state's
 /// value: which state looks like which is the theme's to state (spec §10,
 /// rule 0a). Its border colour is `button.body(CHECKED).stroke.color` where
-/// a rule states it for `CHECKED`, at [`button`]'s width, else unset.
-/// Upstream replays the refinement over its selected style.
+/// a rule states it for `CHECKED`, at [`button`]'s width, else unset; where
+/// that stroke's stated width is another, `button.body(CHECKED).stroke.width`
+/// is not mapped (spec §10, rule 4). Upstream replays the refinement over its
+/// selected style.
 pub fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::button_checked(r)
 }
@@ -573,6 +575,38 @@ mod tests {
         assert_eq!(
             button_disabled(&high)?.border_color,
             Some(super::super::hsla(gray))
+        );
+        Ok(())
+    }
+
+    /// A checked stroke whose stated width is not the rest stroke's, which
+    /// gpui-component keeps for a selected Button, is reported not mapped at
+    /// its home (spec §10, rule 4), not drawn at the rest width: windows-11
+    /// patched with a checked stroke 3 px wide over its 1 px rest one.
+    #[test]
+    fn a_checked_stroke_of_another_width_is_not_mapped() -> Mapped<()> {
+        use super::super::Unmapped;
+        use native_theme::next::{ButtonRule, Color, PartPatch, Stroke, ThemePatch, WidgetState};
+        const PATCHED_WIDTH: f32 = 3.0;
+        let ctx = ThemeContext::light();
+        let stock = Theme::preset(Preset::Windows11);
+        let plain = stock.clone().resolve(&ctx);
+        assert_ne!(
+            super::super::stroke_width_of(&plain.button.body(WidgetState::NONE)),
+            Some(PATCHED_WIDTH),
+            "the rest stroke is the patched width, so this proves nothing"
+        );
+        button_checked(&plain)?;
+        let patch = ThemePatch::new().button(ButtonRule::new().states(WidgetState::CHECKED).body(
+            PartPatch::new().stroke(Stroke::uniform(
+                PATCHED_WIDTH,
+                Color::new(1.0, 0.0, 0.0, 1.0),
+            )),
+        ));
+        let r = stock.with_patch(patch).resolve(&ctx);
+        assert_eq!(
+            button_checked(&r),
+            Err(Unmapped("button.body(CHECKED).stroke.width"))
         );
         Ok(())
     }

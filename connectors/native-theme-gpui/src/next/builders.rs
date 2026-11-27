@@ -19,7 +19,7 @@ use native_theme::next::{
 use super::{
     Mapped, Unmapped, fill, fill_of, flat_button_states, font, hsla, normal_window, padding_of,
     radius, scrollbar_geometry, state_fill_of, state_stroke_color, state_text_color, stated,
-    stroke_color, stroke_width, text_color, text_size, uncoloured_font,
+    stroke_color, stroke_width, stroke_width_of, text_color, text_size, uncoloured_font,
 };
 use crate::geometry;
 use crate::variants::{DefaultButtonStates, ToolbarButtonStates};
@@ -103,9 +103,18 @@ pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// states it for `CHECKED` (no line, transparent, where it states none),
 /// at [`button`]'s width, else unset, so [`button`]'s border at rest, which
 /// upstream replays over its selected style, stands (spec §10, rule 0).
+/// Where that stroke's stated width is not [`button`]'s, which gpui-component
+/// keeps for a selected Button, `button.body(CHECKED).stroke.width` is not
+/// mapped (spec §10, rule 4).
 pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
     let checked = b.body(WidgetState::CHECKED);
+    if checked.from_state.contains(PartStated::STROKE)
+        && let Stroke::Uniform { width, .. } = checked.stroke
+        && stroke_width_of(&b.body(WidgetState::NONE)) != Some(width)
+    {
+        return Err(Unmapped("button.body(CHECKED).stroke.width"));
+    }
     let style = geometry::button_checked_from(
         state_text_color(
             &b.label(WidgetState::CHECKED),

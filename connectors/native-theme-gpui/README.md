@@ -1018,7 +1018,14 @@ theme states for `CHECKED | HOVER` or `CHECKED | PRESSED` (the macOS presets
 state the toolbar button's fills and labels, kde-breeze the flat button's
 hovered Highlight pen, windows-11 the push and toolbar buttons' pressed
 `Stroke::None`) is not drawn; the connector draws nothing of its own in
-its place.
+its place. No builder reads a checked button that is disabled either:
+`next::geometry::button_checked` reads `CHECKED` and
+`next::geometry::button_disabled` `DISABLED`, so the stroke the theme states
+for `DISABLED | CHECKED` (windows-11's `Stroke::None`, under high contrast
+the grey text) is not drawn. `next::geometry::button_checked` draws the
+checked pen at `next::geometry::button`'s width, which the selected Button
+keeps; a checked stroke stated at another width is reported not mapped
+(`button.body(CHECKED).stroke.width`, spec §10, rule 4).
 
 **A primary button has no outline.** gpui-component lays a border out only
 for a `Default` Button and an outline one (gpui-component 0.10.0

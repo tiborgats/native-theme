@@ -855,10 +855,11 @@ rule 0).
   `next::styles::toolbar_button` draw a checked button in the primary
   button's fill and label in the same status, a label the theme states for
   `CHECKED` laid over; its outline where the theme states no checked one,
-  its corners and its shadow are the unchecked button's. A checked fill the theme states is lettered in the label it
-  states for `CHECKED`, else in the label at rest, never in the pressed
-  one (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
-  stated `CHECKED` label, else in the label at rest"). iced gives the
+  its corners and its shadow are the unchecked button's. A checked fill
+  the theme states is lettered in the label it states for `CHECKED`, else
+  in the label at rest, never in the pressed one (spec §10, rule 0a: "a
+  stated `CHECKED` fill is lettered in the stated `CHECKED` label, else in
+  the label at rest"). iced gives the
   button's hovered and pressed statuses, so where the theme states the
   checked fill, `next::styles::button_toggle` and
   `next::styles::toolbar_button` fill a checked button under the pointer
@@ -875,7 +876,9 @@ rule 0).
   `CHECKED | HOVER`, `CHECKED | PRESSED` and `DISABLED | CHECKED`
   (windows-11: none pressed or disabled), at the unchecked button's width
   and corners; a state it states no checked outline for keeps the
-  unchecked button's there.
+  unchecked button's there. A checked outline stated at another width
+  than the unchecked button's at rest is reported not mapped at its width
+  (`button.body(<state>).stroke.width`, spec §10, rule 4).
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted

@@ -1323,9 +1323,10 @@ fn an_unstated_checked_toggle_is_egui_s_selected_button_not_the_pressed_one() ->
 /// The Basic page's toggle while on, under windows-11 light and dark, is outlined in the checked
 /// stroke the preset states (`button.body(CHECKED)`, ToggleButtonBorderBrushChecked's three
 /// sides, ControlStrokeColorOnAccentDefault #14FFFFFF inside the edge), laid over the fill egui
-/// paints, not in egui's selected button's pen; under the pointer the theme's answer for
-/// `CHECKED | HOVER`, the same colour, and pressed for `CHECKED | PRESSED`, none
-/// (`pages::basic::toggle_on_pen`).
+/// paints, not in the pen egui keeps for a selected button, the widget state's
+/// `visuals.widgets.*.bg_stroke` (egui 0.37.0 `src/style.rs`, `Style::interact_selectable`);
+/// under the pointer the theme's answer for `CHECKED | HOVER`, the same colour, and pressed for
+/// `CHECKED | PRESSED`, none (`pages::basic::toggle_on_pen`).
 #[test]
 fn a_windows_toggle_that_is_on_takes_the_stated_checked_outline() -> Result<(), String> {
     use crate::pages::basic::toggle_on_pen;
@@ -1386,6 +1387,47 @@ fn a_windows_toggle_that_is_on_takes_the_stated_checked_outline() -> Result<(), 
         );
     }
     Ok(())
+}
+
+/// A toggle that is on takes no other state's pen where the theme states the stroke for its
+/// state in a form egui cannot draw: windows-11 light, its `CHECKED | HOVER` stroke patched to
+/// sides of two widths, gives no hovered pen, so egui's own stays, not the checked pen at rest
+/// (spec §10, rule 0a; `pages::basic::toggle_on_pen`).
+#[test]
+fn a_toggle_that_is_on_takes_no_other_states_pen() {
+    use crate::pages::basic::toggle_on_pen;
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, Color, Paint, PartPatch, Preset, ResolvedTheme, Stroke,
+        StrokeAlign, StrokeSide, Theme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let side = |width| StrokeSide {
+        width,
+        paint: Paint::Solid(Color::new(1.0, 0.0, 0.0, 1.0)),
+    };
+    let patch = ThemePatch::new().button(
+        ButtonRule::new()
+            .states(WidgetState::CHECKED | WidgetState::HOVER)
+            .body(PartPatch::new().stroke(Stroke::sides(
+                side(1.0),
+                side(2.0),
+                side(1.0),
+                side(2.0),
+                StrokeAlign::Inside,
+            ))),
+    );
+    let theme = Theme::preset(Preset::Windows11);
+    let ctx = ThemeContext::light();
+    let on = ButtonQuery::new(WidgetState::CHECKED);
+    let pen = |r: &ResolvedTheme, was| toggle_on_pen(Some(r), on, was).map(|(_, pen)| pen);
+    let stock = theme.clone().resolve(&ctx);
+    assert!(
+        pen(&stock, (true, false)).is_some(),
+        "windows-11 states no hovered checked pen, so this proves nothing"
+    );
+    let r = theme.with_patch(patch).resolve(&ctx);
+    assert_eq!(pen(&r, (false, false)), pen(&stock, (false, false)));
+    assert!(pen(&r, (false, false)).is_some());
+    assert_eq!(pen(&r, (true, false)), None);
 }
 
 /// The side-panel toggle while the panel is open letters its label in

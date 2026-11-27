@@ -390,7 +390,7 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorCla
                 "button.body(HOVER).stroke.color",
                 state_stroke_color_of(&r.button.body(WidgetState::HOVER)),
                 width,
-                "native-theme-gpui/next/builders.rs:855",
+                "native-theme-gpui/next/builders.rs:864",
             )
         }),
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
@@ -420,6 +420,54 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorCla
         _ => None,
     };
     rest.into_iter().chain(hovered).collect()
+}
+
+/// `info`, [`button`]'s for a Default Button at rest under `native`, made the
+/// toggle that is on (`demo::toggle_button`): a selected Button, refined by
+/// `next::geometry::button_checked` where it applies. Its edge claims and
+/// line are replaced by the edge it draws, where `geometry::button` gives
+/// one: `button.body(CHECKED).stroke.color` where a rule states it, which
+/// `button_checked` sets at `geometry::button`'s width, else the border at
+/// rest. A selected Button takes no hover or press style (gpui-component
+/// 0.10.0 button/button.rs:733, :758), so no hovered or pressed edge is
+/// claimed.
+pub(crate) fn checked_toggle(mut info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
+    let Some(r) = native else {
+        return info;
+    };
+    let width = stroke_width_of(&r.button.body(WidgetState::NONE));
+    if !width.is_some_and(|width| width > 0.0) {
+        return info;
+    }
+    info.colors.retain(|c| !c.role.starts_with("border"));
+    info.not_themeable.retain(|note| note.what != "edge");
+    let applied = next::geometry::button_checked(r).is_ok();
+    let pen = applied && state_stroke_color_of(&r.button.body(WidgetState::CHECKED)).is_some();
+    if pen {
+        info.colors(edge_claim(
+                "checked edge",
+                "button.body(CHECKED).stroke.color",
+                state_stroke_color_of(&r.button.body(WidgetState::CHECKED)),
+                width,
+                "native-theme-gpui/next/builders.rs:128",
+            ))
+            .not_themeable(
+                "edge",
+                "button.body(CHECKED).stroke.color, which next::geometry::button_checked sets on geometry::button's border at its width; it stays under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, :758)",
+            )
+    } else {
+        info.colors(edge_claim(
+                "border at rest",
+                "button.body(NONE).stroke.color",
+                stroke_color_of(&r.button.body(WidgetState::NONE)),
+                width,
+                "native-theme-gpui/next/builders.rs:50",
+            ))
+            .not_themeable(
+                "edge",
+                "button.body(NONE).stroke.color, geometry::button's border at rest, which upstream replays over its selected style: no rule states button.body(CHECKED).stroke.color, or next::geometry::button_checked is not applied; it stays under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, :758)",
+            )
+    }
 }
 
 /// The outline of a Ghost Button built with
@@ -739,20 +787,20 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
                 &r.button.body(WidgetState::DEFAULT),
                 "button.body(DEFAULT).fill",
             ),
-            "native-theme-gpui/next/builders.rs:131",
+            "native-theme-gpui/next/builders.rs:140",
         ))
         .colors(stated_claim(
             "text",
             "button.label(DEFAULT).color",
             text_color_of(&r.button.label(WidgetState::DEFAULT)),
-            "native-theme-gpui/next/builders.rs:888",
+            "native-theme-gpui/next/builders.rs:897",
         ));
     let rest = edge_claim(
         "border at rest",
         "button.body(DEFAULT).stroke.color",
         state_stroke_color_of(&r.button.body(WidgetState::DEFAULT)),
         width,
-        "native-theme-gpui/next/builders.rs:132",
+        "native-theme-gpui/next/builders.rs:141",
     )
     .or_else(|| {
         edge_claim(
@@ -760,7 +808,7 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
             "button.body(NONE).stroke.color",
             stroke_color_of(&r.button.body(WidgetState::NONE)),
             width,
-            "native-theme-gpui/next/builders.rs:133",
+            "native-theme-gpui/next/builders.rs:142",
         )
     });
     let hovered = edge_claim(
@@ -768,7 +816,7 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
         "button.body(HOVER).stroke.color",
         state_stroke_color_of(&r.button.body(WidgetState::HOVER)),
         width,
-        "native-theme-gpui/next/builders.rs:864",
+        "native-theme-gpui/next/builders.rs:873",
     )
     .or_else(|| {
         edge_claim(
@@ -776,7 +824,7 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
             "button.body(DEFAULT).stroke.color",
             stroke_color_of(&r.button.body(WidgetState::DEFAULT)),
             width,
-            "native-theme-gpui/next/builders.rs:866",
+            "native-theme-gpui/next/builders.rs:875",
         )
     });
     let info = info.colors(rest).colors(hovered);
@@ -788,7 +836,7 @@ pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
                 &r.button.body(WidgetState::DEFAULT),
                 "button.body(DEFAULT).fill",
             ),
-            "native-theme-gpui/next/builders.rs:881",
+            "native-theme-gpui/next/builders.rs:890",
         ))
         .color(claim(
             "active",
@@ -1012,7 +1060,7 @@ pub(super) fn native_toolbar(
                     &r.toolbar.button(WidgetState::HOVER),
                     "toolbar.button(HOVER).fill",
                 ),
-                "native-theme-gpui/next/builders.rs:731",
+                "native-theme-gpui/next/builders.rs:740",
             )
         })
         .unwrap_or_default();
@@ -1035,7 +1083,7 @@ pub(super) fn native_toolbar(
                     &r.toolbar.button(WidgetState::PRESSED),
                     "toolbar.button(PRESSED).fill",
                 ),
-                "native-theme-gpui/next/builders.rs:735",
+                "native-theme-gpui/next/builders.rs:744",
             )
         })
         .unwrap_or_default();
@@ -1054,7 +1102,7 @@ pub(super) fn native_toolbar(
         "toolbar.button(HOVER).stroke.color",
         states.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER))),
         rest_border(native),
-        "native-theme-gpui/next/builders.rs:732",
+        "native-theme-gpui/next/builders.rs:741",
     );
     from.line(info.colors(edge))
 }
@@ -1346,7 +1394,7 @@ fn toolbar_checked_colors(
                     &r.toolbar.button(WidgetState::CHECKED),
                     "toolbar.button(CHECKED).fill",
                 ),
-                "native-theme-gpui/next/builders.rs:710",
+                "native-theme-gpui/next/builders.rs:719",
             );
             // The toolbar's checked label, else the push button's, else none
             // set, so the variant's one foreground letters it.
@@ -1354,14 +1402,14 @@ fn toolbar_checked_colors(
                 "checked text",
                 "toolbar.button_label(CHECKED).color",
                 state_text_color_of(&r.toolbar.button_label(WidgetState::CHECKED)),
-                "native-theme-gpui/next/builders.rs:700",
+                "native-theme-gpui/next/builders.rs:709",
             )
             .or_else(|| {
                 stated_claim(
                     "checked text",
                     "button.label(CHECKED).color",
                     state_text_color_of(&r.button.label(WidgetState::CHECKED)),
-                    "native-theme-gpui/next/builders.rs:705",
+                    "native-theme-gpui/next/builders.rs:714",
                 )
             })
             .or_else(|| {
@@ -1387,7 +1435,7 @@ fn toolbar_checked_colors(
                     )
                     .ok()
                     .flatten(),
-                    "native-theme-gpui/next/builders.rs:735",
+                    "native-theme-gpui/next/builders.rs:744",
                 ),
                 // `checked_fill` gives `Rest` only where `toolbar_button_rest`
                 // applies, which lays this fill over the selected style.
@@ -1400,7 +1448,7 @@ fn toolbar_checked_colors(
                     )
                     .ok()
                     .flatten(),
-                    "native-theme-gpui/next/builders.rs:972",
+                    "native-theme-gpui/next/builders.rs:981",
                 ),
                 (CheckedFill::Own, Some(_)) => Some(claim(
                     "selected bg",
@@ -1466,7 +1514,7 @@ fn toolbar_checked(
         "toolbar.button(CHECKED).stroke.color",
         applied.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED))),
         rest_border(native),
-        "native-theme-gpui/next/builders.rs:714",
+        "native-theme-gpui/next/builders.rs:723",
     ));
     info.not_themeable(
         "hover outline while checked",
