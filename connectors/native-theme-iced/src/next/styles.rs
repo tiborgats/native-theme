@@ -392,8 +392,8 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -429,8 +429,8 @@ pub fn button(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button_toggle(
     r: &ResolvedTheme,
     checked: bool,
@@ -473,8 +473,8 @@ pub fn button_toggle(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn toolbar_button(
     r: &ResolvedTheme,
     checked: bool,
@@ -497,8 +497,8 @@ pub fn toolbar_button(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button_primary(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -513,8 +513,8 @@ pub fn button_primary(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button_default(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -529,8 +529,8 @@ pub fn button_default(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button_danger(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -552,8 +552,8 @@ pub fn button_danger(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button_success(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -575,8 +575,8 @@ pub fn button_success(
 ///
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
-/// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0).
+/// stroke not reduced, a concentric radius); a value at rest it leaves
+/// unstated is iced's own class's (spec §10, rule 0).
 pub fn button_warning(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -1600,7 +1600,7 @@ pub fn pane_grid(
 ///
 /// [`super::Unmapped`] where the panel's fill or border is stated in a form
 /// iced cannot draw (a layered fill with no fallback colour, a per-side
-/// stroke, a concentric radius).
+/// stroke not reduced, a concentric radius).
 pub fn tooltip(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {

@@ -1728,7 +1728,7 @@ mod tests {
 
     /// Spec §10 rule 2, for every stroke colour a builder or a colour token
     /// reads: a stroke stated as none is transparent, no line; one stroke its
-    /// colour; an unstated stroke, or one stated per side, the home lacked.
+    /// colour; the home lacked an unstated stroke or one per side not reduced.
     #[test]
     fn a_none_stroke_is_transparent() -> Mapped<()> {
         let mut none = PartStyle::default();

@@ -160,8 +160,8 @@ fn stated_content_min_size(new: &native_theme::next::ResolvedTheme) -> Option<St
 /// side plus the stated stroke's width, a stroke stated as none adding 0
 /// (spec §10, rule 2), an unstated side iced's own
 /// (`iced_widget::button::DEFAULT_PADDING`); `None` where the stroke is
-/// unstated or per side, or the right side is stated (an arrow column then
-/// widens it, which this does not reckon).
+/// unstated or per side and not reduced, or the right side is stated (an
+/// arrow column then widens it, which this does not reckon).
 #[cfg(feature = "widgets")]
 fn stated_combo_box_padding(new: &native_theme::next::ResolvedTheme) -> Option<String> {
     use native_theme::next::{PartStated, Stroke, WidgetState};

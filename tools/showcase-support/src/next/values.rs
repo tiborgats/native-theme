@@ -43,9 +43,10 @@
 //! stroke a toolkit with one border colour draws (spec §10, rule 2): its
 //! `stroke.color` that colour, its swatch too, marked [`side_not_drawn`],
 //! `<colour> (<side> side <colour> not drawn)`, where the fourth side's
-//! colour is another, and its `stroke.width` the width, unmarked; so for a
-//! ruled or window part and a static part (`tooltip.panel`), not the focus
-//! indicator (`focus_ring.*`); the marker stands before [`STATED_AT_REST`].
+//! colour is another, and its `stroke.width` the width, unmarked. This holds
+//! for a ruled part, a window part and a static part (`tooltip.panel`), not
+//! for a focus indicator (`focus_ring.*`, a part's `focus`); the marker
+//! stands before [`STATED_AT_REST`].
 //! [`NOT_STATED`] where the theme
 //! states nothing: a property whose `stated` bit is clear, a size that is
 //! `None`, a global that is `null`, a part that states nothing; a value
@@ -526,8 +527,9 @@ fn global_value(
 /// A static part's stroke colour or width at `segments` of the serialised
 /// form `json` (`tooltip.panel.stroke.color`), where the stroke there,
 /// deserialised, is one [`reduced`] reduces: the uniform stroke's value,
-/// marked as [`marked_stroke`] marks it; `None` for every other home, the
-/// focus indicator's (`focus_ring.*`) among them.
+/// marked as [`marked_stroke`] marks it; `None` for every other home, a
+/// focus indicator's among them (`focus_ring.*`, a part's `focus`), which no
+/// connector reduces.
 fn reduced_global_stroke(
     segments: &[&str],
     json: &serde_json::Value,
@@ -536,6 +538,7 @@ fn reduced_global_stroke(
     if !matches!(property, "color" | "width")
         || parent.last() != Some(&"stroke")
         || segments.first() == Some(&"focus_ring")
+        || parent.contains(&"focus")
     {
         return None;
     }
@@ -1464,8 +1467,9 @@ mod tests {
     /// stroke it is drawn as: a 3 + 1 its three sides' colour and swatch,
     /// marked with the fourth side's colour as not drawn, its width unmarked,
     /// on a ruled part and on a static part, the marker before the stated at
-    /// rest one; four equal sides unmarked; the focus indicator's keeps its
-    /// stated form; the marker strips off.
+    /// rest one; four equal sides unmarked; a focus indicator's, the global
+    /// one and a static part's own, keeps its stated form; the marker strips
+    /// off.
     #[test]
     fn a_reduced_per_side_stroke_is_marked() -> Result {
         use native_theme::next::{ButtonRule, PartPatch, ThemePatch};
@@ -1481,6 +1485,8 @@ mod tests {
         r.tooltip.panel.stroke = three_and_one(main, odd);
         r.tooltip.panel.stated |= PartStated::STROKE;
         r.focus_ring.stroke = three_and_one(main, odd);
+        r.tooltip.panel.focus = Some(std::sync::Arc::new(r.focus_ring.clone()));
+        r.tooltip.panel.stated |= PartStated::FOCUS;
         let json = theme_json(&r)?;
         let value = |home: &str| text(&r, &json, home);
         let colour = home_value("button.body(NONE).stroke.color", &r, &json, &as_stated)?;
@@ -1513,11 +1519,16 @@ mod tests {
         assert_eq!(panel.text, marked);
         assert_eq!(panel.colour, Some(main));
         assert_eq!(value("tooltip.panel.stroke.width")?, "1 px");
-        let ring = value("focus_ring.stroke.color")?;
-        assert!(
-            ring.starts_with('{') && ring.contains("\"bottom\""),
-            "{ring}"
-        );
+        for home in [
+            "focus_ring.stroke.color",
+            "tooltip.panel.focus.stroke.color",
+        ] {
+            let ring = value(home)?;
+            assert!(
+                ring.starts_with('{') && ring.contains("\"bottom\""),
+                "{home}: {ring}"
+            );
+        }
         assert_eq!(without_side_not_drawn(&marked), main.to_string());
         let circular = format!("4 px {DRAWN_CIRCULAR}");
         assert_eq!(without_side_not_drawn(&circular), circular);

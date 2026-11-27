@@ -76,10 +76,10 @@ pub use crate::focus_ring::RingLook;
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to iced (a gradient fill, a per-side
-/// stroke, a concentric radius): its place in the 0.8.0 model, as a query and a
-/// property (`button.body(NONE).stroke.width`). The 0.7.2 path has no such
-/// case, its resolved fields being always set; the 0.8.0 path reports it
-/// rather than inventing the value.
+/// stroke not reduced, a concentric radius): its place in the 0.8.0 model,
+/// as a query and a property (`button.body(NONE).stroke.width`). The 0.7.2
+/// path has no such case, its resolved fields being always set; the 0.8.0
+/// path reports it rather than inventing the value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Unmapped(pub(crate) &'static str);
 

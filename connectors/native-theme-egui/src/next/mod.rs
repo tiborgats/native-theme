@@ -1263,7 +1263,7 @@ pub fn input_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egu
 /// # Errors
 ///
 /// [`Unmapped`] where [`text_area_margin`] is, or the field's stroke is per
-/// side.
+/// side and not reduced.
 pub fn text_area_frame(
     ui: &egui::Ui,
     id: egui::Id,

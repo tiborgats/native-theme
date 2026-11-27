@@ -148,12 +148,11 @@
 # toolkits' corner being circular (docs/v0.8.0-spec.md §10, rule 2); a per-side stroke that
 # `Stroke::prevailing` reduces (four sides of one width and solid colours, at least three of them
 # one colour) as the uniform stroke the toolkits draw (docs/v0.8.0-spec.md §10, rule 2), on a
-# ruled or window part and a static part (`tooltip.panel`), not the focus indicator
-# (`focus_ring.*`): its
-# `stroke.color` that colour, with its swatch, marked `<colour> (<side> side <colour> not drawn)`
-# where the fourth side's colour is another, its `stroke.width` the width, unmarked; the marker
-# before `(stated at rest)`, as `4 px (drawn circular) (stated at rest)` stacks; the 0.7.2
-# comparison strips both. An error for an unknown name.
+# ruled or window part and a static part (`tooltip.panel`), not a focus indicator (`focus_ring.*`,
+# a part's `focus`): its `stroke.color` that colour, with its swatch, marked `<colour> (<side> side
+# <colour> not drawn)` where the fourth side's colour is another, its `stroke.width` the width,
+# unmarked; the marker before `(stated at rest)`, as `4 px (drawn circular) (stated at rest)`
+# stacks; the 0.7.2 comparison strips both. An error for an unknown name.
 # Units from the property's kind (a small table for globals and metrics).
 #
 # ---------------------------------------------------------------------------------------------

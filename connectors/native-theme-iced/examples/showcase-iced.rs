@@ -42400,12 +42400,38 @@ mod tests {
         let stated = p.stated.contains(PartStated::STROKE);
         match kind {
             " unstated" => !stated,
-            " none" => stated && matches!(p.stroke, Stroke::None),
+            " none" => stated && matches!(p.stroke.prevailing(), Stroke::None),
             ".width 0" => {
-                stated && matches!(p.stroke, Stroke::Uniform { width, .. } if width == 0.0)
+                stated
+                    && matches!(p.stroke.prevailing(), Stroke::Uniform { width, .. } if width == 0.0)
             }
             _ => false,
         }
+    }
+
+    /// A part stated with four solid sides 0 wide, which `Stroke::prevailing`
+    /// reduces to a uniform stroke 0 wide, is 0 wide for a reason the checker
+    /// takes as the theme's ([`stroke_zero`], [`zero_reason_holds`]): a button
+    /// body patched to one on kde-breeze.
+    #[test]
+    fn a_four_side_stroke_of_width_0_is_a_reason_that_holds() {
+        use native_theme::next::{
+            ButtonRule, Color, Paint, PartPatch, StrokeAlign, StrokeSide, ThemePatch,
+        };
+        let side = || StrokeSide {
+            width: 0.0,
+            paint: Paint::Solid(Color::rgb(0.0, 0.0, 0.0)),
+        };
+        let mut r = loaded("kde-breeze", false).next_shown().clone();
+        r.apply_patch(
+            &ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().stroke(
+                Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside),
+            ))),
+        );
+        let home = "button.body(NONE)";
+        let reason = stroke_zero(&r.button.body(WidgetState::NONE), home);
+        assert_eq!(reason, format!("{home}.stroke.width 0"));
+        assert!(zero_reason_holds(&reason, &r), "{reason}");
     }
 
     /// A colour line's text after its role, where it names a style row
@@ -46091,7 +46117,11 @@ mod tests {
             let line = match iced_next::stroke_width_of(panel) {
                 Some(width) => width,
                 None if !panel.stated.contains(PartStated::STROKE) => iced::Border::default().width,
-                None => return Err(format!("{at_theme}: dialog.panel's stroke is per side")),
+                None => {
+                    return Err(format!(
+                        "{at_theme}: dialog.panel's stroke is per side and not reduced"
+                    ));
+                }
             };
             let stated = iced_next::padding_of(panel);
             let drawn = dialog_padding(state);
