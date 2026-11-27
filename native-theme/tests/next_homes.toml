@@ -1383,6 +1383,10 @@ homes = [
     "input.field(NONE).fill",
     "text_area.field(NONE).fill",
 ]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states $button_color laid over the window, opaque (#e6e6e7 / #38383c); 0.8.0 states it in libadwaita's own form, as the push button's: the window text at 10 %, translucent over what lies behind as libadwaita's background-color is"
+difference_citation = "adwaita: _entries.scss:9 (the entry's background-color: $button_color), _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)) at libadwaita 1.10.0; docs/platform-facts.md §2.4 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
 
 [[row]]
 key = "input.placeholder_color"
@@ -2819,6 +2823,10 @@ homes = ["dialog.panel.padding.left"]
 [[row]]
 key = "combo_box.background_color"
 homes = ["combo_box.field(NONE).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states the trigger button's $button_color laid over the window, opaque (#e6e6e7 / #38383c); 0.8.0 states the push button's table, libadwaita's own form: the window text at 10 %, translucent over what lies behind as libadwaita's background-color is"
+difference_citation = "adwaita: _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)), :28-29 (%button_basic_raised's background-color) at libadwaita 1.10.0, _dropdowns.scss:1-12 adds no fill; docs/platform-facts.md §2.24 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
 
 [[row]]
 key = "combo_box.min_height"
@@ -2847,10 +2855,10 @@ homes = ["combo_box.label(DISABLED).color"]
 [[row]]
 key = "combo_box.hover_background"
 homes = ["combo_box.field(HOVER).fill"]
-difference_presets = ["kde-breeze", "material-3", "macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2 leaves it unset on kde-breeze, material-3 and macos-tahoe (the rest fill by inheritance, no rule) and states an uncited hover fill on macos-monterey (#e0e0e5 / #444446); 0.8.0 states the rest fill for HOVER, where Breeze keeps it, where Material's outlined select keeps it, and where a hovered macOS pop-up button draws as at rest (spec §2, from_state)"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.24 (hover_background): a non-editable combo box is a button frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75); material-3: the outlined select passes the outlined field no container colour or state layer (select/internal/_outlined-select.scss:42-48), whose :hover changes only its outline (field/internal/_outlined-field.scss:247-257, material-web cbd34a8); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels"
-difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "material-3" = { light = "#fef7ff", dark = "#141218" }, "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" } }
+difference_presets = ["kde-breeze", "material-3", "macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2 leaves it unset on kde-breeze, material-3 and macos-tahoe (the rest fill by inheritance, no rule) and states an uncited hover fill on macos-monterey (#e0e0e5 / #444446); 0.8.0 states the rest fill for HOVER, where Breeze keeps it, where Material's outlined select keeps it, and where a hovered macOS pop-up button draws as at rest (spec §2, from_state); adwaita: 0.7.2's uncited #d5d5d5 / #464649; 0.8.0 states the push button's table, the trigger being a raised button: $button_hover_color, the window text at 15 %, translucent"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.24 (hover_background): a non-editable combo box is a button frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75); material-3: the outlined select passes the outlined field no container colour or state layer (select/internal/_outlined-select.scss:42-48), whose :hover changes only its outline (field/internal/_outlined-field.scss:247-257, material-web cbd34a8); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels; adwaita: _buttons.scss:2 ($button_hover_color: color-mix(in srgb, currentColor 15%, transparent)), :35-37 (&:hover) at libadwaita 1.10.0, _dropdowns.scss:1-12 adds no fill; docs/platform-facts.md §2.24 (hover_background)"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "material-3" = { light = "#fef7ff", dark = "#141218" }, "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
 
 [[row]]
 key = "combo_box.hover_border_color"
@@ -2953,10 +2961,18 @@ homes = ["combo_box.field(NONE).padding.left"]
 [[row]]
 key = "segmented_control.background_color"
 homes = ["segmented_control.track(NONE).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states AdwToggleGroup's $button_color laid over the window, opaque (#e6e6e7 / #38383c); 0.8.0 states it in libadwaita's own form, as the push button's: the window text at 10 %, translucent over what lies behind as libadwaita's background is"
+difference_citation = "adwaita: _toggle-group.scss:12 (background: $button_color), _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
 
 [[row]]
 key = "segmented_control.active_background"
 homes = ["segmented_control.segment(SELECTED).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "adwaita dark: 0.7.2 states AdwToggleGroup's checked toggle, white at 20 %, laid over the group's opaque #38383c (#606063); 0.8.0 states the track in libadwaita's own form, translucent, so it states the checked toggle in that form too, white at 20 %, a layer over the track, which a palette's track then lies under as libadwaita's does; light keeps #ffffff"
+difference_citation = "adwaita: _toggle-group.scss:79-80 (a checked toggle's background: --active-toggle-bg-color), _colors.scss:238 (#ffffff, light), :245-247 (rgb(255 255 255 / 20%), dark) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (active_background)"
+difference_values = { "adwaita" = { light = "#ffffff", dark = "#ffffff33" } }
 
 [[row]]
 key = "segmented_control.active_text_color"
@@ -2982,10 +2998,10 @@ homes = ["segmented_control.disabled_opacity"]
 [[row]]
 key = "segmented_control.hover_background"
 homes = ["segmented_control.segment(HOVER).fill"]
-difference_presets = ["macos-monterey"]
-difference_reason = "0.7.2's uncited #e0e0e5 / #444446; 0.8.0 states no hover fill of a segment's own, as AppKit draws a hovered segment as at rest (the segment states no rest fill)"
-difference_citation = "os-probe run 45198750893 (macOS 15; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.segment` differs from the normal capture in 0 pixels"
-difference_values = { "macos-monterey" = "unstated" }
+difference_presets = ["macos-monterey", "adwaita"]
+difference_reason = "0.7.2's uncited #e0e0e5 / #444446; 0.8.0 states no hover fill of a segment's own, as AppKit draws a hovered segment as at rest (the segment states no rest fill); adwaita: 0.7.2's uncited #d5d5d5 / #464649; 0.8.0 states AdwToggleGroup's own hover, $hover_color, the window text at 7 %, a layer over the group's fill"
+difference_citation = "macos-monterey: os-probe run 45198750893 (macOS 15; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.segment` differs from the normal capture in 0 pixels; adwaita: _toggle-group.scss:65-67 (toggle:hover { background-color: $hover_color }), _colors.scss:268 ($hover_color: color-mix(in srgb, currentColor 7%, transparent)) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (hover_background)"
+difference_values = { "macos-monterey" = "unstated", "adwaita" = { light = "#0000060e", dark = "#ffffff12" } }
 
 [[row]]
 key = "segmented_control.font.family"

@@ -31,8 +31,10 @@
 //! text the preset letters its widgets in, and the tooltip's text with
 //! `tooltip_bg` (§7: one text colour for the eight surfaces), and with it the
 //! push button's fills, the window text at libadwaita's `$button_*_color`
-//! alphas, and the toolbar's and the flat button's hovered, pressed and
-//! checked layers of the window text (`currentColor` at 7, 16 and 10 %);
+//! alphas, and with them the drop-down's, the entry's and the toggle group's
+//! track's, and the toolbar's and the flat button's hovered, pressed and
+//! checked layers of the window text (`currentColor` at 7, 16 and 10 %), and
+//! the hovered toggle's at 7 %;
 //! `accent` is `accent_bg_color`, the accent's fill and the tab's active
 //! indicator, from which the focus ring is derived again through
 //! `adw_standalone`; `error`, `warning` and `success` are
@@ -47,8 +49,9 @@
 //! takes from the selection, follow them, as the disabled text follows the
 //! window text. Every other colour keeps the preset's value: the fills the
 //! preset states as libadwaita's translucent layers already laid over its
-//! own window (the drop-down's, the entries', the toggle group's, the hover
-//! fills), the placeholder, the switch's and the slider's colours, the
+//! own window (the hover fills) or as fixed layers of its own window text
+//! (the tab's hover, the sidebar's pressed row, the pressed toggle's fill),
+//! the placeholder, the switch's and the slider's colours, the
 //! status colours' text. An explicit accent is libadwaita's accent as the system's accent
 //! is ([`lay_accent_over`]), the later statement of layer 3: it replaces the
 //! palette's `accent`, `selection_bg`, `info`, and with the accent its text
@@ -210,10 +213,7 @@ struct SchemeColors {
     warning_foreground: Color,
     success: Color,
     success_foreground: Color,
-    button_background: Color,
-    button_hover: Color,
     checkbox_background: Color,
-    button_active_layer: Color,
     trough_active: Color,
     trough_hover: Color,
     view_active: Color,
@@ -337,27 +337,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `defaults.success_text_color`: platform-facts.md (§2.1.4): success_fg_color white
     // (libadwaita 1.10.0 _colors.scss:17)
     success_foreground: srgb8(0xffff_ffff),
-    // `combo_box.background_color`: platform-facts.md §2.24 background_color: the trigger button's
-    // $button_color over the window, #e6e6e7 (libadwaita 1.10.0 _buttons.scss:28-29;
-    // _dropdowns.scss:1-12 adds no fill)
-    // `input.background_color`: platform-facts.md §2.4 background_color: an entry fills with
-    // $button_color, currentColor 10 %, over the window, #e6e6e7 (libadwaita 1.10.0
-    // _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
-    // `segmented_control.background_color`: platform-facts.md §2.25 background_color:
-    // AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
-    // the window fg RGB(0 0 6 / 80%) so 8 % of #000006, laid over the window's #fafafb
-    // (libadwaita 1.10.0 _colors.scss:32-33)
-    button_background: srgb8(0xe6e6_e7ff),
-    // `combo_box.hover_background`, `segmented_control.hover_background`: 0.7.2 adwaita.toml
-    // (uncited)
-    button_hover: srgb8(0xd5d5_d5ff),
     // `checkbox.unchecked_background`: no disabled_background / disabled_text_color:
     // platform-facts.md (§2.1.6), a disabled check is its enabled self at disabled_opacity
     checkbox_background: srgb8(0xffff_ffff),
-    // a pressed drop-down's trigger, a raised button: :active, $button_active_color, the window
-    // text rgb(0 0 6 / 80%) at 30 %, a layer (_buttons.scss:3, :39-42, _dropdowns.scss:1-12,
-    // _colors.scss:33 at libadwaita 1.10.0)
-    button_active_layer: srgb8(0x0000_063d),
     // a pressed unchecked check box's and off switch's fill: $trough_active_color, the text at
     // 25 % (_checks.scss:42-44, _switch.scss:9, _colors.scss:282)
     trough_active: srgb8(0x0000_0633),
@@ -394,8 +376,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // `scrollbar.thumb_active_color`: 0.7.2 adwaita.toml (uncited)
     scrollbar_thumb_pressed: srgb8(0x4e4e_4eff),
     // `segmented_control.active_background`: platform-facts.md (§2.25): AdwToggleGroup's checked
-    // toggle, --active-toggle-bg-color #ffffff and --active-toggle-fg-color RGB(0 0 6 / 80%) over
-    // it (libadwaita 1.10.0 _toggle-group.scss:79-81, _colors.scss:238-239)
+    // toggle is `--active-toggle-bg-color`, "`#ffffff` in light", and --active-toggle-fg-color
+    // RGB(0 0 6 / 80%) over it (libadwaita 1.10.0 _toggle-group.scss:79-81, _colors.scss:238-239)
     segment_selected: srgb8(0xffff_ffff),
     // `segmented_control.active_text_color`: 0.7.2 adwaita.toml (uncited)
     segment_selected_foreground: srgb8(0x3333_38ff),
@@ -497,27 +479,9 @@ const DARK: SchemeColors = SchemeColors {
     success: srgb8(0x26a2_69ff),
     // `defaults.success_text_color`: 0.7.2 adwaita.toml (uncited)
     success_foreground: srgb8(0xffff_ffff),
-    // `combo_box.background_color`: platform-facts.md §2.24 background_color: the trigger button's
-    // $button_color over the window, #38383c (libadwaita 1.10.0 _buttons.scss:28-29;
-    // _dropdowns.scss:1-12 adds no fill)
-    // `input.background_color`: platform-facts.md §2.4 background_color: an entry fills with
-    // $button_color, currentColor 10 %, over the window, #38383c (libadwaita 1.10.0
-    // _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
-    // `segmented_control.background_color`: platform-facts.md §2.25 background_color:
-    // AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
-    // the window fg white at 10 %, laid over the window's #222226 (libadwaita 1.10.0
-    // _colors.scss:95-96)
-    button_background: srgb8(0x3838_3cff),
-    // `combo_box.hover_background`, `segmented_control.hover_background`: 0.7.2 adwaita.toml
-    // (uncited)
-    button_hover: srgb8(0x4646_49ff),
     // `checkbox.unchecked_background`: no disabled_background / disabled_text_color:
     // platform-facts.md (§2.1.6), a disabled check is its enabled self at disabled_opacity
     checkbox_background: srgb8(0x3030_34ff),
-    // a pressed drop-down's trigger, a raised button: :active, $button_active_color, the window
-    // text white at 30 %, a layer (_buttons.scss:3, :39-42, _dropdowns.scss:1-12, _colors.scss:96
-    // at libadwaita 1.10.0)
-    button_active_layer: Color::new(1.0, 1.0, 1.0, 0.3),
     // a pressed unchecked check box's and off switch's fill: $trough_active_color, the text at
     // 25 % (_checks.scss:42-44, _switch.scss:9, _colors.scss:282)
     trough_active: srgb8(0xffff_ff40),
@@ -553,10 +517,11 @@ const DARK: SchemeColors = SchemeColors {
     // `scrollbar.thumb_active_color`: 0.7.2 adwaita.toml (uncited)
     scrollbar_thumb_pressed: srgb8(0xc0c0_c0ff),
     // `segmented_control.active_background`: platform-facts.md (§2.25): AdwToggleGroup's checked
-    // toggle, --active-toggle-bg-color white at 20 % over the group's #38383c, and
-    // --active-toggle-fg-color #ffffff (libadwaita 1.10.0 _toggle-group.scss:79-81,
-    // _colors.scss:245-248)
-    segment_selected: srgb8(0x6060_63ff),
+    // toggle is `--active-toggle-bg-color`, "`rgb(255 255 255 / 20%)` in dark", a layer over the
+    // group's own fill (the track), and --active-toggle-fg-color #ffffff over it (libadwaita
+    // 1.10.0 _toggle-group.scss:79-81, _colors.scss:245-248), where 0.7.2 stated it laid over the
+    // window, opaque
+    segment_selected: Color::new(1.0, 1.0, 1.0, 0.2),
     // `segmented_control.active_text_color`: 0.7.2 adwaita.toml (uncited)
     segment_selected_foreground: srgb8(0xffff_ffff),
     // `sidebar.background_color`: 0.7.2 adwaita.toml (uncited)
@@ -750,20 +715,25 @@ const FLAT_CHECKED_PRESSED_ALPHA: f32 = 0.19;
 /// `$button_color`, `color-mix(in srgb, currentColor 10%, transparent)`, on
 /// `%button_basic_raised` (_buttons.scss:1, :28-29 at libadwaita 1.10.0;
 /// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`;
-/// platform-facts.md (§2.3)).
+/// platform-facts.md (§2.3)); also the drop-down's trigger at rest, a raised
+/// button (§2.24), the entry's fill (_entries.scss:9; §2.4), and so the text
+/// area's, which [`input`] builds as the entry, and the toggle group's track
+/// (_toggle-group.scss:12; §2.25).
 const BUTTON_ALPHA: f32 = 0.1;
 
 /// The alpha of the window text a hovered push button is filled with:
 /// `$button_hover_color`, `color-mix(in srgb, currentColor 15%,
 /// transparent)`, on `&:hover` (_buttons.scss:2, :35-36 at libadwaita 1.10.0;
-/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`); also the
+/// hovered drop-down's trigger, a raised button (platform-facts.md (§2.24)).
 const BUTTON_HOVER_ALPHA: f32 = 0.15;
 
 /// The alpha of the window text a pressed push button is filled with:
 /// `$button_active_color`, `color-mix(in srgb, currentColor 30%,
 /// transparent)`, on `&.keyboard-activating, &:active` (_buttons.scss:3,
 /// :39-41 at libadwaita 1.10.0; `docs/facts/gnome/button.toml` on
-/// `v0.8.0-rc1` at `78ee0efd`).
+/// `v0.8.0-rc1` at `78ee0efd`); also the pressed drop-down's trigger, a
+/// raised button (_dropdowns.scss:1-12 adds no fill).
 const BUTTON_PRESSED_ALPHA: f32 = 0.3;
 
 /// The alpha of the window text a checked push button is filled with:
@@ -2604,8 +2574,13 @@ fn input(
     padding: Edges,
     min_height: Option<f32>,
 ) -> InputWidget {
+    // `input.background_color`: platform-facts.md §2.4 background_color: an entry fills with
+    // $button_color, `color-mix(in srgb, currentColor 10%, transparent)` (_entries.scss:9,
+    // _buttons.scss:1 at libadwaita 1.10.0), the window text at BUTTON_ALPHA, translucent over
+    // what lies behind as libadwaita's `background-color` is, where 0.7.2 stated it laid over the
+    // window.
     let field = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.button_background)])
+        .base([fill(c.row_foreground.mul_alpha(BUTTON_ALPHA))])
         .base(border(roles, INPUT_BORDER_WIDTH))
         .base([
             corners(layout.corner_radius),
@@ -3348,8 +3323,14 @@ fn combo_box(
     layout: &LayoutMetrics,
     direction: Direction,
 ) -> ComboBoxWidget {
+    // The trigger is a raised button and keeps `%button_basic_raised`'s fills (platform-facts.md
+    // §2.24 background_color, hover_background; _buttons.scss:1-3, :28-42 at libadwaita 1.10.0;
+    // _dropdowns.scss:1-12 adds no fill): the window text at BUTTON_ALPHA, BUTTON_HOVER_ALPHA and
+    // BUTTON_PRESSED_ALPHA, translucent over what lies behind as libadwaita's `background-color`
+    // is, where 0.7.2 stated the rest fill laid over the window and an uncited hover solid.
+    let layer = |alpha: f32| fill(c.row_foreground.mul_alpha(alpha));
     let field = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.button_background)])
+        .base([layer(BUTTON_ALPHA)])
         .base(border(roles, COMBO_BOX_BORDER_WIDTH))
         .base([
             corners(layout.corner_radius),
@@ -3367,14 +3348,14 @@ fn combo_box(
         // adds no outline, at libadwaita 1.10.0).
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            std::iter::once(fill(c.button_hover)).chain(border(roles, COMBO_BOX_BORDER_WIDTH)),
+            std::iter::once(layer(BUTTON_HOVER_ALPHA)).chain(border(roles, COMBO_BOX_BORDER_WIDTH)),
         )
         // Pressed: the trigger is a raised button, `&:active { background-color:
-        // $button_active_color }` (_buttons.scss:39-42; _dropdowns.scss:1-12 adds no fill, at
+        // $button_active_color }` (_buttons.scss:3, :39-42; _dropdowns.scss:1-12 adds no fill, at
         // libadwaita 1.10.0).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            std::iter::once(fill(c.button_active_layer))
+            std::iter::once(layer(BUTTON_PRESSED_ALPHA))
                 .chain(border(roles, COMBO_BOX_BORDER_WIDTH)),
         )
         .build();
@@ -3415,8 +3396,13 @@ fn segmented_control(
     layout: &LayoutMetrics,
     direction: Direction,
 ) -> SegmentedControlWidget {
+    // `segmented_control.background_color`: platform-facts.md §2.25 background_color:
+    // AdwToggleGroup's `background: $button_color`, `color-mix(in srgb, currentColor 10%,
+    // transparent)` (_toggle-group.scss:12, _buttons.scss:1 at libadwaita 1.10.0), the window text
+    // at BUTTON_ALPHA, translucent over what lies behind as libadwaita's `background` is, where
+    // 0.7.2 stated it laid over the window.
     let track = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.button_background)])
+        .base([fill(c.row_foreground.mul_alpha(BUTTON_ALPHA))])
         .base(border(roles, layout.border_width))
         .base([
             corners(layout.corner_radius),
@@ -3444,7 +3430,14 @@ fn segmented_control(
             ],
             [PartProp::Stroke(Stroke::None)],
         )
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        // Hovered: AdwToggleGroup's `toggle:hover { background-color: $hover_color }`, the window
+        // text at 7 %, a layer over the group's fill (platform-facts.md §2.25 hover_background;
+        // _toggle-group.scss:65-67, _colors.scss:268 at libadwaita 1.10.0), the toolbar's
+        // TOOLBAR_BUTTON_HOVER_ALPHA, where 0.7.2 stated an uncited solid.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))],
+        )
         // Pressed: AdwToggleGroup's toggle :active, $active_color (_toggle-group.scss:69-70 at
         // libadwaita 1.10.0).
         .rule(
