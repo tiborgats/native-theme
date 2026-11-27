@@ -3503,15 +3503,25 @@ fn edged_quads(cx: &mut VisualTestContext, selector: &'static str) -> Vec<(gpui:
 /// the pointer.
 type CopyBoxEdges = (&'static str, Vec<(gpui::Hsla, f32)>, Vec<(gpui::Hsla, f32)>);
 
-/// The two Copy boxes that are Buttons, with the Inputs page shown and the
-/// Inspector showing the input groups' info, which is no element of the
-/// list: the input group's Copy and the Inspector's.
-fn copy_box_edges(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [CopyBoxEdges; 2] {
+/// The three Copy boxes, all Buttons, with the Inputs page shown: the input
+/// group's Copy and the Inspector's, with the Inspector showing the input
+/// groups' info, which is no element of the list, and the Inspector's with
+/// it showing a page tab's, which is one (`inspector::listed_info`).
+fn copy_box_edges(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [CopyBoxEdges; 3] {
+    let info = settle_on(cx, showcase, Page::Inputs.tab());
+    assert!(
+        info.as_ref().is_some_and(|info| info.listed.is_some()),
+        "the page tab's info is not an element of the list, so no listed Copy is drawn: {info:?}"
+    );
+    let listed_rest = edged_quads(cx, INSPECTOR_COPY);
+    let listed = bounds_of(cx, INSPECTOR_COPY).center();
+    hover(cx, listed);
+    draw(cx);
+    let listed_hovered = edged_quads(cx, INSPECTOR_COPY);
     let info = settle_on(cx, showcase, "inputs-input-groups");
     assert!(
         info.as_ref().is_some_and(|info| info.listed.is_none()),
-        "the Inspector shows no info, or one of an element of the list, whose Copy box is no \
-         Button: {info:?}"
+        "the Inspector shows no info, or one of an element of the list: {info:?}"
     );
     let group = bounds_of(cx, INPUTS_GROUP_COPY).center();
     hover(cx, group);
@@ -3526,11 +3536,12 @@ fn copy_box_edges(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [C
     [
         (INPUTS_GROUP_COPY, group_rest, group_hovered),
         (INSPECTOR_COPY, inspector_rest, inspector_hovered),
+        ("the listed inspector-copy", listed_rest, listed_hovered),
     ]
 }
 
-/// The input group's Copy and the Inspector's are the 0.8.0 flat button
-/// (`next::variants::ghost_button`, refined by
+/// The input group's Copy and the Inspector's, unlisted and listed, are the
+/// 0.8.0 flat button (`next::variants::ghost_button`, refined by
 /// `next::geometry::ghost_button_rest_own_padding`): under kde-breeze light,
 /// which states the flat button's hovered outline, each is edged in
 /// `button.body(HOVER; variant=Flat).stroke.color` under the pointer and in
@@ -4930,22 +4941,23 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
     }
 }
 
-/// The inspector's Copy box letters its text as its routes say (M9-037): in
-/// `sidebar.item_label(NONE).color` at rest, `button.label(HOVER).color`
-/// under the pointer and `button.label(PRESSED).color` while pressed, read
-/// from the installed 0.8.0 theme. The text is the box's own child, so it is
-/// painted in the text colour the box is laid out under, which the registry
-/// records for `chrome.info.copy` (a text colour is no quad of the scene).
-/// kde-breeze light states the same colour for its sidebar text, its hovered
-/// button text and its pressed button text, so the hovered one is patched to
-/// the theme's `colors.window.border` and the pressed one to its
-/// `colors.window.foreground_muted`, colours of the same theme that differ
-/// from the sidebar's and from each other.
+/// The listed Copy letters its label as its routes say: in the panel's text,
+/// `sidebar.item_label(NONE).color`, at rest as the iced and egui showcases'
+/// Copy is, and in it still under the pointer and while pressed, the label
+/// setting its own colour over the ghost variant's foreground. The label's
+/// colour is the text colour it is laid out in, which the registry records
+/// for `chrome.info.copy` (`elements::label_probe`; a text colour is no quad
+/// of the scene). kde-breeze light states the same colour for its sidebar
+/// text, its hovered button text and its pressed button text, so the hovered
+/// one is patched to the theme's `colors.window.border` and the pressed one
+/// to its `colors.window.foreground_muted`, by rules that name no variant and
+/// so are the flat button's too, colours of the same theme that differ from
+/// the sidebar's and from each other.
 /// The routes are read from the panel's own text for `chrome.info.copy`
 /// (`inspector::listed`, beside the info of the page tab the pointer settled
 /// on), where the panel names each leaf with how it applies.
 #[gpui::test]
-fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAppContext) {
+fn the_listed_copy_letters_its_label_in_the_panels_text(cx: &mut TestAppContext) {
     use native_theme::next::{ButtonRule, TextPatch, ThemePatch, WidgetState};
     use native_theme_gpui::next::text_color_of;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4992,28 +5004,28 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     let Some(info) = info else { return };
     let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
     let text = |cx: &mut VisualTestContext| {
-        cx.update(|_window, cx| ui.read(cx).text_colours.get("chrome.info.copy").copied())
+        cx.update(|_window, cx| ui.read(cx).label_colours.get("chrome.info.copy").copied())
     };
     assert_eq!(
         text(&mut cx),
         rest,
-        "the Copy box's text at rest is not sidebar.item_label(NONE).color"
+        "the Copy label at rest is not sidebar.item_label(NONE).color"
     );
     let copy = bounds_of(&mut cx, INSPECTOR_COPY).center();
     hover(&mut cx, copy);
     draw(&mut cx);
     assert_eq!(
         text(&mut cx),
-        hovered,
-        "the Copy box's text under the pointer is not button.label(HOVER).color"
+        rest,
+        "the Copy label under the pointer is not sidebar.item_label(NONE).color"
     );
     cx.simulate_mouse_down(copy, MouseButton::Left, Modifiers::default());
     cx.run_until_parked();
     draw(&mut cx);
     assert_eq!(
         text(&mut cx),
-        pressed,
-        "the Copy box's text while pressed is not button.label(PRESSED).color"
+        rest,
+        "the Copy label while pressed is not sidebar.item_label(NONE).color"
     );
     cx.simulate_mouse_up(copy, MouseButton::Left, Modifiers::default());
     cx.run_until_parked();
@@ -5024,40 +5036,46 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     });
     assert!(panel.is_some(), "no panel text for chrome.info.copy");
     let Some(panel) = panel else { return };
-    for (home, says) in [
-        (
-            "button.label(HOVER).color",
-            "the Copy box's text under the pointer",
-        ),
-        (
-            "button.label(PRESSED).color",
-            "the Copy box's text while pressed",
-        ),
+    let says = "lettered in sidebar.item_label(NONE).color, else upstream's sidebar_foreground, \
+                in every state";
+    for home in [
+        "button.label(NONE; variant=Flat).color",
+        "button.label(HOVER; variant=Flat).color",
+        "button.label(PRESSED; variant=Flat).color",
     ] {
         let row = panel.rows.iter().find(|row| row.leaf == home);
         assert!(
-            row.is_some_and(|row| row.how.contains(says)),
-            "the panel's {home} row does not say {says:?}: {row:?}"
+            row.is_some_and(|row| row.how.starts_with("not drawn") && row.how.contains(says)),
+            "the panel's {home} row does not say it is not drawn, {says:?}: {row:?}"
         );
     }
+    let row = panel
+        .rows
+        .iter()
+        .find(|row| row.leaf == "sidebar.item_label(NONE).color");
+    assert!(
+        row.is_some_and(|row| row.how.starts_with("gpui:")),
+        "the panel's sidebar.item_label(NONE).color row does not say gpui draws it: {row:?}"
+    );
 }
 
-/// The Copy box of a listed element's info, the panel's own box, draws its
-/// listed outline: under kde-breeze light, which states the hovered push
-/// button's stroke and pads that button on every side by more than 3 px, it
-/// is edged in `button.body(HOVER).stroke.color` under the pointer and in no
-/// colour at rest, and the border lies inside the stated padding: with that
-/// stroke patched to a width of 3 px the box is the same size at rest and
-/// under the pointer as before (spec §10, rule 0).
+/// The Copy of a listed element's info is the flat Button it is in an
+/// unlisted one's, as tall as upstream's small Button, `inspector::COPY_HEIGHT`
+/// at the window's rem, which `PanelLook::body_min_height` counts: under
+/// kde-breeze light, which states the flat button's hovered outline, it is
+/// edged in `button.body(HOVER; variant=Flat).stroke.color` under the pointer
+/// and in no colour at rest, and it keeps that height in both, the border laid
+/// out inside it, with that outline patched to a width of 3 px too.
 #[gpui::test]
-fn the_listed_copy_box_draws_the_hovered_outline_inside_its_padding(cx: &mut TestAppContext) {
+fn the_listed_copy_is_a_small_flat_button(cx: &mut TestAppContext) {
     use native_theme::next::{
-        ButtonRule, PartPatch, ResolvedTheme, Stroke, ThemePatch, WidgetState,
+        ButtonQuery, ButtonRule, ButtonVariant, PartPatch, ResolvedTheme, Stroke, ThemePatch,
+        WidgetState,
     };
-    use native_theme_gpui::next::{padding_of, state_stroke_color_of, stroke_width_of};
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     const PATCHED_WIDTH: f32 = 3.0;
     let outline = |r: &ResolvedTheme| {
-        let hovered = r.button.body(WidgetState::HOVER);
+        let hovered = r.button.body(ButtonQuery::flat().state(WidgetState::HOVER));
         state_stroke_color_of(&hovered).zip(stroke_width_of(&hovered))
     };
     // The box at rest and hovered, with the colours it is edged in hovered.
@@ -5081,47 +5099,49 @@ fn the_listed_copy_box_draws_the_hovered_outline_inside_its_padding(cx: &mut Tes
     show(&mut cx, &showcase, Page::Charts);
     let r = next_theme(&mut cx, &showcase);
     let stated = r.as_ref().and_then(outline);
-    let padded = r.as_ref().is_some_and(|r| {
-        padding_of(&r.button.body(WidgetState::NONE))
-            .iter()
-            .all(|side| side.is_some_and(|v| v > PATCHED_WIDTH))
-    });
     assert!(
-        stated.is_some_and(|(c, w)| !c.is_transparent() && w > 0. && w != PATCHED_WIDTH) && padded,
-        "kde-breeze light states no hovered push button stroke apart from {PATCHED_WIDTH} px, or \
-         pads that button on some side by no more, so this test proves nothing: {stated:?}"
+        stated.is_some_and(|(c, w)| !c.is_transparent() && w > 0. && w != PATCHED_WIDTH),
+        "kde-breeze light states no flat hover outline apart from {PATCHED_WIDTH} px, so this \
+         test proves nothing: {stated:?}"
     );
     let Some((colour, _)) = stated else {
         return;
     };
+    let tall = cx.update(|window, _| crate::inspector::COPY_HEIGHT.to_pixels(window.rem_size()));
+    // Within half a pixel: gpui rounds the layout to whole pixels.
+    let is_tall = |height: Pixels| (height - tall).abs() <= px(0.5);
     let (rest_edges, rest, hovered, edges) = measure(&mut cx, &showcase);
     assert!(
         rest_edges.is_empty(),
-        "the Copy box at rest is edged in {rest_edges:?}"
+        "the listed Copy at rest is edged in {rest_edges:?}"
     );
     assert!(
         edges.iter().any(|(c, _)| *c == colour),
-        "the hovered Copy box is edged in {edges:?}, not button.body(HOVER).stroke.color \
-         {colour:?}"
+        "the hovered listed Copy is edged in {edges:?}, not \
+         button.body(HOVER; variant=Flat).stroke.color {colour:?}"
     );
-    assert_eq!(
-        rest, hovered,
-        "the Copy box changes its size under the pointer"
+    assert!(
+        is_tall(rest.height) && is_tall(hovered.height),
+        "the listed Copy is {rest:?} at rest and {hovered:?} hovered, not COPY_HEIGHT, {tall:?}, \
+         tall"
     );
     let patched = install_patched_breeze(&mut cx, &showcase, Page::Charts, |r| {
         Some(
             ThemePatch::new().button(
-                ButtonRule::new().states(WidgetState::HOVER).body(
-                    PartPatch::new()
-                        .stroke(Stroke::uniform(PATCHED_WIDTH, r.colors.window.foreground?)),
-                ),
+                ButtonRule::new()
+                    .variant(ButtonVariant::Flat)
+                    .states(WidgetState::HOVER)
+                    .body(
+                        PartPatch::new()
+                            .stroke(Stroke::uniform(PATCHED_WIDTH, r.colors.window.foreground?)),
+                    ),
             ),
         )
     });
     let patched = patched.as_ref().and_then(outline);
     assert!(
         patched.is_some_and(|(c, w)| c != colour && w == PATCHED_WIDTH),
-        "the patch does not state a hovered stroke {PATCHED_WIDTH} px wide in another colour: \
+        "the patch does not state a flat hover outline {PATCHED_WIDTH} px wide in another colour: \
          {patched:?}"
     );
     let Some((patched_colour, _)) = patched else {
@@ -5131,14 +5151,13 @@ fn the_listed_copy_box_draws_the_hovered_outline_inside_its_padding(cx: &mut Tes
         measure(&mut cx, &showcase);
     assert!(
         patched_rest_edges.is_empty() && patched_edges.iter().any(|(c, _)| *c == patched_colour),
-        "patched, the Copy box is edged in {patched_rest_edges:?} at rest and {patched_edges:?} \
-         hovered, not {patched_colour:?}"
+        "patched, the listed Copy is edged in {patched_rest_edges:?} at rest and \
+         {patched_edges:?} hovered, not {patched_colour:?}"
     );
     assert!(
-        patched_rest == rest && patched_hovered == rest,
-        "with the hovered stroke {PATCHED_WIDTH} px wide the Copy box is {patched_rest:?} at \
-         rest and {patched_hovered:?} hovered, not {rest:?}: the border does not lie inside the \
-         stated padding"
+        is_tall(patched_rest.height) && is_tall(patched_hovered.height),
+        "with the flat hover outline {PATCHED_WIDTH} px wide the listed Copy is {patched_rest:?} \
+         at rest and {patched_hovered:?} hovered, not COPY_HEIGHT, {tall:?}, tall"
     );
 }
 

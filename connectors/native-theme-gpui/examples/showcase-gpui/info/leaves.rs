@@ -189,67 +189,56 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         ],
         "not drawn: gpui-component styles a focused Button after the caller's style and gives no hook for it, so a focused Primary Button's border is ThemeColor ring where it has a border width, and where it has none a 1 px line inside it in its text colour at 60 %, with the band round it where the band is on (gpui-component 0.10.0 button/button.rs:936-938, focus_style; styled.rs:250-298, focus_style; native-theme-gpui README, Limits)",
     ),
-    // --- button: the Copy box of Widget Info -----------------------------------
+    // --- button: Widget Info's Copy, next::variants::ghost_button ---------------
     (
         "chrome.info.copy",
-        &["button.body(HOVER).fill"],
-        "gpui: the Copy box's fill under the pointer (inspector.rs)",
+        &["button.body(HOVER; variant=Flat).fill"],
+        FLAT_GHOST_HOVER_FILL,
     ),
     (
         "chrome.info.copy",
-        &["button.label(HOVER).color"],
-        "gpui: the Copy box's text under the pointer (inspector.rs)",
+        &["button.body(PRESSED; variant=Flat).fill"],
+        FLAT_GHOST_PRESSED_FILL,
+    ),
+    ("chrome.info.copy", COPY_LABEL_HOMES, COPY_PANEL_LABEL),
+    (
+        "chrome.info.copy",
+        &["button.body(HOVER; variant=Flat).stroke.color"],
+        "gpui: next::variants::ghost_button's colour, the border under the pointer and pressed, button.body(HOVER; variant=Flat).stroke.color where a rule states it, laid out by next::geometry::ghost_button_rest_own_padding around upstream's own padding and hidden at rest (inspector.rs, listed_info; support::ghost_variant)",
     ),
     (
         "chrome.info.copy",
-        &["button.body(PRESSED).fill"],
-        "gpui: the Copy box's fill while pressed (inspector.rs)",
+        FLAT_PRESSED_EDGE_HOMES,
+        FLAT_ONE_BORDER_COLOUR,
     ),
     (
         "chrome.info.copy",
-        &["button.label(PRESSED).color"],
-        "gpui: the Copy box's text while pressed (inspector.rs)",
+        &["button.body(HOVER; variant=Flat).stroke.width"],
+        "gpui: next::geometry::ghost_button_rest_own_padding's border width, the hovered flat body's, where a rule states button.body(HOVER; variant=Flat).stroke.color, transparent at rest and coloured under the pointer and pressed, around upstream's own padding (native-theme-gpui next/builders.rs, ghost_rest_within; inspector.rs, listed_info)",
     ),
     (
         "chrome.info.copy",
-        &["button.body(HOVER).stroke.color"],
-        "gpui: the Copy box's border under the pointer, where a rule states it for the state, button.body(HOVER).stroke.width wide and transparent at rest, the width taken off each stated padding side so the box keeps its size (inspector.rs, listed_info)",
+        &["button.body(PRESSED; variant=Flat).stroke.width"],
+        "not reachable: the Copy button's border is next::geometry::ghost_button_rest_own_padding's in every state, the hovered flat body's width, which next::variants::ghost_button colours under the pointer and pressed (native-theme-gpui next/builders.rs, ghost_rest_within)",
+    ),
+    ("chrome.info.copy", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
+    (
+        "chrome.info.copy",
+        &[
+            "button.body(NONE).corners",
+            "button.body(NONE; variant=Flat).corners",
+        ],
+        "not drawn: the Copy button is rounded by upstream's ButtonRounded::Medium, Theme::radius, which the connector sets from layout.corner_radius (gpui-component 0.10.0 button/button.rs, RenderOnce for Button; native-theme-gpui next/mod.rs, theme_scalars)",
     ),
     (
         "chrome.info.copy",
-        &["button.body(PRESSED).stroke.color"],
-        "gpui: the Copy box's border while pressed, where a rule states it for the state, at the hovered stroke's width; where none does, the box's own treatment, the hover style gpui keeps under the press (inspector.rs, listed_info)",
-    ),
-    (
-        "chrome.info.copy",
-        &["button.body(HOVER).stroke.width"],
-        "gpui: the Copy box's border width in every state, where a rule states button.body(HOVER).stroke.color, transparent at rest, taken off each stated padding side so the box keeps its size (inspector.rs, CopyEdge)",
-    ),
-    ("chrome.info.copy", COPY_FLAT_HOMES, COPY_PUSH_BOX),
-    (
-        "chrome.info.copy",
-        &["button.body(NONE).corners"],
-        "gpui: the Copy box's corner radius (inspector.rs)",
-    ),
-    (
-        "chrome.info.copy",
-        &["button.body(NONE).padding.top"],
-        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
-    ),
-    (
-        "chrome.info.copy",
-        &["button.body(NONE).padding.right"],
-        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
-    ),
-    (
-        "chrome.info.copy",
-        &["button.body(NONE).padding.bottom"],
-        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
-    ),
-    (
-        "chrome.info.copy",
-        &["button.body(NONE).padding.left"],
-        "gpui: pads the Copy box's text, less button.body(HOVER).stroke.width where a rule states the hovered stroke, the border laid out inside it, floored at 0 (inspector.rs, PanelLook)",
+        &[
+            "button.body(NONE).padding.top",
+            "button.body(NONE).padding.right",
+            "button.body(NONE).padding.bottom",
+            "button.body(NONE).padding.left",
+        ],
+        "not drawn: the Copy button is a Size::Small Button, which keeps upstream's padding, px_2 at the sides and none above and below, h_6 tall, as the unlisted Copy (gpui-component 0.10.0 button/button.rs, RenderOnce for Button, the Size::Small arm; inspector.rs, COPY_HEIGHT)",
     ),
     // --- button: the pages menu, variants::ghost_button --------------------------
     (
@@ -842,16 +831,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         FLAT_PRESSED_WIDTH,
     ),
     ("chrome.page_tabs.menu", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
-    (
-        "chrome.info.copy",
-        &["button.label(NONE; variant=Flat).color"],
-        "not drawn: the Copy box is lettered at rest in the panel's text, sidebar.item_label(NONE).color, else upstream's sidebar_foreground (inspector.rs, PanelLook::text)",
-    ),
-    (
-        "chrome.info.copy",
-        &["button.body(NONE; variant=Flat).corners"],
-        "not drawn: the Copy box is rounded by the push button's corners, button.body(NONE).corners, else upstream's radius (inspector.rs, PanelLook)",
-    ),
     (
         "chrome.page_tabs.menu",
         &["button.label(NONE; variant=Flat).color"],
@@ -3462,22 +3441,15 @@ const TOOL_STATE_WIDTH: &str = "not drawn: a tool button's border is next::geome
 /// side-panel toggle's, are not drawn.
 const CHECKED_ICON_STATE_TINT: &str = "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)";
 
-/// The flat button's own states, which the listed Copy box does not read.
-const COPY_FLAT_HOMES: &[&str] = &[
-    "button.body(HOVER; variant=Flat).fill",
-    "button.body(PRESSED; variant=Flat).fill",
+/// The flat button's own label colours, which Widget Info's Copy does not letter its label in.
+const COPY_LABEL_HOMES: &[&str] = &[
+    "button.label(NONE; variant=Flat).color",
     "button.label(HOVER; variant=Flat).color",
     "button.label(PRESSED; variant=Flat).color",
-    "button.body(HOVER; variant=Flat).stroke.color",
-    "button.body(PRESSED; variant=Flat).stroke.color",
-    "button.body(HOVER; variant=Flat).stroke.width",
-    "button.body(PRESSED; variant=Flat).stroke.width",
-    "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
-    "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
 ];
 
-/// Why [`COPY_FLAT_HOMES`] are not drawn.
-const COPY_PUSH_BOX: &str = "not drawn: the listed Copy box is a div drawn with the push button's homes, not a flat Button: under the pointer and pressed it is filled in button.body(HOVER).fill and button.body(PRESSED).fill and lettered in button.label(HOVER).color and button.label(PRESSED).color, each where stated, else ThemeColor button_hover, button_active and button_foreground, outlined in button.body(HOVER).stroke.color at button.body(HOVER).stroke.width, button.body(PRESSED).stroke.color while pressed where a rule states it, and it takes no keyboard focus, so it draws no focused outline (inspector.rs, PanelLook, CopyEdge, listed_info)";
+/// Why [`COPY_LABEL_HOMES`] are not drawn.
+const COPY_PANEL_LABEL: &str = "not drawn: the Copy button's label is the panel's text, lettered in sidebar.item_label(NONE).color, else upstream's sidebar_foreground, in every state, over the ghost variant's foreground (inspector.rs, listed_info; PanelLook::text)";
 
 /// A flat button's fill under the pointer, the Pages menu button's.
 const FLAT_GHOST_HOVER_FILL: &str = "gpui: the ghost variant's hover, ThemeColor secondary_hover, which next::apply sets from button.body(HOVER; variant=Flat).fill where a rule states it for HOVER, else gpui-component's own (native-theme-gpui next/mod.rs, flat_button_states)";

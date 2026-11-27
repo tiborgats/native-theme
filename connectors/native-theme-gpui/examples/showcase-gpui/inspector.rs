@@ -26,11 +26,11 @@ use std::sync::Arc;
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
-use crate::elements;
+use crate::elements::{self, ListedExt as _};
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, next_stated};
 use crate::support::{
-    NativeStyled, drawn_state_fill, frame_drawer, ghost_variant, next_geometry, next_metric,
-    refined, with_gap, with_padding,
+    NativeStyled, frame_drawer, ghost_variant, next_geometry, next_metric, refined, with_gap,
+    with_padding,
 };
 use crate::{
     INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
@@ -125,7 +125,7 @@ impl Inspector {
             Some((element, info))
         });
         if let (Some(look), Some((element, info))) = (look, listed) {
-            let (panel, title) = listed_info(&self.ui, look, element, info);
+            let (panel, title) = listed_info(&self.ui, look, element, info, cx);
             self.title_drawn = Some(title);
             return panel;
         }
@@ -629,11 +629,12 @@ const NO_ROUTE: &str = "gpui: no route recorded";
 /// section names, in all three showcases.
 const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 
-/// The Copy box's side padding where `button.body(NONE)` states no left or
-/// right padding: upstream's `Button`'s at the default Size, `px_2p5`
-/// (button/button.rs, `RenderOnce for Button`, the `Size::Medium` arm), which
-/// sets no top or bottom padding (its `h_8` sets the height).
-const COPY_PADDING_X: gpui::Rems = gpui::rems(0.625);
+/// The height of Widget Info's Copy, a `Button` at `Size::Small` with a
+/// child: upstream's `h_6` (gpui-component 0.10.0 `button/button.rs`,
+/// `RenderOnce for Button`, the `Size::Small` arm of a Button that is no
+/// icon button), 1.5 rem (gpui-pre-macros 0.3.12 `src/styles.rs`, the `6`
+/// suffix), the border it is refined with laid out inside it.
+pub(crate) const COPY_HEIGHT: gpui::Rems = gpui::rems(1.5);
 
 /// What Widget Info is drawn in under an installed 0.8.0 theme, the same in
 /// the three showcases (docs/showcase-elements.toml, "The Widget Info
@@ -648,16 +649,8 @@ const COPY_PADDING_X: gpui::Rems = gpui::rems(0.625);
 /// `layout.widget_gap` before each row and `layout.section_gap` before each
 /// section, none where the layout states none; a swatch framed in
 /// `colors.window.border` (else `border`), `layout.border_width` wide and
-/// rounded by `layout.corner_radius`; the Copy button padded by
-/// `button.body(NONE)`'s sides (else upstream's `Button`'s,
-/// [`COPY_PADDING_X`] at the sides, none above and below) and rounded by its
-/// corners (else upstream's `radius`), filled with `button.body(HOVER).fill`
-/// and lettered in `button.label(HOVER).color` under the pointer,
-/// `button.body(PRESSED).fill` and `button.label(PRESSED).color` while
-/// pressed, each state asked alone (spec §2, `from_state`); where unstated,
-/// upstream's default `Button`'s `button_hover`, `button_active` and
-/// `button_foreground` (button/button.rs, `ButtonVariant::hovered`, `active`
-/// and `text_color`).
+/// rounded by `layout.corner_radius`; the Copy button the flat `Button` the
+/// unlisted info's Copy is, [`COPY_HEIGHT`] tall ([`listed_info`]).
 /// With it, what the rows' values are read from: the installed 0.8.0
 /// resolved theme and its serialised form (`next::values::home_value`).
 #[cfg_attr(test, derive(Clone, Debug, PartialEq))]
@@ -671,15 +664,10 @@ pub(crate) struct PanelLook {
     row_gap: Option<gpui::Pixels>,
     section_gap: Option<gpui::Pixels>,
     frame: (gpui::Hsla, gpui::Pixels, gpui::Pixels),
-    copy_padding: [Option<gpui::Pixels>; 4],
-    copy_radius: gpui::Pixels,
-    /// The Copy box's fill and text colour under the pointer.
-    copy_hover: (gpui::Hsla, gpui::Hsla),
-    /// The Copy box's fill and text colour while pressed.
-    copy_active: (gpui::Hsla, gpui::Hsla),
-    /// The Copy box's outline, where a rule states the hovered button's
-    /// stroke ([`CopyEdge::of`]).
-    copy_edge: Option<CopyEdge>,
+    /// The Copy button's height, [`COPY_HEIGHT`] at upstream's rem,
+    /// `Theme::font_size` (gpui-component 0.10.0 `root.rs`,
+    /// `WindowState::prepare`, `set_rem_size`).
+    copy_height: gpui::Pixels,
     /// The installed 0.8.0 resolved theme.
     theme: native_theme::next::ResolvedTheme,
     /// `theme`'s serialised form ([`theme_json`]).
@@ -720,18 +708,6 @@ impl PanelLook {
         let gap = |metric: fn(
             &native_theme::next::ResolvedTheme,
         ) -> next::Mapped<Option<gpui::Pixels>>| { metric(r).ok().flatten() };
-        let body = r.button.body(WidgetState::NONE);
-        let copy_edge = CopyEdge::of(r);
-        // Each stated side less the outline's width, floored at 0, so the
-        // border lies inside the padding the theme states.
-        let inside = |side: f32| match copy_edge {
-            Some(edge) => (side - edge.width.as_f32()).max(0.),
-            None => side,
-        };
-        let [top, right, bottom, left] =
-            next::padding_of(&body).map(|side| side.map(|side| gpui::px(inside(side))));
-        let upstream_side = COPY_PADDING_X.to_pixels(theme.font_size);
-        let colour = |text: &native_theme::next::TextStyle| next::text_color_of(text);
         Some(Self {
             family: if says(TextStated::FAMILY) {
                 native_theme_gpui::font_family(&label.family)
@@ -745,7 +721,7 @@ impl PanelLook {
             } else {
                 gpui::FontWeight::default()
             },
-            text: colour(&label).unwrap_or(theme.sidebar_foreground),
+            text: next::text_color_of(&label).unwrap_or(theme.sidebar_foreground),
             muted: r
                 .colors
                 .window
@@ -761,24 +737,7 @@ impl PanelLook {
                 gpui::px(r.layout.border_width),
                 gpui::px(r.layout.corner_radius.max(0.)),
             ),
-            copy_padding: [
-                top,
-                Some(right.unwrap_or(upstream_side)),
-                bottom,
-                Some(left.unwrap_or(upstream_side)),
-            ],
-            copy_radius: next::radius_of(&body)
-                .map_or(theme.radius, |radius| gpui::px(radius.max(0.))),
-            copy_hover: (
-                drawn_state_fill(&r.button.body(WidgetState::HOVER)).unwrap_or(theme.button_hover),
-                colour(&r.button.label(WidgetState::HOVER)).unwrap_or(theme.button_foreground),
-            ),
-            copy_active: (
-                drawn_state_fill(&r.button.body(WidgetState::PRESSED))
-                    .unwrap_or(theme.button_active),
-                colour(&r.button.label(WidgetState::PRESSED)).unwrap_or(theme.button_foreground),
-            ),
-            copy_edge,
+            copy_height: COPY_HEIGHT.to_pixels(theme.font_size),
             theme: r.clone(),
             json,
             families,
@@ -789,9 +748,9 @@ impl PanelLook {
     /// where the side panel's content scrolls (`demo::side_panel`): down to
     /// the end of its info's first row, as [`listed_info`] lays it out under
     /// `margin`, the content's padding (`demo::side_panel_content_margin`):
-    /// the top margin; the title row, as tall as the Copy box, one line of
-    /// the panel's type padded by the Copy box's top and bottom, and never
-    /// shorter than the title's line; `layout.section_gap` and the "Theme"
+    /// the top margin; the title row, as tall as the Copy button
+    /// ([`COPY_HEIGHT`]), and never shorter than the title's line;
+    /// `layout.section_gap` and the "Theme"
     /// section's name, one line; then `layout.widget_gap` and the first row's
     /// two lines, its home and value, and how gpui applies it. A margin,
     /// padding or gap the theme leaves unstated is none, and adds nothing.
@@ -801,7 +760,6 @@ impl PanelLook {
     /// of a fractional height (ios-13's 39.27 px at text scale 2) is laid out
     /// taller than its line.
     pub(crate) fn body_min_height(&self, margin: Option<gpui::Pixels>, scale: f32) -> gpui::Pixels {
-        let [top, _, bottom, _] = self.copy_padding;
         let laid = |height: f32| {
             if scale > 0. {
                 (height * scale).ceil() / scale
@@ -813,8 +771,7 @@ impl PanelLook {
             parts.iter().flatten().map(|part| laid(part.as_f32())).sum()
         };
         let line = self.line.as_f32();
-        let edge = self.copy_edge.map(|edge| edge.width);
-        let title_row = laid((line + added(&[top, bottom, edge, edge])).max(line));
+        let title_row = laid(self.copy_height.as_f32().max(line));
         gpui::px(added(&[margin, self.section_gap, self.row_gap]) + title_row + laid(line) * 3.)
     }
 
@@ -827,35 +784,6 @@ impl PanelLook {
             .font_weight(self.weight)
             .text_color(self.text)
             .whitespace_nowrap()
-    }
-}
-
-/// The outline of Widget Info's Copy box, the push button's: a transparent
-/// border `width` wide at rest, `hovered` under the pointer and `pressed`
-/// while pressed.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct CopyEdge {
-    /// `button.body(HOVER).stroke.width`.
-    width: gpui::Pixels,
-    /// `button.body(HOVER).stroke.color`.
-    hovered: gpui::Hsla,
-    /// `button.body(PRESSED).stroke.color` where a rule states it for the
-    /// state; `None` where none does, and the box keeps its own treatment, the
-    /// hover style gpui lays under the press.
-    pressed: Option<gpui::Hsla>,
-}
-
-impl CopyEdge {
-    /// The outline `r` states: `None` where no rule states the hovered
-    /// button's stroke colour, or its width is not one gpui can draw.
-    fn of(r: &native_theme::next::ResolvedTheme) -> Option<Self> {
-        use native_theme::next::WidgetState;
-        let hovered = r.button.body(WidgetState::HOVER);
-        Some(Self {
-            width: gpui::px(next::stroke_width_of(&hovered)?),
-            hovered: next::state_stroke_color_of(&hovered)?,
-            pressed: next::state_stroke_color_of(&r.button.body(WidgetState::PRESSED)),
-        })
     }
 }
 
@@ -917,12 +845,15 @@ pub(crate) fn listed(
 /// (`info::leaves`); then "Not themeable", where the widget's info says what
 /// the theme states nothing for. The title, the Copy button, the section
 /// name and the first row record where they were laid out. Copy copies the
-/// text the panel shows (`ListedInfo::copy_text`). Also the title.
+/// text the panel shows (`ListedInfo::copy_text`); it is the flat `Button`
+/// the unlisted info's Copy is (`Inspector::widget_tab`), its label in the
+/// panel's text. Also the title.
 fn listed_info(
     ui: &Entity<InfoRegistry>,
     look: &PanelLook,
     element: &elements::ShowcaseElement,
     info: &WidgetInfo,
+    cx: &gpui::App,
 ) -> (gpui::Div, SharedString) {
     let listed = listed(look, element, info);
     let title = SharedString::from(listed.title.clone());
@@ -1002,47 +933,23 @@ fn listed_info(
         })
         .collect();
     let copy_text = listed.copy_text();
-    let [top, right, bottom, left] = look.copy_padding;
-    let ((hover_fill, hover_text), (active_fill, active_text)) =
-        (look.copy_hover, look.copy_active);
-    let edge = look.copy_edge;
-    // The label is the box's own text, so the box's hover and pressed text
-    // colours letter it; a child setting its own colour would keep it. The
-    // outline is laid out at rest in no colour, inside the stated padding
-    // (`PanelLook::of`), so the box keeps its size under the pointer.
-    let copy = look
-        .text(div())
-        .id("inspector-copy")
-        .relative()
-        .cursor_pointer()
-        .when_some(top, |copy, side| copy.pt(side))
-        .when_some(right, |copy, side| copy.pr(side))
-        .when_some(bottom, |copy, side| copy.pb(side))
-        .when_some(left, |copy, side| copy.pl(side))
-        .when_some(edge, |copy, edge| {
-            copy.border(edge.width)
-                .border_color(gpui::Hsla::transparent_black())
-        })
-        .rounded(look.copy_radius)
-        .hover(move |style| {
-            let style = style.bg(hover_fill).text_color(hover_text);
-            match edge {
-                Some(edge) => style.border_color(edge.hovered),
-                None => style,
-            }
-        })
-        .active(move |style| {
-            let style = style.bg(active_fill).text_color(active_text);
-            match edge.and_then(|edge| edge.pressed) {
-                Some(pressed) => style.border_color(pressed),
-                None => style,
-            }
-        })
-        .child("Copy")
-        .child(elements::record(ui, "chrome.info.copy"))
-        .on_click(move |_, _, cx| {
-            cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone()))
-        });
+    // The label in the panel's text, its colour in every state, as the
+    // other showcases letter it at rest; the Button is the unlisted Copy's.
+    let label = look.text(div()).child("Copy");
+    #[cfg(test)]
+    let label = label.child(elements::label_probe(ui, "chrome.info.copy".to_string()));
+    let copy = refined(
+        Button::new("inspector-copy")
+            .small()
+            .accessibility_label("Copy")
+            .child(label),
+        next_geometry(cx, next::geometry::ghost_button_rest_own_padding)
+            .and_then(Result::ok)
+            .as_ref(),
+    )
+    .custom(ghost_variant(cx))
+    .on_click(move |_, _, cx| cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone())))
+    .listed(ui, "chrome.info.copy");
     // Every text its own width, the title row the panel's.
     let panel = v_flex()
         .w_full()

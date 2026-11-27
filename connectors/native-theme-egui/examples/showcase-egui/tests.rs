@@ -999,9 +999,9 @@ fn the_open_toggle_names_the_checked_fill_it_is_drawn_in() -> Result<(), String>
     Ok(())
 }
 
-/// The flat buttons' hovered and pressed outlines (the side-panel toggle, the Pages menu button,
-/// Widget Info's Copy) route to the flat button's homes `next::flat_button` lays over their
-/// scope per call, not to the push button's row of `mapping.toml`.
+/// The flat buttons' hovered and pressed outlines (the side-panel toggle, the Pages menu button)
+/// route to the flat button's homes `next::flat_button` lays over their scope per call, not to
+/// the push button's row of `mapping.toml`.
 #[test]
 fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
     let manifest = Manifest::parse(MANIFEST)?;
@@ -1009,11 +1009,7 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
         native_theme_egui::Role::Button,
         RoleVariant::Normal,
     )];
-    for element in [
-        "chrome.status_bar.toggle",
-        "chrome.page_tabs.menu",
-        "chrome.info.copy",
-    ] {
+    for element in ["chrome.status_bar.toggle", "chrome.page_tabs.menu"] {
         for (home, drawn) in [
             (
                 "button.body(HOVER).stroke.color",
@@ -12865,11 +12861,6 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             "basic.buttons.dialog_default",
             "button.body(NONE; variant=Primary).corners",
             i::DIALOG_DEFAULT_CORNERS,
-        ),
-        (
-            "chrome.info.copy",
-            "button.body(HOVER).stroke.width",
-            i::FLAT_HOVER_WIDTH,
         ),
         (
             "basic.buttons.toggle_on",
