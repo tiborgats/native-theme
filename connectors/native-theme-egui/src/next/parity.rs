@@ -1883,7 +1883,71 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         Cause::Stated(home!(button.body(NONE).fill)),
         ADWAITA_BUTTON_FILLS,
     ),
+    d(
+        "base",
+        &[A],
+        ".visuals.text_edit_bg_color.0",
+        Cause::Stated(home!(input.field(NONE).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
+    d(
+        "Input/Disabled",
+        &[A],
+        ".visuals.text_edit_bg_color.0",
+        Cause::Stated(home!(input.field(NONE).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
+    d(
+        "ComboBox",
+        &[A],
+        ".visuals.widgets.{inactive,open}.weak_bg_fill",
+        Cause::Stated(home!(combo_box.field(NONE).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
+    d(
+        "ComboBox",
+        &[A],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        Cause::Stated(home!(combo_box.field(HOVER).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
+    d(
+        "ComboBox/Disabled",
+        &[A],
+        ".visuals.widgets.inactive.weak_bg_fill",
+        Cause::Stated(home!(combo_box.field(NONE).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
+    d(
+        "SegmentedControl",
+        &[A],
+        ".visuals.widgets.{inactive,open}.weak_bg_fill",
+        Cause::Stated(home!(segmented_control.track(NONE).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
+    d(
+        "SegmentedControl",
+        &[A],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        Cause::Stated(home!(segmented_control.segment(HOVER).fill)),
+        ADWAITA_FIELD_FILLS,
+    ),
 ];
+
+/// adwaita's entry, drop-down and toggle group filled in libadwaita's own form.
+const ADWAITA_FIELD_FILLS: &str = "the 0.8.0 adwaita states the entry's, the drop-down's and \
+     AdwToggleGroup's fills in libadwaita's own form, the window text at `$button_color` 10 % \
+     (_entries.scss:9, _toggle-group.scss:12, _buttons.scss:1 at libadwaita 1.10.0), the \
+     drop-down's trigger, a raised button, the push button's table under the pointer, \
+     `$button_hover_color` 15 % (_buttons.scss:2, :35-37, _dropdowns.scss:1-12), and a hovered \
+     toggle `$hover_color`, the window text at 7 % (_toggle-group.scss:65-67, _colors.scss:268), \
+     each translucent (native-theme/tests/next_homes.toml, rows input.background_color, \
+     combo_box.background_color, combo_box.hover_background, \
+     segmented_control.background_color and segmented_control.hover_background, listed \
+     differences), the Disabled cells keeping the rest fill (libadwaita fades a disabled \
+     widget whole, `filter: Opacity`, and states no disabled fill); 0.7.2 states the rest \
+     fills laid over the window, opaque, and the hovered drop-down and toggle as uncited \
+     solids (#d5d5d5 / #464649)";
 
 /// adwaita's push button filled from libadwaita's own table.
 const ADWAITA_BUTTON_FILLS: &str = "the 0.8.0 adwaita states the push button's fills in one \

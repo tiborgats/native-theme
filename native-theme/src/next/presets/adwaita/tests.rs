@@ -395,6 +395,51 @@ fn a_push_button_s_fills_are_libadwaita_s_table() {
     }
 }
 
+/// The drop-down's trigger, a raised button, takes the push button's table
+/// (`$button_color` 10, `$button_hover_color` 15, `$button_active_color` 30;
+/// _buttons.scss:1-3, :28-42, _dropdowns.scss:1-12 at libadwaita 1.10.0);
+/// the entry and the toggle group's track fill with `$button_color`
+/// (_entries.scss:9, _toggle-group.scss:12); a hovered toggle is
+/// `$hover_color`, the window text at 7 % (_toggle-group.scss:65-67,
+/// _colors.scss:268): each the window text at its alpha, translucent.
+#[test]
+fn the_drop_down_entry_and_toggle_group_take_libadwaita_s_fills() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
+        let layer = |alpha: f32| Paint::Solid(c.row_foreground.mul_alpha(alpha));
+        for (state, alpha) in [
+            (WidgetState::NONE, BUTTON_ALPHA),
+            (WidgetState::HOVER, BUTTON_HOVER_ALPHA),
+            (WidgetState::PRESSED, BUTTON_PRESSED_ALPHA),
+        ] {
+            let field = theme.combo_box.field(state);
+            assert_eq!(field.fill, layer(alpha), "drop-down {state:?}");
+            assert!(field.stated.contains(PartStated::FILL), "{state:?}");
+        }
+        assert_eq!(
+            theme.input.field(WidgetState::NONE).fill,
+            layer(BUTTON_ALPHA)
+        );
+        assert_eq!(
+            theme.segmented_control.track(WidgetState::NONE).fill,
+            layer(BUTTON_ALPHA)
+        );
+        assert_eq!(
+            theme.segmented_control.segment(WidgetState::HOVER).fill,
+            Paint::Solid(c.hover_layer)
+        );
+        assert_eq!(
+            c.hover_layer.to_srgb8(),
+            c.row_foreground
+                .mul_alpha(TOOLBAR_BUTTON_HOVER_ALPHA)
+                .to_srgb8()
+        );
+    }
+}
+
 /// A disabled check, radio and off switch state their rest fill for
 /// `DISABLED`, the fade alone changing them; checked, each keeps its checked
 /// fill, the accent.
@@ -703,11 +748,12 @@ fn a_palette_states_its_roles() {
 }
 
 /// The widgets the preset draws in a colour a slot replaces take the slot's
-/// colour, the push button's fills and the toolbar's and the flat button's
-/// layers of the window text the palette's foreground at libadwaita's
-/// alphas; the fills the preset
-/// states as libadwaita's layers over its own window, the placeholder and
-/// the switch's hover colour keep the preset's.
+/// colour, the push button's, the entry's, the drop-down's and the toggle
+/// group's fills and the toolbar's and the flat button's layers of the
+/// window text the palette's foreground at libadwaita's alphas; the fills
+/// the preset states as libadwaita's layers over its own window or of its
+/// own window text (a hovered toggle's), the placeholder and the switch's
+/// hover colour keep the preset's.
 #[test]
 fn a_palette_recolours_the_widgets_of_its_colours() {
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -815,9 +861,23 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
             solid(&theme.button.body(ButtonQuery::new(none)).fill),
             Some(p.foreground.mul_alpha(BUTTON_ALPHA))
         );
+        for (name, got) in [
+            ("entry", solid(&theme.input.field(none).fill)),
+            ("drop-down", solid(&theme.combo_box.field(none).fill)),
+            (
+                "toggle group",
+                solid(&theme.segmented_control.track(none).fill),
+            ),
+        ] {
+            assert_eq!(
+                got,
+                Some(p.foreground.mul_alpha(BUTTON_ALPHA)),
+                "{scheme:?} {name}"
+            );
+        }
         assert_eq!(
-            solid(&theme.input.field(none).fill),
-            Some(c.button_background)
+            solid(&theme.segmented_control.segment(WidgetState::HOVER).fill),
+            Some(c.hover_layer)
         );
         assert_eq!(theme.input.placeholder(none).color, c.placeholder);
         assert_eq!(

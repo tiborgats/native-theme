@@ -677,6 +677,54 @@ const DIFFERENCES: &[Difference] = &[
                  uncited solid (#c8c8c8 / #2e2e32); its label is equal",
     },
     Difference {
+        leaf: "geometry::input_fill",
+        presets: &["adwaita"],
+        reason: "the text field's refinements at rest and disabled fill with \
+                 input.field(NONE)'s fill, which the 0.8.0 adwaita states in libadwaita's \
+                 own form, the entry's `$button_color`, the window text at 10 %, translucent \
+                 (_entries.scss:9, _buttons.scss:1 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row input.background_color, a listed \
+                 difference), where 0.7.2's is that fill laid over the window, opaque \
+                 (#e6e6e7 / #38383c); every other field of the two refinements is equal",
+    },
+    Difference {
+        leaf: "geometry::combo_box_fill",
+        presets: &["adwaita"],
+        reason: "the drop-down's refinements at rest and disabled fill with \
+                 combo_box.field(NONE)'s fill, which the 0.8.0 adwaita states as the push \
+                 button's table, the trigger being a raised button: `$button_color`, the \
+                 window text at 10 %, translucent (_buttons.scss:1, :28-29 at libadwaita \
+                 1.10.0, _dropdowns.scss:1-12 adds no fill; native-theme/tests/next_homes.toml, \
+                 row combo_box.background_color, a listed difference), where 0.7.2's is that \
+                 fill laid over the window, opaque (#e6e6e7 / #38383c); every other field of \
+                 the two refinements is equal",
+    },
+    Difference {
+        leaf: SEGMENTED_FILL,
+        presets: &["adwaita"],
+        reason: "0.7.2 states segmented_control.background_color as AdwToggleGroup's \
+                 `$button_color` laid over the window, opaque (#e6e6e7 / #38383c); the 0.8.0 \
+                 adwaita states it in libadwaita's own form, the window text at 10 %, \
+                 translucent (_toggle-group.scss:12, _buttons.scss:1 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row segmented_control.background_color, \
+                 a listed difference), so the tab_bar_segmented slot, its token and its stored \
+                 config string are segmented_control.track(NONE)'s fill; every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: EDITOR_FILLS,
+        presets: &["adwaita"],
+        reason: "the code editor's fills are the text field's fill, input.field(NONE)'s, \
+                 which the 0.8.0 adwaita states as the entry's `$button_color`, the window text \
+                 at 10 %, translucent (_entries.scss:9, _buttons.scss:1 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row input.background_color, a listed \
+                 difference), where 0.7.2's is opaque; so highlight_theme's style and the \
+                 stored config's highlight hold that fill as editor_background and, the fill \
+                 being translucent, the fill laid over the window as editor_gutter_background \
+                 (crate::config::highlight_style_of), where 0.7.2's leave the gutter unset; \
+                 every other field of the highlight style is equal",
+    },
+    Difference {
         leaf: "variants::ghost_button",
         presets: &["adwaita"],
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
@@ -1320,6 +1368,67 @@ fn slider_thumb_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
 /// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
 const BUTTON_FILLS: &str = "to_theme: the push button's fills";
 
+/// The leaf of [`DIFFERENCES`]' entry for the segmented control's track:
+/// the `ThemeColor` slot `tab_bar_segmented`, its token and its stored
+/// config string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const SEGMENTED_FILL: &str = "to_theme: tab_bar_segmented";
+
+/// The leaf of [`DIFFERENCES`]' entry for the code editor's fills: the
+/// style of `highlight_theme` and the stored configs' `highlight`, compared
+/// by [`editor_as_old`].
+const EDITOR_FILLS: &str = "to_theme: the code editor's fills";
+
+/// The highlight style the connector builds from the text field's fill at
+/// rest over the window's frame ([`crate::config::highlight_style_of`]):
+/// the form of [`EDITOR_FILLS`]' entries; `None` where either is unstated.
+fn editor_style_of(
+    new: &native_theme::next::ResolvedTheme,
+) -> Option<gpui_component::highlighter::HighlightThemeStyle> {
+    let fill = super::fill_color(&new.input.field(native_theme::next::WidgetState::NONE))?;
+    let frame = super::fill_color(&new.window.frame(native_theme::next::WindowState::default()))?;
+    let mode = if new.is_dark() {
+        gpui_component::theme::ThemeMode::Dark
+    } else {
+        gpui_component::theme::ThemeMode::Light
+    };
+    Some(crate::config::highlight_style_of(fill, frame, mode))
+}
+
+/// `theme` with its highlight style and its stored configs' `highlight` as
+/// `from`'s, where `theme` holds the style the preset's fills give,
+/// `stated`, light then dark ([`editor_style_of`]): the style of the theme's
+/// mode, and the stored `highlight` of each scheme whose `stated` is given.
+/// `None` where `theme` does not hold it, or where it is `from`'s, the
+/// listed difference then describing nothing.
+fn editor_as_old(
+    theme: &GpuiTheme,
+    from: &GpuiTheme,
+    stated: &[Option<gpui_component::highlighter::HighlightThemeStyle>; 2],
+) -> Option<GpuiTheme> {
+    let [light, dark] = stated;
+    let own = if theme.is_dark() { dark } else { light }.as_ref()?;
+    if theme.highlight_theme.style != *own || from.highlight_theme.style == *own {
+        return None;
+    }
+    let mut patched = theme.clone();
+    patched.highlight_theme = from.highlight_theme.clone();
+    for (config, source, stated) in [
+        (&mut patched.light_theme, &from.light_theme, light),
+        (&mut patched.dark_theme, &from.dark_theme, dark),
+    ] {
+        let Some(stated) = stated else {
+            continue;
+        };
+        if config.highlight.as_ref() != Some(stated) {
+            return None;
+        }
+        let mut stored = (**config).clone();
+        stored.highlight = source.highlight.clone();
+        *config = std::rc::Rc::new(stored);
+    }
+    Some(patched)
+}
+
 /// The push button's fill of `state` as the connector reads it for the
 /// slots of [`BUTTON_FILLS`]: `button.body(NONE)`'s fill at rest, else the
 /// fill a rule states for the state; `None` where it is unstated.
@@ -1529,6 +1638,25 @@ const STATED_SLOTS: &[StatedSlot] = &[
         },
     },
     StatedSlot {
+        leaf: SEGMENTED_FILL,
+        laid: false,
+        what: "the segmented control's stated track fill",
+        of: |new| {
+            super::fill_color(
+                &new.segmented_control
+                    .track(native_theme::next::WidgetState::NONE),
+            )
+        },
+        color: |c| c.tab_bar_segmented,
+        token: |t| t.tab_bar_segmented,
+        config: |c| c.tab_bar_segmented.clone(),
+        copy: |theme, from| {
+            theme.colors.tab_bar_segmented = from.colors.tab_bar_segmented;
+            theme.tokens.tab_bar_segmented = from.tokens.tab_bar_segmented;
+        },
+        copy_config: |config, from| config.tab_bar_segmented = from.tab_bar_segmented.clone(),
+    },
+    StatedSlot {
         leaf: SIDEBAR_FILL,
         laid: false,
         what: "the sidebar's stated fill",
@@ -1687,8 +1815,9 @@ const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
 const RESTATED_BUTTON_FILLS: &[&str] = &["adwaita"];
 
 /// Whether the refinement `n` is `o` filled with `stated`, a colour of its
-/// own: the form of [`DIFFERENCES`]' `geometry::button_disabled` entries and
-/// of their `geometry::button_checked` entries on [`RESTATED_BUTTON_FILLS`].
+/// own: the form of [`DIFFERENCES`]' `geometry::button_disabled` entries, of
+/// their `geometry::button_checked` entries on [`RESTATED_BUTTON_FILLS`] and
+/// of their field fills' entries ([`compare_field_fill`]).
 fn refills(o: &gpui::StyleRefinement, n: &gpui::StyleRefinement, stated: Option<Hsla>) -> bool {
     use gpui::Styled as _;
     let Some(stated) = stated else {
@@ -2233,6 +2362,27 @@ fn compare_theme(
             ));
         }
     }
+    if let Some(listed) = report.listed(EDITOR_FILLS) {
+        report.count(EDITOR_FILLS);
+        let stated = editor_style_of(new);
+        let stated = if is_dark {
+            [None, stated]
+        } else {
+            [stated, None]
+        };
+        if let Some(patched) = editor_as_old(&new_theme, &old_theme, &stated) {
+            new_theme = patched;
+        } else {
+            report.failures.push(format!(
+                "{}: {EDITOR_FILLS}: the listed difference ({}) no longer describes it: 0.7.2 \
+                 {:?}, 0.8.0 {:?}",
+                report.label,
+                listed.reason,
+                old_theme.highlight_theme.style,
+                new_theme.highlight_theme.style
+            ));
+        }
+    }
     let failures = report.failures.len();
     let config = |t: &GpuiTheme, own: bool| {
         if is_dark == own {
@@ -2553,10 +2703,11 @@ macro_rules! builder {
     };
 }
 
-/// Compare a fill builder's two outputs, at rest and disabled, as one leaf.
+/// Compare a fill builder's two outputs, at rest and disabled, as one leaf,
+/// `$stated` the field's fill at rest ([`compare_field_fill`]).
 macro_rules! fill_builder {
-    ($report:expr, $old:expr, $new:expr, $name:ident) => {
-        compare_mapped(
+    ($report:expr, $old:expr, $new:expr, $name:ident, $stated:expr) => {
+        compare_field_fill(
             $report,
             concat!("geometry::", stringify!($name)),
             (
@@ -2565,8 +2716,37 @@ macro_rules! fill_builder {
             ),
             super::builders::$name($new, false)
                 .and_then(|rest| Ok((rest, super::builders::$name($new, true)?))),
+            $stated,
         )
     };
+}
+
+/// Compare a field's fill refinements at rest and disabled,
+/// `geometry::input_fill` or `geometry::combo_box_fill`: where
+/// [`DIFFERENCES`] lists `leaf` for the preset, both are 0.7.2's refilled
+/// with `stated`, the field's fill at rest ([`refills`]); else they are
+/// 0.7.2's.
+fn compare_field_fill(
+    report: &mut Report,
+    leaf: &'static str,
+    o: (gpui::StyleRefinement, gpui::StyleRefinement),
+    n: super::Mapped<(gpui::StyleRefinement, gpui::StyleRefinement)>,
+    stated: Option<Hsla>,
+) {
+    let Some(listed) = report.listed(leaf) else {
+        compare_mapped(report, leaf, o, n);
+        return;
+    };
+    if let Some(n) = report.mapped(leaf, n) {
+        report.count(leaf);
+        if !(refills(&o.0, &n.0, stated) && refills(&o.1, &n.1, stated)) {
+            report.failures.push(format!(
+                "{}: {leaf}: the listed difference ({}) no longer describes it: 0.7.2 {o:?}, \
+                 0.8.0 {n:?}",
+                report.label, listed.reason
+            ));
+        }
+    }
 }
 
 /// Compare a layout metric's two values.
@@ -2805,8 +2985,20 @@ fn compare_builders(
         &combo_box,
         "combo_box.field(NONE).stroke.width",
     );
-    fill_builder!(report, old, new, input_fill);
-    fill_builder!(report, old, new, combo_box_fill);
+    fill_builder!(
+        report,
+        old,
+        new,
+        input_fill,
+        super::fill_color(&new.input.field(native_theme::next::WidgetState::NONE))
+    );
+    fill_builder!(
+        report,
+        old,
+        new,
+        combo_box_fill,
+        super::fill_color(&new.combo_box.field(native_theme::next::WidgetState::NONE))
+    );
     builder!(report, old, new, menu_item);
     let popover = "geometry::popover";
     match report.listed(popover) {
@@ -3575,10 +3767,12 @@ fn every_listed_difference_names_a_covered_preset() {
 /// pressed fills of each scheme ([`button_states_of`]), with the button
 /// state slots of [`BUTTON_STATES`] as that theme's ([`button_states_as`]),
 /// or as a failure where they are not what the connector derives from the
-/// fills; for each of `stated`, a slot of [`STATED_SLOTS`] with that theme
-/// and the 0.8.0 preset's colour of each scheme for it, with the slot as
-/// that theme's ([`slot_as_old`]), or as a failure where it is not the
-/// stated colour. Where `handles` is given, the resize handles of gpui-base's global
+/// fills; for each of `patches.stated`, a slot of [`STATED_SLOTS`] with that
+/// theme and the 0.8.0 preset's colour of each scheme for it, with the slot
+/// as that theme's ([`slot_as_old`]), or as a failure where it is not the
+/// stated colour; where `patches.editor` is given, the code editor's fills
+/// as that theme's ([`editor_as_old`]), or as a failure where they are not
+/// the 0.8.0 preset's highlight style. Where `handles` is given, the resize handles of gpui-base's global
 /// and of the base overrides are given as 0.7.2's of the same scheme, or as
 /// a failure where they are not the 0.8.0 preset's homes
 /// ([`resize_handles_of`], [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries) or
@@ -3595,7 +3789,7 @@ fn installed(
     cx: &gpui::App,
     row_hover_listed: Option<[Option<Hsla>; 2]>,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
-    stated: &[StatedPatch<'_>],
+    patches: &Patches<'_>,
     handles: Option<SchemeHandles>,
     thumbs: Option<SchemeThumbs>,
     rest_thumbs: Option<SchemeRestThumbs>,
@@ -3617,7 +3811,8 @@ fn installed(
         }
         None => Ok(theme),
     });
-    let patched = stated
+    let patched = patches
+        .stated
         .iter()
         .fold(patched, |patched, (slot, from, schemes)| {
             patched.and_then(|theme| {
@@ -3625,6 +3820,14 @@ fn installed(
                     .ok_or_else(|| format!("{}: not {}", slot.leaf, slot.what))
             })
         });
+    let patched = match &patches.editor {
+        Some((from, schemes)) => patched.and_then(|theme| {
+            editor_as_old(&theme, from, schemes).ok_or_else(|| {
+                format!("{EDITOR_FILLS}: not what the connector builds from the text field's fill")
+            })
+        }),
+        None => patched,
+    };
     let styled_debug = patched.map_or_else(|failure| failure, |theme| format!("{theme:?}"));
     let base = gpui_base::Theme::global(cx);
     let as_old = |handle: Option<Hsla>, active: Option<Hsla>| match handles {
@@ -3724,6 +3927,19 @@ type SchemeRestThumbs = [(Hsla, Option<Hsla>); 2];
 /// colour for the slot in each scheme, light then dark.
 type StatedPatch<'a> = (&'static StatedSlot, &'a GpuiTheme, [Option<Hsla>; 2]);
 
+/// What [`installed`] patches in what is installed: the slots of
+/// [`STATED_SLOTS`], and, where [`DIFFERENCES`] lists [`EDITOR_FILLS`], the
+/// code editor's fills, with the 0.7.2 side's styled theme at the same point
+/// and the 0.8.0 preset's highlight style in each scheme, light then dark
+/// ([`editor_style_of`]).
+struct Patches<'a> {
+    stated: Vec<StatedPatch<'a>>,
+    editor: Option<(
+        &'a GpuiTheme,
+        [Option<gpui_component::highlighter::HighlightThemeStyle>; 2],
+    )>,
+}
+
 /// The two schemes of `key` (0.7.2) or `preset` (0.8.0) applied, light then
 /// dark, with no variant stored before: what is installed after the calls,
 /// and after an upstream switch to light mode (`Theme::change`), which the
@@ -3788,11 +4004,14 @@ fn apply_both(
         .and_then(|old| old.get(at))
         .map(|(_, from)| (from, states))
     };
-    let stated = |at: usize| -> Vec<StatedPatch<'_>> {
+    let stated = |at: usize| -> Patches<'_> {
         let Some((_, from)) = old.and_then(|old| old.get(at)) else {
-            return Vec::new();
+            return Patches {
+                stated: Vec::new(),
+                editor: None,
+            };
         };
-        STATED_SLOTS
+        let stated = STATED_SLOTS
             .iter()
             .filter(|slot| {
                 DIFFERENCES
@@ -3807,7 +4026,17 @@ fn apply_both(
                     [schemes.next().flatten(), schemes.next().flatten()],
                 )
             })
-            .collect()
+            .collect();
+        let editor = DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == EDITOR_FILLS && d.presets.contains(&key))
+            .then(|| {
+                let mut schemes = themes
+                    .iter()
+                    .map(|(_, (_, _, _, new))| editor_style_of(new));
+                (from, [schemes.next().flatten(), schemes.next().flatten()])
+            });
+        Patches { stated, editor }
     };
     let handles_listed = next
         && DIFFERENCES

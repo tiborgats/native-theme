@@ -1296,6 +1296,16 @@ model, the platform presets and the three connectors
         toolbar's border (§2.13: none), the list's (§2.15: none for a plain
         list), the progress bar's padding (§2.10: 0) and the sidebar's
         (§2.12: 6, 6 top / 4 bottom).
+        *0.8.0 M4 P6, P7 (2026-11-27):* in 0.8.0's adwaita preset
+        (`native-theme/src/next/presets/adwaita.rs`) none of this item's
+        `#d5d5d5` / `#464649` is left: `button.active_background` is
+        `$button_active_color`, the window text at 30 % (P6);
+        `combo_box.hover_background` is `$button_hover_color`, the window
+        text at 15 % (§2.24), and `segmented_control.hover_background`
+        `$hover_color`, the window text at 7 % over the group's fill (§2.25)
+        (P7); `checkbox.hover_background` is the unchecked box's rest fill,
+        its outline `$trough_hover_color` (§2.5). The rest of this item was
+        not re-checked against the 0.8.0 preset.
       - kde-breeze (its pressed button's fill and text and its scroll bar's
         pressed thumb left this list in D7, 2026-10-26: the reader now writes
         them from the colour scheme, and it cannot be right while the preset

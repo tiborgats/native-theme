@@ -1451,6 +1451,207 @@ const ADWAITA_BUTTON_FILLS: &str = "the 0.8.0 adwaita states the push button's f
      button.disabled_opacity (`filter: Opacity`); 0.7.2 states the rest fill laid over the \
      window, opaque, and its hovered, pressed and checked fills as uncited solids";
 
+/// The fill at rest of the field of `$w` (`input` or `text_area`), faded by
+/// `$w.disabled_opacity` as the style fades a disabled field that states no
+/// disabled fill (`crate::styles::faded`).
+macro_rules! faded_field_fill {
+    ($w:ident) => {
+        Home {
+            path: concat!(
+                stringify!($w),
+                ".field(NONE).fill, faded by ",
+                stringify!($w),
+                ".disabled_opacity"
+            ),
+            value: |t| faded_field_fill(home!(fill, $w.field(NONE)), t, t.$w.disabled_opacity),
+        }
+    };
+}
+
+/// `home`'s fill faded by `opacity` where it is stated
+/// ([`faded_field_fill!`]).
+#[cfg(feature = "widgets")]
+fn faded_field_fill(
+    home: Home,
+    t: &native_theme::next::ResolvedTheme,
+    opacity: Option<f32>,
+) -> Option<Value> {
+    match (home.value)(t)? {
+        Value::Color(fill) => Some(Value::Color(
+            opacity.map_or(fill, |opacity| crate::styles::faded(fill, opacity)),
+        )),
+        _ => None,
+    }
+}
+
+/// The style functions, which alone read a disabled field's fill, are
+/// compared with the `widgets` feature only: no value without it.
+#[cfg(not(feature = "widgets"))]
+fn faded_field_fill(
+    _: Home,
+    _: &native_theme::next::ResolvedTheme,
+    _: Option<f32>,
+) -> Option<Value> {
+    None
+}
+
+/// adwaita's text field's fill, the entry's `$button_color`, in each status
+/// of the field, faded when disabled, and the focused stroke laid over it
+/// ([`ADWAITA_FIELD_FILLS`]).
+const ADWAITA_INPUT_FILLS: [Stated; 7] = [
+    set(at!(NONE), Field::Background, home!(fill, input.field(NONE))),
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, input.field(NONE)),
+    ),
+    set(
+        at!(FOCUSED),
+        Field::Background,
+        home!(fill, input.field(NONE)),
+    ),
+    set(
+        at!(FOCUSED),
+        Field::BorderColor,
+        home!(stroke, input.field(FOCUSED)),
+    ),
+    set(
+        at!(FOCUSED | HOVER),
+        Field::Background,
+        home!(fill, input.field(NONE)),
+    ),
+    set(
+        at!(FOCUSED | HOVER),
+        Field::BorderColor,
+        home!(stroke, input.field(FOCUSED)),
+    ),
+    set(at!(DISABLED), Field::Background, faded_field_fill!(input)),
+];
+
+/// adwaita's text area's fill, as its text field's
+/// ([`ADWAITA_INPUT_FILLS`]).
+const ADWAITA_TEXT_AREA_FILLS: [Stated; 7] = [
+    set(
+        at!(NONE),
+        Field::Background,
+        home!(fill, text_area.field(NONE)),
+    ),
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, text_area.field(NONE)),
+    ),
+    set(
+        at!(FOCUSED),
+        Field::Background,
+        home!(fill, text_area.field(NONE)),
+    ),
+    set(
+        at!(FOCUSED),
+        Field::BorderColor,
+        home!(stroke, text_area.field(FOCUSED)),
+    ),
+    set(
+        at!(FOCUSED | HOVER),
+        Field::Background,
+        home!(fill, text_area.field(NONE)),
+    ),
+    set(
+        at!(FOCUSED | HOVER),
+        Field::BorderColor,
+        home!(stroke, text_area.field(FOCUSED)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::Background,
+        faded_field_fill!(text_area),
+    ),
+];
+
+/// adwaita's drop-down's fills, the push button's table, at rest and under
+/// the pointer, open or not ([`ADWAITA_FIELD_FILLS`]).
+const ADWAITA_COMBO_FILLS: [Stated; 4] = [
+    set(
+        at!(NONE),
+        Field::Background,
+        home!(fill, combo_box.field(NONE)),
+    ),
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, combo_box.field(HOVER)),
+    ),
+    set(
+        at!(OPEN),
+        Field::Background,
+        home!(fill, combo_box.field(NONE)),
+    ),
+    set(
+        at!(OPEN | HOVER),
+        Field::Background,
+        home!(fill, combo_box.field(OPEN | HOVER)),
+    ),
+];
+
+/// adwaita's segmented control's track, AdwToggleGroup's `$button_color`,
+/// faded as one widget over the window when disabled
+/// ([`ADWAITA_FIELD_FILLS`]).
+const ADWAITA_TRACK_FILLS: [Stated; 2] = [
+    set(
+        at!(NONE),
+        Field::Background,
+        home!(fill, segmented_control.track(NONE)),
+    ),
+    set(at!(DISABLED), Field::Background, ADWAITA_DISABLED_TRACK),
+];
+
+/// The segmented control's track fill at rest, faded as one widget over the
+/// window by `segmented_control.disabled_opacity`.
+const ADWAITA_DISABLED_TRACK: Home = Home {
+    path: "segmented_control.track(NONE).fill, faded as one over colors.window.background by \
+           segmented_control.disabled_opacity",
+    value: |t| {
+        let s = &t.segmented_control;
+        Some(Value::Faded {
+            color: super::fill_color(&s.track(WidgetState::NONE))?,
+            under: None,
+            ground: super::to_color(t.colors.window.background?),
+            opacity: s.disabled_opacity,
+        })
+    },
+};
+
+/// adwaita's unselected segment's fill, hovered (AdwToggleGroup's
+/// `$hover_color`) and pressed ([`ADWAITA_FIELD_FILLS`]).
+const ADWAITA_SEGMENT_FILLS: [Stated; 2] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, segmented_control.segment(HOVER)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::Background,
+        home!(fill, segmented_control.segment(PRESSED)),
+    ),
+];
+
+/// The reason of adwaita's text field, drop-down and segmented control
+/// fills.
+const ADWAITA_FIELD_FILLS: &str = "the 0.8.0 adwaita states the entry's, the drop-down's and \
+     AdwToggleGroup's fills in libadwaita's own form, the window text at `$button_color` 10 % \
+     (_entries.scss:9, _toggle-group.scss:12, _buttons.scss:1 at libadwaita 1.10.0), the \
+     drop-down's trigger, a raised button, the push button's table under the pointer, \
+     `$button_hover_color` 15 % (_buttons.scss:2, :35-37, _dropdowns.scss:1-12), and a hovered \
+     toggle `$hover_color`, the window text at 7 % (_toggle-group.scss:65-67, _colors.scss:268), \
+     each translucent (native-theme/tests/next_homes.toml, rows input.background_color, \
+     combo_box.background_color, combo_box.hover_background, \
+     segmented_control.background_color and segmented_control.hover_background, listed \
+     differences); a disabled field its fill faded by its disabled_opacity, a disabled \
+     control's track faded as one over the window, and a focused field's stroke laid over the \
+     translucent fill; 0.7.2 states the rest fills laid over the window, opaque, and the \
+     hovered drop-down and toggle as uncited solids (#d5d5d5 / #464649)";
+
 /// A checked toggle's label under the pointer and pressed, the theme's
 /// answers for `CHECKED | HOVER` and `CHECKED | PRESSED`
 /// ([`CHECKED_STATES`]).
@@ -2648,8 +2849,14 @@ const DIFFERENCES: &[Difference] = &[
     field("text_editor", MACOS, LineAlign::Inside),
     // adwaita's inset focus ring, which 0.7.2 drew as the focused field's
     // border, is painted over the field by `next::focus_ring`.
-    ring_over("text_input"),
-    ring_over("text_editor"),
+    ring_over("text_input").stating(
+        &[&ADWAITA_INPUT_FILLS],
+        &[INSIDE, RING_OVER, ADWAITA_FIELD_FILLS],
+    ),
+    ring_over("text_editor").stating(
+        &[&ADWAITA_TEXT_AREA_FILLS],
+        &[INSIDE, RING_OVER, ADWAITA_FIELD_FILLS],
+    ),
     // input.field(NONE) and text_area.field(NONE): ios-13 states WebKit's
     // `border: 1px solid -apple-system-secondary-label` (html.css:457-466
     // at WebKit 31adf9d; native-theme/tests/next_homes.toml, rows
@@ -2875,11 +3082,9 @@ const DIFFERENCES: &[Difference] = &[
     // macos-monterey's hovered fill as the rest one, and macos-tahoe's and
     // ios-13's outline at rest (`field(NONE)`: none, and WebKit's 1px
     // systemBackground border).
-    open(
-        &["adwaita", "material-3"],
-        LineAlign::Outside,
-        States::STATED,
-    ),
+    open(&["material-3"], LineAlign::Outside, States::STATED),
+    open(&["adwaita"], LineAlign::Outside, States::STATED)
+        .stating(&[&ADWAITA_COMBO_FILLS], &[OPEN, ADWAITA_FIELD_FILLS]),
     open(
         &["macos-tahoe", "ios-13"],
         LineAlign::Outside,
@@ -3170,7 +3375,7 @@ const DIFFERENCES: &[Difference] = &[
     ),
     stated_fields(
         "segment",
-        &["adwaita", "windows-11", "material-3"],
+        &["windows-11", "material-3"],
         LineAlign::Outside,
         &[&[set(
             at!(PRESSED),
@@ -3178,6 +3383,11 @@ const DIFFERENCES: &[Difference] = &[
             home!(fill, segmented_control.segment(PRESSED)),
         )]],
     ),
+    stated_fields("segment", &["adwaita"], LineAlign::Outside, &[])
+        .stating(&[&ADWAITA_SEGMENT_FILLS], &[STATED, ADWAITA_FIELD_FILLS]),
+    // segmented_control.track(NONE): adwaita's AdwToggleGroup `$button_color`.
+    stated_fields("segmented_control", &["adwaita"], LineAlign::Outside, &[])
+        .stating(&[&ADWAITA_TRACK_FILLS], &[ADWAITA_FIELD_FILLS]),
     stated_fields(
         "expander",
         &["macos-monterey", "macos-tahoe"],
@@ -4151,14 +4361,17 @@ impl AtState for iced_widget::text_editor::Status {
     }
 }
 
-/// A text field's style: its border's width, and its colour laid over the
-/// field's fill as the 0.8.0 builder lays it.
+/// A text field's style: its fill, its border's width, and its colour laid
+/// over the field's fill as the 0.8.0 builder lays it.
 #[cfg(feature = "widgets")]
 macro_rules! field_fields {
     ($style:ty, $name:literal) => {
         impl Fields for $style {
             fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
                 match field {
+                    Field::Background => {
+                        self.background = iced_core::Background::Color(color_of(field, &value)?);
+                    }
                     Field::BorderWidth => self.border.width = width_of(field, &value)?,
                     Field::BorderColor => {
                         self.border.color = match value {
@@ -4170,8 +4383,7 @@ macro_rules! field_fields {
                             )?,
                         };
                     }
-                    Field::Background
-                    | Field::HandleBackground
+                    Field::HandleBackground
                     | Field::TextColor
                     | Field::IconColor
                     | Field::InnerRadius
