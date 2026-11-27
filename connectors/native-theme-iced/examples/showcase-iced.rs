@@ -5022,12 +5022,19 @@ fn recoloured_icon<'a>(
     }
 }
 
-/// The colour [`icon_button`] gives a bundled set's icon on a tool button:
-/// the label `iced_next::styles::toolbar_button` gives it at rest, `selected`
-/// or not, which is iced's own button's where the connector maps no style
-/// (`next::Unmapped`; the button is then iced's own, [`NextDressed`]). A
-/// flat button's is [`icon_colour`]'s. An OS icon theme's icons keep theirs.
+/// The colour [`icon_button`] gives a bundled set's icon on a tool button,
+/// as it loads, the one colour iced draws it in ([`tool_icon_stated`]):
+/// `toolbar.button_icon(NONE).color` where stated, and while `selected`
+/// `toolbar.button_icon(CHECKED).color` where a rule states it for
+/// `CHECKED`; else the label `iced_next::styles::toolbar_button` gives the
+/// button at rest, `selected` or not, which is iced's own button's where the
+/// connector maps no style (`next::Unmapped`; the button is then iced's own,
+/// [`NextDressed`]). A flat button's is [`icon_colour`]'s. An OS icon
+/// theme's icons keep theirs.
 fn tool_icon_colour(r: &native_theme::next::ResolvedTheme, theme: &Theme, selected: bool) -> Color {
+    if let Some(colour) = tool_icon_stated(r, selected) {
+        return colour;
+    }
     match iced_next::styles::toolbar_button(r, selected) {
         Ok(style) => style(theme, button::Status::Active).text_color,
         Err(_) => {
@@ -5036,6 +5043,28 @@ fn tool_icon_colour(r: &native_theme::next::ResolvedTheme, theme: &Theme, select
             theme.style(&class, button::Status::Active).text_color
         }
     }
+}
+
+/// The colour `r` states for a tool button's icon, `selected` or not: at
+/// rest `toolbar.button_icon(NONE).color` where stated; while `selected`
+/// `toolbar.button_icon(CHECKED).color` where a rule states it for
+/// `CHECKED` (spec §2, `from_state`), a colour stated at rest being no
+/// checked one (spec §10, rule 0a). `None` where it states none, and the
+/// icon takes the label's colour ([`tool_icon_colour`]). iced draws the icon
+/// in one colour in every status (the connector's README, Limits).
+fn tool_icon_stated(r: &native_theme::next::ResolvedTheme, selected: bool) -> Option<Color> {
+    use native_theme::next::IconStated;
+    let (icon, bits) = if selected {
+        let icon = r.toolbar.button_icon(WidgetState::CHECKED);
+        let bits = icon.from_state;
+        (icon, bits)
+    } else {
+        let icon = r.toolbar.button_icon(WidgetState::NONE);
+        let bits = icon.stated;
+        (icon, bits)
+    };
+    bits.contains(IconStated::COLOR)
+        .then(|| next_colour(icon.color))
 }
 
 /// The colour [`icon_button`] gives a bundled set's icon on a flat button:
@@ -9470,13 +9499,15 @@ fn drawing_route(
 /// `iced_next::styles::toolbar_button` gives the button at rest, `checked`
 /// or not ([`tool_icon_colour`]), so the route names the rows of the
 /// export's `styles::toolbar_button.text_color` at that status the home
-/// moves, or that the icon stands in for the label. `None` for a home that
-/// is no label colour, or that the element or the export does not list.
+/// moves, or that the icon stands in for the label; where the theme states
+/// the icon's own colour (`icon_stated`, [`tool_icon_stated`]), that the
+/// icon stands in for the label in that colour. `None` for a home that is
+/// no label colour, or that the element or the export does not list.
 fn tool_icon_route(
     element: &ShowcaseElement,
     home: &str,
     (checked, os_icon): (bool, bool),
-    installed: Option<&str>,
+    (icon_stated, installed): (bool, Option<&str>),
 ) -> Option<String> {
     if !matches!(
         home,
@@ -9484,11 +9515,17 @@ fn tool_icon_route(
             | "button.label(HOVER).color"
             | "button.label(PRESSED).color"
             | "button.label(CHECKED).color"
+            | "toolbar.button_label(CHECKED).color"
+            | "toolbar.button_label(HOVER|CHECKED).color"
+            | "toolbar.button_label(PRESSED|CHECKED).color"
     ) {
         return None;
     }
     if os_icon {
         return Some(OS_ICON_COLOURS.to_owned());
+    }
+    if icon_stated {
+        return Some(ICON_IN_ITS_OWN_COLOUR.to_owned());
     }
     let export = contract_homes()?;
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
@@ -9512,6 +9549,70 @@ fn tool_icon_route(
         None if route.starts_with("not drawn here") => ICON_FOR_LABEL.to_owned(),
         None => route,
     })
+}
+
+/// The route of a tool button's label colour where it shows the set's icon
+/// in the label's place, loaded in the colour the theme states for the icon
+/// ([`tool_icon_stated`]).
+const ICON_IN_ITS_OWN_COLOUR: &str = "not drawn: the set's icon stands in for the label, \
+     loaded in the colour the theme states for the icon, toolbar.button_icon(<state>).color \
+     (tool_icon_colour)";
+
+/// The route of a tool button's icon colour home `home` where its button
+/// shows `icon`, `checked` or not, an OS icon theme's (`os_icon`) keeping
+/// its own colours: at rest `toolbar.button_icon(NONE).color` and, checked,
+/// `(CHECKED)`'s, each where [`tool_icon_stated`] takes it; iced draws the
+/// icon in that one colour in every status. `None` for a home that is no
+/// icon colour.
+fn tool_icon_colour_route(
+    home: &str,
+    icon: Option<&IconData>,
+    (checked, os_icon): (bool, bool),
+) -> Option<String> {
+    let checked_home = match home {
+        "toolbar.button_icon(NONE).color" => false,
+        "toolbar.button_icon(CHECKED).color" => true,
+        "toolbar.button_icon(HOVER).color"
+        | "toolbar.button_icon(PRESSED).color"
+        | "toolbar.button_icon(HOVER|CHECKED).color"
+        | "toolbar.button_icon(PRESSED|CHECKED).color" => {
+            return Some(
+                "not reachable: iced draws a tool button's icon in the one colour it loads in, \
+                 in every status (the connector's README, Limits)"
+                    .to_owned(),
+            );
+        }
+        _ => return None,
+    };
+    let route = match icon {
+        _ if os_icon && icon.is_some() => OS_ICON_COLOURS,
+        None => "not drawn: the button shows its label, the icon set having no icon for it",
+        Some(IconData::Rgba { .. }) => {
+            "not drawn: the icon is an image, which takes no tint (iced_widget 0.14.2 \
+             src/image.rs)"
+        }
+        Some(_) if checked_home != checked && checked => {
+            "not drawn: the switch is on, and tool_icon_colour loads its icon in \
+             toolbar.button_icon(CHECKED).color where a rule states it for CHECKED, a colour \
+             stated at rest being no checked one, else in the checked label"
+        }
+        Some(_) if checked_home != checked => {
+            "not drawn: the switch is off, and tool_icon_colour loads its icon in \
+             toolbar.button_icon(NONE).color where stated, else in the label at rest"
+        }
+        Some(_) if checked => {
+            "tool_icon_colour: the icon's colour while checked, set as it loads, in every \
+             status, toolbar.button_icon(CHECKED).color where a rule states it for CHECKED, \
+             else the label iced_next::styles::toolbar_button gives the checked button at rest \
+             (icon_button)"
+        }
+        Some(_) => {
+            "tool_icon_colour: the icon's colour, set as it loads, in every status, \
+             toolbar.button_icon(NONE).color where stated, else the label \
+             iced_next::styles::toolbar_button gives the button at rest (icon_button)"
+        }
+    };
+    Some(route.to_owned())
 }
 
 /// The route of a flat button's label colour where it shows the icon set's
@@ -9822,6 +9923,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     let flat = flat_element(id);
     let icon = ghost_icon(state, id).filter(|_| flat);
     let os_icon = icon.is_some() && state.chrome_icons.system;
+    // The icon of the button an element is, or is the icon of.
+    let own_icon = ghost_icon(state, id.strip_suffix(".icon").unwrap_or(id));
     let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
     let colour = ghost_home(home).is_some() || home == "sidebar.item_label(NONE).color";
     if colour && id == "chrome.info.copy" {
@@ -9849,11 +9952,57 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              iced's own flat button's (button::text) where unstated"
         }
         "button.body(NONE).corners" if tool => {
-            "iced_next::styles::toolbar_button: button::Style::border.radius"
+            "not drawn: on the 0.8.0 model iced_next::styles::toolbar_button rounds a tool button \
+             by toolbar.button(NONE).corners (toolbar_outline), not by the push button's"
+        }
+        "toolbar.button(NONE).corners" if tool => {
+            "iced_next::styles::toolbar_button: button::Style::border.radius in every status, \
+             toolbar.button(NONE).corners, iced's own neutral class's where unstated"
+        }
+        "button.body(HOVER).stroke.width" if id == "chrome.info.copy" => {
+            "ghost_button: the Hovered border's width, button.body(HOVER;variant=Flat).stroke's \
+             where a rule states it for the state, on the bounds over the padding (next_edge); \
+             iced's own flat button's (button::text) where none does"
+        }
+        "button.body(CHECKED; variant=Flat).stroke.color"
+        | "button.body(CHECKED; variant=Flat).stroke.width"
+        | "button.body(HOVER|CHECKED; variant=Flat).stroke.color"
+        | "button.body(HOVER|CHECKED; variant=Flat).stroke.width"
+        | "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
+        | "button.body(PRESSED|CHECKED; variant=Flat).stroke.width"
+            if flat =>
+        {
+            "not drawn: ghost_button outlines the open toggle as the closed one in the same \
+             status, by button.body(HOVER;variant=Flat).stroke and \
+             button.body(PRESSED;variant=Flat).stroke, and reads no checked flat outline"
+        }
+        "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color"
+        | "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width"
+            if flat =>
+        {
+            "not reachable: iced's button takes no keyboard focus, so it has no focused status \
+             to draw an outline in"
+        }
+        "button.icon(NONE; variant=Flat).color" | "button.icon(CHECKED; variant=Flat).color"
+            if flat && own_icon.is_some() && state.chrome_icons.system =>
+        {
+            OS_ICON_COLOURS
+        }
+        "button.icon(NONE; variant=Flat).color" | "button.icon(CHECKED; variant=Flat).color"
+            if flat && own_icon.is_none() =>
+        {
+            "not drawn: the toggle shows its label, the icon set having no icon for it"
+        }
+        "button.icon(NONE; variant=Flat).color" | "button.icon(CHECKED; variant=Flat).color"
+            if flat =>
+        {
+            "not drawn: icon_colour loads the toggle's icon in the label ghost_button gives it \
+             at rest, closed or open, and no style reads the flat button's icon colour"
         }
         "button.body(NONE).stroke.width" if tool => {
-            "iced_next::styles::toolbar_button: button::Style::border.width, the outline under the \
-             pointer, drawn inside the bounds"
+            "not drawn: on the 0.8.0 model iced_next::styles::toolbar_button edges a tool button by \
+             toolbar.button(NONE)'s and each state's own stated width (toolbar_outline), not by the \
+             push button's"
         }
         "icons.theme" => "the icon loaders' theme: native_theme's FreedesktopLoader",
         "icons.set" => "the icon loader of the set: IconSetChoice::effective_icon_set",
@@ -11270,6 +11419,7 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
     // The primary button is outlined in its own variant's
     // (`ButtonSource::primary`).
     let primary = under("basic.buttons.primary");
+    let default = under("basic.buttons.dialog_default");
     let outline = if primary {
         "button.body(NONE; variant=Primary)"
     } else {
@@ -11300,6 +11450,29 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
         | "button.body(NONE).padding.left" => {
             "iced_next::button_padding: Button::padding, the side of button.body(NONE).padding \
              plus its stroke width, iced's own (button::DEFAULT_PADDING) where unstated"
+                .to_owned()
+        }
+        "button.body(HOVER; variant=Primary).stroke.width"
+        | "button.body(PRESSED; variant=Primary).stroke.width"
+            if primary =>
+        {
+            "not drawn: styles::button_primary draws the hovered and pressed outline at the \
+             rest width, button.body(NONE; variant=Primary).stroke.width"
+                .to_owned()
+        }
+        "button.body(HOVER; variant=Primary).stroke.width"
+        | "button.body(PRESSED; variant=Primary).stroke.width"
+            if default =>
+        {
+            "not drawn: styles::button_default draws the hovered and pressed outline at the \
+             rest width, the primary variant's where it is the primary button, \
+             button.body(NONE; variant=Primary).stroke.width"
+                .to_owned()
+        }
+        "button.body(NONE; variant=Primary).stroke.width" if default => {
+            "styles::button_default: button::Style::border.width where the theme states no \
+             button.body(DEFAULT).fill, the button then styles::button_primary's, \
+             button.body(NONE; variant=Primary).stroke.width, painted over the padding"
                 .to_owned()
         }
         "button.body(NONE).corners" | "button.body(NONE).stroke.width" if primary => format!(
@@ -12391,13 +12564,26 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     // Edit, the edit-mode switch, while it is on, which
     // `iced_next::styles::toolbar_button` draws checked.
     let checked = id == "basic.icons.edit" && state.basic_edit;
+    let button_id = id.strip_suffix(".icon").unwrap_or(id);
+    if tool_button(button_id)
+        && let Some(line) = tool_icon_colour_route(
+            home,
+            ghost_icon(state, button_id),
+            (
+                button_id == "basic.icons.edit" && state.basic_edit,
+                state.chrome_icons.system,
+            ),
+        )
+    {
+        return line;
+    }
     if tool_button(id)
         && let Some(line) = ghost_icon(state, id).and_then(|_| {
             tool_icon_route(
                 element,
                 home,
                 (checked, state.chrome_icons.system),
-                installed.as_deref(),
+                (tool_icon_stated(r, checked).is_some(), installed.as_deref()),
             )
         })
     {
@@ -24013,6 +24199,57 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
+    // a_tool_buttons_icon_loads_in_the_stated_icon_colour
+    // -----------------------------------------------------------------------
+
+    /// A tool button's bundled icon loads in `toolbar.button_icon(NONE).color`
+    /// where the theme states it, and a checked one in
+    /// `toolbar.button_icon(CHECKED).color` where a rule states it for
+    /// `CHECKED`, a colour stated at rest being no checked one
+    /// ([`tool_icon_colour`]); else in the label at rest. A mark stated at each
+    /// home in turn, over kde-breeze light.
+    #[test]
+    fn a_tool_buttons_icon_loads_in_the_stated_icon_colour() {
+        let r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        let theme = match native_theme_iced::next::to_theme(&r) {
+            Ok(theme) => theme,
+            Err(error) => panic!("kde-breeze has no iced theme: {error:?}"),
+        };
+        let mark = "#13579b";
+        let want = match mark.parse::<native_theme::next::Color>() {
+            Ok(colour) => next_colour(colour),
+            Err(error) => panic!("{error}"),
+        };
+        let at = |home: &str| match with_home(&r, home, mark) {
+            Some(patched) => patched,
+            None => panic!("no patch reaches {home}"),
+        };
+        for checked in [false, true] {
+            assert_ne!(
+                tool_icon_colour(&r, &theme, checked),
+                want,
+                "kde-breeze's icon already takes the mark (checked: {checked}), so this test \
+                 proves nothing"
+            );
+        }
+        let rest = at("toolbar.button_icon(NONE).color");
+        assert_eq!(tool_icon_colour(&rest, &theme, false), want, "at rest");
+        assert_eq!(
+            tool_icon_colour(&rest, &theme, true),
+            tool_icon_colour(&r, &theme, true),
+            "a colour stated at rest is taken for the checked button"
+        );
+        let checked = at("toolbar.button_icon(CHECKED).color");
+        assert_eq!(tool_icon_colour(&checked, &theme, true), want, "checked");
+        assert_eq!(
+            tool_icon_colour(&checked, &theme, false),
+            tool_icon_colour(&r, &theme, false),
+            "the checked colour is taken at rest"
+        );
+    }
+
+    // -----------------------------------------------------------------------
     // the_basic_edit_button_starts_checked_and_switches
     // -----------------------------------------------------------------------
 
@@ -34905,6 +35142,11 @@ mod tests {
             TOOL_BUTTON_PUSH_LABEL,
         ),
         (
+            "basic.icons.edit",
+            "toolbar.button(NONE).fill",
+            EDIT_ON_REST_FILL,
+        ),
+        (
             "basic.icons.copy",
             "button.label(NONE).color",
             TOOL_BUTTON_PUSH_LABEL,
@@ -34997,16 +35239,6 @@ mod tests {
         (
             "basic.buttons.toggle_on",
             "button.body(PRESSED).fill",
-            TOGGLE_ON_PRESSED,
-        ),
-        (
-            "basic.buttons.toggle_on",
-            "button.label(PRESSED).color",
-            TOGGLE_ON_PRESSED,
-        ),
-        (
-            "basic.buttons.toggle_on.label",
-            "button.label(PRESSED).color",
             TOGGLE_ON_PRESSED,
         ),
         (
@@ -35098,13 +35330,19 @@ mod tests {
          window's focus: the UNFOCUSED_VIEW rows only while the window is inactive, and the \
          showcase opens active, its bar in styles::scrollable's own rows";
 
-    /// Why the On toggle's pressed colours move no row it draws: its homes,
-    /// `button.body(PRESSED).fill` and `button.label(PRESSED).color`, move
-    /// only an unchecked toggle's pressed status.
+    /// Why the On toggle's pressed fill moves no row it draws: its home,
+    /// `button.body(PRESSED).fill`, moves only an unchecked toggle's pressed
+    /// status.
     const TOGGLE_ON_PRESSED: &str = "\
-         the On toggle is checked, and the pressed homes button.body(PRESSED).fill and \
-         button.label(PRESSED).color move only an unchecked toggle's pressed status, \
-         `(false, Pressed)`: a checked toggle keeps its checked fill and label pressed";
+         the On toggle is checked, and the pressed home button.body(PRESSED).fill moves only \
+         an unchecked toggle's pressed status, `(false, Pressed)`: a checked toggle keeps its \
+         checked fill and label pressed";
+
+    /// Why the edit switch's rest fill moves no row it draws as it opens.
+    const EDIT_ON_REST_FILL: &str = "\
+         the edit switch opens on, checked, and toolbar.button(NONE).fill fills only a tool \
+         button that is off, `(false, Active)`: iced_next::styles::toolbar_button fills a \
+         checked one in toolbar.button(CHECKED).fill, else as the connector's primary button";
 
     /// Why a tool button draws no push button's label.
     const TOOL_BUTTON_PUSH_LABEL: &str = "\
@@ -35592,7 +35830,7 @@ mod tests {
         "button.label(PRESSED).color",
     ];
     /// And a tool button's own, which `iced_next::styles::toolbar_button`
-    /// reads besides.
+    /// reads besides, and its icon's, which [`tool_icon_colour`] reads.
     const TOOL_BUTTON_COLOURS: &[&str] = &[
         "button.label(CHECKED).color",
         "toolbar.button(HOVER).fill",
@@ -35601,6 +35839,14 @@ mod tests {
         "toolbar.button(HOVER|CHECKED).stroke.color",
         "toolbar.button(PRESSED).fill",
         "toolbar.button(CHECKED).fill",
+        "toolbar.button(NONE).fill",
+        "toolbar.button(HOVER|CHECKED).fill",
+        "toolbar.button(PRESSED|CHECKED).fill",
+        "toolbar.button_label(CHECKED).color",
+        "toolbar.button_label(HOVER|CHECKED).color",
+        "toolbar.button_label(PRESSED|CHECKED).color",
+        "toolbar.button_icon(NONE).color",
+        "toolbar.button_icon(CHECKED).color",
     ];
 
     /// A tab's colour home `home`, where [`tab_style`] reads it: `None` for

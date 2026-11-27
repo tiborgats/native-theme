@@ -12366,6 +12366,81 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
     Ok(())
 }
 
+/// The tool buttons' and the side-panel toggle's own homes, the primary and the dialog's
+/// default button's own outline and the Copy box's hovered width, which no `mapping.toml` row
+/// holds, are routed to the call that applies them, not shown as held by no row: each such home
+/// a listed tool button, its icon, the toggle, its icon, the two buttons and the Copy box list
+/// names the call that reads it ([`crate::info::TOOL_BUTTON_ROUTES`],
+/// [`crate::info::TOGGLE_ROUTES`], the per-call routes).
+#[test]
+fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let calls: [(&str, &[&str]); 5] = [
+        (
+            "toolbar.button(NONE)",
+            &["style/roles.rs, the toolbar's rest capsule"],
+        ),
+        ("toolbar.button(", &["pages::basic::edit_look_at"]),
+        ("toolbar.button_label(", &["pages::basic::edit_look_at"]),
+        ("toolbar.button_icon(", &["demo::tool_icon_color"]),
+        (
+            "button.",
+            &[
+                "chrome::toggle_checked_pens",
+                "chrome::toggle_icon_colour",
+                "primary_pen",
+                "next::flat_button",
+            ],
+        ),
+    ];
+    let homes = [
+        "toolbar.button(NONE).fill",
+        "toolbar.button(NONE).corners",
+        "toolbar.button(HOVER|CHECKED).fill",
+        "toolbar.button(PRESSED|CHECKED).fill",
+        "toolbar.button_label(CHECKED).color",
+        "toolbar.button_label(HOVER|CHECKED).color",
+        "toolbar.button_label(PRESSED|CHECKED).color",
+        "toolbar.button_icon(",
+        "; variant=Flat)",
+        "; variant=Primary).stroke",
+        "button.body(HOVER).stroke.width",
+    ];
+    let mut checked = 0usize;
+    let mut wrong = Vec::new();
+    for element in listed_elements().iter().filter(|e| {
+        e.id.starts_with("chrome.toolbar.")
+            || e.id.starts_with("basic.icons.")
+            || e.id.starts_with("chrome.status_bar.toggle")
+            || e.id == "basic.buttons.primary"
+            || e.id == "basic.buttons.dialog_default"
+            || e.id == "chrome.info.copy"
+    }) {
+        for home in element
+            .homes
+            .iter()
+            .filter(|h| homes.iter().any(|listed| h.contains(listed)) && !h.ends_with(".size"))
+        {
+            checked += 1;
+            let how = crate::info::listed_how(&manifest, &element.id, home, &seams);
+            let call = calls
+                .iter()
+                .find(|(prefix, _)| home.starts_with(prefix))
+                .is_some_and(|(_, names)| names.iter().any(|name| how.contains(name)));
+            if !how.starts_with("egui: ") || !call {
+                wrong.push(format!("{} {home}: {how:?}", element.id));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    assert!(checked > 0, "no listed element lists such a home");
+    Ok(())
+}
+
 /// The Basic switches' label homes, which no `mapping.toml` row holds, are routed to the
 /// companion crate's switch that reads them ([`crate::info::SWITCH_LABEL_ROUTES`]), not shown
 /// as unreachable: every `switch.label` home the three switches and their labels list, each

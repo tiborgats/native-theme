@@ -49,6 +49,12 @@ moves = [
   { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
+[homes."button.body(CHECKED; variant=Flat).stroke.color"]
+named = "UNREAD_HOMES"
+entry = "button.body(CHECKED; variant=Flat).stroke.color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+
 [homes."button.body(DEFAULT).fill"]
 leaves = ["button.default_button_background"]
 moves = [
@@ -88,6 +94,12 @@ entry = "button.focus_border_color"
 kind = "no receiver"
 why = "an iced button takes no keyboard focus: it implements no `operate` for `Focusable`, and its status has no focused variant (`iced_widget-0.14.2/src/button.rs:257-273`, `:471-498`)"
 
+[homes."button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color"]
+named = "UNREAD_HOMES"
+entry = "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+
 [homes."button.body(HOVER).fill"]
 leaves = ["button.hover_background"]
 moves = [
@@ -114,6 +126,12 @@ moves = [
   { row = "styles::button_default.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_primary.border", statuses = ["Hovered"] },
 ]
+
+[homes."button.body(HOVER|CHECKED; variant=Flat).stroke.color"]
+named = "UNREAD_HOMES"
+entry = "button.body(HOVER|CHECKED; variant=Flat).stroke.color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
 
 [homes."button.body(NONE).fill"]
 leaves = ["button.background_color"]
@@ -198,6 +216,24 @@ moves = [
   { row = "styles::button_default.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_primary.border", statuses = ["Pressed"] },
 ]
+
+[homes."button.body(PRESSED|CHECKED; variant=Flat).stroke.color"]
+named = "UNREAD_HOMES"
+entry = "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+
+[homes."button.icon(CHECKED; variant=Flat).color"]
+named = "UNREAD_HOMES"
+entry = "button.icon(CHECKED; variant=Flat).color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+
+[homes."button.icon(NONE; variant=Flat).color"]
+named = "UNREAD_HOMES"
+entry = "button.icon(NONE; variant=Flat).color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
 
 [homes."button.label(CHECKED).color"]
 leaves = ["button.checked_text_color"]
@@ -1833,10 +1869,21 @@ moves = [
   { row = "styles::toolbar_button.border", statuses = ["(false, Hovered)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
+[homes."toolbar.button(HOVER|CHECKED).fill"]
+moves = [
+  { row = "styles::toolbar_button.background", statuses = ["(true, Hovered)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
 [homes."toolbar.button(HOVER|CHECKED).stroke.color"]
 leaves = ["toolbar.button_hover_border_color"]
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(true, Hovered)", "(true, Pressed)"] },
+]
+
+[homes."toolbar.button(NONE).fill"]
+moves = [
+  { row = "styles::toolbar_button.background", statuses = ["(false, Active)"] },
+  { row = "styles::toolbar_button.background", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
 ]
 
 [homes."toolbar.button(PRESSED).fill"]
@@ -1852,10 +1899,51 @@ moves = [
   { row = "styles::toolbar_button.border", statuses = ["(false, Pressed)", "(true, Pressed)"] },
 ]
 
+[homes."toolbar.button(PRESSED|CHECKED).fill"]
+moves = [
+  { row = "styles::toolbar_button.background", statuses = ["(true, Pressed)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
 [homes."toolbar.button(PRESSED|HOVER|CHECKED).stroke.color"]
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(true, Pressed)"] },
 ]
+
+[homes."toolbar.button_icon(CHECKED).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(CHECKED).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
+
+[homes."toolbar.button_icon(HOVER).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(HOVER).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
+
+[homes."toolbar.button_icon(HOVER|CHECKED).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(HOVER|CHECKED).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
+
+[homes."toolbar.button_icon(NONE).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(NONE).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
+
+[homes."toolbar.button_icon(PRESSED).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(PRESSED).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
+
+[homes."toolbar.button_icon(PRESSED|CHECKED).color"]
+named = "UNREAD_HOMES"
+entry = "toolbar.button_icon(PRESSED|CHECKED).color"
+kind = "no receiver"
+why = "iced's button draws its content in one `text_color` and passes it no status (iced_widget 0.14.2 src/button.rs, `draw`), an `svg`'s status is the pointer over its own bounds (src/svg.rs, `Status`), so the connector gives no style for a toolbar button's icon (the crate's README, Limits); an application loads the icon in a colour (`icons::to_svg_handle`)"
 
 [homes."toolbar.button_label(CHECKED).color"]
 moves = [
@@ -1873,6 +1961,11 @@ moves = [
   { row = "styles::toolbar_button.text_color", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
+[homes."toolbar.button_label(HOVER|CHECKED).color"]
+moves = [
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
 [homes."toolbar.button_label(NONE).color"]
 leaves = ["toolbar.font.color"]
 moves = [
@@ -1886,6 +1979,11 @@ moves = [
 [homes."toolbar.button_label(PRESSED).color"]
 moves = [
   { row = "styles::toolbar_button.text_color", statuses = ["(false, Pressed)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
+[homes."toolbar.button_label(PRESSED|CHECKED).color"]
+moves = [
   { row = "styles::toolbar_button.text_color", statuses = ["(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
@@ -2467,13 +2565,13 @@ homes = ["toolbar.bar(NONE).fill"]
 homes = ["toolbar.button_label(NONE).color"]
 
 [rows."styles::toolbar_button.background"]
-homes = ["button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "toolbar.button(CHECKED).fill", "toolbar.button(HOVER).fill", "toolbar.button(PRESSED).fill"]
+homes = ["button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "toolbar.button(CHECKED).fill", "toolbar.button(HOVER).fill", "toolbar.button(HOVER|CHECKED).fill", "toolbar.button(NONE).fill", "toolbar.button(PRESSED).fill", "toolbar.button(PRESSED|CHECKED).fill"]
 
 [rows."styles::toolbar_button.border"]
 homes = ["toolbar.button(CHECKED).stroke.color", "toolbar.button(HOVER).stroke.color", "toolbar.button(HOVER|CHECKED).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color"]
 
 [rows."styles::toolbar_button.text_color"]
-homes = ["button.label(NONE).color", "button.label(NONE; variant=Primary).color", "toolbar.button_label(CHECKED).color", "toolbar.button_label(DISABLED).color", "toolbar.button_label(HOVER).color", "toolbar.button_label(NONE).color", "toolbar.button_label(PRESSED).color"]
+homes = ["button.label(NONE).color", "button.label(NONE; variant=Primary).color", "toolbar.button_label(CHECKED).color", "toolbar.button_label(DISABLED).color", "toolbar.button_label(HOVER).color", "toolbar.button_label(HOVER|CHECKED).color", "toolbar.button_label(NONE).color", "toolbar.button_label(PRESSED).color", "toolbar.button_label(PRESSED|CHECKED).color"]
 
 [rows."styles::toolbar_rule.color"]
 homes = ["toolbar.bar(NONE).stroke.color"]
