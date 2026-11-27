@@ -250,6 +250,8 @@ model_only_homes = [
   { home = "button.icon(CHECKED; variant=Flat).color", reason = "a checked flat button's icon colour (docs/v0.8.0-spec.md §5, `button`'s `icon` part); 0.7.2's `[button]` (docs/property-registry.toml) has no icon colour" },
   { home = "button.icon(HOVER|CHECKED; variant=Flat).color", reason = "a checked flat button's icon colour under the pointer (docs/v0.8.0-spec.md §5, `button`'s `icon` part); 0.7.2's `[button]` (docs/property-registry.toml) has no icon colour" },
   { home = "button.icon(PRESSED|CHECKED; variant=Flat).color", reason = "a checked flat button's icon colour while pressed (docs/v0.8.0-spec.md §5, `button`'s `icon` part); 0.7.2's `[button]` (docs/property-registry.toml) has no icon colour" },
+  { home = "button.icon(HOVER; variant=Flat).color", reason = "a flat button's icon colour under the pointer (docs/v0.8.0-spec.md §5, `button`'s `icon` part); 0.7.2's `[button]` (docs/property-registry.toml) has no icon colour" },
+  { home = "button.icon(PRESSED; variant=Flat).color", reason = "a flat button's icon colour while pressed (docs/v0.8.0-spec.md §5, `button`'s `icon` part); 0.7.2's `[button]` (docs/property-registry.toml) has no icon colour" },
   { home = "button.body(HOVER; variant=Flat).stroke.width", reason = "a flat button's outline width under the pointer (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one outline width, button.border.line_width" },
   { home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", reason = "a flat button's outline with the keyboard focus (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and its focus outline is the push button's, button.focus_border_color" },
   { home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", reason = "a flat button's outline width with the keyboard focus (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one outline width, button.border.line_width" },
@@ -864,14 +866,15 @@ sample = { fill = [0.6, 0.5], border = [0.6, 0.0, 0.0, 0.5] }
 # raised button's leaves in 0.7.2 (Breeze fills a checked flat button apart,
 # breezehelper.cpp:680-684); their homes are the checked state's. The flat button's checked
 # outline in each state, its checked fill, label and icon colour under the pointer and pressed,
-# its icon's colour closed and open, its hovered outline width and its focus outline have no
-# 0.7.2 field and are listed at the flat variant's own homes (model_only_homes).
+# its icon's colour closed (at rest, under the pointer and pressed) and open, its hovered
+# outline width and its focus outline have no 0.7.2 field and are listed at the flat variant's
+# own homes (model_only_homes).
 [[element]]
 id = "chrome.status_bar.toggle"
 name = "Side panel toggle"
 parent = "chrome.status_bar"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.checked_background", "button.checked_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(CHECKED; variant=Flat).stroke.color", "button.body(CHECKED; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).stroke.color", "button.body(HOVER|CHECKED; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width", "button.body(PRESSED|CHECKED; variant=Flat).stroke.color", "button.body(PRESSED|CHECKED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).fill", "button.body(PRESSED|CHECKED; variant=Flat).fill", "button.label(HOVER|CHECKED; variant=Flat).color", "button.label(PRESSED|CHECKED; variant=Flat).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(CHECKED; variant=Flat).stroke.color", "button.body(CHECKED; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).stroke.color", "button.body(HOVER|CHECKED; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width", "button.body(PRESSED|CHECKED; variant=Flat).stroke.color", "button.body(PRESSED|CHECKED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).fill", "button.body(PRESSED|CHECKED; variant=Flat).fill", "button.label(HOVER|CHECKED; variant=Flat).color", "button.label(PRESSED|CHECKED; variant=Flat).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color", "button.icon(HOVER; variant=Flat).color", "button.icon(PRESSED; variant=Flat).color"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -880,7 +883,7 @@ id = "chrome.status_bar.toggle.icon"
 name = "Icon"
 parent = "chrome.status_bar.toggle"
 leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color"]
+homes = ["icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color", "button.icon(HOVER; variant=Flat).color", "button.icon(PRESSED; variant=Flat).color"]
 states = ["Normal"]
 part = true
 

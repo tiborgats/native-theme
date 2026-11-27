@@ -260,6 +260,12 @@ entry = "button.icon(CHECKED; variant=Flat).color"
 kind = "no widget"
 why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` draws a checked one's fill, label and outline and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector; iced's button takes no keyboard focus"
 
+[homes."button.icon(HOVER; variant=Flat).color"]
+named = "UNREAD_HOMES"
+entry = "button.icon(HOVER; variant=Flat).color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` draws a checked one's fill, label and outline and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector; iced's button takes no keyboard focus"
+
 [homes."button.icon(HOVER|CHECKED; variant=Flat).color"]
 named = "UNREAD_HOMES"
 entry = "button.icon(HOVER|CHECKED; variant=Flat).color"
@@ -269,6 +275,12 @@ why = "no `next::styles` function draws a flat button; the iced showcase's own `
 [homes."button.icon(NONE; variant=Flat).color"]
 named = "UNREAD_HOMES"
 entry = "button.icon(NONE; variant=Flat).color"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` draws a checked one's fill, label and outline and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector; iced's button takes no keyboard focus"
+
+[homes."button.icon(PRESSED; variant=Flat).color"]
+named = "UNREAD_HOMES"
+entry = "button.icon(PRESSED; variant=Flat).color"
 kind = "no widget"
 why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` draws a checked one's fill, label and outline and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector; iced's button takes no keyboard focus"
 

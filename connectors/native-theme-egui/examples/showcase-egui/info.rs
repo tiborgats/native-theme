@@ -874,8 +874,10 @@ pub(crate) const TOOL_ICON_PRESSED: &str = "egui: per call, the colour the icon 
      (demo::tool_icon_color, demo::loaded_in)";
 /// The route of the edit switch's icon colour while on, at rest.
 pub(crate) const EDIT_ICON_CHECKED: &str = "egui: per call, the colour the edit switch's icon \
-     loads in while on, at rest, where a rule states it for CHECKED; else the switch's label \
-     colour (demo::tool_icon_color, demo::loaded_in)";
+     loads in while on, at rest, where a rule states it for CHECKED; else \
+     toolbar.button_icon(NONE).color where stated, a colour stated at rest holding while on, as \
+     egui draws a selected button's image as it loads; else the switch's label colour \
+     (demo::tool_icon_color, demo::loaded_in)";
 /// The route of the edit switch's icon colour while on under the pointer.
 pub(crate) const EDIT_ICON_HOVER_CHECKED: &str = "egui: per call, the colour the edit switch's \
      icon loads in while on under the pointer, in the state of its previous response, where a \
@@ -891,7 +893,7 @@ pub(crate) const EDIT_ICON_PRESSED_CHECKED: &str = "egui: per call, the colour t
 /// pressed, its flat outline's hovered width and focused pen, and of its icon's colour, which
 /// the chrome lays over the scope per call from the installed 0.8.0 theme and no `mapping.toml`
 /// row holds, each with its route. Only the toggle and its icon ([`TOGGLE`]) take them.
-pub(crate) const TOGGLE_ROUTES: [(&str, &str); 19] = [
+pub(crate) const TOGGLE_ROUTES: [(&str, &str); 21] = [
     (
         "button.body(HOVER; variant=Flat).stroke.width",
         TOGGLE_HOVER_WIDTH,
@@ -927,6 +929,14 @@ pub(crate) const TOGGLE_ROUTES: [(&str, &str); 19] = [
     (
         "button.icon(PRESSED|CHECKED; variant=Flat).color",
         TOGGLE_ICON_PRESSED,
+    ),
+    (
+        "button.icon(HOVER; variant=Flat).color",
+        TOGGLE_ICON_CLOSED_HOVER,
+    ),
+    (
+        "button.icon(PRESSED; variant=Flat).color",
+        TOGGLE_ICON_CLOSED_PRESSED,
     ),
     (
         "button.body(CHECKED; variant=Flat).stroke.color",
@@ -1010,8 +1020,18 @@ pub(crate) const TOGGLE_ICON_PRESSED: &str = "egui: per call, the colour the tog
      (chrome::toggle_icon_colour)";
 /// The route of the closed toggle's icon colour.
 pub(crate) const TOGGLE_ICON_REST: &str = "egui: per call, the colour the toggle's icon loads in \
-     while the side panel is closed, where stated; else the colour it loads in \
+     while the side panel is closed, where stated, a colour stated at rest holding under the \
+     pointer and pressed, as egui changes an image in no state; else the colour it loads in \
      (chrome::toggle_icon_colour)";
+/// The route of the closed toggle's icon colour under the pointer.
+pub(crate) const TOGGLE_ICON_CLOSED_HOVER: &str = "egui: per call, the colour the toggle's icon \
+     loads in under the pointer while the side panel is closed, in the state of its previous \
+     response, where stated (chrome::toggle_icon_colour, as demo::tool_icon_color the tool \
+     buttons')";
+/// The route of the closed toggle's icon colour pressed.
+pub(crate) const TOGGLE_ICON_CLOSED_PRESSED: &str = "egui: per call, the colour the toggle's icon \
+     loads in pressed while the side panel is closed, in the state of its previous response, \
+     where stated (chrome::toggle_icon_colour, as demo::tool_icon_color the tool buttons')";
 /// The route of the open toggle's icon colour.
 pub(crate) const TOGGLE_ICON_OPEN: &str = "egui: per call, the colour the toggle's icon loads in \
      while the side panel is open, where stated, a colour stated at rest holding there too; \

@@ -1257,6 +1257,67 @@ fn the_toggles_icon_takes_the_stated_flat_icon_colour() {
     }
 }
 
+/// The two switches' icons by rule 0 as each loads (N33): egui draws a button's image as it is
+/// loaded in every state, selected or not (`Button::image_tint_follows_text_color` off), so a
+/// colour stated at rest holds while on, for the edit switch (`demo::tool_icon_color`) as for the
+/// side-panel toggle; and the closed toggle's icon asks the flat button's `HOVER` and `PRESSED`
+/// colours in those states, as the tool buttons ask theirs, a colour stated at rest holding
+/// where no rule states one for the state. Over kde-breeze light patched, which states none.
+#[test]
+fn the_switches_icons_keep_a_colour_stated_at_rest() {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, Preset, Theme, ThemeContext, ThemePatch,
+        ToolbarRule, WidgetState,
+    };
+    use native_theme_egui::next::to_color32;
+    let [rest, hover, press] = [
+        Color::new(0.0, 1.0, 0.0, 1.0),
+        Color::new(0.0, 0.0, 1.0, 1.0),
+        Color::new(1.0, 1.0, 0.0, 1.0),
+    ];
+    let ctx = ThemeContext::light();
+    let tool = Theme::preset(Preset::KdeBreeze)
+        .with_patch(
+            ThemePatch::new().toolbar(ToolbarRule::new().button_icon(IconPatch::new().color(rest))),
+        )
+        .resolve(&ctx);
+    for was in [(false, false), (true, false), (true, true)] {
+        assert_eq!(
+            crate::demo::tool_icon_color(Some(&tool), was, true),
+            Some(to_color32(rest)),
+            "the edit switch's icon while on {was:?}"
+        );
+    }
+    let flat = |state: WidgetState, colour: Color| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .icon(IconPatch::new().color(colour))
+    };
+    let toggle = Theme::preset(Preset::KdeBreeze)
+        .with_patch(
+            ThemePatch::new()
+                .button(flat(WidgetState::NONE, rest))
+                .button(flat(WidgetState::HOVER, hover))
+                .button(flat(WidgetState::PRESSED, press)),
+        )
+        .resolve(&ctx);
+    let closed = |was| crate::chrome::toggle_icon_colour(Some(&toggle), false, was);
+    assert_eq!(closed((false, false)), Some(to_color32(rest)));
+    assert_eq!(closed((true, false)), Some(to_color32(hover)));
+    assert_eq!(closed((true, true)), Some(to_color32(press)));
+    let rest_only = Theme::preset(Preset::KdeBreeze)
+        .with_patch(ThemePatch::new().button(flat(WidgetState::NONE, rest)))
+        .resolve(&ctx);
+    for was in [(false, false), (true, false), (true, true)] {
+        assert_eq!(
+            crate::chrome::toggle_icon_colour(Some(&rest_only), false, was),
+            Some(to_color32(rest)),
+            "the closed toggle's icon {was:?}"
+        );
+    }
+}
+
 /// The side-panel toggle while the panel is open, under a theme that states no checked flat
 /// fill or label (macos-monterey light states neither), is egui's own selected button
 /// (`Button::selected`, spec §10, rule 0a): its frame is filled as the suggested-action button
@@ -12713,6 +12774,14 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::TOGGLE_ICON_PRESSED,
         ),
         (
+            "button.icon(HOVER; variant=Flat).color",
+            i::TOGGLE_ICON_CLOSED_HOVER,
+        ),
+        (
+            "button.icon(PRESSED; variant=Flat).color",
+            i::TOGGLE_ICON_CLOSED_PRESSED,
+        ),
+        (
             "button.body(CHECKED; variant=Flat).stroke.color",
             i::TOGGLE_CHECKED_PEN,
         ),
@@ -14321,24 +14390,26 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     Ok(())
 }
 
-/// A checked toolbar button's icon keeps egui's selected look only where the theme states its
-/// colour for `CHECKED` by neither of spec §2's two queries (`from_state`): on every preset
-/// with `toolbar.button_icon`'s colour first stated by a rule of no state, which clears the bit
-/// of the query at `CHECKED` alone, a rule for `HOVER | CHECKED` (`PRESSED | CHECKED`) alone
-/// colours the hovered (pressed) checked icon, as `home_patch_toml` (`tools/showcase-support`)
-/// states that home, and a rule for `HOVER` (`PRESSED`) alone does not
+/// A checked toolbar button's icon keeps the colour stated at rest, egui drawing a selected
+/// button's image as it loads, where the theme states its colour for `CHECKED` by neither of
+/// spec §2's two queries (`from_state`): on every preset with `toolbar.button_icon`'s colour
+/// first stated by a rule of no state, which clears the bit of the query at `CHECKED` alone, a
+/// rule for `HOVER | CHECKED` (`PRESSED | CHECKED`) alone colours the hovered (pressed) checked
+/// icon, as `home_patch_toml` (`tools/showcase-support`) states that home, and a rule for
+/// `HOVER` (`PRESSED`) alone does not, the icon keeping the colour stated at rest
 /// (`demo::tool_icon_color`).
 #[test]
 fn a_checked_tool_icon_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
     use crate::demo::tool_icon_color;
     use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
     let magenta = Some(egui::Color32::from_rgb(0xff, 0, 0xff));
+    let rest = Some(egui::Color32::from_rgb(0x10, 0x10, 0x10));
     let base = "[[widgets.toolbar.rules]]\nstates = []\nbutton_icon.color = \"#101010\"\n";
     let mut misses = Vec::new();
     for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
         for (states, expected) in [
             (format!("\"{flag}\", \"checked\""), magenta),
-            (format!("\"{flag}\""), None),
+            (format!("\"{flag}\""), rest),
         ] {
             let patch = format!(
                 "{base}[[widgets.toolbar.rules]]\nstates = [{states}]\nbutton_icon.color = \"#ff00ff\"\n"

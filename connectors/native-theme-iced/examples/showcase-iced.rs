@@ -10501,6 +10501,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         | "button.icon(CHECKED; variant=Flat).color"
         | "button.icon(HOVER|CHECKED; variant=Flat).color"
         | "button.icon(PRESSED|CHECKED; variant=Flat).color"
+        | "button.icon(HOVER; variant=Flat).color"
+        | "button.icon(PRESSED; variant=Flat).color"
             if flat && own_icon.is_some() && state.chrome_icons.system =>
         {
             OS_ICON_COLOURS
@@ -10509,6 +10511,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         | "button.icon(CHECKED; variant=Flat).color"
         | "button.icon(HOVER|CHECKED; variant=Flat).color"
         | "button.icon(PRESSED|CHECKED; variant=Flat).color"
+        | "button.icon(HOVER; variant=Flat).color"
+        | "button.icon(PRESSED; variant=Flat).color"
             if flat && own_icon.is_none() =>
         {
             "not drawn: the toggle shows its label, the icon set having no icon for it"
@@ -10517,6 +10521,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         | "button.icon(CHECKED; variant=Flat).color"
         | "button.icon(HOVER|CHECKED; variant=Flat).color"
         | "button.icon(PRESSED|CHECKED; variant=Flat).color"
+        | "button.icon(HOVER; variant=Flat).color"
+        | "button.icon(PRESSED; variant=Flat).color"
             if flat && matches!(own_icon, Some(IconData::Rgba { .. })) =>
         {
             "not drawn: the icon is an image, which takes no tint (iced_widget 0.14.2 \
@@ -10524,6 +10530,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         }
         "button.icon(HOVER|CHECKED; variant=Flat).color"
         | "button.icon(PRESSED|CHECKED; variant=Flat).color"
+        | "button.icon(HOVER; variant=Flat).color"
+        | "button.icon(PRESSED; variant=Flat).color"
             if flat =>
         {
             "not reachable: iced draws a flat button's icon in the one colour it loads in, in \

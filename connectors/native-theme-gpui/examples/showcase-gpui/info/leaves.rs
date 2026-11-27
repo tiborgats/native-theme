@@ -524,6 +524,14 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.status_bar.toggle",
+        &[
+            "button.icon(HOVER; variant=Flat).color",
+            "button.icon(PRESSED; variant=Flat).color",
+        ],
+        "not reachable: an Icon takes one colour, so the closed toggle's icon keeps the tint of the state it is built in, button.icon(NONE; variant=Flat).color's, under the pointer and pressed (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, Styled for Icon; native-theme-gpui README, Limits)",
+    ),
+    (
+        "chrome.status_bar.toggle",
         &["button.body(CHECKED).fill"],
         "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
     ),
