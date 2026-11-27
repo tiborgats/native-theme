@@ -23,7 +23,7 @@ use std::fmt::Debug;
 
 use gpui::px;
 use gpui_component::Size;
-use native_theme::next::{Preset, ThemeContext, WidgetState};
+use native_theme::next::{PartStyle, Preset, StyleQuery, ThemeContext, WidgetState};
 
 use super::checkbox::DISABLED_INDICATOR_ALPHA;
 use super::{
@@ -348,16 +348,16 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "CheckboxLook::of border disabled",
         presets: &["kde-breeze"],
-        reason: "as adwaita's and material-3's: the 0.8.0 kde-breeze states no \
-                 checkbox.indicator(DISABLED).stroke, so a disabled box keeps \
-                 gpui-component's own treatment (spec §10, rule 0), its enabled border at half \
-                 alpha, where the 0.7.2 look kept the enabled border. kde-breeze does state a \
-                 disabled checked box's frame for DISABLED|CHECKED, Breeze's Disabled \
-                 Highlight #e3e5e7 / #1f2124 (`indicator` in native-theme/src/next/presets/ \
-                 kde.rs, switch_disabled_on_frame), which the look does not reach: by spec §2's \
-                 from_state contract a connector keeping its own treatment of DISABLED asks \
-                 the query with that flag alone, and a rule for DISABLED|CHECKED does not set \
-                 its bit there; a spec question, not a connector fix",
+        reason: "unchecked, as adwaita's and material-3's: the 0.8.0 kde-breeze states no \
+                 checkbox.indicator(DISABLED).stroke for an unchecked box, so a disabled one \
+                 keeps gpui-component's own treatment (spec §10, rule 0), its enabled border \
+                 at half alpha, where the 0.7.2 look kept the enabled border. Checked, \
+                 kde-breeze states the disabled checked box's frame for DISABLED|CHECKED, \
+                 Breeze's Disabled Highlight #e3e5e7 / #1f2124 (`indicator` in \
+                 native-theme/src/next/presets/kde.rs, switch_disabled_on_frame), which the \
+                 look reads at checkbox.indicator(DISABLED|CHECKED).stroke.color by spec §2's \
+                 two queries (from_state: the query at DISABLED|CHECKED asking DISABLED has \
+                 the bit), where the 0.7.2 look kept the enabled border",
     },
     Difference {
         leaf: "CheckboxLook::of border disabled",
@@ -405,12 +405,13 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "CheckboxLook::radio border disabled",
         presets: &["kde-breeze"],
-        reason: "as the check box's (CheckboxLook::of border disabled, kde-breeze): no \
-                 radio.indicator(DISABLED).stroke is stated, so gpui-component dims a disabled \
-                 radio's border_color to half alpha (gpui-component 0.10.0 radio.rs:193-200); \
-                 the Disabled Highlight frame kde-breeze states for DISABLED|CHECKED \
-                 (#e3e5e7 / #1f2124, switch_disabled_on_frame) is not reached by the query \
-                 with DISABLED alone (spec §2, from_state), a spec question",
+        reason: "as the check box's (CheckboxLook::of border disabled, kde-breeze): \
+                 unchecked, no radio.indicator(DISABLED).stroke is stated, so gpui-component \
+                 dims a disabled radio's border_color to half alpha (gpui-component 0.10.0 \
+                 radio.rs:193-200); checked, the look reads the Disabled Highlight frame \
+                 kde-breeze states for DISABLED|CHECKED (#e3e5e7 / #1f2124, \
+                 switch_disabled_on_frame) at radio.indicator(DISABLED|CHECKED).stroke.color \
+                 by spec §2's two queries (from_state)",
     },
     Difference {
         leaf: "CheckboxLook::radio border disabled",
@@ -918,6 +919,14 @@ fn shown(checked: bool) -> WidgetState {
     }
 }
 
+/// Spec §2's two queries of a connector that keeps its own treatment of
+/// `flag` on a part drawn at `at`: the part with `flag` alone, and at `at`
+/// asking `flag`; the theme states a property for `flag` where either has
+/// its `from_state` bit.
+fn two_queries(flag: WidgetState, at: WidgetState) -> [StyleQuery; 2] {
+    [flag.into(), StyleQuery::new(at).asking(flag)]
+}
+
 /// A colour of the window's colours, `home` its path.
 fn window_colour(
     colour: Option<native_theme::next::Color>,
@@ -956,8 +965,8 @@ fn slider_hover_home(
 }
 
 /// An enabled switch's track under the pointer from its 0.8.0 homes: the
-/// fill a rule states for `HOVER` (at the checked state where checked), else
-/// the track at rest; `None` disabled.
+/// fill a rule states for `HOVER` ([`two_queries`]; at the checked state
+/// where checked), else the track at rest; `None` disabled.
 fn switch_hover_home(
     n: &native_theme::next::ResolvedTheme,
     checked: bool,
@@ -967,10 +976,13 @@ fn switch_hover_home(
         return Ok(None);
     }
     let s = &n.switch;
-    let ruled = s
-        .track(WidgetState::HOVER)
-        .from_state
-        .contains(native_theme::next::PartStated::FILL);
+    let ruled = two_queries(WidgetState::HOVER, WidgetState::HOVER | shown(checked))
+        .into_iter()
+        .any(|q| {
+            s.track(q)
+                .from_state
+                .contains(native_theme::next::PartStated::FILL)
+        });
     if ruled {
         fill(
             &s.track(WidgetState::HOVER | shown(checked)),
@@ -983,9 +995,10 @@ fn switch_hover_home(
 }
 
 /// A switch's label colour from its 0.8.0 homes: disabled, the one a rule
-/// states for `DISABLED`, else gpui-component's muted_foreground,
-/// `colors.window.foreground_muted`; enabled, the stated one at its state,
-/// else gpui-component's foreground, `colors.window.foreground`.
+/// states for `DISABLED` ([`two_queries`]), else gpui-component's
+/// muted_foreground, `colors.window.foreground_muted`; enabled, the stated
+/// one at its state, else gpui-component's foreground,
+/// `colors.window.foreground`.
 fn switch_label_home(
     n: &native_theme::next::ResolvedTheme,
     checked: bool,
@@ -994,9 +1007,12 @@ fn switch_label_home(
     use native_theme::next::TextStated;
     let s = &n.switch;
     if disabled {
-        if s.label(WidgetState::DISABLED)
-            .from_state
-            .contains(TextStated::COLOR)
+        if two_queries(
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | shown(checked),
+        )
+        .into_iter()
+        .any(|q| s.label(q).from_state.contains(TextStated::COLOR))
         {
             crate::next::text_color(
                 &s.label(WidgetState::DISABLED | shown(checked)),
@@ -1017,21 +1033,26 @@ fn switch_label_home(
 }
 
 /// A check box's or radio's label colour from its 0.8.0 homes, `label` the
-/// label at a state: disabled, the one a rule states for `DISABLED`, else
-/// gpui-component's muted_foreground, `colors.window.foreground_muted`;
-/// enabled, the label at rest.
+/// label at a state: disabled, the one a rule states for `DISABLED`
+/// ([`two_queries`]), at the shown state, else gpui-component's
+/// muted_foreground, `colors.window.foreground_muted`; enabled, the label at
+/// rest.
 fn indicator_label_home(
     n: &native_theme::next::ResolvedTheme,
-    label: &dyn Fn(WidgetState) -> native_theme::next::TextStyle,
+    label: &dyn Fn(StyleQuery) -> native_theme::next::TextStyle,
+    checked: bool,
     disabled: bool,
 ) -> Mapped<gpui::Hsla> {
     use native_theme::next::TextStated;
     if !disabled {
-        return crate::next::text_color(&label(WidgetState::NONE), "label(NONE).color");
+        return crate::next::text_color(&label(WidgetState::NONE.into()), "label(NONE).color");
     }
-    let off = label(WidgetState::DISABLED);
-    if off.from_state.contains(TextStated::COLOR) {
-        crate::next::text_color(&off, "label(DISABLED).color")
+    let off = WidgetState::DISABLED | shown(checked);
+    if two_queries(WidgetState::DISABLED, off)
+        .into_iter()
+        .any(|q| label(q).from_state.contains(TextStated::COLOR))
+    {
+        crate::next::text_color(&label(off.into()), "label(DISABLED|shown).color")
     } else {
         window_colour(
             n.colors.window.foreground_muted,
@@ -1041,24 +1062,24 @@ fn indicator_label_home(
 }
 
 /// A check box's or radio's hover outline from its 0.8.0 homes, `indicator`
-/// the indicator at a state: where a rule states the stroke for `HOVER`, its
-/// colour at the shown state; `None` where none does, or disabled.
+/// the indicator at a state: where a rule states the stroke for `HOVER`
+/// ([`two_queries`]), its colour at the shown state; `None` where none does,
+/// or disabled.
 fn hover_border_home(
-    indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+    indicator: &dyn Fn(StyleQuery) -> PartStyle,
     checked: bool,
     disabled: bool,
 ) -> Mapped<Option<gpui::Hsla>> {
-    let ruled = indicator(WidgetState::HOVER)
-        .from_state
-        .contains(native_theme::next::PartStated::STROKE);
+    let at = WidgetState::HOVER | shown(checked);
+    let ruled = two_queries(WidgetState::HOVER, at).into_iter().any(|q| {
+        indicator(q)
+            .from_state
+            .contains(native_theme::next::PartStated::STROKE)
+    });
     if disabled || !ruled {
         return Ok(None);
     }
-    stroke_color(
-        &indicator(WidgetState::HOVER | shown(checked)),
-        "indicator(HOVER|shown).stroke.color",
-    )
-    .map(Some)
+    stroke_color(&indicator(at.into()), "indicator(HOVER|shown).stroke.color").map(Some)
 }
 
 /// An enabled check box's or radio's fill under the pointer from its 0.8.0
@@ -1066,7 +1087,7 @@ fn hover_border_home(
 /// states one; else unchecked the fill at rest, checked none; checked, none
 /// too where it is the checked fill; `None` disabled.
 fn hover_fill_home(
-    indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+    indicator: &dyn Fn(StyleQuery) -> PartStyle,
     checked: bool,
     disabled: bool,
 ) -> Mapped<Option<gpui::Hsla>> {
@@ -1074,16 +1095,19 @@ fn hover_fill_home(
         return Ok(None);
     }
     let hover = crate::next::state_fill_of(
-        &indicator(WidgetState::HOVER | shown(checked)),
+        &indicator((WidgetState::HOVER | shown(checked)).into()),
         "indicator(HOVER|shown).fill",
     )?;
     if checked {
-        let on = fill(&indicator(WidgetState::CHECKED), "indicator(CHECKED).fill")?;
+        let on = fill(
+            &indicator(WidgetState::CHECKED.into()),
+            "indicator(CHECKED).fill",
+        )?;
         return Ok(hover.filter(|hover| *hover != on));
     }
     match hover {
         Some(hover) => Ok(Some(hover)),
-        None => fill(&indicator(WidgetState::NONE), "indicator(NONE).fill").map(Some),
+        None => fill(&indicator(WidgetState::NONE.into()), "indicator(NONE).fill").map(Some),
     }
 }
 
@@ -1093,16 +1117,19 @@ fn hover_fill_home(
 /// it leaves, the indicator's width less, on each side, the padding the
 /// indicator states there, else the outline's width.
 fn outline_home(
-    indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+    indicator: &dyn Fn(StyleQuery) -> PartStyle,
     checked: bool,
     disabled: bool,
 ) -> Mapped<(gpui::Hsla, gpui::Pixels, gpui::Pixels)> {
     let colour = if disabled {
         gpui::transparent_black()
     } else {
-        stroke_color(&indicator(shown(checked)), "indicator(shown).stroke.color")?
+        stroke_color(
+            &indicator(shown(checked).into()),
+            "indicator(shown).stroke.color",
+        )?
     };
-    let rest = indicator(WidgetState::NONE);
+    let rest = indicator(WidgetState::NONE.into());
     let width = crate::next::stroke_width(&rest, "indicator(NONE).stroke.width")?;
     let side = crate::next::stated(rest.min_size[0], "indicator(NONE).min_size[0]")?;
     let [top, right, bottom, left] = crate::next::padding_of(&rest);
@@ -1305,11 +1332,14 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                     &state,
                     old_switch.map(|look| look.track),
                     new_switch.map(|look| look.track),
-                    if new
-                        .switch
-                        .track(WidgetState::DISABLED)
-                        .from_state
-                        .contains(native_theme::next::PartStated::FILL)
+                    if two_queries(WidgetState::DISABLED, WidgetState::DISABLED | shown)
+                        .into_iter()
+                        .any(|q| {
+                            new.switch
+                                .track(q)
+                                .from_state
+                                .contains(native_theme::next::PartStated::FILL)
+                        })
                     {
                         track(
                             WidgetState::DISABLED | shown,
@@ -1391,8 +1421,8 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 )
             };
             let text = |look: CheckboxLook| look.label;
-            let boxed = |s| new.checkbox.indicator(s);
-            let round = |s| new.radio.indicator(s);
+            let boxed = |s: StyleQuery| new.checkbox.indicator(s);
+            let round = |s: StyleQuery| new.radio.indicator(s);
             for (look, radio) in [("CheckboxLook::of", false), ("CheckboxLook::radio", true)] {
                 let (old_look, new_look) = if radio {
                     (
@@ -1405,9 +1435,9 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                         CheckboxLook::next_of(&new, checked, disabled),
                     )
                 };
-                let indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle =
+                let indicator: &dyn Fn(StyleQuery) -> PartStyle =
                     if radio { &round } else { &boxed };
-                let label = |s| {
+                let label = |s: StyleQuery| {
                     if radio {
                         new.radio.label(s)
                     } else {
@@ -1424,7 +1454,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                         &state,
                         old_look.map(|look| look.fill),
                         new_look.map(|look| look.fill),
-                        fill(&indicator(shown(checked)), "indicator(shown).fill"),
+                        fill(&indicator(shown(checked).into()), "indicator(shown).fill"),
                     );
                     r.moved(
                         leaf("CheckboxLook::of mark", "CheckboxLook::radio mark"),
@@ -1474,7 +1504,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                     &state,
                     old_look.map(text),
                     new_look.map(text),
-                    indicator_label_home(&new, &label, disabled),
+                    indicator_label_home(&new, &label, checked, disabled),
                 );
                 r.moved(
                     leaf(
@@ -1514,23 +1544,27 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 let dimmed = |stroke: Mapped<gpui::Hsla>| {
                     stroke.map(|colour| colour.opacity(DISABLED_INDICATOR_ALPHA))
                 };
+                let off = WidgetState::DISABLED | shown;
+                // Whether a rule states the indicator's `bit` for `DISABLED` ([`two_queries`]).
+                let ruled = |indicator: &dyn Fn(StyleQuery) -> PartStyle, bit| {
+                    two_queries(WidgetState::DISABLED, off)
+                        .into_iter()
+                        .any(|q| indicator(q).from_state.contains(bit))
+                };
                 // The fill disabled: the one a rule states for `DISABLED` (at the checked
                 // state), else the enabled one, dimmed where gpui-component dims it (a checked
                 // box, a radio checked or not).
                 let disabled_fill =
-                    |indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+                    |indicator: &dyn Fn(StyleQuery) -> PartStyle,
                      radio: bool,
                      home: &'static str,
                      stated_home: &'static str| {
-                        if indicator(WidgetState::DISABLED)
-                            .from_state
-                            .contains(native_theme::next::PartStated::FILL)
-                        {
-                            fill(&indicator(WidgetState::DISABLED | shown), stated_home)
+                        if ruled(indicator, native_theme::next::PartStated::FILL) {
+                            fill(&indicator(off.into()), stated_home)
                         } else if checked || radio {
-                            dimmed(fill(&indicator(shown), home))
+                            dimmed(fill(&indicator(shown.into()), home))
                         } else {
-                            fill(&indicator(shown), home)
+                            fill(&indicator(shown.into()), home)
                         }
                     };
                 r.moved(
@@ -1560,16 +1594,13 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 // The border disabled: the stroke a rule states for `DISABLED` (at the checked
                 // state), else the enabled one at half alpha, as gpui-component dims it.
                 let disabled_border =
-                    |indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+                    |indicator: &dyn Fn(StyleQuery) -> PartStyle,
                      home: &'static str,
                      stated_home: &'static str| {
-                        if indicator(WidgetState::DISABLED)
-                            .from_state
-                            .contains(native_theme::next::PartStated::STROKE)
-                        {
-                            stroke_color(&indicator(WidgetState::DISABLED | shown), stated_home)
+                        if ruled(indicator, native_theme::next::PartStated::STROKE) {
+                            stroke_color(&indicator(off.into()), stated_home)
                         } else {
-                            dimmed(stroke_color(&indicator(shown), home))
+                            dimmed(stroke_color(&indicator(shown.into()), home))
                         }
                     };
                 r.moved(
@@ -1596,11 +1627,17 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 );
                 // The mark disabled: the one a rule states for `DISABLED`, else the
                 // enabled one at half alpha, as gpui-component dims a disabled mark.
-                let mark_ruled = new
-                    .checkbox
-                    .checkmark(WidgetState::DISABLED)
-                    .from_state
-                    .contains(native_theme::next::IconStated::COLOR);
+                let mark_ruled = two_queries(
+                    WidgetState::DISABLED,
+                    WidgetState::DISABLED | WidgetState::CHECKED,
+                )
+                .into_iter()
+                .any(|q| {
+                    new.checkbox
+                        .checkmark(q)
+                        .from_state
+                        .contains(native_theme::next::IconStated::COLOR)
+                });
                 let box_mark = new
                     .checkbox
                     .checkmark(if mark_ruled {
@@ -1621,11 +1658,17 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                         dimmed(box_mark)
                     },
                 );
-                let dot_ruled = new
-                    .radio
-                    .dot(WidgetState::DISABLED)
-                    .from_state
-                    .contains(native_theme::next::PartStated::FILL);
+                let dot_ruled = two_queries(
+                    WidgetState::DISABLED,
+                    WidgetState::DISABLED | WidgetState::CHECKED,
+                )
+                .into_iter()
+                .any(|q| {
+                    new.radio
+                        .dot(q)
+                        .from_state
+                        .contains(native_theme::next::PartStated::FILL)
+                });
                 r.moved(
                     "CheckboxLook::radio mark disabled",
                     &state,

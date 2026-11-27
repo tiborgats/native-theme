@@ -21960,58 +21960,68 @@ fn checkbox_homes(
     checked: bool,
     disabled: bool,
 ) -> [Leaf; 6] {
-    use native_theme::next::{IconStated, PartStated, TextStated, WidgetState};
+    use crate::info::inputs::two_queries;
+    use native_theme::next::{IconStated, PartStated, StyleQuery, TextStated, WidgetState};
     let at = |checkbox: Leaf, radio_home: Leaf| if radio { radio_home } else { checkbox };
-    let indicator = |state: WidgetState| {
+    let indicator = |state: StyleQuery| {
         if radio {
             r.radio.indicator(state)
         } else {
             r.checkbox.indicator(state)
         }
     };
-    let stated_disabled = disabled
-        && indicator(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::FILL);
+    let off = WidgetState::DISABLED
+        | if checked {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+    // Whether a rule states the indicator's `bit` for `DISABLED`, by spec §2's two queries.
+    let ruled = |bit| {
+        two_queries(WidgetState::DISABLED, off)
+            .into_iter()
+            .any(|query| indicator(query).from_state.contains(bit))
+    };
+    let stated_disabled = disabled && ruled(PartStated::FILL);
     let rest = at(
         (
             "checkbox.indicator(NONE).fill",
-            "native-theme-gpui/widgets/checkbox.rs:323",
+            "native-theme-gpui/widgets/checkbox.rs:324",
         ),
         (
             "radio.indicator(NONE).fill",
-            "native-theme-gpui/widgets/checkbox.rs:324",
+            "native-theme-gpui/widgets/checkbox.rs:325",
         ),
     );
     let fill = match (stated_disabled, checked) {
         (true, false) => at(
             (
                 "checkbox.indicator(DISABLED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:272",
+                "native-theme-gpui/widgets/checkbox.rs:276",
             ),
             (
                 "radio.indicator(DISABLED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:274",
+                "native-theme-gpui/widgets/checkbox.rs:278",
             ),
         ),
         (true, true) => at(
             (
                 "checkbox.indicator(DISABLED|CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:273",
+                "native-theme-gpui/widgets/checkbox.rs:277",
             ),
             (
                 "radio.indicator(DISABLED|CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:275",
+                "native-theme-gpui/widgets/checkbox.rs:279",
             ),
         ),
         (false, true) => at(
             (
                 "checkbox.indicator(CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:330",
+                "native-theme-gpui/widgets/checkbox.rs:331",
             ),
             (
                 "radio.indicator(CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:331",
+                "native-theme-gpui/widgets/checkbox.rs:332",
             ),
         ),
         (false, false) => rest,
@@ -22020,22 +22030,22 @@ fn checkbox_homes(
         at(
             (
                 "checkbox.indicator(HOVER|CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:821",
+                "native-theme-gpui/widgets/checkbox.rs:838",
             ),
             (
                 "radio.indicator(HOVER|CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:823",
+                "native-theme-gpui/widgets/checkbox.rs:840",
             ),
         )
-    } else if drawn_state_fill(&indicator(WidgetState::HOVER)).is_some() {
+    } else if drawn_state_fill(&indicator(WidgetState::HOVER.into())).is_some() {
         at(
             (
                 "checkbox.indicator(HOVER).fill",
-                "native-theme-gpui/widgets/checkbox.rs:820",
+                "native-theme-gpui/widgets/checkbox.rs:837",
             ),
             (
                 "radio.indicator(HOVER).fill",
-                "native-theme-gpui/widgets/checkbox.rs:822",
+                "native-theme-gpui/widgets/checkbox.rs:839",
             ),
         )
     } else {
@@ -22045,129 +22055,145 @@ fn checkbox_homes(
         at(
             (
                 "checkbox.indicator(HOVER|CHECKED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:289",
+                "native-theme-gpui/widgets/checkbox.rs:290",
             ),
             (
                 "radio.indicator(HOVER|CHECKED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:291",
+                "native-theme-gpui/widgets/checkbox.rs:292",
             ),
         )
     } else {
         at(
             (
                 "checkbox.indicator(HOVER).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:288",
+                "native-theme-gpui/widgets/checkbox.rs:289",
             ),
             (
                 "radio.indicator(HOVER).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:290",
+                "native-theme-gpui/widgets/checkbox.rs:291",
             ),
         )
     };
-    let stroked_disabled = disabled
-        && indicator(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::STROKE);
+    let stroked_disabled = disabled && ruled(PartStated::STROKE);
     let border = if stroked_disabled && checked {
         at(
             (
                 "checkbox.indicator(DISABLED|CHECKED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:424",
+                "native-theme-gpui/widgets/checkbox.rs:432",
             ),
             (
                 "radio.indicator(DISABLED|CHECKED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:427",
+                "native-theme-gpui/widgets/checkbox.rs:435",
             ),
         )
     } else if stroked_disabled {
         at(
             (
                 "checkbox.indicator(DISABLED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:422",
+                "native-theme-gpui/widgets/checkbox.rs:430",
             ),
             (
                 "radio.indicator(DISABLED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:426",
+                "native-theme-gpui/widgets/checkbox.rs:434",
             ),
         )
     } else if checked {
         at(
             (
                 "checkbox.indicator(CHECKED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:345",
+                "native-theme-gpui/widgets/checkbox.rs:346",
             ),
             (
                 "radio.indicator(CHECKED).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:346",
+                "native-theme-gpui/widgets/checkbox.rs:347",
             ),
         )
     } else {
         at(
             (
                 "checkbox.indicator(NONE).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:352",
+                "native-theme-gpui/widgets/checkbox.rs:353",
             ),
             (
                 "radio.indicator(NONE).stroke.color",
-                "native-theme-gpui/widgets/checkbox.rs:353",
+                "native-theme-gpui/widgets/checkbox.rs:354",
             ),
         )
     };
-    let label_ruled = if radio {
-        r.radio.label(WidgetState::DISABLED)
-    } else {
-        r.checkbox.label(WidgetState::DISABLED)
-    }
-    .from_state
-    .contains(TextStated::COLOR);
-    let disabled_label = if label_ruled {
+    let label_ruled = two_queries(WidgetState::DISABLED, off)
+        .into_iter()
+        .any(|query| {
+            if radio {
+                r.radio.label(query)
+            } else {
+                r.checkbox.label(query)
+            }
+            .from_state
+            .contains(TextStated::COLOR)
+        });
+    let disabled_label = if label_ruled && checked {
+        at(
+            (
+                "checkbox.label(DISABLED|CHECKED).color",
+                "native-theme-gpui/widgets/checkbox.rs:375",
+            ),
+            (
+                "radio.label(DISABLED|CHECKED).color",
+                "native-theme-gpui/widgets/checkbox.rs:377",
+            ),
+        )
+    } else if label_ruled {
         at(
             (
                 "checkbox.label(DISABLED).color",
-                "native-theme-gpui/widgets/checkbox.rs:365",
+                "native-theme-gpui/widgets/checkbox.rs:374",
             ),
             (
                 "radio.label(DISABLED).color",
-                "native-theme-gpui/widgets/checkbox.rs:366",
+                "native-theme-gpui/widgets/checkbox.rs:376",
             ),
         )
     } else {
         (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/checkbox.rs:800",
+            "native-theme-gpui/widgets/checkbox.rs:817",
         )
     };
-    let mark_ruled = if radio {
-        r.radio
-            .dot(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::FILL)
-    } else {
-        r.checkbox
-            .checkmark(WidgetState::DISABLED)
-            .from_state
-            .contains(IconStated::COLOR)
-    };
+    let mark_ruled = two_queries(
+        WidgetState::DISABLED,
+        WidgetState::DISABLED | WidgetState::CHECKED,
+    )
+    .into_iter()
+    .any(|query| {
+        if radio {
+            r.radio.dot(query).from_state.contains(PartStated::FILL)
+        } else {
+            r.checkbox
+                .checkmark(query)
+                .from_state
+                .contains(IconStated::COLOR)
+        }
+    });
     let mark = if disabled && mark_ruled {
         at(
             (
                 "checkbox.checkmark(DISABLED|CHECKED).color",
-                "native-theme-gpui/widgets/checkbox.rs:769",
+                "native-theme-gpui/widgets/checkbox.rs:780",
             ),
             (
                 "radio.dot(DISABLED|CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:403",
+                "native-theme-gpui/widgets/checkbox.rs:413",
             ),
         )
     } else {
         at(
             (
                 "checkbox.checkmark(CHECKED).color",
-                "native-theme-gpui/widgets/checkbox.rs:305",
+                "native-theme-gpui/widgets/checkbox.rs:306",
             ),
             (
                 "radio.dot(CHECKED).fill",
-                "native-theme-gpui/widgets/checkbox.rs:300",
+                "native-theme-gpui/widgets/checkbox.rs:301",
             ),
         )
     };
@@ -22177,11 +22203,11 @@ fn checkbox_homes(
         at(
             (
                 "checkbox.label(NONE).color",
-                "native-theme-gpui/widgets/checkbox.rs:360",
+                "native-theme-gpui/widgets/checkbox.rs:361",
             ),
             (
                 "radio.label(NONE).color",
-                "native-theme-gpui/widgets/checkbox.rs:360",
+                "native-theme-gpui/widgets/checkbox.rs:361",
             ),
         )
     };
@@ -22190,14 +22216,15 @@ fn checkbox_homes(
 
 /// `switch_hover_stated` decides as `SwitchLook::next_of` does, on
 /// kde-breeze light patched so that a rule with no required state clears
-/// the hovered track's fill (`not_states(CHECKED)`, spec §2: a later rule
-/// without required states clears the `from_state` bit) and the tracks are
+/// the hovered track's fill at every state (spec §2: a later rule without
+/// required states clears the `from_state` bit) and the tracks are
 /// translucent: a `HOVER` rule; one beside a `HOVER|CHECKED` rule differing
 /// from the checked track, and beside one equal to it; a `HOVER|CHECKED`
-/// rule alone, which the query with `HOVER` alone does not see (spec §2,
-/// `from_state`); none. The look draws the hovered track's own fill (spec
-/// §9, step 2), so a hover stated equal to the checked track is stated but
-/// draws as that track.
+/// rule alone, which the query with `HOVER` alone does not see and the
+/// checked track's own query asking `HOVER` does (spec §2's two queries,
+/// `from_state`), so it states the checked track's hover only; none. The
+/// look draws the hovered track's own fill (spec §9, step 2), so a hover
+/// stated equal to the checked track is stated but draws as that track.
 #[cfg(feature = "widgets")]
 #[test]
 fn switch_hover_stated_decides_as_the_switch_look_does() {
@@ -22216,13 +22243,14 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
             .track(PartPatch::new().fill(fill.clone()))
     };
     let hovered_on = WidgetState::HOVER | WidgetState::CHECKED;
-    // (case, rules, stated, drawn checked): unchecked, a stated hover draws
+    // (case, rules, stated unchecked and checked, drawn checked): unchecked, a stated hover
+    // draws
     let cases = [
-        ("no hover rule", vec![], false, false),
+        ("no hover rule", vec![], [false, false], false),
         (
             "a HOVER rule",
             vec![rule(WidgetState::HOVER, &hover)],
-            true,
+            [true, true],
             true,
         ),
         (
@@ -22231,30 +22259,26 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
                 rule(WidgetState::HOVER, &hover),
                 rule(hovered_on, &hover_on),
             ],
-            true,
+            [true, true],
             true,
         ),
         (
             "a HOVER rule and a HOVER|CHECKED rule equal to CHECKED",
             vec![rule(WidgetState::HOVER, &hover), rule(hovered_on, &on)],
-            true,
+            [true, true],
             false,
         ),
         (
             "a HOVER|CHECKED rule alone",
             vec![rule(hovered_on, &hover_on)],
-            false,
-            false,
+            [false, true],
+            true,
         ),
     ];
-    for (case, rules, stated, drawn_checked) in cases {
+    for (case, rules, [stated, stated_checked], drawn_checked) in cases {
         let patch = rules.into_iter().fold(
             ThemePatch::new()
-                .switch(
-                    SwitchRule::new()
-                        .not_states(WidgetState::CHECKED)
-                        .track(PartPatch::new().fill(rest.clone())),
-                )
+                .switch(SwitchRule::new().track(PartPatch::new().fill(rest.clone())))
                 .switch(rule(WidgetState::CHECKED, &on)),
             ThemePatch::switch,
         );
@@ -22272,7 +22296,7 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
             );
             assert_eq!(
                 switch_hover_stated(&r, checked),
-                stated,
+                if checked { stated_checked } else { stated },
                 "{case}, checked {checked}: switch_hover_stated"
             );
         }
@@ -22305,55 +22329,76 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
         (false, true) => off,
         (true, true) => off_on,
     };
-    let track_ruled = r
-        .switch
-        .track(native_theme::next::WidgetState::DISABLED)
-        .from_state
-        .contains(native_theme::next::PartStated::FILL);
+    use native_theme::next::WidgetState;
+    let state = WidgetState::DISABLED
+        | if checked {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+    let track_ruled = crate::info::inputs::two_queries(WidgetState::DISABLED, state)
+        .into_iter()
+        .any(|query| {
+            r.switch
+                .track(query)
+                .from_state
+                .contains(native_theme::next::PartStated::FILL)
+        });
     let (off, off_on) = if track_ruled {
         (
             (
                 "switch.track(DISABLED).fill",
-                "native-theme-gpui/widgets/switch.rs:265",
+                "native-theme-gpui/widgets/switch.rs:264",
             ),
             (
                 "switch.track(DISABLED|CHECKED).fill",
-                "native-theme-gpui/widgets/switch.rs:266",
+                "native-theme-gpui/widgets/switch.rs:265",
             ),
         )
     } else {
         (
             (
                 "switch.track(NONE).fill",
-                "native-theme-gpui/widgets/switch.rs:263",
+                "native-theme-gpui/widgets/switch.rs:262",
             ),
             (
                 "switch.track(CHECKED).fill",
-                "native-theme-gpui/widgets/switch.rs:264",
+                "native-theme-gpui/widgets/switch.rs:263",
             ),
         )
     };
     let track = pick([
         (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:263",
+            "native-theme-gpui/widgets/switch.rs:262",
         ),
         (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:264",
+            "native-theme-gpui/widgets/switch.rs:263",
         ),
         off,
         off_on,
     ]);
-    let hover_ruled = r
-        .switch
-        .track(native_theme::next::WidgetState::HOVER)
-        .from_state
-        .contains(native_theme::next::PartStated::FILL);
+    let hover_ruled = crate::info::inputs::two_queries(
+        WidgetState::HOVER,
+        WidgetState::HOVER
+            | if checked {
+                WidgetState::CHECKED
+            } else {
+                WidgetState::NONE
+            },
+    )
+    .into_iter()
+    .any(|query| {
+        r.switch
+            .track(query)
+            .from_state
+            .contains(native_theme::next::PartStated::FILL)
+    });
     let hover = match (checked, hover_ruled) {
         (false, true) => (
             "switch.track(HOVER).fill",
-            "native-theme-gpui/widgets/switch.rs:247",
+            "native-theme-gpui/widgets/switch.rs:246",
         ),
         (true, true) => (
             "switch.track(HOVER|CHECKED).fill",
@@ -22361,85 +22406,85 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
         ),
         (false, false) => (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:232",
+            "native-theme-gpui/widgets/switch.rs:233",
         ),
         (true, false) => (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:232",
+            "native-theme-gpui/widgets/switch.rs:233",
         ),
     };
     let track_outline = pick([
         (
             "switch.track(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:282",
+            "native-theme-gpui/widgets/switch.rs:281",
         ),
         (
             "switch.track(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:283",
+            "native-theme-gpui/widgets/switch.rs:282",
         ),
         (
             "switch.track(DISABLED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:284",
+            "native-theme-gpui/widgets/switch.rs:283",
         ),
         (
             "switch.track(DISABLED|CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:285",
+            "native-theme-gpui/widgets/switch.rs:284",
         ),
     ]);
     let thumb_outline = if checked {
         (
             "switch.thumb(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:293",
+            "native-theme-gpui/widgets/switch.rs:292",
         )
     } else {
         (
             "switch.thumb(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:292",
+            "native-theme-gpui/widgets/switch.rs:291",
         )
     };
     let thumb = pick([
         (
             "switch.thumb(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:273",
+            "native-theme-gpui/widgets/switch.rs:272",
         ),
         (
             "switch.thumb(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:274",
+            "native-theme-gpui/widgets/switch.rs:273",
         ),
         (
             "switch.thumb(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:275",
+            "native-theme-gpui/widgets/switch.rs:274",
         ),
         (
             "switch.thumb(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:276",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
     ]);
     let label = match native_theme_gpui::widgets::SwitchLook::next_label_home(r, checked, disabled)
     {
         Ok(SwitchLabelHome::Rest) => (
             "switch.label(NONE).color",
-            "native-theme-gpui/widgets/switch.rs:437",
+            "native-theme-gpui/widgets/switch.rs:436",
         ),
         Ok(SwitchLabelHome::Checked) => (
             "switch.label(CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:438",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
         Ok(SwitchLabelHome::Disabled) => (
             "switch.label(DISABLED).color",
-            "native-theme-gpui/widgets/switch.rs:439",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
         Ok(SwitchLabelHome::DisabledChecked) => (
             "switch.label(DISABLED|CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:440",
+            "native-theme-gpui/widgets/switch.rs:439",
         ),
         Ok(SwitchLabelHome::WindowForegroundMuted) => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:487",
+            "native-theme-gpui/widgets/switch.rs:492",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:481",
+            "native-theme-gpui/widgets/switch.rs:486",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -22926,11 +22971,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
     let stated_homes = [
         (
             "switch.label(NONE).color",
-            "native-theme-gpui/widgets/switch.rs:437",
+            "native-theme-gpui/widgets/switch.rs:436",
         ),
         (
             "switch.label(DISABLED).color",
-            "native-theme-gpui/widgets/switch.rs:439",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
     ];
     for (r, homes, gap, size) in [
@@ -28123,9 +28168,10 @@ fn a_preference_resolves_the_08_theme_again(cx: &mut TestAppContext) {
 }
 
 /// A disabled Checkbox's info claims the border the widget draws: under
-/// kde-breeze light, which states no stroke for `DISABLED`, gpui-component's
-/// own disabled border, the enabled home at half alpha (gpui-component
-/// 0.10.0 checkbox.rs:286-290), under a role that says so; patched to state
+/// kde-breeze light, which states no stroke for `DISABLED` on an unchecked
+/// box, gpui-component's own disabled border, the enabled home at half alpha
+/// (gpui-component 0.10.0 checkbox.rs:286-290), under a role that says so,
+/// and checked the frame it states for `DISABLED|CHECKED`; patched to state
 /// a sentinel stroke at the rest width for `DISABLED`, that stroke under
 /// `checkbox.indicator(DISABLED).stroke.color` (`DISABLED|CHECKED` checked).
 #[cfg(feature = "widgets")]
@@ -28156,36 +28202,54 @@ fn a_disabled_checkboxs_info_claims_the_border_it_draws() {
             .ok()
             .map(|look| as_rgba(look.faded_over(ground).border))
     };
-    for (checked, home) in [
-        (false, "checkbox.indicator(NONE).stroke.color"),
-        (true, "checkbox.indicator(CHECKED).stroke.color"),
-    ] {
-        let enabled = CheckboxLook::next_of(&r, checked, false)
+    let enabled = CheckboxLook::next_of(&r, false, false)
+        .ok()
+        .map(|look| look.border);
+    assert!(
+        enabled.is_some_and(|e| e.a > 0.),
+        "kde-breeze gives no look, or an unedged one"
+    );
+    assert_eq!(
+        CheckboxLook::next_of(&r, false, true)
             .ok()
-            .map(|look| look.border);
-        assert!(
-            enabled.is_some_and(|e| e.a > 0.),
-            "kde-breeze gives no look, or an unedged one, checked {checked}"
-        );
-        assert_eq!(
-            CheckboxLook::next_of(&r, checked, true)
-                .ok()
-                .map(|look| look.border),
-            enabled.map(|e| gpui::Hsla { a: e.a * 0.5, ..e }),
-            "checked {checked}"
-        );
-        assert_eq!(
-            claimed(&r, checked),
-            drawn(&r, checked).map(|value| {
-                (
-                    "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
-                    home,
-                    value,
-                )
-            }),
-            "unpatched, checked {checked}"
-        );
-    }
+            .map(|look| look.border),
+        enabled.map(|e| gpui::Hsla { a: e.a * 0.5, ..e }),
+        "unchecked"
+    );
+    assert_eq!(
+        claimed(&r, false),
+        drawn(&r, false).map(|value| {
+            (
+                "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+                "checkbox.indicator(NONE).stroke.color",
+                value,
+            )
+        }),
+        "unpatched, unchecked"
+    );
+    // Checked, kde-breeze states Breeze's disabled checked frame for `DISABLED|CHECKED`, which
+    // the query at that state asking `DISABLED` states for `DISABLED` (spec §2's two queries).
+    assert_eq!(
+        CheckboxLook::next_of(&r, true, true)
+            .ok()
+            .map(|look| look.border),
+        native_theme_gpui::next::state_stroke_color_of(
+            &r.checkbox
+                .indicator(WidgetState::DISABLED | WidgetState::CHECKED)
+        ),
+        "checked"
+    );
+    assert_eq!(
+        claimed(&r, true),
+        drawn(&r, true).map(|value| {
+            (
+                "border",
+                "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+                value,
+            )
+        }),
+        "unpatched, checked"
+    );
     let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
     r.apply_patch(
         &ThemePatch::new().checkbox(

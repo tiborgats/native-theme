@@ -280,8 +280,8 @@ fn state_option(value: Option<Hsla>, ruled: bool, home: &'static str) -> Mapped<
 /// queried state (its `from_state` bit); `None` where none does, a soft
 /// option's unset value. The rule is for some flag of the query, not a
 /// given one (spec §2, `from_state`): a reader that keeps the toolkit's own
-/// treatment of one flag over a value stated for another queries with that
-/// flag alone.
+/// treatment of one flag over a value stated for another asks spec §2's two
+/// queries, that flag alone and its own query asking it ([`StyleQuery::asking`]).
 ///
 /// # Errors
 ///
@@ -301,7 +301,7 @@ pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla
 /// draw (not one stroke of one colour, nor none). The rule is for some flag
 /// of the query, not a given one (spec §2, `from_state`): a reader that
 /// keeps the toolkit's own treatment of one flag over a value stated for
-/// another queries with that flag alone.
+/// another asks spec §2's two queries: that flag alone, its own query asking it.
 pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     if !part.from_state.contains(PartStated::STROKE) {
         return None;
@@ -316,7 +316,7 @@ pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
 /// rule states it for the queried state or it is not stated. The rule is
 /// for some flag of the query, not a given one (spec §2, `from_state`): a
 /// reader that keeps the toolkit's own treatment of one flag over a value
-/// stated for another queries with that flag alone.
+/// stated for another asks spec §2's two queries: that flag alone, its own query asking it.
 pub fn state_text_color_of(text: &TextStyle) -> Option<Hsla> {
     text.from_state
         .contains(TextStated::COLOR)

@@ -6803,9 +6803,10 @@ fn a_checked_disabled_mark_is_read_only_where_stated() {
 /// checked state, and where no rule does in gpui-component's own disabled
 /// border, the enabled one at half alpha (spec §10, rule 0; gpui-component
 /// 0.10.0 checkbox.rs:286-290, radio.rs:198-199): kde-breeze, which states
-/// none, and the same theme patched to state one for each control, a
-/// sentinel colour at the rest stroke's width, so the patch states no value
-/// the theme lacks but the colour under test.
+/// none for an unchecked control and Breeze's disabled checked frame for
+/// `DISABLED|CHECKED` (spec §2's two queries), and the same theme patched to
+/// state one for each control, a sentinel colour at the rest stroke's width,
+/// so the patch states no value the theme lacks but the colour under test.
 #[test]
 fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crate::next::Mapped<()>
 {
@@ -6823,11 +6824,22 @@ fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crat
     let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
     for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
         let enabled = look(&r, radio, checked, false)?.border;
+        let frame = if radio {
+            r.radio
+                .indicator(WidgetState::DISABLED | WidgetState::CHECKED)
+        } else {
+            r.checkbox
+                .indicator(WidgetState::DISABLED | WidgetState::CHECKED)
+        };
         assert_eq!(
             look(&r, radio, checked, true)?.border,
-            gpui::Hsla {
-                a: enabled.a * 0.5,
-                ..enabled
+            if checked {
+                crate::next::stroke_color(&frame, "indicator(DISABLED|CHECKED).stroke.color")?
+            } else {
+                gpui::Hsla {
+                    a: enabled.a * 0.5,
+                    ..enabled
+                }
             },
             "unpatched, radio {radio}, checked {checked}"
         );
@@ -6868,22 +6880,21 @@ fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crat
 }
 
 /// `r` with its check box's and radio's indicator fill, and the check box's
-/// mark colour, stated for no state at `DISABLED`: a rule of no required
-/// state, forbidding every state but `DISABLED` a rest query's look depends
-/// on, restates them at rest, so they stay as `r` gives them and the
-/// `from_state` bits of those queried at `DISABLED` are cleared (spec §2,
-/// `from_state`: a rule without required states clears it). Every bundled
-/// preset states a disabled indicator's fill, adwaita its rest fill and its
-/// mark as enabled (libadwaita fades a disabled check and changes no colour,
-/// _checks.scss:62-64 at libadwaita 1.10.0).
+/// mark colour, stated for no state at `DISABLED` and
+/// `DISABLED|INDETERMINATE`: a rule of no required state, forbidding every
+/// state but `DISABLED` and `INDETERMINATE` a rest query's look depends on,
+/// restates them at rest, so they stay as `r` gives them at `DISABLED` and
+/// the `from_state` bits of those queried at either state, asked or not, are
+/// cleared (spec §2, `from_state`: a rule without required states clears
+/// it). Every bundled preset states a disabled indicator's fill, adwaita its
+/// rest fill and its mark as enabled, a mixed one's too (libadwaita fades a
+/// disabled check and changes no colour, _checks.scss:62-64 at libadwaita
+/// 1.10.0).
 fn disabled_look_unstated(r: &mut native_theme::next::ResolvedTheme) {
     use native_theme::next::{
         CheckboxRule, IconPatch, PartPatch, RadioRule, ThemePatch, WidgetState,
     };
-    let others = WidgetState::CHECKED
-        | WidgetState::INDETERMINATE
-        | WidgetState::HOVER
-        | WidgetState::PRESSED;
+    let others = WidgetState::CHECKED | WidgetState::HOVER | WidgetState::PRESSED;
     let boxed = r.checkbox.indicator(WidgetState::NONE).fill;
     let mark = r.checkbox.checkmark(WidgetState::NONE).color;
     let round = r.radio.indicator(WidgetState::NONE).fill;
@@ -7319,4 +7330,480 @@ fn a_hovered_checked_box_draws_the_fill_resolved_for_its_state() -> crate::next:
         "patched, mixed"
     );
     Ok(())
+}
+
+/// A site that keeps gpui-component's treatment of a flag `S` over a value
+/// read at `S|T`, as the theme states it for `S` by spec §2's two queries.
+/// `clear` states the property with no state, so the query with `S` alone
+/// lacks its bit; `both` is the rule for `S|T`, `other` the one for `T`.
+struct TwoFlagSite {
+    clear: &'static str,
+    both: &'static str,
+    other: &'static str,
+    /// A home the theme of `other` also states, in a third colour, where
+    /// gpui-component's own treatment reads a state a rule for `T` alone
+    /// would give `other`'s colour too: the mixed box's checked look, read at
+    /// `T|CHECKED`, against a site wrongly reading `T|INDETERMINATE`.
+    also: Option<&'static str>,
+    /// The bit at `S` alone.
+    alone: fn(&native_theme::next::ResolvedTheme) -> bool,
+    /// The value the site draws at `S|T`.
+    drawn: fn(&native_theme::next::ResolvedTheme) -> crate::next::Mapped<Option<gpui::Hsla>>,
+    /// gpui-component's own treatment of `S` at `S|T`, `other`'s colour given.
+    own: fn(
+        &native_theme::next::ResolvedTheme,
+        gpui::Hsla,
+    ) -> crate::next::Mapped<Option<gpui::Hsla>>,
+}
+
+/// The sites of spec §2's two queries the check box, the radio and the
+/// switch read ([`TwoFlagSite`]).
+fn two_flag_sites() -> Vec<TwoFlagSite> {
+    use native_theme::next::ResolvedTheme as R;
+    use native_theme::next::{IconStated, PartStated, TextStated, WidgetState as S};
+    const MIXED: S = S::INDETERMINATE;
+    fn dimmed(_: &R, c: gpui::Hsla) -> crate::next::Mapped<Option<gpui::Hsla>> {
+        Ok(Some(c.opacity(super::checkbox::DISABLED_INDICATOR_ALPHA)))
+    }
+    fn none(_: &R, _: gpui::Hsla) -> crate::next::Mapped<Option<gpui::Hsla>> {
+        Ok(None)
+    }
+    fn muted(r: &R, _: gpui::Hsla) -> crate::next::Mapped<Option<gpui::Hsla>> {
+        crate::next::stated(
+            r.colors.window.foreground_muted,
+            "colors.window.foreground_muted",
+        )
+        .map(|c| Some(crate::next::hsla(c)))
+    }
+    vec![
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).fill",
+            both: "checkbox.indicator(DISABLED|CHECKED).fill",
+            other: "checkbox.indicator(CHECKED).fill",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .indicator(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_of(r, true, true)?.fill)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "radio.indicator(NONE).fill",
+            both: "radio.indicator(DISABLED|CHECKED).fill",
+            other: "radio.indicator(CHECKED).fill",
+            also: None,
+            alone: |r| {
+                r.radio
+                    .indicator(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_radio(r, true, true)?.fill)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).stroke.color",
+            both: "checkbox.indicator(HOVER|CHECKED).stroke.color",
+            other: "checkbox.indicator(CHECKED).stroke.color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .indicator(S::HOVER)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(CheckboxLook::next_of(r, true, false)?.hover_border),
+            own: none,
+        },
+        TwoFlagSite {
+            clear: "radio.indicator(NONE).stroke.color",
+            both: "radio.indicator(HOVER|CHECKED).stroke.color",
+            other: "radio.indicator(CHECKED).stroke.color",
+            also: None,
+            alone: |r| {
+                r.radio
+                    .indicator(S::HOVER)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(CheckboxLook::next_radio(r, true, false)?.hover_border),
+            own: none,
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).stroke.color",
+            both: "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+            other: "checkbox.indicator(CHECKED).stroke.color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .indicator(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_of(r, true, true)?.border)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "radio.indicator(NONE).stroke.color",
+            both: "radio.indicator(DISABLED|CHECKED).stroke.color",
+            other: "radio.indicator(CHECKED).stroke.color",
+            also: None,
+            alone: |r| {
+                r.radio
+                    .indicator(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_radio(r, true, true)?.border)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "checkbox.checkmark(NONE).color",
+            both: "checkbox.checkmark(DISABLED|CHECKED).color",
+            other: "checkbox.checkmark(CHECKED).color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .checkmark(S::DISABLED)
+                    .from_state
+                    .contains(IconStated::COLOR)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_of(r, true, true)?.mark)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "radio.dot(NONE).fill",
+            both: "radio.dot(DISABLED|CHECKED).fill",
+            other: "radio.dot(CHECKED).fill",
+            also: None,
+            alone: |r| {
+                r.radio
+                    .dot(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_radio(r, true, true)?.mark)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "checkbox.label(NONE).color",
+            both: "checkbox.label(DISABLED|CHECKED).color",
+            other: "checkbox.label(CHECKED).color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .label(S::DISABLED)
+                    .from_state
+                    .contains(TextStated::COLOR)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_of(r, true, true)?.label)),
+            own: muted,
+        },
+        TwoFlagSite {
+            clear: "radio.label(NONE).color",
+            both: "radio.label(DISABLED|CHECKED).color",
+            other: "radio.label(CHECKED).color",
+            also: None,
+            alone: |r| {
+                r.radio
+                    .label(S::DISABLED)
+                    .from_state
+                    .contains(TextStated::COLOR)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_radio(r, true, true)?.label)),
+            own: muted,
+        },
+        // The mixed box: `INDETERMINATE` kept as `CHECKED` where no rule states it, and
+        // `DISABLED` and `HOVER` with it.
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).fill",
+            both: "checkbox.indicator(DISABLED|INDETERMINATE).fill",
+            other: "checkbox.indicator(DISABLED).fill",
+            also: Some("checkbox.indicator(DISABLED|CHECKED).fill"),
+            alone: |r| {
+                r.checkbox
+                    .indicator(MIXED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_mixed(r, true)?.fill)),
+            own: |r, _| Ok(Some(CheckboxLook::next_of(r, true, true)?.fill)),
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).fill",
+            both: "checkbox.indicator(DISABLED|INDETERMINATE).fill",
+            other: "checkbox.indicator(INDETERMINATE).fill",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .indicator(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_mixed(r, true)?.fill)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).stroke.color",
+            both: "checkbox.indicator(DISABLED|INDETERMINATE).stroke.color",
+            other: "checkbox.indicator(DISABLED).stroke.color",
+            also: Some("checkbox.indicator(DISABLED|CHECKED).stroke.color"),
+            alone: |r| {
+                r.checkbox
+                    .indicator(MIXED)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_mixed(r, true)?.border)),
+            own: |r, _| Ok(Some(CheckboxLook::next_of(r, true, true)?.border)),
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).stroke.color",
+            both: "checkbox.indicator(DISABLED|INDETERMINATE).stroke.color",
+            other: "checkbox.indicator(INDETERMINATE).stroke.color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .indicator(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_mixed(r, true)?.border)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).fill",
+            both: "checkbox.indicator(HOVER|INDETERMINATE).fill",
+            other: "checkbox.indicator(HOVER).fill",
+            also: Some("checkbox.indicator(HOVER|CHECKED).fill"),
+            alone: |r| {
+                r.checkbox
+                    .indicator(MIXED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(CheckboxLook::next_mixed(r, false)?.hover_fill),
+            own: |r, _| Ok(CheckboxLook::next_of(r, true, false)?.hover_fill),
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).stroke.color",
+            both: "checkbox.indicator(HOVER|INDETERMINATE).stroke.color",
+            other: "checkbox.indicator(HOVER).stroke.color",
+            also: Some("checkbox.indicator(HOVER|CHECKED).stroke.color"),
+            alone: |r| {
+                r.checkbox
+                    .indicator(MIXED)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(CheckboxLook::next_mixed(r, false)?.hover_border),
+            own: |r, _| Ok(CheckboxLook::next_of(r, true, false)?.hover_border),
+        },
+        TwoFlagSite {
+            clear: "checkbox.indicator(NONE).stroke.color",
+            both: "checkbox.indicator(HOVER|INDETERMINATE).stroke.color",
+            other: "checkbox.indicator(INDETERMINATE).stroke.color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .indicator(S::HOVER)
+                    .from_state
+                    .contains(PartStated::STROKE)
+            },
+            drawn: |r| Ok(CheckboxLook::next_mixed(r, false)?.hover_border),
+            own: none,
+        },
+        TwoFlagSite {
+            clear: "checkbox.checkmark(NONE).color",
+            both: "checkbox.checkmark(DISABLED|INDETERMINATE).color",
+            other: "checkbox.checkmark(DISABLED).color",
+            also: Some("checkbox.checkmark(DISABLED|CHECKED).color"),
+            alone: |r| {
+                r.checkbox
+                    .checkmark(MIXED)
+                    .from_state
+                    .contains(IconStated::COLOR)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_mixed(r, true)?.mark)),
+            own: |r, _| Ok(Some(CheckboxLook::next_of(r, true, true)?.mark)),
+        },
+        TwoFlagSite {
+            clear: "checkbox.checkmark(NONE).color",
+            both: "checkbox.checkmark(DISABLED|INDETERMINATE).color",
+            other: "checkbox.checkmark(INDETERMINATE).color",
+            also: None,
+            alone: |r| {
+                r.checkbox
+                    .checkmark(S::DISABLED)
+                    .from_state
+                    .contains(IconStated::COLOR)
+            },
+            drawn: |r| Ok(Some(CheckboxLook::next_mixed(r, true)?.mark)),
+            own: dimmed,
+        },
+        TwoFlagSite {
+            clear: "switch.track(NONE).fill",
+            both: "switch.track(HOVER|CHECKED).fill",
+            other: "switch.track(CHECKED).fill",
+            also: None,
+            alone: |r| {
+                r.switch
+                    .track(S::HOVER)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(SwitchLook::next_of(r, true, false)?.hover_track),
+            // The checked track without the pointer. (ii) checks nothing here:
+            // the rule for `CHECKED` makes the hovered checked track the rest
+            // one, so a site reading `HOVER|CHECKED` unasked draws it too.
+            own: |_, c| Ok(Some(c)),
+        },
+        TwoFlagSite {
+            clear: "switch.track(NONE).fill",
+            both: "switch.track(DISABLED|CHECKED).fill",
+            other: "switch.track(CHECKED).fill",
+            also: None,
+            alone: |r| {
+                r.switch
+                    .track(S::DISABLED)
+                    .from_state
+                    .contains(PartStated::FILL)
+            },
+            drawn: |r| Ok(Some(SwitchLook::next_of(r, true, true)?.track)),
+            own: |_, c| Ok(Some(c.opacity(super::switch::DISABLED_TRACK_ALPHA))),
+        },
+        TwoFlagSite {
+            clear: "switch.label(NONE).color",
+            both: "switch.label(DISABLED|CHECKED).color",
+            other: "switch.label(CHECKED).color",
+            also: None,
+            alone: |r| {
+                r.switch
+                    .label(S::DISABLED)
+                    .from_state
+                    .contains(TextStated::COLOR)
+            },
+            drawn: |r| Ok(Some(SwitchLook::next_of(r, true, true)?.label)),
+            own: muted,
+        },
+    ]
+}
+
+/// Spec §2's two queries at each site of the check box, the radio and the
+/// switch ([`two_flag_sites`]), on kde-breeze patched as showcase-support's
+/// `home_patch_toml` states a home: the property first stated with no state,
+/// so the query with `S` alone lacks its bit; then (i) a rule for `S|T` alone
+/// is drawn at `S|T`, and (ii) a rule for `T` alone does not state the value
+/// for `S`, and gpui-component's own treatment stays. Where that treatment
+/// reads a state the rule for `T` reaches as well, the theme of (ii) also
+/// states [`TwoFlagSite::also`] in a third colour, which the own treatment
+/// draws and a site reading `S|T` unasked does not. The switch's hovered
+/// checked track is the one site (ii) cannot tell apart: the rule for
+/// `CHECKED` is its own treatment's colour too.
+#[test]
+fn a_rule_for_two_flags_states_the_value_for_the_flag_the_connector_treats() -> Result<(), String> {
+    use native_theme::next::{Color, Preset, Theme as NextTheme, ThemeContext, ThemePatch};
+    use native_theme_showcase_support::next::patch::home_patch_toml;
+    // The property with no state: the patch of its `NONE` home without the
+    // `not_states` that keeps that rule to the rest state, a rule that
+    // requires no state.
+    let unruled = |toml: String| {
+        toml.lines()
+            .filter(|line| !line.starts_with("not_states"))
+            .map(|line| format!("{line}\n"))
+            .collect::<String>()
+    };
+    let rest = "#102030";
+    let patched = |clear: &str, rules: &[(&str, &str)]| {
+        let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        let mut tomls = vec![
+            home_patch_toml(clear, rest)
+                .map(unruled)
+                .ok_or(format!("no patch for {clear}"))?,
+        ];
+        for &(home, colour) in rules {
+            tomls.push(home_patch_toml(home, colour).ok_or(format!("no patch for {home}"))?);
+        }
+        for toml in tomls {
+            let patch = ThemePatch::from_toml(&toml).map_err(|e| format!("{toml}: {e:?}"))?;
+            r.apply_patch(&patch);
+        }
+        Ok::<_, String>(r)
+    };
+    let ruled = Color::from_srgb8(0xa1, 0xb2, 0xc3, 0xff);
+    let ruled_hex = "#a1b2c3";
+    let third_hex = "#3c5a78";
+    let mut faults = Vec::new();
+    for site in two_flag_sites() {
+        let both = patched(site.clear, &[(site.both, ruled_hex)])?;
+        if (site.alone)(&both) {
+            faults.push(format!(
+                "{}: the bit at the flag alone stays set",
+                site.both
+            ));
+        }
+        let drawn = (site.drawn)(&both).map_err(|e| format!("{}: {e:?}", site.both))?;
+        if drawn != Some(crate::next::hsla(ruled)) {
+            faults.push(format!("(i) {}: drawn {drawn:?}", site.both));
+        }
+        let other = match site.also {
+            Some(also) => patched(site.clear, &[(site.other, ruled_hex), (also, third_hex)])?,
+            None => patched(site.clear, &[(site.other, ruled_hex)])?,
+        };
+        let drawn = (site.drawn)(&other).map_err(|e| format!("{}: {e:?}", site.other))?;
+        let own = (site.own)(&other, crate::next::hsla(ruled))
+            .map_err(|e| format!("{}: {e:?}", site.other))?;
+        if site.also.is_some() && own == Some(crate::next::hsla(ruled)) {
+            faults.push(format!(
+                "(ii) {} under {}: gpui-component's own {own:?} is the rule's colour",
+                site.both, site.other
+            ));
+        }
+        if drawn != own {
+            faults.push(format!(
+                "(ii) {} under {}: drawn {drawn:?}, not gpui-component's own {own:?}",
+                site.both, site.other
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+    Ok(())
+}
+
+/// The mixed box's focus ring by spec §2's two queries ([`checkbox::mixed_state`]):
+/// adwaita with the indicator's ring stated with no state, then (i) a rule
+/// for `FOCUS_VISIBLE|INDETERMINATE` makes the mixed box read its ring at
+/// `INDETERMINATE`, and (ii) one for `FOCUS_VISIBLE` alone leaves it the
+/// checked box's.
+#[test]
+fn a_mixed_box_reads_its_ring_where_a_rule_for_two_flags_states_it() {
+    use native_theme::next::{
+        CheckboxRule, PartPatch, Preset, Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let at = WidgetState::FOCUS_VISIBLE | WidgetState::CHECKED;
+    let mixed = WidgetState::FOCUS_VISIBLE | WidgetState::INDETERMINATE;
+    let patched = |states: WidgetState| {
+        let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+        let ring = |rule: CheckboxRule| {
+            ThemePatch::new().checkbox(rule.indicator(PartPatch::new().focus(Some(own_ring()))))
+        };
+        r.apply_patch(&ring(CheckboxRule::new()));
+        r.apply_patch(&ring(CheckboxRule::new().states(states)));
+        r
+    };
+    let both = patched(mixed);
+    assert!(
+        !both
+            .checkbox
+            .indicator(WidgetState::INDETERMINATE)
+            .from_state
+            .contains(native_theme::next::PartStated::FOCUS),
+        "the bit at INDETERMINATE alone stays set"
+    );
+    assert_eq!(checkbox::mixed_state(&both, at, true), mixed, "(i)");
+    let other = patched(WidgetState::FOCUS_VISIBLE);
+    assert_eq!(checkbox::mixed_state(&other, at, true), at, "(ii)");
 }

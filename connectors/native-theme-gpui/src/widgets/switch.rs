@@ -191,10 +191,11 @@ impl SwitchLook {
     /// and `switch.disabled_opacity`.
     ///
     /// A checked track's hover is read at `HOVER|CHECKED` where a rule states
-    /// the hovered track's fill, as the query with that flag alone says
-    /// (`switch.track(HOVER).from_state`, spec §2): the hovered track's whole
-    /// fill (spec §9, step 2), drawn in place of the track's, one equal to it
-    /// included; where no rule states one, the track without the pointer.
+    /// the hovered track's fill, as spec §2's two queries say (`from_state`:
+    /// `switch.track(HOVER)`, and the track at `HOVER|CHECKED` asking
+    /// `HOVER`): the hovered track's whole fill (spec §9, step 2), drawn in
+    /// place of the track's, one equal to it included; where no rule states
+    /// one, the track without the pointer.
     ///
     /// # Errors
     ///
@@ -206,7 +207,7 @@ impl SwitchLook {
         checked: bool,
         disabled: bool,
     ) -> Mapped<Self> {
-        use native_theme::next::{PartStated, WidgetState};
+        use native_theme::next::{PartStated, StyleQuery, WidgetState};
         // The home of a property at the switch's state, for `Unmapped`:
         // each spelt whole, so a claim can cite the line that names it.
         let at = |[none, on, off, off_on]: [&'static str; 4]| match (checked, disabled) {
@@ -232,14 +233,12 @@ impl SwitchLook {
             at_rest("switch.track(NONE).fill", "switch.track(CHECKED).fill"),
         )?;
         let hover = if checked {
-            if s.track(WidgetState::HOVER)
-                .from_state
-                .contains(PartStated::FILL)
+            let on = StyleQuery::new(WidgetState::HOVER | rest).asking(WidgetState::HOVER);
+            if [WidgetState::HOVER.into(), on]
+                .into_iter()
+                .any(|query| s.track(query).from_state.contains(PartStated::FILL))
             {
-                Some(fill(
-                    &s.track(WidgetState::HOVER | WidgetState::CHECKED),
-                    "switch.track(HOVER|CHECKED).fill",
-                )?)
+                Some(fill(&s.track(on), "switch.track(HOVER|CHECKED).fill")?)
             } else {
                 None
             }
@@ -446,16 +445,17 @@ impl SwitchLabelHome {
 
 /// The label's colour of a switch of a 0.8.0 theme and its home
 /// ([`SwitchLook::next_label_home`]). Disabled, a rule stated for
-/// `DISABLED` is asked with that flag alone first, as
+/// `DISABLED` is asked by spec §2's two queries, as
 /// [`CheckboxLook::next_sized`](super::CheckboxLook::next_sized) asks the
-/// disabled fill: a colour stated for `CHECKED` alone is not a disabled
-/// colour, and gpui-component's own `muted_foreground` stands.
+/// disabled fill: with that flag alone and at the switch's state asking it;
+/// a colour stated for `CHECKED` alone is not a disabled colour, and
+/// gpui-component's own `muted_foreground` stands.
 fn next_label(
     r: &native_theme::next::ResolvedTheme,
     checked: bool,
     disabled: bool,
 ) -> Mapped<(Hsla, SwitchLabelHome)> {
-    use native_theme::next::WidgetState;
+    use native_theme::next::{StyleQuery, WidgetState};
     let shown = if checked {
         WidgetState::CHECKED
     } else {
@@ -463,7 +463,12 @@ fn next_label(
     };
     let home = label_home(
         &r.switch.label(shown),
-        &r.switch.label(WidgetState::DISABLED),
+        [
+            &r.switch.label(WidgetState::DISABLED),
+            &r.switch.label(
+                StyleQuery::new(WidgetState::DISABLED | shown).asking(WidgetState::DISABLED),
+            ),
+        ],
         checked,
         disabled,
     );
@@ -498,19 +503,23 @@ fn label_colour(r: &native_theme::next::ResolvedTheme, home: SwitchLabelHome) ->
 
 /// The home of a switch's label colour ([`next_label`]) from the label the
 /// theme gives the switch as shown (`shown`, at `CHECKED` where `checked`,
-/// else at rest) and for `DISABLED` alone (`disabled_alone`): disabled, the
-/// rule's colour where one for `DISABLED` wrote it, else gpui-component's
-/// `muted_foreground`; enabled, the stated colour, else its `foreground`.
+/// else at rest) and for `DISABLED` by spec §2's two queries (`asked`: at
+/// `DISABLED` alone, and at the disabled switch's state asking it):
+/// disabled, the rule's colour where one for `DISABLED` states it, else
+/// gpui-component's `muted_foreground`; enabled, the stated colour, else
+/// its `foreground`.
 fn label_home(
     shown: &native_theme::next::TextStyle,
-    disabled_alone: &native_theme::next::TextStyle,
+    asked: [&native_theme::next::TextStyle; 2],
     checked: bool,
     disabled: bool,
 ) -> SwitchLabelHome {
     use native_theme::next::TextStated;
     if disabled {
         match (
-            disabled_alone.from_state.contains(TextStated::COLOR),
+            asked
+                .iter()
+                .any(|label| label.from_state.contains(TextStated::COLOR)),
             checked,
         ) {
             (true, false) => SwitchLabelHome::Disabled,
@@ -534,8 +543,10 @@ pub(super) const DISABLED_TRACK_ALPHA: f32 = 0.5;
 
 /// The track's fill of the switch `s` at `state`, its home `home`, `base` the
 /// enabled track at the switch's checked state: disabled, where no rule
-/// states the track's fill for `DISABLED`, gpui-component's own disabled
-/// track, `base` at [`DISABLED_TRACK_ALPHA`]; else the fill at `state`.
+/// states the track's fill for `DISABLED` by spec §2's two queries (at
+/// `DISABLED` alone, and at `state` asking it), gpui-component's own
+/// disabled track, `base` at [`DISABLED_TRACK_ALPHA`]; else the fill at
+/// `state`.
 fn track_at(
     (s, state, base): (
         &native_theme::next::SwitchWidget,
@@ -544,11 +555,13 @@ fn track_at(
     ),
     home: &'static str,
 ) -> Mapped<Hsla> {
-    use native_theme::next::{PartStated, WidgetState};
-    let ruled = s
-        .track(WidgetState::DISABLED)
-        .from_state
-        .contains(PartStated::FILL);
+    use native_theme::next::{PartStated, StyleQuery, WidgetState};
+    let ruled = [
+        WidgetState::DISABLED.into(),
+        StyleQuery::new(state).asking(WidgetState::DISABLED),
+    ]
+    .into_iter()
+    .any(|query| s.track(query).from_state.contains(PartStated::FILL));
     if state.contains(WidgetState::DISABLED) && !ruled {
         return Ok(base.opacity(DISABLED_TRACK_ALPHA));
     }
@@ -1104,11 +1117,11 @@ mod tests {
         let unstated = native_theme::next::TextStyle::default();
         for checked in [false, true] {
             assert_eq!(
-                label_home(&unstated, &unstated, checked, false),
+                label_home(&unstated, [&unstated, &unstated], checked, false),
                 SwitchLabelHome::WindowForeground
             );
             assert_eq!(
-                label_home(&unstated, &unstated, checked, true),
+                label_home(&unstated, [&unstated, &unstated], checked, true),
                 SwitchLabelHome::WindowForegroundMuted
             );
         }
@@ -1227,7 +1240,7 @@ mod tests {
         let checked_alone = r.switch.label(WidgetState::CHECKED);
         let unstated = native_theme::next::TextStyle::default();
         assert_eq!(
-            label_home(&checked_alone, &unstated, true, true),
+            label_home(&checked_alone, [&unstated, &unstated], true, true),
             SwitchLabelHome::WindowForegroundMuted
         );
         Ok(())
