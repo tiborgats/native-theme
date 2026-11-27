@@ -1252,7 +1252,8 @@ pub(crate) const TOGGLE_FOCUS_PEN: &str = "egui: per call, the toggle's outline 
 /// lays over egui's selected button, the Basic page's edit switch's checked fill and label, which
 /// `pages::basic::edit_look_at` hands it per state, and its checked pens, which
 /// `pages::basic::tool_pen` hands it, the On toggle's checked look per state, which
-/// `pages::basic::toggle_on_in` hands it, the flat buttons' hovered and pressed outlines, which
+/// `pages::basic::toggle_on_in` hands it, and its checked pens and the push button's outline they
+/// cover, which `pages::basic::toggle_on_pen` hands it, the flat buttons' hovered and pressed outlines, which
 /// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
 /// primary button's own outline and the dialog's default button's, which `pages::basic` hands
 /// each button, the segmented control's
@@ -1603,6 +1604,41 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "basic.buttons.toggle_on.label",
         "button.label(PRESSED).color",
         TOGGLE_ON_PRESSED_RULE_LABEL,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(CHECKED).stroke.color",
+        TOGGLE_ON_PEN,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(CHECKED).stroke.width",
+        TOGGLE_ON_PEN,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(HOVER|CHECKED).stroke.color",
+        TOGGLE_ON_HOVER_PEN,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(HOVER|CHECKED).stroke.width",
+        TOGGLE_ON_HOVER_PEN,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(PRESSED|CHECKED).stroke.color",
+        TOGGLE_ON_PRESSED_PEN,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(PRESSED|CHECKED).stroke.width",
+        TOGGLE_ON_PRESSED_PEN,
+    ),
+    (
+        "basic.buttons.toggle_on",
+        "button.body(NONE).stroke.color",
+        TOGGLE_ON_REST_EDGE,
     ),
     (
         "basic.buttons.dialog_default",
@@ -2008,6 +2044,41 @@ pub(crate) const TOGGLE_ON_PRESSED_RULE_LABEL: &str = "egui: per call, RichText:
      button.label(PRESSED|CHECKED).color, which this gives where its rule follows every rule for \
      CHECKED; else egui's own selected button's, visuals.selection.stroke \
      (pages::basic::toggle_on_in)";
+
+/// The On toggle's outline at rest, its colour and width, per call in
+/// `pages::basic::toggle_on_pen`.
+pub(crate) const TOGGLE_ON_PEN: &str = "egui: per call, Button::stroke, the toggle's outline while \
+     on at rest, where a rule states button.body(CHECKED).stroke for CHECKED, its colour laid over \
+     the fill egui paints the button in (demo::pen_over); else egui's own selected button's pen, \
+     which egui keeps from the widget state, visuals.widgets.inactive.bg_stroke (egui 0.37.0 \
+     src/style.rs, Style::interact_selectable; pages::basic::toggle_on_pen, demo::state_pen)";
+
+/// The On toggle's outline under the pointer, its colour and width, as [`TOGGLE_ON_PEN`].
+pub(crate) const TOGGLE_ON_HOVER_PEN: &str = "egui: per call, Button::stroke, the toggle's outline \
+     while on under the pointer, in the state of its previous response, where a rule states \
+     button.body(CHECKED).stroke for CHECKED, or one for HOVER|CHECKED states this one (the query \
+     asking CHECKED); else, or where it is stated in a form egui cannot draw, egui's own selected \
+     button's pen, visuals.widgets.hovered.bg_stroke, never another state's \
+     (pages::basic::toggle_on_pen, demo::stated_pen)";
+
+/// The On toggle's outline pressed, its colour and width, as [`TOGGLE_ON_PEN`].
+pub(crate) const TOGGLE_ON_PRESSED_PEN: &str = "egui: per call, Button::stroke, the toggle's outline \
+     while on and pressed, in the state of its previous response, where a rule states \
+     button.body(CHECKED).stroke for CHECKED, or one for PRESSED|CHECKED states this one (the \
+     query asking CHECKED), none where its width is not positive; else, or where it is stated in \
+     a form egui cannot draw, egui's own selected button's pen, visuals.widgets.active.bg_stroke, \
+     never another state's (pages::basic::toggle_on_pen, demo::stated_pen)";
+
+/// The push button's outline at rest on the On toggle, which egui's selected button keeps where
+/// the theme states no checked stroke, and which the checked pen covers where it does.
+pub(crate) const TOGGLE_ON_REST_EDGE: &str = "egui: the toggle while on is egui's selected button, \
+     which keeps the widget state's pen, visuals.widgets.inactive.bg_stroke at rest, which \
+     next::apply sets from this (mapping.toml, button.border.color; egui 0.37.0 src/style.rs, \
+     Style::interact_selectable), where no rule states button.body(CHECKED).stroke for CHECKED; \
+     where one does, Button::stroke draws that pen instead, so this colour is not drawn on it: \
+     windows-11 states it, ToggleButtonBorderBrushChecked's three sides, \
+     ControlStrokeColorOnAccentDefault #14FFFFFF, the same under the pointer and none pressed \
+     (pages::basic::toggle_on_pen)";
 
 /// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
 /// the page tabs and the inspector's tabs.

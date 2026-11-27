@@ -12610,6 +12610,26 @@ fn the_edit_switchs_checked_outline_colour_names_its_pen() -> Result<(), String>
     Ok(())
 }
 
+/// The On toggle's `button.body(NONE).stroke.color`, which a `mapping.toml` row also holds, is
+/// routed to the per-call pen that covers it where the theme states the checked stroke
+/// (`pages::basic::toggle_on_pen`, [`crate::info::TOGGLE_ON_REST_EDGE`]), not to the row (N50).
+#[test]
+fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let how = crate::info::listed_how(
+        &manifest,
+        "basic.buttons.toggle_on",
+        "button.body(NONE).stroke.color",
+        &seams,
+    );
+    assert_eq!(how, crate::info::TOGGLE_ON_REST_EDGE);
+    Ok(())
+}
+
 /// The tool buttons' and the side-panel toggle's own homes, the primary and the dialog's
 /// default button's own outline and corners, the On toggle's hovered and pressed checked looks
 /// and the Copy box's hovered width, which no `mapping.toml` row holds (the list's
@@ -12858,6 +12878,36 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             "basic.buttons.toggle_on.label",
             "button.label(PRESSED|CHECKED).color",
             i::TOGGLE_ON_PRESSED_LABEL,
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "button.body(CHECKED).stroke.color",
+            i::TOGGLE_ON_PEN,
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "button.body(CHECKED).stroke.width",
+            i::TOGGLE_ON_PEN,
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "button.body(HOVER|CHECKED).stroke.color",
+            i::TOGGLE_ON_HOVER_PEN,
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "button.body(HOVER|CHECKED).stroke.width",
+            i::TOGGLE_ON_HOVER_PEN,
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "button.body(PRESSED|CHECKED).stroke.color",
+            i::TOGGLE_ON_PRESSED_PEN,
+        ),
+        (
+            "basic.buttons.toggle_on",
+            "button.body(PRESSED|CHECKED).stroke.width",
+            i::TOGGLE_ON_PRESSED_PEN,
         ),
     ];
     // The routes of every tool button and its icon.

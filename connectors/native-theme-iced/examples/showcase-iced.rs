@@ -12165,6 +12165,25 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
              state's own width, which moves no content (iced_widget 0.14.2 src/button.rs, layout)"
                 .to_owned()
         }
+        "button.body(CHECKED).stroke.width" if under("basic.buttons.toggle_on") => {
+            "styles::button_toggle: button::Style::border.width at rest where a rule states \
+             button.body(CHECKED).stroke for the state (checked_borders), painted over the \
+             padding; else the rest width, button.body(NONE).stroke.width"
+                .to_owned()
+        }
+        "button.body(HOVER|CHECKED).stroke.width" if under("basic.buttons.toggle_on") => {
+            "styles::button_toggle: the Hovered border's width, the theme's answer for \
+             button.body(HOVER|CHECKED) where it states the stroke for CHECKED by the spec's two \
+             queries (checked_borders), painted over the padding; else the unchecked button's"
+                .to_owned()
+        }
+        "button.body(PRESSED|CHECKED).stroke.width" if under("basic.buttons.toggle_on") => {
+            "styles::button_toggle: the Pressed border's width, the theme's answer for \
+             button.body(PRESSED|CHECKED) where it states the stroke for CHECKED by the spec's \
+             two queries (checked_borders), painted over the padding; else the unchecked \
+             button's"
+                .to_owned()
+        }
         "button.body(NONE).stroke.width" | "button.body(NONE; variant=Primary).stroke.width" => {
             format!(
                 "{class}: button::Style::border.width, {outline}.stroke.width, painted over the \

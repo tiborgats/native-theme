@@ -49,6 +49,26 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         ],
         "not reachable: a selected Button takes no hover or press style, so the toggle that is on keeps next::geometry::button_checked's fill and text colour under the pointer and pressed (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected; native-theme-gpui README, Limits)",
     ),
+    (
+        "basic.buttons.toggle_on",
+        &["button.body(CHECKED).stroke.color"],
+        "gpui: next::geometry::button_checked's border colour where a rule states the stroke for CHECKED, at next::geometry::button's width, replayed over the selected Button's style (demo::toggle_button); where none does, next::geometry::button's button.body(NONE).stroke.color stands",
+    ),
+    (
+        "basic.buttons.toggle_on",
+        &["button.body(CHECKED).stroke.width"],
+        "gpui: next::geometry::button_checked draws the checked border at next::geometry::button's width, which the selected Button keeps; where the stated checked width is another, it is not mapped (spec §10, rule 4) and the builder is not applied, its checked fill, label and border with it (gpui's border takes layout space; native-theme-gpui README, Limits)",
+    ),
+    (
+        "basic.buttons.toggle_on",
+        &[
+            "button.body(HOVER|CHECKED).stroke.color",
+            "button.body(HOVER|CHECKED).stroke.width",
+            "button.body(PRESSED|CHECKED).stroke.color",
+            "button.body(PRESSED|CHECKED).stroke.width",
+        ],
+        "not reachable: a selected Button takes no hover or press style, so the toggle that is on keeps next::geometry::button_checked's border under the pointer and pressed (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected; native-theme-gpui README, Limits)",
+    ),
     // --- button: a dialog's default button, next::variants::default_button ----------
     (
         "basic.buttons.dialog_default",
