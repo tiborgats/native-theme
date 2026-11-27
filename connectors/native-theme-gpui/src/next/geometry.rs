@@ -132,8 +132,8 @@ pub fn title_bar_inactive(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped
 /// rule 0a). Its border colour is `button.body(CHECKED).stroke.color` where
 /// a rule states it for `CHECKED`, at [`button`]'s width, else unset; where
 /// that stroke's stated width is another, `button.body(CHECKED).stroke.width`
-/// is not mapped (spec §10, rule 4). Upstream replays the refinement over its
-/// selected style.
+/// is not mapped (spec §10, rule 4), and the checked fill and label go with
+/// it. Upstream replays the refinement over its selected style.
 pub fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::button_checked(r)
 }
@@ -581,7 +581,8 @@ mod tests {
 
     /// A checked stroke whose stated width is not the rest stroke's, which
     /// gpui-component keeps for a selected Button, is reported not mapped at
-    /// its home (spec §10, rule 4), not drawn at the rest width: windows-11
+    /// its home (spec §10, rule 4), not drawn at the rest width, and the
+    /// checked fill and label the theme states go with it: windows-11
     /// patched with a checked stroke 3 px wide over its 1 px rest one.
     #[test]
     fn a_checked_stroke_of_another_width_is_not_mapped() -> Mapped<()> {
@@ -604,6 +605,16 @@ mod tests {
             )),
         ));
         let r = stock.with_patch(patch).resolve(&ctx);
+        assert!(
+            super::super::state_fill_of(
+                &r.button.body(WidgetState::CHECKED),
+                "button.body(CHECKED).fill"
+            )?
+            .is_some()
+                && super::super::state_text_color_of(&r.button.label(WidgetState::CHECKED))
+                    .is_some(),
+            "windows-11 states no checked fill or label, so this proves nothing"
+        );
         assert_eq!(
             button_checked(&r),
             Err(Unmapped("button.body(CHECKED).stroke.width"))

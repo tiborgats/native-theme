@@ -21577,8 +21577,9 @@ fn note_of<'a>(notes: &'a [crate::info::Note], what: &str) -> Option<&'a str> {
 /// `button.body(CHECKED).stroke.color`, where a rule states it and
 /// `geometry::button_checked` applies, else the border at rest; and no
 /// hovered or pressed edge, which a selected Button does not take
-/// (gpui-component 0.10.0 button/button.rs:733, :758) -- over every 0.8.0
-/// preset in both schemes whose Button is edged.
+/// (gpui-component 0.10.0 button/button.rs:733, :758) -- the edge over every
+/// 0.8.0 preset in both schemes whose Button is edged, the hovered one over
+/// every one.
 #[test]
 fn the_checked_toggles_info_claims_the_edge_it_is_drawn_with() {
     use crate::demo::{ButtonKind, ButtonState};
@@ -21587,11 +21588,6 @@ fn the_checked_toggles_info_claims_the_edge_it_is_drawn_with() {
     let mut branches = (false, false);
     for (name, r, t) in every_next_variant() {
         let body = r.button.body(WidgetState::NONE);
-        if native_theme_gpui::next::geometry::button(&r).is_err()
-            || !stroke_width_of(&body).is_some_and(|width| width > 0.0)
-        {
-            continue;
-        }
         let info = crate::info::buttons::checked_toggle(
             crate::info::buttons::button(
                 &t,
@@ -21609,6 +21605,11 @@ fn the_checked_toggles_info_claims_the_edge_it_is_drawn_with() {
             None,
             "{name}: the toggle that is on claims a hovered edge a selected Button does not take: {info:?}"
         );
+        if native_theme_gpui::next::geometry::button(&r).is_err()
+            || !stroke_width_of(&body).is_some_and(|width| width > 0.0)
+        {
+            continue;
+        }
         let pen = native_theme_gpui::next::geometry::button_checked(&r)
             .ok()
             .and_then(|_| state_stroke_color_of(&r.button.body(WidgetState::CHECKED)));
@@ -21641,7 +21642,7 @@ fn the_checked_toggles_info_claims_the_edge_it_is_drawn_with() {
 }
 
 /// A refined Button's info claims an edge only where `geometry::button`
-/// draws one (M9-059):`button.body(NONE).stroke.color` at rest, and
+/// draws one (M9-059): `button.body(NONE).stroke.color` at rest, and
 /// upstream's colour under the pointer, where the body's stroke width is
 /// above 0, and no edge in any state where it is 0, whose width replaces
 /// upstream's `border_1` -- over every 0.8.0 preset in both schemes that the

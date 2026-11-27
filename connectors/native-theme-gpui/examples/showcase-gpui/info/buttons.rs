@@ -437,6 +437,8 @@ pub(crate) fn checked_toggle(mut info: WidgetInfo, native: Option<&NextTheme>) -
     };
     let width = stroke_width_of(&r.button.body(WidgetState::NONE));
     if !width.is_some_and(|width| width > 0.0) {
+        info.colors
+            .retain(|c| c.role != "border, hovered or pressed");
         return info;
     }
     info.colors.retain(|c| !c.role.starts_with("border"));

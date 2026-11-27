@@ -3095,8 +3095,9 @@ pub(crate) fn windows_cases() -> Vec<(
     // microsoft-ui-xaml 2.5.1), not the listed elevation border's three sides; the text field's
     // and the text area's hovered outline, `SystemColorHighlightColor`
     // (TextBox_themeresources.xaml:88 > generic.xaml:2072 at microsoft-ui-xaml 2.5.1); and a
-    // checked toolbar button's is `SystemColorHighlightColor` (AppBarToggleButton_themeresources.xaml
-    // :95 at microsoft-ui-xaml 2.5.1), not the listed on-accent one.
+    // checked toolbar button's is `SystemColorHighlightColor`
+    // (AppBarToggleButton_themeresources.xaml:95 at microsoft-ui-xaml 2.5.1), not the listed
+    // on-accent one.
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_background",
         "button.hover_text_color",

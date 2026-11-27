@@ -1203,9 +1203,9 @@ fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
 /// Under a palette kept under high contrast
 /// (`preserve_palette_in_high_contrast`, spec §6, step 1) the palette's
 /// `border` stands over the high-contrast colours of the text field's, the
-/// text area's, the combo box's and the push button's outline in every state,
-/// and the primary button's outline is the accent elevation border's, as
-/// without high contrast.
+/// text area's, the combo box's and the push button's outline in every state;
+/// the primary button's outline, which no palette slot restates, stays the
+/// high-contrast highlight.
 #[test]
 fn a_palette_kept_under_high_contrast_stands_over_its_outlines() {
     let [button_text, highlight, highlight_text, gray] =
@@ -1252,11 +1252,13 @@ fn a_palette_kept_under_high_contrast_stands_over_its_outlines() {
         );
     }
     let primary = |state| kept.button.body(ButtonQuery::primary().state(state)).stroke;
-    assert_eq!(
-        primary(WidgetState::NONE),
-        Stroke::uniform(kept.layout.border_width, srgb8(0xffff_ff14))
-    );
-    assert_eq!(primary(WidgetState::PRESSED), Stroke::None);
+    for state in [WidgetState::NONE, WidgetState::PRESSED] {
+        assert_eq!(
+            primary(state),
+            Stroke::uniform(kept.layout.border_width, highlight),
+            "{state:?}"
+        );
+    }
 }
 
 /// The focus visual is the 2px outer ring around the 1px inner one in

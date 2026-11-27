@@ -1025,7 +1025,10 @@ for `DISABLED | CHECKED` (windows-11's `Stroke::None`, under high contrast
 the grey text) is not drawn. `next::geometry::button_checked` draws the
 checked pen at `next::geometry::button`'s width, which the selected Button
 keeps; a checked stroke stated at another width is reported not mapped
-(`button.body(CHECKED).stroke.width`, spec §10, rule 4).
+(`button.body(CHECKED).stroke.width`, spec §10, rule 4), and the builder,
+which returns one refinement or the one home it does not map, is then not
+applied: the checked fill and label the theme states go with it, and the
+selected Button keeps gpui-component's own selected fill and label.
 
 **A primary button has no outline.** gpui-component lays a border out only
 for a `Default` Button and an outline one (gpui-component 0.10.0

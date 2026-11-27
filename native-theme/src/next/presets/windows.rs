@@ -2427,10 +2427,11 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// disabled text. Under high contrast the fill is the button face and the
 /// label the button text ([`HighContrast`]), hovered and pressed the
 /// highlight text behind the highlight; the outline the button text, hovered
-/// the highlight, pressed the highlight text and disabled the grey text, and
-/// the primary button's the highlight, each where no palette `palette` is
-/// kept under high contrast ([`unless_palette`]); checked, the outline the
-/// highlight text, hovered the button text. The flat variant is WinUI's
+/// the highlight, pressed the highlight text and disabled the grey text, each
+/// where no palette `palette` is kept under high contrast
+/// ([`unless_palette`]), and the primary button's the highlight, which no
+/// palette slot restates; checked, the outline the highlight text, hovered
+/// the button text. The flat variant is WinUI's
 /// subtle button, which has no checked form:
 /// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
 /// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
@@ -2464,7 +2465,7 @@ fn button(
     // Outside high contrast ButtonBorderBrush = ControlElevationBorderBrush, its three sides
     // (`elevation_stroke`), as disabled ButtonBorderBrushDisabled = ControlStrokeColorDefaultBrush.
     let neutral = elevation_border(c, hc, roles);
-    let primary_outline = unless_palette(hc.highlight, palette);
+    let primary_outline = hc.highlight;
     let [
         rest_outline,
         hover_outline,
