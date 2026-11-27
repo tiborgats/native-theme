@@ -323,7 +323,7 @@
         "fill": "#ffffff0f",
         "stroke": {
           "width": 1.0,
-          "color": "#00000019",
+          "color": "#ffffff12",
           "align": "outside"
         },
         "corners": 4.0,
@@ -344,7 +344,11 @@
             "checked"
           ],
           "body": {
-            "fill": "#000005"
+            "fill": "#000005",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff14"
+            }
           }
         },
         {
@@ -375,7 +379,7 @@
           "body": {
             "stroke": {
               "width": 1.0,
-              "color": "#00000019",
+              "color": "#ffffff12",
               "align": "outside"
             }
           }
@@ -386,7 +390,11 @@
             "checked"
           ],
           "body": {
-            "fill": "srgb(0, 0, 0.019607844, 0.9)"
+            "fill": "srgb(0, 0, 0.019607844, 0.9)",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff14"
+            }
           }
         },
         {
@@ -405,8 +413,17 @@
             "fill": "#000005",
             "stroke": {
               "width": 1.0,
-              "color": "#00000019"
+              "color": "#ffffff14"
             }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "primary",
+          "body": {
+            "stroke": "none"
           }
         },
         {
@@ -415,6 +432,24 @@
           ],
           "body": {
             "fill": "#33333300"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "primary",
+          "body": {
+            "stroke": "none"
           }
         },
         {
@@ -570,7 +605,7 @@
         "fill": "#ffffff0f",
         "stroke": {
           "width": 1.0,
-          "color": "#00000019",
+          "color": "#ffffff12",
           "align": "outside"
         },
         "corners": 4.0,
@@ -594,7 +629,7 @@
           "field": {
             "stroke": {
               "width": 1.0,
-              "color": "#00000019",
+              "color": "#ffffff12",
               "align": "outside"
             }
           }
@@ -606,7 +641,7 @@
           "field": {
             "stroke": {
               "width": 1.0,
-              "color": "#00000019",
+              "color": "#ffffff12",
               "align": "outside"
             }
           }
@@ -688,7 +723,7 @@
         "fill": "#ffffff0f",
         "stroke": {
           "width": 1.0,
-          "color": "#00000019",
+          "color": "#ffffff12",
           "align": "outside"
         },
         "corners": 4.0,
@@ -708,7 +743,7 @@
           "field": {
             "stroke": {
               "width": 1.0,
-              "color": "#00000019",
+              "color": "#ffffff12",
               "align": "outside"
             }
           }
@@ -720,7 +755,7 @@
           "field": {
             "stroke": {
               "width": 1.0,
-              "color": "#00000019",
+              "color": "#ffffff12",
               "align": "outside"
             }
           }
@@ -2120,7 +2155,29 @@
             "checked"
           ],
           "button": {
-            "fill": "#000005"
+            "fill": "#000005",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff14"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button": {
+            "stroke": "none"
           }
         },
         {
@@ -2237,7 +2294,7 @@
         "fill": "#ffffff0f",
         "stroke": {
           "width": 1.0,
-          "color": "#00000019"
+          "color": "#ffffff12"
         },
         "corners": 4.0,
         "shadows": "none",
@@ -2261,7 +2318,7 @@
             "fill": "#323232",
             "stroke": {
               "width": 1.0,
-              "color": "#00000019"
+              "color": "#ffffff12"
             }
           }
         },

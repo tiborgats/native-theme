@@ -22,8 +22,10 @@
 //! `defaults.surface_color`); `sidebar_bg` is the sidebar's; `foreground` is
 //! the window's text, in which the preset letters its widgets, and the text
 //! of the eight surfaces (§7: one text colour); `foreground_muted` and
-//! `border` are the window's, so every outline drawn in the default border
-//! and the separator; `link` is the link, whose hovered and pressed colours,
+//! `border` are the window's, so every outline drawn in the default border,
+//! the separator and the neutral elevation borders' colour (the push
+//! button's, the combo box's and the text field's outline at rest, hovered
+//! and disabled), one colour as without a palette; `link` is the link, whose hovered and pressed colours,
 //! shades of another colour, are then not stated (spec §6, step 2); `error`,
 //! `warning`, `success` and `info` are the status fills; `accent` is the
 //! accent, written as given as an explicit accent is (below), and `accent_fg`
@@ -34,7 +36,9 @@
 //! tooltip's, so its panel (the preset's `AcrylicInAppFillColorDefault` is
 //! the popover's too); `surface_bg` the card's, the dialog's and the
 //! popover's, so their panels. Every other colour keeps the value of the
-//! layers below: the control fills, strokes and hover layers, every disabled
+//! layers below: the control fills, strokes and hover layers (the accent
+//! elevation border's colour of the primary and the checked buttons among
+//! them, WinUI's `ControlStrokeColorOnAccentDefault`), every disabled
 //! colour, the focus ring, the status colours' text.
 //!
 //! An explicit accent, or else a palette's `accent`, is written as given;
@@ -131,9 +135,19 @@
 //! the whole outline (microsoft-ui-xaml 8463f45,
 //! `controls/dev/CommonStyles/Button_themeresources.xaml`,
 //! `TextBox_themeresources.xaml`): the push button's and the text field's
-//! outlines are `StrokeAlign::Outside`, the primary button's `Inside`. No
-//! source the builder reads gives another control's `BackgroundSizing`:
+//! outlines are `StrokeAlign::Outside`, the primary button's `Inside`; a
+//! checked push button's outline, except disabled, and a checked toolbar
+//! button's are `Inside` too (`ToggleButtonCheckedStateBackgroundSizing`
+//! and `AppBarToggleButtonInnerBorder.BackgroundSizing`, `OuterBorderEdge`:
+//! `docs/facts/windows/button.toml` on `v0.8.0-rc1`, rows W1-022, W1-100).
+//! No source the builder reads gives another control's `BackgroundSizing`:
 //! their outlines stay `Inside`.
+//!
+//! WinUI's elevation borders are gradients whose one edge
+//! (`ControlStrokeColorSecondary`, `ControlStrokeColorOnAccentSecondary`,
+//! the text field's `ControlStrongStrokeColorDefault`) differs from the
+//! three other sides: the preset states each as one colour, the three
+//! sides', and the edge is not stated.
 //!
 //! An inactive window (`ThemeContext::window_active` false) has the inactive
 //! title bar (`window.inactive_title_bar_background`) and the inactive title
@@ -255,6 +269,12 @@ struct SchemeColors {
     control_fill_disabled: Color,
     control_alt_fill: Color,
     control_stroke: Color,
+    /// The neutral elevation borders' colour, the three sides of their
+    /// gradients, stated as one colour; a palette's `border` replaces it.
+    elevation_stroke: Color,
+    /// The accent elevation border's colour, the three sides of its gradient,
+    /// stated as one colour; no palette replaces it.
+    on_accent_stroke: Color,
     strong_stroke: Color,
     strong_stroke_disabled: Color,
     strong_fill: Color,
@@ -515,6 +535,31 @@ const LIGHT: SchemeColors = SchemeColors {
     // (#0F000000, Segmented.xaml:21-22; Common_themeresources_any.xaml:243); its width and radius,
     // 1 and 4, are the defaults' (platform-facts.md)
     control_stroke: srgb8(0x0000_000f),
+    // the push button's, the combo box's and the text field's outline at rest, hovered and
+    // disabled: ButtonBorderBrush, …PointerOver, ComboBoxBorderBrush, …PointerOver =
+    // ControlElevationBorderBrush and TextControlBorderBrush, …PointerOver =
+    // TextControlElevationBorderBrush, gradients whose three sides are ControlStrokeColorDefault
+    // #0F000000 (the fourth, ControlStrokeColorSecondary or the text field's
+    // ControlStrongStrokeColorDefault, one colour does not state); disabled,
+    // ButtonBorderBrushDisabled, ComboBoxBorderBrushDisabled, TextControlBorderBrushDisabled =
+    // ControlStrokeColorDefaultBrush, flat (Button_themeresources.xaml:136-137, :139,
+    // ComboBox_themeresources.xaml:264-265, :267, TextBox_themeresources.xaml:134-135, :137,
+    // Common_themeresources_any.xaml:382-390, :243 at microsoft-ui-xaml 8463f45; platform-facts.md
+    // (§2.4); `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, appendix;
+    // `docs/facts/windows/roles.toml` there, row W3-15); CardStrokeColorDefault, the default
+    // border, is the same #0F000000 (Common_themeresources_any.xaml:250)
+    elevation_stroke: srgb8(0x0000_000f),
+    // the primary button's and a checked push or toolbar button's outline, at rest and hovered:
+    // AccentButtonBorderBrush, …PointerOver, ToggleButtonBorderBrushChecked,
+    // …CheckedPointerOver, AppBarToggleButtonBorderBrushChecked, …CheckedPointerOver =
+    // AccentControlElevationBorderBrush, a gradient whose three sides are
+    // ControlStrokeColorOnAccentDefault #14FFFFFF (the fourth, ControlStrokeColorOnAccentSecondary
+    // #66000000, one colour does not state) (Button_themeresources.xaml:111-112,
+    // ToggleButton_themeresources.xaml:151-152, AppBarToggleButton_themeresources.xaml:160-161;
+    // Common_themeresources_any.xaml:397-405, :245, :246 at microsoft-ui-xaml 8463f45;
+    // `docs/facts/windows/button.toml` and `roles.toml` on `v0.8.0-rc1`, rows W1-020, W1-022,
+    // W3-15)
+    on_accent_stroke: srgb8(0xffff_ff14),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5):
     // CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
     // `progress_bar.track_color`: platform-facts.md (§2.10): ProgressBarBackground =
@@ -871,6 +916,31 @@ const DARK: SchemeColors = SchemeColors {
     // (#12FFFFFF, Segmented.xaml:14-15; Common_themeresources_any.xaml:39); its width and radius,
     // 1 and 4, are the defaults' (platform-facts.md)
     control_stroke: srgb8(0xffff_ff12),
+    // the push button's, the combo box's and the text field's outline at rest, hovered and
+    // disabled: ButtonBorderBrush, …PointerOver, ComboBoxBorderBrush, …PointerOver =
+    // ControlElevationBorderBrush and TextControlBorderBrush, …PointerOver =
+    // TextControlElevationBorderBrush, gradients whose three sides are ControlStrokeColorDefault
+    // #12FFFFFF (the fourth, ControlStrokeColorSecondary or the text field's
+    // ControlStrongStrokeColorDefault, one colour does not state); disabled,
+    // ButtonBorderBrushDisabled, ComboBoxBorderBrushDisabled, TextControlBorderBrushDisabled =
+    // ControlStrokeColorDefaultBrush, flat (Button_themeresources.xaml:38-39, :41,
+    // ComboBox_themeresources.xaml:54-55, :57, TextBox_themeresources.xaml:27-28, :30,
+    // Common_themeresources_any.xaml:186-191, :39 at microsoft-ui-xaml 8463f45; platform-facts.md
+    // (§2.4); `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, appendix;
+    // `docs/facts/windows/roles.toml` there, row W3-15); not CardStrokeColorDefault #19000000, the
+    // default border, which 0.7.2's `button.border.color` took
+    elevation_stroke: srgb8(0xffff_ff12),
+    // the primary button's and a checked push or toolbar button's outline, at rest and hovered:
+    // AccentButtonBorderBrush, …PointerOver, ToggleButtonBorderBrushChecked,
+    // …CheckedPointerOver, AppBarToggleButtonBorderBrushChecked, …CheckedPointerOver =
+    // AccentControlElevationBorderBrush, a gradient whose three sides are
+    // ControlStrokeColorOnAccentDefault #14FFFFFF (the fourth, ControlStrokeColorOnAccentSecondary
+    // #23000000, one colour does not state) (Button_themeresources.xaml:13-14,
+    // ToggleButton_themeresources.xaml:35-36, AppBarToggleButton_themeresources.xaml:30-31;
+    // Common_themeresources_any.xaml:198-206, :41, :42 at microsoft-ui-xaml 8463f45;
+    // `docs/facts/windows/button.toml` and `roles.toml` on `v0.8.0-rc1`, rows W1-020, W1-022,
+    // W3-15)
+    on_accent_stroke: srgb8(0xffff_ff14),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5):
     // CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
     // `progress_bar.track_color`: platform-facts.md (§2.10): ProgressBarBackground =
@@ -1301,6 +1371,10 @@ const TOOLBAR_CORNER_RADIUS: f32 = 0.0;
 // ControlCornerRadius reaches ContentRoot only open (CommandBar_themeresources.xaml:795, :842,
 // :559-560)
 const TOOLBAR_BORDER_WIDTH: f32 = 0.0;
+// a toolbar toggle's outline width: AppBarToggleButtonBorderThemeThickness = 1, the style's
+// BorderThickness (AppBarToggleButton_themeresources.xaml:200, :216 at microsoft-ui-xaml 2.5.1;
+// `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
+const TOOLBAR_TOGGLE_BORDER_WIDTH: f32 = 1.0;
 // `toolbar.border.padding.top`, `toolbar.border.padding.bottom`: 0.7.2 windows-11.toml (uncited)
 const TOOLBAR_PADDING_VERTICAL: f32 = 0.0;
 // `toolbar.border.padding.right`: platform-facts.md (§2.13): WinUI3 CommandBar Padding=4,0,0,0
@@ -1691,7 +1765,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, &hc, &typography),
         dialog: dialog(c, &colors, &typography, units, &layout, motion),
-        combo_box: combo_box(c, &colors, &typography, &layout, direction),
+        combo_box: combo_box(c, &hc, &colors, &typography, &layout, direction),
         segmented_control: segmented_control(c, &hc, &typography, &layout),
         card: card(c, &colors),
         expander: expander(c, &colors, &typography, &layout, direction),
@@ -1887,6 +1961,7 @@ fn lay_palette_over(c: &mut SchemeColors, p: &Palette, explicit_accent: bool) {
     c.window_foreground = p.foreground;
     c.window_foreground_muted = p.foreground_muted;
     c.window_border = p.border;
+    c.elevation_stroke = p.border;
     c.link = p.link;
     c.error = p.error;
     c.warning = p.warning;
@@ -2272,6 +2347,19 @@ fn border(roles: &ColorRoles, width: f32) -> Option<PartProp> {
     roles.window.border.map(|color| stroke(width, color))
 }
 
+/// The neutral elevation border's colour of a control: under high contrast
+/// the default border (`roles`' window border, the window text where no
+/// palette states it: no source the builder reads states the high-contrast
+/// elevation brushes' colour), else the elevation border's three sides
+/// (`elevation_stroke`), which a palette's `border` replaces
+/// ([`lay_palette_over`]).
+fn elevation_border(c: &SchemeColors, hc: &HighContrast, roles: &ColorRoles) -> Option<Color> {
+    match hc.window_text {
+        Some(_) => roles.window.border,
+        None => Some(c.elevation_stroke),
+    }
+}
+
 /// A part's corners at `radius`.
 fn corners(radius: f32) -> PartProp {
     PartProp::Corners(Corners::uniform(radius))
@@ -2298,21 +2386,24 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
     label
 }
 
-/// The push button: `ControlFillColorDefault` in the default border, its
-/// colour, radius and width (0.7.2's `resolve_border_inheritance`; the
-/// default shadow, which is on), outside the fill (`InnerBorderEdge`),
-/// padded, of least sizes; its hovered, pressed and disabled fills, checked
-/// the accent's fill, checked and hovered or pressed the accent's secondary
-/// and tertiary fills, pressed in no outline; the primary variant filled with
-/// the accent's fill, its outline inside its edge (`OuterBorderEdge`),
-/// lettered in the accent's text (0.7.2: `primary_text_color` is
+/// The push button: `ControlFillColorDefault` in the elevation border's
+/// colour ([`elevation_border`]) at the default radius and width (0.7.2's
+/// `resolve_border_inheritance`; the default shadow, which is on), outside
+/// the fill (`InnerBorderEdge`), padded, of least sizes; its hovered, pressed
+/// and disabled fills, checked the accent's fill in the accent elevation
+/// border's colour inside its edge, checked and hovered or pressed the
+/// accent's secondary and tertiary fills, checked and pressed or disabled in
+/// no outline; the primary variant filled with the accent's fill in the
+/// accent elevation border's colour inside its edge (`OuterBorderEdge`), in
+/// no outline pressed or disabled, lettered in the accent's text (0.7.2: `primary_text_color` is
 /// `defaults.accent_text_color` where unstated). Its label is the window's
 /// text, pressed the muted text, checked the accent's text, checked and
 /// pressed the accent's secondary text, disabled the disabled text. Under high contrast the
 /// fill is the button face and the label and the outline the button text
 /// ([`HighContrast`]), hovered and pressed the highlight text behind the
 /// highlight, the outline hovered the highlight, pressed the highlight text
-/// and disabled the grey text.
+/// and disabled the grey text; checked, the outline the highlight text,
+/// hovered the button text; the primary button's the highlight.
 /// The flat variant is WinUI's subtle button, which has no checked form:
 /// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
 /// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
@@ -2327,8 +2418,8 @@ fn button(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> ButtonWidget {
-    let primary = || {
-        RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
+    let primary = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
             variant: Some(ButtonVariant::Primary),
             shape: None,
         })
@@ -2342,11 +2433,14 @@ fn button(
     // Under high contrast the outline is ButtonBorderBrush = SystemControlForegroundTransparentBrush
     // (Button_themeresources.xaml:86 at microsoft-ui-xaml 8463f45), there SystemColorButtonTextColor
     // (generic.xaml:2054 at 8463f45), the button text, not the window text the default border is.
+    // Outside high contrast ButtonBorderBrush = ControlElevationBorderBrush, its three sides
+    // (`elevation_stroke`), as disabled ButtonBorderBrushDisabled = ControlStrokeColorDefaultBrush.
+    let neutral = elevation_border(c, hc, roles);
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
             hc.button_text
-                .or(roles.window.border)
+                .or(neutral)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
         .base([
@@ -2359,9 +2453,23 @@ fn button(
             )),
             PartProp::MinSize([Some(BUTTON_MIN_WIDTH), Some(BUTTON_MIN_HEIGHT)]),
         ])
+        // Checked, ToggleButtonBorderBrushChecked = AccentControlElevationBorderBrush, its three
+        // sides (`on_accent_stroke`), inside its edge: the checked states' BackgroundSizing is
+        // ToggleButtonCheckedStateBackgroundSizing = OuterBorderEdge (ToggleButton_themeresources.xaml
+        // :6, :122, :64, :255-256 at microsoft-ui-xaml 2.5.1; `docs/facts/windows/button.toml` on
+        // `v0.8.0-rc1` at `78ee0efd`, row W1-022); under high contrast
+        // SystemControlHighlightAltTransparentBrush (:93), SystemColorHighlightTextColor
+        // (generic.xaml:2068; `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` there,
+        // appendix).
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.accent_fill)],
+            [
+                fill(c.accent_fill),
+                stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.on_accent_stroke),
+                ),
+            ],
         )
         // Hovered and pressed under high contrast, ButtonBackgroundPointerOver / …Pressed =
         // SystemColorHighlightTextColorBrush (Button_themeresources.xaml:79-80 at
@@ -2389,10 +2497,10 @@ fn button(
         // SystemColorHighlightColorBrush (:87).
         .rules(
             hc.highlight
-                .or(roles.window.border)
+                .or(neutral)
                 .map(|_| RuleSelector::on(WidgetState::HOVER)),
             hc.highlight
-                .or(roles.window.border)
+                .or(neutral)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
         // The push button checked is WinUI's ToggleButton checked, after the HOVER and PRESSED
@@ -2405,18 +2513,21 @@ fn button(
         // ACCENT_FILL_TERTIARY_OPACITY (:13, :129), in ToggleButtonBorderBrushCheckedPressed =
         // ControlFillColorTransparentBrush, no outline (:37, :153), not the unchecked pressed one;
         // under high contrast SystemColorHighlightTextColorBrush filling it and its outline (:71,
-        // :95).
+        // :95). Hovered, the outline the checked one, ToggleButtonBorderBrushCheckedPointerOver =
+        // AccentControlElevationBorderBrush (:152, :36), restated over the HOVER rule's. Each
+        // inside its edge, as the checked one.
         .rule(
             RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER),
-            [fill(hc.button_text.unwrap_or(
-                c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY),
-            ))],
-        )
-        .rules(
-            hc.button_text
-                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
-            hc.button_text
-                .map(|color| outside_stroke(layout.border_width, color)),
+            [
+                fill(
+                    hc.button_text
+                        .unwrap_or(c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY)),
+                ),
+                stroke(
+                    layout.border_width,
+                    hc.button_text.unwrap_or(c.on_accent_stroke),
+                ),
+            ],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
@@ -2427,15 +2538,34 @@ fn button(
                 ),
                 hc.highlight_text
                     .map_or(PartProp::Stroke(Stroke::None), |color| {
-                        outside_stroke(layout.border_width, color)
+                        stroke(layout.border_width, color)
                     }),
             ],
         )
+        // The primary button, AccentButtonStyle: AccentButtonBorderBrush, …PointerOver =
+        // AccentControlElevationBorderBrush, its three sides (`on_accent_stroke`), inside its edge
+        // (OuterBorderEdge, the module documentation); pressed, AccentButtonBorderBrushPressed =
+        // ControlFillColorTransparentBrush, no outline (Button_themeresources.xaml:111-113, :13-15
+        // at microsoft-ui-xaml 8463f45; `docs/facts/windows/button.toml` on `v0.8.0-rc1` at
+        // `78ee0efd`, row W1-020). Under high contrast all three SystemColorHighlightColor
+        // (:62-64; generic.xaml:2055, :2073, :2082;
+        // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` there, appendix).
         .rule(
-            primary(),
-            [fill(c.accent_fill)]
-                .into_iter()
-                .chain(border(roles, layout.border_width)),
+            primary(WidgetState::NONE),
+            [
+                fill(c.accent_fill),
+                stroke(
+                    layout.border_width,
+                    hc.highlight.unwrap_or(c.on_accent_stroke),
+                ),
+            ],
+        )
+        .rule(
+            primary(WidgetState::PRESSED),
+            [hc.highlight
+                .map_or(PartProp::Stroke(Stroke::None), |color| {
+                    stroke(layout.border_width, color)
+                })],
         )
         // Disabled, ButtonBackgroundDisabled = ControlFillColorDisabledBrush
         // (Button_themeresources.xaml:131, :33 at microsoft-ui-xaml 8463f45); under high contrast
@@ -2454,6 +2584,29 @@ fn button(
                 .map(|_| RuleSelector::on(WidgetState::DISABLED)),
             hc.gray_text
                 .map(|color| outside_stroke(layout.border_width, color)),
+        )
+        // Checked and disabled, ToggleButtonBorderBrushCheckedDisabled =
+        // ControlFillColorTransparentBrush, no outline (ToggleButton_themeresources.xaml:154, :38 at
+        // microsoft-ui-xaml 2.5.1); under high contrast SystemColorGrayTextColor (:96), outside the
+        // fill: CheckedDisabled sets no BackgroundSizing, so the style's InnerBorderEdge
+        // (`docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-022).
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED),
+            [hc.gray_text
+                .map_or(PartProp::Stroke(Stroke::None), |color| {
+                    outside_stroke(layout.border_width, color)
+                })],
+        )
+        // The primary button disabled, AccentButtonBorderBrushDisabled =
+        // ControlFillColorTransparentBrush, no outline; under high contrast
+        // SystemColorGrayTextColor, inside its edge (Button_themeresources.xaml:114, :16, :65 at
+        // microsoft-ui-xaml 8463f45; generic.xaml:2032).
+        .rule(
+            primary(WidgetState::DISABLED),
+            [hc.gray_text
+                .map_or(PartProp::Stroke(Stroke::None), |color| {
+                    stroke(layout.border_width, color)
+                })],
         )
         // The flat button, WinUI's subtle button (SubtleButtonStyle), after the push button's
         // rules so that its own win, each from its resources (Button_themeresources.xaml:17-28,
@@ -2547,7 +2700,10 @@ fn button(
             .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
         hc.button_face.map(TextProp::Color),
     )
-    .rule(primary(), [TextProp::Color(roles.accent.foreground)])
+    .rule(
+        primary(WidgetState::NONE),
+        [TextProp::Color(roles.accent.foreground)],
+    )
     // Disabled, ButtonForegroundDisabled = TextFillColorDisabled (Button_themeresources.xaml:135 at
     // microsoft-ui-xaml 8463f45); under high contrast SystemControlDisabledBaseMediumLowBrush
     // (:85), SystemColorGrayTextColor (generic.xaml:2026), as AccentButtonForegroundDisabled
@@ -3261,15 +3417,15 @@ fn window(
 /// The text field, and with `padding` and no least height the text area
 /// (0.7.2's `text_area.border` takes the field's colour, radius, width and
 /// shadow where unstated, `resolve_widget_to_widget`):
-/// `ControlFillColorDefault` in the default border, its colour, radius and
-/// width (`resolve_border_inheritance`), outside the fill
-/// (`InnerBorderEdge`), no shadow; hovered, the same outline
-/// (`input.hover_border_color`); focused, the outline in the accent's fill;
-/// disabled, the disabled fill; the window's text, its own disabled colour;
-/// the placeholder in the muted text. Under high contrast the fill is the
-/// button face, the text the button text, the placeholder the window text
-/// and the focused outline the mapping's accent fill
-/// ([`HighContrast::focused_outline`]).
+/// `ControlFillColorDefault` in the elevation border's colour
+/// ([`elevation_border`]) at the default radius and width
+/// (`resolve_border_inheritance`), outside the fill (`InnerBorderEdge`), no
+/// shadow; hovered, the same outline (`input.hover_border_color`); focused,
+/// the outline in the accent's fill; disabled, the disabled fill; the
+/// window's text, its own disabled colour; the placeholder in the muted
+/// text. Under high contrast the fill is the button face, the text the
+/// button text, the placeholder the window text and the focused outline the
+/// mapping's accent fill ([`HighContrast::focused_outline`]).
 fn input(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -3279,13 +3435,14 @@ fn input(
     padding: Edges,
     min_height: Option<f32>,
 ) -> InputWidget {
+    // TextControlBorderBrush = TextControlElevationBorderBrush, its three sides
+    // (`elevation_stroke`), as disabled TextControlBorderBrushDisabled =
+    // ControlStrokeColorDefaultBrush (TextBox_themeresources.xaml:134, :137 / :27, :30 at
+    // microsoft-ui-xaml 8463f45).
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
-            roles
-                .window
-                .border
-                .map(|color| outside_stroke(layout.border_width, color)),
+            elevation_border(c, hc, roles).map(|color| outside_stroke(layout.border_width, color)),
         )
         .base([
             corners(layout.corner_radius),
@@ -3300,10 +3457,7 @@ fn input(
     // `HOVER` (spec §2, `from_state`). Pressed, the same: the TextBox has no Pressed state
     // (:255, :256, :275, :291), so under the pressing pointer it is PointerOver; the click
     // focuses it (FOCUSED).
-    let hover_border = match hc.window_text {
-        Some(_) => Some(c.window_border),
-        None => roles.window.border,
-    };
+    let hover_border = Some(c.elevation_stroke);
     let field = field
         .rules(
             hover_border.into_iter().flat_map(|_| {
@@ -3759,9 +3913,38 @@ fn toolbar(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(hc.highlight.unwrap_or(c.subtle_fill_pressed))],
         )
+        // Checked and checked hovered, AppBarToggleButtonBorderBrushChecked, …CheckedPointerOver =
+        // AccentControlElevationBorderBrush, its three sides (`on_accent_stroke`), inside its edge
+        // (AppBarToggleButtonInnerBorder.BackgroundSizing = OuterBorderEdge in the checked
+        // states); pressed and disabled, …CheckedPressed, …CheckedDisabled =
+        // ControlFillColorTransparentBrush, no outline (AppBarToggleButton_themeresources.xaml
+        // :160-163, :30-33, :343 at microsoft-ui-xaml 2.5.1; `docs/facts/windows/button.toml` on
+        // `v0.8.0-rc1` at `78ee0efd`, row W1-100). Under high contrast checked, hovered and pressed
+        // SystemColorHighlightColor, disabled SystemColorGrayTextColor (:95-98;
+        // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` there, appendix).
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.accent_fill)],
+            [
+                fill(c.accent_fill),
+                stroke(
+                    TOOLBAR_TOGGLE_BORDER_WIDTH,
+                    hc.highlight.unwrap_or(c.on_accent_stroke),
+                ),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [hc.highlight
+                .map_or(PartProp::Stroke(Stroke::None), |color| {
+                    stroke(TOOLBAR_TOGGLE_BORDER_WIDTH, color)
+                })],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED),
+            [hc.gray_text
+                .map_or(PartProp::Stroke(Stroke::None), |color| {
+                    stroke(TOOLBAR_TOGGLE_BORDER_WIDTH, color)
+                })],
         )
         // Checked under high contrast, AppBarToggleButtonBackgroundChecked =
         // SystemColorHighlightColorBrush (AppBarToggleButton_themeresources.xaml:74 at
@@ -4159,20 +4342,26 @@ fn dialog(
     )
 }
 
-/// The combo box: `ControlFillColorDefault` in the default border, its
-/// colour, radius and width (`resolve_border_inheritance`), no shadow,
-/// padded, of least sizes, its hover and disabled fills; the window's text,
-/// the disabled text's colour when disabled; its arrow's size and column.
+/// The combo box: `ControlFillColorDefault` in the elevation border's colour
+/// ([`elevation_border`]) at the default radius and width
+/// (`resolve_border_inheritance`), no shadow, padded, of least sizes, its
+/// hover and disabled fills; the window's text, the disabled text's colour
+/// when disabled; its arrow's size and column.
 fn combo_box(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
     direction: Direction,
 ) -> ComboBoxWidget {
+    // ComboBoxBorderBrush = ControlElevationBorderBrush, its three sides (`elevation_stroke`), as
+    // disabled ComboBoxBorderBrushDisabled = ControlStrokeColorDefaultBrush
+    // (ComboBox_themeresources.xaml:264, :267 / :54, :57 at microsoft-ui-xaml 8463f45).
+    let outline = elevation_border(c, hc, roles).map(|color| stroke(layout.border_width, color));
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(c.control_fill)])
-        .base(border(roles, layout.border_width))
+        .base(outline.clone())
         .base([
             corners(layout.corner_radius),
             // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow
@@ -4193,7 +4382,7 @@ fn combo_box(
         // :416-417 at microsoft-ui-xaml 8463f45).
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            std::iter::once(fill(c.control_fill_hover)).chain(border(roles, layout.border_width)),
+            std::iter::once(fill(c.control_fill_hover)).chain(outline),
         )
         // ComboBoxBackgroundPressed = ControlFillColorTertiary (ComboBox_themeresources.xaml:244,
         // Pressed state :433 at microsoft-ui-xaml 8463f45), flattened as `button.active_background`;

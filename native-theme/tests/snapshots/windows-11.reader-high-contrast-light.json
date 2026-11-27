@@ -344,7 +344,11 @@
             "checked"
           ],
           "body": {
-            "fill": "#050505"
+            "fill": "#050505",
+            "stroke": {
+              "width": 1.0,
+              "color": "#060606"
+            }
           }
         },
         {
@@ -386,19 +390,10 @@
             "checked"
           ],
           "body": {
-            "fill": "#040404"
-          }
-        },
-        {
-          "states": [
-            "hover",
-            "checked"
-          ],
-          "body": {
+            "fill": "#040404",
             "stroke": {
               "width": 1.0,
-              "color": "#040404",
-              "align": "outside"
+              "color": "#040404"
             }
           }
         },
@@ -411,8 +406,7 @@
             "fill": "#060606",
             "stroke": {
               "width": 1.0,
-              "color": "#060606",
-              "align": "outside"
+              "color": "#060606"
             }
           }
         },
@@ -422,7 +416,19 @@
             "fill": "#050505",
             "stroke": {
               "width": 1.0,
-              "color": "#020202"
+              "color": "#050505"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "primary",
+          "body": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#050505"
             }
           }
         },
@@ -443,6 +449,31 @@
               "width": 1.0,
               "color": "#070707",
               "align": "outside"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "body": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#070707",
+              "align": "outside"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "primary",
+          "body": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#070707"
             }
           }
         },
@@ -2166,7 +2197,35 @@
             "checked"
           ],
           "button": {
-            "fill": "#050505"
+            "fill": "#050505",
+            "stroke": {
+              "width": 1.0,
+              "color": "#050505"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#050505"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#070707"
+            }
           }
         },
         {

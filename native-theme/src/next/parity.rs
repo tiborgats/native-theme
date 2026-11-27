@@ -3089,7 +3089,11 @@ pub(crate) fn windows_cases() -> Vec<(
     // pressed toolbar button, `SystemControlHighlightListLowBrush` / `…ListMediumBrush`, the
     // highlight (AppBarButton_themeresources.xaml:41-42; generic.xaml:2079-2080); a disabled
     // button, `SystemControlBackgroundBaseLowBrush`, the button face
-    // (Button_themeresources.xaml:81; generic.xaml:2010).
+    // (Button_themeresources.xaml:81; generic.xaml:2010). The text field's, the text area's and the
+    // combo box's outline under high contrast stay the default border, the window text, not the
+    // listed elevation border's three sides, and a checked toolbar button's is
+    // `SystemColorHighlightColor` (AppBarToggleButton_themeresources.xaml:95 at microsoft-ui-xaml
+    // 2.5.1), not the listed on-accent one.
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_background",
         "button.hover_text_color",
@@ -3107,10 +3111,14 @@ pub(crate) fn windows_cases() -> Vec<(
         "checkbox.unchecked_background",
         "checkbox.unchecked_border_color",
         "checkbox.border.color",
+        "input.border.color",
+        "text_area.border.color",
         "toolbar.button_hover_background",
         "toolbar.button_active_background",
+        "toolbar.button_checked_border_color",
         "switch.hover_checked_background",
         "combo_box.hover_border_color",
+        "combo_box.border.color",
         "expander.hover_background",
     ];
     let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
