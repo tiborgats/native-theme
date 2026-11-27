@@ -12124,6 +12124,14 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
              plus its stroke width, iced's own (button::DEFAULT_PADDING) where unstated"
                 .to_owned()
         }
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color"
+        | "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width"
+            if primary =>
+        {
+            "not drawn: iced's button takes no keyboard focus, so it has no focused status to \
+             draw an outline in"
+                .to_owned()
+        }
         "button.body(HOVER; variant=Primary).stroke.width"
         | "button.body(PRESSED; variant=Primary).stroke.width"
             if primary =>

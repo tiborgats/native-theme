@@ -598,12 +598,14 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     // The primary button: egui's selected button, outlined per call (`Button::stroke`, which
     // overrides egui's on-hover effects) in the state of its previous response, kept in the
     // page's memory as the dialog's default button's below, in the pen [`primary_pen`] reads
-    // over the fill egui paints it in; focused, and where the theme states no pen for the
-    // state, the button scope's own.
+    // over the fill egui paints it in, focused `FOCUS_VISIBLE`'s; where the theme states no pen
+    // for the state, the button scope's own.
     let primary_key = egui::Id::unique(("basic state", "basic.buttons.primary"));
     let primary_was = demo::previous_state(ui, primary_key);
     let primary_at = |(hovered, pressed, focused): (bool, bool, bool)| {
-        let state = if pressed {
+        let state = if focused {
+            NextState::FOCUS_VISIBLE
+        } else if pressed {
             NextState::PRESSED
         } else if hovered {
             NextState::HOVER
@@ -614,9 +616,7 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             // egui's selected button is filled in the scope's selection fill in every state
             // (`egui-0.37.0/src/theme/default_style.rs`, `CLASS_SELECTED`).
             let fill = ui.visuals().selection.bg_fill;
-            let pen = r
-                .filter(|_| !focused)
-                .and_then(|r| primary_pen(r, state, fill));
+            let pen = r.and_then(|r| primary_pen(r, state, fill));
             let button = Button::new(text).selected(true);
             match pen {
                 Some(pen) => button.stroke(pen),
@@ -1553,14 +1553,15 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &
     list(reg, state, atlas, ui);
 }
 
-/// The primary button's outline in `state` (`NONE`, `HOVER` or `PRESSED`) of the installed
-/// 0.8.0 theme `r`, on the button egui fills in `fill`: `button.body(<state>;
-/// variant=Primary).stroke`, its width and colour, at rest where stated and hovered or pressed
-/// where a rule states it for the state (spec §2, `from_state`), one stroke of one colour, a
+/// The primary button's outline in `state` (`NONE`, `HOVER`, `PRESSED` or `FOCUS_VISIBLE`) of
+/// the installed 0.8.0 theme `r`, on the button egui fills in `fill`: `button.body(<state>;
+/// variant=Primary).stroke`, its width and colour, at rest where stated and hovered, pressed or
+/// focused where a rule states it for the state (spec §2, `from_state`), one stroke of one colour, a
 /// translucent one laid inside composited over `fill` ([`demo::pen_over`]); none where its
 /// width is not positive. `None` where the theme states none for the state, or in no form egui
 /// can draw, and the button scope's own stays: egui changes the outline between rest, hover and
-/// press (`egui-0.37.0/src/style.rs`, `Widgets::light`), so an unstated state keeps egui's
+/// press, a focused button taking the pressed entry (`egui-0.37.0/src/style.rs`,
+/// `Widgets::light`; `src/widget_style/mod.rs:212-222`), so an unstated state keeps egui's
 /// treatment of it, not the rest pen (spec §10, rule 0).
 fn primary_pen(r: &ResolvedTheme, state: NextState, fill: egui::Color32) -> Option<egui::Stroke> {
     let part = r

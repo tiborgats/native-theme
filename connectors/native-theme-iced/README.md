@@ -710,7 +710,9 @@ in none of them:
 - **A button's and a slider's focus.** An iced button takes no keyboard
   focus (`iced_widget` 0.14.2 `src/button.rs:257-273`), so
   `button.focus_border_color` has no receiver, nor has a stroke stated for
-  a focused button (`button.body(FOCUS_VISIBLE)`, of a flat button too:
+  a focused button (`button.body(FOCUS_VISIBLE)`, of the primary button's
+  own outline, `button.body(FOCUS_VISIBLE; variant=Primary)`, and of a flat
+  button too:
   Breeze's flat button turns its pen Highlight when focused, as when
   hovered or pressed, and the showcase's flat buttons draw that pen hovered
   and pressed only), and iced's slider has no

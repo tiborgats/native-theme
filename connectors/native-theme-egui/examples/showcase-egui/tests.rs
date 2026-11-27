@@ -12811,6 +12811,16 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         ),
         (
             "basic.buttons.primary",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+            i::PRIMARY_OUTLINE,
+        ),
+        (
+            "basic.buttons.primary",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+            i::PRIMARY_OUTLINE,
+        ),
+        (
+            "basic.buttons.primary",
             "button.body(NONE; variant=Primary).corners",
             i::PRIMARY_CORNERS_UNREAD,
         ),
@@ -17104,11 +17114,11 @@ fn the_primary_buttons_unstated_hover_keeps_the_scopes_outline() -> Result<(), S
     Ok(())
 }
 
-/// Under kde-breeze light with the primary button's hovered and pressed outlines patched in
-/// (`button.body(HOVER; variant=Primary).stroke` 3 px magenta, `(PRESSED; variant=Primary)`
-/// 2 px green), the hovered primary is drawn in the first and the pressed in the second, each
-/// state's whole pen, its width too, not the resting one's; focused, in the button scope's own
-/// active entry.
+/// Under kde-breeze light with the primary button's hovered, pressed and focused outlines
+/// patched in (`button.body(HOVER; variant=Primary).stroke` 3 px magenta, `(PRESSED;
+/// variant=Primary)` 2 px green, `(FOCUS_VISIBLE; variant=Primary)` 4 px blue), the hovered
+/// primary is drawn in the first, the pressed in the second and the focused in the third, each
+/// state's whole pen, its width too, not the resting one's.
 #[test]
 fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
     use native_theme::next::{
@@ -17118,6 +17128,7 @@ fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
     const ID: &str = "basic.buttons.primary";
     let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
     let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let blue = Color::new(0.0, 0.0, 1.0, 1.0);
     let rule = |state, width, colour| {
         ButtonRule::new()
             .variant(ButtonVariant::Primary)
@@ -17126,7 +17137,8 @@ fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
     };
     let patch = ThemePatch::new()
         .button(rule(WidgetState::HOVER, 3.0, magenta))
-        .button(rule(WidgetState::PRESSED, 2.0, green));
+        .button(rule(WidgetState::PRESSED, 2.0, green))
+        .button(rule(WidgetState::FOCUS_VISIBLE, 4.0, blue));
     let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     probe.run_steps(SETTLE);
     let rect = element_rect(&probe, ID)?;
@@ -17152,6 +17164,45 @@ fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
         Some(patch_for)
     })?;
     harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    harness
+        .query_all_by_label("Primary")
+        .next()
+        .ok_or("no node labelled Primary")?
+        .focus();
+    harness.run_steps(4);
+    let rect = element_rect(&harness, ID)?;
+    let strokes: Vec<egui::Stroke> = frames_at(&harness, rect).iter().map(|f| f.1).collect();
+    assert_eq!(
+        strokes,
+        [egui::Stroke::new(4.0, next::to_color32(blue))],
+        "focused"
+    );
+    Ok(())
+}
+
+/// Under macos-monterey light, which states no focused outline for the primary button
+/// (`button.body(FOCUS_VISIBLE; variant=Primary).stroke`), the focused primary is drawn in the
+/// button scope's own active entry, egui's treatment of a focused button (spec §10, rule 0).
+#[test]
+fn the_primary_buttons_unstated_focus_keeps_the_scopes_outline() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, PartStated, WidgetState};
+    const ID: &str = "basic.buttons.primary";
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.run_steps(SETTLE);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("macos-monterey: no 0.8.0 theme installed")?;
+    assert!(
+        !r.button
+            .body(ButtonQuery::primary().with_state(WidgetState::FOCUS_VISIBLE))
+            .from_state
+            .contains(PartStated::STROKE),
+        "macos-monterey states the primary's focused outline, so the test proves nothing"
+    );
     harness.remove_cursor();
     harness.run_steps(3);
     let own = scope_widgets(&harness, native_theme_egui::Role::Button)?

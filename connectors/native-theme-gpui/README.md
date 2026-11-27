@@ -1042,10 +1042,13 @@ selected Button keeps gpui-component's own selected fill and label.
 for a `Default` Button and an outline one (gpui-component 0.10.0
 `src/button/button.rs:727-732`), so a `.primary()` Button is drawn without
 one, and the primary body's stroke the theme states at rest, hovered,
-pressed or disabled (`button.body(<state>; variant=Primary).stroke`:
+pressed, focused (`FOCUS_VISIBLE`) or disabled
+(`button.body(<state>; variant=Primary).stroke`:
 windows-11's AccentControlElevationBorderBrush at rest and hovered, none
 pressed and disabled) is not drawn; the connector draws nothing of its own in
-its place.
+its place. A focused one takes gpui-component's own focus look, which it
+lays over the caller's style (*The focus ring*, under
+[Overriding theme values](#overriding-theme-values)).
 
 **A toolbar or flat button's icon takes one colour.** gpui-component's
 `Button` gives its icon no colour of its own: an `Icon` is drawn in the colour

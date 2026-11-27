@@ -665,9 +665,9 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
 /// The route of the primary button's own outline, which the Basic page hands its button per call.
 pub(crate) const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline, \
      button.body(<state>; variant=Primary).stroke, its width and colour, at rest where stated, \
-     hovered and pressed where a rule states it for the state, a translucent one laid inside \
-     composited over the button's fill; else the button scope's own entry for the state; \
-     focused, the scope's own (pages::basic, primary_pen)";
+     hovered, pressed and focused (FOCUS_VISIBLE) where a rule states it for the state, a \
+     translucent one laid inside composited over the button's fill; else the button scope's \
+     own entry for the state (pages::basic, primary_pen)";
 /// The route of the dialog's default button's outline: its own look where the theme gives it
 /// one, else the primary button's outline, both per call.
 pub(crate) const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the state of the \
@@ -675,9 +675,9 @@ pub(crate) const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke,
      button's own frame (native-theme-egui next::default_button: button.body(DEFAULT).stroke, \
      hovered and pressed button.body(HOVER).stroke, focused button.body(FOCUS_VISIBLE).stroke \
      where a rule states each, else egui's own); else it is the primary button, filled as it is and outlined in \
-     button.body(<state>; variant=Primary).stroke at rest where stated, hovered and pressed \
-     where a rule states it for the state, else in the button scope's own entry for the state, \
-     which this home gives; focused, the scope's own (pages::basic, primary_pen)";
+     button.body(<state>; variant=Primary).stroke at rest where stated, hovered, pressed and \
+     focused (FOCUS_VISIBLE) where a rule states it for the state, else in the button scope's \
+     own entry for the state, which this home gives (pages::basic, primary_pen)";
 /// The route of the primary button's own corners: egui reads them nowhere.
 pub(crate) const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
      the button scope (pages::basic, primary), rounded as the push button, by \
@@ -1490,6 +1490,16 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.buttons.primary",
         "button.body(PRESSED; variant=Primary).stroke.width",
+        PRIMARY_OUTLINE,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+        PRIMARY_OUTLINE,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
         PRIMARY_OUTLINE,
     ),
     (
