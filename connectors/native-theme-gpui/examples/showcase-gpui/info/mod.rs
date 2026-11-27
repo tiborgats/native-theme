@@ -495,7 +495,7 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar_button_disabled",
-        "toolbar.button(DISABLED).fill as the fill and toolbar.button(DISABLED).corners as the radius, each where a rule states it for the disabled state, on a disabled toolbar Button built on next::variants::toolbar_button, after toolbar_button_rest: the Button replays both refinements over its disabled style (button/button.rs, RenderOnce for Button), so the rest capsule stands where no rule states the disabled one, and gpui-component's own disabled fill, the variant's colour at 15 % (button/button.rs, ButtonVariant::disabled), where neither is stated; no text colour, so a disabled Button is lettered in its own muted_foreground at half alpha",
+        "toolbar.button(DISABLED).fill as the fill and toolbar.button(DISABLED).corners as the radius, each where a rule states it for the disabled state, on a disabled toolbar Button built on next::variants::toolbar_button, after toolbar_button_rest: the Button replays both refinements over its disabled style (button/button.rs, RenderOnce for Button), so the rest capsule stands where no rule states the disabled one, and gpui-component's own disabled fill, the variant's colour at 15 % (button/button.rs, ButtonVariant::disabled), where neither is stated; toolbar.button_label(DISABLED).color as the text colour where a rule states it for the disabled state, which an untinted Icon takes too (src/icon.rs, into_svg), else none, and a disabled Button is lettered in its own muted_foreground at half alpha",
     ),
     ("icon_size_small", "icons.sizes.small"),
     ("icon_size_dialog", "icons.sizes.dialog"),

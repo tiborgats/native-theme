@@ -50,7 +50,7 @@
 //! window text. Every other colour keeps the preset's value: the fills the
 //! preset states as libadwaita's translucent layers already laid over its
 //! own window (the hover fills) or as fixed layers of its own window text
-//! (the tab's hover, the sidebar's pressed row, the pressed toggle's fill),
+//! (the tab's hover, the sidebar's pressed row),
 //! the placeholder, the switch's and the slider's colours, the
 //! status colours' text. An explicit accent is libadwaita's accent as the system's accent
 //! is ([`lay_accent_over`]), the later statement of layer 3: it replaces the
@@ -351,8 +351,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // $view_active_color and %boxed_list_row's :active, the text at 8 % (_lists.scss:75-78,
     // :352-360, :524-526, _colors.scss:275)
     view_active: srgb8(0x0000_0610),
-    // a pressed toggle's and sidebar row's fill: $active_color, the text at 16 %
-    // (_toggle-group.scss:69-70, _sidebars.scss:126-129, _colors.scss:269, :49)
+    // a pressed sidebar row's fill: $active_color, the text at 16 % (_sidebars.scss:126-129,
+    // _colors.scss:269, :49)
     active_layer: srgb8(0x0000_0621),
     // `tab.hover_background`: a notebook tab hovered or pressed, `&:hover, &:active {
     // background-color: $hover_color }`, the text at 7 % (_notebook.scss:127-129,
@@ -492,8 +492,8 @@ const DARK: SchemeColors = SchemeColors {
     // $view_active_color and %boxed_list_row's :active, the text at 8 % (_lists.scss:75-78,
     // :352-360, :524-526, _colors.scss:275)
     view_active: srgb8(0xffff_ff14),
-    // a pressed toggle's and sidebar row's fill: $active_color, the text at 16 %
-    // (_toggle-group.scss:69-70, _sidebars.scss:126-129, _colors.scss:269, :111)
+    // a pressed sidebar row's fill: $active_color, the text at 16 % (_sidebars.scss:126-129,
+    // _colors.scss:269, :111)
     active_layer: srgb8(0xffff_ff29),
     // `tab.hover_background`: a notebook tab hovered or pressed, `&:hover, &:active {
     // background-color: $hover_color }`, the text at 7 % (_notebook.scss:127-129,
@@ -3438,11 +3438,15 @@ fn segmented_control(
             RuleSelector::on(WidgetState::HOVER),
             [fill(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))],
         )
-        // Pressed: AdwToggleGroup's toggle :active, $active_color (_toggle-group.scss:69-70 at
-        // libadwaita 1.10.0).
+        // Pressed: AdwToggleGroup's toggle :active, $active_color, the window text at 16 %
+        // (_toggle-group.scss:69-70, _colors.scss:269 at libadwaita 1.10.0), the toolbar's
+        // TOOLBAR_BUTTON_PRESSED_ALPHA.
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.active_layer)],
+            [fill(layer_of(
+                c.row_foreground,
+                TOOLBAR_BUTTON_PRESSED_ALPHA,
+            ))],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),

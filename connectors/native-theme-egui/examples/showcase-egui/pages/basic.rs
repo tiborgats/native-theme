@@ -815,7 +815,8 @@ pub(crate) fn toggle_on_at(
 /// selected button takes neither state of its own (`Button::fill` and `RichText::color`
 /// override every on-hover effect, spec §10, rule 0). Where that answer is stated in a form egui
 /// cannot paint (`Unmapped`), or the theme states the colour by neither query, the one stated
-/// for `on`, and `None` where it states none there, egui's own selected look (rule 0a).
+/// for `on`, that colour alone, as [`edit_look_at`] takes the edit switch's (rule 0, per
+/// property), and `None` where it states none there, egui's own selected look (rule 0a).
 pub(crate) fn toggle_on_in(
     r: Option<&native_theme::next::ResolvedTheme>,
     on: native_theme::next::ButtonQuery,
@@ -1795,20 +1796,23 @@ pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
 /// the fill for `CHECKED` by spec §2's two queries (`from_state`: a rule for `CHECKED`, or the
 /// state's own query asking `CHECKED`), `(HOVER|CHECKED)`'s under the pointer and
 /// `(PRESSED|CHECKED)`'s pressed, and the labels likewise from `toolbar.button_label`
-/// (`next::toolbar_button_checked`), as the switch's icon takes its colour
-/// (`demo::tool_icon_color`), as egui's selected button takes neither state of its own
+/// (`next::toolbar_button_checked`), as egui's selected button takes neither state of its own
 /// (spec §10, rule 0); each unstated one [`edit_look`]'s, the same in every state, as egui's own
-/// selected look is, and both [`edit_look`]'s where `next::toolbar_button_checked` reports a fill
-/// stated in a form egui cannot paint (`Unmapped`, which the Theme tab lists).
+/// selected look is, and so is each one `next::toolbar_button_checked` reports stated in a form
+/// egui cannot paint (`Unmapped`, which the Theme tab lists), that colour alone, as
+/// [`toggle_on_in`] takes the On toggle's (spec §10, rule 0, per property).
 pub(crate) fn edit_look_at(
     r: Option<&ResolvedTheme>,
     (hovered, pressed): (bool, bool),
 ) -> (Option<egui::Color32>, Option<egui::Color32>) {
     let look = edit_look(r);
-    match r.and_then(|r| next::toolbar_button_checked(r).ok()) {
+    match r.map(next::toolbar_button_checked) {
         Some(checked) => {
             let (fill, text) = checked.at(hovered, pressed);
-            (fill.or(look.fill), text.or(look.text))
+            (
+                fill.ok().flatten().or(look.fill),
+                text.ok().flatten().or(look.text),
+            )
         }
         None => (look.fill, look.text),
     }

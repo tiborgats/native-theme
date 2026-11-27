@@ -125,11 +125,15 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
         ),
     ] {
         let at = format!("{preset:?} {:?}", ctx.scheme);
-        let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx))?;
-        assert_eq!(look.fill, fill.map(|c| Some(rgb(c))), "{at}");
-        assert_eq!(look.text, text.map(|c| Some(rgb(c))), "{at}");
-        let [rest, hover, press] =
-            [0, 1, 2].map(|i| (fill.get(i).copied().map(rgb), text.get(i).copied().map(rgb)));
+        let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx));
+        assert_eq!(look.fill, fill.map(|c| Ok(Some(rgb(c)))), "{at}");
+        assert_eq!(look.text, text.map(|c| Ok(Some(rgb(c)))), "{at}");
+        let [rest, hover, press] = [0, 1, 2].map(|i| {
+            (
+                Ok(fill.get(i).copied().map(rgb)),
+                Ok(text.get(i).copied().map(rgb)),
+            )
+        });
         assert_eq!(look.at(false, false), rest, "{at} at rest");
         assert_eq!(look.at(true, false), hover, "{at} hovered");
         assert_eq!(look.at(true, true), press, "{at} pressed");
@@ -137,10 +141,102 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
     }
     let ios = super::toolbar_button_checked(
         &Theme::preset(Preset::Ios13).resolve(&ThemeContext::light()),
-    )?;
-    assert_eq!((ios.fill, ios.text), ([None; 3], [None; 3]), "ios-13");
-    assert_eq!(ios.at(true, true), (None, None), "ios-13 pressed");
+    );
+    assert_eq!(
+        (ios.fill, ios.text),
+        ([Ok(None); 3], [Ok(None); 3]),
+        "ios-13"
+    );
+    assert_eq!(ios.at(true, true), (Ok(None), Ok(None)), "ios-13 pressed");
     Ok(())
+}
+
+/// The toolbar's Disabled cell letters a disabled tool button in
+/// `toolbar.button_label(DISABLED).color`, `inactive.fg_stroke` and `noninteractive.fg_stroke`
+/// (the label, and the scope's text colour an icon loads in), where a rule states it for
+/// `DISABLED`, which kde-breeze, material-3 and windows-11 do (N47); on a preset that states
+/// none the cell keeps the Normal cell's labels.
+#[test]
+fn a_disabled_tool_button_is_lettered_in_the_disabled_label() {
+    use native_theme::next::TextStated;
+    for &(key, preset) in PRESETS {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(preset).resolve(&ctx);
+            let label = r.toolbar.button_label(WidgetState::DISABLED);
+            let stated = label.from_state.contains(TextStated::COLOR);
+            if matches!(key, "kde-breeze" | "material-3" | "windows-11") {
+                assert!(stated, "{key} {:?} states no disabled label", ctx.scheme);
+            }
+            let mut notes = Vec::new();
+            let source = super::build::variant_source(&r, &mut notes);
+            let normal = egui::Style::default();
+            let cell = crate::style::variants::disabled_cell(
+                crate::Role::Toolbar,
+                &normal,
+                &source,
+                &mut notes,
+            );
+            let w = cell.map(|c| {
+                let w = &c.visuals.widgets;
+                [w.inactive.fg_stroke.color, w.noninteractive.fg_stroke.color]
+            });
+            let own = &normal.visuals.widgets;
+            let want = if stated {
+                [super::to_color32(label.color); 2]
+            } else {
+                [
+                    own.inactive.fg_stroke.color,
+                    own.noninteractive.fg_stroke.color,
+                ]
+            };
+            assert_eq!(w, Some(want), "{key} {:?}", ctx.scheme);
+        }
+    }
+}
+
+/// A checked toolbar button's fill stated as layers that are all gradients for `CHECKED |
+/// HOVER` alone, over macos-tahoe light, is `Unmapped` at that home under the pointer, and the
+/// resting and pressed fills and every label stay as the preset states them: each value is read
+/// on its own (spec §10, rule 0, per property; rule 4).
+#[test]
+fn a_checked_tool_buttons_gradient_fill_leaves_its_other_values() {
+    use native_theme::next::{GradientStop, Paint, PaintLayer, ToolbarRule};
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let ctx = ThemeContext::light();
+    let stock = super::toolbar_button_checked(&Theme::preset(Preset::MacosTahoe).resolve(&ctx));
+    let patch = ThemePatch::new().toolbar(
+        ToolbarRule::new()
+            .states(WidgetState::CHECKED | WidgetState::HOVER)
+            .button(PartPatch::new().fill(gradient)),
+    );
+    let r = Theme::preset(Preset::MacosTahoe)
+        .with_patch(patch)
+        .resolve(&ctx);
+    let look = super::toolbar_button_checked(&r);
+    let [rest, _, press] = stock.fill;
+    assert_eq!(
+        look.fill,
+        [
+            rest,
+            Err(super::Unmapped("toolbar.button(HOVER|CHECKED).fill")),
+            press
+        ]
+    );
+    assert!(matches!(rest, Ok(Some(_))) && matches!(press, Ok(Some(_))));
+    assert_eq!(look.text, stock.text);
 }
 
 /// A stated uniform stroke gives its colour and width in every alignment; a
@@ -1078,6 +1174,83 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
         "{asked} presets state the disabled checked box's outline by a rule for DISABLED | CHECKED: \
          the test reaches one branch only"
     );
+    Ok(())
+}
+
+/// A disabled checked box is lettered in `checkbox.label(DISABLED|CHECKED)` where a rule for
+/// `DISABLED` states it by spec §2's two queries (`label(DISABLED)`, or `label(DISABLED|CHECKED)`
+/// asking `DISABLED`), else as the unchecked disabled box, and its mark, falling back to the
+/// label on a disabled fill the theme states, with it (`style::variants::selected_disabled_cell`).
+/// On every preset with the label and the mark first stated with no state, and a disabled fill:
+/// (i) a rule for `DISABLED | CHECKED` alone letters the checked box and its mark, and leaves the
+/// unchecked one; (ii) a rule for `CHECKED` alone states nothing
+/// for `DISABLED`, and the checked box is lettered as with no such rule.
+#[test]
+fn a_rule_for_disabled_and_checked_letters_the_disabled_checked_box()
+-> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{IconStated, StyleQuery};
+    let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    let base = "[[widgets.checkbox.rules]]\nstates = []\nlabel.color = \"#101010\"\n\
+                checkmark.color = \"#303030\"\n\
+                [[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
+                indicator.fill = \"#202020\"\n";
+    let ruled = |states: &str| {
+        format!(
+            "{base}[[widgets.checkbox.rules]]\nstates = [{states}]\nlabel.color = \"#ff00ff\"\n"
+        )
+    };
+    let cell = |atlas: &crate::ThemeAtlas, variant| {
+        atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, variant)
+            .visuals
+            .clone()
+    };
+    for &(key, preset) in PRESETS {
+        let both = patched_light(preset, &ruled("\"disabled\", \"checked\""))?;
+        let checked = cell(&both, crate::RoleVariant::SelectedDisabled);
+        assert_eq!(
+            checked.override_text_color,
+            Some(magenta),
+            "(i) {key}: checked"
+        );
+        let unchecked = cell(&both, crate::RoleVariant::Disabled);
+        assert_ne!(
+            unchecked.override_text_color,
+            Some(magenta),
+            "(i) {key}: unchecked"
+        );
+        let r = Theme::preset(preset)
+            .with_patch(ThemePatch::from_toml(&ruled("\"disabled\", \"checked\""))?)
+            .resolve(&ThemeContext::light());
+        let off_on = StyleQuery::new(WidgetState::DISABLED | WidgetState::CHECKED)
+            .asking(WidgetState::DISABLED);
+        assert!(
+            ![
+                r.checkbox.checkmark(WidgetState::DISABLED),
+                r.checkbox.checkmark(off_on),
+            ]
+            .iter()
+            .any(|mark| mark.from_state.contains(IconStated::COLOR)),
+            "(i) {key}: patched, it still states a disabled mark"
+        );
+        assert_eq!(
+            checked.widgets.inactive.fg_stroke.color, magenta,
+            "(i) {key}: the mark"
+        );
+        let alone = cell(
+            &patched_light(preset, &ruled("\"checked\""))?,
+            crate::RoleVariant::SelectedDisabled,
+        );
+        let stock = cell(
+            &patched_light(preset, base)?,
+            crate::RoleVariant::SelectedDisabled,
+        );
+        assert_eq!(
+            alone.override_text_color, stock.override_text_color,
+            "(ii) {key}: checked"
+        );
+    }
     Ok(())
 }
 
@@ -2438,7 +2611,7 @@ fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
 -> Result<(), Box<dyn std::error::Error>> {
     let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
     let [base, value] = ["\"#101010\"", "\"#ff00ff\""];
-    let checked = |r: &native_theme::next::ResolvedTheme| super::toolbar_button_checked(r).ok();
+    let checked = |r: &native_theme::next::ResolvedTheme| Some(super::toolbar_button_checked(r));
     let mut misses = Vec::new();
     for (i, flag) in [(1, "hover"), (2, "pressed")] {
         two_flag_site(
@@ -2448,7 +2621,7 @@ fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
             ["checked", flag],
             [base, value],
             magenta,
-            |r| checked(r).and_then(|c| c.fill.get(i).copied().flatten()),
+            |r| checked(r).and_then(|c| c.fill.get(i).copied().and_then(Result::ok).flatten()),
         )?;
         two_flag_site(
             &mut misses,
@@ -2457,7 +2630,7 @@ fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
             ["checked", flag],
             [base, value],
             magenta,
-            |r| checked(r).and_then(|c| c.text.get(i).copied().flatten()),
+            |r| checked(r).and_then(|c| c.text.get(i).copied().and_then(Result::ok).flatten()),
         )?;
     }
     assert!(misses.is_empty(), "{misses:#?}");

@@ -838,7 +838,11 @@ listed here, and a value the theme leaves unstated is egui's own
   application to hand `Button::fill` and `RichText::color`, which override
   every on-hover effect, in the state of the button's previous response
   (`CheckedToolButton::at`); in a state where it does not, egui's own
-  selected look stays.
+  selected look stays. Each value is read on its own: one stated as layers
+  that are all gradients is `Unmapped` at its home and leaves the others.
+  In a state whose value is `Unmapped`, hand egui the resting checked
+  value, because egui's selected look does not change with the state
+  (rule 0; the home is reported, rule 4).
 - **A tool button's icon colour.** egui's only per-state tint of a
   button's image is the label's text colour
   (`Button::image_tint_follows_text_color`, `egui-0.37.0`
@@ -847,9 +851,14 @@ listed here, and a value the theme leaves unstated is egui's own
   (macos-monterey light: the label #606060, the icon #676767 at rest), so
   no cell carries both. The application loads the icon in
   `toolbar.button_icon(<state>).color` (`IconKey::tint`) where the theme
-  states it, in the state of the button's previous response, and checked
-  only where a rule states it for `CHECKED`; where it states none, the icon
-  keeps the colour it is loaded in.
+  states it, in the state of the button's previous response; checked, in
+  `toolbar.button_icon(<state> | CHECKED).color` (the side-panel toggle
+  while open in `button.icon(CHECKED | <state>; variant=Flat).color`)
+  where stated, as the plain query answers it, a colour stated at rest
+  holding in every state no rule states one for, because egui has no
+  treatment of `CHECKED` for a button's image (a selected button changes
+  only its fills and text stroke, `src/theme/default_style.rs`); where the
+  theme states none, the icon keeps the colour it is loaded in.
 - **A flat button's narrower hovered or pressed outline.** egui lays a
   button out at the inner margin `button_padding + expansion −
   bg_stroke.width` of its state (`egui-0.37.0/src/theme/default_style.rs`,

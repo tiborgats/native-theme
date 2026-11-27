@@ -1257,6 +1257,99 @@ fn the_toggles_icon_takes_the_stated_flat_icon_colour() {
     }
 }
 
+/// The two switches' icons by rule 0 as each loads (N33): egui draws a button's image as it is
+/// loaded in every state, selected or not (`Button::image_tint_follows_text_color` off), so a
+/// colour stated at rest holds while on, for the edit switch (`demo::tool_icon_color`) as for the
+/// side-panel toggle; and the toggle's icon asks the flat button's `HOVER` and `PRESSED`
+/// colours in those states, as the tool buttons ask theirs, a colour stated at rest holding
+/// where no rule states one for the state. egui having no treatment of `CHECKED` for an image,
+/// a rule for `HOVER` alone colours the hovered icon while on too, of the open toggle and of the
+/// edit switch. Over kde-breeze light patched, which states none.
+#[test]
+fn the_switches_icons_keep_a_colour_stated_at_rest() {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, Preset, Theme, ThemeContext, ThemePatch,
+        ToolbarRule, WidgetState,
+    };
+    use native_theme_egui::next::to_color32;
+    let [rest, hover, press] = [
+        Color::new(0.0, 1.0, 0.0, 1.0),
+        Color::new(0.0, 0.0, 1.0, 1.0),
+        Color::new(1.0, 1.0, 0.0, 1.0),
+    ];
+    let ctx = ThemeContext::light();
+    let tool = Theme::preset(Preset::KdeBreeze)
+        .with_patch(
+            ThemePatch::new().toolbar(ToolbarRule::new().button_icon(IconPatch::new().color(rest))),
+        )
+        .resolve(&ctx);
+    for was in [(false, false), (true, false), (true, true)] {
+        assert_eq!(
+            crate::demo::tool_icon_color(Some(&tool), was, true),
+            Some(to_color32(rest)),
+            "the edit switch's icon while on {was:?}"
+        );
+    }
+    let flat = |state: WidgetState, colour: Color| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .icon(IconPatch::new().color(colour))
+    };
+    let toggle = Theme::preset(Preset::KdeBreeze)
+        .with_patch(
+            ThemePatch::new()
+                .button(flat(WidgetState::NONE, rest))
+                .button(flat(WidgetState::HOVER, hover))
+                .button(flat(WidgetState::PRESSED, press)),
+        )
+        .resolve(&ctx);
+    let closed = |was| crate::chrome::toggle_icon_colour(Some(&toggle), false, was);
+    assert_eq!(closed((false, false)), Some(to_color32(rest)));
+    assert_eq!(closed((true, false)), Some(to_color32(hover)));
+    assert_eq!(closed((true, true)), Some(to_color32(press)));
+    let open = |was| crate::chrome::toggle_icon_colour(Some(&toggle), true, was);
+    assert_eq!(open((false, false)), Some(to_color32(rest)));
+    assert_eq!(
+        open((true, false)),
+        Some(to_color32(hover)),
+        "the open toggle hovered"
+    );
+    assert_eq!(
+        open((true, true)),
+        Some(to_color32(press)),
+        "the open toggle pressed"
+    );
+    let tool_hover = Theme::preset(Preset::KdeBreeze)
+        .with_patch(
+            ThemePatch::new()
+                .toolbar(ToolbarRule::new().button_icon(IconPatch::new().color(rest)))
+                .toolbar(
+                    ToolbarRule::new()
+                        .states(WidgetState::HOVER)
+                        .button_icon(IconPatch::new().color(hover)),
+                ),
+        )
+        .resolve(&ctx);
+    let edit = |was| crate::demo::tool_icon_color(Some(&tool_hover), was, true);
+    assert_eq!(edit((false, false)), Some(to_color32(rest)));
+    assert_eq!(
+        edit((true, false)),
+        Some(to_color32(hover)),
+        "the edit switch hovered while on"
+    );
+    let rest_only = Theme::preset(Preset::KdeBreeze)
+        .with_patch(ThemePatch::new().button(flat(WidgetState::NONE, rest)))
+        .resolve(&ctx);
+    for was in [(false, false), (true, false), (true, true)] {
+        assert_eq!(
+            crate::chrome::toggle_icon_colour(Some(&rest_only), false, was),
+            Some(to_color32(rest)),
+            "the closed toggle's icon {was:?}"
+        );
+    }
+}
+
 /// The side-panel toggle while the panel is open, under a theme that states no checked flat
 /// fill or label (macos-monterey light states neither), is egui's own selected button
 /// (`Button::selected`, spec §10, rule 0a): its frame is filled as the suggested-action button
@@ -12387,6 +12480,26 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
     Ok(())
 }
 
+/// The edit switch's checked outline colour, `toolbar.button(CHECKED).stroke.color`, which a
+/// `mapping.toml` row also holds, is routed to the per-call pen that draws it
+/// (`pages::basic::tool_pen`, [`crate::info::EDIT_CHECKED_PEN`]), not to the row (N40).
+#[test]
+fn the_edit_switchs_checked_outline_colour_names_its_pen() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let how = crate::info::listed_how(
+        &manifest,
+        "basic.icons.edit",
+        "toolbar.button(CHECKED).stroke.color",
+        &seams,
+    );
+    assert_eq!(how, crate::info::EDIT_CHECKED_PEN);
+    Ok(())
+}
+
 /// The tool buttons' and the side-panel toggle's own homes, the primary and the dialog's
 /// default button's own outline and corners, the On toggle's hovered and pressed checked looks
 /// and the Copy box's hovered width, which no `mapping.toml` row holds (the list's
@@ -12440,6 +12553,11 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             "basic.icons.save.icon",
             "toolbar.button_icon(DISABLED).color",
             i::SAVE_ICON_DISABLED,
+        ),
+        (
+            "basic.icons.save.icon",
+            "toolbar.button_label(DISABLED).color",
+            i::SAVE_DISABLED_LABEL,
         ),
         (
             "basic.icons.edit",
@@ -12672,8 +12790,44 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     // The routes of the side-panel toggle and its icon.
     let toggle: &[(&str, &str)] = &[
         (
+            "button.label(NONE; variant=Flat).color",
+            i::TOGGLE_REST_LABEL,
+        ),
+        (
+            "button.body(NONE; variant=Flat).corners",
+            i::TOGGLE_REST_CORNERS,
+        ),
+        (
             "button.body(HOVER; variant=Flat).stroke.width",
             i::TOGGLE_HOVER_WIDTH,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.width",
+            i::TOGGLE_PRESSED_WIDTH,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).stroke.color",
+            i::TOGGLE_HOVER_EDGE,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.color",
+            i::TOGGLE_PRESSED_EDGE,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).fill",
+            i::TOGGLE_CLOSED_HOVER_FILL,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).fill",
+            i::TOGGLE_CLOSED_PRESSED_FILL,
+        ),
+        (
+            "button.label(HOVER; variant=Flat).color",
+            i::TOGGLE_CLOSED_HOVER_LABEL,
+        ),
+        (
+            "button.label(PRESSED; variant=Flat).color",
+            i::TOGGLE_CLOSED_PRESSED_LABEL,
         ),
         (
             "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
@@ -12706,6 +12860,14 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         (
             "button.icon(PRESSED|CHECKED; variant=Flat).color",
             i::TOGGLE_ICON_PRESSED,
+        ),
+        (
+            "button.icon(HOVER; variant=Flat).color",
+            i::TOGGLE_ICON_CLOSED_HOVER,
+        ),
+        (
+            "button.icon(PRESSED; variant=Flat).color",
+            i::TOGGLE_ICON_CLOSED_PRESSED,
         ),
         (
             "button.body(CHECKED; variant=Flat).stroke.color",
@@ -12745,6 +12907,51 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::TOGGLE_ICON_OPEN,
         ),
     ];
+    // The routes of the other flat buttons, the Pages menu button and Widget Info's Copy.
+    let flat: &[(&str, &str)] = &[
+        ("button.label(NONE; variant=Flat).color", i::FLAT_REST_LABEL),
+        (
+            "button.body(NONE; variant=Flat).corners",
+            i::FLAT_REST_CORNERS,
+        ),
+        ("button.body(HOVER; variant=Flat).fill", i::FLAT_HOVER_FILL),
+        (
+            "button.body(PRESSED; variant=Flat).fill",
+            i::FLAT_PRESSED_FILL,
+        ),
+        (
+            "button.label(HOVER; variant=Flat).color",
+            i::FLAT_HOVER_LABEL,
+        ),
+        (
+            "button.label(PRESSED; variant=Flat).color",
+            i::FLAT_PRESSED_LABEL,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).stroke.color",
+            i::FLAT_HOVER_EDGE,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.color",
+            i::FLAT_PRESSED_EDGE,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).stroke.width",
+            i::FLAT_HOVER_WIDTH,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.width",
+            i::FLAT_PRESSED_WIDTH,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+            i::FLAT_FOCUS_PEN,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+            i::FLAT_FOCUS_PEN,
+        ),
+    ];
     let model_only: Vec<String> = native_theme_showcase_support::elements::model_only_homes()?
         .into_iter()
         .map(|entry| entry.home)
@@ -12760,12 +12967,15 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             || e.id == "basic.buttons.primary"
             || e.id == "basic.buttons.dialog_default"
             || e.id == "chrome.info.copy"
+            || e.id == "chrome.page_tabs.menu"
     }) {
         let id = element.id.as_str();
         let group = if id.starts_with("chrome.toolbar.") || id.starts_with("basic.icons.") {
             tool
         } else if id.starts_with("chrome.status_bar.toggle") {
             toggle
+        } else if id == "chrome.info.copy" || id == "chrome.page_tabs.menu" {
+            flat
         } else {
             &[]
         };
@@ -12804,6 +13014,10 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     // Another element that listed one of their homes would not take their route.
     for (element, routes) in [
         ("chrome.page_tabs.menu", &crate::info::TOGGLE_ROUTES[..]),
+        (
+            "basic.buttons.default",
+            &crate::info::FLAT_BUTTON_ROUTES[..],
+        ),
         (
             "basic.buttons.default",
             &crate::info::TOOL_BUTTON_ROUTES[..],
@@ -14316,38 +14530,49 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     Ok(())
 }
 
-/// A checked toolbar button's icon keeps egui's selected look only where the theme states its
-/// colour for `CHECKED` by neither of spec §2's two queries (`from_state`): on every preset
-/// with `toolbar.button_icon`'s colour first stated by a rule of no state, which clears the bit
-/// of the query at `CHECKED` alone, a rule for `HOVER | CHECKED` (`PRESSED | CHECKED`) alone
-/// colours the hovered (pressed) checked icon, as `home_patch_toml` (`tools/showcase-support`)
-/// states that home, and a rule for `HOVER` (`PRESSED`) alone does not
-/// (`demo::tool_icon_color`).
+/// A checked toolbar button's icon takes the plain query's answer at `(<state> | CHECKED)`,
+/// egui having no treatment of `CHECKED` for a button's image: on every preset with
+/// `toolbar.button_icon`'s colour first stated by a rule of no state, a rule for
+/// `HOVER | CHECKED` (`PRESSED | CHECKED`) colours the hovered (pressed) checked icon, as
+/// `home_patch_toml` (`tools/showcase-support`) states that home, and so does a rule for
+/// `HOVER` (`PRESSED`) alone, which that query matches; neither colours it at rest
+/// (`demo::tool_icon_color`). So does the open side-panel toggle's icon, by `button`'s icon
+/// colour (`chrome::toggle_icon_colour`).
 #[test]
 fn a_checked_tool_icon_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
     use crate::demo::tool_icon_color;
     use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    type Read = fn(&native_theme::next::ResolvedTheme, (bool, bool)) -> Option<egui::Color32>;
     let magenta = Some(egui::Color32::from_rgb(0xff, 0, 0xff));
-    let base = "[[widgets.toolbar.rules]]\nstates = []\nbutton_icon.color = \"#101010\"\n";
+    let sites: [(&str, &str, Read); 2] = [
+        ("toolbar", "button_icon.color", |r, was| {
+            tool_icon_color(Some(r), was, true)
+        }),
+        ("button", "icon.color", |r, was| {
+            crate::chrome::toggle_icon_colour(Some(r), true, was)
+        }),
+    ];
     let mut misses = Vec::new();
-    for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
-        for (states, expected) in [
-            (format!("\"{flag}\", \"checked\""), magenta),
-            (format!("\"{flag}\""), None),
-        ] {
-            let patch = format!(
-                "{base}[[widgets.toolbar.rules]]\nstates = [{states}]\nbutton_icon.color = \"#ff00ff\"\n"
-            );
-            let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
-            for &preset in Preset::ALL {
-                let r = Theme::preset(preset)
-                    .with_patch(patch.clone())
-                    .resolve(&ThemeContext::light());
-                let got = tool_icon_color(Some(&r), was, true);
-                if got != expected {
-                    misses.push(format!(
-                        "{preset:?}, a rule for [{states}]: {got:?}, not {expected:?}"
-                    ));
+    for (widget, property, read) in sites {
+        let base = format!("[[widgets.{widget}.rules]]\nstates = []\n{property} = \"#101010\"\n");
+        for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
+            for states in [format!("\"{flag}\", \"checked\""), format!("\"{flag}\"")] {
+                let patch = format!(
+                    "{base}[[widgets.{widget}.rules]]\nstates = [{states}]\n{property} = \"#ff00ff\"\n"
+                );
+                let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+                for &preset in Preset::ALL {
+                    let r = Theme::preset(preset)
+                        .with_patch(patch.clone())
+                        .resolve(&ThemeContext::light());
+                    let got = read(&r, was);
+                    let at_rest = read(&r, (false, false));
+                    if got != magenta || at_rest == magenta {
+                        misses.push(format!(
+                            "{widget} {preset:?}, a rule for [{states}]: {got:?}, not \
+                             {magenta:?} (at rest {at_rest:?})"
+                        ));
+                    }
                 }
             }
         }
@@ -14403,13 +14628,14 @@ fn checked_site<T: PartialEq + std::fmt::Debug>(
 }
 
 /// The Basic page's toggle and edit switch and the side-panel toggle take a hovered or pressed
-/// checked fill, label colour, outline and icon colour the theme states for `CHECKED` by either
-/// of the two queries ([`checked_site`]): `pages::basic::toggle_on_in`,
-/// `pages::basic::edit_look_at` (`next::toolbar_button_checked`), `chrome::toggle_checked_in`,
-/// `chrome::toggle_checked_pens` and `chrome::toggle_icon_colour`.
+/// checked fill, label colour and outline the theme states for `CHECKED` by either of the two
+/// queries ([`checked_site`]): `pages::basic::toggle_on_in`, `pages::basic::edit_look_at`
+/// (`next::toolbar_button_checked`), `chrome::toggle_checked_in` and
+/// `chrome::toggle_checked_pens`. The icons' colours take the plain query's answer
+/// (`a_checked_tool_icon_takes_a_rule_for_its_state_with_checked`).
 #[test]
 fn a_checked_look_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
-    use crate::chrome::{toggle_checked_in, toggle_checked_pens, toggle_icon_colour};
+    use crate::chrome::{toggle_checked_in, toggle_checked_pens};
     use crate::pages::basic::{edit_look_at, toggle_on_in};
     use native_theme::next::{ButtonQuery, WidgetState};
     let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
@@ -14452,14 +14678,6 @@ fn a_checked_look_takes_a_rule_for_its_state_with_checked() -> Result<(), String
         colours,
         &some,
         |r, was| toggle_checked_in(Some(r), was).text,
-    )?;
-    checked_site(
-        &mut misses,
-        "side toggle icon",
-        ("button", "icon.color"),
-        colours,
-        &some,
-        |r, was| toggle_icon_colour(Some(r), true, was),
     )?;
     let pen = Some(egui::Stroke::new(2.0, magenta));
     checked_site(
@@ -14766,6 +14984,124 @@ fn the_disabled_tool_button_takes_the_stated_disabled_look() -> Result<(), Strin
         )?],
         "Save's icon is not loaded in the patched toolbar.button_icon(DISABLED).color"
     );
+    Ok(())
+}
+
+/// The Basic page's Save, a disabled tool button, under kde-breeze, material-3 and windows-11
+/// light, a bundled Material icon: each states `toolbar.button_label(DISABLED).color` and none
+/// `toolbar.button_icon(DISABLED).color`, so the toolbar's Disabled cell letters it in that
+/// label (the lib's `a_disabled_tool_button_is_lettered_in_the_disabled_label`), and its icon,
+/// loaded in the scope's text colour, is painted from the texture Save's icon loaded in that label takes (a
+/// cache hit of the same key in the same context, so an icon loaded in any other colour fails),
+/// not the label at rest.
+#[cfg(feature = "material-icons")]
+#[test]
+fn the_disabled_tool_button_takes_the_stated_disabled_label() -> Result<(), String> {
+    use native_theme::icons::IconRole;
+    use native_theme::next::{IconStated, TextStated, WidgetState};
+    use native_theme_egui::icons::{IconKey, custom_icon_to_image};
+    use native_theme_egui::next::to_color32;
+    const ID: &str = "basic.icons.save";
+    for preset in ["kde-breeze", "material-3", "windows-11"] {
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        harness.state_mut().settings.icon = IconSetChoice::Material;
+        harness.run_steps(SETTLE);
+        harness.remove_cursor();
+        harness.run_steps(3);
+        let r = harness
+            .state()
+            .atlas
+            .next_shown(&harness.ctx)
+            .cloned()
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let label = r.toolbar.button_label(WidgetState::DISABLED);
+        if !label.from_state.contains(TextStated::COLOR) {
+            return Err(format!(
+                "{preset} states no toolbar.button_label(DISABLED).color"
+            ));
+        }
+        if r.toolbar
+            .button_icon(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+        {
+            return Err(format!(
+                "{preset} states toolbar.button_icon(DISABLED).color"
+            ));
+        }
+        let want = to_color32(label.color);
+        let rest = to_color32(r.toolbar.button_label(WidgetState::NONE).color);
+        if want == rest {
+            return Err(format!("{preset}: the disabled label is the label at rest"));
+        }
+        let size = crate::demo::tool_icon_size(Some(&r)).ok_or("no toolbar icon size")?;
+        let (set, icon_theme) = harness.state().chosen_icons();
+        let role = IconRole::ActionSave;
+        let load = |ctx: &egui::Context, colour, side: u32| -> Result<egui::TextureId, String> {
+            let mut key = IconKey::role(role, set).size(size).tint(colour);
+            if let Some(name) = icon_theme.as_deref() {
+                key = key.icon_theme(name);
+            }
+            let image = custom_icon_to_image(ctx, &role, &key).ok_or("the set has no Save icon")?;
+            let hint = egui::SizeHint::Size {
+                width: side,
+                height: side,
+                maintain_aspect_ratio: false,
+            };
+            let source = image.source(ctx).clone();
+            match source.load(ctx, egui::TextureOptions::default(), hint) {
+                Ok(egui::load::TexturePoll::Ready { texture }) => Ok(texture.id),
+                Ok(egui::load::TexturePoll::Pending { .. }) => {
+                    Err("Save's icon is still loading".to_owned())
+                }
+                Err(error) => Err(format!("Save's icon is not loaded: {error}")),
+            }
+        };
+        // Save in view where the page lays it out below the fold (material-3's): egui paints
+        // only what the window shows (`egui-0.37.0/src/widgets/button.rs:369-374`).
+        let save_node = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.element.as_deref() == Some(ID))
+            .map(|r| r.id.accesskit_id())
+            .ok_or_else(|| format!("{preset}: Save is not recorded"))?;
+        harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == save_node))
+            .next()
+            .ok_or_else(|| format!("{preset}: Save has no AccessKit node"))?
+            .scroll_to_me();
+        // The scroll lands on the third pass after the request (as the page scroll tests).
+        harness.run_steps(3);
+        let place = place_of(&harness, ID);
+        let painted: Vec<_> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.expand(1.0).contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| (b.fill_texture_id, r.rect.size()))
+                }
+                _ => None,
+            })
+            .collect();
+        // Loaded at the pixel size egui paints it at (egui-0.37.0 src/widgets/image.rs,
+        // Image::paint_at), its aspect not kept.
+        let side = |extent: f32| (harness.ctx.pixels_per_point() * extent).round() as u32;
+        let [(texture, painted_size)] = painted[..] else {
+            return Err(format!(
+                "{preset}: Save's icon is not painted once: {painted:?}"
+            ));
+        };
+        let in_label = load(&harness.ctx, want, side(painted_size.x))?;
+        let at_rest = load(&harness.ctx, rest, side(painted_size.x))?;
+        assert_eq!(
+            texture, in_label,
+            "{preset}: Save's icon is not loaded in toolbar.button_label(DISABLED).color \
+             (at rest {at_rest:?}, size {size}, painted {painted_size:?})"
+        );
+    }
     Ok(())
 }
 
@@ -16982,4 +17318,77 @@ fn the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour() -> Result<(), Str
         )
     })
     .map_err(|e| e.to_string())
+}
+
+/// The On toggle and the edit switch treat a checked fill egui cannot paint by one rule (spec
+/// §10, rule 0, per property; rule 4): under macos-tahoe light, which states the checked fills
+/// at rest, hovered and pressed for both, a `(CHECKED | HOVER)` fill patched to layers that are
+/// all gradients leaves the hovered one at the fill stated for `CHECKED` alone, that colour
+/// alone, and the pressed one at the preset's pressed fill, and each label as before
+/// (`pages::basic::toggle_on_in`, `pages::basic::edit_look_at`).
+#[test]
+fn a_checked_fill_egui_cannot_paint_leaves_the_other_checked_values() -> Result<(), String> {
+    use crate::pages::basic::{edit_look, edit_look_at, toggle_on_in};
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, Color, GradientStop, Paint, PaintLayer, PartPatch, Preset, Theme,
+        ThemeContext, ThemePatch, ToolbarRule, WidgetState as S,
+    };
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let ctx = ThemeContext::light();
+    let stock = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+    let patched = Theme::preset(Preset::MacosTahoe)
+        .with_patch(
+            ThemePatch::new()
+                .button(
+                    ButtonRule::new()
+                        .states(S::CHECKED | S::HOVER)
+                        .body(PartPatch::new().fill(gradient.clone())),
+                )
+                .toolbar(
+                    ToolbarRule::new()
+                        .states(S::CHECKED | S::HOVER)
+                        .button(PartPatch::new().fill(gradient)),
+                ),
+        )
+        .resolve(&ctx);
+    let on = ButtonQuery::new(S::CHECKED);
+    let [rest, hovered, pressed] = [(false, false), (true, false), (true, true)];
+    let toggle_rest = toggle_on_in(Some(&stock), on, rest);
+    let toggle_pressed = toggle_on_in(Some(&stock), on, pressed);
+    if toggle_rest.fill.is_none() || toggle_rest.fill == toggle_pressed.fill {
+        return Err("macos-tahoe no longer states its checked toggle's fills apart".to_owned());
+    }
+    let toggle = toggle_on_in(Some(&patched), on, hovered);
+    assert_eq!(toggle.fill, toggle_rest.fill, "the hovered toggle's fill");
+    assert_eq!(
+        toggle.text,
+        toggle_on_in(Some(&stock), on, hovered).text,
+        "the hovered toggle's label"
+    );
+    assert_eq!(toggle_on_in(Some(&patched), on, pressed), toggle_pressed);
+    let edit_rest = edit_look(Some(&stock));
+    let edit_pressed = edit_look_at(Some(&stock), pressed);
+    if edit_rest.fill.is_none() || edit_rest.fill == edit_pressed.0 {
+        return Err(
+            "macos-tahoe no longer states its checked tool button's fills apart".to_owned(),
+        );
+    }
+    let edit = edit_look_at(Some(&patched), hovered);
+    assert_eq!(edit.0, edit_rest.fill, "the hovered edit switch's fill");
+    assert_eq!(edit.1, edit_look_at(Some(&stock), hovered).1);
+    assert_eq!(edit_look_at(Some(&patched), pressed), edit_pressed);
+    Ok(())
 }

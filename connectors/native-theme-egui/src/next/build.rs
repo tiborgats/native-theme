@@ -72,6 +72,11 @@ fn icon_stated_for(alone: &IconStyle, own: &IconStyle, bit: IconStated) -> bool 
     alone.from_state.contains(bit) || own.from_state.contains(bit)
 }
 
+/// [`stated_for`] of a text.
+fn text_stated_for(alone: &TextStyle, own: &TextStyle, bit: TextStated) -> bool {
+    alone.from_state.contains(bit) || own.from_state.contains(bit)
+}
+
 /// [`fill`] with the home a note names it by.
 fn fill_at(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Read<Rgba> {
     fill(part, home, notes).map(|c| (c, home))
@@ -1296,7 +1301,8 @@ pub(crate) fn mixed_box(r: &ResolvedTheme, notes: &mut Vec<Note>) -> MixedBox {
 /// own treatment of the hover or the press, each property apart, unless the theme states one
 /// for it (spec §2, `from_state`: the state alone, or the combined state asking it;
 /// [`stated_for`]), and are then the combined state's value; a checked box's disabled fill,
-/// mark and outline likewise, and the checked switch's disabled track. The disabled box takes
+/// mark, outline and label likewise (the label else the unchecked disabled box's), and the
+/// checked switch's disabled track. The disabled box takes
 /// the outline a rule states for the disabled state, else keeps its resting one.
 pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> VariantSource {
     use WidgetState as S;
@@ -1308,6 +1314,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
     let off_on = StyleQuery::new(S::DISABLED | S::CHECKED).asking(S::DISABLED);
     let (box_off, box_off_on) = (k.indicator(S::DISABLED), k.indicator(off_on));
     let mark_off_on = k.checkmark(off_on);
+    let (label_off, label_off_on) = (k.label(S::DISABLED), k.label(off_on));
     let track_off_on = r.switch.track(off_on);
     VariantSource {
         button: disabled(
@@ -1395,6 +1402,11 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                     edge(&box_off_on).1,
                 )
             }),
+            disabled_label: if text_stated_for(&label_off, &label_off_on, TextStated::COLOR) {
+                text_color(&label_off_on)
+            } else {
+                state_text_color(&label_off)
+            },
         },
         input: Disabled {
             text: state_text_color(&i.text(S::DISABLED)),
@@ -1441,6 +1453,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                 },
             }
         },
+        toolbar_label: state_text_color(&r.toolbar.button_label(S::DISABLED)),
     }
 }
 
