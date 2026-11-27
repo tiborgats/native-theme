@@ -45,6 +45,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(PRESSED|CHECKED).fill",
             "button.label(HOVER|CHECKED).color",
             "button.label(PRESSED|CHECKED).color",
+            "button.label(PRESSED).color",
         ],
         "not reachable: a selected Button takes no hover or press style, so the toggle that is on keeps next::geometry::button_checked's fill and text colour under the pointer and pressed (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected; native-theme-gpui README, Limits)",
     ),
@@ -235,7 +236,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.page_tabs.menu",
         &["button.label(HOVER).color"],
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
+        CUSTOM_NO_HOVER_TEXT,
     ),
     (
         "chrome.page_tabs.menu",
@@ -349,7 +350,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "toolbar.button_icon(HOVER|CHECKED).color",
             "toolbar.button_icon(PRESSED|CHECKED).color",
         ],
-        "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)",
+        CHECKED_ICON_STATE_TINT,
     ),
     (
         "basic.icons.edit",
@@ -357,7 +358,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "toolbar.button_icon(HOVER).color",
             "toolbar.button_icon(PRESSED).color",
         ],
-        "not reachable: an Icon takes one colour, the tint of the state its Button is built in, so it stays under the pointer and pressed: while the switch is off the tint at rest, toolbar.button_icon(NONE).color's where stated; while it is on toolbar.button_icon(CHECKED).color's where a rule states it for CHECKED (gpui-component 0.10.0 src/icon.rs, Styled for Icon; demo::tool_icon_tinted; native-theme-gpui README, Limits)",
+        "not reachable: an Icon takes one colour, the tint of the state its Button is built in, so it stays under the pointer and pressed: while the switch is off the tint at rest, toolbar.button_icon(NONE).color's where stated; while it is on toolbar.button_icon(CHECKED).color's where a rule states it for CHECKED; else the Button's text colour (gpui-component 0.10.0 src/icon.rs, Styled for Icon; demo::tool_icon_tinted; native-theme-gpui README, Limits)",
     ),
     (
         "basic.icons.edit",
@@ -412,26 +413,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ("chrome.toolbar.", TOOL_STATE_WIDTHS, TOOL_STATE_WIDTH),
     ("basic.icons.", TOOL_STATE_WIDTHS, TOOL_STATE_WIDTH),
     (
-        "chrome.toolbar.",
-        &["toolbar.button_label(HOVER).color"],
-        CUSTOM_NO_HOVER_TEXT,
-    ),
-    (
-        "basic.icons.",
-        &["toolbar.button_label(HOVER).color"],
-        CUSTOM_NO_HOVER_TEXT,
-    ),
-    (
-        "chrome.toolbar.",
-        &["toolbar.button_label(PRESSED).color"],
-        PRESSED_KEEPS_TEXT,
-    ),
-    (
-        "basic.icons.",
-        &["toolbar.button_label(PRESSED).color"],
-        PRESSED_KEEPS_TEXT,
-    ),
-    (
         "chrome.status_bar.toggle",
         &[
             "button.body(CHECKED; variant=Flat).stroke.color",
@@ -454,12 +435,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         &[
             "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color",
             "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width",
-        ],
-        "not reachable: a focused Button's border is gpui-component's own focus style, ThemeColor ring, not a stroke the theme states for the state (styled.rs, focus_style)",
-    ),
-    (
-        "chrome.status_bar.toggle",
-        &[
             "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
             "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
         ],
@@ -494,7 +469,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.icon(HOVER|CHECKED; variant=Flat).color",
             "button.icon(PRESSED|CHECKED; variant=Flat).color",
         ],
-        "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)",
+        CHECKED_ICON_STATE_TINT,
     ),
     (
         "chrome.status_bar.toggle",
@@ -538,18 +513,24 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.toolbar.",
-        &["button.label(HOVER).color"],
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
+        &[
+            "button.label(HOVER).color",
+            "toolbar.button_label(HOVER).color",
+        ],
+        CUSTOM_NO_HOVER_TEXT,
     ),
     (
         "basic.icons.",
-        &["button.label(HOVER).color"],
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
+        &[
+            "button.label(HOVER).color",
+            "toolbar.button_label(HOVER).color",
+        ],
+        CUSTOM_NO_HOVER_TEXT,
     ),
     (
         "chrome.status_bar.toggle",
         &["button.label(HOVER).color"],
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
+        CUSTOM_NO_HOVER_TEXT,
     ),
     (
         "chrome.toolbar.",
@@ -699,8 +680,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "",
-        &["button.label(PRESSED).color"],
-        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1315-1319, text_color)",
+        &[
+            "button.label(PRESSED).color",
+            "toolbar.button_label(PRESSED).color",
+        ],
+        PRESSED_KEEPS_TEXT,
     ),
     (
         "",
@@ -3262,7 +3246,11 @@ const TOOL_STATE_WIDTHS: &[&str] = &[
 ];
 
 /// Why [`TOOL_STATE_WIDTHS`] are not drawn.
-const TOOL_STATE_WIDTH: &str = "not drawn: a tool button's border is next::geometry::toolbar_button_rest's in every state, button.body(NONE).stroke.width wide, which next::variants::toolbar_button colours under the pointer and pressed (native-theme-gpui next/builders.rs, toolbar_button_rest)";
+const TOOL_STATE_WIDTH: &str = "not drawn: a tool button's border is next::geometry::toolbar_button_rest's in every state, button.body(NONE).stroke.width wide, which next::variants::toolbar_button colours under the pointer and pressed (native-theme-gpui next/builders.rs, toolbar_button_rest); Edit while on is a selected Button, which takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, selected)";
+
+/// Why a checked button's icon colours under the pointer and pressed, Edit's and the
+/// side-panel toggle's, are not drawn.
+const CHECKED_ICON_STATE_TINT: &str = "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)";
 
 /// Why a Custom variant's label under the pointer is not drawn.
 const CUSTOM_NO_HOVER_TEXT: &str = "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)";

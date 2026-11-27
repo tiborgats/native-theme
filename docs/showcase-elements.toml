@@ -483,8 +483,8 @@ leaves = ["button.font.color", "button.hover_background", "button.hover_text_col
 # homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
 #          button hovered and pressed, both drawn.
 #        the toolbar button's own outline at rest, its widths hovered and pressed and its
-#          labels hovered and pressed (model_only_homes), which egui's toolbar scope and iced's
-#          styles::toolbar_button draw.
+#          labels hovered and pressed (model_only_homes), which iced's styles::toolbar_button
+#          draws; egui's toolbar scope draws the widths and the labels, no outline at rest.
 homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_label(NONE)", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(HOVER).stroke.width", "toolbar.button(PRESSED).stroke.width", "toolbar.button_label(HOVER).color", "toolbar.button_label(PRESSED).color", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
@@ -506,8 +506,8 @@ leaves = ["button.font.color", "button.hover_background", "button.hover_text_col
 # homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
 #          button hovered and pressed, both drawn.
 #        the toolbar button's own outline at rest, its widths hovered and pressed and its
-#          labels hovered and pressed (model_only_homes), which egui's toolbar scope and iced's
-#          styles::toolbar_button draw.
+#          labels hovered and pressed (model_only_homes), which iced's styles::toolbar_button
+#          draws; egui's toolbar scope draws the widths and the labels, no outline at rest.
 homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_label(NONE)", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(HOVER).stroke.width", "toolbar.button(PRESSED).stroke.width", "toolbar.button_label(HOVER).color", "toolbar.button_label(PRESSED).color", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
@@ -529,8 +529,8 @@ leaves = ["button.font.color", "button.hover_background", "button.hover_text_col
 # homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
 #          button hovered and pressed, both drawn.
 #        the toolbar button's own outline at rest, its widths hovered and pressed and its
-#          labels hovered and pressed (model_only_homes), which egui's toolbar scope and iced's
-#          styles::toolbar_button draw.
+#          labels hovered and pressed (model_only_homes), which iced's styles::toolbar_button
+#          draws; egui's toolbar scope draws the widths and the labels, no outline at rest.
 homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_label(NONE)", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(HOVER).stroke.width", "toolbar.button(PRESSED).stroke.width", "toolbar.button_label(HOVER).color", "toolbar.button_label(PRESSED).color", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
@@ -1129,17 +1129,19 @@ sample = { text = "glyph" }
 
 # A checked button: `button.checked_*` (docs/platform-facts.md §2.3), and the pressed fill, which
 # gpui's selected Button is filled in where the theme states no checked fill (its `button_active`,
-# which next::apply sets from it; docs/v0.8.0-spec.md §10, rule 0a). No connector letters it in the
-# pressed label. Under the pointer and pressed, the checked state's answers for HOVER|CHECKED and
-# PRESSED|CHECKED (model_only_homes), which egui and iced draw where CHECKED's are stated.
+# which next::apply sets from it; docs/v0.8.0-spec.md §10, rule 0a). Under the pointer and pressed,
+# the checked state's answers for HOVER|CHECKED and PRESSED|CHECKED (model_only_homes), which egui
+# and iced draw where CHECKED's are stated; and the pressed label, which the presets give as the
+# answer for PRESSED|CHECKED's label where the PRESSED rule follows every rule for CHECKED (iced's
+# contract-homes.toml moves it at styles::button_toggle.text_color, (true, Pressed)).
 [[element]]
 id = "basic.buttons.toggle_on"
 name = "Toggle button"
 parent = "basic.buttons.toggle_off"
-leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.checked_background", "button.checked_text_color", "button.active_background", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.checked_background", "button.checked_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 # homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
 #          (0.7.2), and the button is hovered and pressed.
-homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(PRESSED).fill", "button.body(HOVER|CHECKED).fill", "button.body(PRESSED|CHECKED).fill", "button.label(HOVER|CHECKED).color", "button.label(PRESSED|CHECKED).color","button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
+homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(PRESSED).fill", "button.body(HOVER|CHECKED).fill", "button.body(PRESSED|CHECKED).fill", "button.label(HOVER|CHECKED).color", "button.label(PRESSED|CHECKED).color", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["On"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -1147,8 +1149,8 @@ sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 id = "basic.buttons.toggle_on.label"
 name = "Button label"
 parent = "basic.buttons.toggle_on"
-leaves = ["button.font", "button.checked_text_color", "defaults.line_height"]
-homes = ["button.label(NONE)", "button.label(CHECKED).color", "button.label(HOVER|CHECKED).color", "button.label(PRESSED|CHECKED).color", "typography.line_height_multiplier"]
+leaves = ["button.font", "button.checked_text_color", "button.active_text_color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(CHECKED).color", "button.label(HOVER|CHECKED).color", "button.label(PRESSED|CHECKED).color", "button.label(PRESSED).color", "typography.line_height_multiplier"]
 states = ["On"]
 part = true
 sample = { text = "glyph" }
@@ -2064,8 +2066,8 @@ leaves = ["button.font.color", "button.hover_background", "button.hover_text_col
 # homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
 #          button hovered and pressed, both drawn.
 #        the toolbar button's own outline at rest, its widths hovered and pressed and its
-#          labels hovered and pressed (model_only_homes), which egui's toolbar scope and iced's
-#          styles::toolbar_button draw.
+#          labels hovered and pressed (model_only_homes), which iced's styles::toolbar_button
+#          draws; egui's toolbar scope draws the widths and the labels, no outline at rest.
 homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(HOVER).stroke.width", "toolbar.button(PRESSED).stroke.width", "toolbar.button_label(HOVER).color", "toolbar.button_label(PRESSED).color", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
@@ -2087,8 +2089,8 @@ leaves = ["button.font.color", "button.hover_background", "button.hover_text_col
 # homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
 #          button hovered and pressed, both drawn.
 #        the toolbar button's own outline at rest, its widths hovered and pressed and its
-#          labels hovered and pressed (model_only_homes), which egui's toolbar scope and iced's
-#          styles::toolbar_button draw.
+#          labels hovered and pressed (model_only_homes), which iced's styles::toolbar_button
+#          draws; egui's toolbar scope draws the widths and the labels, no outline at rest.
 homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(HOVER).stroke.width", "toolbar.button(PRESSED).stroke.width", "toolbar.button_label(HOVER).color", "toolbar.button_label(PRESSED).color", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
@@ -2110,8 +2112,8 @@ leaves = ["button.font.color", "button.hover_background", "button.hover_text_col
 # homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
 #          button hovered and pressed, both drawn.
 #        the toolbar button's own outline at rest, its widths hovered and pressed and its
-#          labels hovered and pressed (model_only_homes), which egui's toolbar scope and iced's
-#          styles::toolbar_button draw.
+#          labels hovered and pressed (model_only_homes), which iced's styles::toolbar_button
+#          draws; egui's toolbar scope draws the widths and the labels, no outline at rest.
 homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(HOVER).stroke.width", "toolbar.button(PRESSED).stroke.width", "toolbar.button_label(HOVER).color", "toolbar.button_label(PRESSED).color", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }

@@ -37,10 +37,14 @@ const REGENERATE_HOMES: &str =
 /// The state queries the 0.8.0 style functions ask that the table of homes
 /// names for no colour leaf (the homes of `crate::next::styles`' `Unmapped`
 /// sources): a variant's outline, a disabled or pressed state 0.7.2 had no
-/// field for; and the colour homes of the same kind docs/showcase-elements.toml
+/// field for; the colour homes of the same kind docs/showcase-elements.toml
 /// lists that none of them asks, which [`UNREAD_HOMES`] names: a flat
 /// button's focused and checked looks, a flat button's icon, a toolbar
-/// button's icon.
+/// button's icon; and a home docs/showcase-elements.toml lists in a state
+/// none of them asks, whose rule reaches a state one asks: `toolbar.button(PRESSED|CHECKED)
+/// .stroke.color`, which `toolbar_button` asks as
+/// `toolbar.button(PRESSED|HOVER|CHECKED)`, iced's pressed status being
+/// under the pointer.
 const QUERIED_HOMES: &[&str] = &[
     "button.body(CHECKED; variant=Flat).stroke.color",
     "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",

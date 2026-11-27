@@ -10077,7 +10077,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     let os_icon = icon.is_some() && state.chrome_icons.system;
     // The icon of the button an element is, or is the icon of.
     let own_icon = ghost_icon(state, id.strip_suffix(".icon").unwrap_or(id));
-    let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
+    let selected = id.strip_suffix(".icon").unwrap_or(id) == "chrome.status_bar.toggle"
+        && state.side_panel_visible;
     // What a rule states for the flat button's checked state alone, which
     // the open toggle's states take ([`ghost_button`]).
     let checked_part = r.button.body(self::flat(WidgetState::CHECKED));
@@ -10087,6 +10088,11 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         iced_next::state_text_color_of(&r.button.label(self::flat(WidgetState::CHECKED))).is_some();
     // Edit, the edit-mode switch, while it is on.
     let edit_on = id == "basic.icons.edit" && state.basic_edit;
+    let checked_tool_edge = r
+        .toolbar
+        .button(WidgetState::CHECKED)
+        .from_state
+        .contains(PartStated::STROKE);
     let colour = ghost_home(home).is_some() || home == "sidebar.item_label(NONE).color";
     if colour && id == "chrome.info.copy" {
         return Some(copy_route(r, home));
@@ -10128,7 +10134,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         "button.body(HOVER; variant=Flat).stroke.width" if flat && selected && checked_edge => {
             "not drawn: the toggle is open and a rule states button.body(CHECKED;variant=Flat).stroke \
              for CHECKED, so ghost_button outlines it under the pointer by the theme's answer for \
-             button.body(CHECKED|HOVER;variant=Flat), its width included (next_edge)"
+             button.body(CHECKED|HOVER;variant=Flat), its width included (next_edge), which \
+             button.body(HOVER;variant=Flat).stroke.width gives where its rule follows every rule \
+             for CHECKED"
         }
         "button.body(HOVER; variant=Flat).stroke.width" if flat => {
             "ghost_button: the Hovered border's width, button.body(HOVER;variant=Flat).stroke's \
@@ -10296,18 +10304,37 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              button.icon(CHECKED;variant=Flat).color where a rule states it for CHECKED, else \
              the label ghost_button gives the open toggle at rest (icon_button)"
         }
+        "toolbar.button(NONE).stroke.width" if edit_on && checked_tool_edge => {
+            "not drawn: the switch is on, and a rule states toolbar.button(CHECKED).stroke for \
+             CHECKED, so iced_next::styles::toolbar_button draws it at the checked widths, \
+             toolbar.button(CHECKED)'s at rest and the theme's answers for \
+             toolbar.button(HOVER|CHECKED) and toolbar.button(PRESSED|HOVER|CHECKED) under the \
+             pointer and pressed (toolbar_outline)"
+        }
+        "toolbar.button(NONE).stroke.width" if edit_on => {
+            "iced_next::styles::toolbar_button: button::Style::border.width while the switch is \
+             on, no rule stating toolbar.button(CHECKED).stroke for CHECKED, at rest and in each \
+             status whose stroke no rule states a width for, toolbar.button(NONE).stroke.width, \
+             iced's own neutral class's where unstated (toolbar_outline)"
+        }
         "toolbar.button(NONE).stroke.width" if tool => {
             "iced_next::styles::toolbar_button: button::Style::border.width at rest and in each \
              status whose stroke no rule states a width for, toolbar.button(NONE).stroke.width, \
              iced's own neutral class's where unstated (toolbar_outline)"
         }
-        "toolbar.button(HOVER).stroke.width" | "toolbar.button(PRESSED).stroke.width"
-            if edit_on =>
-        {
+        "toolbar.button(HOVER).stroke.width" if edit_on => {
             "not drawn: the switch is on, and iced_next::styles::toolbar_button draws it under \
-             the pointer and pressed at toolbar.button(HOVER|CHECKED)'s and \
-             toolbar.button(PRESSED|HOVER|CHECKED)'s width where a rule states each, else the \
-             rest width (toolbar_outline)"
+             the pointer at the theme's answer for toolbar.button(HOVER|CHECKED)'s width where a \
+             rule states it, else the rest width (toolbar_outline), which \
+             toolbar.button(HOVER).stroke.width gives where its rule follows every rule for \
+             CHECKED"
+        }
+        "toolbar.button(PRESSED).stroke.width" if edit_on => {
+            "not drawn: the switch is on, and iced_next::styles::toolbar_button draws it pressed \
+             at the theme's answer for toolbar.button(PRESSED|HOVER|CHECKED)'s width where a rule \
+             states it, else the rest width (toolbar_outline), which \
+             toolbar.button(PRESSED).stroke.width gives where its rule follows every rule for \
+             CHECKED"
         }
         "toolbar.button(HOVER).stroke.width" if tool => {
             "iced_next::styles::toolbar_button: the Hovered border's width where a rule states \
@@ -24654,6 +24681,99 @@ mod tests {
         );
     }
 
+    /// The side-panel toggle's icon element is routed as the toggle is
+    /// drawn: with the panel open its icon homes take the open toggle's
+    /// routes, as `icon_colour` loads the icon of the selected button, and
+    /// with it closed the closed one's. A bundled-style SVG stands in for
+    /// the set's icon, so the routes are those of an icon that takes a tint,
+    /// under kde-breeze light.
+    #[test]
+    fn the_toggle_icons_routes_follow_the_panel() {
+        let mut state = loaded("kde-breeze", false);
+        state.chrome_icons.system = false;
+        state.chrome_icons.panel = Some(IconData::Svg(Cow::Borrowed(
+            b"<svg><path fill=\"currentColor\"/></svg>",
+        )));
+        let route = |state: &State, home: &str| {
+            button_home_route(state, "chrome.status_bar.toggle.icon", home).unwrap_or_default()
+        };
+        state.side_panel_visible = true;
+        let open = (
+            route(&state, "button.icon(CHECKED; variant=Flat).color"),
+            route(&state, "button.icon(NONE; variant=Flat).color"),
+        );
+        assert!(
+            open.0
+                .starts_with("icon_colour: the icon's colour while open"),
+            "the open toggle's checked icon colour: {:?}",
+            open.0
+        );
+        assert!(
+            open.1.starts_with("not drawn: the toggle is open"),
+            "the open toggle's icon colour at rest: {:?}",
+            open.1
+        );
+        state.side_panel_visible = false;
+        let closed = (
+            route(&state, "button.icon(CHECKED; variant=Flat).color"),
+            route(&state, "button.icon(NONE; variant=Flat).color"),
+        );
+        assert!(
+            closed.0.starts_with("not drawn: the toggle is closed"),
+            "the closed toggle's checked icon colour: {:?}",
+            closed.0
+        );
+        assert!(
+            closed
+                .1
+                .starts_with("icon_colour: the icon's colour, set as it loads"),
+            "the closed toggle's icon colour at rest: {:?}",
+            closed.1
+        );
+    }
+
+    /// Edit's rest width, `toolbar.button(NONE).stroke.width`, is routed as
+    /// `toolbar_button_from` draws the switch: while it is on, not drawn
+    /// where a rule states `toolbar.button(CHECKED).stroke` (the checked
+    /// widths are drawn), else drawn; while it is off, drawn. On every
+    /// preset of the 0.8.0 model in light mode, which hold both kinds.
+    #[test]
+    fn edits_rest_width_route_follows_the_checked_stroke() {
+        let mut seen = BTreeSet::new();
+        let mut faults = Vec::new();
+        for key in Preset::ALL.iter().map(|preset| preset.as_str()) {
+            let mut state = loaded(key, false);
+            let stated = state
+                .next_shown()
+                .toolbar
+                .button(WidgetState::CHECKED)
+                .from_state
+                .contains(PartStated::STROKE);
+            seen.insert(stated);
+            for on in [true, false] {
+                state.basic_edit = on;
+                let route = button_home_route(
+                    &state,
+                    "basic.icons.edit",
+                    "toolbar.button(NONE).stroke.width",
+                )
+                .unwrap_or_default();
+                let not_drawn = route.starts_with("not drawn");
+                if not_drawn != (on && stated)
+                    || (!not_drawn && !route.starts_with("iced_next::styles::toolbar_button"))
+                {
+                    faults.push(format!("{key} (on: {on}, stated: {stated}): {route:?}"));
+                }
+            }
+        }
+        assert_eq!(
+            seen.len(),
+            2,
+            "the presets no longer hold a checked tool stroke and none, so this test proves less"
+        );
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     // -----------------------------------------------------------------------
     // the_basic_edit_button_starts_checked_and_switches
     // -----------------------------------------------------------------------
@@ -36028,6 +36148,22 @@ mod tests {
                  button.body(CHECKED).fill"
             ),
             "{label}: the On toggle's checked fill: {checked}"
+        );
+        // Its pressed label is the theme's answer for CHECKED | PRESSED,
+        // which the pressed rule gives where it follows every rule for
+        // CHECKED: the presets' pressed label moves its pressed status.
+        let pressed_label = colour_home_route(
+            element,
+            "button.label(PRESSED).color",
+            Shown::opening(r),
+            Some(label),
+        )
+        .unwrap_or_default();
+        assert!(
+            pressed_label.contains(
+                "styles::button_toggle.text_color (Pressed) moved by button.label(PRESSED).color"
+            ),
+            "{label}: the On toggle's pressed label: {pressed_label}"
         );
     }
 

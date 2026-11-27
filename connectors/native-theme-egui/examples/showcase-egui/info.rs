@@ -663,14 +663,14 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      it for that state (pages::basic::RowLook::of)";
 
 /// The route of the primary button's own outline, which the Basic page hands its button per call.
-const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline, \
+pub(crate) const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline, \
      button.body(<state>; variant=Primary).stroke, its width and colour, at rest where stated, \
      hovered and pressed where a rule states it for the state, a translucent one laid inside \
      composited over the button's fill; else the button scope's own entry for the state; \
      focused, the scope's own (pages::basic, primary_pen)";
 /// The route of the dialog's default button's outline: its own look where the theme gives it
 /// one, else the primary button's outline, both per call.
-const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the state of the \
+pub(crate) const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the state of the \
      button's previous response: where a rule states button.body(DEFAULT).fill, the default \
      button's own frame (native-theme-egui next::default_button: button.body(DEFAULT).stroke, \
      hovered and pressed button.body(HOVER).stroke, focused button.body(FOCUS_VISIBLE).stroke \
@@ -679,7 +679,7 @@ const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the sta
      where a rule states it for the state, else in the button scope's own entry for the state, \
      which this home gives; focused, the scope's own (pages::basic, primary_pen)";
 /// The route of the primary button's own corners: egui reads them nowhere.
-const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
+pub(crate) const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
      the button scope (pages::basic, primary), rounded as the push button, by \
      button.body(NONE).corners";
 
@@ -733,7 +733,7 @@ const TOGGLE_PRESSED_EDGE: &str = "egui: per call, the toggle's outline pressed 
      button.body(CHECKED|PRESSED; variant=Flat).stroke, where a rule states it, else the \
      closed one's (chrome::toggle_checked_pens)";
 /// The route of a flat button's hovered outline width, as [`FLAT_HOVER_EDGE`].
-const FLAT_HOVER_WIDTH: &str = "egui: per call, the flat button's outline width under the \
+pub(crate) const FLAT_HOVER_WIDTH: &str = "egui: per call, the flat button's outline width under the \
      pointer, button.body(HOVER; variant=Flat).stroke.width where a rule states the stroke for \
      HOVER, else egui's own treatment of the hover (native-theme-egui next::flat_button; \
      demo::flat)";
@@ -758,29 +758,29 @@ fn button_or_icon(element: &str, id: &str) -> bool {
 }
 
 /// The route of a tool button's hovered and pressed outline width, from the toolbar scope.
-const TOOL_HOVER_WIDTH: &str = "egui: the toolbar scope's hovered entry, \
+pub(crate) const TOOL_HOVER_WIDTH: &str = "egui: the toolbar scope's hovered entry, \
      visuals.widgets.hovered.bg_stroke's width, where a rule states toolbar.button(HOVER).stroke \
      for HOVER, else egui's own treatment of the hover (native-theme-egui next/build.rs, \
      ToolbarCell button_border; style/roles.rs, toolbar)";
 /// As [`TOOL_HOVER_WIDTH`], pressed: egui draws pressed and focused alike, in its `active` entry.
-const TOOL_PRESSED_WIDTH: &str = "egui: the toolbar scope's active entry, pressed or \
+pub(crate) const TOOL_PRESSED_WIDTH: &str = "egui: the toolbar scope's active entry, pressed or \
      keyboard-focused, visuals.widgets.active.bg_stroke's width, where a rule states \
      toolbar.button(PRESSED).stroke for PRESSED, else egui's own treatment of the press \
      (native-theme-egui next/build.rs, ToolbarCell button_border; style/roles.rs, toolbar)";
 /// The route of a tool button's hovered label, from the toolbar scope.
-const TOOL_HOVER_LABEL: &str = "egui: the toolbar scope's hovered entry, \
+pub(crate) const TOOL_HOVER_LABEL: &str = "egui: the toolbar scope's hovered entry, \
      visuals.widgets.hovered.fg_stroke, where a rule states it for HOVER, else egui's own \
      treatment of the hover (native-theme-egui next/build.rs, ToolbarCell button_text; \
      style/roles.rs, panel): the label's colour where the set has no icon for the button; an \
      icon keeps the colour it loads in";
 /// As [`TOOL_HOVER_LABEL`], pressed.
-const TOOL_PRESSED_LABEL: &str = "egui: the toolbar scope's active entry, pressed or \
+pub(crate) const TOOL_PRESSED_LABEL: &str = "egui: the toolbar scope's active entry, pressed or \
      keyboard-focused, visuals.widgets.active.fg_stroke, where a rule states it for PRESSED, else \
      egui's own treatment of the press (native-theme-egui next/build.rs, ToolbarCell \
      button_text; style/roles.rs, panel): the label's colour where the set has no icon for the \
      button; an icon keeps the colour it loads in";
 /// The route of a tool button's own outline at rest, which egui's toolbar scope reads none of.
-const TOOL_REST_EDGE: &str = "not drawn: egui's toolbar scope reads no outline of a tool button \
+pub(crate) const TOOL_REST_EDGE: &str = "not drawn: egui's toolbar scope reads no outline of a tool button \
      at rest, only its rest capsule's fill and corners (native-theme-egui next/build.rs, \
      ToolbarCell rest); a stated hovered or pressed outline is drawn at its own width";
 
@@ -796,87 +796,93 @@ pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
     ("toolbar.button(PRESSED).stroke.width", TOOL_PRESSED_WIDTH),
     ("toolbar.button_label(HOVER).color", TOOL_HOVER_LABEL),
     ("toolbar.button_label(PRESSED).color", TOOL_PRESSED_LABEL),
-    (
-        "toolbar.button(NONE).fill",
-        "egui: the toolbar scope's resting fill, visuals.widgets.inactive.weak_bg_fill, where \
-         stated (native-theme-egui style/roles.rs, the toolbar's rest capsule); per call, \
-         demo::next_toolbar_button frames the button at rest in it",
-    ),
-    (
-        "toolbar.button(NONE).corners",
-        "egui: the toolbar scope's corner_radius in every state, where stated (native-theme-egui \
-         style/roles.rs, the toolbar's rest capsule)",
-    ),
-    (
-        "toolbar.button(HOVER|CHECKED).fill",
-        "egui: per call, Button::fill, the edit switch's fill while on under the pointer, in the \
-         state of its previous response, where a rule states toolbar.button(CHECKED).fill for \
-         CHECKED; else egui's own selected button's, visuals.selection.bg_fill \
-         (pages::basic::edit_look_at, native-theme-egui next::toolbar_button_checked)",
-    ),
-    (
-        "toolbar.button(PRESSED|CHECKED).fill",
-        "egui: per call, Button::fill, the edit switch's fill while on and pressed, in the state \
-         of its previous response, where a rule states toolbar.button(CHECKED).fill for CHECKED; \
-         else egui's own selected button's, visuals.selection.bg_fill \
-         (pages::basic::edit_look_at, native-theme-egui next::toolbar_button_checked)",
-    ),
-    (
-        "toolbar.button_label(CHECKED).color",
-        "egui: per call, the edit switch's label colour while on, at rest, where a rule states it \
-         for CHECKED, before button.label(CHECKED).color; else egui's own selected button's, \
-         visuals.selection.stroke (pages::basic::edit_look_at, native-theme-egui \
-         next::toolbar_button_checked)",
-    ),
+    ("toolbar.button(NONE).fill", TOOL_REST_FILL),
+    ("toolbar.button(NONE).corners", TOOL_REST_CORNERS),
+    ("toolbar.button(HOVER|CHECKED).fill", EDIT_HOVER_FILL),
+    ("toolbar.button(PRESSED|CHECKED).fill", EDIT_PRESSED_FILL),
+    ("toolbar.button_label(CHECKED).color", EDIT_LABEL),
     (
         "toolbar.button_label(HOVER|CHECKED).color",
-        "egui: per call, the edit switch's label colour while on under the pointer, in the state \
-         of its previous response, where a rule states toolbar.button_label(CHECKED).color for \
-         CHECKED; else as at rest (pages::basic::edit_look_at, native-theme-egui \
-         next::toolbar_button_checked)",
+        EDIT_HOVER_LABEL,
     ),
     (
         "toolbar.button_label(PRESSED|CHECKED).color",
-        "egui: per call, the edit switch's label colour while on and pressed, in the state of its \
-         previous response, where a rule states toolbar.button_label(CHECKED).color for CHECKED; \
-         else as at rest (pages::basic::edit_look_at, native-theme-egui \
-         next::toolbar_button_checked)",
+        EDIT_PRESSED_LABEL,
     ),
-    (
-        "toolbar.button_icon(NONE).color",
-        "egui: per call, the colour the icon loads in at rest, where stated, a colour stated at \
-         rest holding under the pointer and pressed, as egui changes an image in no state; else \
-         the colour it loads in (demo::tool_icon_color, demo::loaded_in)",
-    ),
-    (
-        "toolbar.button_icon(HOVER).color",
-        "egui: per call, the colour the icon loads in under the pointer, in the state of the \
-         button's previous response, where stated (demo::tool_icon_color, demo::loaded_in)",
-    ),
-    (
-        "toolbar.button_icon(PRESSED).color",
-        "egui: per call, the colour the icon loads in while pressed, in the state of the button's \
-         previous response, where stated (demo::tool_icon_color, demo::loaded_in)",
-    ),
-    (
-        "toolbar.button_icon(CHECKED).color",
-        "egui: per call, the colour the edit switch's icon loads in while on, at rest, where a \
-         rule states it for CHECKED; else the switch's label colour (demo::tool_icon_color, \
-         demo::loaded_in)",
-    ),
+    ("toolbar.button_icon(NONE).color", TOOL_ICON_REST),
+    ("toolbar.button_icon(HOVER).color", TOOL_ICON_HOVER),
+    ("toolbar.button_icon(PRESSED).color", TOOL_ICON_PRESSED),
+    ("toolbar.button_icon(CHECKED).color", EDIT_ICON_CHECKED),
     (
         "toolbar.button_icon(HOVER|CHECKED).color",
-        "egui: per call, the colour the edit switch's icon loads in while on under the pointer, \
-         in the state of its previous response, where a rule states \
-         toolbar.button_icon(CHECKED).color for CHECKED (demo::tool_icon_color, demo::loaded_in)",
+        EDIT_ICON_HOVER_CHECKED,
     ),
     (
         "toolbar.button_icon(PRESSED|CHECKED).color",
-        "egui: per call, the colour the edit switch's icon loads in while on and pressed, in the \
-         state of its previous response, where a rule states \
-         toolbar.button_icon(CHECKED).color for CHECKED (demo::tool_icon_color, demo::loaded_in)",
+        EDIT_ICON_PRESSED_CHECKED,
     ),
 ];
+
+/// The route of a tool button's fill at rest, the toolbar scope's rest capsule.
+pub(crate) const TOOL_REST_FILL: &str = "egui: the toolbar scope's resting fill, \
+     visuals.widgets.inactive.weak_bg_fill, where stated (native-theme-egui style/roles.rs, the \
+     toolbar's rest capsule); per call, demo::next_toolbar_button frames the button at rest in it";
+/// The route of a tool button's corners, the toolbar scope's rest capsule.
+pub(crate) const TOOL_REST_CORNERS: &str = "egui: the toolbar scope's corner_radius in every \
+     state, where stated (native-theme-egui style/roles.rs, the toolbar's rest capsule)";
+/// The route of the edit switch's fill while on under the pointer.
+pub(crate) const EDIT_HOVER_FILL: &str = "egui: per call, Button::fill, the edit switch's fill \
+     while on under the pointer, in the state of its previous response, where a rule states \
+     toolbar.button(CHECKED).fill for CHECKED; else egui's own selected button's, \
+     visuals.selection.bg_fill (pages::basic::edit_look_at, native-theme-egui \
+     next::toolbar_button_checked)";
+/// The route of the edit switch's fill while on and pressed.
+pub(crate) const EDIT_PRESSED_FILL: &str = "egui: per call, Button::fill, the edit switch's fill \
+     while on and pressed, in the state of its previous response, where a rule states \
+     toolbar.button(CHECKED).fill for CHECKED; else egui's own selected button's, \
+     visuals.selection.bg_fill (pages::basic::edit_look_at, native-theme-egui \
+     next::toolbar_button_checked)";
+/// The route of the edit switch's label while on, at rest.
+pub(crate) const EDIT_LABEL: &str = "egui: per call, the edit switch's label colour while on, at \
+     rest, where a rule states it for CHECKED, before button.label(CHECKED).color; else egui's \
+     own selected button's, visuals.selection.stroke (pages::basic::edit_look_at, \
+     native-theme-egui next::toolbar_button_checked)";
+/// The route of the edit switch's label while on under the pointer.
+pub(crate) const EDIT_HOVER_LABEL: &str = "egui: per call, the edit switch's label colour while \
+     on under the pointer, in the state of its previous response, where a rule states \
+     toolbar.button_label(CHECKED).color for CHECKED; else as at rest \
+     (pages::basic::edit_look_at, native-theme-egui next::toolbar_button_checked)";
+/// The route of the edit switch's label while on and pressed.
+pub(crate) const EDIT_PRESSED_LABEL: &str = "egui: per call, the edit switch's label colour while \
+     on and pressed, in the state of its previous response, where a rule states \
+     toolbar.button_label(CHECKED).color for CHECKED; else as at rest \
+     (pages::basic::edit_look_at, native-theme-egui next::toolbar_button_checked)";
+/// The route of a tool button's icon colour at rest.
+pub(crate) const TOOL_ICON_REST: &str = "egui: per call, the colour the icon loads in at rest, \
+     where stated, a colour stated at rest holding under the pointer and pressed, as egui changes \
+     an image in no state; else the colour it loads in (demo::tool_icon_color, demo::loaded_in)";
+/// The route of a tool button's icon colour under the pointer.
+pub(crate) const TOOL_ICON_HOVER: &str = "egui: per call, the colour the icon loads in under the \
+     pointer, in the state of the button's previous response, where stated \
+     (demo::tool_icon_color, demo::loaded_in)";
+/// The route of a tool button's icon colour while pressed.
+pub(crate) const TOOL_ICON_PRESSED: &str = "egui: per call, the colour the icon loads in while \
+     pressed, in the state of the button's previous response, where stated \
+     (demo::tool_icon_color, demo::loaded_in)";
+/// The route of the edit switch's icon colour while on, at rest.
+pub(crate) const EDIT_ICON_CHECKED: &str = "egui: per call, the colour the edit switch's icon \
+     loads in while on, at rest, where a rule states it for CHECKED; else the switch's label \
+     colour (demo::tool_icon_color, demo::loaded_in)";
+/// The route of the edit switch's icon colour while on under the pointer.
+pub(crate) const EDIT_ICON_HOVER_CHECKED: &str = "egui: per call, the colour the edit switch's \
+     icon loads in while on under the pointer, in the state of its previous response, where a \
+     rule states toolbar.button_icon(CHECKED).color for CHECKED (demo::tool_icon_color, \
+     demo::loaded_in)";
+/// The route of the edit switch's icon colour while on and pressed.
+pub(crate) const EDIT_ICON_PRESSED_CHECKED: &str = "egui: per call, the colour the edit switch's \
+     icon loads in while on and pressed, in the state of its previous response, where a rule \
+     states toolbar.button_icon(CHECKED).color for CHECKED (demo::tool_icon_color, \
+     demo::loaded_in)";
 
 /// The homes of the side-panel toggle's checked outline, fill and label under the pointer and
 /// pressed, its flat outline's hovered width and focused pen, and of its icon's colour, which
@@ -885,11 +891,7 @@ pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
 pub(crate) const TOGGLE_ROUTES: [(&str, &str); 19] = [
     (
         "button.body(HOVER; variant=Flat).stroke.width",
-        "egui: per call, the toggle's outline width under the pointer while the side panel is \
-         closed, button.body(HOVER; variant=Flat).stroke.width where a rule states the stroke for \
-         HOVER, else egui's own treatment of the hover (native-theme-egui next::flat_button; \
-         demo::flat); open, where a rule states button.body(CHECKED; variant=Flat).stroke, the \
-         checked pens' (chrome::toggle_checked_pens)",
+        TOGGLE_HOVER_WIDTH,
     ),
     (
         "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
@@ -901,47 +903,27 @@ pub(crate) const TOGGLE_ROUTES: [(&str, &str); 19] = [
     ),
     (
         "button.body(HOVER|CHECKED; variant=Flat).fill",
-        "egui: per call, Button::fill, the toggle's fill under the pointer while the side panel \
-         is open, in the state of its previous response, where a rule states \
-         button.body(CHECKED; variant=Flat).fill for CHECKED; else egui's own selected button's, \
-         visuals.selection.bg_fill (chrome::ghost_button, chrome::toggle_checked_in)",
+        TOGGLE_HOVER_FILL,
     ),
     (
         "button.body(PRESSED|CHECKED; variant=Flat).fill",
-        "egui: per call, Button::fill, the toggle's fill pressed while the side panel is open, \
-         in the state of its previous response, where a rule states \
-         button.body(CHECKED; variant=Flat).fill for CHECKED; else egui's own selected button's, \
-         visuals.selection.bg_fill (chrome::ghost_button, chrome::toggle_checked_in)",
+        TOGGLE_PRESSED_FILL,
     ),
     (
         "button.label(HOVER|CHECKED; variant=Flat).color",
-        "egui: per call, the toggle's label colour under the pointer while the side panel is \
-         open, in the state of its previous response, where a rule states \
-         button.label(CHECKED; variant=Flat).color for CHECKED; else egui's own selected \
-         button's, visuals.selection.stroke; an icon shown in the label's place keeps the colour \
-         it loads in (chrome::ghost_button, chrome::toggle_checked_in)",
+        TOGGLE_HOVER_LABEL,
     ),
     (
         "button.label(PRESSED|CHECKED; variant=Flat).color",
-        "egui: per call, the toggle's label colour pressed while the side panel is open, in the \
-         state of its previous response, where a rule states \
-         button.label(CHECKED; variant=Flat).color for CHECKED; else egui's own selected \
-         button's, visuals.selection.stroke; an icon shown in the label's place keeps the colour \
-         it loads in (chrome::ghost_button, chrome::toggle_checked_in)",
+        TOGGLE_PRESSED_LABEL,
     ),
     (
         "button.icon(HOVER|CHECKED; variant=Flat).color",
-        "egui: per call, the colour the toggle's icon loads in under the pointer while the side \
-         panel is open, in the state of its previous response, where a rule states \
-         button.icon(CHECKED; variant=Flat).color for CHECKED; else as at rest \
-         (chrome::toggle_icon_colour)",
+        TOGGLE_ICON_HOVER,
     ),
     (
         "button.icon(PRESSED|CHECKED; variant=Flat).color",
-        "egui: per call, the colour the toggle's icon loads in pressed while the side panel is \
-         open, in the state of its previous response, where a rule states \
-         button.icon(CHECKED; variant=Flat).color for CHECKED; else as at rest \
-         (chrome::toggle_icon_colour)",
+        TOGGLE_ICON_PRESSED,
     ),
     (
         "button.body(CHECKED; variant=Flat).stroke.color",
@@ -975,38 +957,76 @@ pub(crate) const TOGGLE_ROUTES: [(&str, &str); 19] = [
         "button.body(PRESSED|CHECKED; variant=Flat).stroke.width",
         TOGGLE_CHECKED_ACTIVE_PEN,
     ),
-    (
-        "button.icon(NONE; variant=Flat).color",
-        "egui: per call, the colour the toggle's icon loads in while the side panel is closed, \
-         where stated; else the colour it loads in (chrome::toggle_icon_colour)",
-    ),
-    (
-        "button.icon(CHECKED; variant=Flat).color",
-        "egui: per call, the colour the toggle's icon loads in while the side panel is open, \
-         where stated, a colour stated at rest holding there too; where a rule states it for \
-         CHECKED, in the state of the toggle's previous response, under the pointer \
-         button.icon(HOVER|CHECKED; variant=Flat).color and pressed button.icon(PRESSED|CHECKED; \
-         variant=Flat).color; else the colour it loads in (chrome::toggle_icon_colour)",
-    ),
+    ("button.icon(NONE; variant=Flat).color", TOGGLE_ICON_REST),
+    ("button.icon(CHECKED; variant=Flat).color", TOGGLE_ICON_OPEN),
 ];
+/// The route of the toggle's outline width under the pointer.
+pub(crate) const TOGGLE_HOVER_WIDTH: &str = "egui: per call, the toggle's outline width under \
+     the pointer while the side panel is closed, button.body(HOVER; variant=Flat).stroke.width \
+     where a rule states the stroke for HOVER, else egui's own treatment of the hover \
+     (native-theme-egui next::flat_button; demo::flat); open, where a rule states \
+     button.body(CHECKED; variant=Flat).stroke, the checked pens' (chrome::toggle_checked_pens)";
+/// The route of the open toggle's fill under the pointer.
+pub(crate) const TOGGLE_HOVER_FILL: &str = "egui: per call, Button::fill, the toggle's fill under \
+     the pointer while the side panel is open, in the state of its previous response, where a \
+     rule states button.body(CHECKED; variant=Flat).fill for CHECKED; else egui's own selected \
+     button's, visuals.selection.bg_fill (chrome::ghost_button, chrome::toggle_checked_in)";
+/// The route of the open toggle's fill pressed.
+pub(crate) const TOGGLE_PRESSED_FILL: &str = "egui: per call, Button::fill, the toggle's fill \
+     pressed while the side panel is open, in the state of its previous response, where a rule \
+     states button.body(CHECKED; variant=Flat).fill for CHECKED; else egui's own selected \
+     button's, visuals.selection.bg_fill (chrome::ghost_button, chrome::toggle_checked_in)";
+/// The route of the open toggle's label under the pointer.
+pub(crate) const TOGGLE_HOVER_LABEL: &str = "egui: per call, the toggle's label colour under the \
+     pointer while the side panel is open, in the state of its previous response, where a rule \
+     states button.label(CHECKED; variant=Flat).color for CHECKED; else egui's own selected \
+     button's, visuals.selection.stroke; an icon shown in the label's place keeps the colour it \
+     loads in (chrome::ghost_button, chrome::toggle_checked_in)";
+/// The route of the open toggle's label pressed.
+pub(crate) const TOGGLE_PRESSED_LABEL: &str = "egui: per call, the toggle's label colour pressed \
+     while the side panel is open, in the state of its previous response, where a rule states \
+     button.label(CHECKED; variant=Flat).color for CHECKED; else egui's own selected button's, \
+     visuals.selection.stroke; an icon shown in the label's place keeps the colour it loads in \
+     (chrome::ghost_button, chrome::toggle_checked_in)";
+/// The route of the open toggle's icon colour under the pointer.
+pub(crate) const TOGGLE_ICON_HOVER: &str = "egui: per call, the colour the toggle's icon loads in \
+     under the pointer while the side panel is open, in the state of its previous response, \
+     where a rule states button.icon(CHECKED; variant=Flat).color for CHECKED; else as at rest \
+     (chrome::toggle_icon_colour)";
+/// The route of the open toggle's icon colour pressed.
+pub(crate) const TOGGLE_ICON_PRESSED: &str = "egui: per call, the colour the toggle's icon loads \
+     in pressed while the side panel is open, in the state of its previous response, where a \
+     rule states button.icon(CHECKED; variant=Flat).color for CHECKED; else as at rest \
+     (chrome::toggle_icon_colour)";
+/// The route of the closed toggle's icon colour.
+pub(crate) const TOGGLE_ICON_REST: &str = "egui: per call, the colour the toggle's icon loads in \
+     while the side panel is closed, where stated; else the colour it loads in \
+     (chrome::toggle_icon_colour)";
+/// The route of the open toggle's icon colour.
+pub(crate) const TOGGLE_ICON_OPEN: &str = "egui: per call, the colour the toggle's icon loads in \
+     while the side panel is open, where stated, a colour stated at rest holding there too; \
+     where a rule states it for CHECKED, in the state of the toggle's previous response, under \
+     the pointer button.icon(HOVER|CHECKED; variant=Flat).color and pressed \
+     button.icon(PRESSED|CHECKED; variant=Flat).color; else the colour it loads in \
+     (chrome::toggle_icon_colour)";
 /// The route of the open toggle's outline at rest.
-const TOGGLE_CHECKED_PEN: &str = "egui: per call, the toggle's outline while the side panel is \
+pub(crate) const TOGGLE_CHECKED_PEN: &str = "egui: per call, the toggle's outline while the side panel is \
      open, at rest, egui's inactive entry, where a rule states it for CHECKED, a translucent pen \
      laid inside composited over the fill; else the scope's own (chrome::toggle_checked_pens)";
 /// The route of the open toggle's outline under the pointer.
-const TOGGLE_CHECKED_HOVER_PEN: &str = "egui: per call, the toggle's outline under the pointer \
+pub(crate) const TOGGLE_CHECKED_HOVER_PEN: &str = "egui: per call, the toggle's outline under the pointer \
      while the side panel is open, egui's hovered entry, the theme's answer for this state \
      where a rule states button.body(CHECKED; variant=Flat).stroke for CHECKED; else the \
      scope's own (chrome::toggle_checked_pens)";
 /// The route of the open toggle's outline pressed or focused, egui's one `active` entry.
-const TOGGLE_CHECKED_ACTIVE_PEN: &str = "egui: per call, the toggle's outline pressed or focused \
+pub(crate) const TOGGLE_CHECKED_ACTIVE_PEN: &str = "egui: per call, the toggle's outline pressed or focused \
      while the side panel is open, egui's one active entry, where a rule states \
      button.body(CHECKED; variant=Flat).stroke for CHECKED: the theme's answer for \
      (CHECKED|FOCUS_VISIBLE) where a rule states the flat button's FOCUS_VISIBLE stroke, else \
      for (CHECKED|PRESSED); else the scope's own (chrome::toggle_checked_pens)";
 /// The route of the flat button's focused pen on the toggle: egui's one `active` entry, press and
 /// keyboard focus alike.
-const TOGGLE_FOCUS_PEN: &str = "egui: per call, the toggle's outline pressed or focused, egui's \
+pub(crate) const TOGGLE_FOCUS_PEN: &str = "egui: per call, the toggle's outline pressed or focused, egui's \
      one active entry: closed, button.body(FOCUS_VISIBLE; variant=Flat).stroke, its colour and \
      width, where a rule states it for FOCUS_VISIBLE, else button.body(PRESSED; \
      variant=Flat).stroke's where one states it, else egui's own treatment of the press \
@@ -1275,62 +1295,49 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         TOGGLE_ON_PRESSED_LABEL,
     ),
     (
+        "basic.buttons.toggle_on",
+        "button.label(PRESSED).color",
+        TOGGLE_ON_PRESSED_RULE_LABEL,
+    ),
+    (
+        "basic.buttons.toggle_on.label",
+        "button.label(PRESSED).color",
+        TOGGLE_ON_PRESSED_RULE_LABEL,
+    ),
+    (
         "basic.buttons.dialog_default",
         "button.body(NONE; variant=Primary).corners",
-        "not drawn: where the theme gives the dialog's default button no look of its own it is \
-         the primary button, egui's selected Button in the button scope (pages::basic, \
-         primary_at), rounded as the push button, by button.body(NONE).corners",
+        DIALOG_DEFAULT_CORNERS,
     ),
     (
         "basic.icons.edit",
         "toolbar.button(HOVER).stroke.width",
-        "egui: while the edit switch is off, and while it is on where pages::basic::tool_pen \
-         finds no rule stating toolbar.button(HOVER|CHECKED).stroke, as the other tool buttons: \
-         the toolbar scope's hovered entry, visuals.widgets.hovered.bg_stroke's width, where a \
-         rule states toolbar.button(HOVER).stroke for HOVER, else egui's own treatment of the \
-         hover (native-theme-egui next/build.rs, ToolbarCell button_border)",
+        EDIT_HOVER_WIDTH,
     ),
     (
         "basic.icons.edit",
         "toolbar.button(PRESSED).stroke.width",
-        "egui: while the edit switch is off, and while it is on where pages::basic::tool_pen \
-         finds no rule stating toolbar.button(PRESSED|CHECKED).stroke, as the other tool \
-         buttons: the toolbar scope's active entry, visuals.widgets.active.bg_stroke's width, \
-         where a rule states toolbar.button(PRESSED).stroke for PRESSED, else egui's own \
-         treatment of the press (native-theme-egui next/build.rs, ToolbarCell button_border)",
+        EDIT_PRESSED_WIDTH,
     ),
     (
         "basic.icons.edit",
         "toolbar.button_label(HOVER).color",
-        "egui: while the edit switch is off, as the other tool buttons: the toolbar scope's \
-         hovered entry, visuals.widgets.hovered.fg_stroke, where a rule states it for HOVER \
-         (native-theme-egui next/build.rs, ToolbarCell button_text), the label's colour where \
-         the set has no icon; while it is on (it opens on), not drawn: its text is the checked \
-         label in every state, override_text_color (pages::basic::icon_buttons)",
+        EDIT_OFF_HOVER_LABEL,
     ),
     (
         "basic.icons.edit",
         "toolbar.button_label(PRESSED).color",
-        "egui: while the edit switch is off, as the other tool buttons: the toolbar scope's \
-         active entry, visuals.widgets.active.fg_stroke, where a rule states it for PRESSED \
-         (native-theme-egui next/build.rs, ToolbarCell button_text), the label's colour where \
-         the set has no icon; while it is on (it opens on), not drawn: its text is the checked \
-         label in every state, override_text_color (pages::basic::icon_buttons)",
+        EDIT_OFF_PRESSED_LABEL,
     ),
     (
         "basic.icons.edit",
         "toolbar.button(CHECKED).stroke.width",
-        "egui: per call, the edit switch's outline width while on at rest, egui's inactive entry, \
-         visuals.widgets.inactive.bg_stroke, where a rule states toolbar.button(CHECKED).stroke \
-         for the state, else the scope's own (pages::basic::tool_pen, demo::state_pen)",
+        EDIT_CHECKED_WIDTH,
     ),
     (
         "basic.icons.edit",
         "toolbar.button(HOVER|CHECKED).stroke.width",
-        "egui: per call, the edit switch's outline width while on under the pointer, egui's \
-         hovered entry, visuals.widgets.hovered.bg_stroke, where a rule states \
-         toolbar.button(HOVER|CHECKED).stroke for the state, else the scope's own \
-         (pages::basic::tool_pen, demo::state_pen)",
+        EDIT_HOVER_CHECKED_WIDTH,
     ),
     (
         "basic.icons.edit",
@@ -1471,12 +1478,7 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.icons.edit",
         "toolbar.button(NONE).fill",
-        "egui: while the edit switch is off, as the other tool buttons: the toolbar scope's \
-         resting fill, where stated (native-theme-egui style/roles.rs, the toolbar's rest \
-         capsule), demo::next_toolbar_button framing the button at rest in it; \
-         while it is on (it opens on), not drawn: it is egui's selected Button, filled in \
-         toolbar.button(CHECKED).fill or visuals.selection.bg_fill, and the rest frame is skipped \
-         (pages::basic::icon_buttons)",
+        EDIT_REST_FILL,
     ),
     (
         "basic.icons.edit",
@@ -1510,59 +1512,124 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     ),
 ];
 
+/// The dialog's default button's own corners, where it is the primary button.
+pub(crate) const DIALOG_DEFAULT_CORNERS: &str = "not drawn: where the theme gives the dialog's \
+     default button no look of its own it is the primary button, egui's selected Button in the \
+     button scope (pages::basic, primary_at), rounded as the push button, by \
+     button.body(NONE).corners";
+
+/// The edit switch's hovered outline width: [`TOOL_HOVER_WIDTH`]'s while it is off.
+pub(crate) const EDIT_HOVER_WIDTH: &str = "egui: while the edit switch is off, and while it is on \
+     where pages::basic::tool_pen finds no rule stating toolbar.button(HOVER|CHECKED).stroke, as \
+     the other tool buttons: the toolbar scope's hovered entry, \
+     visuals.widgets.hovered.bg_stroke's width, where a rule states toolbar.button(HOVER).stroke \
+     for HOVER, else egui's own treatment of the hover (native-theme-egui next/build.rs, \
+     ToolbarCell button_border)";
+
+/// The edit switch's pressed outline width: [`TOOL_PRESSED_WIDTH`]'s while it is off.
+pub(crate) const EDIT_PRESSED_WIDTH: &str = "egui: while the edit switch is off, and while it is \
+     on where pages::basic::tool_pen finds no rule stating toolbar.button(PRESSED|CHECKED).stroke, \
+     as the other tool buttons: the toolbar scope's active entry, \
+     visuals.widgets.active.bg_stroke's width, where a rule states \
+     toolbar.button(PRESSED).stroke for PRESSED, else egui's own treatment of the press \
+     (native-theme-egui next/build.rs, ToolbarCell button_border)";
+
+/// The edit switch's hovered label: [`TOOL_HOVER_LABEL`]'s while it is off.
+pub(crate) const EDIT_OFF_HOVER_LABEL: &str = "egui: while the edit switch is off, as the other \
+     tool buttons: the toolbar scope's hovered entry, visuals.widgets.hovered.fg_stroke, where a \
+     rule states it for HOVER (native-theme-egui next/build.rs, ToolbarCell button_text), the \
+     label's colour where the set has no icon; while it is on (it opens on), not drawn: its text \
+     is the checked label in every state, override_text_color (pages::basic::icon_buttons)";
+
+/// The edit switch's pressed label: [`TOOL_PRESSED_LABEL`]'s while it is off.
+pub(crate) const EDIT_OFF_PRESSED_LABEL: &str = "egui: while the edit switch is off, as the other \
+     tool buttons: the toolbar scope's active entry, visuals.widgets.active.fg_stroke, where a \
+     rule states it for PRESSED (native-theme-egui next/build.rs, ToolbarCell button_text), the \
+     label's colour where the set has no icon; while it is on (it opens on), not drawn: its text \
+     is the checked label in every state, override_text_color (pages::basic::icon_buttons)";
+
+/// The edit switch's outline width while on, at rest.
+pub(crate) const EDIT_CHECKED_WIDTH: &str = "egui: per call, the edit switch's outline width \
+     while on at rest, egui's inactive entry, visuals.widgets.inactive.bg_stroke, where a rule \
+     states toolbar.button(CHECKED).stroke for the state, else the scope's own \
+     (pages::basic::tool_pen, demo::state_pen)";
+
+/// The edit switch's outline width while on under the pointer.
+pub(crate) const EDIT_HOVER_CHECKED_WIDTH: &str = "egui: per call, the edit switch's outline \
+     width while on under the pointer, egui's hovered entry, visuals.widgets.hovered.bg_stroke, \
+     where a rule states toolbar.button(HOVER|CHECKED).stroke for the state, else the scope's \
+     own (pages::basic::tool_pen, demo::state_pen)";
+
+/// The edit switch's fill at rest: [`TOOL_REST_FILL`]'s while it is off.
+pub(crate) const EDIT_REST_FILL: &str = "egui: while the edit switch is off, as the other tool \
+     buttons: the toolbar scope's resting fill, where stated (native-theme-egui style/roles.rs, \
+     the toolbar's rest capsule), demo::next_toolbar_button framing the button at rest in it; \
+     while it is on (it opens on), not drawn: it is egui's selected Button, filled in \
+     toolbar.button(CHECKED).fill or visuals.selection.bg_fill, and the rest frame is skipped \
+     (pages::basic::icon_buttons)";
+
 /// The edit switch's icon at rest: [`TOOL_BUTTON_ROUTES`]' line holds only while the switch is
 /// off; while on, `demo::tool_icon_color` reads `CHECKED` and its forms instead.
-const EDIT_ICON_REST: &str = "egui: while the edit switch is off, as the other tool buttons: the \
+pub(crate) const EDIT_ICON_REST: &str = "egui: while the edit switch is off, as the other tool buttons: the \
      colour the icon loads in at rest, where stated (demo::tool_icon_color, demo::loaded_in); \
      while it is on (it opens on), not drawn: the icon loads in toolbar.button_icon(CHECKED)'s \
      colour, or the switch's label colour";
 
 /// The edit switch's icon under the pointer, as [`EDIT_ICON_REST`].
-const EDIT_ICON_HOVER: &str = "egui: while the edit switch is off, the colour the icon loads in \
+pub(crate) const EDIT_ICON_HOVER: &str = "egui: while the edit switch is off, the colour the icon loads in \
      under the pointer, in the state of the button's previous response, where stated \
      (demo::tool_icon_color, demo::loaded_in); while it is on (it opens on), not drawn: \
      toolbar.button_icon(HOVER|CHECKED)'s colour is read instead";
 
 /// The edit switch's icon while pressed, as [`EDIT_ICON_REST`].
-const EDIT_ICON_PRESSED: &str = "egui: while the edit switch is off, the colour the icon loads in \
+pub(crate) const EDIT_ICON_PRESSED: &str = "egui: while the edit switch is off, the colour the icon loads in \
      while pressed, in the state of the button's previous response, where stated \
      (demo::tool_icon_color, demo::loaded_in); while it is on (it opens on), not drawn: \
      toolbar.button_icon(PRESSED|CHECKED)'s colour is read instead";
 
 /// The edit switch's outline while on, pressed or keyboard-focused, egui's one `active` entry.
-const EDIT_PRESSED_PEN: &str = "egui: per call, the edit switch's outline while on, pressed or \
+pub(crate) const EDIT_PRESSED_PEN: &str = "egui: per call, the edit switch's outline while on, pressed or \
      keyboard-focused, egui's one active entry, visuals.widgets.active.bg_stroke, its colour and \
      width, where a rule states toolbar.button(PRESSED|CHECKED).stroke for the state, else the \
      scope's own (pages::basic::tool_pen, demo::state_pen)";
 
 /// The edit switch's outline pressed under the pointer, iced's query, which egui does not ask.
-const EDIT_PRESSED_UNDER_POINTER: &str = "not drawn: egui asks the edit switch's pressed outline \
+pub(crate) const EDIT_PRESSED_UNDER_POINTER: &str = "not drawn: egui asks the edit switch's pressed outline \
      as toolbar.button(PRESSED|CHECKED), a pressed response being egui's active entry whether \
      the pointer is over it or not (pages::basic::tool_pen)";
 
 /// The On toggle's fill under the pointer, per call in `pages::basic::toggle_on_in`.
-const TOGGLE_ON_HOVER_FILL: &str = "egui: per call, Button::fill, the toggle's fill while on \
+pub(crate) const TOGGLE_ON_HOVER_FILL: &str = "egui: per call, Button::fill, the toggle's fill while on \
      under the pointer, in the state of its previous response, where a rule states \
      button.body(CHECKED).fill for CHECKED; else egui's own selected button's, \
      visuals.selection.bg_fill (pages::basic::toggle_on_in)";
 
 /// The On toggle's fill pressed, as [`TOGGLE_ON_HOVER_FILL`].
-const TOGGLE_ON_PRESSED_FILL: &str = "egui: per call, Button::fill, the toggle's fill while on \
+pub(crate) const TOGGLE_ON_PRESSED_FILL: &str = "egui: per call, Button::fill, the toggle's fill while on \
      and pressed, in the state of its previous response, where a rule states \
      button.body(CHECKED).fill for CHECKED; else egui's own selected button's, \
      visuals.selection.bg_fill (pages::basic::toggle_on_in)";
 
 /// The On toggle's label under the pointer, as [`TOGGLE_ON_HOVER_FILL`].
-const TOGGLE_ON_HOVER_LABEL: &str = "egui: per call, RichText::color, the toggle's label colour \
+pub(crate) const TOGGLE_ON_HOVER_LABEL: &str = "egui: per call, RichText::color, the toggle's label colour \
      while on under the pointer, in the state of its previous response, where a rule states \
      button.label(CHECKED).color for CHECKED; else egui's own selected button's, \
      visuals.selection.stroke (pages::basic::toggle_on_in)";
 
 /// The On toggle's label pressed, as [`TOGGLE_ON_HOVER_FILL`].
-const TOGGLE_ON_PRESSED_LABEL: &str = "egui: per call, RichText::color, the toggle's label colour \
+pub(crate) const TOGGLE_ON_PRESSED_LABEL: &str = "egui: per call, RichText::color, the toggle's label colour \
      while on and pressed, in the state of its previous response, where a rule states \
      button.label(CHECKED).color for CHECKED; else egui's own selected button's, \
      visuals.selection.stroke (pages::basic::toggle_on_in)";
+
+/// The pressed label on the On toggle, which the theme's answer for `PRESSED|CHECKED` takes where
+/// the rule stating it follows every rule for `CHECKED`, as [`TOGGLE_ON_PRESSED_LABEL`].
+pub(crate) const TOGGLE_ON_PRESSED_RULE_LABEL: &str = "egui: per call, RichText::color, the toggle's label \
+     colour while on and pressed, in the state of its previous response, where a rule states \
+     button.label(CHECKED).color for CHECKED: the theme's answer for \
+     button.label(PRESSED|CHECKED).color, which this gives where its rule follows every rule for \
+     CHECKED; else egui's own selected button's, visuals.selection.stroke \
+     (pages::basic::toggle_on_in)";
 
 /// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
 /// the page tabs and the inspector's tabs.
