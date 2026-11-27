@@ -179,6 +179,16 @@ const DIFFERENCES: &[Difference] = &[
                  fill",
     },
     Difference {
+        leaf: "segmented_control::Look.hover",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states the hovered toggle as uncited solids (#d5d5d5 / \
+                 #464649); the 0.8.0 adwaita states AdwToggleGroup's own hover in libadwaita's \
+                 form, `$hover_color`, the window text at 7 %, translucent, a layer over the \
+                 group's fill (_toggle-group.scss:65-67, _colors.scss:268 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row segmented_control.hover_background, a \
+                 listed difference)",
+    },
+    Difference {
         leaf: "segmented_control::Look.separator",
         presets: &["adwaita", "material-3"],
         reason: "0.7.2 states the dividers no colour of their own (the control painted them in \
@@ -188,7 +198,7 @@ const DIFFERENCES: &[Difference] = &[
                  shared outline, outline-color = outline \
                  (v0_192/_md-comp-outlined-segmented-button.scss:65-66 at material-web \
                  cbd34a8), each segmented_control.separator(NONE).fill, which the control \
-                 paints its dividers in; next_drawn, SEPARATOR_FILL",
+                 paints its dividers in; next_drawn, ADWAITA_SEGMENTED",
     },
     Difference {
         leaf: "slider::Look.thumb_hover_color",

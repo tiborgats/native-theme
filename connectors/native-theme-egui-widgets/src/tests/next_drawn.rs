@@ -59,6 +59,10 @@ enum Differs {
     /// The dividers' colour alone ([`divider_fills_masked`]): 0.7.2 paints them in the outline's
     /// colour, 0.8.0 in the one the theme states for them.
     DividerFill,
+    /// The rects' fills alone, a rect filled in an outline's colour kept
+    /// ([`rect_fills_masked`]): a drop-down's field, a segmented control's track and its
+    /// segments.
+    RectFill,
     /// What each of these lets differ, at once, each of them one that changes no place
     /// ([`masked`]).
     Each(&'static [Differs]),
@@ -258,14 +262,26 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "segmented control",
         presets: &["adwaita"],
-        differs: Differs::DividerFill,
-        reason: SEPARATOR_FILL,
+        differs: Differs::Each(&[Differs::DividerFill, Differs::RectFill]),
+        reason: ADWAITA_SEGMENTED,
     },
     Difference {
         case: "segmented control disabled",
         presets: &["adwaita"],
-        differs: Differs::DividerFill,
-        reason: SEPARATOR_FILL,
+        differs: Differs::Each(&[Differs::DividerFill, Differs::RectFill]),
+        reason: ADWAITA_SEGMENTED,
+    },
+    Difference {
+        case: "combo box",
+        presets: &["adwaita"],
+        differs: Differs::RectFill,
+        reason: ADWAITA_COMBO,
+    },
+    Difference {
+        case: "combo box disabled",
+        presets: &["adwaita"],
+        differs: Differs::RectFill,
+        reason: ADWAITA_COMBO,
     },
     Difference {
         case: "segmented control disabled",
@@ -616,14 +632,35 @@ const MACOS_SWITCH: &str = "the label's side and gap: the 0.8.0 macOS presets st
      states neither and the label lies after the track at the scope's own icon_spacing, 2 pt \
      nearer; crate::next::parity, switch::Geometry.leading and .label_gap";
 
-/// adwaita's segmented control dividers (material-3's separator fill is its outline's colour,
-/// drawn alike).
-const SEPARATOR_FILL: &str = "the dividers' colour: 0.7.2 states the dividers no colour of \
-     their own, so the control paints them in its outline's; the 0.8.0 adwaita states \
-     AdwToggleGroup's `> separator`, GtkSeparator's `background: $border_color` \
-     (_toggle-group.scss:141-159, _misc.scss:21-22 at libadwaita 1.10.0), \
-     segmented_control.separator(NONE).fill, which the control paints them in; \
-     crate::next::parity, segmented_control::Look.separator";
+/// adwaita's segmented control: its dividers, its track and its checked toggle (material-3's
+/// separator fill is its outline's colour, drawn alike).
+const ADWAITA_SEGMENTED: &str = "the dividers' colour and the track's and the checked \
+     toggle's fills: 0.7.2 states the dividers no colour of their own, so the control paints \
+     them in its outline's; the 0.8.0 adwaita states AdwToggleGroup's `> separator`, \
+     GtkSeparator's `background: $border_color` (_toggle-group.scss:141-159, _misc.scss:21-22 \
+     at libadwaita 1.10.0), segmented_control.separator(NONE).fill, which the control paints \
+     them in (crate::next::parity, segmented_control::Look.separator); it states the track in \
+     libadwaita's own form, the window text at `$button_color` 10 %, translucent \
+     (_toggle-group.scss:12, _buttons.scss:1), and its checked toggle \
+     `--active-toggle-bg-color`, #ffffff in light and white at 20 % in dark, a layer over the \
+     track (_toggle-group.scss:79-80, _colors.scss:238, :245-247; docs/platform-facts.md \
+     §2.25; native-theme/tests/next_homes.toml, rows segmented_control.background_color and \
+     segmented_control.active_background, listed differences), where 0.7.2 states the track \
+     laid over the window, opaque (#e6e6e7 / #38383c), and the dark checked toggle laid over \
+     that (#606063); a disabled control fades them as one over its backdrop \
+     (segmented_control.rs, fade_as_one); native-theme-egui, next::parity, the \
+     SegmentedControl entries, ADWAITA_FIELD_FILLS and ADWAITA_CHECKED_TOGGLE";
+
+/// adwaita's drop-down field.
+const ADWAITA_COMBO: &str = "the field's fill alone: the 0.8.0 adwaita states the drop-down's \
+     trigger, a raised button, in libadwaita's own form, the window text at `$button_color` \
+     10 %, translucent (_buttons.scss:1, :28-29, _dropdowns.scss:1-12 at libadwaita 1.10.0; \
+     docs/platform-facts.md §2.24; native-theme/tests/next_homes.toml, row \
+     combo_box.background_color, a listed difference), where 0.7.2 states it laid over the \
+     window, opaque (#e6e6e7 / #38383c); a disabled field keeps that rest fill in its Disabled \
+     cell, libadwaita stating no disabled fill, and egui fades it by the cell's disabled_alpha; \
+     native-theme-egui, next::parity, the ComboBox and ComboBox/Disabled entries, \
+     ADWAITA_FIELD_FILLS";
 
 /// The macOS presets' disabled switch label.
 const MACOS_SWITCH_DISABLED: &str = "the label's side, gap and colour: as MACOS_SWITCH gives, \
@@ -895,6 +932,7 @@ fn masked(
         Differs::Fill => both(fills_masked),
         Differs::Dot => both(|s| fallbacks_masked(&dots_masked(s))),
         Differs::DividerFill => divider_fills_masked(a, b),
+        Differs::RectFill => both(rect_fills_masked),
         Differs::Each(each) => each
             .iter()
             .try_fold((a.to_vec(), b.to_vec()), |(a, b), d| masked(*d, &a, &b)),
@@ -957,6 +995,7 @@ fn alike_but(
         | Differs::Fill
         | Differs::Dot
         | Differs::DividerFill
+        | Differs::RectFill
         | Differs::Each(_) => ra == rb && masked(differs, a, b).is_some_and(|(a, b)| a == b),
         Differs::Gap => {
             // the row's background spans the row, which the gap's change widens
@@ -1321,6 +1360,25 @@ fn divider_fills_masked(
         }
     }
     Some((a, b))
+}
+
+/// `shapes` with each rect's fill made transparent, but a rect filled in an outline's colour
+/// (the segmented control's dividers, [`outlines_masked`]), every other value kept: what a
+/// listed difference, a field's, a track's or a segment's fill, leaves to compare.
+fn rect_fills_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    let outlines = outline_colours(shapes);
+    shapes
+        .iter()
+        .cloned()
+        .map(|mut shape| {
+            if let egui::Shape::Rect(r) = &mut shape
+                && !outlines.contains(&r.fill)
+            {
+                r.fill = egui::Color32::TRANSPARENT;
+            }
+            shape
+        })
+        .collect()
 }
 
 /// The colours of the outlines `shapes` stroke.
