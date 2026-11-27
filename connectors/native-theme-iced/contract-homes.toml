@@ -44,9 +44,8 @@ combinations = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita
 [homes."button.body(CHECKED).fill"]
 leaves = ["button.checked_background"]
 moves = [
-  { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
-  { row = "styles::button_toggle.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(CHECKED; variant=Flat).stroke.color"]

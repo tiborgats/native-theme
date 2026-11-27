@@ -552,6 +552,11 @@ pub(crate) struct ButtonSource {
     /// that is unset, which its connector drew as the pressed one.
     pub active_background: Option<Layer>,
     pub disabled_background: Option<Color>,
+    /// The fill of a disabled checked button where the theme states the
+    /// disabled fill: on the 0.8.0 model its answer for
+    /// `DISABLED | CHECKED`, on 0.7.2's, which states one disabled fill,
+    /// `disabled_background`.
+    pub checked_disabled_background: Option<Color>,
     pub checked_background: Option<Color>,
     /// Where the theme states no checked fill, whether a checked button is
     /// drawn in the primary button's fill and label in the same status, by
@@ -605,6 +610,7 @@ impl ButtonSource {
             hover_background: Some(Layer::Color(hover)),
             active_background: Some(Layer::Color(b.active_background.map_or(hover, to_color))),
             disabled_background: b.disabled_background.map(to_color),
+            checked_disabled_background: b.disabled_background.map(to_color),
             checked_background: b.checked_background.map(to_color),
             checked_primary: false,
             label: Some(to_color(b.font.color)),
@@ -881,7 +887,7 @@ pub(crate) fn button_toggle_from(
             ),
             Status::Disabled => match source.disabled_background {
                 Some(_) => disabled_button(
-                    source.disabled_background,
+                    source.checked_disabled_background,
                     fill,
                     source.disabled_label,
                     rest_label,

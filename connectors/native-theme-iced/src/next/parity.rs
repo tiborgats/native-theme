@@ -1227,14 +1227,32 @@ const PRIMARY_OUTLINE: [Stated; 8] = button_outline!(; Primary);
 /// [`BUTTON_OUTLINE`].
 const TAHOE_BUTTON: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &BUTTON_OUTLINE];
 
-/// A toggle on macos-tahoe: [`TAHOE_BUTTON`], checked [`CHECKED_OUTLINE`]
-/// and [`TOGGLE_CHECKED_FILLS`].
+/// A toggle on macos-tahoe: [`TAHOE_BUTTON`], checked [`CHECKED_OUTLINE`],
+/// [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_DISABLED_FILL`].
 const TAHOE_TOGGLE: &[&[Stated]] = &[
     &BUTTON_STATE_FILLS,
     &BUTTON_OUTLINE,
     &CHECKED_OUTLINE,
     &TOGGLE_CHECKED_FILLS,
+    &TOGGLE_CHECKED_DISABLED_FILL,
 ];
+
+/// A disabled checked toggle's fill, the theme's answer for
+/// `DISABLED | CHECKED` ([`MEASURED_CHECKED_DISABLED`]).
+const TOGGLE_CHECKED_DISABLED_FILL: [Stated; 1] = [set(
+    at!(DISABLED | CHECKED),
+    Field::Background,
+    home!(fill, button.body(DISABLED | CHECKED)),
+)];
+
+/// The reason of macos-tahoe's disabled checked toggle fill.
+const MEASURED_CHECKED_DISABLED: &str = "0.7.2 has no disabled checked button fill, so its \
+     connector drew a disabled checked toggle in button.disabled_background; the 0.8.0 \
+     macos-tahoe preset states the disabled checked toggle, button.body(DISABLED | CHECKED), \
+     the accent mixed by 0.04 at alpha 0.44 (the comment of BUTTON_CHECKED_DISABLED_MIX there \
+     cites os-probe run 41006842699, os-probe-macos-26/tiebreak-derivations.toml, \
+     derivation.checked_disabled_fill_*), which the 0.8.0 side draws on a disabled checked \
+     toggle where the theme states the disabled fill (docs/v0.8.0-spec.md §10, rule 0)";
 
 /// A toggle on ios-13: its outline, checked or not, and checked
 /// [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
@@ -1364,9 +1382,8 @@ const TOGGLE_CHECKED_LABELS: [Stated; 2] = [
 
 /// The reason of a checked toggle drawn in the theme's answers for its
 /// hovered and pressed states.
-const CHECKED_STATES: &str = "0.7.2 has no hovered or pressed checked button, so its \
-     connector drew a checked toggle in button.checked_background and checked_text_color in \
-     every status; the 0.8.0 theme states the checked fill and label for CHECKED alone \
+const CHECKED_STATES: &str = "0.7.2 drew a checked toggle in one look in every status (its \
+     checked fill and label, else the pressed pair); the 0.8.0 theme states the checked fill and label for CHECKED alone \
      (button.body(CHECKED), button.label(CHECKED), docs/v0.8.0-spec.md §2, from_state), and \
      iced gives the button's hovered and pressed statuses, so the 0.8.0 side draws a checked \
      toggle under the pointer and pressed in what the theme states for CHECKED | HOVER and \
@@ -2352,7 +2369,13 @@ const DIFFERENCES: &[Difference] = &[
     stated_fields("button", &["macos-tahoe"], LineAlign::Inside, TAHOE_BUTTON),
     stated_checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, false).stating(
         TAHOE_TOGGLE,
-        &[INSIDE, STATED_CHECKED, STATED, CHECKED_STATES],
+        &[
+            INSIDE,
+            STATED_CHECKED,
+            STATED,
+            CHECKED_STATES,
+            MEASURED_CHECKED_DISABLED,
+        ],
     ),
     stated_fields(
         "button",
@@ -2363,31 +2386,21 @@ const DIFFERENCES: &[Difference] = &[
     stated_checked("button_toggle", &["ios-13"], LineAlign::Outside, false)
         .stating(IOS_TOGGLE, &[STATED_CHECKED, STATED, CHECKED_STATES]),
     stated_fields("button", &["material-3"], LineAlign::Outside, STATE_STROKES),
-    stated_fields(
-        "button_toggle",
-        &["material-3"],
-        LineAlign::Outside,
-        MATERIAL_TOGGLE,
-    )
-    .stating(MATERIAL_TOGGLE, &[STATED, CHECKED_STATES]),
+    stated_fields("button_toggle", &["material-3"], LineAlign::Outside, &[])
+        .stating(MATERIAL_TOGGLE, &[STATED, CHECKED_STATES]),
     stated_fields(
         "button",
         &["windows-11"],
         LineAlign::Outside,
         PRESSED_STROKE,
     ),
-    stated_fields(
-        "button_toggle",
-        &["windows-11"],
-        LineAlign::Outside,
-        WINDOWS_TOGGLE,
-    )
-    .stating(WINDOWS_TOGGLE, &[STATED, CHECKED_STATES]),
+    stated_fields("button_toggle", &["windows-11"], LineAlign::Outside, &[])
+        .stating(WINDOWS_TOGGLE, &[STATED, CHECKED_STATES]),
     stated_fields(
         "button_toggle",
         &["kde-breeze", "adwaita"],
         LineAlign::Outside,
-        CHECKED_TOGGLE_FILLS,
+        &[],
     )
     .stating(CHECKED_TOGGLE_FILLS, &[CHECKED_STATES]),
     toolbar_labels(&["macos-tahoe"]).stating(

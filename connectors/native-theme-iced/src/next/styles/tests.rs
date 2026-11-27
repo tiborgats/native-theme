@@ -306,6 +306,40 @@ fn a_disabled_checked_toolbar_button_takes_the_disabled_checked_fill() -> TestRe
     Ok(())
 }
 
+/// A disabled checked toggle is filled in the theme's answer for the state
+/// it is in, `button.body(DISABLED | CHECKED)`'s, not `(DISABLED)`'s (spec
+/// §10, rule 0), as a disabled checked toolbar button is: on a theme whose
+/// two answers differ, as an unchecked toggle disabled is on a theme that
+/// states the first answer's colour for `DISABLED`, and not as one that is
+/// off on the same theme.
+#[test]
+fn a_disabled_checked_toggle_takes_the_disabled_checked_fill() -> TestResult {
+    use iced_widget::button::Status;
+    fn disabled(
+        r: &ResolvedTheme,
+        checked: bool,
+    ) -> Result<Option<Background>, Box<dyn std::error::Error>> {
+        Ok(super::button_toggle(r, checked)?(&to_theme(r)?, Status::Disabled).background)
+    }
+    let in_disabled = |fill: Color| {
+        ButtonRule::new()
+            .states(WidgetState::DISABLED)
+            .body(PartPatch::new().fill(Paint::Solid(fill)))
+    };
+    let patch = ThemePatch::new().button(in_disabled(DISTINCT)).button(
+        ButtonRule::new()
+            .states(WidgetState::DISABLED | WidgetState::CHECKED)
+            .body(PartPatch::new().fill(Paint::Solid(LABEL))),
+    );
+    let in_label = every_preset_with(&ThemePatch::new().button(in_disabled(LABEL)));
+    for ((preset, r), (_, in_label)) in every_preset_with(&patch).into_iter().zip(in_label) {
+        let checked = disabled(&r, true)?;
+        assert_eq!(checked, disabled(&in_label, false)?, "{preset:?}");
+        assert_ne!(checked, disabled(&r, false)?, "{preset:?}");
+    }
+    Ok(())
+}
+
 /// A checked toggle whose theme states the checked fill and label for
 /// `CHECKED` alone is filled and lettered under the pointer and pressed in
 /// the theme's answers for `CHECKED | HOVER` and `CHECKED | PRESSED`, at
@@ -937,11 +971,13 @@ fn a_vertical_sliders_rail_is_the_vertical_tracks_width() -> TestResult {
 }
 
 /// The disabled fill and label a button with no disabled opacity shows:
-/// the disabled fill the theme states, with its disabled label or the label
-/// at rest faded as iced fades it; or, where it states no disabled fill,
-/// `idle` and `idle_label` faded as iced fades them.
+/// the disabled fill the theme states, its answer for `DISABLED | CHECKED`
+/// where `checked`, with its disabled label or the label at rest faded as
+/// iced fades it; or, where it states no disabled fill, `idle` and
+/// `idle_label` faded as iced fades them.
 fn disabled_without_opacity(
     r: &ResolvedTheme,
+    checked: bool,
     idle: IcedColor,
     idle_label: IcedColor,
 ) -> Result<(IcedColor, IcedColor, bool), super::Unmapped> {
@@ -960,12 +996,18 @@ fn disabled_without_opacity(
         text_color(&r.button.label(WidgetState::NONE), "label")?
             .scale_alpha(ICED_DISABLED_BUTTON_ALPHA)
     };
+    let body = if checked {
+        r.button.body(WidgetState::DISABLED | WidgetState::CHECKED)
+    } else {
+        body
+    };
     Ok((fill(&body, "fill")?, label, true))
 }
 
 /// A status button and a checked toggle whose theme states no disabled
-/// opacity draw each disabled colour the theme states as stated and fade
-/// only the ones it leaves to iced, as iced's own classes do.
+/// opacity draw each disabled colour the theme states as stated, the
+/// toggle's fill its answer for `DISABLED | CHECKED`, and fade only the ones
+/// it leaves to iced, as iced's own classes do.
 #[test]
 fn a_class_button_and_a_checked_toggle_with_no_disabled_opacity_halve_what_is_left_to_iced()
 -> TestResult {
@@ -978,14 +1020,15 @@ fn a_class_button_and_a_checked_toggle_with_no_disabled_opacity_halve_what_is_le
         let role = &r.colors.error;
         let style = super::button_danger(&r)?(&theme, Status::Disabled);
         let (fill, label, is_stated) =
-            disabled_without_opacity(&r, to_color(role.fill), to_color(role.foreground))?;
+            disabled_without_opacity(&r, false, to_color(role.fill), to_color(role.foreground))?;
         assert_eq!(background_color(style.background), Some(fill), "{preset:?}");
         assert_eq!(style.text_color, label, "{preset:?}");
 
         let toggle = super::button_toggle(&r, true)?;
         let checked = toggle(&theme, Status::Active);
         let checked_fill = background_color(checked.background).ok_or("no checked fill")?;
-        let (fill, label, _) = disabled_without_opacity(&r, checked_fill, checked.text_color)?;
+        let (fill, label, _) =
+            disabled_without_opacity(&r, true, checked_fill, checked.text_color)?;
         let style = toggle(&theme, Status::Disabled);
         assert_eq!(
             background_color(style.background),

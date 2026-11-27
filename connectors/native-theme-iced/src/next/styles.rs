@@ -77,6 +77,12 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.body(WidgetState::DISABLED),
             "button.body(DISABLED).fill",
         )?,
+        checked_disabled_background: flagged(
+            &b.body(WidgetState::DISABLED),
+            &b.body(WidgetState::DISABLED | WidgetState::CHECKED),
+            PartStated::FILL,
+            |p| fill(p, "button.body(DISABLED|CHECKED).fill"),
+        )?,
         checked_background,
         checked_primary: true,
         label: text_color_of(&b.label(WidgetState::NONE)),
@@ -292,7 +298,10 @@ pub fn button(
 /// `button.body(CHECKED | HOVER)`'s and `button.body(CHECKED | PRESSED)`'s;
 /// where it states the checked label, it is lettered in
 /// `button.label(CHECKED | HOVER)`'s and `(CHECKED | PRESSED)`'s (spec §10,
-/// rule 0), as [`toolbar_button`].
+/// rule 0), as [`toolbar_button`]. Where the theme states the disabled fill
+/// (`button.body(DISABLED)`), a disabled checked toggle is filled in its
+/// answer for `button.body(DISABLED | CHECKED)`, as a disabled checked
+/// toolbar button is.
 ///
 /// # Errors
 ///

@@ -866,7 +866,9 @@ rule 0).
   `CHECKED | PRESSED` (on the toolbar, macos-monterey's and macos-tahoe's
   measured shades), and where it states the checked label, letter it in
   theirs (spec §10, rule 0). A disabled checked toolbar button is filled in
-  what the theme states for `DISABLED | CHECKED`, where stated.
+  what the theme states for `DISABLED | CHECKED`, where stated, and a
+  disabled checked toggle likewise where the theme states the disabled
+  fill (macos-tahoe's measured disabled checked toggle).
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted
