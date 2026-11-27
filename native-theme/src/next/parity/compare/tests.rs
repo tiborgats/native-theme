@@ -1336,11 +1336,21 @@ fn a_colour_out_of_range_or_not_finite_mismatches() -> TestResult {
 #[test]
 fn a_part_property_of_a_form_0_7_2_does_not_hold_mismatches() -> TestResult {
     let c = srgb(STROKE);
-    let side = || StrokeSide {
+    let edge = srgb(COLOR);
+    let side = |color| StrokeSide {
         width: 1.0,
-        paint: Paint::Solid(c),
+        paint: Paint::Solid(color),
     };
-    let sides = || Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
+    let two_two = || {
+        Stroke::sides(
+            side(c),
+            side(c),
+            side(edge),
+            side(edge),
+            StrokeAlign::Inside,
+        )
+    };
+    let three_one = || Stroke::sides(side(c), side(c), side(edge), side(c), StrokeAlign::Inside);
     let gradient = Paint::layers([PaintLayer::LinearGradient {
         angle_deg: 0.0,
         stops: Arc::from([
@@ -1428,6 +1438,19 @@ fn a_part_property_of_a_form_0_7_2_does_not_hold_mismatches() -> TestResult {
             color.clone(),
             true,
         ),
+        // A per-side stroke `Stroke::prevailing` reduces: the three sides' colour; 0.7.2 had no edge colour.
+        (
+            PartProp::Stroke(three_one()),
+            "stroke.width",
+            json!(1.0),
+            true,
+        ),
+        (
+            PartProp::Stroke(three_one()),
+            "stroke.color",
+            color.clone(),
+            true,
+        ),
         // The forms it does not.
         (PartProp::Fill(gradient), "fill", color.clone(), false),
         (PartProp::Fill(layered), "fill", color.clone(), false),
@@ -1451,9 +1474,14 @@ fn a_part_property_of_a_form_0_7_2_does_not_hold_mismatches() -> TestResult {
             color.clone(),
             false,
         ),
-        (PartProp::Stroke(sides()), "stroke.width", json!(1.0), false),
         (
-            PartProp::Stroke(sides()),
+            PartProp::Stroke(two_two()),
+            "stroke.width",
+            json!(1.0),
+            false,
+        ),
+        (
+            PartProp::Stroke(two_two()),
             "stroke.color",
             color.clone(),
             false,
