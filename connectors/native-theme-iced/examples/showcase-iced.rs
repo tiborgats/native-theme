@@ -9952,7 +9952,8 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              iced's own flat button's (button::text) where unstated"
         }
         "button.body(NONE).corners" if tool => {
-            "iced_next::styles::toolbar_button: button::Style::border.radius"
+            "not drawn: on the 0.8.0 model iced_next::styles::toolbar_button rounds a tool button \
+             by toolbar.button(NONE).corners (toolbar_outline), not by the push button's"
         }
         "toolbar.button(NONE).corners" if tool => {
             "iced_next::styles::toolbar_button: button::Style::border.radius in every status, \
@@ -9999,8 +10000,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              at rest, closed or open, and no style reads the flat button's icon colour"
         }
         "button.body(NONE).stroke.width" if tool => {
-            "iced_next::styles::toolbar_button: button::Style::border.width, the outline under the \
-             pointer, drawn inside the bounds"
+            "not drawn: on the 0.8.0 model iced_next::styles::toolbar_button edges a tool button by \
+             toolbar.button(NONE)'s and each state's own stated width (toolbar_outline), not by the \
+             push button's"
         }
         "icons.theme" => "the icon loaders' theme: native_theme's FreedesktopLoader",
         "icons.set" => "the icon loader of the set: IconSetChoice::effective_icon_set",

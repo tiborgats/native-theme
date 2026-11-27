@@ -1201,7 +1201,66 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "not reachable: the Theme row is a ComboBox, which has no text field to select text in \
          (chrome::settings_rows)",
     ),
+    (
+        "basic.icons.edit",
+        "toolbar.button(NONE).fill",
+        "egui: while the edit switch is off, as the other tool buttons: the toolbar scope's \
+         resting fill, where stated (native-theme-egui style/roles.rs, the toolbar's rest \
+         capsule), demo::next_toolbar_button framing the button at rest in it; \
+         while it is on (it opens on), not drawn: it is egui's selected Button, filled in \
+         toolbar.button(CHECKED).fill or visuals.selection.bg_fill, and the rest frame is skipped \
+         (pages::basic::icon_buttons)",
+    ),
+    (
+        "basic.icons.edit",
+        "toolbar.button_icon(NONE).color",
+        EDIT_ICON_REST,
+    ),
+    (
+        "basic.icons.edit",
+        "toolbar.button_icon(HOVER).color",
+        EDIT_ICON_HOVER,
+    ),
+    (
+        "basic.icons.edit",
+        "toolbar.button_icon(PRESSED).color",
+        EDIT_ICON_PRESSED,
+    ),
+    (
+        "basic.icons.edit.icon",
+        "toolbar.button_icon(NONE).color",
+        EDIT_ICON_REST,
+    ),
+    (
+        "basic.icons.edit.icon",
+        "toolbar.button_icon(HOVER).color",
+        EDIT_ICON_HOVER,
+    ),
+    (
+        "basic.icons.edit.icon",
+        "toolbar.button_icon(PRESSED).color",
+        EDIT_ICON_PRESSED,
+    ),
 ];
+
+/// The edit switch's icon at rest: [`TOOL_BUTTON_ROUTES`]' line holds only while the switch is
+/// off; while on, `demo::tool_icon_color` reads `CHECKED` and its forms instead.
+const EDIT_ICON_REST: &str = "egui: while the edit switch is off, as the other tool buttons: the \
+     colour the icon loads in at rest, where stated (demo::tool_icon_color, demo::loaded_in); \
+     while it is on (it opens on), not drawn: the icon loads in toolbar.button_icon(CHECKED)'s \
+     colour, or the switch's label colour";
+
+/// The edit switch's icon under the pointer, as [`EDIT_ICON_REST`].
+const EDIT_ICON_HOVER: &str = "egui: while the edit switch is off, the colour the icon loads in \
+     under the pointer, in the state of the button's previous response, where stated \
+     (demo::tool_icon_color, demo::loaded_in); while it is on (it opens on), not drawn: \
+     toolbar.button_icon(HOVER|CHECKED)'s colour is read instead";
+
+/// The edit switch's icon while pressed, as [`EDIT_ICON_REST`].
+const EDIT_ICON_PRESSED: &str = "egui: while the edit switch is off, the colour the icon loads in \
+     while pressed, in the state of the button's previous response, where stated \
+     (demo::tool_icon_color, demo::loaded_in); while it is on (it opens on), not drawn: \
+     toolbar.button_icon(PRESSED|CHECKED)'s colour is read instead";
 
 /// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
 /// the page tabs and the inspector's tabs.
