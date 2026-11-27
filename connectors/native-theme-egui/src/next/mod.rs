@@ -504,7 +504,9 @@ pub fn toolbar_button_checked_border_color(r: &ResolvedTheme) -> Mapped<Option<C
 /// rest, under the pointer and pressed, picked by [`CheckedToolButton::at`]
 /// from the button's previous response. Each value is read on its own: one
 /// egui cannot take is [`Unmapped`] at its home and leaves the others (spec
-/// §10, rule 0, per property).
+/// §10, rule 0, per property). In a state whose value is [`Unmapped`], hand
+/// egui the resting checked value, because egui's selected look does not
+/// change with the state (rule 0; the home is reported, rule 4).
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct CheckedToolButton {

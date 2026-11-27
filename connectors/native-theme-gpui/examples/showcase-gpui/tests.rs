@@ -24046,10 +24046,12 @@ fn the_disabled_tool_button_takes_the_stated_disabled_look(cx: &mut TestAppConte
 
 /// The Basic page's Save, a disabled tool button, under kde-breeze light,
 /// material-3 light and windows-11 light, each stating
-/// `toolbar.button_label(DISABLED).color`: the Button built for it carries
-/// that colour as its text colour, which its label and its untinted icon
-/// take, and its info names it; under adwaita light, which states none,
-/// no label colour line, and gpui-component's own disabled text stands.
+/// `toolbar.button_label(DISABLED).color`: the refinement
+/// `geometry::toolbar_button_disabled` gives, which `demo::icon_button`
+/// applies to the Button, carries that colour as its text colour, and
+/// Save's info line names it; under adwaita light, which states none, no
+/// text colour and no label colour line. The built Button itself is not
+/// read: gpui keeps no record of a drawn sprite's colour.
 #[gpui::test]
 fn the_disabled_tool_button_takes_the_stated_disabled_label(cx: &mut TestAppContext) {
     use native_theme::next::WidgetState;

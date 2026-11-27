@@ -11550,10 +11550,15 @@ pub(crate) fn icon_button(
         })
         .flatten();
         if let Some(colour) = label {
+            let takes = if drawn.0.is_raster() {
+                "the label's; the icon, drawn as an image (gpui::img), takes none"
+            } else {
+                "the label's, and the icon's where no rule tints it for the state"
+            };
             button_info = button_info.instance(
                 "label colour",
                 format!(
-                    "toolbar.button_label(DISABLED).color, a rule stating it for the state {}, next::geometry::toolbar_button_disabled's text colour: the label's, and the icon's where no rule tints it for the state",
+                    "toolbar.button_label(DISABLED).color, a rule stating it for the state {}, next::geometry::toolbar_button_disabled's text colour: {takes}",
                     as_rgba(colour)
                 ),
             );

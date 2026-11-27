@@ -9772,7 +9772,8 @@ fn untinted_icon_route(icon: Option<&IconData>, os_icon: bool) -> Option<&'stati
 /// ([`colour_home_route`]): its icon's colour as [`disabled_tool_icon_colour`]
 /// loads it; its label colours and the opacity that fades the label, which
 /// the icon takes where it shows and no rule states its disabled colour,
-/// and which the icon stands in for where one does; the two colours no
+/// and which the icon stands in for where one does, an image icon taking
+/// none ([`IMAGE_FOR_LABEL`]); the two colours no
 /// iced style reads. `None` for any other home, which the export or
 /// [`button_home_route`] routes.
 fn disabled_tool_route(
@@ -9827,6 +9828,8 @@ fn disabled_tool_route(
         {
             if os_icon {
                 OS_ICON_COLOURS
+            } else if matches!(icon, Some(IconData::Rgba { .. })) {
+                IMAGE_FOR_LABEL
             } else if stated {
                 "not drawn: the set's icon stands in for the label, loaded in \
                  toolbar.button_icon(DISABLED).color, which a rule states for DISABLED \
@@ -24876,7 +24879,9 @@ mod tests {
     /// icon stands in for the label, routes to [`IMAGE_FOR_LABEL`]: an image
     /// takes no tint ([`recoloured_icon`]), so neither the label nor a stated
     /// icon colour reaches it; a symbolic (svg) icon keeps its routes, and an
-    /// OS icon theme's keeps [`OS_ICON_COLOURS`]. Over kde-breeze light.
+    /// OS icon theme's keeps [`OS_ICON_COLOURS`]. So do the label homes of
+    /// Save, the disabled tool button ([`disabled_tool_route`]). Over
+    /// kde-breeze light.
     #[test]
     fn a_raster_icon_in_the_labels_place_takes_no_tint() {
         let r =
@@ -24935,6 +24940,26 @@ mod tests {
             flat_route(&r, "button.label(NONE).color", false, (Some(&image), true)),
             OS_ICON_COLOURS
         );
+        let save = elements::element(DISABLED_TOOL);
+        assert!(save.is_some(), "{DISABLED_TOOL} is not listed");
+        let Some(save) = save else { return };
+        let mut state = loaded("kde-breeze", false);
+        state.chrome_icons.system = false;
+        for (icon, image_icon) in [(&image, true), (&symbolic, false)] {
+            state.chrome_icons.save = Some(icon.clone());
+            for home in [
+                "toolbar.button_label(NONE).color",
+                "toolbar.button_label(DISABLED).color",
+                "button.disabled_opacity",
+            ] {
+                let route = disabled_tool_route(&state, save, home, None);
+                assert_eq!(
+                    route.as_deref() == Some(IMAGE_FOR_LABEL),
+                    image_icon,
+                    "Save's icon, an image: {image_icon}, {home}: {route:?}"
+                );
+            }
+        }
     }
 
     // -----------------------------------------------------------------------

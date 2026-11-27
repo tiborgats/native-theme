@@ -840,6 +840,9 @@ listed here, and a value the theme leaves unstated is egui's own
   (`CheckedToolButton::at`); in a state where it does not, egui's own
   selected look stays. Each value is read on its own: one stated as layers
   that are all gradients is `Unmapped` at its home and leaves the others.
+  In a state whose value is `Unmapped`, hand egui the resting checked
+  value, because egui's selected look does not change with the state
+  (rule 0; the home is reported, rule 4).
 - **A tool button's icon colour.** egui's only per-state tint of a
   button's image is the label's text colour
   (`Button::image_tint_follows_text_color`, `egui-0.37.0`

@@ -874,20 +874,19 @@ pub(crate) const TOOL_ICON_PRESSED: &str = "egui: per call, the colour the icon 
      (demo::tool_icon_color, demo::loaded_in)";
 /// The route of the edit switch's icon colour while on, at rest.
 pub(crate) const EDIT_ICON_CHECKED: &str = "egui: per call, the colour the edit switch's icon \
-     loads in while on, at rest, where a rule states it for CHECKED; else \
-     toolbar.button_icon(NONE).color where stated, a colour stated at rest holding while on, as \
+     loads in while on, at rest, where stated, a colour stated at rest holding while on, as \
      egui draws a selected button's image as it loads; else the switch's label colour \
      (demo::tool_icon_color, demo::loaded_in)";
 /// The route of the edit switch's icon colour while on under the pointer.
 pub(crate) const EDIT_ICON_HOVER_CHECKED: &str = "egui: per call, the colour the edit switch's \
-     icon loads in while on under the pointer, in the state of its previous response, where a \
-     rule states toolbar.button_icon(CHECKED).color for CHECKED, or one for HOVER | CHECKED \
-     states this colour (the query asking CHECKED; demo::tool_icon_color, demo::loaded_in)";
+     icon loads in while on under the pointer, in the state of its previous response, where \
+     stated, as egui has no treatment of CHECKED for a button's image \
+     (demo::tool_icon_color, demo::loaded_in)";
 /// The route of the edit switch's icon colour while on and pressed.
 pub(crate) const EDIT_ICON_PRESSED_CHECKED: &str = "egui: per call, the colour the edit switch's \
-     icon loads in while on and pressed, in the state of its previous response, where a rule \
-     states toolbar.button_icon(CHECKED).color for CHECKED, or one for PRESSED | CHECKED states \
-     this colour (the query asking CHECKED; demo::tool_icon_color, demo::loaded_in)";
+     icon loads in while on and pressed, in the state of its previous response, where stated, \
+     as egui has no treatment of CHECKED for a button's image \
+     (demo::tool_icon_color, demo::loaded_in)";
 
 /// The homes of the side-panel toggle's checked outline, fill and label under the pointer and
 /// pressed, its flat outline's hovered width and focused pen, and of its icon's colour, which
@@ -1009,14 +1008,12 @@ pub(crate) const TOGGLE_PRESSED_LABEL: &str = "egui: per call, the toggle's labe
 /// The route of the open toggle's icon colour under the pointer.
 pub(crate) const TOGGLE_ICON_HOVER: &str = "egui: per call, the colour the toggle's icon loads in \
      under the pointer while the side panel is open, in the state of its previous response, \
-     where a rule states button.icon(CHECKED; variant=Flat).color for CHECKED, or one for \
-     HOVER|CHECKED states this one (the query asking CHECKED); else as at rest \
+     where stated, as egui has no treatment of CHECKED for a button's image \
      (chrome::toggle_icon_colour)";
 /// The route of the open toggle's icon colour pressed.
 pub(crate) const TOGGLE_ICON_PRESSED: &str = "egui: per call, the colour the toggle's icon loads \
-     in pressed while the side panel is open, in the state of its previous response, where a \
-     rule states button.icon(CHECKED; variant=Flat).color for CHECKED, or one for \
-     PRESSED|CHECKED states this one (the query asking CHECKED); else as at rest \
+     in pressed while the side panel is open, in the state of its previous response, where \
+     stated, as egui has no treatment of CHECKED for a button's image \
      (chrome::toggle_icon_colour)";
 /// The route of the closed toggle's icon colour.
 pub(crate) const TOGGLE_ICON_REST: &str = "egui: per call, the colour the toggle's icon loads in \
@@ -1037,9 +1034,8 @@ pub(crate) const TOGGLE_ICON_OPEN: &str = "egui: per call, the colour the toggle
      while the side panel is open, where stated, a colour stated at rest holding there too; \
      in the state of the toggle's previous response, under the pointer \
      button.icon(HOVER|CHECKED; variant=Flat).color and pressed \
-     button.icon(PRESSED|CHECKED; variant=Flat).color, where a rule states it for CHECKED or \
-     one for that state with CHECKED states this one (the query asking CHECKED); else the \
-     colour it loads in \
+     button.icon(PRESSED|CHECKED; variant=Flat).color, where stated; else the colour it \
+     loads in \
      (chrome::toggle_icon_colour)";
 /// The route of the open toggle's outline at rest.
 pub(crate) const TOGGLE_CHECKED_PEN: &str = "egui: per call, the toggle's outline while the side panel is \
@@ -1508,9 +1504,8 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          query asking CHECKED); where one does, that one at rest, \
          toolbar.button_label(HOVER|CHECKED).color under the pointer and \
          toolbar.button_label(PRESSED|CHECKED).color pressed; else egui's own selected button's, \
-         visuals.selection.stroke. Its icon loads in it where no rule states \
-         toolbar.button_icon(CHECKED).color for CHECKED, nor one for the state drawn with \
-         CHECKED; where one does, in toolbar.button_icon(<state>|CHECKED).color \
+         visuals.selection.stroke. Its icon loads in it where \
+         toolbar.button_icon(<state>|CHECKED).color is unstated; where stated, in that \
          (pages::basic::edit_look_at, \
          demo::tool_icon_color)",
     ),
@@ -1703,10 +1698,9 @@ pub(crate) const EDIT_REST_FILL: &str = "egui: while the edit switch is off, as 
 /// off; while on, `demo::tool_icon_color` reads `CHECKED` and its forms instead.
 pub(crate) const EDIT_ICON_REST: &str = "egui: while the edit switch is off, as the other tool buttons: the \
      colour the icon loads in at rest, where stated (demo::tool_icon_color, demo::loaded_in); \
-     while it is on (it opens on), the same colour where no rule states \
-     toolbar.button_icon(CHECKED).color for CHECKED, egui drawing a selected button's image as \
-     it loads, else toolbar.button_icon(CHECKED)'s colour; where none is stated, the switch's \
-     label colour";
+     while it is on (it opens on), toolbar.button_icon(CHECKED)'s colour, the colour stated at \
+     rest where no rule states one for CHECKED, egui drawing a selected button's image as it \
+     loads; where none is stated, the switch's label colour";
 
 /// The edit switch's icon under the pointer, as [`EDIT_ICON_REST`].
 pub(crate) const EDIT_ICON_HOVER: &str = "egui: while the edit switch is off, the colour the icon loads in \

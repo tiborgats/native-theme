@@ -1796,8 +1796,7 @@ pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
 /// the fill for `CHECKED` by spec §2's two queries (`from_state`: a rule for `CHECKED`, or the
 /// state's own query asking `CHECKED`), `(HOVER|CHECKED)`'s under the pointer and
 /// `(PRESSED|CHECKED)`'s pressed, and the labels likewise from `toolbar.button_label`
-/// (`next::toolbar_button_checked`), as the switch's icon takes its colour
-/// (`demo::tool_icon_color`), as egui's selected button takes neither state of its own
+/// (`next::toolbar_button_checked`), as egui's selected button takes neither state of its own
 /// (spec §10, rule 0); each unstated one [`edit_look`]'s, the same in every state, as egui's own
 /// selected look is, and so is each one `next::toolbar_button_checked` reports stated in a form
 /// egui cannot paint (`Unmapped`, which the Theme tab lists), that colour alone, as

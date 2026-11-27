@@ -2124,17 +2124,15 @@ pub(crate) fn remember_state<S: ResponseState>(
 
 /// The colour `toolbar.button_icon(<state>).color` of the installed 0.8.0 theme `r` states for a
 /// toolbar button's icon in the state `(hovered, pressed)` of its previous response: pressed
-/// `PRESSED`, else hovered `HOVER`, else at rest, where the theme states it. Checked
-/// (`checked`), where the theme states the colour for `CHECKED` (asked alone, or at
-/// `(<state> | CHECKED)` asking `CHECKED`, spec §2, `from_state`, the two queries), the
-/// `(<state> | CHECKED)` query's; where it states it for `CHECKED` by neither, the colour
-/// stated at rest, the answer of `CHECKED` asked alone: egui's selected button draws its image
-/// as it is loaded (`Button::image_tint_follows_text_color` is off by default, egui-0.37.0
-/// `src/widgets/button.rs`), so the colour the icon loads in at rest holds while checked (spec
-/// §10, rule 0); unchecked, the icon loads in one colour and egui changes it in no state, so a
-/// colour stated at rest holds under the pointer and pressed (rule 0). `None` where it states
-/// none, or none is installed, and the icon keeps the colour it is loaded in. Never the label's:
-/// no rule makes the icon take it.
+/// `PRESSED`, else hovered `HOVER`, else at rest, where the theme states it; checked
+/// (`checked`), the theme's answer for that state with `CHECKED` (`(<state> | CHECKED)`).
+/// egui has no treatment of `CHECKED` for a button's image: a selected button changes only its
+/// fills and text stroke (egui-0.37.0 `src/theme/default_style.rs`), and it draws the image as
+/// it is loaded (`Button::image_tint_follows_text_color` is off by default,
+/// `src/widgets/button.rs`), so the icon takes the plain query's answer wherever it is stated,
+/// a colour stated at rest holding in every state no rule states one for (spec §10, rule 0).
+/// `None` where it states none, or none is installed, and the icon keeps the colour it is
+/// loaded in. Never the label's: no rule makes the icon take it.
 pub(crate) fn tool_icon_color(
     r: Option<&native_theme::next::ResolvedTheme>,
     (hovered, pressed): (bool, bool),
@@ -2149,22 +2147,11 @@ pub(crate) fn tool_icon_color(
     } else {
         WidgetState::NONE
     };
-    if checked {
-        let icon = r.toolbar.button_icon(
-            native_theme::next::StyleQuery::new(state | WidgetState::CHECKED)
-                .asking(WidgetState::CHECKED),
-        );
-        let alone = r.toolbar.button_icon(WidgetState::CHECKED);
-        if !alone.from_state.contains(IconStated::COLOR)
-            && !icon.from_state.contains(IconStated::COLOR)
-        {
-            return alone
-                .stated
-                .contains(IconStated::COLOR)
-                .then(|| native_theme_egui::next::to_color32(alone.color));
-        }
-        return Some(native_theme_egui::next::to_color32(icon.color));
-    }
+    let state = if checked {
+        state | WidgetState::CHECKED
+    } else {
+        state
+    };
     let icon = r.toolbar.button_icon(state);
     icon.stated
         .contains(IconStated::COLOR)

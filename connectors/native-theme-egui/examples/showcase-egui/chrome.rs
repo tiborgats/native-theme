@@ -576,17 +576,15 @@ pub(crate) fn toggle_checked_pens(
 }
 
 /// The side-panel toggle's icon colour, `button.icon(<state>; variant=Flat).color` in the state
-/// it is in, `CHECKED` while on, where the theme states it: egui draws a button's image alike
-/// in every state (`Button::image_tint_follows_text_color` is off by default, egui-0.37.0
-/// `src/widgets/button.rs`), so a colour stated at rest holds while on (spec §10, rule 0), as
-/// [`demo::tool_icon_color`] takes the edit switch's. While off, in the state `(hovered,
-/// pressed)` of the toggle's previous response, `PRESSED`'s pressed and `HOVER`'s hovered, a
-/// colour stated at rest holding there too, as the tool buttons ask theirs. While on, in the
-/// state `(hovered, pressed)` of the toggle's previous response, the theme's answer for
-/// `(CHECKED | PRESSED)` pressed and `(CHECKED | HOVER)` hovered where it states the colour for
-/// `CHECKED` by spec §2's two queries (`from_state`: `CHECKED` alone, or that state's own query
-/// asking `CHECKED`), as [`toggle_checked_in`] takes the fill; else `CHECKED`'s. `None` where it
-/// states none, and the icon keeps the colour it loads in, never the label's.
+/// `(hovered, pressed)` of the toggle's previous response, `PRESSED`'s pressed and `HOVER`'s
+/// hovered, with `CHECKED` while on (`(CHECKED | <state>)`), where the theme states it, as
+/// [`demo::tool_icon_color`] takes the tool buttons' and the edit switch's: egui has no
+/// treatment of `CHECKED` for a button's image (a selected button changes only its fills and
+/// text stroke, egui-0.37.0 `src/theme/default_style.rs`) and draws the image alike in every
+/// state (`Button::image_tint_follows_text_color` is off by default, `src/widgets/button.rs`),
+/// so the plain query's answer holds wherever it is stated, a colour stated at rest holding in
+/// every state no rule states one for (spec §10, rule 0). `None` where it states none, and the
+/// icon keeps the colour it loads in, never the label's.
 pub(crate) fn toggle_icon_colour(
     r: Option<&native_theme::next::ResolvedTheme>,
     open: bool,
@@ -594,8 +592,6 @@ pub(crate) fn toggle_icon_colour(
 ) -> Option<egui::Color32> {
     use native_theme::next::{ButtonQuery, IconStated};
     let r = r?;
-    let at = |query: ButtonQuery| r.button.icon(query);
-    let flat = |state| ButtonQuery::flat().with_state(state);
     let state = if pressed {
         WidgetState::PRESSED
     } else if hovered {
@@ -603,19 +599,12 @@ pub(crate) fn toggle_icon_colour(
     } else {
         WidgetState::NONE
     };
-    let icon = if !open {
-        at(flat(state))
+    let state = if open {
+        WidgetState::CHECKED | state
     } else {
-        let checked = at(flat(WidgetState::CHECKED));
-        let own = at(flat(WidgetState::CHECKED | state).asking(WidgetState::CHECKED));
-        if checked.from_state.contains(IconStated::COLOR)
-            || own.from_state.contains(IconStated::COLOR)
-        {
-            own
-        } else {
-            checked
-        }
+        state
     };
+    let icon = r.button.icon(ButtonQuery::flat().with_state(state));
     icon.stated
         .contains(IconStated::COLOR)
         .then(|| next::to_color32(icon.color))
