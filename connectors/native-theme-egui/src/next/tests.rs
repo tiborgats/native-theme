@@ -126,8 +126,8 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
     ] {
         let at = format!("{preset:?} {:?}", ctx.scheme);
         let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx))?;
-        assert_eq!(look.fill, Some(fill.map(rgb)), "{at}");
-        assert_eq!(look.text, Some(text.map(rgb)), "{at}");
+        assert_eq!(look.fill, fill.map(|c| Some(rgb(c))), "{at}");
+        assert_eq!(look.text, text.map(|c| Some(rgb(c))), "{at}");
         let [rest, hover, press] =
             [0, 1, 2].map(|i| (fill.get(i).copied().map(rgb), text.get(i).copied().map(rgb)));
         assert_eq!(look.at(false, false), rest, "{at} at rest");
@@ -138,7 +138,7 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
     let ios = super::toolbar_button_checked(
         &Theme::preset(Preset::Ios13).resolve(&ThemeContext::light()),
     )?;
-    assert_eq!((ios.fill, ios.text), (None, None), "ios-13");
+    assert_eq!((ios.fill, ios.text), ([None; 3], [None; 3]), "ios-13");
     assert_eq!(ios.at(true, true), (None, None), "ios-13 pressed");
     Ok(())
 }
@@ -2420,6 +2420,42 @@ fn a_rule_for_two_flags_states_the_value_for_the_flag_asked()
         magenta,
         |r| source(r).switch[1].map(crate::convert::to_color32),
     )?;
+    assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
+/// A checked toolbar button keeps egui's selected look under the pointer and pressed only where
+/// the theme states its fill or label colour for `CHECKED` by neither of the two queries
+/// ([`two_flag_site`]): a rule for `CHECKED | HOVER` (`CHECKED | PRESSED`) alone gives
+/// [`super::toolbar_button_checked`] the hovered (pressed) value, a rule for `HOVER` (`PRESSED`)
+/// alone none.
+#[test]
+fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
+-> Result<(), Box<dyn std::error::Error>> {
+    let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
+    let [base, value] = ["\"#101010\"", "\"#ff00ff\""];
+    let checked = |r: &native_theme::next::ResolvedTheme| super::toolbar_button_checked(r).ok();
+    let mut misses = Vec::new();
+    for (i, flag) in [(1, "hover"), (2, "pressed")] {
+        two_flag_site(
+            &mut misses,
+            &format!("checked tool button's {flag} fill"),
+            ("toolbar", "button.fill"),
+            ["checked", flag],
+            [base, value],
+            magenta,
+            |r| checked(r).and_then(|c| c.fill.get(i).copied().flatten()),
+        )?;
+        two_flag_site(
+            &mut misses,
+            &format!("checked tool button's {flag} label"),
+            ("toolbar", "button_label.color"),
+            ["checked", flag],
+            [base, value],
+            magenta,
+            |r| checked(r).and_then(|c| c.text.get(i).copied().flatten()),
+        )?;
+    }
     assert!(misses.is_empty(), "{misses:#?}");
     Ok(())
 }

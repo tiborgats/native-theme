@@ -831,12 +831,14 @@ listed here, and a value the theme leaves unstated is egui's own
   so no cell gives a checked tool button the hovered and pressed fills and
   labels a theme states (`toolbar.button(HOVER|CHECKED)`,
   `(PRESSED|CHECKED)`, macOS). `next::toolbar_button_checked` returns them
-  with the resting ones where a rule states `toolbar.button(CHECKED)`'s
-  fill (its label `toolbar.button_label(CHECKED)`'s), for the application
-  to hand `Button::fill` and `RichText::color`, which override every
-  on-hover effect, in the state of the button's previous response
-  (`CheckedToolButton::at`); where none does, egui's own selected look
-  stays.
+  with the resting ones, each where the theme states it for `CHECKED`: a
+  rule for `CHECKED` states `toolbar.button(CHECKED)`'s fill (its label
+  `toolbar.button_label(CHECKED)`'s), or the state's own query asking
+  `CHECKED` has the fill's bit (spec §2, `from_state`), for the
+  application to hand `Button::fill` and `RichText::color`, which override
+  every on-hover effect, in the state of the button's previous response
+  (`CheckedToolButton::at`); in a state where it does not, egui's own
+  selected look stays.
 - **A tool button's icon colour.** egui's only per-state tint of a
   button's image is the label's text colour
   (`Button::image_tint_follows_text_color`, `egui-0.37.0`

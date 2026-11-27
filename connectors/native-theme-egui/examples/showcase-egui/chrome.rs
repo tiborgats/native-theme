@@ -514,11 +514,13 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
 }
 
 /// The side-panel toggle's colours while on in the state `was` of its previous response,
-/// `(hovered, pressed)`: where a rule states [`toggle_checked`]'s fill or label colour for
-/// `CHECKED`, pressed `(CHECKED | PRESSED; variant=Flat)`'s and hovered `(CHECKED | HOVER;
-/// variant=Flat)`'s, each the theme's answer for that state (spec §10, rule 0), as the Basic
-/// page's toggle takes its own (`pages::basic::toggle_on_in`); each unstated one egui's own
-/// selected look in every state (rule 0a).
+/// `(hovered, pressed)`: where the theme states the fill or the label colour for `CHECKED` by
+/// spec §2's two queries (`from_state`: a rule for [`toggle_checked`]'s `CHECKED`, or the
+/// state's own query asking `CHECKED`), pressed `(CHECKED | PRESSED; variant=Flat)`'s and
+/// hovered `(CHECKED | HOVER; variant=Flat)`'s, each the theme's answer for that state (spec
+/// §10, rule 0), as the Basic page's toggle takes its own (`pages::basic::toggle_on_in`); each
+/// one it states by neither query the resting one, and egui's own selected look where that is
+/// unstated (rule 0a).
 pub(crate) fn toggle_checked_in(
     r: Option<&native_theme::next::ResolvedTheme>,
     was: (bool, bool),
@@ -532,49 +534,55 @@ pub(crate) fn toggle_checked_in(
 
 /// The side-panel toggle's outline while on, egui's inactive, hovered and active entries: the
 /// pen `button.body(CHECKED; variant=Flat).stroke` where a rule states it for `CHECKED`, and
-/// then under the pointer `(CHECKED | HOVER)`'s and, egui's `active` being press and keyboard
-/// focus alike, `(CHECKED | FOCUS_VISIBLE)`'s where a rule states the flat button's
-/// `FOCUS_VISIBLE` stroke, else `(CHECKED | PRESSED)`'s, as `next::flat_button` lines the flat
-/// button, each the theme's answer for that state (spec §10, rule 0), on the button egui fills
-/// in `fill`, a translucent pen laid inside composited over it ([`demo::pen_over`]); all `None`
-/// where no rule states it for `CHECKED`, and the scope's own stays ([`demo::state_pen`]).
+/// under the pointer `(CHECKED | HOVER)`'s and, egui's `active` being press and keyboard focus
+/// alike, `(CHECKED | FOCUS_VISIBLE)`'s where a rule states the flat button's `FOCUS_VISIBLE`
+/// stroke, else `(CHECKED | PRESSED)`'s, as `next::flat_button` lines the flat button, each
+/// where the theme states the stroke for `CHECKED` by spec §2's two queries (`from_state`: the
+/// resting pen's rule for `CHECKED`, or the state's own query asking `CHECKED`) and then the
+/// theme's answer for that state (spec §10, rule 0), on the button egui fills in `fill`, a
+/// translucent pen laid inside composited over it ([`demo::pen_over`]); each `None` where it
+/// states it by neither, and the scope's own stays ([`demo::state_pen`]).
 pub(crate) fn toggle_checked_pens(
     r: Option<&native_theme::next::ResolvedTheme>,
     fill: egui::Color32,
 ) -> [Option<egui::Stroke>; 3] {
+    use native_theme::next::{ButtonQuery, PartStated};
     let Some(r) = r else {
         return [None; 3];
     };
-    let at = |state| {
-        r.button
-            .body(native_theme::next::ButtonQuery::flat().with_state(state))
+    let at = |state| r.button.body(ButtonQuery::flat().with_state(state));
+    let over = |part: &native_theme::next::PartStyle, pen| demo::pen_over(part, pen, fill);
+    let rest = {
+        let part = at(WidgetState::CHECKED);
+        demo::state_pen(&part).map(|pen| over(&part, pen))
     };
+    // the pen at `CHECKED | state`, asking `CHECKED`
     let pen = |state| {
-        let part = at(state);
-        demo::state_pen(&part).map(|pen| demo::pen_over(&part, pen, fill))
-    };
-    let Some(rest) = pen(WidgetState::CHECKED) else {
-        return [None; 3];
+        let part = r.button.body(
+            ButtonQuery::flat()
+                .with_state(WidgetState::CHECKED | state)
+                .asking(WidgetState::CHECKED),
+        );
+        (rest.is_some() || part.from_state.contains(PartStated::STROKE))
+            .then(|| demo::stated_pen(&part).map(|pen| over(&part, pen)))
+            .flatten()
     };
     let active = if demo::state_pen(&at(WidgetState::FOCUS_VISIBLE)).is_some() {
         WidgetState::FOCUS_VISIBLE
     } else {
         WidgetState::PRESSED
     };
-    [
-        Some(rest),
-        pen(WidgetState::CHECKED | WidgetState::HOVER),
-        pen(WidgetState::CHECKED | active),
-    ]
+    [rest, pen(WidgetState::HOVER), pen(active)]
 }
 
 /// The side-panel toggle's icon colour, `button.icon(<state>; variant=Flat).color` in the state
 /// it is in, `CHECKED` while on, where the theme states it: egui draws a button's image alike
-/// in every state, so a colour stated at rest holds while on (spec §10, rule 0). While on, where
-/// a rule states the colour for `CHECKED` (asked alone, spec §2, `from_state`), in the state
-/// `(hovered, pressed)` of the toggle's previous response the theme's answer for `(CHECKED |
-/// PRESSED)` pressed and `(CHECKED | HOVER)` hovered, as [`toggle_checked_in`] takes the fill.
-/// `None` where it states none, and the icon keeps the colour it loads in, never the label's.
+/// in every state, so a colour stated at rest holds while on (spec §10, rule 0). While on, in the
+/// state `(hovered, pressed)` of the toggle's previous response, the theme's answer for
+/// `(CHECKED | PRESSED)` pressed and `(CHECKED | HOVER)` hovered where it states the colour for
+/// `CHECKED` by spec §2's two queries (`from_state`: `CHECKED` alone, or that state's own query
+/// asking `CHECKED`), as [`toggle_checked_in`] takes the fill; else `CHECKED`'s. `None` where it
+/// states none, and the icon keeps the colour it loads in, never the label's.
 pub(crate) fn toggle_icon_colour(
     r: Option<&native_theme::next::ResolvedTheme>,
     open: bool,
@@ -582,22 +590,28 @@ pub(crate) fn toggle_icon_colour(
 ) -> Option<egui::Color32> {
     use native_theme::next::{ButtonQuery, IconStated};
     let r = r?;
-    let at = |state| r.button.icon(ButtonQuery::flat().with_state(state));
-    let state = if !open {
-        WidgetState::NONE
-    } else if !at(WidgetState::CHECKED)
-        .from_state
-        .contains(IconStated::COLOR)
-    {
-        WidgetState::CHECKED
-    } else if pressed {
-        WidgetState::CHECKED | WidgetState::PRESSED
-    } else if hovered {
-        WidgetState::CHECKED | WidgetState::HOVER
+    let at = |query: ButtonQuery| r.button.icon(query);
+    let flat = |state| ButtonQuery::flat().with_state(state);
+    let icon = if !open {
+        at(flat(WidgetState::NONE))
     } else {
-        WidgetState::CHECKED
+        let checked = at(flat(WidgetState::CHECKED));
+        let state = if pressed {
+            WidgetState::PRESSED
+        } else if hovered {
+            WidgetState::HOVER
+        } else {
+            WidgetState::NONE
+        };
+        let own = at(flat(WidgetState::CHECKED | state).asking(WidgetState::CHECKED));
+        if checked.from_state.contains(IconStated::COLOR)
+            || own.from_state.contains(IconStated::COLOR)
+        {
+            own
+        } else {
+            checked
+        }
     };
-    let icon = at(state);
     icon.stated
         .contains(IconStated::COLOR)
         .then(|| next::to_color32(icon.color))
