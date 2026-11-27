@@ -22,9 +22,10 @@ fn line_align(align: StrokeAlign, home: &'static str) -> Mapped<LineAlign> {
 
 /// A part's stroke, where stated as one stroke of one colour: its colour as
 /// stated and where it lies, which the style function composites over the
-/// fill it paints.
+/// fill it paints. A per-side stroke is read as [`Stroke::prevailing`]
+/// gives it (spec §10, rule 2).
 pub(crate) fn line(part: &PartStyle, home: &'static str) -> Mapped<Line> {
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::Uniform { color, align, .. } if part.stated.contains(PartStated::STROKE) => {
             Ok(Line {
                 align: line_align(*align, home)?,
@@ -38,7 +39,7 @@ pub(crate) fn line(part: &PartStyle, home: &'static str) -> Mapped<Line> {
 /// [`line()`], or, where the part states no stroke (`Stroke::None`), no
 /// stroke ([`Line::none`]), which iced draws 0 wide.
 pub(crate) fn line_or_none(part: &PartStyle, home: &'static str) -> Mapped<Line> {
-    match part.stroke {
+    match part.stroke.prevailing() {
         Stroke::None if part.stated.contains(PartStated::STROKE) => Ok(Line::none()),
         _ => line(part, home),
     }

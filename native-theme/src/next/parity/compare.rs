@@ -20,12 +20,12 @@
 //! state's rule. A home at the row's `null_reference` state is not checked for it, nor is any home where
 //! no unresolved theme is given. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
 //! `border.shadow_enabled` (`false` is `SHADOWS` stated with `shadows = None`, `true` is `SHADOWS`
-//! unstated), a part's stroke colour and width read out of `Stroke::Uniform` inside the edge (`Stroke::None`
+//! unstated), a part's stroke colour and width read out of `Stroke::Uniform` in every alignment (`Stroke::None`
 //! is the width 0.0 and no colour; a per-side stroke is read as `Stroke::prevailing` gives it, and 0.7.2 had
 //! no edge colour, so the edge is not compared) and a corner radius out of `CornerRadius::Uniform` with
 //! circular corners (`CornerRadius::None` is 0.0), and a text's `decoration` against 0.7.2's
 //! `underline_enabled` (a plain underline is `true`, no line `false`); any other form there (a gradient fill,
-//! a per-side stroke `Stroke::prevailing` does not reduce, a centred stroke, a pill, continuous corners, a
+//! a per-side stroke `Stroke::prevailing` does not reduce, a pill, continuous corners, a
 //! coloured underline) is a value no 0.7.2 field holds, so a mismatch
 //! (continuous corners match only a listed difference's value for them, below). A colour is compared by its
 //! 8-bit channels only where every channel is finite and in 0..=1; any other colour is a mismatch.

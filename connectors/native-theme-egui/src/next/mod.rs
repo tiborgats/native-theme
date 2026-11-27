@@ -46,7 +46,7 @@ use crate::{Role, TextRole};
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to egui (a gradient fill with no fallback
-/// colour, a per-side stroke): its place in the 0.8.0 model, as a query and
+/// colour, a per-side stroke not reduced): its place in the 0.8.0 model, as a query and
 /// a property (`typography.body.weight`). The 0.7.2 path has no such case,
 /// its resolved fields being always set; the 0.8.0 path reports it rather
 /// than inventing the value.
@@ -111,9 +111,10 @@ pub(crate) mod reads {
     }
 
     /// A part's stroke colour, where stated as one stroke of one colour, in
-    /// any alignment; `None` for a per-side stroke.
+    /// any alignment, a per-side stroke as [`Stroke::prevailing`] gives it
+    /// (spec §10, rule 2); `None` for a per-side stroke it does not reduce.
     pub(crate) fn stroke(part: &PartStyle) -> Option<Color> {
-        match &part.stroke {
+        match &part.stroke.prevailing() {
             Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
                 Some(*color)
             }
@@ -213,7 +214,8 @@ pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Colo
 
 /// A part's stroke colour as stated, where stated as one stroke of one
 /// colour, in any alignment; `None` where it is not stated, or stated in a
-/// form egui cannot draw (a per-side stroke). This is the theme's colour;
+/// form egui cannot draw (a per-side stroke [`Stroke::prevailing`] does not
+/// reduce; one it reduces gives its prevailing colour). This is the theme's colour;
 /// where a translucent stroke lies inside or across the box's edge, the
 /// connector hands egui it composited over the fill under it.
 #[must_use]
@@ -244,13 +246,14 @@ pub fn stroke_color_over(part: &PartStyle, color: Color32, fill: Option<Color32>
 
 /// A part's stroke width, where stated as one stroke, in any alignment, or
 /// as none, which is no width; `None` where it is not stated, or stated in
-/// a form egui cannot draw (a per-side stroke).
+/// a form egui cannot draw (a per-side stroke [`Stroke::prevailing`] does
+/// not reduce).
 #[must_use]
 pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return None;
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Some(0.0),
         Stroke::Uniform { width, .. } => Some(*width),
         _ => None,
@@ -478,13 +481,13 @@ pub fn toolbar_button_checked_background(r: &ResolvedTheme) -> Mapped<Option<Col
 /// # Errors
 ///
 /// [`Unmapped`] where the stroke is stated in a form egui cannot draw (a
-/// per-side stroke).
+/// per-side stroke, not reduced).
 pub fn toolbar_button_checked_border_color(r: &ResolvedTheme) -> Mapped<Option<Color32>> {
     let part = r.toolbar.button(WidgetState::CHECKED);
     if !part.from_state.contains(PartStated::STROKE) {
         return Ok(None);
     }
-    match part.stroke {
+    match part.stroke.prevailing() {
         Stroke::None => Ok(None),
         _ => stated(
             stroke_color_of(&part),
@@ -1045,7 +1048,7 @@ pub fn disabled_opacity(r: &ResolvedTheme) -> f32 {
 /// A part's stroke colour as egui draws it: the stated colour, or
 /// transparent where the stroke is stated as none.
 fn line_color(part: &PartStyle, home: &'static str) -> Mapped<Color32> {
-    match part.stroke {
+    match part.stroke.prevailing() {
         Stroke::None if part.stated.contains(PartStated::STROKE) => Ok(Color32::TRANSPARENT),
         _ => stated(stroke_color_of(part), home),
     }
@@ -1106,7 +1109,8 @@ fn padded(part: &PartStyle, width_home: &'static str) -> Mapped<crate::accessors
 /// # Errors
 ///
 /// [`Unmapped`] where the theme states the fill or a stroke in a form egui
-/// cannot draw (a layered fill with no fallback colour, a per-side stroke).
+/// cannot draw (a layered fill with no fallback colour, a per-side stroke
+/// not reduced).
 pub fn default_button(r: &ResolvedTheme) -> Mapped<Option<crate::DefaultButton>> {
     let b = &r.button;
     let body = b.body(WidgetState::DEFAULT);
@@ -1188,7 +1192,8 @@ fn egui_scheme(r: &ResolvedTheme) -> egui::Theme {
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the button's or the field's stroke is per side.
+/// [`Unmapped`] where the button's or the field's stroke is per side and
+/// not reduced.
 pub fn input_margin(r: &ResolvedTheme) -> Mapped<egui::Margin> {
     Ok(crate::accessors::input_margin_from(
         &padded(
@@ -1208,7 +1213,8 @@ pub fn input_margin(r: &ResolvedTheme) -> Mapped<egui::Margin> {
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the button's or either field's stroke is per side.
+/// [`Unmapped`] where the button's or either field's stroke is per side and
+/// not reduced.
 pub fn text_area_margin(r: &ResolvedTheme) -> Mapped<egui::Margin> {
     Ok(crate::accessors::text_area_margin_from(
         input_margin(r)?,
@@ -1226,7 +1232,8 @@ pub fn text_area_margin(r: &ResolvedTheme) -> Mapped<egui::Margin> {
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where [`input_margin`] is, or the focused stroke is per side.
+/// [`Unmapped`] where [`input_margin`] is, or the focused stroke is per side
+/// and not reduced.
 pub fn input_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egui::Frame> {
     Ok(crate::accessors::field_frame(
         ui,

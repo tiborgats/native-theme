@@ -699,7 +699,7 @@ fn outline_color(part: &native_theme::next::PartStyle, home: &'static str) -> Ma
     if !part.stated.contains(PartStated::STROKE) {
         return Ok(None);
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Ok(None),
         Stroke::Uniform { color, .. } => Ok(Some(hsla(*color))),
         _ => Err(Unmapped(home)),
@@ -713,7 +713,7 @@ fn outline_width(part: &native_theme::next::PartStyle, home: &'static str) -> Ma
     if !part.stated.contains(PartStated::STROKE) {
         return Ok(None);
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Ok(None),
         Stroke::Uniform { width, .. } => Ok(Some(*width)),
         _ => Err(Unmapped(home)),

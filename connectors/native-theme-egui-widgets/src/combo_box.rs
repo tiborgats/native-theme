@@ -320,7 +320,7 @@ impl Sides {
     /// The sides of a drop-down of a 0.8.0 theme: `combo_box.field(NONE)`'s left and right
     /// padding and its stroke's width (none for a stroke stated as none), and
     /// `combo_box.arrow_area_width`, each where stated and finite; a stroke unstated, or stated
-    /// per side, keeps egui's width. `None` where the field's stated stroke width is not finite.
+    /// per side and not reduced (`Stroke::prevailing`), keeps egui's width. `None` where the field's stated stroke width is not finite.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
         let c = &r.combo_box;
         let field = c.field(WidgetState::NONE);

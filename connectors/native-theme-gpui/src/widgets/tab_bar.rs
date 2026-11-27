@@ -397,7 +397,7 @@ fn selected_outline(part: &native_theme::next::PartStyle) -> Mapped<(Hsla, f32)>
     if !part.stated.contains(PartStated::STROKE) {
         return Ok((transparent_black(), 0.));
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Ok((transparent_black(), 0.)),
         Stroke::Uniform { width, .. } => Ok((
             crate::next::stroke_color(part, "tab.tab(SELECTED).stroke.color")?,

@@ -91,7 +91,8 @@ pub enum Note {
     /// A 0.8.0 theme states a value in a form egui cannot draw, and egui's own stays in its
     /// place (spec §10, rule 2): corners whose radii differ corner by corner, or concentric
     /// ones (egui rounds a widget by one radius, [`crate::next::radius_of`]), or a stroke
-    /// stated per side (egui strokes a widget by one `egui::Stroke`). A whole-theme failure,
+    /// stated per side that `Stroke::prevailing` does not reduce (egui strokes a widget by one
+    /// `egui::Stroke`). A whole-theme failure,
     /// such as a focus indicator that is not a ring, is [`crate::next::Unmapped`] instead.
     #[non_exhaustive]
     Unmapped {

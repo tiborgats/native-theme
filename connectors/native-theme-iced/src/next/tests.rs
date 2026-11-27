@@ -731,23 +731,14 @@ fn a_chevron_of_no_stated_size_widens_nothing_and_sizes_no_handle() -> TestResul
 
 /// A flare radius that is not positive and finite draws no flares, whatever
 /// the theme states for the tab: the radius is checked before the selected
-/// tab is read, which a stroke per side makes unreadable.
+/// tab is read, which a stroke per side `Stroke::prevailing` does not reduce
+/// makes unreadable.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_flare_radius_that_is_not_positive_and_finite_draws_none() -> TestResult {
-    use native_theme::next::{Paint, PartPatch, Stroke, StrokeAlign, StrokeSide, TabRule};
+    use native_theme::next::{PartPatch, TabRule};
 
-    let side = || StrokeSide {
-        width: 1.0,
-        paint: Paint::Solid(OUTER),
-    };
-    let patch = ThemePatch::new().tab(TabRule::new().tab(PartPatch::new().stroke(Stroke::sides(
-        side(),
-        side(),
-        side(),
-        side(),
-        StrokeAlign::Inside,
-    ))));
+    let patch = ThemePatch::new().tab(TabRule::new().tab(PartPatch::new().stroke(two_and_two())));
     for (preset, mut r) in every_preset_with(&patch) {
         r.tab.active_outward_corner_radius = Some(4.0);
         assert!(super::tab_flares_look(&r).is_err(), "{preset:?}");
@@ -761,6 +752,93 @@ fn a_flare_radius_that_is_not_positive_and_finite_draws_none() -> TestResult {
             r.tab.active_outward_corner_radius = radius;
             assert_eq!(super::tab_flares_look(&r)?, None, "{preset:?} {radius:?}");
         }
+    }
+    Ok(())
+}
+
+/// A solid side 1 wide in `color`.
+fn solid_side(color: Color) -> native_theme::next::StrokeSide {
+    native_theme::next::StrokeSide {
+        width: 1.0,
+        paint: native_theme::next::Paint::Solid(color),
+    }
+}
+
+/// A per-side stroke 1 wide `Stroke::prevailing` reduces: [`OUTER`] on three
+/// sides, [`INNER`] on the bottom.
+fn three_and_one() -> native_theme::next::Stroke {
+    native_theme::next::Stroke::sides(
+        solid_side(OUTER),
+        solid_side(OUTER),
+        solid_side(INNER),
+        solid_side(OUTER),
+        native_theme::next::StrokeAlign::Inside,
+    )
+}
+
+/// A per-side stroke 1 wide `Stroke::prevailing` does not reduce: [`OUTER`]
+/// on the top and the bottom, [`INNER`] on the right and the left.
+fn two_and_two() -> native_theme::next::Stroke {
+    native_theme::next::Stroke::sides(
+        solid_side(OUTER),
+        solid_side(INNER),
+        solid_side(OUTER),
+        solid_side(INNER),
+        native_theme::next::StrokeAlign::Inside,
+    )
+}
+
+/// A button body's stroke stated 3 + 1 is drawn as the uniform stroke of the
+/// three sides' colour (spec §10, rule 2): on every preset and scheme,
+/// `next::styles::button` gives in every status what it gives for a uniform
+/// stroke of that colour, width and alignment, and the part reads give that
+/// colour and width; a 2 + 2 stays unmapped.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_three_and_one_stroke_draws_as_its_prevailing_colour() -> TestResult {
+    use iced_core::theme::Theme as IcedTheme;
+    use iced_widget::button::Status;
+    use native_theme::next::{ButtonRule, PartPatch, Stroke, StrokeAlign, WidgetState};
+
+    let body =
+        |stroke| ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().stroke(stroke)));
+    let uniform = every_preset_with(&body(Stroke::uniform_aligned(
+        1.0,
+        OUTER,
+        StrokeAlign::Inside,
+    )));
+    let reduced = every_preset_with(&body(three_and_one()));
+    let unreduced = every_preset_with(&body(two_and_two()));
+    for (((preset, stated), (_, r)), (_, per_side)) in uniform.iter().zip(&reduced).zip(&unreduced)
+    {
+        let (drawn, expected) = (super::styles::button(r)?, super::styles::button(stated)?);
+        for status in [
+            Status::Active,
+            Status::Hovered,
+            Status::Pressed,
+            Status::Disabled,
+        ] {
+            assert_eq!(
+                drawn(&IcedTheme::Light, status),
+                expected(&IcedTheme::Light, status),
+                "{preset:?} {status:?}"
+            );
+        }
+        let part = r.button.body(WidgetState::NONE);
+        assert_eq!(
+            super::stroke_color_of(&part),
+            Some(super::to_color(OUTER)),
+            "{preset:?}"
+        );
+        assert_eq!(super::stroke_width_of(&part), Some(1.0), "{preset:?}");
+        assert!(
+            super::styles::button(per_side).is_err(),
+            "{preset:?}: a 2 + 2 stroke is drawn"
+        );
+        assert_eq!(
+            super::stroke_width_of(&per_side.button.body(WidgetState::NONE)),
+            None
+        );
     }
     Ok(())
 }

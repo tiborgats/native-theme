@@ -631,7 +631,7 @@ pub(crate) fn toggle_stated_notes(
         Paint::Solid(colour) => format!(" {colour}"),
         _ => ", its layers as egui paints them".to_owned(),
     };
-    let line = |stroke: &Stroke| match stroke {
+    let line = |stroke: &Stroke| match stroke.prevailing() {
         Stroke::Uniform { width, color, .. } => format!(" {width} px {color}"),
         _ => " none".to_owned(),
     };

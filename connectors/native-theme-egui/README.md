@@ -766,11 +766,17 @@ listed here, and a value the theme leaves unstated is egui's own
   (`button.body(FOCUSED).focus.kind`, ...).
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
-  `RectShape::stroke`). Where the theme states a part's stroke per side
-  (`Stroke::Complex`), the part keeps egui's own stroke, as if the theme
-  stated none, and the part reads (`next::stroke_color_of`,
-  `next::stroke_width_of`) return `None`; the atlas reports each such stroke
-  it meets as a `Note::Unmapped` at its home in `ThemeAtlas::notes`.
+  `RectShape::stroke`). A part's stroke stated per side (`Stroke::Complex`)
+  whose four sides have one width and solid colours, at least three of them
+  the same colour, is drawn as a uniform stroke of that width and colour in
+  the stroke's alignment (`Stroke::prevailing`, docs/v0.8.0-spec.md §10,
+  rule 2): the fourth side's other colour, such as WinUI's elevation edge,
+  is not drawn. Every other per-side stroke (different widths, a side
+  painted as layers or not painted, two colours on two sides each) keeps
+  egui's own stroke, as if the theme stated none, and the part reads
+  (`next::stroke_color_of`, `next::stroke_width_of`) return `None`; the
+  atlas reports each such stroke it meets as a `Note::Unmapped` at its home
+  in `ThemeAtlas::notes`.
 - **Corners.** egui rounds a rect with four circular radii, each a whole
   point up to 255 (`epaint-0.37.0/src/corner_radius.rs`, `CornerRadius`),
   and the atlas rounds each part by one radius (`next::radius_of`). A

@@ -45,7 +45,7 @@ impl New {
 /// `button.body(NONE)`'s padding inside its border, from its homes: each
 /// stated side plus the stated stroke's width, a stroke stated as none
 /// adding 0 (spec §10, rule 2); `None` where a side or the stroke is
-/// unstated, or the stroke is per side.
+/// unstated, or the stroke is per side and not reduced (`Stroke::prevailing`).
 fn body_padding(new: &native_theme::next::ResolvedTheme) -> Option<iced_core::Padding> {
     use native_theme::next::{PartStated, Stroke, WidgetState};
 
@@ -53,7 +53,7 @@ fn body_padding(new: &native_theme::next::ResolvedTheme) -> Option<iced_core::Pa
     if !body.stated.contains(PartStated::STROKE) {
         return None;
     }
-    let width = match body.stroke {
+    let width = match body.stroke.prevailing() {
         Stroke::None => 0.0,
         Stroke::Uniform { width, .. } => width,
         _ => return None,
@@ -172,7 +172,7 @@ fn stated_combo_box_padding(new: &native_theme::next::ResolvedTheme) -> Option<S
     {
         return None;
     }
-    let width = match field.stroke {
+    let width = match field.stroke.prevailing() {
         Stroke::None => 0.0,
         Stroke::Uniform { width, .. } => width,
         _ => return None,

@@ -111,11 +111,14 @@ pub(crate) fn meet_corners(part: &PartStyle, home: &'static str, notes: &mut Vec
     }
 }
 
-/// A [`Note::Unmapped`] at `home` where `part` states a stroke per side, which egui cannot
-/// draw as the one `egui::Stroke` it outlines a widget by (spec §10, rule 2). egui's own
-/// outline stays, as [`line()`] and [`stroke_width_of`] give none.
+/// A [`Note::Unmapped`] at `home` where `part` states a stroke per side that
+/// [`Stroke::prevailing`] does not reduce, which egui cannot draw as the one `egui::Stroke` it
+/// outlines a widget by (spec §10, rule 2). egui's own outline stays, as [`line()`] and
+/// [`stroke_width_of`] give none.
 fn meet_stroke(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) {
-    if part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::Complex(_)) {
+    if part.stated.contains(PartStated::STROKE)
+        && matches!(part.stroke.prevailing(), Stroke::Complex(_))
+    {
         push_note(notes, Note::Unmapped { path: home });
     }
 }
@@ -130,7 +133,7 @@ fn radius_at(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Rea
 /// A part's stroke colour, where stated as one stroke of one colour in an alignment the
 /// connector knows.
 pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::Uniform { align, .. } if LineAlign::of(*align).is_some() => {
             reads::stroke(part).map(rgba)
         }
@@ -152,10 +155,10 @@ pub(crate) fn state_line(
 
 /// A part's border as a state's: its colour as [`line()`] reads it, transparent for a stroke
 /// stated as none (spec §10, rule 2), and its width, with `home`, the width's, noted where
-/// stated per side ([`meet_stroke`]).
+/// stated per side and not reduced ([`meet_stroke`]).
 fn line_of(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> StateLine {
     meet_stroke(part, home, notes);
-    let color = match part.stroke {
+    let color = match part.stroke.prevailing() {
         Stroke::None if part.stated.contains(PartStated::STROKE) => Some(rgba(Color::TRANSPARENT)),
         _ => line(part),
     };
@@ -166,7 +169,7 @@ fn line_of(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> State
 }
 
 /// [`line()`] where a rule states it for the queried state (its `from_state` bit), `home`
-/// noted where stated per side ([`meet_stroke`]).
+/// noted where stated per side and not reduced ([`meet_stroke`]).
 fn state_line_color(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Option<Rgba> {
     part.from_state
         .contains(PartStated::STROKE)
@@ -180,7 +183,7 @@ fn state_line_color(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>)
 /// A part's outline as the builders take it, and where its stroke lies (`Outside` for one
 /// the theme states none of, or states as none, which composites nothing).
 pub(crate) fn edge(part: &PartStyle) -> (Edge, LineAlign) {
-    let align = match &part.stroke {
+    let align = match &part.stroke.prevailing() {
         Stroke::Uniform { align, .. } => LineAlign::of(*align),
         _ => None,
     };
@@ -524,7 +527,7 @@ fn menu_outline(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Outline {
 }
 
 /// A panel part's separator line, with the home of its width, noted where stated per side
-/// ([`meet_stroke`]).
+/// and not reduced ([`meet_stroke`]).
 fn panel_edge(part: &PartStyle, width_path: &'static str, notes: &mut Vec<Note>) -> PanelEdge {
     meet_stroke(part, width_path, notes);
     PanelEdge {

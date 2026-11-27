@@ -194,7 +194,7 @@ impl Over {
                     || alone.from_state.contains(bit)
                     || own.from_state.contains(bit)
             };
-            let stroke = match (&indicator.stroke, stroke_color_of(&indicator)) {
+            let stroke = match (&indicator.stroke.prevailing(), stroke_color_of(&indicator)) {
                 (NextStroke::Uniform { align, .. }, Some(colour)) => Some((colour, *align)),
                 _ => None,
             };

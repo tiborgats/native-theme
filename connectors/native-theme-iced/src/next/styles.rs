@@ -682,7 +682,7 @@ macro_rules! input_source {
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced); a
 /// value at rest it leaves unstated is iced's own field's (spec §10, rule
 /// 0).
 pub fn text_input(
@@ -706,7 +706,7 @@ fn text_input_source(r: &ResolvedTheme) -> Mapped<InputSource> {
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced); a
 /// value at rest it leaves unstated is iced's own text area's (spec §10,
 /// rule 0).
 pub fn text_editor(
@@ -843,7 +843,7 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
 ///
 /// [`super::Unmapped`] where the theme states no window background, or
 /// states a value in a form iced cannot draw (a layered fill with no
-/// fallback colour, a per-side stroke, a concentric radius); a value at
+/// fallback colour, a per-side stroke not reduced, a concentric radius); a value at
 /// rest it leaves unstated is iced's own box's (spec §10, rule 0).
 pub fn checkbox(
     r: &ResolvedTheme,
@@ -859,7 +859,7 @@ pub fn checkbox(
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced, a
 /// concentric radius); a value at rest it leaves unstated is iced's own
 /// box's (spec §10, rule 0).
 pub fn checkbox_over(
@@ -878,7 +878,7 @@ pub fn checkbox_over(
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced); a
 /// value at rest it leaves unstated is iced's own radio's (spec §10, rule
 /// 0).
 pub fn radio(
@@ -1022,7 +1022,7 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
 ///
 /// [`super::Unmapped`] where the theme states no window background, or
 /// states a value in a form iced cannot draw (a layered fill with no
-/// fallback colour, a per-side stroke, a concentric radius); a fill at rest
+/// fallback colour, a per-side stroke not reduced, a concentric radius); a fill at rest
 /// it leaves unstated is iced's own switch's (spec §10, rule 0).
 pub fn toggler(
     r: &ResolvedTheme,
@@ -1038,7 +1038,7 @@ pub fn toggler(
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced, a
 /// concentric radius); a fill at rest it leaves unstated is iced's own
 /// switch's (spec §10, rule 0).
 pub fn toggler_over(
@@ -1056,7 +1056,7 @@ pub fn toggler_over(
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced); a
 /// value at rest it leaves unstated is iced's own field's (spec §10, rule
 /// 0).
 pub fn pick_list(
@@ -1151,7 +1151,7 @@ fn menu_source(r: &ResolvedTheme) -> Mapped<MenuSource> {
         )
     };
     let (line, width) = if frame.stated.contains(PartStated::STROKE) {
-        let line = match frame.stroke {
+        let line = match frame.stroke.prevailing() {
             Stroke::None => None,
             _ => Some(line(frame, color_home)?),
         };
@@ -1181,7 +1181,8 @@ fn menu_source(r: &ResolvedTheme) -> Mapped<MenuSource> {
 /// its stroke where stated, `None` for each where not or where the stroke
 /// is none.
 fn thumb_edge(part: &PartStyle) -> Mapped<(Option<f32>, Option<Line>)> {
-    if !part.stated.contains(PartStated::STROKE) || matches!(part.stroke, Stroke::None) {
+    if !part.stated.contains(PartStated::STROKE) || matches!(part.stroke.prevailing(), Stroke::None)
+    {
         return Ok((None, None));
     }
     Ok((
@@ -1377,7 +1378,8 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
         border: part_outline!(track, "segmented_control.track(NONE)")?,
         separator: if separator.stated.contains(PartStated::FILL) {
             Some(fill(&separator, "segmented_control.separator(NONE).fill")?)
-        } else if !track.stated.contains(PartStated::STROKE) || matches!(track.stroke, Stroke::None)
+        } else if !track.stated.contains(PartStated::STROKE)
+            || matches!(track.stroke.prevailing(), Stroke::None)
         {
             None
         } else {
@@ -1411,7 +1413,7 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
 ///
 /// [`super::Unmapped`] where the theme states no window background, or
 /// states a value in a form iced cannot draw (a layered fill with no
-/// fallback colour, a per-side stroke, a concentric radius); a value at
+/// fallback colour, a per-side stroke not reduced, a concentric radius); a value at
 /// rest it leaves unstated is iced's own container's (spec §10, rule 0).
 pub fn segmented_control(
     r: &ResolvedTheme,
@@ -1426,7 +1428,7 @@ pub fn segmented_control(
 ///
 /// [`super::Unmapped`] where the theme states no window background, or
 /// states a value in a form iced cannot draw (a layered fill with no
-/// fallback colour, a per-side stroke, a concentric radius).
+/// fallback colour, a per-side stroke not reduced, a concentric radius).
 pub fn segment_separator(
     r: &ResolvedTheme,
     disabled: bool,
@@ -1442,7 +1444,7 @@ pub fn segment_separator(
 ///
 /// [`super::Unmapped`] where the theme states no window background, or
 /// states a value in a form iced cannot draw (a layered fill with no
-/// fallback colour, a per-side stroke, a concentric radius); a fill or a
+/// fallback colour, a per-side stroke not reduced, a concentric radius); a fill or a
 /// label at rest it leaves unstated is iced's own segment's (spec §10, rule
 /// 0).
 pub fn segment(
@@ -1484,7 +1486,7 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced, a
 /// concentric radius); a label or a frame property it leaves unstated is
 /// iced's own (spec §10, rule 0).
 pub fn expander(
@@ -1501,7 +1503,7 @@ pub fn expander(
 /// # Errors
 ///
 /// [`super::Unmapped`] where the theme states a value in a form iced cannot
-/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// draw (a layered fill with no fallback colour, a per-side stroke not reduced, a
 /// concentric radius); a frame property it leaves unstated is iced's own
 /// container's (spec §10, rule 0).
 pub fn expander_frame(
@@ -1557,13 +1559,14 @@ pub fn rule(r: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + 
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states a toolbar stroke per side:
-/// iced's rule is one line (spec §10, rule 4).
+/// [`super::Unmapped`] where the theme states a toolbar stroke per side and
+/// [`Stroke::prevailing`] does not reduce it: iced's rule is one line (spec
+/// §10, rule 4).
 pub fn toolbar_rule(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<>> {
     let bar = r.toolbar.bar(WidgetState::NONE);
-    let line = match &bar.stroke {
+    let line = match &bar.stroke.prevailing() {
         _ if !bar.stated.contains(PartStated::STROKE) => None,
         Stroke::None => Some(iced_core::Color::TRANSPARENT),
         Stroke::Uniform { color, .. } => Some(to_color(*color)),

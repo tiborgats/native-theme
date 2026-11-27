@@ -26083,9 +26083,10 @@ fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
         seen.0 && seen.1,
         "the presets did not cover both an indicator and none: {seen:?}"
     );
-    // A selected tab's stroke per side, which gpui cannot draw: TabLook
-    // builds no look, the bar is gpui-component's, and the info gives that
-    // reason, not a theme that states no indicator.
+    // A selected tab's stroke per side that `Stroke::prevailing` does not
+    // reduce (two colours on two sides each), which gpui cannot draw:
+    // TabLook builds no look, the bar is gpui-component's, and the info
+    // gives that reason, not a theme that states no indicator.
     let Some((name, mut r, t)) = variants.first().cloned() else {
         return Ok(());
     };
@@ -26094,7 +26095,11 @@ fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
         .window
         .border
         .ok_or(format!("{name} states no colors.window.border"))?;
-    let side = || native_theme::next::StrokeSide {
+    let other = native_theme::next::Color::rgb(1.0, 0.0, 1.0);
+    if other == colour {
+        return Err(format!("{name}'s window border is the test's other colour"));
+    }
+    let side = |colour| native_theme::next::StrokeSide {
         width: 1.,
         paint: native_theme::next::Paint::Solid(colour),
     };
@@ -26104,10 +26109,10 @@ fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
                 .states(native_theme::next::WidgetState::SELECTED)
                 .tab(native_theme::next::PartPatch::new().stroke(
                     native_theme::next::Stroke::sides(
-                        side(),
-                        side(),
-                        side(),
-                        side(),
+                        side(colour),
+                        side(other),
+                        side(colour),
+                        side(other),
                         native_theme::next::StrokeAlign::Inside,
                     ),
                 )),
