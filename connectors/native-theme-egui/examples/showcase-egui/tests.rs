@@ -12448,6 +12448,26 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
     Ok(())
 }
 
+/// The edit switch's checked outline colour, `toolbar.button(CHECKED).stroke.color`, which a
+/// `mapping.toml` row also holds, is routed to the per-call pen that draws it
+/// (`pages::basic::tool_pen`, [`crate::info::EDIT_CHECKED_PEN`]), not to the row (N40).
+#[test]
+fn the_edit_switchs_checked_outline_colour_names_its_pen() -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let how = crate::info::listed_how(
+        &manifest,
+        "basic.icons.edit",
+        "toolbar.button(CHECKED).stroke.color",
+        &seams,
+    );
+    assert_eq!(how, crate::info::EDIT_CHECKED_PEN);
+    Ok(())
+}
+
 /// The tool buttons' and the side-panel toggle's own homes, the primary and the dialog's
 /// default button's own outline and corners, the On toggle's hovered and pressed checked looks
 /// and the Copy box's hovered width, which no `mapping.toml` row holds (the list's

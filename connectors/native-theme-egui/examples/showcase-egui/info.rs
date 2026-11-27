@@ -1447,6 +1447,11 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     ),
     (
         "basic.icons.edit",
+        "toolbar.button(CHECKED).stroke.color",
+        EDIT_CHECKED_PEN,
+    ),
+    (
+        "basic.icons.edit",
         "toolbar.button(CHECKED).stroke.width",
         EDIT_CHECKED_WIDTH,
     ),
@@ -1674,6 +1679,12 @@ pub(crate) const EDIT_CHECKED_WIDTH: &str = "egui: per call, the edit switch's o
      states toolbar.button(CHECKED).stroke for the state, else the scope's own \
      (pages::basic::tool_pen, demo::state_pen)";
 
+/// The edit switch's outline colour while on, at rest.
+pub(crate) const EDIT_CHECKED_PEN: &str = "egui: per call, the edit switch's outline colour \
+     while on at rest, egui's inactive entry, visuals.widgets.inactive.bg_stroke, where a rule \
+     states toolbar.button(CHECKED).stroke for the state, else the scope's own \
+     (pages::basic::tool_pen, demo::state_pen)";
+
 /// The edit switch's outline width while on under the pointer.
 pub(crate) const EDIT_HOVER_CHECKED_WIDTH: &str = "egui: per call, the edit switch's outline \
      width while on under the pointer, egui's hovered entry, visuals.widgets.hovered.bg_stroke, \
@@ -1692,8 +1703,10 @@ pub(crate) const EDIT_REST_FILL: &str = "egui: while the edit switch is off, as 
 /// off; while on, `demo::tool_icon_color` reads `CHECKED` and its forms instead.
 pub(crate) const EDIT_ICON_REST: &str = "egui: while the edit switch is off, as the other tool buttons: the \
      colour the icon loads in at rest, where stated (demo::tool_icon_color, demo::loaded_in); \
-     while it is on (it opens on), not drawn: the icon loads in toolbar.button_icon(CHECKED)'s \
-     colour, or the switch's label colour";
+     while it is on (it opens on), the same colour where no rule states \
+     toolbar.button_icon(CHECKED).color for CHECKED, egui drawing a selected button's image as \
+     it loads, else toolbar.button_icon(CHECKED)'s colour; where none is stated, the switch's \
+     label colour";
 
 /// The edit switch's icon under the pointer, as [`EDIT_ICON_REST`].
 pub(crate) const EDIT_ICON_HOVER: &str = "egui: while the edit switch is off, the colour the icon loads in \
