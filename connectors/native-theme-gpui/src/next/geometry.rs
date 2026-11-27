@@ -224,6 +224,19 @@ pub fn toolbar_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Optio
     builders::toolbar_button_icon_color(r, state)
 }
 
+/// [`toolbar_button_icon_color`] of a flat `Button` built on
+/// [`next::variants::ghost_button`](super::variants::ghost_button), a 0.8.0
+/// builder with no 0.7.2 one: `button.icon(NONE; variant=Flat).color` at
+/// rest where stated, `button.icon(state; variant=Flat).color` in another
+/// state where a rule states it for the state; `None` where neither, and the
+/// icon keeps the Button's text colour. Give it to the `Icon`
+/// (`Styled::text_color`) of a Button built in `state`, `CHECKED` for one
+/// that is on (`selected(true)`): an `Icon` takes one colour, so it stays
+/// under the pointer and pressed (the crate's README, *Limits*).
+pub fn ghost_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
+    builders::ghost_button_icon_color(r, state)
+}
+
 #[cfg(test)]
 mod tests {
     use native_theme::next::{Preset, Theme, ThemeContext};
@@ -474,6 +487,49 @@ mod tests {
         }
         let kde = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
         assert_eq!(toolbar_button_icon_color(&kde, WidgetState::NONE), None);
+    }
+
+    /// A flat button's icon is tinted in `button.icon(NONE; variant=Flat).color`
+    /// at rest and in `button.icon(CHECKED; variant=Flat).color` while on,
+    /// each where stated: kde-breeze states neither, and patched to state
+    /// both, apart, each state takes its own. Patched at rest alone, the
+    /// checked icon is not tinted in the rest colour: no rule states it for
+    /// `CHECKED`, and it keeps the selected Button's text colour.
+    #[test]
+    fn a_flat_buttons_icon_takes_the_stated_icon_colour() {
+        use native_theme::next::{ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch};
+        let kde = Theme::preset(Preset::KdeBreeze);
+        let stock = kde.clone().resolve(&ThemeContext::light());
+        for state in [WidgetState::NONE, WidgetState::CHECKED] {
+            assert_eq!(ghost_button_icon_color(&stock, state), None, "{state:?}");
+        }
+        let (off, on) = (
+            Color::new(0.0, 1.0, 0.0, 1.0),
+            Color::new(1.0, 0.0, 1.0, 1.0),
+        );
+        let rule = |state: WidgetState, colour: Color| {
+            ButtonRule::new()
+                .variant(ButtonVariant::Flat)
+                .states(state)
+                .icon(IconPatch::new().color(colour))
+        };
+        let rest = ThemePatch::new().button(rule(WidgetState::NONE, off));
+        let both = rest.clone().button(rule(WidgetState::CHECKED, on));
+        let r = kde.clone().with_patch(both).resolve(&ThemeContext::light());
+        assert_eq!(
+            ghost_button_icon_color(&r, WidgetState::NONE),
+            Some(super::super::hsla(off))
+        );
+        assert_eq!(
+            ghost_button_icon_color(&r, WidgetState::CHECKED),
+            Some(super::super::hsla(on))
+        );
+        let r = kde.with_patch(rest).resolve(&ThemeContext::light());
+        assert_eq!(
+            ghost_button_icon_color(&r, WidgetState::NONE),
+            Some(super::super::hsla(off))
+        );
+        assert_eq!(ghost_button_icon_color(&r, WidgetState::CHECKED), None);
     }
 
     /// A checked button whose checked fill and label no rule states

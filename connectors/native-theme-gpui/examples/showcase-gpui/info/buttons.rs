@@ -1541,15 +1541,46 @@ impl Edge {
     /// Button, in the checked flat body's pen where a rule states it for
     /// `CHECKED` and the refinement can be built under `native`.
     pub(crate) fn ghost_checked(native: Option<&NextTheme>) -> Option<Self> {
-        let r = native.filter(|r| next::geometry::ghost_button_checked(r).is_ok())?;
-        let checked = r
-            .button
-            .body(ButtonQuery::flat().state(WidgetState::CHECKED));
-        state_stroke_color_of(&checked)?;
+        Self::flat(
+            native,
+            next::geometry::ghost_button_checked,
+            WidgetState::CHECKED,
+            "button.body(CHECKED; variant=Flat).stroke.width",
+            "the border in the checked flat pen next::geometry::ghost_button_checked gives the selected Button",
+        )
+    }
+
+    /// `next::geometry::ghost_button_rest`'s transparent border on a flat
+    /// Button at rest, of the hovered flat body's stroke width, where a rule
+    /// states that stroke for `HOVER` and the refinement can be built under
+    /// `native`.
+    pub(crate) fn ghost_rest(native: Option<&NextTheme>) -> Option<Self> {
+        Self::flat(
+            native,
+            next::geometry::ghost_button_rest,
+            WidgetState::HOVER,
+            "button.body(HOVER; variant=Flat).stroke.width",
+            "the transparent border next::geometry::ghost_button_rest gives the Button",
+        )
+    }
+
+    /// The border `refinement` gives a flat Button under `native`, where it
+    /// can be built and a rule states `button.body(state; variant=Flat)`'s
+    /// stroke for `state`: that stroke's width, read at `home`.
+    fn flat(
+        native: Option<&NextTheme>,
+        refinement: fn(&NextTheme) -> next::Mapped<gpui::StyleRefinement>,
+        state: WidgetState,
+        home: &'static str,
+        border: &'static str,
+    ) -> Option<Self> {
+        let r = native.filter(|r| refinement(r).is_ok())?;
+        let body = r.button.body(ButtonQuery::flat().state(state));
+        state_stroke_color_of(&body)?;
         Some(Self {
-            width: stroke_width_of(&checked)?,
-            home: "button.body(CHECKED; variant=Flat).stroke.width",
-            border: "the border in the checked flat pen next::geometry::ghost_button_checked gives the selected Button",
+            width: stroke_width_of(&body)?,
+            home,
+            border,
         })
     }
 }

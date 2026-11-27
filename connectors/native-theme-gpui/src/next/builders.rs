@@ -12,7 +12,7 @@ use gpui::{Hsla, Pixels, StyleRefinement, Styled as _, px};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
 use native_theme::next::{
-    ButtonQuery, DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle,
+    ButtonQuery, DecorationKind, DialogEntranceStyle, IconStated, IconStyle, PartStated, PartStyle,
     ResolvedTheme, Stroke, TextStated, WidgetState,
 };
 
@@ -996,7 +996,22 @@ pub(crate) fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefineme
 /// tint of the state a Button is built in stays under the pointer and
 /// pressed.
 pub(crate) fn toolbar_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
-    let icon = r.toolbar.button_icon(state);
+    icon_color_in(&r.toolbar.button_icon(state), state)
+}
+
+/// [`toolbar_button_icon_color`] of a flat Button built on
+/// [`super::variants::ghost_button`]: `button.icon(NONE; variant=Flat).color`
+/// at rest where stated; in another state
+/// `button.icon(state; variant=Flat).color` where a rule states it for the
+/// state; else `None`, and the icon keeps the Button's text colour.
+pub(crate) fn ghost_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
+    icon_color_in(&r.button.icon(ButtonQuery::flat().state(state)), state)
+}
+
+/// The colour of `icon`, queried in `state`, as
+/// [`toolbar_button_icon_color`] takes it: stated at rest, else stated by a
+/// rule for the state.
+fn icon_color_in(icon: &IconStyle, state: WidgetState) -> Option<Hsla> {
     let bits = if state == WidgetState::NONE {
         icon.stated
     } else {
