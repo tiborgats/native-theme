@@ -991,6 +991,55 @@ fn a_rule_for_disabled_and_checked_letters_the_disabled_checked_box() -> TestRes
     Ok(())
 }
 
+/// A disabled checked box's mark, on a disabled fill the theme states and
+/// with no disabled mark stated, takes the disabled checked box's label
+/// (`checkbox.label(DISABLED|CHECKED)` where a rule for `DISABLED` states it
+/// by spec §2's two queries), as its label does, not the unchecked disabled
+/// box's `checkbox.label(DISABLED)`. On every preset that states no disabled
+/// mark, with the label first stated with no state, a disabled fill and a
+/// rule for `DISABLED|CHECKED` alone stating the label. The box is not faded
+/// here (no disabled opacity).
+#[test]
+fn a_disabled_checked_marks_fallback_is_the_checked_disabled_label() -> TestResult {
+    use iced_widget::checkbox::Status;
+    use native_theme::next::{IconStated, StyleQuery};
+    let patch = ThemePatch::new()
+        .checkbox(CheckboxRule::new().label(TextPatch::new().color(LABEL)))
+        .checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::DISABLED)
+                .indicator(PartPatch::new().fill(Paint::Solid(LABEL))),
+        )
+        .checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::DISABLED | WidgetState::CHECKED)
+                .label(TextPatch::new().color(DISTINCT)),
+        );
+    let mut checked = 0usize;
+    for (preset, mut r) in every_preset_with(&patch) {
+        let marked = [
+            r.checkbox.checkmark(WidgetState::DISABLED),
+            r.checkbox.checkmark(
+                StyleQuery::new(WidgetState::DISABLED | WidgetState::CHECKED)
+                    .asking(WidgetState::DISABLED),
+            ),
+        ]
+        .iter()
+        .any(|mark| mark.from_state.contains(IconStated::COLOR));
+        if marked {
+            continue;
+        }
+        checked += 1;
+        r.checkbox.disabled_opacity = None;
+        let theme = to_theme(&r)?;
+        let style = super::checkbox(&r)?(&theme, Status::Disabled { is_checked: true });
+        assert_eq!(style.icon_color, to_color(DISTINCT), "{preset:?}");
+        assert_eq!(style.text_color, Some(to_color(DISTINCT)), "{preset:?}");
+    }
+    assert!(checked > 0, "every preset states a disabled mark");
+    Ok(())
+}
+
 /// A vertical slider's rail is as wide as the vertical track
 /// (`slider.track(NONE; orientation=Vertical).min_size[0]`), a horizontal
 /// one's as tall as the horizontal track (`min_size[1]`), each from its own

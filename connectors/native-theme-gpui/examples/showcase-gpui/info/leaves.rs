@@ -1088,6 +1088,16 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: checkbox.disabled_opacity (radio.disabled_opacity), fades the whole disabled control (CheckboxLook::next_of)",
     ),
     (
+        "basic.checkboxes.disabled.mark",
+        &["checkbox.label(DISABLED|CHECKED).color"],
+        "not drawn: a disabled checked box's mark is checkbox.checkmark(DISABLED|CHECKED).color where a rule states it for DISABLED, else the checked mark faded by DISABLED_INDICATOR_ALPHA, never the label's colour (native-theme-gpui widgets/checkbox.rs, checked_disabled_mark)",
+    ),
+    (
+        "basic.checkboxes.disabled",
+        &["checkbox.label(DISABLED|CHECKED).color"],
+        "gpui: the disabled checked box's label, checkbox.label(DISABLED|CHECKED).color where a rule states it for DISABLED by spec §2's two queries; else gpui-component's own muted_foreground, colors.window.foreground_muted (CheckboxLook::next_of; native-theme-gpui widgets/checkbox.rs, disabled_label)",
+    ),
+    (
         "",
         &["checkbox.label(DISABLED).color"],
         "gpui: checkbox.label(DISABLED).color (radio.label(DISABLED)), a disabled control's label where a rule states it for DISABLED; else gpui-component's own muted_foreground, colors.window.foreground_muted (CheckboxLook::next_of)",

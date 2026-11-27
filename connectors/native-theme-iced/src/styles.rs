@@ -2349,7 +2349,7 @@ pub(crate) fn checkbox_from(
                 let (_, own_disabled, _) = own(status);
                 let (at_rest, line) = fills.rest(is_checked, (own_fill, own_rest));
                 let (background, mark) = match disabled {
-                    Some(fill) => (fill, disabled_label.unwrap_or(own_style.icon_color)),
+                    Some(fill) => (fill, text.unwrap_or(own_style.icon_color)),
                     None => (at_rest, mark),
                 };
                 let mark = disabled_mark.filter(|_| is_checked).unwrap_or(mark);

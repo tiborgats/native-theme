@@ -12276,13 +12276,17 @@ fn check_box_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) 
             "CheckMark: the mark's stroke colour, iced_next::styles::checkbox's icon_color, \
              checkbox.checkmark(CHECKED).color, over its fill"
         }
-        "checkbox.label(DISABLED).color" if mark && id.ends_with(".mark") => {
+        "checkbox.label(DISABLED).color" | "checkbox.label(DISABLED|CHECKED).color"
+            if mark && id.ends_with(".mark") =>
+        {
             "CheckMark: the disabled mark, iced_next::styles::checkbox's Disabled icon_color: \
              checkbox.checkmark(DISABLED|CHECKED).color where a rule states \
-             checkbox.checkmark(DISABLED).color; else checkbox.label(DISABLED).color where \
-             checkbox.indicator(DISABLED|CHECKED).fill is stated, iced's own icon colour where \
-             that label colour is unstated; else the checked mark's, \
-             checkbox.checkmark(CHECKED).color"
+             checkbox.checkmark(DISABLED).color; else, where \
+             checkbox.indicator(DISABLED|CHECKED).fill is stated, the checked box's disabled \
+             label, checkbox.label(DISABLED|CHECKED).color where a rule for DISABLED states it \
+             by spec §2's two queries, else checkbox.label(DISABLED).color, iced's own icon \
+             colour where that label colour is unstated; else the \
+             checked mark's, checkbox.checkmark(CHECKED).color"
         }
         _ => return None,
     };

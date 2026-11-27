@@ -533,6 +533,7 @@ moves = [
 
 [homes."checkbox.label(DISABLED|CHECKED).color"]
 moves = [
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: true }"] },
 ]
 
@@ -2492,7 +2493,7 @@ homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(DISABLED).fill"
 homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED).stroke.color", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(DISABLED|CHECKED).stroke.color", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).fill", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(NONE).fill", "checkbox.indicator(NONE).stroke.color", "colors.view.background", "colors.window.background"]
 
 [rows."styles::checkbox.icon_color"]
-homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(DISABLED|CHECKED).color", "checkbox.label(DISABLED).color", "colors.window.background"]
+homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(DISABLED|CHECKED).color", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "colors.window.background"]
 
 [rows."styles::checkbox.text_color"]
 homes = ["checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.label(NONE).color", "colors.window.background"]

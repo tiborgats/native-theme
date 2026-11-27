@@ -769,6 +769,12 @@ pub(crate) const FLAT_PRESSED_LABEL: &str = "egui: per call, the flat button's l
      button.label(PRESSED; variant=Flat).color where a rule states it for PRESSED, else egui's \
      own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
 
+/// The route of a disabled checked box's own label colour, which egui does not read.
+const CHECKED_DISABLED_LABEL: &str = "not drawn: egui letters a disabled check box, checked or \
+     not, and draws its mark on a stated disabled fill in the Disabled cell's text, \
+     checkbox.label(DISABLED).color where stated (native-theme-egui style/variants.rs, \
+     selected_disabled_cell); the connector reads no checked disabled label";
+
 /// The homes of a flat button's own states, which `next::flat_button` lays over the scope per
 /// call from the installed 0.8.0 theme and no `mapping.toml` row holds, each with its route. Only
 /// the flat buttons ([`FLAT_BUTTONS`]) take them; the side-panel toggle's are
@@ -1223,6 +1229,22 @@ pub(crate) const TOGGLE_FOCUS_PEN: &str = "egui: per call, the toggle's outline 
 /// button's own corners, which egui reads none of, and
 /// the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
+    // The disabled checked check box, in the check box's SelectedDisabled cell.
+    (
+        "basic.checkboxes.disabled",
+        "checkbox.label(DISABLED|CHECKED).color",
+        CHECKED_DISABLED_LABEL,
+    ),
+    (
+        "basic.checkboxes.disabled.label",
+        "checkbox.label(DISABLED|CHECKED).color",
+        CHECKED_DISABLED_LABEL,
+    ),
+    (
+        "basic.checkboxes.disabled.mark",
+        "checkbox.label(DISABLED|CHECKED).color",
+        CHECKED_DISABLED_LABEL,
+    ),
     // Save, the disabled tool button (pages::basic::icon_buttons), in the toolbar's Disabled cell.
     (
         "basic.icons.save",

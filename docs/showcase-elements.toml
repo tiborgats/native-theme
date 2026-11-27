@@ -265,6 +265,7 @@ model_only_homes = [
   { home = "button.body(PRESSED|CHECKED; variant=Flat).fill", reason = "a checked flat button's fill while pressed (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked fill, button.checked_background" },
   { home = "button.label(HOVER|CHECKED; variant=Flat).color", reason = "a checked flat button's label colour under the pointer (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked label colour, button.checked_text_color" },
   { home = "button.label(PRESSED|CHECKED; variant=Flat).color", reason = "a checked flat button's label colour while pressed (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked label colour, button.checked_text_color" },
+  { home = "checkbox.label(DISABLED|CHECKED).color", reason = "a disabled checked box's label colour (docs/v0.8.0-spec.md §5, `checkbox`'s `label` part; §2, from_state); 0.7.2's `[checkbox]` has one disabled label colour, checkbox.disabled_text_color, checked or not" },
   { home = "button.body(HOVER|CHECKED).fill", reason = "a checked button's fill under the pointer (docs/v0.8.0-spec.md §5, `button`'s `body` part; §10, rule 0); 0.7.2's `[button]` has one checked fill, button.checked_background" },
   { home = "button.body(PRESSED|CHECKED).fill", reason = "a checked button's fill while pressed (docs/v0.8.0-spec.md §5, `button`'s `body` part; §10, rule 0); 0.7.2's `[button]` has one checked fill, button.checked_background" },
   { home = "button.label(HOVER|CHECKED).color", reason = "a checked button's label colour under the pointer (docs/v0.8.0-spec.md §5, `button`'s `label` part; §10, rule 0); 0.7.2's `[button]` has one checked label colour, button.checked_text_color" },
@@ -1297,7 +1298,9 @@ leaves = ["checkbox.font", "checkbox.indicator_color", "checkbox.indicator_width
 # homes: checkbox.* not radio.*: a check box.
 #        checkbox.disabled_background: DISABLED|CHECKED, not DISABLED: shown checked (Checked,
 #          disabled).
-homes = ["checkbox.label(NONE)", "checkbox.checkmark(CHECKED).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.checkmark(NONE).stroke_width", "checkbox.label_gap", "checkbox.indicator(CHECKED).fill", "checkbox.disabled_opacity", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.label(DISABLED).color", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left", "typography.line_height_multiplier"]
+#        checkbox.label(DISABLED|CHECKED).color (model_only_homes): the checked box's disabled
+#          label, which gpui and iced read for it by spec §2's two queries.
+homes = ["checkbox.label(NONE)", "checkbox.checkmark(CHECKED).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.checkmark(NONE).stroke_width", "checkbox.label_gap", "checkbox.indicator(CHECKED).fill", "checkbox.disabled_opacity", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Checked, disabled"]
 
 [[element]]
@@ -1319,7 +1322,10 @@ name = "Check mark"
 parent = "basic.checkboxes.disabled.indicator"
 leaves = ["checkbox.indicator_color", "checkbox.check_mark_stroke_width_px", "checkbox.disabled_opacity", "checkbox.disabled_text_color", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px"]
 # homes: checkbox.* not radio.*: a check box.
-homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(NONE).stroke_width", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left"]
+#        checkbox.label(DISABLED|CHECKED).color (model_only_homes): the checked box's disabled
+#          label, which iced's mark takes on a stated disabled fill where no disabled mark is
+#          stated.
+homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(NONE).stroke_width", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left"]
 states = ["Checked, disabled"]
 part = true
 sample = { mark = "glyph" }
@@ -1330,7 +1336,9 @@ name = "Checkbox label"
 parent = "basic.checkboxes.disabled.indicator"
 leaves = ["checkbox.font", "checkbox.label_gap_px", "checkbox.disabled_opacity", "checkbox.disabled_text_color", "defaults.line_height"]
 # homes: checkbox.* not radio.*: a check box.
-homes = ["checkbox.label(NONE)", "checkbox.label_gap", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "typography.line_height_multiplier"]
+#        checkbox.label(DISABLED|CHECKED).color (model_only_homes): the checked box's disabled
+#          label, which gpui and iced read for it by spec §2's two queries.
+homes = ["checkbox.label(NONE)", "checkbox.label_gap", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "typography.line_height_multiplier"]
 states = ["Checked, disabled"]
 part = true
 sample = { text = "glyph" }
