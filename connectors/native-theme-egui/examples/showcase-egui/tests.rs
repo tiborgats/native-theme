@@ -12715,6 +12715,11 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::DIALOG_DEFAULT_CORNERS,
         ),
         (
+            "chrome.info.copy",
+            "button.body(HOVER).stroke.width",
+            i::FLAT_HOVER_WIDTH,
+        ),
+        (
             "basic.buttons.toggle_on",
             "button.body(HOVER|CHECKED).fill",
             i::TOGGLE_ON_HOVER_FILL,

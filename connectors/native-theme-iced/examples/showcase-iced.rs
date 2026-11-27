@@ -10413,7 +10413,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              button.body(HOVER;variant=Flat).stroke.width gives where its rule follows every rule \
              for CHECKED"
         }
-        "button.body(HOVER; variant=Flat).stroke.width" if flat => {
+        "button.body(HOVER; variant=Flat).stroke.width" | "button.body(HOVER).stroke.width"
+            if flat =>
+        {
             "ghost_button: the Hovered border's width, button.body(HOVER;variant=Flat).stroke's \
              where a rule states it for the state, on the bounds over the padding (next_edge); \
              iced's own flat button's (button::text) where none does"
@@ -13241,10 +13243,10 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         return line.to_owned();
     }
     let installed = state.installed_combination();
-    // Edit, the edit-mode switch, while it is on, which
-    // `iced_next::styles::toolbar_button` draws checked.
-    let checked = id == "basic.icons.edit" && state.basic_edit;
     let button_id = id.strip_suffix(".icon").unwrap_or(id);
+    // Edit, the edit-mode switch, while it is on, which
+    // `iced_next::styles::toolbar_button` draws checked, its icon with it.
+    let checked = button_id == "basic.icons.edit" && state.basic_edit;
     if button_id == DISABLED_TOOL
         && let Some(line) = disabled_tool_route(state, element, home, installed.as_deref())
     {

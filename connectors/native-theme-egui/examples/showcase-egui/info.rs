@@ -1748,6 +1748,11 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         FLAT_PRESSED_EDGE,
     ),
     (
+        "chrome.info.copy",
+        "button.body(HOVER).stroke.width",
+        FLAT_HOVER_WIDTH,
+    ),
+    (
         "basic.list.scrollbar",
         "scrollbar.thumb(NONE).corners",
         THUMB_CORNERS,

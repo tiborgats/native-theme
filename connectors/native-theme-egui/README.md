@@ -851,9 +851,14 @@ listed here, and a value the theme leaves unstated is egui's own
   (macos-monterey light: the label #606060, the icon #676767 at rest), so
   no cell carries both. The application loads the icon in
   `toolbar.button_icon(<state>).color` (`IconKey::tint`) where the theme
-  states it, in the state of the button's previous response, and checked
-  only where a rule states it for `CHECKED`; where it states none, the icon
-  keeps the colour it is loaded in.
+  states it, in the state of the button's previous response; checked, in
+  `toolbar.button_icon(<state> | CHECKED).color` (the side-panel toggle
+  while open in `button.icon(CHECKED | <state>; variant=Flat).color`)
+  where stated, as the plain query answers it, a colour stated at rest
+  holding in every state no rule states one for, because egui has no
+  treatment of `CHECKED` for a button's image (a selected button changes
+  only its fills and text stroke, `src/theme/default_style.rs`); where the
+  theme states none, the icon keeps the colour it is loaded in.
 - **A flat button's narrower hovered or pressed outline.** egui lays a
   button out at the inner margin `button_padding + expansion −
   bg_stroke.width` of its state (`egui-0.37.0/src/theme/default_style.rs`,
