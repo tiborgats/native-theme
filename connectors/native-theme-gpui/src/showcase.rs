@@ -4790,10 +4790,44 @@ fn how_source() -> &'static str {
         .map_or("", |(_, text)| *text)
 }
 
+/// The strings of the `const` named `name` in `raw`, each with the offset
+/// it is written at, and whether it is a list: a `&str` const's one string,
+/// or a `&[&str]` const's list; `None` where `raw` declares no such const.
+fn const_strings<'a>(raw: &'a str, name: &str) -> Option<(bool, Vec<(usize, &'a str)>)> {
+    let single = format!("const {name}: &str = ");
+    let list = format!("const {name}: &[&str] = &[");
+    let (is_list, from, end) = if let Some(at) = raw.find(&single) {
+        let from = at + single.len();
+        (
+            false,
+            from,
+            raw.get(from..)?.find(";\n").map(|ix| from + ix)?,
+        )
+    } else {
+        let from = raw.find(&list)? + list.len();
+        (true, from, raw.get(from..)?.find("];").map(|ix| from + ix)?)
+    };
+    let mut strings = Vec::new();
+    let mut at = from;
+    while let Some(rest) = raw.get(at..end).filter(|rest| !rest.is_empty()) {
+        if let Some(body) = rest.strip_prefix('"') {
+            let len = end_of_string(body, "\"");
+            strings.push((at, body.get(..len.saturating_sub(1)).unwrap_or("")));
+            at += 1 + len;
+        } else {
+            at += char_len(rest);
+        }
+    }
+    (!strings.is_empty()).then_some((is_list, strings))
+}
+
 /// Every entry of the `HOW` table in `raw`, in order: each tuple's prefix,
 /// the strings of its `&[...]` list as its homes and its line, comments
-/// skipped. An error where the table is missing or does not close, or where
-/// an entry is not a prefix, a list of one home or more, and a line.
+/// skipped; a tuple's member written as the name of a `const` of the same
+/// file, a `&str` or a `&[&str]` list of homes, is read as that const's
+/// strings, at the line they are written on. An error where the table is
+/// missing or does not close, where a name is no such const, or where an
+/// entry is not a prefix, a list of one home or more, and a line.
 fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
     let open = raw
         .find(HOW_OPEN)
@@ -4818,6 +4852,18 @@ fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
             let text = body.get(..len.saturating_sub(1)).unwrap_or("");
             entry.push((line_at(&starts, at), text, in_list));
             at += 1 + len;
+        } else if rest.starts_with(|c: char| c.is_ascii_uppercase()) {
+            let len = rest
+                .find(|c: char| !(c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_'))
+                .unwrap_or(rest.len());
+            let name = rest.get(..len).unwrap_or("");
+            let (list, strings) = const_strings(raw, name)
+                .ok_or_else(|| format!("{HOW_FILE}'s HOW names {name}, no const of the file"))?;
+            let listed = in_list || list;
+            for (offset, text) in strings {
+                entry.push((line_at(&starts, offset), text, listed));
+            }
+            at += len;
         } else {
             if rest.starts_with("&[") {
                 in_list = true;
@@ -4968,6 +5014,31 @@ fn the_how_reader_does_its_job() {
         );
     }
     assert!(how_lines("const NOT: u8 = 1;").is_err());
+    // A member written as a const of the file is read as its strings.
+    let consts = format!(
+        "{open}    (\"p.\", HOMES, LINE),\n    (\"q.\", &[\"z.w(NONE).fill\"], LINE),\n];\n\nconst LINE: &str = \"gpui: shared\";\n\nconst HOMES: &[&str] = &[\n    \"x.y(NONE).fill\",\n    \"x.y(HOVER).fill\",\n];\n"
+    );
+    let read: Vec<(usize, &str, Vec<&str>, &str)> = how_lines(&consts)
+        .unwrap_or_default()
+        .iter()
+        .map(|h| (h.line, h.prefix, h.homes.clone(), h.text))
+        .collect();
+    assert_eq!(
+        read,
+        [
+            (
+                2,
+                "p.",
+                vec!["x.y(NONE).fill", "x.y(HOVER).fill"],
+                "gpui: shared"
+            ),
+            (3, "q.", vec!["z.w(NONE).fill"], "gpui: shared")
+        ]
+    );
+    assert!(
+        how_lines(&format!("{open}    (\"p.\", &[\"a\"], MISSING),\n];\n")).is_err(),
+        "a name that is no const of the file is read"
+    );
 }
 
 /// The field a home names, as code reads it: its last segment without an
