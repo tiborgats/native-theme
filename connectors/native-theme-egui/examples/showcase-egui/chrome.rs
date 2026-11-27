@@ -12,7 +12,7 @@ use crate::{
     LEFT_PANEL_WIDTH,
     app::{App, ModeChoice, Page, ThemeChoice},
     demo::{self, PanelSeams, Registry},
-    pages::basic::{ToggleOn, toggle_on_at},
+    pages::basic::{ToggleOn, toggle_on_at, toggle_on_in},
     pages::inner_extent,
 };
 
@@ -513,6 +513,23 @@ fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
     )
 }
 
+/// The side-panel toggle's colours while on in the state `was` of its previous response,
+/// `(hovered, pressed)`: where a rule states [`toggle_checked`]'s fill or label colour for
+/// `CHECKED`, pressed `(CHECKED | PRESSED; variant=Flat)`'s and hovered `(CHECKED | HOVER;
+/// variant=Flat)`'s, each the theme's answer for that state (spec §10, rule 0), as the Basic
+/// page's toggle takes its own (`pages::basic::toggle_on_in`); each unstated one egui's own
+/// selected look in every state (rule 0a).
+pub(crate) fn toggle_checked_in(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    was: (bool, bool),
+) -> ToggleOn {
+    toggle_on_in(
+        r,
+        native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED),
+        was,
+    )
+}
+
 /// The side-panel toggle's outline while on, egui's inactive, hovered and active entries: the
 /// pen `button.body(CHECKED; variant=Flat).stroke` where a rule states it for `CHECKED`, and
 /// then under the pointer `(CHECKED | HOVER)`'s and, egui's `active` being press and keyboard
@@ -553,22 +570,36 @@ pub(crate) fn toggle_checked_pens(
 
 /// The side-panel toggle's icon colour, `button.icon(<state>; variant=Flat).color` in the state
 /// it is in, `CHECKED` while on, where the theme states it: egui draws a button's image alike
-/// in every state, so a colour stated at rest holds while on (spec §10, rule 0). `None` where it
-/// states none, and the icon keeps the colour it loads in, never the label's.
+/// in every state, so a colour stated at rest holds while on (spec §10, rule 0). While on, where
+/// a rule states the colour for `CHECKED` (asked alone, spec §2, `from_state`), in the state
+/// `(hovered, pressed)` of the toggle's previous response the theme's answer for `(CHECKED |
+/// PRESSED)` pressed and `(CHECKED | HOVER)` hovered, as [`toggle_checked_in`] takes the fill.
+/// `None` where it states none, and the icon keeps the colour it loads in, never the label's.
 pub(crate) fn toggle_icon_colour(
     r: Option<&native_theme::next::ResolvedTheme>,
     open: bool,
+    (hovered, pressed): (bool, bool),
 ) -> Option<egui::Color32> {
-    let state = if open {
-        WidgetState::CHECKED
-    } else {
+    use native_theme::next::{ButtonQuery, IconStated};
+    let r = r?;
+    let at = |state| r.button.icon(ButtonQuery::flat().with_state(state));
+    let state = if !open {
         WidgetState::NONE
+    } else if !at(WidgetState::CHECKED)
+        .from_state
+        .contains(IconStated::COLOR)
+    {
+        WidgetState::CHECKED
+    } else if pressed {
+        WidgetState::CHECKED | WidgetState::PRESSED
+    } else if hovered {
+        WidgetState::CHECKED | WidgetState::HOVER
+    } else {
+        WidgetState::CHECKED
     };
-    let icon = r?
-        .button
-        .icon(native_theme::next::ButtonQuery::flat().with_state(state));
+    let icon = at(state);
     icon.stated
-        .contains(native_theme::next::IconStated::COLOR)
+        .contains(IconStated::COLOR)
         .then(|| next::to_color32(icon.color))
 }
 
@@ -630,10 +661,10 @@ fn toggle_stated_notes(
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
 /// for a `Ui` made Ghost with `demo::ghost`: unframed at rest (`frame_when_inactive(false)`) and
 /// filled on hover. A toggle that is on (`checked`) is egui's selected button, framed in every
-/// state, with the checked colours [`toggle_checked`] reads laid over it where the theme states
-/// them; its label lettered in the checked text colour, an icon in its place keeping the colour
-/// it loads in. Its icon where the set has one, else its tooltip's text as its label, as gpui's
-/// (`showcase-gpui/demo.rs:1367-1370`).
+/// state, with the checked colours [`toggle_checked_in`] reads for its state laid over it where
+/// the theme states them; its label lettered in the checked text colour, an icon in its place
+/// keeping the colour it loads in. Its icon where the set has one, else its tooltip's text as its
+/// label, as gpui's (`showcase-gpui/demo.rs:1367-1370`).
 fn ghost_button(
     image: Option<egui::Image<'static>>,
     label: &'static str,
@@ -892,10 +923,13 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             // (`egui/src/ui.rs:2376-2379`), so the row is set to the taller of the two.
             // The toggle's icon, where the theme states its size and the set has it; without
             // one the toggle is its label, whose button egui sizes itself. It loads in the
-            // colour the theme states for it ([`toggle_icon_colour`]), else in the bar's text.
+            // colour the theme states for it ([`toggle_icon_colour`]) in the state of the
+            // toggle's previous response, else in the bar's text.
+            let toggle_key = egui::Id::unique(("chrome state", "chrome.status_bar.toggle"));
+            let was = demo::previous_state(ui, toggle_key);
             let shown = ui.visuals().override_text_color;
             if let Some(colour) =
-                toggle_icon_colour(app.atlas.next_shown(ui.ctx()), app.side_panel_visible)
+                toggle_icon_colour(app.atlas.next_shown(ui.ctx()), app.side_panel_visible, was)
             {
                 ui.visuals_mut().override_text_color = Some(colour);
             }
@@ -918,7 +952,8 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             ui.horizontal(|ui| {
                 let label = "Toggle Side Panel";
                 let open = app.side_panel_visible;
-                let checked = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
+                let rest = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
+                let checked = open.then(|| toggle_checked_in(app.atlas.next_shown(ui.ctx()), was));
                 let stated = open.then(|| toggle_stated_notes(app.atlas.next_shown(ui.ctx())));
                 let theme = app.atlas.next_shown(ui.ctx()).filter(|_| open);
                 let App {
@@ -939,9 +974,9 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                         demo::next_tool_button(ui, padding);
                         flat = demo::flat(ui);
                         // While on, the outline the theme states for the checked state, over
-                        // the fill egui paints the button in: the checked fill where stated,
-                        // else egui's selected button's in every state; the selected button
-                        // takes its pen from the entry of its state.
+                        // the fill egui paints the button in: the checked fill of its state
+                        // where stated, else egui's selected button's in every state; the
+                        // selected button takes its pen from the entry of its state.
                         let fill = checked
                             .and_then(|on| on.fill)
                             .unwrap_or(ui.visuals().selection.bg_fill);
@@ -962,11 +997,12 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                         r
                     },
                 );
+                demo::remember_state(ui, toggle_key, was, &toggle);
                 registry.ghost_last();
                 registry.flat_last(&flat);
                 // Where the theme states no checked colour, what the toggle that is on is drawn
                 // in instead.
-                let unstated = checked.map(|on| {
+                let unstated = rest.map(|on| {
                     [
                         on.fill_note("button.body(CHECKED; variant=Flat).fill"),
                         on.text_note("button.label(CHECKED; variant=Flat).color")
