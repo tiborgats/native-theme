@@ -188,6 +188,12 @@ const DIFFERENCES: &[Difference] = &[
         reason: COMBO_CELL,
     },
     Difference {
+        case: "combo box disabled",
+        presets: &["windows-11"],
+        differs: Differs::Outline,
+        reason: WINDOWS_COMBO_DISABLED,
+    },
+    Difference {
         case: "combo box",
         presets: &["macos-tahoe"],
         differs: Differs::Inset,
@@ -684,6 +690,14 @@ const COMBO_CELL: &str = "the button's outline colour alone differs: it is the c
      ComboBox cell's bg_stroke, whose translucent border lies inside the part in the 0.8.0 theme \
      and is composited over its fill (native-theme-egui, next::parity, the ComboBox and \
      ComboBox/Disabled entries of its differences)";
+
+/// windows-11's disabled combo box keeps its rest outline, the elevation border's colour.
+const WINDOWS_COMBO_DISABLED: &str = "the outline's colour alone differs, in dark: a disabled \
+     combo box keeps its rest outline, combo_box.field's stroke, which 0.7.2's windows-11 takes \
+     from the default border, CardStrokeColorDefault #19000000, and the 0.8.0 preset states as the \
+     three sides of WinUI's ControlElevationBorderBrush, ControlStrokeColorDefault #12FFFFFF, as \
+     ComboBoxBorderBrushDisabled is (native-theme/tests/next_homes.toml, row \
+     combo_box.border.color, a listed difference); in light both are #0F000000";
 
 /// The segments are framed and divided in their cell's stroke.
 const SEGMENTED_CELL: &str = "the frame's and the dividers' colour alone differs: it is the \

@@ -5398,6 +5398,22 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
       when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
       slot restates stay.
+- [ ] [0.8.x] **windows-11**'s elevation borders beyond their one colour (M4 N38, 2026-11-27): the preset states each
+      as the colour of its three sides (P8); not stated: the edge side's colour, `ControlElevationBorderBrush`'s stop
+      0.33 `ControlStrokeColorSecondary` #29000000 / #18FFFFFF at the bottom in light and the top in dark (the dark
+      dictionary has no flip), `AccentControlElevationBorderBrush`'s `ControlStrokeColorOnAccentSecondary` #66000000 /
+      #23000000 at the bottom in both (Common_themeresources_any.xaml:186-206, :382-405, :40, :42, :244, :246 at
+      microsoft-ui-xaml 8463f45), and the text field's `ControlStrongStrokeColorDefault` #72000000 / #8BFFFFFF bottom
+      (`TextControlElevationBorderBrush`, TextBox_themeresources.xaml:155-163, :48-56; platform-facts.md §2.4), whose
+      gradient stops are in the repository only as prose: a facts task quotes them; the focused text field's 2 px
+      accent bottom over three neutral sides (`TextControlElevationBorderFocusedBrush`, :164-173, :57-66), where the
+      preset states the accent on four sides at 1 px (`FocusKind::Underline` the likely home); the brushes' gradient
+      stops themselves (0→3 px, stops 0.33 and 1.0; the text box's 0→2 px, 0.5 and 1.0), which
+      `PaintLayer::LinearGradient` cannot state (no absolute extent). The per-side form (`Stroke::sides`, three sides
+      and the edge) with a model reduction for one-colour toolkits waits for the maintainer
+      (`.superpowers/sdd/v0.8.0-plan/M4/design/N38-elevation-borders.md`, option b). The combo box's and a checked
+      toolbar button's `BackgroundSizing` under high contrast and the high-contrast colour of the elevation brushes
+      (the preset keeps the default border there) are not read.
 - [ ] [0.8.x] **macos-monterey / macos-tahoe**: under a palette the title bar keeps its measured fill (AppKit names no
       colour for `header_bg`); colours no palette slot names keep the preset's (alternate row, list header, field,
       button, pop-up, placeholder, hover fills); white text on a light explicit accent; the text selection under an

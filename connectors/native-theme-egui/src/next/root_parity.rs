@@ -59,6 +59,18 @@ const DIFFERENCES: &[Difference] = &[
         new: "Ok(Some(#00_7A_FF_FF))",
         reason: TOOLBAR_CHECKED,
     },
+    Difference {
+        name: "toolbar_button_checked_border_color",
+        preset: "windows-11",
+        new: "Ok(Some(#14_14_14_14))",
+        reason: "0.7.2's windows-11 states no checked toolbar button outline; the 0.8.0 preset \
+                 states the three sides of WinUI's AccentControlElevationBorderBrush, \
+                 ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes, \
+                 toolbar.button(CHECKED).stroke (AppBarToggleButton_themeresources.xaml:160, :30; \
+                 Common_themeresources_any.xaml:245, :41 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row toolbar.button_checked_border_color, a \
+                 listed difference), here premultiplied",
+    },
 ];
 
 /// The macOS checked toolbar button's fill, which 0.7.2 does not state.
@@ -85,18 +97,34 @@ struct FrameDifference {
     reason: &'static str,
 }
 
-const FRAME_DIFFERENCES: &[FrameDifference] = &[FrameDifference {
-    name: "text_area_frame",
-    preset: "ios-13",
-    field: |r| r.text_area.field(native_theme::next::WidgetState::NONE),
-    width_home: "text_area.field(NONE).stroke.width",
-    color_home: "text_area.field(NONE).stroke.color",
-    reason: "0.7.2's ios-13 outlines the text area in the default line (0.5 px of the \
-             separator, uncited); the 0.8.0 preset states WebKit's `border: 1px solid \
-             -apple-system-secondary-label` (html.css:457-466 at WebKit 31adf9d; \
-             native-theme/tests/next_homes.toml, rows text_area.border.color and \
-             text_area.border.line_width, listed differences)",
-}];
+const FRAME_DIFFERENCES: &[FrameDifference] = &[
+    FrameDifference {
+        name: "text_area_frame",
+        preset: "ios-13",
+        field: |r| r.text_area.field(native_theme::next::WidgetState::NONE),
+        width_home: "text_area.field(NONE).stroke.width",
+        color_home: "text_area.field(NONE).stroke.color",
+        reason: "0.7.2's ios-13 outlines the text area in the default line (0.5 px of the \
+                 separator, uncited); the 0.8.0 preset states WebKit's `border: 1px solid \
+                 -apple-system-secondary-label` (html.css:457-466 at WebKit 31adf9d; \
+                 native-theme/tests/next_homes.toml, rows text_area.border.color and \
+                 text_area.border.line_width, listed differences)",
+    },
+    FrameDifference {
+        name: "text_area_frame",
+        preset: "windows-11",
+        field: |r| r.text_area.field(native_theme::next::WidgetState::NONE),
+        width_home: "text_area.field(NONE).stroke.width",
+        color_home: "text_area.field(NONE).stroke.color",
+        reason: "0.7.2's windows-11 outlines the text area in the default border, \
+                 CardStrokeColorDefault (#19000000 in dark); the 0.8.0 preset states the three \
+                 sides of WinUI's TextControlElevationBorderBrush, ControlStrokeColorDefault \
+                 #0F000000 / #12FFFFFF (TextBox_themeresources.xaml:134, :27; \
+                 Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row text_area.border.color, a listed \
+                 difference): the same in light",
+    },
+];
 
 /// `old`, the 0.7.2 frame, with its stroke as [`FrameDifference`] `d`
 /// states it on `new`.

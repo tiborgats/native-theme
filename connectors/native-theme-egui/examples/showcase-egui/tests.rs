@@ -16542,14 +16542,15 @@ fn frames_at(harness: &Harness<'_, App>, rect: egui::Rect) -> Vec<(egui::Color32
 }
 
 /// Under windows-11 light, which states the primary button's outline at rest
-/// (`button.body(NONE; variant=Primary).stroke`, `#0000000f` laid inside) and no rule for its
-/// hovered or pressed state, the primary button is outlined at rest in that pen composited over
-/// its fill, as egui ends the fill at the stroke's inner edge, and hovered and pressed in the
-/// button scope's own hovered and active entries, egui's treatment of those states, never the
-/// resting pen (spec §10, rule 0).
+/// (`button.body(NONE; variant=Primary).stroke`, `#ffffff14` laid inside), no rule for its
+/// hovered state and none pressed (`button.body(PRESSED; variant=Primary).stroke` stated as
+/// none), the primary button is outlined at rest in that pen composited over its fill, as egui
+/// ends the fill at the stroke's inner edge, hovered in the button scope's own hovered entry,
+/// egui's treatment of that state, never the resting pen (spec §10, rule 0), and pressed in no
+/// pen.
 #[test]
-fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), String> {
-    use native_theme::next::{ButtonQuery, PartStated, WidgetState};
+fn the_primary_buttons_unstated_hover_keeps_the_scopes_outline() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, PartStated, Stroke, WidgetState};
     const ID: &str = "basic.buttons.primary";
     let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
     probe.run_steps(SETTLE);
@@ -16561,12 +16562,18 @@ fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), S
         .next_resolved(egui::Theme::Light)
         .ok_or("windows-11: no 0.8.0 theme installed")?;
     let at = |state| r.button.body(ButtonQuery::primary().with_state(state));
-    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
-        assert!(
-            !at(state).from_state.contains(PartStated::STROKE),
-            "windows-11 states the primary's {state:?} outline, so the test proves nothing"
-        );
-    }
+    assert!(
+        !at(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::STROKE),
+        "windows-11 states the primary's hovered outline, so the test proves nothing"
+    );
+    let pressed = at(WidgetState::PRESSED);
+    assert!(
+        pressed.from_state.contains(PartStated::STROKE) && pressed.stroke == Stroke::None,
+        "windows-11 states a pressed primary outline: {:?}",
+        pressed.stroke
+    );
     let rest = at(WidgetState::NONE);
     let pen = crate::demo::stated_pen(&rest).ok_or("windows-11 states no primary outline")?;
     let [(fill, drawn)] = frames_at(&probe, rect)[..] else {
@@ -16579,15 +16586,27 @@ fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), S
     let over = egui::Stroke::new(pen.width, fill.blend(pen.color));
     assert_ne!(over, pen, "the pen composites to itself");
     assert_eq!(drawn, over, "at rest: the stated pen over the fill");
-    for (press, own, what) in [
-        (false, widgets.hovered.bg_stroke, "hovered"),
-        (true, widgets.active.bg_stroke, "pressed"),
-    ] {
-        assert_ne!(own, over, "{what}: the scope's entry is the resting pen");
+    let own = widgets.hovered.bg_stroke;
+    assert_ne!(own, over, "hovered: the scope's entry is the resting pen");
+    let strokes_held = |press| -> Result<Vec<egui::Stroke>, String> {
         let held = held_at("windows-11", None, rect.center(), press)?;
-        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
-        assert_eq!(strokes, [own], "{what}: the scope's own entry");
-    }
+        Ok(frames_at(&held, rect).iter().map(|f| f.1).collect())
+    };
+    assert_eq!(
+        strokes_held(false)?,
+        [own],
+        "hovered: the scope's own entry"
+    );
+    assert_ne!(
+        widgets.active.bg_stroke,
+        egui::Stroke::NONE,
+        "pressed: the scope's entry is no pen"
+    );
+    assert_eq!(
+        strokes_held(true)?,
+        [egui::Stroke::NONE],
+        "pressed: the stated none"
+    );
     Ok(())
 }
 
