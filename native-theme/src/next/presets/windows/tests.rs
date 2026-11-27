@@ -284,6 +284,89 @@ fn a_checked_push_button_hovered_or_pressed_keeps_its_checked_look() {
     }
 }
 
+/// The push button's, the text field's and the combo box's outline at rest,
+/// hovered and disabled is the three sides of their elevation brushes,
+/// `ControlStrokeColorDefault` #0F000000 / #12FFFFFF
+/// (Common_themeresources_any.xaml:243, :39), and in light also the default
+/// border (`CardStrokeColorDefault` #0F000000, :250); under a palette its
+/// `border`.
+#[test]
+fn the_neutral_elevation_borders_are_control_stroke_color_default() {
+    for (scheme, want) in [
+        (Scheme::Light, srgb8(0x0000_000f)),
+        (Scheme::Dark, srgb8(0xffff_ff12)),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let preset = Theme::preset(Preset::Windows11).resolve(&ctx);
+        let p = distinct_palette(scheme);
+        let custom = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let edges = |t: &ResolvedTheme| {
+            [WidgetState::NONE, WidgetState::HOVER, WidgetState::DISABLED].map(|state| {
+                [
+                    stroke_color(&t.button.body(ButtonQuery::new(state)).stroke),
+                    stroke_color(&t.input.field(state).stroke),
+                    stroke_color(&t.combo_box.field(state).stroke),
+                ]
+            })
+        };
+        assert_eq!(edges(&preset), [[Some(want); 3]; 3], "{scheme:?}");
+        assert_eq!(edges(&custom), [[Some(p.border); 3]; 3], "{scheme:?}");
+    }
+    assert_eq!(
+        Theme::preset(Preset::Windows11)
+            .resolve(&ThemeContext::light())
+            .colors
+            .window
+            .border,
+        Some(srgb8(0x0000_000f))
+    );
+}
+
+/// The primary button and a checked push or toolbar button are outlined in
+/// the three sides of `AccentControlElevationBorderBrush`,
+/// `ControlStrokeColorOnAccentDefault` #14FFFFFF in both schemes
+/// (Common_themeresources_any.xaml:245, :41), inside their edge
+/// (`OuterBorderEdge`), at rest and hovered, under a palette too; pressed
+/// and disabled in none (`ControlFillColorTransparentBrush`).
+#[test]
+fn the_accent_elevation_border_is_control_stroke_color_on_accent_default() {
+    let on_accent = srgb8(0xffff_ff14);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        for theme in [
+            Theme::preset(Preset::Windows11).resolve(&ctx),
+            Theme::preset(Preset::Windows11)
+                .with_palette(distinct_palette(scheme))
+                .resolve(&ctx),
+        ] {
+            let width = theme.layout.border_width;
+            let edge = Stroke::uniform(width, on_accent);
+            let checked = WidgetState::CHECKED;
+            let primary = |state| {
+                theme
+                    .button
+                    .body(ButtonQuery::primary().state(state))
+                    .stroke
+            };
+            let push = |state| theme.button.body(ButtonQuery::new(state)).stroke;
+            let tool = |state| theme.toolbar.button(state).stroke;
+            let tool_edge = Stroke::uniform(TOOLBAR_TOGGLE_BORDER_WIDTH, on_accent);
+            for state in [WidgetState::NONE, WidgetState::HOVER] {
+                assert_eq!(primary(state), edge, "{scheme:?} {state:?}");
+                assert_eq!(push(checked | state), edge, "{scheme:?} {state:?}");
+                assert_eq!(tool(checked | state), tool_edge, "{scheme:?} {state:?}");
+            }
+            for state in [WidgetState::PRESSED, WidgetState::DISABLED] {
+                assert_eq!(primary(state), Stroke::None, "{scheme:?} {state:?}");
+                assert_eq!(push(checked | state), Stroke::None, "{scheme:?} {state:?}");
+                assert_eq!(tool(checked | state), Stroke::None, "{scheme:?} {state:?}");
+            }
+        }
+    }
+}
+
 #[test]
 fn a_checked_toolbar_button_keeps_its_fill() {
     for theme in both_schemes() {
@@ -291,11 +374,17 @@ fn a_checked_toolbar_button_keeps_its_fill() {
         for state in [WidgetState::HOVER, WidgetState::PRESSED] {
             assert_ne!(theme.toolbar.button(state), checked, "{state:?}");
             assert_eq!(
-                theme.toolbar.button(state | WidgetState::CHECKED),
-                checked,
+                theme.toolbar.button(state | WidgetState::CHECKED).fill,
+                checked.fill,
                 "{state:?}"
             );
         }
+        assert_eq!(
+            theme
+                .toolbar
+                .button(WidgetState::HOVER | WidgetState::CHECKED),
+            checked
+        );
         assert_eq!(
             theme
                 .toolbar
@@ -873,13 +962,36 @@ fn a_high_contrast_button_takes_the_system_colours() {
         (body.fill, body.stroke)
     };
     let push_label = |state: WidgetState| high.button.label(ButtonQuery::new(state)).color;
-    assert_eq!(push(checked | hover), look(button_text, button_text));
+    let inside = |edge: Color| Stroke::uniform(width, edge);
+    assert_eq!(push(checked).1, inside(highlight_text));
+    assert_eq!(
+        push(checked | hover),
+        (Paint::Solid(button_text), inside(button_text))
+    );
     assert_eq!(push_label(checked | hover), face);
     assert_eq!(
         push(checked | pressed),
-        look(highlight_text, highlight_text)
+        (Paint::Solid(highlight_text), inside(highlight_text))
     );
     assert_eq!(push_label(checked | pressed), highlight);
+    assert_eq!(push(checked | disabled), look(face, gray));
+    let primary = |state: WidgetState| high.button.body(ButtonQuery::primary().state(state)).stroke;
+    for state in [WidgetState::NONE, hover, pressed] {
+        assert_eq!(primary(state), inside(highlight), "{state:?}");
+    }
+    assert_eq!(primary(disabled), inside(gray));
+    let toolbar_edge = |state: WidgetState| high.toolbar.button(state).stroke;
+    for state in [WidgetState::NONE, hover, pressed] {
+        assert_eq!(
+            toolbar_edge(checked | state),
+            Stroke::uniform(TOOLBAR_TOGGLE_BORDER_WIDTH, highlight),
+            "{state:?}"
+        );
+    }
+    assert_eq!(
+        toolbar_edge(checked | disabled),
+        Stroke::uniform(TOOLBAR_TOGGLE_BORDER_WIDTH, gray)
+    );
     let toolbar = |state: WidgetState| high.toolbar.button(state).fill;
     assert_eq!(toolbar(hover), Paint::Solid(highlight));
     assert_eq!(toolbar(pressed), Paint::Solid(highlight));
@@ -893,6 +1005,260 @@ fn a_high_contrast_button_takes_the_system_colours() {
     );
     assert_eq!(toolbar(WidgetState::CHECKED | disabled), Paint::Solid(gray));
     assert_eq!(high.toolbar.button_label(hover).color, highlight_text);
+}
+
+/// Under high contrast the text field's hovered (and pressed, which is
+/// PointerOver) outline is TextControlBorderBrushPointerOver and the combo
+/// box's pressed outline ComboBoxBorderBrushPressed, both
+/// SystemColorHighlightColor (TextBox_themeresources.xaml:88,
+/// ComboBox_themeresources.xaml:161 > generic.xaml:2072, :2071 at
+/// microsoft-ui-xaml 2.5.1, the rc1 spike table); outside it the combo box's
+/// pressed outline is ControlStrokeColorDefault, the elevation border's three
+/// sides, which a palette's `border` replaces.
+#[test]
+fn a_high_contrast_hovered_field_and_a_pressed_combo_box_take_the_highlight() {
+    use crate::next::reader::{OsColors, OsSelectionColors};
+    let [highlight, highlight_text] = [3, 4].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let high = Theme::preset(Preset::Windows11)
+        .with_system_overrides(system)
+        .resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke_color(&high.input.field(state).stroke),
+            Some(highlight),
+            "{state:?}"
+        );
+    }
+    assert_eq!(
+        stroke_color(&high.combo_box.field(WidgetState::PRESSED).stroke),
+        Some(highlight)
+    );
+    for (scheme, want) in [
+        (Scheme::Light, srgb8(0x0000_000f)),
+        (Scheme::Dark, srgb8(0xffff_ff12)),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let pressed =
+            |t: &ResolvedTheme| stroke_color(&t.combo_box.field(WidgetState::PRESSED).stroke);
+        let p = distinct_palette(scheme);
+        let custom = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        assert_eq!(
+            pressed(&Theme::preset(Preset::Windows11).resolve(&ctx)),
+            Some(want),
+            "{scheme:?}"
+        );
+        assert_eq!(pressed(&custom), Some(p.border), "{scheme:?}");
+    }
+}
+
+/// Under high contrast the text field's (and the text area's, a TextBox too)
+/// outline at rest is TextControlBorderBrush, SystemColorButtonTextColor
+/// (TextBox_themeresources.xaml:87 > generic.xaml:2041), and the combo box's
+/// hovered one ComboBoxBorderBrushPointerOver, SystemColorHighlightColor
+/// (ComboBox_themeresources.xaml:160 > generic.xaml:2072 at microsoft-ui-xaml
+/// 2.5.1, the rc1 spike table); outside it the push button's pressed outline
+/// is ButtonBorderBrushPressed = ControlStrokeColorDefault, the elevation
+/// border's three sides, which a palette's `border` replaces.
+#[test]
+fn a_high_contrast_field_and_hovered_combo_box_and_a_palette_s_pressed_button() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [button_text, highlight, highlight_text] =
+        [2, 3, 4].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let high = Theme::preset(Preset::Windows11)
+        .with_system_overrides(system)
+        .resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(
+        stroke_color(&high.input.field(WidgetState::NONE).stroke),
+        Some(button_text)
+    );
+    assert_eq!(
+        stroke_color(&high.text_area.field(WidgetState::NONE).stroke),
+        Some(button_text)
+    );
+    assert_eq!(
+        stroke_color(&high.combo_box.field(WidgetState::HOVER).stroke),
+        Some(highlight)
+    );
+    for (scheme, want) in [
+        (Scheme::Light, srgb8(0x0000_000f)),
+        (Scheme::Dark, srgb8(0xffff_ff12)),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let pressed = |t: &ResolvedTheme| stroke_color(&t.button.body(WidgetState::PRESSED).stroke);
+        let p = distinct_palette(scheme);
+        let custom = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        assert_eq!(
+            pressed(&Theme::preset(Preset::Windows11).resolve(&ctx)),
+            Some(want),
+            "{scheme:?}"
+        );
+        assert_eq!(pressed(&custom), Some(p.border), "{scheme:?}");
+    }
+}
+
+/// Light high-contrast system colours: the button text, the highlight and its
+/// text where `highlight` is set, and the grey text.
+fn high_contrast_system(
+    button_text: Color,
+    highlight: Option<[Color; 2]>,
+    gray: Color,
+) -> SystemOverrides {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: highlight.map(|[highlight, text]| {
+            OsSelectionColors::new(Some(highlight), Some(text), None, None)
+        }),
+        disabled_text: Some(gray),
+        ..OsColors::default()
+    };
+    SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    }
+}
+
+/// Under high contrast the combo box's outline is ComboBoxBorderBrush,
+/// SystemColorButtonTextColor, and disabled ComboBoxBorderBrushDisabled,
+/// SystemColorGrayTextColor (ComboBox_themeresources.xaml:159 >
+/// generic.xaml:2041, :162 > generic.xaml:2025 at microsoft-ui-xaml 2.5.1,
+/// the rc1 spike table). Where the system states no highlight, the text
+/// field's hovered outline and the combo box's hovered and pressed ones are
+/// the rest outline, the button text, no normal-contrast colour.
+#[test]
+fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
+    let [button_text, highlight, highlight_text, gray] =
+        [2, 3, 4, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let high = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(
+            button_text,
+            Some([highlight, highlight_text]),
+            gray,
+        ))
+        .resolve(&ctx);
+    assert_eq!(high.context.contrast, Contrast::High);
+    let combo = |t: &ResolvedTheme, state| stroke_color(&t.combo_box.field(state).stroke);
+    assert_eq!(combo(&high, WidgetState::NONE), Some(button_text));
+    assert_eq!(combo(&high, WidgetState::DISABLED), Some(gray));
+    let partial = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(button_text, None, gray))
+        .resolve(&ctx);
+    assert_eq!(partial.context.contrast, Contrast::High);
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke_color(&partial.input.field(state).stroke),
+            Some(button_text),
+            "{state:?}"
+        );
+        assert_eq!(combo(&partial, state), Some(button_text), "{state:?}");
+    }
+}
+
+/// Under a palette kept under high contrast
+/// (`preserve_palette_in_high_contrast`, spec §6, step 1) the palette's
+/// `border` stands over the high-contrast colours of the text field's, the
+/// text area's, the combo box's and the push button's outline in every state;
+/// the primary button's outline, which no palette slot restates, stays the
+/// high-contrast highlight.
+#[test]
+fn a_palette_kept_under_high_contrast_stands_over_its_outlines() {
+    let [button_text, highlight, highlight_text, gray] =
+        [2, 3, 4, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let p = distinct_palette(Scheme::Light);
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let kept = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(
+            button_text,
+            Some([highlight, highlight_text]),
+            gray,
+        ))
+        .with_palette(p.clone())
+        .preserve_palette_in_high_contrast(true)
+        .resolve(&ctx);
+    assert_eq!(kept.context.contrast, Contrast::High);
+    for state in [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke_color(&kept.input.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+        assert_eq!(
+            stroke_color(&kept.text_area.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+    }
+    for state in [
+        WidgetState::NONE,
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+    ] {
+        assert_eq!(
+            stroke_color(&kept.combo_box.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+        assert_eq!(
+            stroke_color(&kept.button.body(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+    }
+    let primary = |state| kept.button.body(ButtonQuery::primary().state(state)).stroke;
+    for state in [WidgetState::NONE, WidgetState::PRESSED] {
+        assert_eq!(
+            primary(state),
+            Stroke::uniform(kept.layout.border_width, highlight),
+            "{state:?}"
+        );
+    }
 }
 
 /// The focus visual is the 2px outer ring around the 1px inner one in

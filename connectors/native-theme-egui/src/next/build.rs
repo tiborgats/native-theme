@@ -1317,13 +1317,20 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
     let (label_off, label_off_on) = (k.label(S::DISABLED), k.label(off_on));
     let track_off_on = r.switch.track(off_on);
     VariantSource {
-        button: disabled(
-            &b.label(S::DISABLED),
-            &b.body(S::DISABLED),
-            "button.body(DISABLED).fill",
-            &b.body(S::NONE),
-            notes,
-        ),
+        button: Disabled {
+            border: state_edge(
+                &b.body(S::DISABLED),
+                "button.body(DISABLED).stroke.width",
+                notes,
+            ),
+            ..disabled(
+                &b.label(S::DISABLED),
+                &b.body(S::DISABLED),
+                "button.body(DISABLED).fill",
+                &b.body(S::NONE),
+                notes,
+            )
+        },
         primary: PrimaryDisabled {
             fill: state_fill(
                 &b.body(primary_disabled),

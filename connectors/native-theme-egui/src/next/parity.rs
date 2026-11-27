@@ -331,13 +331,7 @@ const DIFFERENCES: &[Difference] = &[
         Cause::OverFill,
         INSIDE,
     ),
-    d(
-        "ComboBox",
-        &[W, M],
-        OUTLINE_AT_REST,
-        Cause::OverFill,
-        INSIDE,
-    ),
+    d("ComboBox", &[M], OUTLINE_AT_REST, Cause::OverFill, INSIDE),
     d(
         "SegmentedControl",
         &[W, M],
@@ -1956,7 +1950,80 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         Cause::Stated(home!(segmented_control.segment(SELECTED).fill)),
         ADWAITA_CHECKED_TOGGLE,
     ),
+    d(
+        "base",
+        &[W],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Stated(home!(button.body(NONE).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "base",
+        &[W],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        Cause::Stated(home!(button.body(HOVER).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "Button",
+        &[W],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        Cause::Stated(home!(button.body(NONE).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "Button",
+        &[W],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        Cause::Stated(home!(button.body(HOVER).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "Button/Disabled",
+        &[W],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        Cause::Stated(home!(button.body(NONE).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "Input",
+        &[W],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        Cause::Stated(home!(input.field(NONE).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "Input",
+        &[W],
+        ".visuals.widgets.{hovered,active}.bg_stroke.color",
+        Cause::Stated(home!(input.field(HOVER).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "ComboBox",
+        &[W],
+        OUTLINE_AT_REST,
+        Cause::Stated(home!(combo_box.field(NONE).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
+    d(
+        "ComboBox/Disabled",
+        &[W],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        Cause::Stated(home!(combo_box.field(NONE).stroke.color)),
+        WINDOWS_ELEVATION,
+    ),
 ];
+
+/// windows-11's push button, text field and combo box outlined in the elevation border's colour.
+const WINDOWS_ELEVATION: &str = "the 0.8.0 windows-11 states the push button's, the text field's \
+     and the combo box's outline at rest, hovered and disabled as the three sides of WinUI's \
+     elevation borders, ControlStrokeColorDefault #0F000000 / #12FFFFFF \
+     (Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45; \
+     native-theme/tests/next_homes.toml, rows button.border.color, input.border.color and \
+     combo_box.border.color, listed differences), where 0.7.2 took the default border, \
+     CardStrokeColorDefault, #19000000 in dark: the same in light, the combo box's laid over its \
+     fill";
 
 /// adwaita's checked toggle in libadwaita's own form.
 const ADWAITA_CHECKED_TOGGLE: &str = "the 0.8.0 adwaita states AdwToggleGroup's checked toggle \

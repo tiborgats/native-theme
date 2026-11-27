@@ -12158,6 +12158,13 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
         "button.body(NONE).corners" | "button.body(NONE; variant=Primary).corners" => {
             format!("{class}: button::Style::border.radius, {outline}.corners")
         }
+        "button.body(NONE).stroke.width" if under("basic.buttons.toggle_on") => {
+            "styles::button_toggle: button::Style::border.width, button.body(NONE).stroke.width, \
+             painted over the padding; where a rule states the checked stroke for the state \
+             (button.body(CHECKED), HOVER|CHECKED, PRESSED|CHECKED, DISABLED|CHECKED), that \
+             state's own width, which moves no content (iced_widget 0.14.2 src/button.rs, layout)"
+                .to_owned()
+        }
         "button.body(NONE).stroke.width" | "button.body(NONE; variant=Primary).stroke.width" => {
             format!(
                 "{class}: button::Style::border.width, {outline}.stroke.width, painted over the \
@@ -18125,10 +18132,20 @@ fn disabled_buttons_info(state: &State) -> String {
     ) -> ButtonStyle {
         style.map(|style| Box::new(style) as Box<dyn Fn(&Theme, button::Status) -> button::Style>)
     }
-    let plain = ("button.body(NONE)", next.button.body(WidgetState::NONE));
+    // Each class's body at rest and disabled: the disabled one's stroke where a rule states it
+    // for DISABLED, which the class draws there, else the one at rest.
+    let plain = (
+        "button.body(NONE)",
+        next.button.body(WidgetState::NONE),
+        "button.body(DISABLED)",
+        next.button.body(WidgetState::DISABLED),
+    );
     let primary = (
         "button.body(NONE; variant=Primary)",
         next.button.body(ButtonQuery::primary()),
+        "button.body(DISABLED; variant=Primary)",
+        next.button
+            .body(ButtonQuery::primary().state(WidgetState::DISABLED)),
     );
     let classes: [(&str, ButtonStyle, _, [&'static str; 3]); 3] = [
         (
@@ -18155,7 +18172,12 @@ fn disabled_buttons_info(state: &State) -> String {
         button::primary as fn(&Theme, button::Status) -> _,
     );
     let mut colours = Vec::new();
-    for (function, style, (home, body), [bg, text, border]) in classes {
+    for (function, style, (home, body, disabled_home, disabled), [bg, text, border]) in classes {
+        let zero = if disabled.from_state.contains(PartStated::STROKE) {
+            stroke_zero(disabled, disabled_home)
+        } else {
+            stroke_zero(body, home)
+        };
         colours.extend(next_paints(
             state,
             function,
@@ -18164,7 +18186,7 @@ fn disabled_buttons_info(state: &State) -> String {
             button_inks,
             button::Status::Disabled,
             &[(bg, "background"), (text, "text_color"), (border, "border")],
-            &stroke_zero(body, home),
+            &zero,
         ));
     }
     let disabled_fill = next

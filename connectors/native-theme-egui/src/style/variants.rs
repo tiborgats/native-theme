@@ -34,8 +34,8 @@ pub(crate) struct Disabled {
     pub fill: Read<Rgba>,
     pub outline: Option<Rgba>,
     pub align: LineAlign,
-    /// The outline a rule states for the disabled state, and where it lies: the check box's;
-    /// `None` where none does, and the resting outline stays.
+    /// The outline a rule states for the disabled state, and where it lies: the button's and the
+    /// check box's; `None` where none does, and the resting outline stays.
     pub border: Option<(StateLine, LineAlign)>,
 }
 
@@ -216,21 +216,26 @@ fn outline_over(
 
 /// `entry`'s outline where a rule states one for the disabled state (`line`, lying at `align`):
 /// its width over the entry's ([`stroke`]) and its colour drawn over the fill the entry paints
-/// (`bg_fill`, [`Line::over`]), each where stated.
+/// (`painted`, [`Line::over`]), each where stated.
 fn stated_outline(
     entry: &mut WidgetVisuals,
     (line, align): (StateLine, LineAlign),
+    painted: FillField,
     notes: &mut Vec<Note>,
 ) {
     if let Some((width, path)) = line.width {
         entry.bg_stroke = stroke(path, entry.bg_stroke, entry.bg_stroke.color, width, notes);
     }
     if let Some(color) = line.color {
+        let fill = match painted {
+            FillField::Bg => entry.bg_fill,
+            FillField::Weak => entry.weak_bg_fill,
+        };
         entry.bg_stroke.color = Line {
             color: to_color32(color),
             align,
         }
-        .over(Some(entry.bg_fill));
+        .over(Some(fill));
     }
 }
 
@@ -548,7 +553,7 @@ pub(crate) fn selected_disabled_cell(
         );
     }
     if let Some(border) = k.disabled_border {
-        stated_outline(&mut v.widgets.inactive, border, notes);
+        stated_outline(&mut v.widgets.inactive, border, FillField::Bg, notes);
     }
     // A disabled mark the theme states is drawn in its own colour. egui 0.37.0 letters the
     // label in the mark's `fg_stroke` where `override_text_color` is unset
@@ -578,12 +583,17 @@ pub(crate) fn disabled_cell(
         // a selected one from `selection.*` regardless of state (`:150-155`), so the primary
         // button in a disabled scope takes the disabled pair too (§6.2) — where the platform
         // states a disabled fill. With none, it dims by opacity alone (docs/platform-facts.md
-        // §2.1.6), and the primary button keeps its own pair.
+        // §2.1.6), and the primary button keeps its own pair. The button outlines from
+        // `bg_stroke` (egui 0.37.0 `src/theme/default_style.rs:70`): the outline a rule states for the disabled state where one does,
+        // else the resting one, which egui dims by `disabled_alpha` alone (spec §10, rule 0).
         Role::Button => {
             let d = &src.button;
             if let Some((fill, _)) = d.fill {
                 v.widgets.inactive.weak_bg_fill = to_color32(fill);
                 outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Weak);
+            }
+            if let Some(border) = d.border {
+                stated_outline(&mut v.widgets.inactive, border, FillField::Weak, notes);
             }
             labels(&mut v.widgets, d.text);
             if let Some(fill) = src.primary.fill {
@@ -616,7 +626,7 @@ pub(crate) fn disabled_cell(
                 outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Bg);
             }
             if let Some(border) = d.border {
-                stated_outline(&mut v.widgets.inactive, border, notes);
+                stated_outline(&mut v.widgets.inactive, border, FillField::Bg, notes);
             }
             if let Some(text) = d.text.map(to_color32) {
                 v.override_text_color = Some(text);

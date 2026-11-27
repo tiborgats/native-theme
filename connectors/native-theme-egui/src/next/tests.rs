@@ -1103,6 +1103,49 @@ fn disabled_unstated_atlas(
     Ok((atlas, light))
 }
 
+/// A disabled button draws the outline a rule states for the disabled state
+/// (`button.body(DISABLED).stroke`), as gpui and iced do (spec §10, rule 0): windows-11 under
+/// high contrast, the grey text (`ButtonBorderBrushDisabled`, SystemColorGrayTextColor,
+/// Button_themeresources.xaml:89 at microsoft-ui-xaml 8463f45); outside it, where no rule states
+/// one, the resting outline, which egui dims by `disabled_alpha` alone.
+#[test]
+fn a_disabled_buttons_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{Contrast, OsColors, Scheme, SystemOverrides};
+    let gray = Color::from_srgb8(0, 0, 5, 0xff);
+    let mut colors = OsColors::default();
+    colors.disabled_text = Some(gray);
+    let mut system = SystemOverrides::default();
+    system.color_schemes = vec![((Scheme::Light, Contrast::High), colors)];
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx.with_contrast(Contrast::High)));
+    assert_eq!(light.context.contrast, Contrast::High);
+    let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+    let entry = |atlas: &crate::ThemeAtlas, variant| {
+        atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Button, variant)
+            .visuals
+            .widgets
+            .inactive
+    };
+    assert_eq!(
+        entry(&atlas, crate::RoleVariant::Disabled).bg_stroke,
+        egui::Stroke::new(light.layout.border_width, super::to_color32(gray))
+    );
+    let stock = atlas_of(&Theme::preset(Preset::Windows11))?;
+    assert_eq!(
+        entry(&stock, crate::RoleVariant::Disabled).bg_stroke,
+        entry(&stock, crate::RoleVariant::Normal).bg_stroke
+    );
+    Ok(())
+}
+
 /// A disabled check box, checked or not, draws the outline a rule states for the disabled
 /// state (`indicator(DISABLED).stroke`), its width and colour; where none does, it keeps its
 /// resting outline, which egui dims by `disabled_alpha` alone (spec §2, `from_state`; §10,

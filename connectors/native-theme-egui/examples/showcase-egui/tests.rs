@@ -1413,6 +1413,116 @@ fn an_unstated_checked_toggle_is_egui_s_selected_button_not_the_pressed_one() ->
     Ok(())
 }
 
+/// The Basic page's toggle while on, under windows-11 light and dark, is outlined in the checked
+/// stroke the preset states (`button.body(CHECKED)`, ToggleButtonBorderBrushChecked's three
+/// sides, ControlStrokeColorOnAccentDefault #14FFFFFF inside the edge), laid over the fill egui
+/// paints, not in the pen egui keeps for a selected button, the widget state's
+/// `visuals.widgets.*.bg_stroke` (egui 0.37.0 `src/style.rs`, `Style::interact_selectable`);
+/// under the pointer the theme's answer for `CHECKED | HOVER`, the same colour, and pressed for
+/// `CHECKED | PRESSED`, none (`pages::basic::toggle_on_pen`).
+#[test]
+fn a_windows_toggle_that_is_on_takes_the_stated_checked_outline() -> Result<(), String> {
+    use crate::pages::basic::toggle_on_pen;
+    use native_theme::next::{ButtonQuery, Color, Stroke, WidgetState};
+    use native_theme_egui::next::to_color32;
+    let on_accent = Color::from_srgb8(0xff, 0xff, 0xff, 0x14);
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let mut harness = open_page_under(Page::Basic, theme, "windows-11");
+        harness.run_steps(SETTLE);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(theme)
+            .ok_or("no 0.8.0 theme is installed")?
+            .clone();
+        let on = ButtonQuery::new(WidgetState::CHECKED);
+        let checked = r.button.body(on);
+        assert_eq!(checked.stroke, Stroke::uniform(1.0, on_accent), "{theme:?}");
+        let (fill, _) = button_paint(
+            &harness,
+            "toggle button (on)",
+            "On",
+            "basic.buttons.toggle_on",
+        )?;
+        let want = crate::demo::pen_over(
+            &checked,
+            egui::Stroke::new(1.0, to_color32(on_accent)),
+            fill,
+        );
+        let rect = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == "toggle button (on)")
+            .map(|r| r.rect)
+            .ok_or("no toggle button (on) record")?;
+        let drawn = harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(s) if s.rect == rect => Some(s.stroke),
+                _ => None,
+            })
+            .ok_or("no frame painted at the toggle's place")?;
+        assert_eq!(drawn, want, "{theme:?}");
+        let pen = |was| toggle_on_pen(Some(&r), on, was).map(|(_, pen)| pen);
+        assert_eq!(
+            pen((true, false)),
+            Some(egui::Stroke::new(1.0, to_color32(on_accent))),
+            "{theme:?} hovered"
+        );
+        assert_eq!(
+            pen((false, true)),
+            Some(egui::Stroke::NONE),
+            "{theme:?} pressed"
+        );
+    }
+    Ok(())
+}
+
+/// A toggle that is on takes no other state's pen where the theme states the stroke for its
+/// state in a form egui cannot draw: windows-11 light, its `CHECKED | HOVER` stroke patched to
+/// sides of two widths, gives no hovered pen, so egui's own stays, not the checked pen at rest
+/// (spec §10, rule 0a; `pages::basic::toggle_on_pen`).
+#[test]
+fn a_toggle_that_is_on_takes_no_other_states_pen() {
+    use crate::pages::basic::toggle_on_pen;
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, Color, Paint, PartPatch, Preset, ResolvedTheme, Stroke,
+        StrokeAlign, StrokeSide, Theme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let side = |width| StrokeSide {
+        width,
+        paint: Paint::Solid(Color::new(1.0, 0.0, 0.0, 1.0)),
+    };
+    let patch = ThemePatch::new().button(
+        ButtonRule::new()
+            .states(WidgetState::CHECKED | WidgetState::HOVER)
+            .body(PartPatch::new().stroke(Stroke::sides(
+                side(1.0),
+                side(2.0),
+                side(1.0),
+                side(2.0),
+                StrokeAlign::Inside,
+            ))),
+    );
+    let theme = Theme::preset(Preset::Windows11);
+    let ctx = ThemeContext::light();
+    let on = ButtonQuery::new(WidgetState::CHECKED);
+    let pen = |r: &ResolvedTheme, was| toggle_on_pen(Some(r), on, was).map(|(_, pen)| pen);
+    let stock = theme.clone().resolve(&ctx);
+    assert!(
+        pen(&stock, (true, false)).is_some(),
+        "windows-11 states no hovered checked pen, so this proves nothing"
+    );
+    let r = theme.with_patch(patch).resolve(&ctx);
+    assert_eq!(pen(&r, (false, false)), pen(&stock, (false, false)));
+    assert!(pen(&r, (false, false)).is_some());
+    assert_eq!(pen(&r, (true, false)), None);
+}
+
 /// The side-panel toggle while the panel is open letters its label in
 /// `button.label(CHECKED; variant=Flat).color` where a rule states it, and in egui's own selected
 /// button's text colour, the suggested-action button's, where none does, never the flat button's
@@ -16878,14 +16988,15 @@ fn frames_at(harness: &Harness<'_, App>, rect: egui::Rect) -> Vec<(egui::Color32
 }
 
 /// Under windows-11 light, which states the primary button's outline at rest
-/// (`button.body(NONE; variant=Primary).stroke`, `#0000000f` laid inside) and no rule for its
-/// hovered or pressed state, the primary button is outlined at rest in that pen composited over
-/// its fill, as egui ends the fill at the stroke's inner edge, and hovered and pressed in the
-/// button scope's own hovered and active entries, egui's treatment of those states, never the
-/// resting pen (spec §10, rule 0).
+/// (`button.body(NONE; variant=Primary).stroke`, `#ffffff14` laid inside), no rule for its
+/// hovered state and none pressed (`button.body(PRESSED; variant=Primary).stroke` stated as
+/// none), the primary button is outlined at rest in that pen composited over its fill, as egui
+/// ends the fill at the stroke's inner edge, hovered in the button scope's own hovered entry,
+/// egui's treatment of that state, never the resting pen (spec §10, rule 0), and pressed in no
+/// pen.
 #[test]
-fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), String> {
-    use native_theme::next::{ButtonQuery, PartStated, WidgetState};
+fn the_primary_buttons_unstated_hover_keeps_the_scopes_outline() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, PartStated, Stroke, WidgetState};
     const ID: &str = "basic.buttons.primary";
     let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
     probe.run_steps(SETTLE);
@@ -16897,12 +17008,18 @@ fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), S
         .next_resolved(egui::Theme::Light)
         .ok_or("windows-11: no 0.8.0 theme installed")?;
     let at = |state| r.button.body(ButtonQuery::primary().with_state(state));
-    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
-        assert!(
-            !at(state).from_state.contains(PartStated::STROKE),
-            "windows-11 states the primary's {state:?} outline, so the test proves nothing"
-        );
-    }
+    assert!(
+        !at(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::STROKE),
+        "windows-11 states the primary's hovered outline, so the test proves nothing"
+    );
+    let pressed = at(WidgetState::PRESSED);
+    assert!(
+        pressed.from_state.contains(PartStated::STROKE) && pressed.stroke == Stroke::None,
+        "windows-11 states a pressed primary outline: {:?}",
+        pressed.stroke
+    );
     let rest = at(WidgetState::NONE);
     let pen = crate::demo::stated_pen(&rest).ok_or("windows-11 states no primary outline")?;
     let [(fill, drawn)] = frames_at(&probe, rect)[..] else {
@@ -16915,15 +17032,27 @@ fn the_primary_buttons_unstated_states_keep_the_scopes_outline() -> Result<(), S
     let over = egui::Stroke::new(pen.width, fill.blend(pen.color));
     assert_ne!(over, pen, "the pen composites to itself");
     assert_eq!(drawn, over, "at rest: the stated pen over the fill");
-    for (press, own, what) in [
-        (false, widgets.hovered.bg_stroke, "hovered"),
-        (true, widgets.active.bg_stroke, "pressed"),
-    ] {
-        assert_ne!(own, over, "{what}: the scope's entry is the resting pen");
+    let own = widgets.hovered.bg_stroke;
+    assert_ne!(own, over, "hovered: the scope's entry is the resting pen");
+    let strokes_held = |press| -> Result<Vec<egui::Stroke>, String> {
         let held = held_at("windows-11", None, rect.center(), press)?;
-        let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
-        assert_eq!(strokes, [own], "{what}: the scope's own entry");
-    }
+        Ok(frames_at(&held, rect).iter().map(|f| f.1).collect())
+    };
+    assert_eq!(
+        strokes_held(false)?,
+        [own],
+        "hovered: the scope's own entry"
+    );
+    assert_ne!(
+        widgets.active.bg_stroke,
+        egui::Stroke::NONE,
+        "pressed: the scope's entry is no pen"
+    );
+    assert_eq!(
+        strokes_held(true)?,
+        [egui::Stroke::NONE],
+        "pressed: the stated none"
+    );
     Ok(())
 }
 

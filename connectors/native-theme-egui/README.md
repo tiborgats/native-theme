@@ -871,6 +871,21 @@ listed here, and a value the theme leaves unstated is egui's own
   stated width, and the button grows by the difference in that state
   (src/style/variants.rs, `flat_cell`; docs/v0.8.0-spec.md §10, rule 4).
   No bundled preset states such a width.
+- **A disabled primary button's own outline.** egui outlines every button
+  of a state from that state's `bg_stroke`, and a selected one only fills
+  and letters from `visuals.selection` (`egui-0.37.0`
+  `src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`), so the
+  disabled scope (`RoleVariant::Disabled` of `Role::Button`) draws the push
+  button's and the primary button's outline from one
+  `widgets.inactive.bg_stroke`, the push button's disabled outline where a
+  rule states it, else its resting one; only the fill and the text go
+  through `visuals.selection` (src/style/variants.rs, `disabled_cell`).
+  `button.body(DISABLED; variant=Primary).stroke` is not drawn apart:
+  windows-11 states no outline for the disabled primary button
+  (`AccentButtonBorderBrushDisabled`, transparent) and egui draws the push
+  button's resting one on it; under high contrast with a palette kept, the
+  palette's border in place of the grey text the primary button states
+  (docs/v0.8.0-spec.md §10, rule 4).
 
 ## Semver
 

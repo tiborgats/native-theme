@@ -344,7 +344,11 @@
             "checked"
           ],
           "body": {
-            "fill": "#0078d7"
+            "fill": "#0078d7",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff14"
+            }
           }
         },
         {
@@ -386,7 +390,11 @@
             "checked"
           ],
           "body": {
-            "fill": "srgb(0, 0.47058824, 0.84313726, 0.9)"
+            "fill": "srgb(0, 0.47058824, 0.84313726, 0.9)",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff14"
+            }
           }
         },
         {
@@ -405,8 +413,17 @@
             "fill": "#0078d7",
             "stroke": {
               "width": 1.0,
-              "color": "#0000000f"
+              "color": "#ffffff14"
             }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "primary",
+          "body": {
+            "stroke": "none"
           }
         },
         {
@@ -415,6 +432,24 @@
           ],
           "body": {
             "fill": "#f9f9f900"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "primary",
+          "body": {
+            "stroke": "none"
           }
         },
         {
@@ -2120,7 +2155,29 @@
             "checked"
           ],
           "button": {
-            "fill": "#0078d7"
+            "fill": "#0078d7",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff14"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button": {
+            "stroke": "none"
           }
         },
         {

@@ -362,14 +362,14 @@ pub fn native_table_frame(r: &NextTheme, rows: usize) -> WidgetInfo {
                 &r.list.container(WidgetState::NONE),
                 "list.container(NONE).fill",
             ),
-            "native-theme-gpui/next/builders.rs:146",
+            "native-theme-gpui/next/builders.rs:174",
         ))
         .colors(edge_claim(
             "edge",
             "list.container(NONE).stroke.color",
             stroke_color_of(&r.list.container(WidgetState::NONE)),
             width,
-            "native-theme-gpui/next/builders.rs:144",
+            "native-theme-gpui/next/builders.rs:172",
         ));
     let info = match width.filter(|width| *width > 0.0) {
         Some(width) => info.config(
@@ -796,7 +796,7 @@ fn list_fill(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
             "fill",
             "list.container(NONE).fill",
             fill_of(&r.list.container(WidgetState::NONE), "list.container(NONE).fill"),
-            "native-theme-gpui/next/builders.rs:146",
+            "native-theme-gpui/next/builders.rs:174",
         )),
         None => info.not_themeable("fill", "none: no native theme is installed, or it states no value gpui can take at a home geometry::list reads, so geometry::list, which paints list.container(NONE).fill on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
     }

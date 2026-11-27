@@ -1768,15 +1768,129 @@ const PRIMARY_STATE_STROKES: &[&[Stated]] = &[&[
     button_stroke!(PRESSED; Primary),
 ]];
 
-/// A button's pressed stroke colour.
-const PRESSED_STROKE: &[&[Stated]] = &[&[button_stroke!(PRESSED;)]];
+/// windows-11's push button and its danger, success and warning variants:
+/// [`BUTTON_OUTLINE`], the pressed stroke colour among it.
+const W11_BUTTON: &[&[Stated]] = &[&BUTTON_OUTLINE];
 
-/// A toggle on windows-11: the pressed stroke colour, checked or not, and
-/// checked [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
+/// The reason of windows-11's elevation borders (N38).
+const W11_ELEVATION: &str = "windows-11's elevation borders take WinUI's colours in the \
+     uniform form, the colour of the brush's three sides (N38): the push button's, the text \
+     field's and the combo box's outline at rest, hovered and disabled \
+     ControlStrokeColorDefault #0F000000 / #12FFFFFF (ControlElevationBorderBrush, \
+     TextControlElevationBorderBrush; Common_themeresources_any.xaml:243, :39 at \
+     microsoft-ui-xaml 8463f45), where 0.7.2 gives the default border, \
+     CardStrokeColorDefault #0F000000 / #19000000; the primary button's, a checked push \
+     button's and a checked toolbar button's ControlStrokeColorOnAccentDefault #14FFFFFF \
+     (AccentControlElevationBorderBrush, :245, :41), inside the edge, the primary and the \
+     checked push button's none pressed or disabled, which the connector draws (a checked \
+     push button's by styles::CheckedBorders), where 0.7.2 gives the default border, the \
+     checked push button the unchecked one's, and the toolbar button none \
+     (native-theme/tests/next_homes.toml, \
+     rows button.border.color, input.border.color, text_area.border.color, \
+     combo_box.border.color, toolbar.button_checked_border_color, listed differences); the \
+     connector lays each over the fill the status paints";
+
+/// A toggle on windows-11: [`BUTTON_OUTLINE`], checked [`W11_CHECKED_OUTLINE`],
+/// and checked [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
 const WINDOWS_TOGGLE: &[&[Stated]] = &[
-    &[button_stroke!(PRESSED;), button_stroke!(PRESSED | CHECKED;)],
+    &BUTTON_OUTLINE,
+    &W11_CHECKED_OUTLINE,
     &TOGGLE_CHECKED_FILLS,
     &TOGGLE_CHECKED_LABELS,
+];
+
+/// A checked toggle's outline in each status, the checked body's the
+/// preset states for its state (`button.body(CHECKED)`, `(HOVER | CHECKED)`,
+/// `(PRESSED | CHECKED)`, `(DISABLED | CHECKED)`), which the connector draws
+/// (`styles::CheckedBorders`).
+const W11_CHECKED_OUTLINE: [Stated; 6] = [
+    set(
+        at!(NONE | CHECKED),
+        Field::BorderColor,
+        home!(stroke, button.body(CHECKED)),
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderWidth,
+        home!(width, button.body(DISABLED | CHECKED)),
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderColor,
+        home!(stroke, button.body(DISABLED | CHECKED) faded by button.disabled_opacity),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::BorderColor,
+        home!(stroke, button.body(HOVER | CHECKED)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::BorderWidth,
+        home!(width, button.body(PRESSED | CHECKED)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::BorderColor,
+        home!(stroke, button.body(PRESSED | CHECKED)),
+    ),
+];
+
+/// windows-11's primary button's outline: [`PRIMARY_OUTLINE`]'s at rest and
+/// pressed, disabled the disabled primary body's the preset states
+/// (`button.body(DISABLED; variant=Primary)`, none), and under the pointer
+/// the rest one, no rule for HOVER stating the primary body's stroke.
+const W11_PRIMARY_OUTLINE: [Stated; 7] = [
+    set(
+        at!(NONE),
+        Field::BorderWidth,
+        home!(width, button.body(NONE; Primary)),
+    ),
+    set(
+        at!(NONE),
+        Field::BorderColor,
+        home!(stroke, button.body(NONE; Primary)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::BorderWidth,
+        home!(width, button.body(DISABLED; Primary)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::BorderColor,
+        home!(stroke, button.body(DISABLED; Primary) faded by button.disabled_opacity),
+    ),
+    set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, button.body(NONE; Primary)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::BorderWidth,
+        home!(width, button.body(PRESSED; Primary)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::BorderColor,
+        home!(stroke, button.body(PRESSED; Primary)),
+    ),
+];
+
+/// A checked toolbar button's outline at rest and under the pointer
+/// (`toolbar.button(CHECKED)`, `(HOVER | CHECKED)`).
+const W11_TOOLBAR_CHECKED_OUTLINE: [Stated; 2] = [
+    set(
+        at!(CHECKED),
+        Field::BorderColor,
+        home!(stroke, toolbar.button(CHECKED)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::BorderColor,
+        home!(stroke, toolbar.button(HOVER | CHECKED)),
+    ),
 ];
 
 /// A button's pressed label (`button.label(PRESSED)`).
@@ -2524,6 +2638,27 @@ const IOS_INPUT_OUTLINE: [Stated; 7] = field_outline!(input);
 /// ios-13's text area's outline ([`field_outline`]).
 const IOS_TEXT_AREA_OUTLINE: [Stated; 7] = field_outline!(text_area);
 
+/// windows-11's text field's outline ([`field_outline`]), and its hovered
+/// stroke, which a rule for HOVER states (`input.field(HOVER)`).
+const W11_INPUT_OUTLINE: &[&[Stated]] = &[
+    &field_outline!(input),
+    &[set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, input.field(HOVER)),
+    )],
+];
+
+/// windows-11's text area's outline, as [`W11_INPUT_OUTLINE`].
+const W11_TEXT_AREA_OUTLINE: &[&[Stated]] = &[
+    &field_outline!(text_area),
+    &[set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, text_area.field(HOVER)),
+    )],
+];
+
 /// A drop-down field's outline at rest, under the pointer and open
 /// (`combo_box.field`): its stroke at rest and under the pointer, open the
 /// width at rest (iced's own colour, no rule for OPEN), and open under the
@@ -2794,14 +2929,10 @@ const DIFFERENCES: &[Difference] = &[
     stated_fields("button", &["material-3"], LineAlign::Outside, STATE_STROKES),
     stated_fields("button_toggle", &["material-3"], LineAlign::Outside, &[])
         .stating(MATERIAL_TOGGLE, &[STATED, CHECKED_STATES]),
-    stated_fields(
-        "button",
-        &["windows-11"],
-        LineAlign::Outside,
-        PRESSED_STROKE,
-    ),
+    stated_fields("button", &["windows-11"], LineAlign::Outside, &[])
+        .stating(W11_BUTTON, &[STATED, W11_ELEVATION]),
     stated_fields("button_toggle", &["windows-11"], LineAlign::Outside, &[])
-        .stating(WINDOWS_TOGGLE, &[STATED, CHECKED_STATES]),
+        .stating(WINDOWS_TOGGLE, &[STATED, CHECKED_STATES, W11_ELEVATION]),
     stated_fields("button_toggle", &["kde-breeze"], LineAlign::Outside, &[])
         .stating(CHECKED_TOGGLE_FILLS, &[CHECKED_STATES]),
     stated_fields("button", &["adwaita"], LineAlign::Outside, &[])
@@ -2838,15 +2969,29 @@ const DIFFERENCES: &[Difference] = &[
             TOOLBAR_OUTLINE,
         ],
     ),
-    toolbar_labels(&["kde-breeze", "adwaita", "windows-11"]).stating(
+    toolbar_labels(&["kde-breeze", "adwaita"]).stating(
         &[&TOOLBAR_CHECKED_DISABLED_FILL],
         &[TOOLBAR_LABELS, TOOLBAR_OUTLINE, TOOLBAR_CHECKED_DISABLED],
+    ),
+    toolbar_labels(&["windows-11"]).stating(
+        &[&TOOLBAR_CHECKED_DISABLED_FILL, &W11_TOOLBAR_CHECKED_OUTLINE],
+        &[
+            TOOLBAR_LABELS,
+            TOOLBAR_OUTLINE,
+            TOOLBAR_CHECKED_DISABLED,
+            STATED,
+            W11_ELEVATION,
+        ],
     ),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.
-    inside("button_primary", &["windows-11", "macos-monterey"]),
-    inside("button_default", &["windows-11", "macos-monterey"]),
+    inside("button_primary", &["macos-monterey"]),
+    inside("button_default", &["macos-monterey"]),
+    stated_fields("button_primary", &["windows-11"], LineAlign::Inside, &[])
+        .stating(&[&W11_PRIMARY_OUTLINE], &[INSIDE, STATED, W11_ELEVATION]),
+    stated_fields("button_default", &["windows-11"], LineAlign::Inside, &[])
+        .stating(&[&W11_PRIMARY_OUTLINE], &[INSIDE, STATED, W11_ELEVATION]),
     stated_fields(
         "button_primary",
         &["macos-tahoe"],
@@ -2940,24 +3085,12 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         STATE_STROKES,
     ),
-    stated_fields(
-        "button_danger",
-        &["windows-11"],
-        LineAlign::Outside,
-        PRESSED_STROKE,
-    ),
-    stated_fields(
-        "button_success",
-        &["windows-11"],
-        LineAlign::Outside,
-        PRESSED_STROKE,
-    ),
-    stated_fields(
-        "button_warning",
-        &["windows-11"],
-        LineAlign::Outside,
-        PRESSED_STROKE,
-    ),
+    stated_fields("button_danger", &["windows-11"], LineAlign::Outside, &[])
+        .stating(W11_BUTTON, &[STATED, W11_ELEVATION]),
+    stated_fields("button_success", &["windows-11"], LineAlign::Outside, &[])
+        .stating(W11_BUTTON, &[STATED, W11_ELEVATION]),
+    stated_fields("button_warning", &["windows-11"], LineAlign::Outside, &[])
+        .stating(W11_BUTTON, &[STATED, W11_ELEVATION]),
     // input.field(NONE) and text_area.field(NONE), the macOS presets'
     // inside the box; input.field(FOCUSED): the macOS presets state no
     // focused stroke. The FS4 presets state adwaita's and the macOS
@@ -2991,6 +3124,12 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         &[&IOS_TEXT_AREA_OUTLINE],
     ),
+    // input.field and text_area.field on windows-11 dark: the elevation
+    // border's three sides (N38); in light 0.7.2's default border is the same.
+    stated_fields("text_input", &["windows-11/dark"], LineAlign::Outside, &[])
+        .stating(W11_INPUT_OUTLINE, &[STATED, W11_ELEVATION]),
+    stated_fields("text_editor", &["windows-11/dark"], LineAlign::Outside, &[])
+        .stating(W11_TEXT_AREA_OUTLINE, &[STATED, W11_ELEVATION]),
     // tooltip.panel, dialog.panel, progress_bar.track(NONE).
     inside("tooltip", MACOS_WINDOWS),
     inside("dialog", MACOS_WINDOWS),
@@ -3209,7 +3348,8 @@ const DIFFERENCES: &[Difference] = &[
         States::STATED,
     )
     .stating(&[&COMBO_OUTLINE], &[OPEN, STATED]),
-    open(&["windows-11"], LineAlign::Inside, States::STATED),
+    open(&["windows-11"], LineAlign::Inside, States::STATED)
+        .stating(&[&COMBO_OUTLINE], &[INSIDE, OPEN, STATED, W11_ELEVATION]),
     open(&["macos-monterey"], LineAlign::Inside, States::STATED)
         .stating(&[&COMBO_HOVER], &[INSIDE, OPEN, STATED]),
     // switch.thumb(HOVER): no preset states a hovered thumb; windows-11 and

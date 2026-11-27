@@ -576,9 +576,9 @@ homes = [
 ]
 note = "a pressed button keeps the hover border (0.7.2's field doc)"
 difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "material-3", "ios-13"]
-difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it, and for PRESSED WinUI's flat ControlStrokeColorDefault; macos-monterey the rest outline for HOVER, where hover draws nothing, and the rest outline pressed, which no rule changes; macos-tahoe no stroke for HOVER and PRESSED, as at rest; material-3 no stroke for HOVER and PRESSED, the filled tonal button having no outline (0.7.2: the default outline colour at width 0); ios-13 WebKit's rest border, 1px of systemBackground, for HOVER and PRESSED, which no :hover or :active rule and no adjustButtonLikeControlStyle change"
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it (the three sides of ControlElevationBorderBrush, ControlStrokeColorDefault, not 0.7.2's default border), and for PRESSED WinUI's flat ControlStrokeColorDefault; macos-monterey the rest outline for HOVER, where hover draws nothing, and the rest outline pressed, which no rule changes; macos-tahoe no stroke for HOVER and PRESSED, as at rest; material-3 no stroke for HOVER and PRESSED, the filled tonal button having no outline (0.7.2: the default outline colour at width 0); ios-13 WebKit's rest border, 1px of systemBackground, for HOVER and PRESSED, which no :hover or :active rule and no adjustButtonLikeControlStyle change"
 difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); macOS: docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis; os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, `…hovered.regular-*.diff_from_normal` 0 pixels); docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd) `button.body.stroke` absent on macos-tahoe (layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26); material-3: _md-comp-filled-tonal-button.scss (v0_192, material-web cbd34a8) has no outline token in any state, its tokens :37-99; ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba), no :hover rule, `button:active` sets only `color` (html.css:901-906), adjustButtonLikeControlStyle changes an active button's text and background alone (RenderThemeIOS.mm:862-870)"
-difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#00000019" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "material-3" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#ffffff12" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "material-3" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "button.focus_border_color"
@@ -623,10 +623,10 @@ homes = ["button.label(NONE).color"]
 [[row]]
 key = "button.border.color"
 homes = ["button.body(NONE).stroke.color"]
-difference_presets = ["macos-tahoe", "ios-13"]
-difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the push button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (#c6c6c8 / #38383a, the separator); 0.8.0 states the border WebKit draws round an iOS button, systemBackground"
-difference_citation = "macos-tahoe: docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent); ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba)"
-difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
+difference_presets = ["macos-tahoe", "ios-13", "windows-11"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the push button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (#c6c6c8 / #38383a, the separator); 0.8.0 states the border WebKit draws round an iOS button, systemBackground; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000, a dark rim in dark); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrokeColorSecondary or ControlStrongStrokeColorDefault not stated)"
+difference_citation = "macos-tahoe: docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent); ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba); windows-11: ButtonBorderBrush, ComboBoxBorderBrush = ControlElevationBorderBrush (Button_themeresources.xaml:136, :38; ComboBox_themeresources.xaml:264, :54), TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), gradients whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:382-390, :186-191, :243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4; docs/todo_v0.7.1_model-completeness-spike-w-coverage.md on v0.8.0-rc1, appendix)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
 
 [[row]]
 key = "button.border.corner_radius"
@@ -1447,10 +1447,10 @@ homes = [
     "input.field(HOVER).stroke.color",
     "text_area.field(HOVER).stroke.color",
 ]
-difference_presets = ["adwaita", "macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's entry has no :hover rule, and a hovered macOS text field draws as at rest"
-difference_citation = "adwaita: _entries.scss:1-60 at libadwaita 1.10.0 (no :hover or :active rule); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.text_field` differs from the normal capture in 0 pixels"
-difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = { light = "#00000019", dark = "#ffffff19" } }
+difference_presets = ["adwaita", "macos-monterey", "macos-tahoe", "windows-11"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's entry has no :hover rule, a hovered macOS text field draws as at rest, and WinUI's TextControlBorderBrushPointerOver is the rest brush, whose three sides 0.8.0 states (ControlStrokeColorDefault, not 0.7.2's default border)"
+difference_citation = "adwaita: _entries.scss:1-60 at libadwaita 1.10.0 (no :hover or :active rule); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.text_field` differs from the normal capture in 0 pixels; windows-11: TextControlBorderBrushPointerOver = TextControlElevationBorderBrush, the rest brush (TextBox_themeresources.xaml:135, :28 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4), its three sides ControlStrokeColorDefault (Common_themeresources_any.xaml:243, :39)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = { light = "#00000019", dark = "#ffffff19" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
 
 [[row]]
 key = "input.focus_border_color"
@@ -1511,10 +1511,10 @@ homes = [
 [[row]]
 key = "input.border.color"
 homes = ["input.field(NONE).stroke.color"]
-difference_presets = ["ios-13"]
-difference_reason = "0.7.2's ios-13 outlines the text field in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
-difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
-difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" } }
+difference_presets = ["ios-13", "windows-11"]
+difference_reason = "0.7.2's ios-13 outlines the text field in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000, a dark rim in dark); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrokeColorSecondary or ControlStrongStrokeColorDefault not stated)"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba); windows-11: ButtonBorderBrush, ComboBoxBorderBrush = ControlElevationBorderBrush (Button_themeresources.xaml:136, :38; ComboBox_themeresources.xaml:264, :54), TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), gradients whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:382-390, :186-191, :243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4; docs/todo_v0.7.1_model-completeness-spike-w-coverage.md on v0.8.0-rc1, appendix)"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
 
 [[row]]
 key = "input.border.corner_radius"
@@ -1556,10 +1556,10 @@ homes = ["input.field(NONE).padding.left"]
 key = "text_area.border.color"
 homes = ["text_area.field(NONE).stroke.color"]
 note = "0.7.2 R-W: unset = input.border's"
-difference_presets = ["ios-13"]
-difference_reason = "0.7.2's ios-13 outlines the text area in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
-difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
-difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" } }
+difference_presets = ["ios-13", "windows-11"]
+difference_reason = "0.7.2's ios-13 outlines the text area in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrongStrokeColorDefault not stated)"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba); windows-11: TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), a gradient whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4)"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
 
 [[row]]
 key = "text_area.border.corner_radius"
@@ -2318,10 +2318,10 @@ difference_values = { "macos-monterey" = { light = "#dfdfdf", dark = "#414141" }
 key = "toolbar.button_checked_border_color"
 homes = ["toolbar.button(CHECKED).stroke.color"]
 note = "drawn at button.border.line_width (0.7.2 doc): the CHECKED stroke's width is button's, no key of its own"
-difference_presets = ["macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2's macOS toolbar states no checked button outline; 0.8.0 states it as none, as the real toolbar's toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle draws none at rest, hovered or pressed (its edge pixel is the fill)"
-difference_citation = "os-probe run 45634379188 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-25-run-45634379188/), `toolbar_bezel_fitted-toolbar_states_sheet.toml` `*.toolbar_toggle_on` `edge_*`"
-difference_values = { "macos-monterey" = "none", "macos-tahoe" = "none" }
+difference_presets = ["macos-monterey", "macos-tahoe", "windows-11"]
+difference_reason = "0.7.2's macOS toolbar states no checked button outline; 0.8.0 states it as none, as the real toolbar's toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle draws none at rest, hovered or pressed (its edge pixel is the fill); 0.7.2's windows-11 states none; 0.8.0 states the three sides of WinUI's AccentControlElevationBorderBrush, ControlStrokeColorOnAccentDefault, 1px, one colour (the fourth side's ControlStrokeColorOnAccentSecondary not stated)"
+difference_citation = "os-probe run 45634379188 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-25-run-45634379188/), `toolbar_bezel_fitted-toolbar_states_sheet.toml` `*.toolbar_toggle_on` `edge_*`; windows-11: AppBarToggleButtonBorderBrushChecked = AccentControlElevationBorderBrush (AppBarToggleButton_themeresources.xaml:160, :30), its three sides ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes (Common_themeresources_any.xaml:397-405, :198-206, :245, :41 at microsoft-ui-xaml 8463f45), AppBarToggleButtonBorderThemeThickness 1 (AppBarToggleButton_themeresources.xaml:200; docs/facts/windows/button.toml on v0.8.0-rc1, row W1-100)"
+difference_values = { "macos-monterey" = "none", "macos-tahoe" = "none", "windows-11" = "#ffffff14" }
 
 [[row]]
 key = "toolbar.font.family"
@@ -2865,9 +2865,9 @@ difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "m
 key = "combo_box.hover_border_color"
 homes = ["combo_box.field(HOVER).stroke.color"]
 difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "ios-13"]
-difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's trigger is a raised button whose :hover sets only its background, WinUI's hovered combo box keeps the rest border brush, a hovered macOS pop-up button draws as at rest (macos-tahoe's has no outline), and WebKit's iOS select has no :hover rule"
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's trigger is a raised button whose :hover sets only its background, WinUI's hovered combo box keeps the rest border brush (its three sides, ControlStrokeColorDefault, not 0.7.2's default border), a hovered macOS pop-up button draws as at rest (macos-tahoe's has no outline), and WebKit's iOS select has no :hover rule"
 difference_citation = "adwaita: _buttons.scss:35-42, _dropdowns.scss:1-12 at libadwaita 1.10.0; windows-11: ComboBoxBorderBrushPointerOver = ControlElevationBorderBrush, the rest brush (ComboBox_themeresources.xaml:265, :55; rest :264, :54; PointerOver :416-417 at microsoft-ui-xaml 8463f45); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d, no :hover rule for select, adjustButtonLikeControlStyle reads only `active()` (RenderThemeIOS.mm:862-870)"
-difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { light = "#0000000f", dark = "#00000019" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "combo_box.disabled_background"
@@ -2918,10 +2918,10 @@ homes = ["combo_box.label(NONE).color"]
 [[row]]
 key = "combo_box.border.color"
 homes = ["combo_box.field(NONE).stroke.color"]
-difference_presets = ["macos-tahoe", "ios-13"]
-difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the pop-up button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (the separator, uncited); 0.8.0 states the border WebKit draws round an iOS select, systemBackground"
-difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill #00000013 / #ffffff13; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d; -webkit-control-background is systemBackground (RenderThemeIOS.mm:1027)"
-difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
+difference_presets = ["macos-tahoe", "ios-13", "windows-11"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the pop-up button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (the separator, uncited); 0.8.0 states the border WebKit draws round an iOS select, systemBackground; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000, a dark rim in dark); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrokeColorSecondary or ControlStrongStrokeColorDefault not stated)"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill #00000013 / #ffffff13; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d; -webkit-control-background is systemBackground (RenderThemeIOS.mm:1027); windows-11: ButtonBorderBrush, ComboBoxBorderBrush = ControlElevationBorderBrush (Button_themeresources.xaml:136, :38; ComboBox_themeresources.xaml:264, :54), TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), gradients whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:382-390, :186-191, :243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4; docs/todo_v0.7.1_model-completeness-spike-w-coverage.md on v0.8.0-rc1, appendix)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
 
 [[row]]
 key = "combo_box.border.corner_radius"

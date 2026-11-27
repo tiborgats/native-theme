@@ -266,11 +266,24 @@ const SLOTS: &[Slot] = &[
 const EXCLUDED: &[(&str, &str)] = &[];
 
 /// A listed difference (plan, section 1, rule 2): the leaf, the presets on
-/// which it differs, and why.
+/// which it differs, and why. A preset is named by its key, for both schemes,
+/// or by its key and one scheme, `windows-11/dark`, where the leaf differs in
+/// that scheme alone ([`Difference::lists`]).
 struct Difference {
     leaf: &'static str,
     presets: &'static [&'static str],
     reason: &'static str,
+}
+
+impl Difference {
+    /// Whether the entry lists the preset `key` in the scheme `is_dark`
+    /// gives: it names the key, or the key and that scheme.
+    fn lists(&self, key: &str, is_dark: bool) -> bool {
+        let scheme = if is_dark { "dark" } else { "light" };
+        self.presets.iter().any(|p| {
+            *p == key || p.strip_prefix(key).and_then(|rest| rest.strip_prefix('/')) == Some(scheme)
+        })
+    }
 }
 
 /// The presets whose 0.8.0 side leaves the dialog panel's sizes unstated
@@ -973,6 +986,47 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "geometry::button",
+        presets: &["windows-11/dark"],
+        reason: "0.7.2's windows-11 dark outlines the push button in the default border, \
+                 CardStrokeColorDefault #19000000 (button.border.color from \
+                 defaults.border.color); the 0.8.0 preset states ButtonBorderBrush = \
+                 ControlElevationBorderBrush's three sides, ControlStrokeColorDefault #12FFFFFF \
+                 (Common_themeresources_any.xaml:39, :186-191 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row button.border.color, a listed \
+                 difference), so the refinement's border colour is button.body(NONE)'s stroke \
+                 colour; in light the two are the same #0F000000, and every other field of the \
+                 refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::button_checked",
+        presets: &["windows-11"],
+        reason: "0.7.2 states no checked push button outline, so its refinement of a checked \
+                 button sets no border colour and the rest outline stands; the 0.8.0 \
+                 windows-11 states ToggleButtonBorderBrushChecked = \
+                 AccentControlElevationBorderBrush's three sides, \
+                 ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes \
+                 (ToggleButton_themeresources.xaml:151, :35, Common_themeresources_any.xaml:397-405, \
+                 :198-206, :245, :41 at microsoft-ui-xaml 8463f45; docs/facts/windows/button.toml \
+                 on v0.8.0-rc1 at 78ee0efd, row W1-022), which next::geometry::button_checked \
+                 draws (docs/v0.8.0-spec.md §10, rule 0), so the refinement's border colour is \
+                 button.body(CHECKED)'s stroke colour; its fill and label are equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar_button_checked",
+        presets: &["windows-11"],
+        reason: "0.7.2's windows-11 states no checked toolbar button outline, so its refinement \
+                 sets no border colour; the 0.8.0 preset states \
+                 AppBarToggleButtonBorderBrushChecked = AccentControlElevationBorderBrush's three \
+                 sides, ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes \
+                 (AppBarToggleButton_themeresources.xaml:160-163, :30-33, \
+                 Common_themeresources_any.xaml:245, :41 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row toolbar.button_checked_border_color, a \
+                 listed difference), so the refinement's border colour is \
+                 toolbar.button(CHECKED)'s stroke colour; every other field of the refinement \
+                 is equal",
+    },
+    Difference {
+        leaf: "geometry::button",
         presets: &["macos-tahoe"],
         reason: "0.7.2's macos-tahoe outlines the push button in the default line (0.5 px, \
                  #00000019 / #ffffff19); the 0.8.0 preset states its stroke as none, as macOS 26 \
@@ -1085,6 +1139,19 @@ const DIFFERENCES: &[Difference] = &[
                  input.border.color, a listed difference), so the input slot, its token and \
                  its stored config string are input.field(NONE)'s stroke colour \
                  (input_outline_of); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: INPUT_OUTLINE,
+        presets: &["windows-11/dark"],
+        reason: "0.7.2's windows-11 dark outlines the text field in the default border, \
+                 CardStrokeColorDefault #19000000; the 0.8.0 preset states \
+                 TextControlBorderBrush = TextControlElevationBorderBrush's three sides, \
+                 ControlStrokeColorDefault #12FFFFFF (TextBox_themeresources.xaml:27, \
+                 Common_themeresources_any.xaml:39 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row input.border.color, a listed \
+                 difference), so the input slot, its token and its stored dark config string are \
+                 input.field(NONE)'s stroke colour (input_outline_of); in light the two are the \
+                 same #0F000000, and every other leaf of the theme is equal",
     },
     Difference {
         leaf: SLIDER_THUMB,
@@ -1738,10 +1805,13 @@ const STATED_SLOTS: &[StatedSlot] = &[
 /// and the token of the theme's mode, and the stored config string of each
 /// scheme whose `stated` is given; the colours compared by their hex
 /// strings, as an upstream rebuild of the theme from its stored config
-/// (`Theme::change`) round-trips them. `None` where `theme` does not hold
-/// it, or where it is `from`'s (a [`StatedSlot::laid`] slot's colour
-/// exactly, any other's by its hex string), the listed difference then
-/// describing nothing.
+/// (`Theme::change`) round-trips them. Where the theme's own scheme has no
+/// `stated` (an entry naming the other scheme alone, [`Difference::lists`]),
+/// its colour and token are left, and only the other scheme's stored config
+/// string is patched. `None` where `theme` does not hold it, where it is
+/// `from`'s (a [`StatedSlot::laid`] slot's colour exactly, any other's by its
+/// hex string), the listed difference then describing nothing, or where
+/// neither scheme is given.
 fn slot_as_old(
     theme: &GpuiTheme,
     from: &GpuiTheme,
@@ -1750,20 +1820,26 @@ fn slot_as_old(
 ) -> Option<GpuiTheme> {
     let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
     let [light, dark] = stated;
-    let own = if theme.is_dark() { dark } else { light }?;
-    let color = (slot.color)(&theme.colors);
-    let old = (slot.color)(&from.colors);
-    let unchanged = if slot.laid {
-        old == own
-    } else {
-        hex(old) == hex(own)
-    };
-    if hex(color) != hex(own) || unchanged || (slot.token)(&theme.tokens) != ThemeToken::from(color)
-    {
+    let mut patched = theme.clone();
+    let own = if theme.is_dark() { dark } else { light };
+    if let Some(own) = own {
+        let color = (slot.color)(&theme.colors);
+        let old = (slot.color)(&from.colors);
+        let unchanged = if slot.laid {
+            old == own
+        } else {
+            hex(old) == hex(own)
+        };
+        if hex(color) != hex(own)
+            || unchanged
+            || (slot.token)(&theme.tokens) != ThemeToken::from(color)
+        {
+            return None;
+        }
+        (slot.copy)(&mut patched, from);
+    } else if light.is_none() && dark.is_none() {
         return None;
     }
-    let mut patched = theme.clone();
-    (slot.copy)(&mut patched, from);
     for (config, source, stated) in [
         (&mut patched.light_theme, &from.light_theme, light),
         (&mut patched.dark_theme, &from.dark_theme, dark),
@@ -1835,6 +1911,20 @@ const UNSTROKED_BUTTON: &[&str] = &["macos-tahoe"];
 /// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
 /// button the 0.8.0 preset strokes in an outline of its own, not 0.7.2's.
 const RESTROKED_BUTTON: &[&str] = &["ios-13"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
+/// button the 0.8.0 preset outlines in 0.7.2's width and a colour of its own.
+const RECOLOURED_BUTTON: &[&str] = &["windows-11"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::toolbar_button_checked`
+/// entries whose checked toolbar button the 0.8.0 preset outlines where
+/// 0.7.2 states no outline, its fill and label as 0.7.2's.
+const TOOLBAR_CHECKED_OUTLINED: &[&str] = &["windows-11"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries whose
+/// checked push button the 0.8.0 preset outlines where 0.7.2 states no
+/// checked outline, its fill and label as 0.7.2's.
+const BUTTON_CHECKED_OUTLINED: &[&str] = &["windows-11"];
 
 /// The presets of [`DIFFERENCES`]' `variants::bordered_button` entries
 /// whose hovered push button the 0.8.0 preset strokes as none.
@@ -2146,6 +2236,7 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
 struct Report {
     label: String,
     preset: &'static str,
+    is_dark: bool,
     compared: usize,
     /// The leaves compared or found unmapped, by name.
     seen: Vec<String>,
@@ -2158,6 +2249,7 @@ impl Report {
         Self {
             label: format!("{preset}/{scheme}"),
             preset,
+            is_dark,
             compared: 0,
             seen: Vec::new(),
             failures: Vec::new(),
@@ -2198,7 +2290,7 @@ impl Report {
     fn listed(&self, leaf: &str) -> Option<&'static Difference> {
         DIFFERENCES
             .iter()
-            .find(|d| d.leaf == leaf && d.presets.contains(&self.preset))
+            .find(|d| d.leaf == leaf && d.lists(self.preset, self.is_dark))
     }
 }
 
@@ -2829,6 +2921,22 @@ fn compare_builders(
                     ));
                 }
             }
+            Some(listed) if RECOLOURED_BUTTON.contains(&report.preset) => {
+                report.count(button);
+                let body = new.button.body(native_theme::next::WidgetState::NONE);
+                let mut corrected = o.clone();
+                corrected.border_color = n.border_color;
+                if o.border_color == n.border_color
+                    || n.border_color != super::stroke_color(&body, "button.body(NONE)").ok()
+                    || corrected != n
+                {
+                    report.failures.push(format!(
+                        "{}: {button}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
             Some(listed) => {
                 report.count(button);
                 let mut corrected = o.clone();
@@ -2868,6 +2976,25 @@ fn compare_builders(
     }
     let button_checked = "geometry::button_checked";
     match report.listed(button_checked) {
+        Some(listed) if BUTTON_CHECKED_OUTLINED.contains(&report.preset) => {
+            if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
+                report.count(button_checked);
+                let o = crate::geometry::button_checked(Native::unscaled(old));
+                let body = new.button.body(native_theme::next::WidgetState::CHECKED);
+                let mut corrected = o.clone();
+                corrected.border_color = n.border_color;
+                if o.border_color.is_some()
+                    || n.border_color != super::stroke_color(&body, "button.body(CHECKED)").ok()
+                    || corrected != n
+                {
+                    report.failures.push(format!(
+                        "{}: {button_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
         Some(listed) if RESTATED_BUTTON_FILLS.contains(&report.preset) => {
             if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
                 report.count(button_checked);
@@ -3200,6 +3327,29 @@ fn compare_builders(
     }
     let toolbar_checked = "geometry::toolbar_button_checked";
     match report.listed(toolbar_checked) {
+        Some(listed) if TOOLBAR_CHECKED_OUTLINED.contains(&report.preset) => {
+            if let Some(n) = report.mapped(
+                toolbar_checked,
+                super::builders::toolbar_button_checked(new),
+            ) {
+                report.count(toolbar_checked);
+                let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
+                let checked = new.toolbar.button(native_theme::next::WidgetState::CHECKED);
+                let mut corrected = o.clone();
+                corrected.border_color = n.border_color;
+                if o.border_color == n.border_color
+                    || n.border_color.is_none()
+                    || n.border_color != super::state_stroke_color_of(&checked)
+                    || corrected != n
+                {
+                    report.failures.push(format!(
+                        "{}: {toolbar_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
         Some(listed) => {
             if let Some(n) = report.mapped(
                 toolbar_checked,
@@ -3747,9 +3897,13 @@ fn every_contract_slot_is_compared_or_accounted_for() {
 fn every_listed_difference_names_a_covered_preset() {
     for d in DIFFERENCES {
         for preset in d.presets {
+            let key = preset
+                .split_once('/')
+                .filter(|(_, scheme)| matches!(*scheme, "light" | "dark"))
+                .map_or(*preset, |(key, _)| key);
             assert!(
-                PRESETS.iter().any(|(key, _)| key == preset),
-                "{}: {preset} is not a preset the test covers",
+                PRESETS.iter().any(|(k, _)| *k == key),
+                "{}: {preset} is not a preset the test covers, or a scheme of one",
                 d.leaf
             );
         }
@@ -4013,18 +4167,17 @@ fn apply_both(
         };
         let stated = STATED_SLOTS
             .iter()
-            .filter(|slot| {
-                DIFFERENCES
-                    .iter()
-                    .any(|d| d.leaf == slot.leaf && d.presets.contains(&key))
-            })
-            .map(|slot| {
-                let mut schemes = themes.iter().map(|(_, (_, _, _, new))| (slot.of)(new));
-                (
-                    slot,
-                    from,
-                    [schemes.next().flatten(), schemes.next().flatten()],
-                )
+            .filter_map(|slot| {
+                let listed = |is_dark: bool| {
+                    DIFFERENCES
+                        .iter()
+                        .any(|d| d.leaf == slot.leaf && d.lists(key, is_dark))
+                };
+                let mut schemes = themes.iter().map(|(is_dark, (_, _, _, new))| {
+                    listed(*is_dark).then(|| (slot.of)(new)).flatten()
+                });
+                let schemes = [schemes.next().flatten(), schemes.next().flatten()];
+                (listed(false) || listed(true)).then_some((slot, from, schemes))
             })
             .collect();
         let editor = DIFFERENCES

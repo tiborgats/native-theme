@@ -45,7 +45,13 @@ combinations = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita
 leaves = ["button.checked_background"]
 moves = [
   { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
-  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Disabled)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
+[homes."button.body(CHECKED).stroke.color"]
+moves = [
+  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."button.body(CHECKED; variant=Flat).stroke.color"]
@@ -75,15 +81,37 @@ moves = [
   { row = "styles::button_danger.background", statuses = ["Disabled"] },
   { row = "styles::button_danger.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_default.background", statuses = ["Disabled"] },
-  { row = "styles::button_default.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_primary.background", statuses = ["Disabled"] },
-  { row = "styles::button_primary.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_success.background", statuses = ["Disabled"] },
   { row = "styles::button_success.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Disabled)", "(true, Disabled)"] },
   { row = "styles::button_toggle.border", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_warning.background", statuses = ["Disabled"] },
   { row = "styles::button_warning.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
+[homes."button.body(DISABLED).stroke.color"]
+moves = [
+  { row = "styles::button.border", statuses = ["Disabled"] },
+  { row = "styles::button_danger.border", statuses = ["Disabled"] },
+  { row = "styles::button_default.border", statuses = ["Disabled"] },
+  { row = "styles::button_primary.border", statuses = ["Disabled"] },
+  { row = "styles::button_success.border", statuses = ["Disabled"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Disabled)", "(true, Disabled)"] },
+  { row = "styles::button_warning.border", statuses = ["Disabled"] },
+]
+
+[homes."button.body(DISABLED; variant=Primary).stroke.color"]
+moves = [
+  { row = "styles::button_default.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Disabled"] },
+]
+
+[homes."button.body(DISABLED|CHECKED).stroke.color"]
+moves = [
+  { row = "styles::button_toggle.border", statuses = ["(true, Disabled)"] },
 ]
 
 [homes."button.body(FOCUS_VISIBLE).stroke.color"]
@@ -113,6 +141,7 @@ moves = [
   { row = "styles::button_toggle.background", statuses = ["(false, Hovered)"] },
   { row = "styles::button_toggle.background", statuses = ["(true, Hovered)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
   { row = "styles::button_toggle.border", statuses = ["(false, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(HOVER).stroke.color"]
@@ -148,7 +177,12 @@ moves = [
 [homes."button.body(HOVER|CHECKED).fill"]
 moves = [
   { row = "styles::button_toggle.background", statuses = ["(true, Hovered)"] },
-  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
+[homes."button.body(HOVER|CHECKED).stroke.color"]
+moves = [
+  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"] },
 ]
 
 [homes."button.body(HOVER|CHECKED; variant=Flat).fill"]
@@ -171,10 +205,12 @@ moves = [
   { row = "styles::button.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_default.background", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_default.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_default.border", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_primary.background", statuses = ["Active", "Hovered", "Pressed"] },
   { row = "styles::button_primary.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_primary.border", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Active)"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -188,12 +224,14 @@ moves = [
   { row = "styles::button.border", statuses = ["Active", "Disabled"] },
   { row = "styles::button_danger.border", statuses = ["Active", "Disabled"] },
   { row = "styles::button_default.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::button_default.border", statuses = ["Disabled"] },
-  { row = "styles::button_default.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_primary.border", statuses = ["Active", "Disabled"] },
-  { row = "styles::button_primary.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Disabled"], except = ["windows-11/light", "windows-11/dark"] },
+  { row = "styles::button_default.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Active"] },
+  { row = "styles::button_primary.border", statuses = ["Disabled"], except = ["windows-11/light", "windows-11/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_success.border", statuses = ["Active", "Disabled"] },
-  { row = "styles::button_toggle.border", statuses = ["(false, Active)", "(false, Disabled)", "(true, Active)", "(true, Disabled)"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Active)", "(false, Disabled)"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)"], except = ["windows-11/light", "windows-11/dark"] },
   { row = "styles::button_warning.border", statuses = ["Active", "Disabled"] },
 ]
 
@@ -202,10 +240,12 @@ leaves = ["button.primary_background"]
 moves = [
   { row = "styles::button_default.background", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_default.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_default.border", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_primary.background", statuses = ["Active", "Hovered", "Pressed"] },
   { row = "styles::button_primary.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_primary.border", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
@@ -213,10 +253,12 @@ moves = [
 
 [homes."button.body(NONE; variant=Primary).stroke.color"]
 moves = [
-  { row = "styles::button_default.border", statuses = ["Active", "Disabled"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::button_default.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::button_primary.border", statuses = ["Active", "Disabled"] },
-  { row = "styles::button_primary.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_default.border", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_default.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark"] },
+  { row = "styles::button_default.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Active"] },
+  { row = "styles::button_primary.border", statuses = ["Disabled"], except = ["windows-11/light", "windows-11/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(PRESSED).fill"]
@@ -264,6 +306,11 @@ moves = [
 moves = [
   { row = "styles::button_toggle.background", statuses = ["(true, Pressed)"] },
   { row = "styles::button_toggle.border", statuses = ["(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
+[homes."button.body(PRESSED|CHECKED).stroke.color"]
+moves = [
+  { row = "styles::button_toggle.border", statuses = ["(true, Pressed)"] },
 ]
 
 [homes."button.body(PRESSED|CHECKED; variant=Flat).fill"]
@@ -1988,6 +2035,7 @@ moves = [
 leaves = ["toolbar.button_checked_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button(CHECKED).stroke.color"]
@@ -2011,6 +2059,7 @@ leaves = ["toolbar.button_hover_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(false, Hovered)"] },
   { row = "styles::toolbar_button.background", statuses = ["(true, Hovered)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toolbar_button.border", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button(HOVER).stroke.color"]
@@ -2022,6 +2071,7 @@ moves = [
 [homes."toolbar.button(HOVER|CHECKED).fill"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(true, Hovered)"] },
+  { row = "styles::toolbar_button.border", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."toolbar.button(HOVER|CHECKED).stroke.color"]
@@ -2040,7 +2090,7 @@ moves = [
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(false, Active)", "(false, Disabled)", "(true, Disabled)"] },
   { row = "styles::toolbar_button.border", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
 ]
 
 [homes."toolbar.button(PRESSED).fill"]
@@ -2427,7 +2477,7 @@ homes = ["colors.window.foreground", "tab.label(HOVER).color", "tab.label(NONE).
 homes = ["button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(NONE).fill", "button.body(PRESSED).fill"]
 
 [rows."styles::button.border"]
-homes = ["button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(HOVER).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(PRESSED).fill", "button.body(PRESSED).stroke.color"]
+homes = ["button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(HOVER).fill", "button.body(HOVER).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(PRESSED).fill", "button.body(PRESSED).stroke.color"]
 
 [rows."styles::button.text_color"]
 homes = ["button.label(DISABLED).color", "button.label(HOVER).color", "button.label(NONE).color", "button.label(PRESSED).color"]
@@ -2436,7 +2486,7 @@ homes = ["button.label(DISABLED).color", "button.label(HOVER).color", "button.la
 homes = ["button.body(DISABLED).fill", "colors.error.fill"]
 
 [rows."styles::button_danger.border"]
-homes = ["button.body(DISABLED).fill", "button.body(HOVER).stroke.color", "button.body(NONE).stroke.color", "button.body(PRESSED).stroke.color", "colors.error.fill"]
+homes = ["button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(HOVER).stroke.color", "button.body(NONE).stroke.color", "button.body(PRESSED).stroke.color", "colors.error.fill"]
 
 [rows."styles::button_danger.text_color"]
 homes = ["button.label(DISABLED).color", "colors.error.foreground"]
@@ -2445,7 +2495,7 @@ homes = ["button.label(DISABLED).color", "colors.error.foreground"]
 homes = ["button.body(DEFAULT).fill", "button.body(DISABLED).fill", "button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill"]
 
 [rows."styles::button_default.border"]
-homes = ["button.body(DEFAULT).fill", "button.body(DEFAULT).stroke.color", "button.body(DISABLED).fill", "button.body(HOVER).stroke.color", "button.body(HOVER; variant=Primary).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(NONE; variant=Primary).stroke.color", "button.body(PRESSED).stroke.color", "button.body(PRESSED; variant=Primary).stroke.color"]
+homes = ["button.body(DEFAULT).fill", "button.body(DEFAULT).stroke.color", "button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(DISABLED; variant=Primary).stroke.color", "button.body(HOVER).stroke.color", "button.body(HOVER; variant=Primary).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(NONE; variant=Primary).stroke.color", "button.body(PRESSED).stroke.color", "button.body(PRESSED; variant=Primary).stroke.color"]
 
 [rows."styles::button_default.text_color"]
 homes = ["button.label(DEFAULT).color", "button.label(DISABLED).color", "button.label(NONE).color", "button.label(NONE; variant=Primary).color", "button.label(PRESSED).color"]
@@ -2460,7 +2510,7 @@ homes = ["colors.window.foreground", "link.label(DISABLED).color", "link.label(H
 homes = ["button.body(DISABLED).fill", "button.body(NONE).fill", "button.body(NONE; variant=Primary).fill"]
 
 [rows."styles::button_primary.border"]
-homes = ["button.body(DISABLED).fill", "button.body(HOVER).stroke.color", "button.body(HOVER; variant=Primary).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(NONE; variant=Primary).stroke.color", "button.body(PRESSED).stroke.color", "button.body(PRESSED; variant=Primary).stroke.color"]
+homes = ["button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(DISABLED; variant=Primary).stroke.color", "button.body(HOVER).stroke.color", "button.body(HOVER; variant=Primary).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(NONE; variant=Primary).stroke.color", "button.body(PRESSED).stroke.color", "button.body(PRESSED; variant=Primary).stroke.color"]
 
 [rows."styles::button_primary.text_color"]
 homes = ["button.label(DISABLED).color", "button.label(NONE).color", "button.label(NONE; variant=Primary).color"]
@@ -2469,7 +2519,7 @@ homes = ["button.label(DISABLED).color", "button.label(NONE).color", "button.lab
 homes = ["button.body(DISABLED).fill", "colors.success.fill"]
 
 [rows."styles::button_success.border"]
-homes = ["button.body(DISABLED).fill", "button.body(HOVER).stroke.color", "button.body(NONE).stroke.color", "button.body(PRESSED).stroke.color", "colors.success.fill"]
+homes = ["button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(HOVER).stroke.color", "button.body(NONE).stroke.color", "button.body(PRESSED).stroke.color", "colors.success.fill"]
 
 [rows."styles::button_success.text_color"]
 homes = ["button.label(DISABLED).color", "colors.success.foreground"]
@@ -2478,7 +2528,7 @@ homes = ["button.label(DISABLED).color", "colors.success.foreground"]
 homes = ["button.body(CHECKED).fill", "button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(HOVER|CHECKED).fill", "button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill", "button.body(PRESSED|CHECKED).fill"]
 
 [rows."styles::button_toggle.border"]
-homes = ["button.body(CHECKED).fill", "button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(HOVER).stroke.color", "button.body(HOVER|CHECKED).fill", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill", "button.body(PRESSED).stroke.color", "button.body(PRESSED|CHECKED).fill"]
+homes = ["button.body(CHECKED).fill", "button.body(CHECKED).stroke.color", "button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(DISABLED|CHECKED).stroke.color", "button.body(HOVER).fill", "button.body(HOVER).stroke.color", "button.body(HOVER|CHECKED).fill", "button.body(HOVER|CHECKED).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill", "button.body(PRESSED).stroke.color", "button.body(PRESSED|CHECKED).fill", "button.body(PRESSED|CHECKED).stroke.color"]
 
 [rows."styles::button_toggle.text_color"]
 homes = ["button.label(CHECKED).color", "button.label(DISABLED).color", "button.label(HOVER).color", "button.label(HOVER|CHECKED).color", "button.label(NONE).color", "button.label(NONE; variant=Primary).color", "button.label(PRESSED).color", "button.label(PRESSED|CHECKED).color"]
@@ -2487,7 +2537,7 @@ homes = ["button.label(CHECKED).color", "button.label(DISABLED).color", "button.
 homes = ["button.body(DISABLED).fill", "colors.warning.fill"]
 
 [rows."styles::button_warning.border"]
-homes = ["button.body(DISABLED).fill", "button.body(HOVER).stroke.color", "button.body(NONE).stroke.color", "button.body(PRESSED).stroke.color", "colors.warning.fill"]
+homes = ["button.body(DISABLED).fill", "button.body(DISABLED).stroke.color", "button.body(HOVER).stroke.color", "button.body(NONE).stroke.color", "button.body(PRESSED).stroke.color", "colors.warning.fill"]
 
 [rows."styles::button_warning.text_color"]
 homes = ["button.label(DISABLED).color", "colors.warning.foreground"]
@@ -2736,7 +2786,7 @@ homes = ["toolbar.button_label(NONE).color"]
 homes = ["button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "toolbar.button(CHECKED).fill", "toolbar.button(DISABLED).fill", "toolbar.button(DISABLED|CHECKED).fill", "toolbar.button(HOVER).fill", "toolbar.button(HOVER|CHECKED).fill", "toolbar.button(NONE).fill", "toolbar.button(PRESSED).fill", "toolbar.button(PRESSED|CHECKED).fill"]
 
 [rows."styles::toolbar_button.border"]
-homes = ["toolbar.button(CHECKED).stroke.color", "toolbar.button(HOVER).stroke.color", "toolbar.button(HOVER|CHECKED).stroke.color", "toolbar.button(NONE).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED|CHECKED).stroke.color", "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color"]
+homes = ["toolbar.button(CHECKED).fill", "toolbar.button(CHECKED).stroke.color", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(HOVER|CHECKED).fill", "toolbar.button(HOVER|CHECKED).stroke.color", "toolbar.button(NONE).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED|CHECKED).stroke.color", "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color"]
 
 [rows."styles::toolbar_button.text_color"]
 homes = ["button.label(NONE).color", "button.label(NONE; variant=Primary).color", "toolbar.button_label(CHECKED).color", "toolbar.button_label(DISABLED).color", "toolbar.button_label(HOVER).color", "toolbar.button_label(HOVER|CHECKED).color", "toolbar.button_label(NONE).color", "toolbar.button_label(PRESSED).color", "toolbar.button_label(PRESSED|CHECKED).color"]

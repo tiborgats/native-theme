@@ -129,7 +129,11 @@ pub fn title_bar_inactive(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped
 /// `ButtonVariant::selected`). Where 0.7.2's builder stands in for an
 /// unstated checked pair with the pressed one, this takes no other state's
 /// value: which state looks like which is the theme's to state (spec §10,
-/// rule 0a). Upstream replays the refinement over its selected style.
+/// rule 0a). Its border colour is `button.body(CHECKED).stroke.color` where
+/// a rule states it for `CHECKED`, at [`button`]'s width, else unset; where
+/// that stroke's stated width is another, `button.body(CHECKED).stroke.width`
+/// is not mapped (spec §10, rule 4), and the checked fill and label go with
+/// it. Upstream replays the refinement over its selected style.
 pub fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::button_checked(r)
 }
@@ -563,6 +567,92 @@ mod tests {
             Some(super::super::hsla(off))
         );
         assert_eq!(ghost_button_icon_color(&r, WidgetState::CHECKED), None);
+    }
+
+    /// A checked push button on windows-11 is bordered in the checked
+    /// outline the preset states, `button.body(CHECKED).stroke`,
+    /// ToggleButtonBorderBrushChecked's three sides,
+    /// ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes, not in
+    /// the rest outline the refinement of [`button`] leaves; a disabled one
+    /// sets no border colour, since no rule states the disabled stroke
+    /// outside high contrast, and under it the grey text
+    /// (`ButtonBorderBrushDisabled`, SystemColorGrayTextColor).
+    #[test]
+    fn a_checked_or_disabled_windows_button_takes_the_stated_outline() -> Mapped<()> {
+        use native_theme::next::{Color, Contrast, OsColors, Scheme, SystemOverrides, WidgetState};
+        let on_accent = super::super::hsla(Color::from_srgb8(0xff, 0xff, 0xff, 0x14));
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::Windows11).resolve(&ctx);
+            assert_ne!(
+                super::super::stroke_color_of(&r.button.body(WidgetState::NONE)),
+                Some(on_accent),
+                "{:?}: the rest outline is the checked one, so this proves nothing",
+                ctx.scheme
+            );
+            assert_eq!(
+                button_checked(&r)?.border_color,
+                Some(on_accent),
+                "{:?}",
+                ctx.scheme
+            );
+            assert_eq!(button_disabled(&r)?.border_color, None, "{:?}", ctx.scheme);
+        }
+        let gray = Color::from_srgb8(0, 0, 5, 0xff);
+        let mut colors = OsColors::default();
+        colors.disabled_text = Some(gray);
+        let mut system = SystemOverrides::default();
+        system.color_schemes = vec![((Scheme::Light, Contrast::High), colors)];
+        let high = Theme::preset(Preset::Windows11)
+            .with_system_overrides(system)
+            .resolve(&ThemeContext::light().with_contrast(Contrast::High));
+        assert_eq!(
+            button_disabled(&high)?.border_color,
+            Some(super::super::hsla(gray))
+        );
+        Ok(())
+    }
+
+    /// A checked stroke whose stated width is not the rest stroke's, which
+    /// gpui-component keeps for a selected Button, is reported not mapped at
+    /// its home (spec §10, rule 4), not drawn at the rest width, and the
+    /// checked fill and label the theme states go with it: windows-11
+    /// patched with a checked stroke 3 px wide over its 1 px rest one.
+    #[test]
+    fn a_checked_stroke_of_another_width_is_not_mapped() -> Mapped<()> {
+        use super::super::Unmapped;
+        use native_theme::next::{ButtonRule, Color, PartPatch, Stroke, ThemePatch, WidgetState};
+        const PATCHED_WIDTH: f32 = 3.0;
+        let ctx = ThemeContext::light();
+        let stock = Theme::preset(Preset::Windows11);
+        let plain = stock.clone().resolve(&ctx);
+        assert_ne!(
+            super::super::stroke_width_of(&plain.button.body(WidgetState::NONE)),
+            Some(PATCHED_WIDTH),
+            "the rest stroke is the patched width, so this proves nothing"
+        );
+        button_checked(&plain)?;
+        let patch = ThemePatch::new().button(ButtonRule::new().states(WidgetState::CHECKED).body(
+            PartPatch::new().stroke(Stroke::uniform(
+                PATCHED_WIDTH,
+                Color::new(1.0, 0.0, 0.0, 1.0),
+            )),
+        ));
+        let r = stock.with_patch(patch).resolve(&ctx);
+        assert!(
+            super::super::state_fill_of(
+                &r.button.body(WidgetState::CHECKED),
+                "button.body(CHECKED).fill"
+            )?
+            .is_some()
+                && super::super::state_text_color_of(&r.button.label(WidgetState::CHECKED))
+                    .is_some(),
+            "windows-11 states no checked fill or label, so this proves nothing"
+        );
+        assert_eq!(
+            button_checked(&r),
+            Err(Unmapped("button.body(CHECKED).stroke.width"))
+        );
+        Ok(())
     }
 
     /// A checked button whose checked fill and label no rule states

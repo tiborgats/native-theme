@@ -1299,6 +1299,135 @@ fn the_primary_button_reads_its_own_hovered_and_pressed_outline() -> TestResult 
     Ok(())
 }
 
+/// windows-11's checked push button is outlined in the checked body's stroke
+/// the preset states for each state, ToggleButtonBorderBrushChecked and
+/// …CheckedPointerOver's three sides, ControlStrokeColorOnAccentDefault
+/// #14FFFFFF inside the edge, composited over the checked fill, and none
+/// pressed or disabled (…CheckedPressed, …CheckedDisabled =
+/// ControlFillColorTransparentBrush), not in the unchecked button's
+/// outline; its primary button has no outline disabled
+/// (AccentButtonBorderBrushDisabled), not the one at rest; and under high
+/// contrast a disabled push button is outlined in the grey text
+/// (ButtonBorderBrushDisabled, SystemColorGrayTextColor).
+#[test]
+fn a_windows_checked_or_disabled_button_takes_the_stated_outline() -> TestResult {
+    use iced_widget::button::Status;
+    use native_theme::next::{ButtonQuery, Contrast, OsColors, Scheme, SystemOverrides};
+    let on_accent = Color::from_srgb8(0xff, 0xff, 0xff, 0x14);
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let r = Theme::preset(Preset::Windows11).resolve(&ctx);
+        let theme = to_theme(&r)?;
+        let toggle = super::button_toggle(&r, true)?;
+        for (state, status) in [
+            (WidgetState::CHECKED, Status::Active),
+            (WidgetState::CHECKED | WidgetState::HOVER, Status::Hovered),
+        ] {
+            let part = r.button.body(state);
+            assert_eq!(
+                part.stroke,
+                Stroke::uniform(1.0, on_accent),
+                "{:?} {status:?}",
+                ctx.scheme
+            );
+            let style = toggle(&theme, status);
+            let under = match style.background {
+                Some(Background::Color(color)) => color,
+                _ => return Err(format!("{:?} {status:?}: no fill", ctx.scheme).into()),
+            };
+            assert_eq!(
+                style.border.color,
+                line(&part, "button.body(CHECKED…)")?.over(under),
+                "{:?} {status:?}",
+                ctx.scheme
+            );
+            assert_eq!(style.border.width, 1.0, "{:?} {status:?}", ctx.scheme);
+        }
+        for status in [Status::Pressed, Status::Disabled] {
+            assert_eq!(
+                toggle(&theme, status).border.width,
+                0.0,
+                "{:?} {status:?}",
+                ctx.scheme
+            );
+        }
+        assert_eq!(
+            r.button
+                .body(ButtonQuery::primary().state(WidgetState::DISABLED))
+                .stroke,
+            Stroke::None
+        );
+        assert_eq!(
+            super::button_primary(&r)?(&theme, Status::Disabled)
+                .border
+                .width,
+            0.0,
+            "{:?}",
+            ctx.scheme
+        );
+    }
+    let gray = Color::from_srgb8(0, 0, 5, 0xff);
+    let mut colors = OsColors::default();
+    colors.disabled_text = Some(gray);
+    let mut system = SystemOverrides::default();
+    system.color_schemes = vec![((Scheme::Light, Contrast::High), colors)];
+    let high = Theme::preset(Preset::Windows11)
+        .with_system_overrides(system)
+        .resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    let theme = to_theme(&high)?;
+    let disabled = super::button(&high)?(&theme, Status::Disabled);
+    assert_eq!(disabled.border.color, to_color(gray));
+    assert_eq!(disabled.border.width, 1.0);
+    Ok(())
+}
+
+/// A checked stroke stated at a width other than the unchecked button's at
+/// rest is drawn at its own width, at rest, hovered, pressed and disabled:
+/// iced draws a button's border on its bounds and lays it out by its padding
+/// alone (iced_widget 0.14.2 `src/button.rs`, `layout` and `draw`), so the
+/// width moves no content; windows-11 patched with a 2 px checked stroke
+/// over its 1 px rest one, the unchecked button kept at 1 px.
+#[test]
+fn a_checked_stroke_of_another_width_is_drawn_at_its_width() -> TestResult {
+    use iced_widget::button::Status;
+    const PATCHED_WIDTH: f32 = 2.0;
+    let ctx = ThemeContext::light();
+    let stock = Theme::preset(Preset::Windows11);
+    let plain = stock.clone().resolve(&ctx);
+    let rest_width = super::super::stroke_width_of(&plain.button.body(WidgetState::NONE));
+    assert_eq!(rest_width, Some(1.0));
+    let red = Color::new(1.0, 0.0, 0.0, 1.0);
+    for (state, status) in [
+        (WidgetState::CHECKED, Status::Active),
+        (WidgetState::CHECKED | WidgetState::HOVER, Status::Hovered),
+        (WidgetState::CHECKED | WidgetState::PRESSED, Status::Pressed),
+        (
+            WidgetState::CHECKED | WidgetState::DISABLED,
+            Status::Disabled,
+        ),
+    ] {
+        let patch = ThemePatch::new().button(
+            ButtonRule::new()
+                .states(state)
+                .body(PartPatch::new().stroke(Stroke::uniform(PATCHED_WIDTH, red))),
+        );
+        let r = stock.clone().with_patch(patch).resolve(&ctx);
+        let theme = to_theme(&r)?;
+        assert_eq!(
+            super::button_toggle(&r, true)?(&theme, status).border.width,
+            PATCHED_WIDTH,
+            "{state:?}"
+        );
+        assert_eq!(
+            super::button_toggle(&r, false)?(&theme, Status::Active)
+                .border
+                .width,
+            1.0,
+            "{state:?}"
+        );
+    }
+    Ok(())
+}
+
 /// A scroller under the pointer or dragged is iced's own where no rule
 /// states the thumb's fill for the state, and the theme's where one does.
 #[test]

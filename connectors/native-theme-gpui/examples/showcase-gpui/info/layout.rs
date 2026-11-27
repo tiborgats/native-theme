@@ -209,7 +209,7 @@ fn next_card_edge(info: WidgetInfo, t: &Theme, r: &NextTheme, kind: GroupBoxKind
         "card.container(NONE).stroke.color",
         stroke_color_of(&r.card.container(WidgetState::NONE)),
         Some(width),
-        "native-theme-gpui/next/builders.rs:748",
+        "native-theme-gpui/next/builders.rs:776",
     ))
     .config("edge", match (width > 0.0, outline) {
         (true, _) => format!("card.container(NONE)'s stroke, {}px, on every variant: geometry::group_box_content sets it on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own", px_text(width)),
@@ -274,7 +274,7 @@ pub fn next_group_box(
                     &r.card.container(WidgetState::NONE),
                     "card.container(NONE).fill",
                 ),
-                "native-theme-gpui/next/builders.rs:750",
+                "native-theme-gpui/next/builders.rs:778",
             )),
             t,
             r,
@@ -485,7 +485,7 @@ pub fn card(t: &Theme, native: Option<&NextTheme>, container_margin: Option<Pixe
                     &r.card.container(WidgetState::NONE),
                     "card.container(NONE).fill",
                 ),
-                "native-theme-gpui/next/builders.rs:750",
+                "native-theme-gpui/next/builders.rs:778",
             )),
             t,
             r,
