@@ -75,7 +75,8 @@
 # (`family`, `color`, `size_px`, `defined_size`, `weight`, `style`, `width`, `line_height`, `letter_spacing`,
 # `optical_size`, `decoration`, `blend_mode`) or of `IconStyle` (`size`, `color`, `opacity`, `weight`,
 # `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. `stroke.color` and `stroke.width` are the two
-# fields of the home's `Stroke::Uniform`; both share the one `STROKE` bit. `<widget>.<part>` may be
+# fields of the home's `Stroke::Uniform`; both share the one `STROKE` bit. A per-side stroke is read as
+# `Stroke::prevailing` gives it: 0.7.2 had no edge colour, so the edge is not compared. `<widget>.<part>` may be
 # `text_area.<part>`: `input.*` serves `input` and `text_area` as `checkbox.*` serves `checkbox` and `radio`. A 0.7.2
 # `None` at a part's property is the
 # property's `stated` bit clear; for a state, no rule, so the query returns what it returns without that state

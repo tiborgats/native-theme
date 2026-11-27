@@ -215,6 +215,49 @@ impl Stroke {
             align,
         }))
     }
+
+    /// The stroke a toolkit with one border colour draws.
+    ///
+    /// A per-side stroke whose four sides have one width and each a
+    /// [`Paint::Solid`] paint (any alpha), at least three of the four colours
+    /// equal, gives [`Stroke::Uniform`] of that width and colour in the
+    /// stroke's alignment. Every other stroke, [`Stroke::None`] and
+    /// [`Stroke::Uniform`] included, gives a clone of itself (a
+    /// [`Stroke::Complex`] clone is an `Arc` clone). A side painted as layers
+    /// ([`Paint::Complex`], even one solid layer) or [`Paint::None`] does not
+    /// reduce. Four equal sides reduce to that colour; four sides of width 0
+    /// reduce to a uniform width-0 stroke, drawn as none.
+    #[must_use]
+    pub fn prevailing(&self) -> Self {
+        let Self::Complex(sides) = self else {
+            return self.clone();
+        };
+        let width = sides.top.width;
+        let solid = |side: &StrokeSide| match side.paint {
+            Paint::Solid(color) if side.width == width => Some(color),
+            _ => None,
+        };
+        let (Some(top), Some(right), Some(bottom), Some(left)) = (
+            solid(&sides.top),
+            solid(&sides.right),
+            solid(&sides.bottom),
+            solid(&sides.left),
+        ) else {
+            return self.clone();
+        };
+        let colors = [top, right, bottom, left];
+        colors
+            .iter()
+            .find(|color| colors.iter().filter(|other| other == color).count() >= 3)
+            .map_or_else(
+                || self.clone(),
+                |&color| Self::Uniform {
+                    width,
+                    color,
+                    align: sides.align,
+                },
+            )
+    }
 }
 
 /// The sides of a [`Stroke::Complex`]; made by [`Stroke::sides`].
@@ -362,6 +405,7 @@ pub enum Cursor {
 
 #[cfg(test)]
 mod tests {
+    use super::super::paint::{BlendMode, PaintLayer};
     use super::*;
 
     #[test]
@@ -394,6 +438,120 @@ mod tests {
         assert_eq!(sides.right, StrokeSide::default());
         assert_eq!(sides.align, StrokeAlign::Outside);
         Ok(())
+    }
+
+    fn solid_side(width: f32, color: Color) -> StrokeSide {
+        StrokeSide {
+            width,
+            paint: Paint::solid(color),
+        }
+    }
+
+    fn four(sides: [StrokeSide; 4], align: StrokeAlign) -> Stroke {
+        let [top, right, bottom, left] = sides;
+        Stroke::sides(top, right, bottom, left, align)
+    }
+
+    #[test]
+    fn prevailing_reduces_three_equal_solid_sides_of_one_width() {
+        let main = Color::WHITE;
+        let edge = Color::BLACK.with_alpha(0.5);
+        for odd in 0..4 {
+            let sides =
+                std::array::from_fn(|i| solid_side(2.0, if i == odd { edge } else { main }));
+            assert_eq!(
+                four(sides, StrokeAlign::Outside).prevailing(),
+                Stroke::uniform_aligned(2.0, main, StrokeAlign::Outside),
+                "odd side {odd}"
+            );
+        }
+    }
+
+    #[test]
+    fn prevailing_reduces_four_equal_sides_and_four_zero_widths() {
+        let equal = four(
+            std::array::from_fn(|_| solid_side(1.0, Color::BLACK)),
+            StrokeAlign::Center,
+        );
+        assert_eq!(
+            equal.prevailing(),
+            Stroke::uniform_aligned(1.0, Color::BLACK, StrokeAlign::Center)
+        );
+        let zero = four(
+            std::array::from_fn(|_| solid_side(0.0, Color::BLACK)),
+            StrokeAlign::Inside,
+        );
+        assert_eq!(zero.prevailing(), Stroke::uniform(0.0, Color::BLACK));
+    }
+
+    #[test]
+    fn prevailing_leaves_other_per_side_strokes() {
+        let a = Color::WHITE;
+        let b = Color::BLACK;
+        let two_two = four(
+            [
+                solid_side(1.0, a),
+                solid_side(1.0, a),
+                solid_side(1.0, b),
+                solid_side(1.0, b),
+            ],
+            StrokeAlign::Inside,
+        );
+        let unequal_widths = four(
+            [
+                solid_side(1.0, a),
+                solid_side(1.0, a),
+                solid_side(2.0, a),
+                solid_side(1.0, a),
+            ],
+            StrokeAlign::Inside,
+        );
+        let layered = four(
+            [
+                solid_side(1.0, a),
+                solid_side(1.0, a),
+                StrokeSide {
+                    width: 1.0,
+                    paint: Paint::layers(vec![PaintLayer::Solid {
+                        color: a,
+                        blend: BlendMode::Normal,
+                    }]),
+                },
+                solid_side(1.0, a),
+            ],
+            StrokeAlign::Inside,
+        );
+        let unpainted = four(
+            [
+                solid_side(1.0, a),
+                solid_side(1.0, a),
+                StrokeSide {
+                    width: 1.0,
+                    paint: Paint::None,
+                },
+                solid_side(1.0, a),
+            ],
+            StrokeAlign::Inside,
+        );
+        let track = four(
+            [
+                StrokeSide::default(),
+                StrokeSide::default(),
+                StrokeSide::default(),
+                solid_side(1.0, a),
+            ],
+            StrokeAlign::Inside,
+        );
+        for stroke in [two_two, unequal_widths, layered, unpainted, track] {
+            assert_eq!(stroke.prevailing(), stroke);
+        }
+    }
+
+    #[test]
+    fn prevailing_leaves_none_and_uniform() {
+        assert_eq!(Stroke::None.prevailing(), Stroke::None);
+        let uniform = Stroke::uniform_aligned(3.0, Color::WHITE, StrokeAlign::Outside);
+        assert_eq!(uniform.prevailing(), uniform);
     }
 
     #[test]
