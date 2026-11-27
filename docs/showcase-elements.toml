@@ -271,6 +271,7 @@ model_only_homes = [
   { home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", reason = "a flat button's outline with the keyboard focus (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and its focus outline is the push button's, button.focus_border_color" },
   { home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", reason = "a flat button's outline width with the keyboard focus (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one outline width, button.border.line_width" },
   { home = "button.label(NONE; variant=Flat).color", reason = "a flat button's label colour at rest (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one label colour, the push button's, button.font.color" },
+  { home = "button.label(CHECKED; variant=Flat).color", reason = "a checked flat button's label colour (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0a); 0.7.2 has no flat variant and one checked label colour, button.checked_text_color" },
   { home = "button.body(NONE; variant=Flat).corners", reason = "a flat button's corners (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one corner radius, the push button's, button.border.corner_radius" },
   { home = "button.body(HOVER|CHECKED; variant=Flat).fill", reason = "a checked flat button's fill under the pointer (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked fill, button.checked_background" },
   { home = "button.body(PRESSED|CHECKED; variant=Flat).fill", reason = "a checked flat button's fill while pressed (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked fill, button.checked_background" },
@@ -741,8 +742,8 @@ sample = { text = "glyph" }
 id = "chrome.info.copy"
 name = "Copy button"
 parent = "chrome.info.title"
-leaves = ["button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height", "sidebar.font", "sidebar.font.color"]
-homes = ["button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "button.label(NONE; variant=Flat).color", "button.body(NONE; variant=Flat).corners"]
+leaves = ["button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height", "defaults.border.corner_radius_px", "sidebar.font", "sidebar.font.color"]
+homes = ["button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "layout.corner_radius", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "button.label(NONE; variant=Flat).color", "button.body(NONE; variant=Flat).corners"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = { glyph = [0.1, 0.1, 0.9, 0.9] } }
@@ -864,7 +865,7 @@ id = "chrome.page_tabs.menu.icon"
 name = "Icon"
 parent = "chrome.page_tabs.menu"
 leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["icons.sizes.small", "icons.theme", "icons.set"]
+homes = ["icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.label(NONE; variant=Flat).color"]
 states = ["Normal"]
 part = true
 
@@ -914,7 +915,7 @@ id = "chrome.status_bar.toggle.icon"
 name = "Icon"
 parent = "chrome.status_bar.toggle"
 leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color", "button.icon(HOVER; variant=Flat).color", "button.icon(PRESSED; variant=Flat).color"]
+homes = ["icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color", "button.icon(HOVER; variant=Flat).color", "button.icon(PRESSED; variant=Flat).color", "button.label(NONE; variant=Flat).color", "button.label(CHECKED; variant=Flat).color"]
 states = ["Normal"]
 part = true
 

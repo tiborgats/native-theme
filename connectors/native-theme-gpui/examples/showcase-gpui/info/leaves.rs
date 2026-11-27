@@ -240,6 +240,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.info.copy",
+        &["layout.corner_radius"],
+        "gpui: upstream's ButtonRounded::Medium, Theme::radius, which the connector sets from layout.corner_radius, rounds the Copy button, a Button whose refinement sets no corners (gpui-component 0.10.0 button/button.rs, RenderOnce for Button; native-theme-gpui next/mod.rs, theme_scalars; native-theme-gpui next/builders.rs, ghost_rest_within)",
+    ),
+    (
+        "chrome.info.copy",
         &[
             "button.body(NONE).padding.top",
             "button.body(NONE).padding.right",
@@ -839,6 +844,27 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         FLAT_PRESSED_WIDTH,
     ),
     ("chrome.page_tabs.menu", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
+    // The icons of the flat buttons, before their buttons' lines.
+    (
+        "chrome.page_tabs.menu.icon",
+        &["button.label(NONE; variant=Flat).color"],
+        "not drawn: no builder reads the flat button's label at rest; the ChevronDown is an untinted Icon, which takes the Ghost Button's text colour, variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (demo::native_tab_bar; gpui-component/button/button.rs:1239-1244, text_color; native-theme-gpui next/mod.rs, slice_colors)",
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        &["button.icon(NONE; variant=Flat).color"],
+        "not drawn: the ChevronDown is an untinted Icon, given no icon colour of the theme's, which takes the Ghost Button's text colour, variants::ghost_button's foreground, ThemeColor secondary_foreground (demo::native_tab_bar; gpui-component/button/button.rs:1239-1244, text_color)",
+    ),
+    (
+        "chrome.status_bar.toggle.icon",
+        &["button.label(NONE; variant=Flat).color"],
+        "not drawn: no builder reads the flat button's label at rest; while the side panel is closed, where no rule states button.icon(NONE; variant=Flat).color, the toggle's icon is untinted and takes the Ghost Button's text colour, variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (demo::panel_toggle; gpui-component/button/button.rs:1239-1244, text_color; native-theme-gpui next/mod.rs, slice_colors)",
+    ),
+    (
+        "chrome.status_bar.toggle.icon",
+        &["button.label(CHECKED; variant=Flat).color"],
+        "gpui: demo::ghost_checked_variant's foreground, the open toggle's text colour, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED, else gpui-component's own selected ghost's, ThemeColor secondary_foreground, which the toggle's icon takes while the side panel is open where no rule states button.icon(CHECKED; variant=Flat).color for CHECKED (demo::panel_toggle, demo::tool_icon_tinted; gpui-component/button/button.rs:1239-1244, text_color)",
+    ),
     (
         "chrome.page_tabs.menu",
         &["button.label(NONE; variant=Flat).color"],

@@ -78,6 +78,7 @@ const QUERIED_HOMES: &[&str] = &[
     "button.icon(NONE; variant=Flat).color",
     "button.icon(PRESSED; variant=Flat).color",
     "button.icon(PRESSED|CHECKED; variant=Flat).color",
+    "button.label(CHECKED; variant=Flat).color",
     "button.label(HOVER; variant=Flat).color",
     "button.label(HOVER|CHECKED).color",
     "button.label(HOVER|CHECKED; variant=Flat).color",
@@ -199,6 +200,11 @@ const UNREAD_HOMES: &[UnreadHome] = &[
     },
     UnreadHome {
         home: "button.label(NONE; variant=Flat).color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.label(CHECKED; variant=Flat).color",
         kind: "no widget",
         why: FLAT_BUTTON,
     },

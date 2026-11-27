@@ -9933,14 +9933,15 @@ fn ghost_home(home: &str) -> Option<&'static str> {
     })
 }
 
-/// The push button's listed home whose route [`ghost_route`] or
-/// [`button_home_route`] gives for the flat variant's own home `home` of a
-/// flat button at rest, hovered or pressed, which [`ghost_button`] reads for
-/// both ([`ghost_home`]; its corners, `button.body(NONE;variant=Flat)
-/// .corners`): `None` for any other home.
+/// The push button's home under whose name [`ghost_route`] or
+/// [`button_home_route`] routes the flat variant's own home `home` of a
+/// flat button at rest, hovered, pressed or checked, the flat home
+/// [`ghost_button`] reads ([`ghost_home`]; its corners,
+/// `button.body(NONE;variant=Flat).corners`): `None` for any other home.
 fn flat_state_home(home: &str) -> Option<&'static str> {
     Some(match home {
         "button.label(NONE; variant=Flat).color" => "button.label(NONE).color",
+        "button.label(CHECKED; variant=Flat).color" => "button.label(CHECKED).color",
         "button.body(NONE; variant=Flat).corners" => "button.body(NONE).corners",
         "button.body(HOVER; variant=Flat).fill" => "button.body(HOVER).fill",
         "button.body(PRESSED; variant=Flat).fill" => "button.body(PRESSED).fill",
@@ -9950,6 +9951,39 @@ fn flat_state_home(home: &str) -> Option<&'static str> {
         "button.body(PRESSED; variant=Flat).stroke.color" => "button.body(PRESSED).stroke.color",
         _ => return None,
     })
+}
+
+/// The flat variant's home that [`ghost_button`] or [`ghost_padding`] reads
+/// on a flat button in place of the push button's listed home `home`, which
+/// neither reads: its label at rest, its hovered and pressed fill, label and
+/// outline, its corners and its padding. `None` for any other home, the
+/// checked fill and label among them, which the side-panel toggle lists at
+/// the push button's homes alone and whose routes name the flat homes they
+/// are drawn in.
+fn flat_in_place_of(home: &str) -> Option<String> {
+    if let Some(side) = home.strip_prefix("button.body(NONE).padding.") {
+        return Some(format!("button.body(NONE;variant=Flat).padding.{side}"));
+    }
+    match home {
+        "button.body(CHECKED).fill" | "button.label(CHECKED).color" => None,
+        "button.body(NONE).corners" => Some("button.body(NONE;variant=Flat).corners".to_owned()),
+        _ => ghost_home(home).map(str::to_owned),
+    }
+}
+
+/// The route of the push button's home that a flat button lists and does
+/// not read, `flat` being the flat variant's home read in its place
+/// ([`flat_in_place_of`]).
+fn push_on_flat_route(flat: &str) -> String {
+    let reader = if flat.contains(".padding.") {
+        "ghost_padding"
+    } else {
+        "ghost_button"
+    };
+    format!(
+        "not drawn: {reader} reads the flat variant's {flat} on a flat button in its place, not \
+         the push button's"
+    )
 }
 
 /// The route of a flat button's listed colour home `home` under `r`: what
@@ -10308,25 +10342,36 @@ fn button_element(id: &str) -> bool {
 /// The route of the home `home` of a [`button_element`] of the list's id
 /// `id` as `state` draws it: a flat button's colours ([`ghost_route`], the
 /// Copy button's [`copy_route`]), a flat or tool button's corners, outline
-/// width and padding, the label's text and the icons' loader and sizes.
-/// `None` for a home none of them reads, a tool button's colours among
-/// them, whose routes are the export's ([`colour_home_route`]) or, where an
-/// icon shows, [`tool_icon_route`]'s.
+/// width and padding, the label's text and the icons' loader and sizes; on
+/// a flat button, a push button's home it lists and does not read
+/// ([`push_on_flat_route`]). `None` for a home none of them reads, a tool
+/// button's colours among them, whose routes are the export's
+/// ([`colour_home_route`]) or, where an icon shows, [`tool_icon_route`]'s.
 fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     let r = state.next_shown();
     let tool = tool_button(id) || id == DISABLED_TOOL;
     let flat = flat_element(id);
+    if flat && let Some(drawn) = flat_in_place_of(home) {
+        return Some(push_on_flat_route(&drawn));
+    }
     let home = if flat {
         flat_state_home(home).unwrap_or(home)
     } else {
         home
     };
-    let icon = ghost_icon(state, id).filter(|_| flat);
+    // The button an element is, or is the icon of, and that button's icon.
+    let button = id.strip_suffix(".icon").unwrap_or(id);
+    let own_icon = ghost_icon(state, button);
+    let icon = own_icon.filter(|_| flat);
     let os_icon = icon.is_some() && state.chrome_icons.system;
-    // The icon of the button an element is, or is the icon of.
-    let own_icon = ghost_icon(state, id.strip_suffix(".icon").unwrap_or(id));
-    let selected = id.strip_suffix(".icon").unwrap_or(id) == "chrome.status_bar.toggle"
-        && state.side_panel_visible;
+    let toggle = button == "chrome.status_bar.toggle";
+    let selected = toggle && state.side_panel_visible;
+    // The flat button by name, for the routes of its icon.
+    let (named, closed) = if toggle {
+        ("the toggle", "the closed toggle")
+    } else {
+        ("the Pages menu button", "the Pages menu button")
+    };
     // What the theme states for the flat button's checked state in the
     // status of `home` (under the pointer, pressed, else at rest) by the
     // spec's two queries, `CHECKED` alone or the status's query asking
@@ -10370,18 +10415,22 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     if let Some(side) = home.strip_prefix("button.body(NONE).padding.") {
         let border = if id == DISABLED_TOOL {
             "the outline at rest is drawn over it"
-        } else if tool {
-            "the outline under the pointer is drawn over it"
         } else {
-            "a flat button draws no border"
+            "the outline under the pointer is drawn over it"
         };
-        return (tool || flat).then(|| {
+        return tool.then(|| {
             format!(
                 "ghost_padding: Button::padding, button.body(NONE;variant=Flat).padding.{side} as \
                  stated, iced's own where unstated ({border})"
             )
         });
     }
+    let no_icon = format!("not drawn: {named} shows its label, the icon set having no icon for it");
+    let rest_icon = format!(
+        "icon_colour: the icon's colour, set as it loads, in every status, \
+         button.icon(NONE;variant=Flat).color where stated, else the label ghost_button gives \
+         {closed} at rest (icon_button)"
+    );
     let route = match home {
         "button.body(NONE).corners" if flat => {
             "ghost_button: button::Style::border.radius, button.body(NONE;variant=Flat).corners, \
@@ -10554,7 +10603,7 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         | "button.icon(PRESSED; variant=Flat).color"
             if flat && own_icon.is_none() =>
         {
-            "not drawn: the toggle shows its label, the icon set having no icon for it"
+            no_icon.as_str()
         }
         "button.icon(NONE; variant=Flat).color"
         | "button.icon(CHECKED; variant=Flat).color"
@@ -10582,11 +10631,7 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              stated at rest being no checked one, else in the label ghost_button gives the open \
              toggle at rest"
         }
-        "button.icon(NONE; variant=Flat).color" if flat => {
-            "icon_colour: the icon's colour, set as it loads, in every status, \
-             button.icon(NONE;variant=Flat).color where stated, else the label ghost_button gives \
-             the closed toggle at rest (icon_button)"
-        }
+        "button.icon(NONE; variant=Flat).color" if flat => rest_icon.as_str(),
         "button.icon(CHECKED; variant=Flat).color" if flat && !selected => {
             "not drawn: the toggle is closed, and icon_colour loads its icon in \
              button.icon(NONE;variant=Flat).color where stated, else in the label at rest"
@@ -10690,6 +10735,11 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         "toolbar.button_icon(NONE).size" => {
             "tool_icon_size: the svg or image's width and height, \
              toolbar.button_icon(NONE).size; its own size where unstated"
+        }
+        "layout.corner_radius" if id == "chrome.info.copy" => {
+            "not drawn: copy_button rounds the Copy button as ghost_button rounds it, by \
+             button.body(NONE;variant=Flat).corners, iced's own flat button's (button::text) \
+             where unstated"
         }
         "sidebar.item_label(NONE)" if id == "chrome.info.copy" => {
             "next_text: the label's size, line box and font, sidebar.item_label(NONE)"
@@ -38001,9 +38051,10 @@ mod tests {
         }
     }
 
-    /// What the route `route` of a flat button's listed colour home `listed`
-    /// gets wrong under `r`, the 0.8.0 theme shown, the button `selected` or
-    /// not, showing `shows`, the home it draws `home` ([`ghost_home`]):
+    /// What the route `route` of a colour home a flat button lists and draws
+    /// as `home`, the flat variant's ([`ghost_home`]), routed under the push
+    /// button's name `listed` ([`flat_state_home`]), gets wrong under `r`,
+    /// the 0.8.0 theme shown, the button `selected` or not, showing `shows`:
     /// [`ghost_route`]'s route held to what [`ghost_drawn`] draws
     /// ([`home_route_faults`]); of Widget Info's Copy button (`copy`),
     /// [`copy_route`]'s held to what [`copy_button`] draws in every status.
@@ -38037,6 +38088,110 @@ mod tests {
         )
     }
 
+    /// What the route `route` of the colour home `leaf` that a flat button
+    /// lists gets wrong under `r`, the button `selected` or not, showing
+    /// `shows`, Widget Info's Copy button where `copy`: a push button's home
+    /// it does not read ([`flat_in_place_of`]) by [`push_route_faults`], a
+    /// flat variant's home it reads ([`flat_state_home`]) and the checked
+    /// fill and label, routed by the flat homes they are drawn in, by
+    /// [`flat_route_faults`], held to the flat home it draws ([`ghost_home`],
+    /// [`copy_home`]). Nothing for any other home.
+    fn flat_leaf_faults(
+        r: &native_theme::next::ResolvedTheme,
+        leaf: &str,
+        route: &str,
+        (selected, shows): (bool, Shows),
+        copy: bool,
+    ) -> Vec<String> {
+        let drawn = |r: &native_theme::next::ResolvedTheme| {
+            if copy {
+                next_drawn_by("copy_button", r).unwrap_or_default()
+            } else {
+                ghost_drawn(r, selected, shows)
+            }
+        };
+        if let Some(flat) = flat_in_place_of(leaf) {
+            return push_route_faults(r, leaf, &flat, route, drawn);
+        }
+        let key = flat_state_home(leaf).unwrap_or(leaf);
+        let home = if copy {
+            copy_home(key)
+        } else {
+            ghost_home(key)
+        };
+        home.map_or_else(Vec::new, |home| {
+            flat_route_faults(r, key, home, route, (selected, shows), copy)
+        })
+    }
+
+    /// What the route `route` of the push button's home `leaf`, which a flat
+    /// button lists and reads `flat` in place of ([`flat_in_place_of`]),
+    /// gets wrong under `r`, where `drawn` draws the button: a route that
+    /// says it is drawn, or does not name `flat`, what is drawn instead; and,
+    /// for a colour, the push button's own `leaf` (stated for
+    /// `variant=Standard` alone, as a rule that names no variant answers the
+    /// flat button's query too) in two colours in turn moving what `drawn`
+    /// draws.
+    fn push_route_faults(
+        r: &native_theme::next::ResolvedTheme,
+        leaf: &str,
+        flat: &str,
+        route: &str,
+        drawn: impl Fn(&native_theme::next::ResolvedTheme) -> String,
+    ) -> Vec<String> {
+        let mut faults = Vec::new();
+        if !route.starts_with("not drawn") {
+            faults.push(format!(
+                "a flat button reads no push button's home: \"{route}\""
+            ));
+        }
+        if !route.contains(flat) {
+            faults.push(format!(
+                "\"{route}\" names no {flat}, what is drawn instead"
+            ));
+        }
+        let standard = leaf.replacen(").", "; variant=Standard).", 1);
+        if home_moves(r, &standard, drawn) == Some(true) {
+            faults.push(format!(
+                "the push button's own {standard} moves the drawing"
+            ));
+        }
+        faults
+    }
+
+    /// A push button's home that a flat button lists and does not read is
+    /// routed not drawn, naming the flat variant's home read in its place,
+    /// and moves nothing [`ghost_button`] draws where stated for the push
+    /// button alone; its flat variant's own home moves it.
+    #[test]
+    fn a_flat_buttons_push_homes_move_nothing_it_draws() -> Result<(), String> {
+        let (_, r) = next_combinations()
+            .into_iter()
+            .next()
+            .ok_or("the 0.8.0 model has no preset")?;
+        let drawn = |r: &native_theme::next::ResolvedTheme| ghost_drawn(r, false, Shows::Label);
+        let leaf = "button.body(HOVER).fill";
+        let flat = flat_in_place_of(leaf).ok_or("no flat home in place of the hover fill")?;
+        let route = push_on_flat_route(&flat);
+        assert_eq!(
+            push_route_faults(&r, leaf, &flat, &route, drawn),
+            Vec::<String>::new()
+        );
+        assert_eq!(home_moves(&r, &flat, drawn), Some(true));
+        assert_eq!(
+            home_moves(&r, leaf, drawn),
+            Some(true),
+            "a rule naming no variant"
+        );
+        let drawn_route = format!("ghost_button: the Hovered fill, {flat}");
+        assert_eq!(
+            push_route_faults(&r, leaf, &flat, &drawn_route, drawn).len(),
+            1,
+            "a drawn route of a push home is a fault"
+        );
+        Ok(())
+    }
+
     /// The home that Widget Info's Copy button draws for its colour home
     /// `home` ([`copy_route`]): the side panel's label colour, which
     /// [`copy_button`] letters it in at rest, or the flat variant's
@@ -38048,30 +38203,40 @@ mod tests {
         }
     }
 
-    /// Widget Info's Copy button's routes ([`copy_route`]) of its label at
-    /// rest, `button.label(NONE).color`, and of the side panel's label colour it
-    /// is lettered in, and of the states it takes from [`ghost_button`],
-    /// hold to what [`copy_button`] draws on every preset of the 0.8.0 model
-    /// in both schemes ([`flat_route_faults`]): each home stated in two
+    /// Widget Info's Copy button's routes ([`copy_route`]) of the flat
+    /// variant's label at rest, `button.label(NONE; variant=Flat).color`, of
+    /// the side panel's label colour it is lettered in, and of the flat
+    /// states it takes from [`ghost_button`], each colour home the element
+    /// lists, hold to what [`copy_button`] draws on every preset of the 0.8.0
+    /// model in both schemes ([`flat_leaf_faults`]): each home stated in two
     /// colours in turn moves the drawing where the route says it is drawn
     /// and nothing where it says it is not, on the theme as shown and with
     /// the home stated.
     #[test]
     fn the_copy_buttons_routes_hold_to_what_it_draws() -> Result<(), String> {
+        let copy = elements::element("chrome.info.copy").ok_or("the list has no Copy button")?;
         let mut failures = Vec::new();
+        for listed in [
+            "button.label(NONE; variant=Flat).color",
+            "sidebar.item_label(NONE).color",
+            "button.body(HOVER; variant=Flat).fill",
+            "button.label(HOVER; variant=Flat).color",
+            "button.body(PRESSED; variant=Flat).fill",
+            "button.label(PRESSED; variant=Flat).color",
+        ] {
+            if !copy.homes.iter().any(|home| home == listed) {
+                failures.push(format!("the Copy button lists no {listed}"));
+            }
+        }
         for (label, r) in next_combinations() {
-            for listed in [
-                "button.label(NONE).color",
-                "sidebar.item_label(NONE).color",
-                "button.body(HOVER).fill",
-                "button.label(HOVER).color",
-                "button.body(PRESSED).fill",
-                "button.label(PRESSED).color",
-            ] {
-                let home = copy_home(listed).ok_or(format!("{listed} has no home"))?;
-                let route = copy_route(&r, listed);
-                for what in flat_route_faults(&r, listed, home, &route, (false, Shows::Label), true)
-                {
+            for listed in copy.homes.iter().map(String::as_str).filter(|home| {
+                copy_home(flat_state_home(home).unwrap_or(*home)).is_some()
+                    || flat_in_place_of(home).is_some()
+            }) {
+                let key = flat_state_home(listed).unwrap_or(listed);
+                let route = flat_in_place_of(listed)
+                    .map_or_else(|| copy_route(&r, key), |flat| push_on_flat_route(&flat));
+                for what in flat_leaf_faults(&r, listed, &route, (false, Shows::Label), true) {
                     failures.push(format!("{label}: {listed}: {what}"));
                 }
             }
@@ -38261,7 +38426,10 @@ mod tests {
         if cfg!(not(feature = "iced_aw")) && (route.contains("aw::") || route.contains("TabBar")) {
             fault("this build has no iced_aw widget");
         }
-        if let Some((_, icon)) = ICON_BUTTONS.iter().find(|(button, _)| *button == id) {
+        // A flat button's icon is checked as its button, a tool button's is not.
+        if let Some(&(id, icon)) = ICON_BUTTONS.iter().find(|(button, icon)| {
+            *button == id || (*icon == id && flat_element(button) && !tool_button(button))
+        }) {
             let selected = (id == "basic.icons.edit" && state.basic_edit)
                 || (id == "chrome.status_bar.toggle" && state.side_panel_visible);
             let shows = match (laid.contains_key(icon), state.chrome_icons.system) {
@@ -38290,30 +38458,18 @@ mod tests {
                 {
                     fault("the tool button's drawing");
                 }
-            } else if let Some(home) = ghost_home(leaf) {
-                for what in flat_route_faults(
-                    state.next_shown(),
-                    leaf,
-                    home,
-                    route,
-                    (selected, shows),
-                    false,
-                ) {
+            } else {
+                for what in
+                    flat_leaf_faults(state.next_shown(), leaf, route, (selected, shows), false)
+                {
                     fault(&what);
                 }
             }
         }
-        if id == "chrome.info.copy"
-            && let Some(home) = copy_home(leaf)
-        {
-            for what in flat_route_faults(
-                state.next_shown(),
-                leaf,
-                home,
-                route,
-                (false, Shows::Label),
-                true,
-            ) {
+        if id == "chrome.info.copy" {
+            for what in
+                flat_leaf_faults(state.next_shown(), leaf, route, (false, Shows::Label), true)
+            {
                 fault(&format!("copy_button: {what}"));
             }
         }

@@ -769,6 +769,46 @@ pub(crate) const FLAT_PRESSED_LABEL: &str = "egui: per call, the flat button's l
      button.label(PRESSED; variant=Flat).color where a rule states it for PRESSED, else egui's \
      own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
 
+/// The route of the push button's hovered and pressed fills on a flat button (the Pages menu
+/// button, the side-panel toggle), which `next::flat_button` replaces in the scope per call.
+pub(crate) const FLAT_PUSH_FILL: &str = "not drawn: next::flat_button lays the flat button's own \
+     fills over the scope's hovered and active entries in its place, button.body(HOVER; \
+     variant=Flat).fill and button.body(PRESSED; variant=Flat).fill where a rule states them for \
+     the state, else egui's own treatment of the state (native-theme-egui next::flat_button; \
+     demo::flat); the side-panel toggle while open is filled in its checked fill of the state \
+     (chrome::toggle_checked_in)";
+/// As [`FLAT_PUSH_FILL`], of the push button's hovered and pressed labels.
+pub(crate) const FLAT_PUSH_LABEL: &str = "not drawn: next::flat_button lays the flat button's \
+     own labels over the scope's hovered and active entries in its place, button.label(HOVER; \
+     variant=Flat).color and button.label(PRESSED; variant=Flat).color where a rule states them \
+     for the state, else egui's own treatment of the state (native-theme-egui next::flat_button; \
+     demo::flat); the side-panel toggle while open is lettered in its checked label of the state \
+     (chrome::toggle_checked_in)";
+/// As [`FLAT_PUSH_FILL`], of the push button's hovered and pressed outlines.
+pub(crate) const FLAT_PUSH_EDGE: &str = "not drawn: next::flat_button lays the flat button's own \
+     outlines over the scope's hovered and active entries in its place, button.body(HOVER; \
+     variant=Flat).stroke.color and button.body(PRESSED; variant=Flat).stroke.color where a rule \
+     states them for the state, else egui's own treatment of the state (native-theme-egui \
+     next::flat_button; demo::flat); the side-panel toggle while open takes its checked pens \
+     where stated (chrome::toggle_checked_pens)";
+
+/// The route of the Pages menu button's caret's colour: the caret is loaded tinted before the
+/// flat button's states are laid over the scope.
+pub(crate) const MENU_ICON_COLOUR: &str = "not drawn: the caret loads in the text colour of the Ui it is \
+     laid out in, visuals.text_color(), and no icon or label colour of the flat button's is read \
+     for it (demo::role_image; chrome::page_tabs)";
+/// The route of the side-panel toggle's label colours on its icon, which loads in an icon
+/// colour or the bar's text, not in the toggle's label.
+pub(crate) const TOGGLE_ICON_LABEL: &str = "not drawn: the toggle's icon loads in the flat button's icon \
+     colour of the toggle's state where stated (chrome::toggle_icon_colour), else in the status \
+     bar's text, never in the toggle's label (chrome::status_bar)";
+
+/// The route of Widget Info's Copy box's corners, which `info::widget_tab` takes from the push
+/// button.
+const COPY_CORNERS_NOT_LAYOUT: &str = "not drawn: info::widget_tab rounds the Copy box by \
+     button.body(NONE).corners where stated, else by the scope's own \
+     visuals.widgets.inactive.corner_radius, not by layout.corner_radius";
+
 /// The route of a disabled checked box's own label colour.
 const CHECKED_DISABLED_LABEL: &str = "egui: the check box's SelectedDisabled cell's text, \
      visuals.override_text_color, checkbox.label(DISABLED|CHECKED).color where a rule states it \
@@ -1758,15 +1798,82 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          (pages::basic::edit_look_at, \
          demo::tool_icon_color)",
     ),
+    // The push button's states on the flat buttons, which next::flat_button replaces.
     (
         "chrome.status_bar.toggle",
         "button.body(HOVER).stroke.color",
-        TOGGLE_HOVER_EDGE,
+        FLAT_PUSH_EDGE,
     ),
     (
         "chrome.status_bar.toggle",
         "button.body(PRESSED).stroke.color",
-        TOGGLE_PRESSED_EDGE,
+        FLAT_PUSH_EDGE,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(HOVER).fill",
+        FLAT_PUSH_FILL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.label(HOVER).color",
+        FLAT_PUSH_LABEL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(HOVER).stroke.color",
+        FLAT_PUSH_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PUSH_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(HOVER).fill",
+        FLAT_PUSH_FILL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.label(HOVER).color",
+        FLAT_PUSH_LABEL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(PRESSED).fill",
+        FLAT_PUSH_FILL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.label(PRESSED).color",
+        FLAT_PUSH_LABEL,
+    ),
+    // The flat buttons' icons, which load in no colour of the flat button's label.
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.label(NONE; variant=Flat).color",
+        MENU_ICON_COLOUR,
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.icon(NONE; variant=Flat).color",
+        MENU_ICON_COLOUR,
+    ),
+    (
+        "chrome.status_bar.toggle.icon",
+        "button.label(NONE; variant=Flat).color",
+        TOGGLE_ICON_LABEL,
+    ),
+    (
+        "chrome.status_bar.toggle.icon",
+        "button.label(CHECKED; variant=Flat).color",
+        TOGGLE_ICON_LABEL,
+    ),
+    (
+        "chrome.info.copy",
+        "layout.corner_radius",
+        COPY_CORNERS_NOT_LAYOUT,
     ),
     (
         "basic.buttons.dialog_default",
@@ -1787,16 +1894,6 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "basic.buttons.dialog_default",
         "button.body(PRESSED).stroke.color",
         DIALOG_DEFAULT_OUTLINE,
-    ),
-    (
-        "chrome.page_tabs.menu",
-        "button.body(HOVER).stroke.color",
-        FLAT_HOVER_EDGE,
-    ),
-    (
-        "chrome.page_tabs.menu",
-        "button.body(PRESSED).stroke.color",
-        FLAT_PRESSED_EDGE,
     ),
     (
         "basic.list.scrollbar",

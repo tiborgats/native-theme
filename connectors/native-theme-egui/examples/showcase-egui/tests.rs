@@ -999,9 +999,9 @@ fn the_open_toggle_names_the_checked_fill_it_is_drawn_in() -> Result<(), String>
     Ok(())
 }
 
-/// The flat buttons' hovered and pressed outlines (the side-panel toggle, the Pages menu button)
-/// route to the flat button's homes `next::flat_button` lays over their scope per call, not to
-/// the push button's row of `mapping.toml`.
+/// The flat buttons' push button's hovered and pressed outlines (the side-panel toggle, the Pages
+/// menu button) are routed not drawn, naming the flat button's homes `next::flat_button` lays
+/// over their scope per call in their place, not the push button's row of `mapping.toml`.
 #[test]
 fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
     let manifest = Manifest::parse(MANIFEST)?;
@@ -1022,11 +1022,88 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
         ] {
             let how = crate::info::listed_how(&manifest, element, home, &seams);
             assert!(
-                how.contains(drawn) && how.contains("next::flat_button"),
+                how.starts_with("not drawn")
+                    && how.contains(drawn)
+                    && how.contains("next::flat_button"),
                 "{element} {home}: {how}"
             );
         }
     }
+    Ok(())
+}
+
+/// What the routes of the push button's hovered and pressed fill, label and outline on a flat
+/// button claim, "not drawn" ([`crate::info::FLAT_PUSH_FILL`], [`crate::info::FLAT_PUSH_LABEL`],
+/// [`crate::info::FLAT_PUSH_EDGE`]), holds: `next::flat_button` gives the hovered and active
+/// entries the same values whatever the scope held there before, and on every preset in both
+/// schemes, each of those homes stated for the push button alone (`variant = "standard"`, as a
+/// rule naming no variant answers the flat button's query too) in two colours in turn moves
+/// neither entry; each flat button's own home, stated so, moves one on some preset.
+#[test]
+fn a_flat_button_reads_none_of_the_push_buttons_states() -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    use native_theme_showcase_support::next::patch::home_patch_toml;
+    let homes = [
+        "button.body(HOVER).fill",
+        "button.body(PRESSED).fill",
+        "button.label(HOVER).color",
+        "button.label(PRESSED).color",
+        "button.body(HOVER).stroke.color",
+        "button.body(PRESSED).stroke.color",
+    ];
+    let entries = |r: &native_theme::next::ResolvedTheme, dark: bool, seed: egui::Color32| {
+        let (mut visuals, scheme) = if dark {
+            (egui::Visuals::dark(), egui::Theme::Dark)
+        } else {
+            (egui::Visuals::light(), egui::Theme::Light)
+        };
+        for entry in [&mut visuals.widgets.hovered, &mut visuals.widgets.active] {
+            entry.weak_bg_fill = seed;
+            entry.fg_stroke.color = seed;
+            entry.bg_stroke = egui::Stroke::new(1.0, seed);
+        }
+        let _notes = native_theme_egui::next::flat_button(r, scheme, &mut visuals);
+        (visuals.widgets.hovered, visuals.widgets.active)
+    };
+    let patched = |r: &native_theme::next::ResolvedTheme, home: &str, colour: &str| {
+        let toml = home_patch_toml(home, colour).ok_or(format!("no patch states {home}"))?;
+        let patch = ThemePatch::from_toml(&toml).map_err(|e| format!("{home}: {e}"))?;
+        let mut r = r.clone();
+        r.apply_patch(&patch);
+        Ok::<_, String>(r)
+    };
+    let mut faults = Vec::new();
+    let mut flat_moved = BTreeSet::new();
+    for &preset in Preset::ALL {
+        for (dark, context) in [(false, ThemeContext::light()), (true, ThemeContext::dark())] {
+            let r = Theme::preset(preset).resolve(&context);
+            let red = entries(&r, dark, egui::Color32::RED);
+            if red != entries(&r, dark, egui::Color32::BLUE) {
+                faults.push(format!(
+                    "{preset:?} (dark: {dark}): the scope's state entries show"
+                ));
+            }
+            for home in homes {
+                let moves = |at: &str| -> Result<bool, String> {
+                    let one = entries(&patched(&r, at, "#13579b")?, dark, egui::Color32::RED);
+                    let other = entries(&patched(&r, at, "#2468ac")?, dark, egui::Color32::RED);
+                    Ok(one != other)
+                };
+                let standard = home.replacen(").", "; variant=Standard).", 1);
+                if moves(&standard)? {
+                    faults.push(format!(
+                        "{preset:?} (dark: {dark}): {standard} moves the drawing"
+                    ));
+                }
+                if moves(&home.replacen(").", "; variant=Flat).", 1))? {
+                    flat_moved.insert(home);
+                }
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+    // The flat homes move the entries somewhere, so the test can see a move.
+    assert_eq!(flat_moved.len(), homes.len(), "only {flat_moved:?} moved");
     Ok(())
 }
 
@@ -12643,7 +12720,8 @@ fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), Stri
 /// and the Copy box's hovered width, which no `mapping.toml` row holds (the list's
 /// `model_only_homes`), are routed to the call that applies them, not shown as held by no row:
 /// each such home a listed tool button, its icon, the toggle, its icon, the three buttons, the
-/// On toggle's label and the Copy box list is pinned to its own route, the line of the call that
+/// On toggle's label, the Copy box and the Pages menu button's icon list is pinned to its own
+/// route, the line of the call that
 /// draws it or says why not ([`crate::info::TOOL_BUTTON_ROUTES`], [`crate::info::TOGGLE_ROUTES`],
 /// the per-call routes), so a route moved to another home fails; a model-only home of theirs
 /// pinned to no route fails, and so does a pin no listed home reaches.
@@ -12696,6 +12774,26 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             "basic.icons.save.icon",
             "toolbar.button_label(DISABLED).color",
             i::SAVE_DISABLED_LABEL,
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            "button.label(NONE; variant=Flat).color",
+            i::MENU_ICON_COLOUR,
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            "button.icon(NONE; variant=Flat).color",
+            i::MENU_ICON_COLOUR,
+        ),
+        (
+            "chrome.status_bar.toggle.icon",
+            "button.label(NONE; variant=Flat).color",
+            i::TOGGLE_ICON_LABEL,
+        ),
+        (
+            "chrome.status_bar.toggle.icon",
+            "button.label(CHECKED; variant=Flat).color",
+            i::TOGGLE_ICON_LABEL,
         ),
         (
             "basic.icons.edit",
@@ -13150,7 +13248,7 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             || e.id == "basic.buttons.primary"
             || e.id == "basic.buttons.dialog_default"
             || e.id == "chrome.info.copy"
-            || e.id == "chrome.page_tabs.menu"
+            || e.id.starts_with("chrome.page_tabs.menu")
     }) {
         let id = element.id.as_str();
         let group = if id.starts_with("chrome.toolbar.") || id.starts_with("basic.icons.") {
