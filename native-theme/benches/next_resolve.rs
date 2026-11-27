@@ -61,6 +61,17 @@ fn measure_queries(theme: &ResolvedTheme, name: &dyn Fn(&str) -> String) {
     measure(&name("checkbox.indicator(CHECKED | HOVER)"), || {
         black_box(theme.checkbox.indicator(black_box(checked)));
     });
+    let disabled_checked = StyleQuery::new(WidgetState::DISABLED.union(WidgetState::CHECKED));
+    measure(&name("checkbox.indicator(DISABLED | CHECKED)"), || {
+        black_box(theme.checkbox.indicator(black_box(disabled_checked)));
+    });
+    let asking_disabled = disabled_checked.asking(WidgetState::DISABLED);
+    measure(
+        &name("checkbox.indicator(DISABLED | CHECKED).asking(DISABLED)"),
+        || {
+            black_box(theme.checkbox.indicator(black_box(asking_disabled)));
+        },
+    );
     let row = ListQuery::new(WidgetState::SELECTED.union(hover)).alternate(true);
     measure(&name("list.row(alternate, SELECTED | HOVER)"), || {
         black_box(theme.list.row(black_box(row)));

@@ -1740,6 +1740,309 @@ fn icon_from_state_follows_the_rules() {
     assert_eq!(disabled.from_state, IconStated::COLOR);
 }
 
+// ---------------------------------------------------------------------------
+// `from_state` of a query that asks about flags.
+// ---------------------------------------------------------------------------
+
+const DISABLED_CHECKED_HOVER: WidgetState = WidgetState::DISABLED
+    .union(WidgetState::CHECKED)
+    .union(WidgetState::HOVER);
+
+#[test]
+fn asked_a_rule_requiring_the_flag_sets_another_states_rule_leaves_a_stateless_one_clears() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            on(WidgetState::DISABLED),
+            [fill(RED), PartProp::Opacity(0.5)],
+        )
+        .rule(
+            on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [PartProp::Corners(Corners::uniform(2.0))],
+        )
+        .rule(
+            on(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(GREEN), PartProp::Stroke(Stroke::uniform(1.0, GREEN))],
+        )
+        .rule(any(), [PartProp::Opacity(1.0)])
+        .build();
+    let plain = StyleQuery::<()>::new(DISABLED_CHECKED_HOVER);
+    let unasked = rules.eval(&plain);
+    assert_eq!(
+        unasked.from_state,
+        PartStated::FILL | PartStated::CORNERS | PartStated::STROKE
+    );
+    let asking = rules.eval(&plain.asking(WidgetState::DISABLED));
+    // The `DISABLED` rule's fill bit stays under the `CHECKED | HOVER` rule's value; that rule
+    // sets no bit of its own (the stroke); the stateless rule clears the opacity's.
+    assert_eq!(fill_of(&asking), Some(GREEN));
+    assert_eq!(asking.from_state, PartStated::FILL | PartStated::CORNERS);
+    // A flag the matching rules require only together with others: the two-flag rules set it.
+    let checked = rules.eval(&plain.asking(WidgetState::CHECKED));
+    assert_eq!(
+        checked.from_state,
+        PartStated::FILL | PartStated::CORNERS | PartStated::STROKE
+    );
+    // An asked flag the query does not set is required by no matching rule.
+    let selected = rules.eval(&plain.asking(WidgetState::SELECTED));
+    assert!(selected.from_state.is_empty());
+    // Two asked flags: only a rule requiring both sets a bit.
+    let both = rules.eval(&plain.asking(WidgetState::DISABLED | WidgetState::CHECKED));
+    assert_eq!(both.from_state, PartStated::CORNERS);
+}
+
+#[test]
+fn asked_text_and_icon_bits_are_left_by_another_states_rule() {
+    let text: RuleSet<TextStyle, TextProp> = RuleBuilder::new(TextStyle::default())
+        .rule(on(WidgetState::DISABLED), [TextProp::Color(RED)])
+        .rule(
+            on(WidgetState::CHECKED | WidgetState::HOVER),
+            [TextProp::Color(GREEN), TextProp::Weight(700)],
+        )
+        .build();
+    let icon: RuleSet<IconStyle, IconProp> = RuleBuilder::new(IconStyle::default())
+        .rule(on(WidgetState::DISABLED), [IconProp::Color(RED)])
+        .rule(
+            on(WidgetState::CHECKED | WidgetState::HOVER),
+            [IconProp::Color(GREEN), IconProp::Opacity(0.5)],
+        )
+        .build();
+    let query = StyleQuery::<()>::new(DISABLED_CHECKED_HOVER).asking(WidgetState::DISABLED);
+    let label = text.eval(&query);
+    assert_eq!(label.color, GREEN);
+    assert_eq!(label.from_state, TextStated::COLOR);
+    let glyph = icon.eval(&query);
+    assert_eq!(glyph.color, GREEN);
+    assert_eq!(glyph.from_state, IconStated::COLOR);
+}
+
+#[test]
+fn asked_focus_visible_counts_a_focused_rule_and_back() {
+    let focus = [WidgetState::FOCUSED, WidgetState::FOCUS_VISIBLE];
+    for required in focus {
+        let rules = one_rule(on(required));
+        for asked in focus {
+            let query = StyleQuery::<()>::new(WidgetState::FOCUS_VISIBLE);
+            let out = rules.eval(&query.asking(asked));
+            assert_eq!(fill_of(&out), Some(RED), "{required:?} {asked:?}");
+            assert_eq!(out.from_state, PartStated::FILL, "{required:?} {asked:?}");
+            // Asked together with another flag, the rule requires only one of them.
+            let pair = rules.eval(
+                &query
+                    .with_state(WidgetState::HOVER)
+                    .asking(asked | WidgetState::HOVER),
+            );
+            assert!(pair.from_state.is_empty(), "{required:?} {asked:?}");
+        }
+    }
+    // A rule requiring both reads as requiring `FOCUSED` alone.
+    let both = one_rule(on(WidgetState::FOCUSED | WidgetState::FOCUS_VISIBLE));
+    let out =
+        both.eval(&StyleQuery::<()>::new(WidgetState::FOCUS_VISIBLE).asking(WidgetState::FOCUSED));
+    assert_eq!(out.from_state, PartStated::FILL);
+}
+
+#[test]
+fn asked_a_flag_an_exclusive_group_cleared_has_no_bit() {
+    const GROUPS: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::HOVER]];
+    let rules: RuleSet<PartStyle, PartProp> = RuleSet::new(
+        base(),
+        GROUPS,
+        vec![
+            (on(WidgetState::HOVER), vec![fill(RED)]),
+            (on(WidgetState::DISABLED), vec![fill(GREEN)]),
+        ],
+    );
+    let query = StyleQuery::<()>::new(WidgetState::DISABLED | WidgetState::HOVER);
+    let out = rules.eval(&query.asking(WidgetState::HOVER));
+    assert_eq!(fill_of(&out), Some(GREEN));
+    assert!(out.from_state.is_empty());
+    assert_eq!(rules.eval(&query).from_state, PartStated::FILL);
+}
+
+/// A rule set with one-flag, two-flag, focus, exclusive and stateless rules.
+fn asking_rules() -> RuleSet<PartStyle, PartProp> {
+    const GROUPS: &[&[WidgetState]] = &[&[
+        WidgetState::DISABLED,
+        WidgetState::PRESSED,
+        WidgetState::HOVER,
+    ]];
+    RuleBuilder::with_exclusive(base(), GROUPS)
+        .rule(
+            on(WidgetState::HOVER),
+            [fill(GREEN), PartProp::Opacity(0.5)],
+        )
+        .rule(
+            on(WidgetState::FOCUSED),
+            [PartProp::Corners(Corners::uniform(2.0))],
+        )
+        .rule(
+            on(WidgetState::FOCUS_VISIBLE),
+            [PartProp::Stroke(Stroke::uniform(2.0, BLUE))],
+        )
+        .rule(
+            on(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(RED), PartProp::Stroke(Stroke::uniform(1.0, RED))],
+        )
+        .rule(
+            on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [PartProp::Opacity(0.25)],
+        )
+        .rule(
+            on(WidgetState::SELECTED).except(WidgetState::CHECKED),
+            [fill(Color::BLACK)],
+        )
+        .rule(any().size(ControlSize::Small), [PartProp::Opacity(1.0)])
+        .build()
+}
+
+#[test]
+fn asking_changes_no_value_and_no_stated_bit() {
+    let rules = asking_rules();
+    let asked = [
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::FOCUSED,
+        WidgetState::DISABLED,
+        WidgetState::FOCUS_VISIBLE,
+        WidgetState::CHECKED,
+        WidgetState::SELECTED,
+        WidgetState::CHECKED | WidgetState::HOVER,
+    ];
+    for state in every_state() {
+        for size in [ControlSize::default(), ControlSize::Small] {
+            let query = StyleQuery::<()>::new(state).size(size);
+            let plain = rules.eval(&query);
+            for flags in asked {
+                let out = rules.eval(&query.asking(flags));
+                assert_eq!(
+                    PartStyle {
+                        from_state: plain.from_state,
+                        ..out.clone()
+                    },
+                    plain,
+                    "{state:?} {size:?} {flags:?}"
+                );
+                assert!(
+                    plain.from_state.contains(out.from_state),
+                    "{state:?} {flags:?}"
+                );
+            }
+        }
+    }
+}
+
+/// Each flag of [`WidgetState::ALL`], one at a time.
+fn every_flag() -> impl Iterator<Item = WidgetState> {
+    (0..u32::BITS)
+        .filter_map(|i| 1u32.checked_shl(i))
+        .map(WidgetState::from_bits_truncate)
+        .filter(|flag| !flag.is_empty())
+}
+
+#[test]
+fn asking_a_querys_only_flag_changes_nothing() {
+    let rules = asking_rules();
+    let body = built_body();
+    assert_eq!(
+        every_flag().fold(WidgetState::NONE, |acc, flag| acc | flag),
+        WidgetState::ALL
+    );
+    for flag in every_flag() {
+        let query = StyleQuery::<()>::new(flag);
+        assert_eq!(
+            rules.eval(&query.asking(flag)),
+            rules.eval(&query),
+            "{flag:?}"
+        );
+        let button = ButtonQuery::new(flag);
+        assert_eq!(
+            body.eval(&button.asking(flag)),
+            body.eval(&button),
+            "{flag:?}"
+        );
+        // A rule for each flag, so that every flag has a rule that matches its own query.
+        for required in every_flag() {
+            let one = one_rule(on(required));
+            assert_eq!(
+                one.eval(&query.asking(flag)),
+                one.eval(&query),
+                "{flag:?} {required:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn asked_focus_visible_at_a_focused_state_counts_a_focused_rule() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(on(WidgetState::FOCUSED), [fill(RED)])
+        .rule(
+            on(WidgetState::FOCUS_VISIBLE),
+            [PartProp::Stroke(Stroke::uniform(2.0, BLUE))],
+        )
+        .rule(
+            on(WidgetState::CHECKED),
+            [PartProp::Corners(Corners::uniform(2.0))],
+        )
+        .rule(
+            on(WidgetState::FOCUSED | WidgetState::CHECKED),
+            [PartProp::Opacity(0.5)],
+        )
+        .build();
+    let focused = StyleQuery::<()>::new(WidgetState::FOCUSED).asking(WidgetState::FOCUS_VISIBLE);
+    let out = rules.eval(&focused);
+    assert_eq!(fill_of(&out), Some(RED));
+    assert_eq!(out.stroke, Stroke::default());
+    assert_eq!(out.from_state, PartStated::FILL);
+    // At a combined state the two-flag `FOCUSED` rule sets its bit too; the `CHECKED` rule
+    // leaves its own.
+    let checked = rules.eval(&focused.with_state(WidgetState::CHECKED));
+    assert_eq!(checked.from_state, PartStated::FILL | PartStated::OPACITY);
+}
+
+#[test]
+fn asked_a_size_bit_is_left_by_another_states_rule() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            on(WidgetState::DISABLED),
+            [PartProp::MinSize([Some(10.0), None])],
+        )
+        .rule(
+            on(WidgetState::CHECKED | WidgetState::HOVER),
+            [
+                PartProp::MinSize([None, Some(20.0)]),
+                PartProp::MaxSize([Some(30.0), None]),
+            ],
+        )
+        .build();
+    let plain = StyleQuery::<()>::new(DISABLED_CHECKED_HOVER);
+    let unasked = rules.eval(&plain);
+    assert_eq!(
+        unasked.from_state,
+        PartStated::MIN_SIZE | PartStated::MAX_SIZE
+    );
+    let asking = rules.eval(&plain.asking(WidgetState::DISABLED));
+    assert_eq!(asking.min_size, [Some(10.0), Some(20.0)]);
+    assert_eq!(asking.max_size, [Some(30.0), None]);
+    // The `DISABLED` rule's width sets the minimum's bit, which the `CHECKED | HOVER` rule's
+    // height leaves; the maximum's was never set.
+    assert_eq!(asking.from_state, PartStated::MIN_SIZE);
+    // A later rule without required states clears it.
+    let cleared: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            on(WidgetState::DISABLED),
+            [PartProp::MinSize([Some(10.0), None])],
+        )
+        .rule(any(), [PartProp::MinSize([None, Some(20.0)])])
+        .build();
+    assert!(
+        cleared
+            .eval(&plain.asking(WidgetState::DISABLED))
+            .from_state
+            .is_empty()
+    );
+}
+
 #[test]
 fn an_appended_rule_wins_over_the_builders() {
     let mut rules = built_body();

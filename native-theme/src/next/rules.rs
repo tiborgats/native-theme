@@ -208,8 +208,11 @@ struct RuleEntry<M> {
 /// clones the base, and applies the properties of every matching rule in
 /// order, the last match winning, setting the `stated` bit of each property
 /// applied. A rule whose `required_states` is not empty also sets the
-/// property's `from_state` bit; one without required states clears it. It
-/// allocates nothing and never panics.
+/// property's `from_state` bit; one without required states clears it. Where
+/// the query's `asked` is not empty, a rule sets the bit only if its required
+/// states contain every asked flag, and one that requires other states leaves
+/// the bit as it was; in this test `FOCUS_VISIBLE` is read as `FOCUSED`, in
+/// the asked flags and in the rule's. It allocates nothing and never panics.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuleSet<T, P, M = ()> {
     base: T,
@@ -352,13 +355,14 @@ impl<T, P, M> RuleSet<T, P, M> {
     }
 
     /// Steps 0 to 4 of the evaluation contract, applying each property with
-    /// `apply`, told whether the rule as written requires a state.
-    fn eval_with<V>(&self, query: &StyleQuery<V>, apply: fn(&mut T, &P, bool)) -> T
+    /// `apply`, told what the rule as written does to its `from_state` bit.
+    fn eval_with<V>(&self, query: &StyleQuery<V>, apply: fn(&mut T, &P, StateMark)) -> T
     where
         T: Clone,
         M: VariantMatcher<V>,
     {
         let state = normalize(query.state, self.exclusive);
+        let asked = focus_folded(query.asked);
         let mut out = self.base.clone();
         for entry in self.rules.iter() {
             if !entry.selector.matches(state, query) {
@@ -371,9 +375,16 @@ impl<T, P, M> RuleSet<T, P, M> {
             let Some(props) = self.props.get(start..start.saturating_add(len)) else {
                 continue;
             };
-            let from_state = !entry.selector.required_states.is_empty();
+            let required = entry.selector.required_states;
+            let mark = if required.is_empty() {
+                StateMark::Clear
+            } else if asked.is_empty() || focus_folded(required).contains(asked) {
+                StateMark::Set
+            } else {
+                StateMark::Keep
+            };
             for prop in props {
-                apply(&mut out, prop, from_state);
+                apply(&mut out, prop, mark);
             }
         }
         out
@@ -425,7 +436,7 @@ pub(crate) trait Patched<P> {
 
 impl Patched<PartProp> for PartStyle {
     fn apply(&mut self, prop: &PartProp) {
-        apply_part(self, prop, false);
+        apply_part(self, prop, StateMark::Clear);
     }
 
     fn clear_from_state(&mut self) {
@@ -435,7 +446,7 @@ impl Patched<PartProp> for PartStyle {
 
 impl Patched<TextProp> for TextStyle {
     fn apply(&mut self, prop: &TextProp) {
-        apply_text(self, prop, false);
+        apply_text(self, prop, StateMark::Clear);
     }
 
     fn clear_from_state(&mut self) {
@@ -445,7 +456,7 @@ impl Patched<TextProp> for TextStyle {
 
 impl Patched<IconProp> for IconStyle {
     fn apply(&mut self, prop: &IconProp) {
-        apply_icon(self, prop, false);
+        apply_icon(self, prop, StateMark::Clear);
     }
 
     fn clear_from_state(&mut self) {
@@ -662,6 +673,29 @@ fn normalize(state: WidgetState, exclusive: &[&[WidgetState]]) -> WidgetState {
     }
 }
 
+/// `state` with `FOCUS_VISIBLE` read as `FOCUSED`, as the `asked` test reads
+/// the asked flags and a rule's required states.
+fn focus_folded(state: WidgetState) -> WidgetState {
+    if state.contains(WidgetState::FOCUS_VISIBLE) {
+        state.difference(WidgetState::FOCUS_VISIBLE) | WidgetState::FOCUSED
+    } else {
+        state
+    }
+}
+
+/// What a matching rule does to the `from_state` bits of the properties it
+/// applies.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum StateMark {
+    /// Sets them: the rule requires a state (every asked flag, where the
+    /// query asks).
+    Set,
+    /// Clears them: the rule requires no state.
+    Clear,
+    /// Leaves them: the rule requires states, not every asked flag.
+    Keep,
+}
+
 /// The sides of `edges` flagged in `mask` written into `target`; returns
 /// their bits (`[top, right, bottom, left]`).
 fn apply_sides(
@@ -732,11 +766,10 @@ const MARGIN_BITS: [PartStated; 4] = [
 ];
 
 /// `prop` written into `style`, its `stated` bits set, and its `from_state`
-/// bits set where the rule requires a state (`from_state`), cleared
-/// otherwise. A size has no `stated` bit; its `from_state` bit
-/// ([`PartStated::MIN_SIZE`], [`PartStated::MAX_SIZE`]) follows the last
-/// rule that wrote either dimension.
-fn apply_part(style: &mut PartStyle, prop: &PartProp, from_state: bool) {
+/// bits set, cleared or left as `mark` says. A size has no `stated` bit; its
+/// `from_state` bit ([`PartStated::MIN_SIZE`], [`PartStated::MAX_SIZE`])
+/// follows the last rule that wrote either dimension and did not leave it.
+fn apply_part(style: &mut PartStyle, prop: &PartProp, mark: StateMark) {
     let bits = match prop {
         PartProp::Fill(v) => {
             style.fill = v.clone();
@@ -786,15 +819,15 @@ fn apply_part(style: &mut PartStyle, prop: &PartProp, from_state: bool) {
         }
     };
     style.stated |= bits.difference(SIZE_BITS);
-    style.from_state = if from_state {
-        style.from_state | bits
-    } else {
-        style.from_state.difference(bits)
+    style.from_state = match mark {
+        StateMark::Set => style.from_state | bits,
+        StateMark::Clear => style.from_state.difference(bits),
+        StateMark::Keep => style.from_state,
     };
 }
 
 /// As [`apply_part`], for a text property.
-fn apply_text(style: &mut TextStyle, prop: &TextProp, from_state: bool) {
+fn apply_text(style: &mut TextStyle, prop: &TextProp, mark: StateMark) {
     let bits = match prop {
         TextProp::Family(v) => {
             style.family = v.clone();
@@ -843,15 +876,15 @@ fn apply_text(style: &mut TextStyle, prop: &TextProp, from_state: bool) {
         }
     };
     style.stated |= bits;
-    style.from_state = if from_state {
-        style.from_state | bits
-    } else {
-        style.from_state.difference(bits)
+    style.from_state = match mark {
+        StateMark::Set => style.from_state | bits,
+        StateMark::Clear => style.from_state.difference(bits),
+        StateMark::Keep => style.from_state,
     };
 }
 
 /// As [`apply_part`], for an icon property.
-fn apply_icon(style: &mut IconStyle, prop: &IconProp, from_state: bool) {
+fn apply_icon(style: &mut IconStyle, prop: &IconProp, mark: StateMark) {
     let bits = match prop {
         IconProp::Size(v) => {
             style.size = *v;
@@ -883,10 +916,10 @@ fn apply_icon(style: &mut IconStyle, prop: &IconProp, from_state: bool) {
         }
     };
     style.stated |= bits;
-    style.from_state = if from_state {
-        style.from_state | bits
-    } else {
-        style.from_state.difference(bits)
+    style.from_state = match mark {
+        StateMark::Set => style.from_state | bits,
+        StateMark::Clear => style.from_state.difference(bits),
+        StateMark::Keep => style.from_state,
     };
 }
 
