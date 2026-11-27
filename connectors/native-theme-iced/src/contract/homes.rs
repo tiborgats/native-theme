@@ -110,8 +110,8 @@ const SWITCH_LABEL: &str = "the showcase colours the switch's label, the text it
 
 /// Why no row reads a flat button's checked outline or its icon's colour.
 const FLAT_BUTTON: &str = "no `next::styles` function draws a flat button; the iced \
-     showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked \
-     one, and its `icon_colour` loads an icon in the button's label colour";
+     showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon \
+     in the colour the theme states for it, each outside the connector";
 
 /// Why no row reads a toolbar button's icon colour.
 const TOOL_ICON: &str = "iced's button draws its content in one `text_color` and passes it no \

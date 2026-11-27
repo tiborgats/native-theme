@@ -276,6 +276,77 @@ fn a_toolbar_button_leaves_an_unstated_state_fill_to_iced() -> TestResult {
     Ok(())
 }
 
+/// A disabled toolbar button is filled in the theme's answer for the state
+/// it is in: `toolbar.button(DISABLED)`'s off, `(DISABLED | CHECKED)`'s
+/// checked (spec §10, rule 0), on a theme whose two answers differ.
+#[test]
+fn a_disabled_checked_toolbar_button_takes_the_disabled_checked_fill() -> TestResult {
+    use iced_widget::button::Status;
+    let patch = ThemePatch::new()
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::DISABLED)
+                .button(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::DISABLED | WidgetState::CHECKED)
+                .button(PartPatch::new().fill(Paint::Solid(LABEL))),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        for (checked, fill) in [(false, DISTINCT), (true, LABEL)] {
+            assert_eq!(
+                super::toolbar_button(&r, checked)?(&theme, Status::Disabled).background,
+                Some(Background::Color(to_color(fill))),
+                "{preset:?} checked {checked}"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// A checked toggle whose theme states the checked fill and label for
+/// `CHECKED` alone is filled and lettered under the pointer and pressed in
+/// the theme's answers for `CHECKED | HOVER` and `CHECKED | PRESSED`, at
+/// rest in `CHECKED`'s (spec §10, rule 0: "what the theme
+/// states for the state is laid over"), as the toolbar button is; on a
+/// theme whose three answers differ.
+#[test]
+fn a_checked_toggle_takes_the_checked_hovered_and_pressed_fill_and_label() -> TestResult {
+    use iced_widget::button::Status;
+    const HOVERED: Color = Color::new(0.6, 0.3, 0.1, 1.0);
+    const PRESSED: Color = Color::new(0.2, 0.7, 0.4, 1.0);
+    let state = |states: WidgetState, colour: Color| {
+        ButtonRule::new()
+            .states(states)
+            .body(PartPatch::new().fill(Paint::Solid(colour)))
+            .label(TextPatch::new().color(colour))
+    };
+    let patch = ThemePatch::new()
+        .button(state(WidgetState::CHECKED, DISTINCT))
+        .button(state(WidgetState::CHECKED | WidgetState::HOVER, HOVERED))
+        .button(state(WidgetState::CHECKED | WidgetState::PRESSED, PRESSED));
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let toggle = super::button_toggle(&r, true)?;
+        for (status, colour) in [
+            (Status::Active, DISTINCT),
+            (Status::Hovered, HOVERED),
+            (Status::Pressed, PRESSED),
+        ] {
+            let drawn = toggle(&theme, status);
+            assert_eq!(
+                drawn.background,
+                Some(Background::Color(to_color(colour))),
+                "{preset:?} {status:?}"
+            );
+            assert_eq!(drawn.text_color, to_color(colour), "{preset:?} {status:?}");
+        }
+    }
+    Ok(())
+}
+
 /// A field whose theme states no disabled opacity is drawn in the disabled
 /// colours the theme states, not faded again.
 #[test]

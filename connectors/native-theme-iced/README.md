@@ -860,22 +860,27 @@ rule 0).
   one (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
   stated `CHECKED` label, else in the label at rest"). iced gives the
   button's hovered and pressed statuses, so where the theme states the
-  checked fill, `next::styles::toolbar_button` fills a checked button under
-  the pointer and pressed in what it states for `CHECKED | HOVER` and
-  `CHECKED | PRESSED` (macos-monterey's and macos-tahoe's measured shades),
-  and where it states the checked label, letters it in theirs (spec §10,
-  rule 0).
-- **A toolbar button's icon colour.** iced's button draws its content with
+  checked fill, `next::styles::button_toggle` and
+  `next::styles::toolbar_button` fill a checked button under the pointer
+  and pressed in what it states for `CHECKED | HOVER` and
+  `CHECKED | PRESSED` (on the toolbar, macos-monterey's and macos-tahoe's
+  measured shades), and where it states the checked label, letter it in
+  theirs (spec §10, rule 0). A disabled checked toolbar button is filled in
+  what the theme states for `DISABLED | CHECKED`, where stated.
+- **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted
   only by its own `svg::Style::color`, whose status is the pointer over the
   svg's own bounds, not the button's (`src/svg.rs`, `Status`), and an
   `image` takes no tint (`src/image.rs`). So the connector gives no style
-  for a toolbar button's icon, and `toolbar.button_icon(<state>).color`
-  (macos-monterey's and macos-tahoe's measured glyph colours) is not drawn
-  by it: an icon follows no hovered or pressed state of its button. An
-  application can load the icon in a colour of a state it knows itself,
-  checked or not (`icons::to_svg_handle`).
+  for a button's icon, and `toolbar.button_icon(<state>).color`
+  (macos-monterey's and macos-tahoe's measured glyph colours) and
+  `button.icon(<state>).color` (a flat button's,
+  `button.icon(<state>; variant=Flat).color`) are not drawn by it: an icon
+  follows no hovered or pressed state of its button. An application can
+  load the icon in a colour of a state it knows itself, checked or not
+  (`icons::to_svg_handle`), as the showcase loads its tool buttons' and its
+  status-bar toggle's.
 
 ## Common recipes
 

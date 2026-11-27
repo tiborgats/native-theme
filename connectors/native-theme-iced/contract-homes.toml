@@ -53,7 +53,7 @@ moves = [
 named = "UNREAD_HOMES"
 entry = "button.body(CHECKED; variant=Flat).stroke.color"
 kind = "no widget"
-why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector"
 
 [homes."button.body(DEFAULT).fill"]
 leaves = ["button.default_button_background"]
@@ -98,7 +98,7 @@ why = "an iced button takes no keyboard focus: it implements no `operate` for `F
 named = "UNREAD_HOMES"
 entry = "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color"
 kind = "no widget"
-why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector"
 
 [homes."button.body(HOVER).fill"]
 leaves = ["button.hover_background"]
@@ -106,6 +106,7 @@ moves = [
   { row = "styles::button.background", statuses = ["Hovered"] },
   { row = "styles::button.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Hovered)"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Hovered)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
   { row = "styles::button_toggle.border", statuses = ["(false, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
@@ -131,7 +132,7 @@ moves = [
 named = "UNREAD_HOMES"
 entry = "button.body(HOVER|CHECKED; variant=Flat).stroke.color"
 kind = "no widget"
-why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector"
 
 [homes."button.body(NONE).fill"]
 leaves = ["button.background_color"]
@@ -196,6 +197,7 @@ moves = [
   { row = "styles::button.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_default.background", statuses = ["Pressed"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Pressed)"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
   { row = "styles::button_toggle.border", statuses = ["(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
@@ -221,19 +223,19 @@ moves = [
 named = "UNREAD_HOMES"
 entry = "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
 kind = "no widget"
-why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector"
 
 [homes."button.icon(CHECKED; variant=Flat).color"]
 named = "UNREAD_HOMES"
 entry = "button.icon(CHECKED; variant=Flat).color"
 kind = "no widget"
-why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector"
 
 [homes."button.icon(NONE; variant=Flat).color"]
 named = "UNREAD_HOMES"
 entry = "button.icon(NONE; variant=Flat).color"
 kind = "no widget"
-why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` keeps the unchecked outline of the same status on a checked one, and its `icon_colour` loads an icon in the button's label colour"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` outlines a checked one and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector"
 
 [homes."button.label(CHECKED).color"]
 leaves = ["button.checked_text_color"]
@@ -266,6 +268,7 @@ leaves = ["button.hover_text_color"]
 moves = [
   { row = "styles::button.text_color", statuses = ["Hovered"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Hovered)"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Hovered)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
 ]
 
 [homes."button.label(NONE).color"]
@@ -298,6 +301,7 @@ moves = [
   { row = "styles::button.text_color", statuses = ["Pressed"] },
   { row = "styles::button_default.text_color", statuses = ["Pressed"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Pressed)"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
 ]
 
 [homes."card.container(NONE).fill"]
@@ -1847,7 +1851,7 @@ moves = [
 [homes."toolbar.button(CHECKED).fill"]
 leaves = ["toolbar.button_checked_background"]
 moves = [
-  { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(CHECKED).stroke.color"]
