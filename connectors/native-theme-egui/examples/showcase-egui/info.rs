@@ -793,17 +793,26 @@ pub(crate) const FLAT_PUSH_EDGE: &str = "not drawn: next::flat_button lays the f
      where stated (chrome::toggle_checked_pens)";
 
 /// The route of the Pages menu button's caret's colour: the caret is loaded tinted before the
-/// flat button's states are laid over the scope, in the flat button's icon colour at rest where
-/// stated.
-pub(crate) const MENU_ICON_COLOUR: &str = "egui: the colour the caret loads in, \
-     button.icon(NONE; variant=Flat).color where stated, in every state, as egui changes an image \
-     in no state; else the text colour of the Ui it is laid out in, visuals.text_color() \
+/// flat button's states are laid over the scope, in the flat button's icon colour of the state
+/// of the button's previous response where stated.
+pub(crate) const MENU_ICON_COLOUR: &str = "egui: per call, the colour the caret loads in, \
+     button.icon(NONE; variant=Flat).color where stated, a colour stated at rest holding under \
+     the pointer and pressed where no rule states one for the state, as egui changes an image in \
+     no state; else the text colour of the Ui it is laid out in, visuals.text_color() \
      (chrome::toggle_icon_colour, demo::loaded_in, demo::role_image; chrome::page_tabs)";
+/// The route of the Pages menu button's caret's colour under the pointer.
+pub(crate) const MENU_ICON_HOVER: &str = "egui: per call, the colour the caret loads in under \
+     the pointer, in the state of the menu button's previous response, where stated \
+     (chrome::toggle_icon_colour, as demo::tool_icon_color the tool buttons'; chrome::page_tabs)";
+/// The route of the Pages menu button's caret's colour pressed.
+pub(crate) const MENU_ICON_PRESSED: &str = "egui: per call, the colour the caret loads in \
+     pressed, in the state of the menu button's previous response, where stated \
+     (chrome::toggle_icon_colour, as demo::tool_icon_color the tool buttons'; chrome::page_tabs)";
 /// The route of the flat button's label colour at rest on the Pages menu button's caret.
 pub(crate) const MENU_ICON_LABEL: &str = "not drawn: the caret loads in the flat button's icon \
-     colour at rest where stated (chrome::toggle_icon_colour), else in the text colour of the Ui \
-     it is laid out in, visuals.text_color(), never in the flat button's label (demo::role_image; \
-     chrome::page_tabs)";
+     colour of the button's state where stated (chrome::toggle_icon_colour), else in the text \
+     colour of the Ui it is laid out in, visuals.text_color(), never in the flat button's label \
+     (demo::role_image; chrome::page_tabs)";
 /// The route of the side-panel toggle's label colours on its icon, which loads in an icon
 /// colour or the bar's text, not in the toggle's label.
 pub(crate) const TOGGLE_ICON_LABEL: &str = "not drawn: the toggle's icon loads in the flat button's icon \
@@ -842,6 +851,28 @@ pub(crate) const TOGGLE_PUSH_CHECKED_LABEL: &str = "not drawn: chrome::toggle_ch
 const COPY_CORNERS_NOT_LAYOUT: &str = "not drawn: info::widget_tab rounds the Copy box by \
      button.body(NONE).corners where stated, else by the scope's own \
      visuals.widgets.inactive.corner_radius, not by layout.corner_radius";
+
+/// The route of Widget Info's Copy box's top padding, which `info::widget_tab` lays out per side
+/// ([`copy_padding`]).
+pub(crate) const COPY_PAD_TOP: &str = "egui: per call, info::widget_tab pads the Copy box above \
+     its label by button.body(NONE).padding.top where stated, else by the scope's own \
+     spacing.button_padding.y (info::copy_padding)";
+/// As [`COPY_PAD_TOP`], of the right side.
+pub(crate) const COPY_PAD_RIGHT: &str = "egui: per call, info::widget_tab pads the Copy box right \
+     of its label by button.body(NONE).padding.right where stated, else by the scope's own \
+     spacing.button_padding.x (info::copy_padding)";
+/// As [`COPY_PAD_TOP`], of the bottom side.
+pub(crate) const COPY_PAD_BOTTOM: &str = "egui: per call, info::widget_tab pads the Copy box \
+     below its label by button.body(NONE).padding.bottom where stated, else by the scope's own \
+     spacing.button_padding.y (info::copy_padding)";
+/// As [`COPY_PAD_TOP`], of the left side.
+pub(crate) const COPY_PAD_LEFT: &str = "egui: per call, info::widget_tab pads the Copy box left \
+     of its label by button.body(NONE).padding.left where stated, else by the scope's own \
+     spacing.button_padding.x (info::copy_padding)";
+/// The route of the flat button's padding on Widget Info's Copy box, which the push button's pads.
+pub(crate) const COPY_PAD_FLAT: &str = "not drawn: info::widget_tab pads the Copy box by the \
+     push button's button.body(NONE).padding sides in its place, not the flat variant's \
+     (info::copy_padding)";
 
 /// The route of a disabled checked box's own label colour.
 const CHECKED_DISABLED_LABEL: &str = "egui: the check box's SelectedDisabled cell's text, \
@@ -967,28 +998,9 @@ pub(crate) const TOOL_REST_EDGE: &str = "not drawn: egui's toolbar scope reads n
 /// The homes of a toolbar button the toolbar scope or the showcase applies from the installed
 /// 0.8.0 theme, which no `mapping.toml` row holds, each with its route: the rest capsule, the
 /// hovered and pressed outline widths and labels, the edit switch's checked looks
-/// (`pages::basic::edit_look_at`) and the icon's colour (`demo::tool_icon_color`); and the push
-/// button's padding sides and the flat button's, which a tool button takes per call
-/// (`demo::next_tool_button`) rather than as `mapping.toml`'s rows route them. Only the tool
+/// (`pages::basic::edit_look_at`) and the icon's colour (`demo::tool_icon_color`). Only the tool
 /// buttons and their icons ([`TOOL_BUTTONS`]) take them.
-pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 27] = [
-    ("button.body(NONE).padding.top", TOOL_PAD_TOP),
-    ("button.body(NONE).padding.right", TOOL_PAD_RIGHT),
-    ("button.body(NONE).padding.bottom", TOOL_PAD_BOTTOM),
-    ("button.body(NONE).padding.left", TOOL_PAD_LEFT),
-    ("button.body(NONE; variant=Flat).padding.top", TOOL_PAD_FLAT),
-    (
-        "button.body(NONE; variant=Flat).padding.right",
-        TOOL_PAD_FLAT,
-    ),
-    (
-        "button.body(NONE; variant=Flat).padding.bottom",
-        TOOL_PAD_FLAT,
-    ),
-    (
-        "button.body(NONE; variant=Flat).padding.left",
-        TOOL_PAD_FLAT,
-    ),
+pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
     ("toolbar.button(NONE).stroke.color", TOOL_REST_EDGE),
     ("toolbar.button(NONE).stroke.width", TOOL_REST_EDGE),
     ("toolbar.button(HOVER).stroke.width", TOOL_HOVER_WIDTH),
@@ -1022,24 +1034,52 @@ pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 27] = [
     ),
 ];
 
+/// The push button's padding sides and the flat button's, which a tool button takes per call
+/// (`demo::next_tool_button`) rather than as `mapping.toml`'s rows route them, each with its
+/// route: the tool buttons and their icons ([`TOOL_BUTTONS`]) and the flat buttons padded as tool
+/// buttons ([`TOOL_PADDED`]) take them.
+pub(crate) const TOOL_PADDING_ROUTES: [(&str, &str); 8] = [
+    ("button.body(NONE).padding.top", TOOL_PAD_TOP),
+    ("button.body(NONE).padding.right", TOOL_PAD_RIGHT),
+    ("button.body(NONE).padding.bottom", TOOL_PAD_BOTTOM),
+    ("button.body(NONE).padding.left", TOOL_PAD_LEFT),
+    ("button.body(NONE; variant=Flat).padding.top", TOOL_PAD_FLAT),
+    (
+        "button.body(NONE; variant=Flat).padding.right",
+        TOOL_PAD_FLAT,
+    ),
+    (
+        "button.body(NONE; variant=Flat).padding.bottom",
+        TOOL_PAD_FLAT,
+    ),
+    (
+        "button.body(NONE; variant=Flat).padding.left",
+        TOOL_PAD_FLAT,
+    ),
+];
+
+/// The flat buttons padded as tool buttons (`demo::next_tool_button`), by id, whose elements take
+/// [`TOOL_PADDING_ROUTES`]: the Pages menu button and the side-panel toggle.
+const TOOL_PADDED: [&str; 2] = ["chrome.page_tabs.menu", TOGGLE];
+
 /// The route of a tool button's top padding: egui pads a button by one pair
 /// (`Spacing::button_padding`), so the top side pads above and below.
 pub(crate) const TOOL_PAD_TOP: &str = "egui: per call, spacing.button_padding.y, above and below \
-     the icon, button.body(NONE).padding.top where stated, egui padding a button by one pair; \
-     else the scope's own (demo::next_tool_button, demo::tool_padding)";
+     the icon or label, button.body(NONE).padding.top where stated, egui padding a button by one \
+     pair; else the scope's own (demo::next_tool_button, demo::tool_padding)";
 /// As [`TOOL_PAD_TOP`], of the left side, which pads left and right.
 pub(crate) const TOOL_PAD_LEFT: &str = "egui: per call, spacing.button_padding.x, left and right \
-     of the icon, button.body(NONE).padding.left where stated, egui padding a button by one \
-     pair; else the scope's own (demo::next_tool_button, demo::tool_padding)";
+     of the icon or label, button.body(NONE).padding.left where stated, egui padding a button by \
+     one pair; else the scope's own (demo::next_tool_button, demo::tool_padding)";
 /// The route of a tool button's bottom padding, which the top side's stands for.
 pub(crate) const TOOL_PAD_BOTTOM: &str = "not drawn where button.body(NONE).padding.top is \
-     stated: demo::next_tool_button pads below the icon by it, egui padding a button by one pair \
-     (Spacing::button_padding); where it is not, by the scope's own spacing.button_padding.y \
-     (demo::tool_padding)";
+     stated: demo::next_tool_button pads below the icon or label by it, egui padding a button by \
+     one pair (Spacing::button_padding); where it is not, by the scope's own \
+     spacing.button_padding.y (demo::tool_padding)";
 /// The route of a tool button's right padding, which the left side's stands for.
 pub(crate) const TOOL_PAD_RIGHT: &str = "not drawn where button.body(NONE).padding.left is \
-     stated: demo::next_tool_button pads right of the icon by it, egui padding a button by one \
-     pair (Spacing::button_padding); where it is not, by the scope's own \
+     stated: demo::next_tool_button pads right of the icon or label by it, egui padding a button \
+     by one pair (Spacing::button_padding); where it is not, by the scope's own \
      spacing.button_padding.x (demo::tool_padding)";
 /// The route of the flat button's padding on a tool button, which the push button's pads.
 pub(crate) const TOOL_PAD_FLAT: &str = "not drawn: demo::next_tool_button pads a tool button by \
@@ -1935,6 +1975,16 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         MENU_ICON_COLOUR,
     ),
     (
+        "chrome.page_tabs.menu.icon",
+        "button.icon(HOVER; variant=Flat).color",
+        MENU_ICON_HOVER,
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.icon(PRESSED; variant=Flat).color",
+        MENU_ICON_PRESSED,
+    ),
+    (
         "chrome.status_bar.toggle.icon",
         "button.label(NONE; variant=Flat).color",
         TOGGLE_ICON_LABEL,
@@ -1948,6 +1998,46 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "chrome.info.copy",
         "layout.corner_radius",
         COPY_CORNERS_NOT_LAYOUT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.top",
+        COPY_PAD_TOP,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.right",
+        COPY_PAD_RIGHT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.bottom",
+        COPY_PAD_BOTTOM,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.left",
+        COPY_PAD_LEFT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.top",
+        COPY_PAD_FLAT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.right",
+        COPY_PAD_FLAT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.bottom",
+        COPY_PAD_FLAT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.left",
+        COPY_PAD_FLAT,
     ),
     (
         "basic.buttons.dialog_default",
@@ -2375,7 +2465,8 @@ pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
 /// other ids name one element each; [`TAB_PER_CALL_ROUTES`] on [`TAB_ELEMENTS`]), the companion
 /// crate's switch where it reads a home of its label ([`SWITCH_LABEL_ROUTES`]), the toolbar
 /// scope or the showcase where it applies a tool button's own ([`TOOL_BUTTON_ROUTES`], on a
-/// tool button or its icon, [`TOOL_BUTTONS`]), the chrome where it lays the side-panel toggle's
+/// tool button or its icon, [`TOOL_BUTTONS`]), the showcase where it pads a tool button
+/// ([`TOOL_PADDING_ROUTES`], on those and on [`TOOL_PADDED`]), the chrome where it lays the side-panel toggle's
 /// own looks or icon colour ([`TOGGLE_ROUTES`], on the toggle or its icon, [`TOGGLE`]), the
 /// flat button's own states on the other flat buttons ([`FLAT_BUTTON_ROUTES`], [`FLAT_BUTTONS`]), else
 /// [`how_line`]'s, from the `mapping.toml` row that holds the home, a tab's label with its
@@ -2402,6 +2493,10 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .then(|| TOOL_BUTTON_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
         .map(|(_, line)| *line);
+    let padding_route = (tool || TOOL_PADDED.contains(&element))
+        .then(|| TOOL_PADDING_ROUTES.iter().find(|(h, _)| *h == home))
+        .flatten()
+        .map(|(_, line)| *line);
     let toggle_route = button_or_icon(element, TOGGLE)
         .then(|| TOGGLE_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
@@ -2418,6 +2513,7 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .or(tab_route)
         .or(switch_route)
         .or(tool_route)
+        .or(padding_route)
         .or(toggle_route)
         .or(flat_route)
         .map_or_else(
@@ -2789,13 +2885,29 @@ fn painted(ui: &egui::Ui, rect: egui::Rect, galley: &egui::Galley) -> egui::Rect
     )
 }
 
+/// Widget Info's Copy box's padding, top, right, bottom, left: each side
+/// `button.body(NONE).padding` of the installed 0.8.0 theme `r` states, else the scope's own
+/// button padding `own` (`Spacing::button_padding`, `y` above and below, `x` left and right), as
+/// egui's other buttons keep it on a side the theme leaves unstated (spec §10, rule 0).
+pub(crate) fn copy_padding(own: egui::Vec2, r: Option<&ResolvedTheme>) -> [f32; 4] {
+    let [top, right, bottom, left] = r.map_or([None; 4], |r| {
+        native_theme_egui::next::padding_of(&r.button.body(WidgetState::NONE))
+    });
+    [
+        top.unwrap_or(own.y),
+        right.unwrap_or(own.x),
+        bottom.unwrap_or(own.y),
+        left.unwrap_or(own.x),
+    ]
+}
+
 /// The Widget tab (R11 §B), laid out as the three showcases lay it out: the title flush left
 /// and Copy flush right on one row, `layout.section_gap` below it the "Theme" section's name,
 /// then each row `layout.widget_gap` below the one before — a colour's swatch, a square one line
 /// tall, `layout.widget_gap` before the text `<leaf> <value>`, and under the text the muted line
 /// of how egui applies it — and, `layout.section_gap` below, "Not themeable" and its lines. A
 /// gap the theme leaves unstated is none. Copy is a flat button, padded by
-/// `button.body(NONE).padding` and rounded by its corners, unframed at rest, and under the
+/// `button.body(NONE).padding` ([`copy_padding`]) and rounded by its corners, unframed at rest, and under the
 /// pointer and while pressed or focused filled, outlined and lettered as
 /// `button.body(HOVER|PRESSED; variant=Flat)` and its label state, the outline focused
 /// `FOCUS_VISIBLE`'s, where a rule states them for the state, else egui's own
@@ -2833,11 +2945,7 @@ pub(crate) fn widget_tab(
     // The title row: the title and Copy, centred on each other.
     let title = text.galley(ui, &view.title, &text.semibold, text.colour);
     let copy_text = text.galley(ui, "Copy", &text.regular, text.colour);
-    let [top, right, bottom, left] = r
-        .map_or([None; 4], |r| {
-            nx::padding_of(&r.button.body(WidgetState::NONE))
-        })
-        .map(Option::unwrap_or_default);
+    let [top, right, bottom, left] = copy_padding(ui.spacing().button_padding, r);
     let copy_size = egui::vec2(copy_text.size().x + left + right, text.line + top + bottom);
     let row_height = copy_size.y.max(text.line);
     let (row, title_row) = ui.allocate_exact_size(

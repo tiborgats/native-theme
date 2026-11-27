@@ -251,8 +251,9 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(NONE).padding.bottom",
             "button.body(NONE).padding.left",
         ],
-        "not drawn: the Copy button is a Size::Small Button, which keeps upstream's padding, px_2 at the sides and none above and below, h_6 tall, as the unlisted Copy (gpui-component 0.10.0 button/button.rs, RenderOnce for Button, the Size::Small arm; inspector.rs, COPY_HEIGHT)",
+        COPY_OWN_PADDING,
     ),
+    ("chrome.info.copy", TOOL_FLAT_PADDING, COPY_OWN_PADDING),
     // --- button: the pages menu, variants::ghost_button --------------------------
     (
         "chrome.page_tabs.menu",
@@ -695,6 +696,16 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ("chrome.toolbar.", TOOL_FLAT_PADDING, TOOL_PADDING_NOT_FLAT),
     ("basic.icons.", TOOL_FLAT_PADDING, TOOL_PADDING_NOT_FLAT),
     (
+        "chrome.page_tabs.menu",
+        TOOL_FLAT_PADDING,
+        FLAT_PADDING_AS_TOOL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        TOOL_FLAT_PADDING,
+        FLAT_PADDING_AS_TOOL,
+    ),
+    (
         "chrome.toolbar.",
         &["button.body(NONE).stroke.width"],
         "gpui: button.body(NONE).stroke.width, next::geometry::toolbar_button_rest's border width, where a rule states toolbar.button(HOVER).stroke.color",
@@ -856,6 +867,14 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "chrome.page_tabs.menu.icon",
         &["button.icon(NONE; variant=Flat).color"],
         "gpui: the SVG Icon's colour, next::geometry::ghost_button_icon_color at rest, button.icon(NONE; variant=Flat).color where stated; else the Ghost Button's text colour, ThemeColor secondary_foreground; an icon set's image takes no tint (demo::tool_icon_tinted, demo::native_tab_bar; gpui-component 0.10.0 src/icon.rs, into_svg)",
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        &[
+            "button.icon(HOVER; variant=Flat).color",
+            "button.icon(PRESSED; variant=Flat).color",
+        ],
+        "not reachable: an Icon takes one colour, so the ChevronDown keeps the tint it is built in at rest, button.icon(NONE; variant=Flat).color's where stated, else the Ghost Button's text colour, under the pointer and pressed (demo::tool_icon_tinted, demo::native_tab_bar; gpui-component 0.10.0 src/icon.rs, Styled for Icon; native-theme-gpui README, Limits)",
     ),
     (
         "chrome.status_bar.toggle.icon",
@@ -3521,8 +3540,9 @@ const FLAT_FOCUS_HOMES: &[&str] = &[
 /// Why a flat button's own label at rest is not drawn.
 const FLAT_GHOST_REST_LABEL: &str = "not drawn: no builder reads the flat button's label at rest; a Ghost Button is lettered in variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (native-theme-gpui next/mod.rs, slice_colors)";
 
-/// The flat button's padding sides, which a tool button lists for the
-/// showcases that pad it by them.
+/// The flat button's padding sides, which a tool button, the Pages menu
+/// button, the side-panel toggle and Widget Info's Copy list for the
+/// showcases that pad them by them.
 const TOOL_FLAT_PADDING: &[&str] = &[
     "button.body(NONE; variant=Flat).padding.top",
     "button.body(NONE; variant=Flat).padding.right",
@@ -3532,6 +3552,12 @@ const TOOL_FLAT_PADDING: &[&str] = &[
 
 /// Why [`TOOL_FLAT_PADDING`] are not drawn.
 const TOOL_PADDING_NOT_FLAT: &str = "not drawn: the tool button's box is padded by the push button's button.body(NONE).padding sides, where stated, in its place, not the flat variant's (demo::tool_button_box)";
+
+/// Why [`TOOL_FLAT_PADDING`] are not drawn on the Pages menu button and the side-panel toggle.
+const FLAT_PADDING_AS_TOOL: &str = "not drawn: the button is padded as a tool button, by the push button's button.body(NONE).padding sides, where stated, in its place, not the flat variant's (demo::tool_button_box)";
+
+/// Why Widget Info's Copy is padded by no padding home of the theme's.
+const COPY_OWN_PADDING: &str = "not drawn: the Copy button is a Size::Small Button, which keeps upstream's padding, px_2 at the sides and none above and below, h_6 tall, as the unlisted Copy (gpui-component 0.10.0 button/button.rs, RenderOnce for Button, the Size::Small arm; inspector.rs, COPY_HEIGHT)";
 
 /// Why a flat button's own corners are not drawn.
 const FLAT_TOOL_BOX_CORNERS: &str = "not drawn: the Button is rounded by the push button's corners, button.body(NONE).corners, where stated, else the Theme's radius (demo::tool_button_box)";

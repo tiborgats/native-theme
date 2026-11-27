@@ -585,7 +585,8 @@ pub(crate) fn toggle_checked_pens(
 /// so the plain query's answer holds wherever it is stated, a colour stated at rest holding in
 /// every state no rule states one for (spec §10, rule 0). `None` where it states none, and the
 /// icon keeps the colour it loads in, never the label's. The Pages menu's caret, a flat button's
-/// icon that is never checked, takes it closed and at rest ([`page_tabs`]).
+/// icon that is never checked, takes it closed, in the state of the menu button's previous
+/// response ([`page_tabs`]).
 pub(crate) fn toggle_icon_colour(
     r: Option<&native_theme::next::ResolvedTheme>,
     open: bool,
@@ -1716,8 +1717,9 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
 /// gpui-component's tab-bar menu does (gpui-component 0.9.1 `src/tab/tab_bar.rs:699-732`,
 /// `TabBar::render`'s Ghost `menu` button, the selected tab's item `checked`). Its caret is the
 /// chosen icon theme's `NavDown` at `icons.sizes.small`, loaded in the flat button's icon colour
-/// at rest, `button.icon(NONE; variant=Flat).color`, where the theme states it
-/// ([`toggle_icon_colour`] closed and at rest), else in the `Ui`'s text colour; where the icon
+/// in the state of the button's previous response, `button.icon(NONE; variant=Flat).color` at
+/// rest, `HOVER`'s under the pointer and `PRESSED`'s pressed, where the theme states it
+/// ([`toggle_icon_colour`] closed), else in the `Ui`'s text colour; where the icon
 /// theme has none, or the
 /// theme states no such size, the button reads "Pages" (§10.4's icon rule). The tabs and the
 /// button are of the installed 0.8.0 theme (`demo::TabLook::next`, `demo::next_tool_button`).
@@ -1733,7 +1735,9 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     } = app;
     let r = atlas.next_shown(ui.ctx());
     let caret_size = demo::small_icon_size(ui);
-    let caret_colour = toggle_icon_colour(r, false, (false, false));
+    let menu_key = egui::Id::unique(("chrome state", "chrome.page_tabs.menu"));
+    let was = demo::previous_state(ui, menu_key);
+    let caret_colour = toggle_icon_colour(r, false, was);
     let padding = demo::tool_padding(r);
     let tabs: Vec<(Page, &'static str)> = Page::ALL.map(|page| (page, page.label())).to_vec();
     let current = settings.page;
@@ -1787,6 +1791,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                     }
                 },
             );
+            demo::remember_state(ui, menu_key, was, &response);
             registry.ghost_last();
             registry.flat_last(&flat);
             registry.tag("chrome.page_tabs.menu", &response);

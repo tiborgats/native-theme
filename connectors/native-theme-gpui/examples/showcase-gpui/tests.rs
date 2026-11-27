@@ -25198,7 +25198,11 @@ fn the_toggles_icon_takes_the_stated_flat_icon_colour(cx: &mut TestAppContext) {
 /// where the theme states it (spec §10, rule 0), as the closed side-panel
 /// toggle's is, and the page row's info names it: kde-breeze light states
 /// none, and the row's info has no "icon colour" line; patched to state one,
-/// it names that colour.
+/// it names that colour. The drawn caret's colour is not read: the Icon keeps
+/// it in a private field, renders to an opaque element (gpui-component
+/// 0.10.0 src/icon.rs, `Icon`, `RenderOnce for Icon`), and a painted SVG's
+/// colour, a monochrome sprite's, is readable on GPUI Fast alone
+/// (`scene_read::scene_glyphs`).
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_pages_menu_icon_takes_the_stated_flat_icon_colour(cx: &mut TestAppContext) {

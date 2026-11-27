@@ -10425,7 +10425,7 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         } else {
             "the outline under the pointer is drawn over it"
         };
-        return tool.then(|| {
+        return (tool || flat).then(|| {
             format!(
                 "ghost_padding: Button::padding, button.body(NONE;variant=Flat).padding.{side} as \
                  stated, iced's own where unstated ({border})"
@@ -38183,6 +38183,12 @@ mod tests {
         assert_eq!(
             push_route_faults(&r, leaf, &flat, &route, drawn),
             Vec::<String>::new()
+        );
+        let standard = leaf.replacen(").", "; variant=Standard).", 1);
+        assert_eq!(
+            home_moves(&r, &standard, drawn),
+            Some(false),
+            "the push button's own home is stated and moves nothing"
         );
         assert_eq!(home_moves(&r, &flat, drawn), Some(true));
         assert_eq!(
