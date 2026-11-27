@@ -159,7 +159,9 @@
 //! covers the edge side's band (the gradient's blend falls inside the
 //! corners). A toolkit of one border colour draws the three sides' colour
 //! (`Stroke::prevailing`; spec §10, rule 2). The flat outlines (pressed,
-//! disabled) and the high-contrast ones are uniform.
+//! disabled) and the high-contrast ones are uniform: wherever
+//! `Contrast::High` is resolved ([`HighContrast::active`]), no outline has
+//! an edge.
 //!
 //! An inactive window (`ThemeContext::window_active` false) has the inactive
 //! title bar (`window.inactive_title_bar_background`) and the inactive title
@@ -1928,6 +1930,37 @@ impl HighContrast {
         })
     }
 
+    /// Whether high contrast is active: any colour is set, as
+    /// [`focused_outline`](Self::focused_outline) is wherever
+    /// `Contrast::High` is resolved ([`resolve`]). Its outlines are uniform
+    /// (the module documentation).
+    fn active(&self) -> bool {
+        let Self {
+            window,
+            window_text,
+            button_face,
+            button_text,
+            highlight,
+            highlight_text,
+            hotlight,
+            gray_text,
+            focused_outline,
+        } = self;
+        [
+            window,
+            window_text,
+            button_face,
+            button_text,
+            highlight,
+            highlight_text,
+            hotlight,
+            gray_text,
+            focused_outline,
+        ]
+        .iter()
+        .any(|color| color.is_some())
+    }
+
     /// Lay the colours over each of `c`'s fields whose every key takes the
     /// same system colour: the view's background, the menu's and the focus
     /// visual's inner ring (`COLOR_WINDOW`: `FocusStrokeColorInnerBrush` =
@@ -2447,16 +2480,29 @@ fn elevation_stroke(
 }
 
 /// The neutral elevation border of the push button and the combo box with
-/// its edge, `ControlElevationBorderBrush`, `width` wide, outside the fill;
-/// `None` under high contrast, where the outline is uniform
-/// ([`elevation_border`]).
+/// its edge, `ControlElevationBorderBrush`, `width` wide, outside the fill
+/// ([`neutral_elevation`]).
 fn control_elevation(c: &SchemeColors, hc: &HighContrast, width: f32) -> Option<PartProp> {
-    hc.window_text.is_none().then(|| {
+    neutral_elevation(c, hc, width, c.elevation_edge_side, c.elevation_edge)
+}
+
+/// A neutral elevation border with its edge `edge_color` on the `edge` side,
+/// `width` wide, outside the fill; `None` under high contrast
+/// ([`HighContrast::active`]), where the outline is uniform
+/// ([`elevation_border`]).
+fn neutral_elevation(
+    c: &SchemeColors,
+    hc: &HighContrast,
+    width: f32,
+    edge: ElevationEdge,
+    edge_color: Color,
+) -> Option<PartProp> {
+    (!hc.active()).then(|| {
         elevation_stroke(
             width,
             c.elevation_stroke,
-            c.elevation_edge_side,
-            c.elevation_edge,
+            edge,
+            edge_color,
             StrokeAlign::Outside,
         )
     })
@@ -2464,8 +2510,12 @@ fn control_elevation(c: &SchemeColors, hc: &HighContrast, width: f32) -> Option<
 
 /// The accent elevation border with its edge,
 /// `AccentControlElevationBorderBrush`, `width` wide, inside the edge
-/// (`OuterBorderEdge`).
-fn accent_elevation(c: &SchemeColors, width: f32) -> PartProp {
+/// (`OuterBorderEdge`); under high contrast ([`HighContrast::active`]) its
+/// three sides' colour on every side.
+fn accent_elevation(c: &SchemeColors, hc: &HighContrast, width: f32) -> PartProp {
+    if hc.active() {
+        return stroke(width, c.on_accent_stroke);
+    }
     elevation_stroke(
         width,
         c.on_accent_stroke,
@@ -2622,9 +2672,8 @@ fn button(
         .rules(
             elevated
                 .as_ref()
-                .filter(|_| rest_outline.is_none())
                 .map(|_| RuleSelector::on(WidgetState::NONE).except(WidgetState::DISABLED)),
-            elevated.clone().filter(|_| rest_outline.is_none()),
+            elevated.clone(),
         )
         // Checked, ToggleButtonBorderBrushChecked = AccentControlElevationBorderBrush, its three
         // sides (`on_accent_stroke`) and its edge (`on_accent_edge`), inside its edge: the checked
@@ -2639,7 +2688,7 @@ fn button(
             [
                 fill(c.accent_fill),
                 hc.highlight_text.map_or_else(
-                    || accent_elevation(c, layout.border_width),
+                    || accent_elevation(c, hc, layout.border_width),
                     |color| stroke(layout.border_width, color),
                 ),
             ],
@@ -2681,9 +2730,8 @@ fn button(
         .rules(
             elevated
                 .as_ref()
-                .filter(|_| hover_outline.is_none())
                 .map(|_| RuleSelector::on(WidgetState::HOVER).except(WidgetState::DISABLED)),
-            elevated.filter(|_| hover_outline.is_none()),
+            elevated,
         )
         // The push button checked is WinUI's ToggleButton checked, after the HOVER and PRESSED
         // rules so that its own win (ToggleButton_themeresources.xaml at microsoft-ui-xaml 2.5.1;
@@ -2706,7 +2754,7 @@ fn button(
                         .unwrap_or(c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY)),
                 ),
                 hc.button_text.map_or_else(
-                    || accent_elevation(c, layout.border_width),
+                    || accent_elevation(c, hc, layout.border_width),
                     |color| stroke(layout.border_width, color),
                 ),
             ],
@@ -2738,7 +2786,7 @@ fn button(
             [
                 fill(c.accent_fill),
                 primary_outline.map_or_else(
-                    || accent_elevation(c, layout.border_width),
+                    || accent_elevation(c, hc, layout.border_width),
                     |color| stroke(layout.border_width, color),
                 ),
             ],
@@ -3634,19 +3682,13 @@ fn input(
     let rest_border = unless_palette(hc.button_text, palette).or(elevation_border(c, hc, roles));
     // Its edge, at rest and in every state but disabled, the bottom side
     // (`text_elevation_edge`): TextControlBorderBrushDisabled is flat, the base's outline.
-    let elevated = hc
-        .window_text
-        .or(unless_palette(hc.button_text, palette))
-        .is_none()
-        .then(|| {
-            elevation_stroke(
-                layout.border_width,
-                c.elevation_stroke,
-                ElevationEdge::Bottom,
-                c.text_elevation_edge,
-                StrokeAlign::Outside,
-            )
-        });
+    let elevated = neutral_elevation(
+        c,
+        hc,
+        layout.border_width,
+        ElevationEdge::Bottom,
+        c.text_elevation_edge,
+    );
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(rest_border.map(|color| outside_stroke(layout.border_width, color)))
@@ -3674,9 +3716,6 @@ fn input(
     // gives the hovered outline under high contrast as the highlight alone; where the system states
     // none, or a palette is kept, it is the rest outline, as PointerOver is outside high contrast.
     let hover_border = unless_palette(hc.highlight, palette).or(rest_border);
-    let hover_elevated = elevated
-        .clone()
-        .filter(|_| unless_palette(hc.highlight, palette).is_none());
     let field = field
         .rules(
             hover_border.into_iter().flat_map(|_| {
@@ -3688,11 +3727,11 @@ fn input(
             hover_border.map(|color| outside_stroke(layout.border_width, color)),
         )
         .rules(
-            hover_elevated.iter().flat_map(|_| {
+            elevated.iter().flat_map(|_| {
                 [WidgetState::HOVER, WidgetState::PRESSED]
                     .map(|state| RuleSelector::on(state).except(WidgetState::DISABLED))
             }),
-            hover_elevated.clone(),
+            elevated.clone(),
         )
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
@@ -4154,7 +4193,7 @@ fn toolbar(
             [
                 fill(c.accent_fill),
                 hc.highlight.map_or_else(
-                    || accent_elevation(c, TOOLBAR_TOGGLE_BORDER_WIDTH),
+                    || accent_elevation(c, hc, TOOLBAR_TOGGLE_BORDER_WIDTH),
                     |color| stroke(TOOLBAR_TOGGLE_BORDER_WIDTH, color),
                 ),
             ],
@@ -4600,8 +4639,7 @@ fn combo_box(
     // Its edge, at rest and hovered, not disabled (`elevation_edge`): ComboBoxBorderBrushPressed
     // and …Disabled are flat (ComboBox_themeresources.xaml:266-267 / :56-57 at microsoft-ui-xaml
     // 8463f45), the pressed rule's and the base's outline.
-    let elevated = control_elevation(c, hc, layout.border_width)
-        .filter(|_| unless_palette(hc.button_text, palette).is_none());
+    let elevated = control_elevation(c, hc, layout.border_width);
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(c.control_fill)])
         .base(outline.clone())

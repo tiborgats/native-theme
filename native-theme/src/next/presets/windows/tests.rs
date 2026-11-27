@@ -1415,6 +1415,56 @@ fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
     }
 }
 
+/// Under high contrast every outline is uniform, also where the system
+/// states some of its colours alone (no highlight, no window text): the
+/// hovered push button's, the primary button's, a checked push button's and
+/// a checked toolbar button's, the text field's and the combo box's state no
+/// elevation edge.
+#[test]
+fn a_partial_high_contrast_states_no_elevation_edge() {
+    let [button_text, gray] = [2, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let partial = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(button_text, None, gray))
+        .resolve(&ctx);
+    assert_eq!(partial.context.contrast, Contrast::High);
+    let checked = WidgetState::CHECKED;
+    for state in [
+        WidgetState::NONE,
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+    ] {
+        let rows = [
+            ("push", partial.button.body(ButtonQuery::new(state)).stroke),
+            (
+                "primary",
+                partial
+                    .button
+                    .body(ButtonQuery::primary().state(state))
+                    .stroke,
+            ),
+            (
+                "checked",
+                partial
+                    .button
+                    .body(ButtonQuery::new(checked | state))
+                    .stroke,
+            ),
+            ("tool", partial.toolbar.button(checked | state).stroke),
+            ("input", partial.input.field(state).stroke),
+            ("text area", partial.text_area.field(state).stroke),
+            ("combo", partial.combo_box.field(state).stroke),
+        ];
+        for (name, got) in rows {
+            assert!(
+                matches!(got, Stroke::None | Stroke::Uniform { .. }),
+                "{state:?} {name}: {got:?}"
+            );
+        }
+    }
+}
+
 /// Under a palette kept under high contrast
 /// (`preserve_palette_in_high_contrast`, spec §6, step 1) the palette's
 /// `border` stands over the high-contrast colours of the text field's, the
