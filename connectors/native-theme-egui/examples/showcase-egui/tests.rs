@@ -12785,6 +12785,14 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     // The routes of the side-panel toggle and its icon.
     let toggle: &[(&str, &str)] = &[
         (
+            "button.label(NONE; variant=Flat).color",
+            i::TOGGLE_REST_LABEL,
+        ),
+        (
+            "button.body(NONE; variant=Flat).corners",
+            i::TOGGLE_REST_CORNERS,
+        ),
+        (
             "button.body(HOVER; variant=Flat).stroke.width",
             i::TOGGLE_HOVER_WIDTH,
         ),
@@ -12896,6 +12904,11 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     ];
     // The routes of the other flat buttons, the Pages menu button and Widget Info's Copy.
     let flat: &[(&str, &str)] = &[
+        ("button.label(NONE; variant=Flat).color", i::FLAT_REST_LABEL),
+        (
+            "button.body(NONE; variant=Flat).corners",
+            i::FLAT_REST_CORNERS,
+        ),
         ("button.body(HOVER; variant=Flat).fill", i::FLAT_HOVER_FILL),
         (
             "button.body(PRESSED; variant=Flat).fill",

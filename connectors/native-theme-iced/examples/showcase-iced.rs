@@ -9931,12 +9931,15 @@ fn ghost_home(home: &str) -> Option<&'static str> {
     })
 }
 
-/// The push button's listed home whose route [`ghost_route`] gives for the
-/// flat variant's own home `home` of a flat button's hovered or pressed
-/// state, which [`ghost_button`] reads for both ([`ghost_home`]): `None` for
-/// any other home.
+/// The push button's listed home whose route [`ghost_route`] or
+/// [`button_home_route`] gives for the flat variant's own home `home` of a
+/// flat button at rest, hovered or pressed, which [`ghost_button`] reads for
+/// both ([`ghost_home`]; its corners, `button.body(NONE;variant=Flat)
+/// .corners`): `None` for any other home.
 fn flat_state_home(home: &str) -> Option<&'static str> {
     Some(match home {
+        "button.label(NONE; variant=Flat).color" => "button.label(NONE).color",
+        "button.body(NONE; variant=Flat).corners" => "button.body(NONE).corners",
         "button.body(HOVER; variant=Flat).fill" => "button.body(HOVER).fill",
         "button.body(PRESSED; variant=Flat).fill" => "button.body(PRESSED).fill",
         "button.label(HOVER; variant=Flat).color" => "button.label(HOVER).color",
@@ -13259,15 +13262,22 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     {
         return line;
     }
-    if tool_button(id)
-        && let Some(line) = ghost_icon(state, id).and_then(|icon| {
-            tool_icon_route(
+    // A tool button's label colour, on the button where its icon stands in
+    // for the label, and on its icon, which loads in it.
+    if tool_button(button_id)
+        && let Some(line) = match ghost_icon(state, button_id) {
+            Some(icon) => tool_icon_route(
                 element,
                 (home, icon),
                 (checked, state.chrome_icons.system),
                 (tool_icon_stated(r, checked).is_some(), installed.as_deref()),
-            )
-        })
+            ),
+            None if button_id != id && home == "toolbar.button_label(NONE).color" => Some(
+                "not drawn: the button shows its label, the icon set having no icon for it"
+                    .to_owned(),
+            ),
+            None => None,
+        }
     {
         return line;
     }

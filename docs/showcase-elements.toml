@@ -261,6 +261,8 @@ model_only_homes = [
   { home = "button.label(PRESSED; variant=Flat).color", reason = "a flat button's label colour while pressed (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one pressed label colour, the push button's, button.active_text_color" },
   { home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", reason = "a flat button's outline with the keyboard focus (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and its focus outline is the push button's, button.focus_border_color" },
   { home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", reason = "a flat button's outline width with the keyboard focus (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one outline width, button.border.line_width" },
+  { home = "button.label(NONE; variant=Flat).color", reason = "a flat button's label colour at rest (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one label colour, the push button's, button.font.color" },
+  { home = "button.body(NONE; variant=Flat).corners", reason = "a flat button's corners (docs/v0.8.0-spec.md §3, ButtonQuery::flat()); 0.7.2 has no flat variant, and one corner radius, the push button's, button.border.corner_radius" },
   { home = "button.body(HOVER|CHECKED; variant=Flat).fill", reason = "a checked flat button's fill under the pointer (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked fill, button.checked_background" },
   { home = "button.body(PRESSED|CHECKED; variant=Flat).fill", reason = "a checked flat button's fill while pressed (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked fill, button.checked_background" },
   { home = "button.label(HOVER|CHECKED; variant=Flat).color", reason = "a checked flat button's label colour under the pointer (docs/v0.8.0-spec.md §3, ButtonQuery::flat(); §10, rule 0); 0.7.2 has no flat variant and one checked label colour, button.checked_text_color" },
@@ -717,15 +719,15 @@ states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = "glyph" }
 
-# Widget Info's Copy box is a flat button: its hovered and pressed fill, label and outline and
-# its focus outline are listed at the flat variant's own homes (model_only_homes), which the
+# Widget Info's Copy box is a flat button: its label and corners at rest, its hovered and pressed
+# fill, label and outline and its focus outline are listed at the flat variant's own homes (model_only_homes), which the
 # connectors read for it, beside the push button's homes its 0.7.2 leaves have.
 [[element]]
 id = "chrome.info.copy"
 name = "Copy button"
 parent = "chrome.info.title"
 leaves = ["button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height", "sidebar.font", "sidebar.font.color"]
-homes = ["button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color"]
+homes = ["button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "button.label(NONE; variant=Flat).color", "button.body(NONE; variant=Flat).corners"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = { glyph = [0.1, 0.1, 0.9, 0.9] } }
@@ -831,15 +833,15 @@ homes = ["tab.tab(NONE).fill", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_s
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
-# The pages menu button is a flat button: its hovered and pressed fill, label and outline and
-# its focus outline are listed at the flat variant's own homes (model_only_homes), which the
+# The pages menu button is a flat button: its label and corners at rest, its hovered and pressed
+# fill, label and outline and its focus outline are listed at the flat variant's own homes (model_only_homes), which the
 # connectors read for it, beside the push button's homes its 0.7.2 leaves have.
 [[element]]
 id = "chrome.page_tabs.menu"
 name = "Pages menu button"
 parent = "chrome.page_tabs"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set", "button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set", "button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.label(NONE; variant=Flat).color", "button.body(NONE; variant=Flat).corners"]
 states = ["Normal"]
 
 [[element]]
@@ -879,15 +881,16 @@ sample = { fill = [0.6, 0.5], border = [0.6, 0.0, 0.0, 0.5] }
 # raised button's leaves in 0.7.2 (Breeze fills a checked flat button apart,
 # breezehelper.cpp:680-684); their homes are the checked state's. The flat button's checked
 # outline in each state, its checked fill, label and icon colour under the pointer and pressed,
-# its icon's colour closed (at rest, under the pointer and pressed) and open, its hovered and
-# pressed fill, label and outline closed and its focus outline have no 0.7.2 field and are
+# its icon's colour closed (at rest, under the pointer and pressed) and open, its label and corners
+# at rest, its hovered and pressed fill, label and outline closed and its focus outline have no
+# 0.7.2 field and are
 # listed at the flat variant's own homes (model_only_homes).
 [[element]]
 id = "chrome.status_bar.toggle"
 name = "Side panel toggle"
 parent = "chrome.status_bar"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.checked_background", "button.checked_text_color", "button.hover_border_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(CHECKED; variant=Flat).stroke.color", "button.body(CHECKED; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).stroke.color", "button.body(HOVER|CHECKED; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width", "button.body(PRESSED|CHECKED; variant=Flat).stroke.color", "button.body(PRESSED|CHECKED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).fill", "button.body(PRESSED|CHECKED; variant=Flat).fill", "button.label(HOVER|CHECKED; variant=Flat).color", "button.label(PRESSED|CHECKED; variant=Flat).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color", "button.icon(HOVER; variant=Flat).color", "button.icon(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(CHECKED; variant=Flat).stroke.color", "button.body(CHECKED; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).stroke.color", "button.body(HOVER|CHECKED; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width", "button.body(PRESSED|CHECKED; variant=Flat).stroke.color", "button.body(PRESSED|CHECKED; variant=Flat).stroke.width", "button.body(HOVER; variant=Flat).stroke.width", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color", "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width", "button.body(HOVER|CHECKED; variant=Flat).fill", "button.body(PRESSED|CHECKED; variant=Flat).fill", "button.label(HOVER|CHECKED; variant=Flat).color", "button.label(PRESSED|CHECKED; variant=Flat).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set", "button.icon(NONE; variant=Flat).color", "button.icon(CHECKED; variant=Flat).color", "button.icon(HOVER|CHECKED; variant=Flat).color", "button.icon(PRESSED|CHECKED; variant=Flat).color", "button.icon(HOVER; variant=Flat).color", "button.icon(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).fill", "button.body(PRESSED; variant=Flat).fill", "button.label(HOVER; variant=Flat).color", "button.label(PRESSED; variant=Flat).color", "button.body(HOVER; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.color", "button.body(PRESSED; variant=Flat).stroke.width", "button.label(NONE; variant=Flat).color", "button.body(NONE; variant=Flat).corners"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1299,7 +1302,7 @@ leaves = ["checkbox.font", "checkbox.indicator_color", "checkbox.indicator_width
 #        checkbox.disabled_background: DISABLED|CHECKED, not DISABLED: shown checked (Checked,
 #          disabled).
 #        checkbox.label(DISABLED|CHECKED).color (model_only_homes): the checked box's disabled
-#          label, which gpui and iced read for it by spec §2's two queries.
+#          label, which the three connectors read for it by spec §2's two queries.
 homes = ["checkbox.label(NONE)", "checkbox.checkmark(CHECKED).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.checkmark(NONE).stroke_width", "checkbox.label_gap", "checkbox.indicator(CHECKED).fill", "checkbox.disabled_opacity", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Checked, disabled"]
 
@@ -1323,8 +1326,8 @@ parent = "basic.checkboxes.disabled.indicator"
 leaves = ["checkbox.indicator_color", "checkbox.check_mark_stroke_width_px", "checkbox.disabled_opacity", "checkbox.disabled_text_color", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px"]
 # homes: checkbox.* not radio.*: a check box.
 #        checkbox.label(DISABLED|CHECKED).color (model_only_homes): the checked box's disabled
-#          label, which iced's mark takes on a stated disabled fill where no disabled mark is
-#          stated.
+#          label, which egui's and iced's mark take on a stated disabled fill where no disabled
+#          mark is stated.
 homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(NONE).stroke_width", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left"]
 states = ["Checked, disabled"]
 part = true
@@ -1337,7 +1340,7 @@ parent = "basic.checkboxes.disabled.indicator"
 leaves = ["checkbox.font", "checkbox.label_gap_px", "checkbox.disabled_opacity", "checkbox.disabled_text_color", "defaults.line_height"]
 # homes: checkbox.* not radio.*: a check box.
 #        checkbox.label(DISABLED|CHECKED).color (model_only_homes): the checked box's disabled
-#          label, which gpui and iced read for it by spec §2's two queries.
+#          label, which the three connectors read for it by spec §2's two queries.
 homes = ["checkbox.label(NONE)", "checkbox.label_gap", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "typography.line_height_multiplier"]
 states = ["Checked, disabled"]
 part = true
@@ -2103,8 +2106,10 @@ sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 id = "basic.icons.copy.icon"
 name = "Icon"
 parent = "basic.icons.copy"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.font.color"]
+# homes: toolbar.button_label(NONE).color, the colour egui and iced load the icon in where
+#          the theme states no icon colour for the state.
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color", "toolbar.button_label(NONE).color"]
 states = ["Normal"]
 part = true
 
@@ -2126,8 +2131,10 @@ sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 id = "basic.icons.paste.icon"
 name = "Icon"
 parent = "basic.icons.paste"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.font.color"]
+# homes: toolbar.button_label(NONE).color, the colour egui and iced load the icon in where
+#          the theme states no icon colour for the state.
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color", "toolbar.button_label(NONE).color"]
 states = ["Normal"]
 part = true
 
@@ -2149,8 +2156,10 @@ sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 id = "basic.icons.delete.icon"
 name = "Icon"
 parent = "basic.icons.delete"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color"]
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.font.color"]
+# homes: toolbar.button_label(NONE).color, the colour egui and iced load the icon in where
+#          the theme states no icon colour for the state.
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color", "toolbar.button_label(NONE).color"]
 states = ["Normal"]
 part = true
 

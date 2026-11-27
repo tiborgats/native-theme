@@ -1177,6 +1177,83 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
     Ok(())
 }
 
+/// A disabled checked box is lettered in `checkbox.label(DISABLED|CHECKED)` where a rule for
+/// `DISABLED` states it by spec §2's two queries (`label(DISABLED)`, or `label(DISABLED|CHECKED)`
+/// asking `DISABLED`), else as the unchecked disabled box, and its mark, falling back to the
+/// label on a disabled fill the theme states, with it (`style::variants::selected_disabled_cell`).
+/// On every preset with the label and the mark first stated with no state, and a disabled fill:
+/// (i) a rule for `DISABLED | CHECKED` alone letters the checked box and its mark, and leaves the
+/// unchecked one; (ii) a rule for `CHECKED` alone states nothing
+/// for `DISABLED`, and the checked box is lettered as with no such rule.
+#[test]
+fn a_rule_for_disabled_and_checked_letters_the_disabled_checked_box()
+-> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{IconStated, StyleQuery};
+    let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    let base = "[[widgets.checkbox.rules]]\nstates = []\nlabel.color = \"#101010\"\n\
+                checkmark.color = \"#303030\"\n\
+                [[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
+                indicator.fill = \"#202020\"\n";
+    let ruled = |states: &str| {
+        format!(
+            "{base}[[widgets.checkbox.rules]]\nstates = [{states}]\nlabel.color = \"#ff00ff\"\n"
+        )
+    };
+    let cell = |atlas: &crate::ThemeAtlas, variant| {
+        atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, variant)
+            .visuals
+            .clone()
+    };
+    for &(key, preset) in PRESETS {
+        let both = patched_light(preset, &ruled("\"disabled\", \"checked\""))?;
+        let checked = cell(&both, crate::RoleVariant::SelectedDisabled);
+        assert_eq!(
+            checked.override_text_color,
+            Some(magenta),
+            "(i) {key}: checked"
+        );
+        let unchecked = cell(&both, crate::RoleVariant::Disabled);
+        assert_ne!(
+            unchecked.override_text_color,
+            Some(magenta),
+            "(i) {key}: unchecked"
+        );
+        let r = Theme::preset(preset)
+            .with_patch(ThemePatch::from_toml(&ruled("\"disabled\", \"checked\""))?)
+            .resolve(&ThemeContext::light());
+        let off_on = StyleQuery::new(WidgetState::DISABLED | WidgetState::CHECKED)
+            .asking(WidgetState::DISABLED);
+        assert!(
+            ![
+                r.checkbox.checkmark(WidgetState::DISABLED),
+                r.checkbox.checkmark(off_on),
+            ]
+            .iter()
+            .any(|mark| mark.from_state.contains(IconStated::COLOR)),
+            "(i) {key}: patched, it still states a disabled mark"
+        );
+        assert_eq!(
+            checked.widgets.inactive.fg_stroke.color, magenta,
+            "(i) {key}: the mark"
+        );
+        let alone = cell(
+            &patched_light(preset, &ruled("\"checked\""))?,
+            crate::RoleVariant::SelectedDisabled,
+        );
+        let stock = cell(
+            &patched_light(preset, base)?,
+            crate::RoleVariant::SelectedDisabled,
+        );
+        assert_eq!(
+            alone.override_text_color, stock.override_text_color,
+            "(ii) {key}: checked"
+        );
+    }
+    Ok(())
+}
+
 /// The mixed box `super::mixed_checkbox` lays over the light `Role::Checkbox` `Normal` cell of
 /// `preset` with `patch` laid over it, with the 0.8.0 light theme it lays it from.
 fn mixed_over_normal(

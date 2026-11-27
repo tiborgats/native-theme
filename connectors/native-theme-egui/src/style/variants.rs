@@ -64,6 +64,9 @@ pub(crate) struct CheckedBox {
     pub disabled_mark: Option<Rgba>,
     /// The checked box's outline, and where it lies, where the theme states a disabled outline.
     pub disabled_border: Option<(StateLine, LineAlign)>,
+    /// The disabled checked box's label: the checked one's where the theme states a disabled
+    /// label for it, else the unchecked disabled box's.
+    pub disabled_label: Option<Rgba>,
 }
 
 /// The primary button's disabled look: its fill where the theme states one, and the label
@@ -152,6 +155,7 @@ impl VariantSource {
                     .map(|c| (c, "checkbox.disabled_background")),
                 disabled_mark: None,
                 disabled_border: None,
+                disabled_label: Some(k.disabled_text_color),
             },
             input: disabled(
                 t.input.disabled_text_color,
@@ -515,8 +519,9 @@ pub(crate) fn selected_disabled_cell(
     let k = &src.checked;
     let mut style = selected.clone();
     let v = &mut style.visuals;
-    // The label in the disabled text colour, as the `Disabled` cell's (§6.3), checked or not.
-    let text = src.checkbox.text.map(to_color32);
+    // The label in the disabled checked box's own disabled text colour where the theme states
+    // one for it, else in the `Disabled` cell's (§6.3).
+    let text = k.disabled_label.map(to_color32);
     if text.is_some() {
         v.override_text_color = text;
     }

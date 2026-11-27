@@ -769,17 +769,43 @@ pub(crate) const FLAT_PRESSED_LABEL: &str = "egui: per call, the flat button's l
      button.label(PRESSED; variant=Flat).color where a rule states it for PRESSED, else egui's \
      own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
 
-/// The route of a disabled checked box's own label colour, which egui does not read.
-const CHECKED_DISABLED_LABEL: &str = "not drawn: egui letters a disabled check box, checked or \
-     not, and draws its mark on a stated disabled fill in the Disabled cell's text, \
-     checkbox.label(DISABLED).color where stated (native-theme-egui style/variants.rs, \
-     selected_disabled_cell); the connector reads no checked disabled label";
+/// The route of a disabled checked box's own label colour.
+const CHECKED_DISABLED_LABEL: &str = "egui: the check box's SelectedDisabled cell's text, \
+     visuals.override_text_color, checkbox.label(DISABLED|CHECKED).color where a rule states it \
+     for DISABLED by spec §2's two queries, else the Disabled cell's, \
+     checkbox.label(DISABLED).color where stated; on a stated disabled fill with no disabled mark \
+     stated, the mark too, visuals.widgets.inactive.fg_stroke; faded by the scope's \
+     disabled_alpha (native-theme-egui next/build.rs, variant_source; style/variants.rs, \
+     selected_disabled_cell; egui-0.37.0 src/ui.rs:523-529, Ui::disable)";
+
+/// The route of a flat button's own label colour at rest, which egui does not read.
+pub(crate) const FLAT_REST_LABEL: &str = "not drawn: next::flat_button lays only the hovered, \
+     pressed and focused states over the scope; at rest the flat button is lettered in the \
+     scope's own text (native-theme-egui next::flat_button; demo::flat)";
+
+/// The route of a flat button's own corners, which egui does not read.
+pub(crate) const FLAT_REST_CORNERS: &str = "not drawn: next::flat_button writes no corner \
+     radius; the flat button is rounded by the scope's own (native-theme-egui next::flat_button; \
+     demo::flat)";
+
+/// The route of the side-panel toggle's own label colour at rest, which egui does not read.
+pub(crate) const TOGGLE_REST_LABEL: &str = "not drawn: closed, next::flat_button lays only the \
+     hovered, pressed and focused states over the scope, and at rest the toggle is lettered in \
+     the scope's own text (native-theme-egui next::flat_button; demo::flat); open, it is egui's \
+     selected button (chrome::ghost_button)";
+
+/// The route of the side-panel toggle's own corners, which egui does not read.
+pub(crate) const TOGGLE_REST_CORNERS: &str = "not drawn: next::flat_button writes no corner \
+     radius; the toggle, closed or open, is rounded by the scope's own (native-theme-egui \
+     next::flat_button; demo::flat; chrome::ghost_button)";
 
 /// The homes of a flat button's own states, which `next::flat_button` lays over the scope per
 /// call from the installed 0.8.0 theme and no `mapping.toml` row holds, each with its route. Only
 /// the flat buttons ([`FLAT_BUTTONS`]) take them; the side-panel toggle's are
 /// [`TOGGLE_ROUTES`]'.
-pub(crate) const FLAT_BUTTON_ROUTES: [(&str, &str); 10] = [
+pub(crate) const FLAT_BUTTON_ROUTES: [(&str, &str); 12] = [
+    ("button.label(NONE; variant=Flat).color", FLAT_REST_LABEL),
+    ("button.body(NONE; variant=Flat).corners", FLAT_REST_CORNERS),
     ("button.body(HOVER; variant=Flat).fill", FLAT_HOVER_FILL),
     ("button.body(PRESSED; variant=Flat).fill", FLAT_PRESSED_FILL),
     ("button.label(HOVER; variant=Flat).color", FLAT_HOVER_LABEL),
@@ -972,7 +998,12 @@ pub(crate) const EDIT_ICON_PRESSED_CHECKED: &str = "egui: per call, the colour t
 /// and of its icon's colour, which the chrome lays over the scope per call from the installed
 /// 0.8.0 theme and no `mapping.toml` row holds, each with its route. Only the toggle and its
 /// icon ([`TOGGLE`]) take them.
-pub(crate) const TOGGLE_ROUTES: [(&str, &str); 28] = [
+pub(crate) const TOGGLE_ROUTES: [(&str, &str); 30] = [
+    ("button.label(NONE; variant=Flat).color", TOGGLE_REST_LABEL),
+    (
+        "button.body(NONE; variant=Flat).corners",
+        TOGGLE_REST_CORNERS,
+    ),
     (
         "button.body(HOVER; variant=Flat).stroke.width",
         TOGGLE_HOVER_WIDTH,

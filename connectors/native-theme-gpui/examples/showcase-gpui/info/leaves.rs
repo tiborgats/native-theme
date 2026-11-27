@@ -849,6 +849,36 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     ("chrome.page_tabs.menu", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
     ("chrome.info.copy", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
+    (
+        "chrome.info.copy",
+        &["button.label(NONE; variant=Flat).color"],
+        "not drawn: the Copy box is lettered at rest in the panel's text, sidebar.item_label(NONE).color, else upstream's sidebar_foreground (inspector.rs, PanelLook::text)",
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(NONE; variant=Flat).corners"],
+        "not drawn: the Copy box is rounded by the push button's corners, button.body(NONE).corners, else upstream's radius (inspector.rs, PanelLook)",
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.label(NONE; variant=Flat).color"],
+        FLAT_GHOST_REST_LABEL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.label(NONE; variant=Flat).color"],
+        FLAT_GHOST_REST_LABEL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(NONE; variant=Flat).corners"],
+        FLAT_TOOL_BOX_CORNERS,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(NONE; variant=Flat).corners"],
+        FLAT_TOOL_BOX_CORNERS,
+    ),
     // --- button: a Default Button refined by next::geometry::button ------------------
     (
         "",
@@ -3459,6 +3489,12 @@ const FLAT_FOCUS_HOMES: &[&str] = &[
     "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
     "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
 ];
+
+/// Why a flat button's own label at rest is not drawn.
+const FLAT_GHOST_REST_LABEL: &str = "not drawn: no builder reads the flat button's label at rest; a Ghost Button is lettered in variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (native-theme-gpui next/mod.rs, slice_colors)";
+
+/// Why a flat button's own corners are not drawn.
+const FLAT_TOOL_BOX_CORNERS: &str = "not drawn: the Button is rounded by the push button's corners, button.body(NONE).corners, where stated, else the Theme's radius (demo::tool_button_box)";
 
 /// Why [`FLAT_FOCUS_HOMES`] are not drawn.
 const FLAT_FOCUS_RING: &str = "not reachable: a focused Button's border is gpui-component's own focus style, ThemeColor ring, not a stroke the theme states for the state (styled.rs, focus_style)";

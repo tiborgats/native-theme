@@ -40,8 +40,8 @@ const REGENERATE_HOMES: &str =
 /// field for, a checked indicator's fill under the pointer and a disabled
 /// checked box's mark and label, each asked at its two flags; the colour
 /// homes of the same kind docs/showcase-elements.toml lists that none of
-/// them asks, which [`UNREAD_HOMES`] names: a flat button's own hovered,
-/// pressed, focused and checked looks, a flat button's icon, a toolbar
+/// them asks, which [`UNREAD_HOMES`] names: a flat button's own label at
+/// rest, hovered, pressed, focused and checked looks, a flat button's icon, a toolbar
 /// button's icon; and a home
 /// docs/showcase-elements.toml lists in a state none of them asks, whose
 /// rule reaches a state one asks: `toolbar.button(PRESSED|CHECKED)
@@ -74,6 +74,7 @@ const QUERIED_HOMES: &[&str] = &[
     "button.label(HOVER; variant=Flat).color",
     "button.label(HOVER|CHECKED).color",
     "button.label(HOVER|CHECKED; variant=Flat).color",
+    "button.label(NONE; variant=Flat).color",
     "button.label(PRESSED; variant=Flat).color",
     "button.label(PRESSED|CHECKED).color",
     "button.label(PRESSED|CHECKED; variant=Flat).color",
@@ -137,11 +138,11 @@ const SWITCH_LABEL: &str = "the showcase colours the switch's label, the text it
      iced's `Toggler`; no connector style reads it (`next::styles::toggler` keeps iced's own \
      `text_color`, src/styles.rs, `toggler_from`)";
 
-/// Why no row reads a flat button's own hovered, pressed, checked or focused
-/// looks or its icon's colour.
+/// Why no row reads a flat button's own label at rest, its own hovered,
+/// pressed, checked or focused looks or its icon's colour.
 const FLAT_BUTTON: &str = "no `next::styles` function draws a flat button; the iced \
-     showcase's own `ghost_button` draws its hovered and pressed fill, label and outline and \
-     a checked one's fill, label and outline and its \
+     showcase's own `ghost_button` draws its label at rest, its hovered and pressed fill, label \
+     and outline and a checked one's fill, label and outline and its \
      `icon_colour` loads an icon in the colour the theme states for it, each outside the \
      connector; iced's button takes no keyboard focus";
 
@@ -177,6 +178,11 @@ const UNREAD_HOMES: &[UnreadHome] = &[
     },
     UnreadHome {
         home: "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.label(NONE; variant=Flat).color",
         kind: "no widget",
         why: FLAT_BUTTON,
     },
