@@ -62,7 +62,7 @@ use crate::{AccessibilityPreferences, ThemeScalars, apply_scalars, caret_blink_o
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to gpui (a gradient fill, a per-side
-/// stroke, a pill): its place in the 0.8.0 model, as a query and a property
+/// stroke not reduced, a pill): its place in the 0.8.0 model, as a query and a property
 /// (`button.body(NONE).stroke.width`). The 0.7.2 path has no such case, its
 /// resolved fields being always set; the 0.8.0 path reports it rather than
 /// inventing the value.
@@ -159,7 +159,8 @@ fn fill_color_of(part: &PartStyle) -> Option<Color> {
 /// extent stays and the connector's README records the limit (spec §10,
 /// rule 4).
 pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
-    if part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::None) {
+    if part.stated.contains(PartStated::STROKE) && matches!(part.stroke.prevailing(), Stroke::None)
+    {
         return Ok(hsla(Color::TRANSPARENT));
     }
     stated(stroke_color_of(part), home)
@@ -167,9 +168,11 @@ pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla>
 
 /// A part's stroke colour as `stroke_color` reads one stroke, `None` where
 /// it is not stated, stated as none (no line: [`stroke_width_of`] gives 0),
-/// or stated in a form gpui cannot draw (not one stroke of one colour).
+/// or stated in a form gpui cannot draw (not one stroke of one colour). A
+/// per-side stroke is read as [`Stroke::prevailing`] gives it (spec §10,
+/// rule 2): a fourth side's other colour is not drawn.
 pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
             Some(hsla(*color))
         }
@@ -186,12 +189,12 @@ pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> 
 
 /// A part's stroke width as `stroke_width` reads it, `None` where it is
 /// not stated, or stated in a form gpui cannot draw (not one stroke, nor
-/// none).
+/// none, a per-side stroke [`Stroke::prevailing`] does not reduce).
 pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return None;
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Some(0.0),
         Stroke::Uniform { width, .. } => Some(*width),
         _ => None,
@@ -306,7 +309,7 @@ pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     if !part.from_state.contains(PartStated::STROKE) {
         return None;
     }
-    match part.stroke {
+    match part.stroke.prevailing() {
         Stroke::None if part.stated.contains(PartStated::STROKE) => Some(hsla(Color::TRANSPARENT)),
         _ => stroke_color_of(part),
     }
@@ -1725,7 +1728,7 @@ mod tests {
 
     /// Spec §10 rule 2, for every stroke colour a builder or a colour token
     /// reads: a stroke stated as none is transparent, no line; one stroke its
-    /// colour; an unstated stroke, or one stated per side, the home lacked.
+    /// colour; the home lacked an unstated stroke or one per side not reduced.
     #[test]
     fn a_none_stroke_is_transparent() -> Mapped<()> {
         let mut none = PartStyle::default();
@@ -1786,6 +1789,74 @@ mod tests {
         assert_eq!(state_stroke_color(&hovered, "hover")?, None);
         hovered.from_state = PartStated::STROKE;
         assert_eq!(state_stroke_color(&hovered, "hover")?, Some(hsla(RED)));
+        Ok(())
+    }
+
+    /// A per-side stroke 1 wide, `edges` on the right and the left and
+    /// `RED` on the top, `bottom` on the bottom.
+    fn per_side(edges: Color, bottom: Color) -> Stroke {
+        use native_theme::next::StrokeSide;
+        let side = |color| StrokeSide {
+            width: 1.0,
+            paint: Paint::Solid(color),
+        };
+        Stroke::sides(
+            side(RED),
+            side(edges),
+            side(bottom),
+            side(edges),
+            StrokeAlign::Inside,
+        )
+    }
+
+    /// A button body's stroke stated 3 + 1 is drawn as the uniform stroke
+    /// of the three sides' colour (spec §10, rule 2): on every preset and
+    /// scheme the button builder and the theme's colours are what a uniform
+    /// stroke of that colour, width and alignment gives, and the part reads
+    /// give that colour and width; a 2 + 2 stays unmapped.
+    #[test]
+    fn a_three_and_one_stroke_draws_as_its_prevailing_colour() -> Mapped<()> {
+        use native_theme::next::{ButtonRule, PartPatch, Preset, Theme, ThemeContext, ThemePatch};
+
+        for preset in Preset::ALL {
+            for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+                let resolve = |stroke| {
+                    Theme::preset(*preset)
+                        .with_patch(
+                            ThemePatch::new()
+                                .button(ButtonRule::new().body(PartPatch::new().stroke(stroke))),
+                        )
+                        .resolve(&ctx)
+                };
+                let reduced = resolve(per_side(RED, GREEN));
+                let uniform = resolve(Stroke::uniform_aligned(1.0, RED, StrokeAlign::Inside));
+                let at = format!("{preset:?} {:?}", ctx.scheme);
+                assert_eq!(
+                    builders::button(&reduced),
+                    builders::button(&uniform),
+                    "{at}"
+                );
+                assert_eq!(
+                    format!("{:?}", theme_color(&reduced)),
+                    format!("{:?}", theme_color(&uniform)),
+                    "{at}"
+                );
+                let part = reduced.button.body(WidgetState::NONE);
+                assert_eq!(stroke_color_of(&part), Some(hsla(RED)), "{at}");
+                assert_eq!(stroke_width_of(&part), Some(1.0), "{at}");
+                let unreduced = resolve(per_side(GREEN, RED));
+                assert_eq!(
+                    builders::button(&unreduced),
+                    Err(Unmapped("button.body(NONE).stroke.width")),
+                    "{at}"
+                );
+                assert_eq!(
+                    stroke_width_of(&unreduced.button.body(WidgetState::NONE)),
+                    None,
+                    "{at}"
+                );
+            }
+        }
         Ok(())
     }
 

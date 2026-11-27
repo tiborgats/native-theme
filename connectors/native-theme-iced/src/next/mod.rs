@@ -76,10 +76,10 @@ pub use crate::focus_ring::RingLook;
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to iced (a gradient fill, a per-side
-/// stroke, a concentric radius): its place in the 0.8.0 model, as a query and a
-/// property (`button.body(NONE).stroke.width`). The 0.7.2 path has no such
-/// case, its resolved fields being always set; the 0.8.0 path reports it
-/// rather than inventing the value.
+/// stroke not reduced, a concentric radius): its place in the 0.8.0 model,
+/// as a query and a property (`button.body(NONE).stroke.width`). The 0.7.2
+/// path has no such case, its resolved fields being always set; the 0.8.0
+/// path reports it rather than inventing the value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Unmapped(pub(crate) &'static str);
 
@@ -193,9 +193,11 @@ pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Iced
 /// colour, in any alignment; `None` where it is not stated, or stated in a
 /// form iced cannot draw. The style functions take it with its alignment
 /// and composite it over the fill each state paints (the module's doc), so
-/// this is the theme's colour, not always the one iced draws.
+/// this is the theme's colour, not always the one iced draws. A per-side
+/// stroke is read as [`Stroke::prevailing`] gives it (spec §10, rule 2): a
+/// fourth side's other colour is not drawn.
 pub fn stroke_color_of(part: &PartStyle) -> Option<IcedColor> {
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
             Some(to_color(*color))
         }
@@ -215,12 +217,13 @@ pub fn state_stroke_color_of(part: &PartStyle) -> Option<IcedColor> {
 
 /// A part's stroke width, where stated as one stroke, in any alignment, or
 /// as none, which is no width; `None` where it is not stated, or stated in
-/// a form iced cannot draw (a per-side stroke).
+/// a form iced cannot draw (a per-side stroke [`Stroke::prevailing`] does
+/// not reduce).
 pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return None;
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Some(0.0),
         Stroke::Uniform { width, .. } => Some(*width),
         _ => None,
@@ -753,7 +756,7 @@ pub fn toolbar_item_gap(r: &ResolvedTheme) -> Option<f32> {
 /// # Errors
 ///
 /// [`Unmapped`] where the theme states no stroke for the bar, or a stroke
-/// per side.
+/// per side and not reduced.
 pub fn toolbar_border_line_width(r: &ResolvedTheme) -> Mapped<f32> {
     let bar = r.toolbar.bar(WidgetState::NONE);
     if !bar.stated.contains(PartStated::STROKE) {
@@ -769,7 +772,7 @@ fn line_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return Ok(iced_core::Border::default().width);
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Ok(0.0),
         Stroke::Uniform { width, .. } => Ok(*width),
         _ => Err(Unmapped(home)),
@@ -812,7 +815,7 @@ fn padding_inside(
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the panel's stroke is per side.
+/// [`Unmapped`] where the panel's stroke is per side and not reduced.
 pub fn dialog_padding(
     r: &ResolvedTheme,
     default: iced_core::Padding,
@@ -834,7 +837,7 @@ pub fn toolbar_padding(r: &ResolvedTheme, default: iced_core::Padding) -> iced_c
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the body's stroke is per side.
+/// [`Unmapped`] where the body's stroke is per side and not reduced.
 #[cfg(feature = "widgets")]
 pub fn button_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
     padding_inside(
@@ -850,7 +853,7 @@ pub fn button_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the field's stroke is per side.
+/// [`Unmapped`] where the field's stroke is per side and not reduced.
 #[cfg(feature = "widgets")]
 pub fn input_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
     padding_inside(
@@ -866,7 +869,7 @@ pub fn input_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the field's stroke is per side.
+/// [`Unmapped`] where the field's stroke is per side and not reduced.
 #[cfg(feature = "widgets")]
 pub fn text_area_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
     padding_inside(
@@ -885,7 +888,7 @@ pub fn text_area_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the field's stroke is per side.
+/// [`Unmapped`] where the field's stroke is per side and not reduced.
 #[cfg(feature = "widgets")]
 pub fn combo_box_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
     combo_box_padding_with(r, chevron_size(r))
@@ -924,7 +927,7 @@ fn combo_box_padding_with(r: &ResolvedTheme, chevron: Option<f32>) -> Mapped<ice
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the body's stroke is per side.
+/// [`Unmapped`] where the body's stroke is per side and not reduced.
 #[cfg(feature = "widgets")]
 pub fn button_content_min_size(r: &ResolvedTheme) -> Mapped<[Option<f32>; 2]> {
     let [width, height] = r.button.body(WidgetState::NONE).min_size;
@@ -1218,7 +1221,7 @@ pub(crate) fn tab_flares_look(r: &ResolvedTheme) -> Mapped<Option<crate::tab_fla
     };
     let tab = t.tab(WidgetState::SELECTED);
     let selected = fill(&tab, "tab.tab(SELECTED).fill")?;
-    let (width, outline) = match &tab.stroke {
+    let (width, outline) = match &tab.stroke.prevailing() {
         _ if !tab.stated.contains(PartStated::STROKE) => {
             return Err(Unmapped("tab.tab(SELECTED).stroke"));
         }

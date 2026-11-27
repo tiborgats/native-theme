@@ -5360,13 +5360,14 @@ fn drawn_state_fill(part: &PartStyle) -> Option<Color> {
 /// does not export): an opaque or `Outside` stroke as stated, an `Inside`
 /// one composited over the fill, a `Center` one over the fill at half its
 /// alpha; a stated `Stroke::None` 0 wide, in iced's own border colour.
-/// `None` where `part` states no stroke, or one iced cannot draw (per side,
-/// or of an alignment it has no form for).
+/// A per-side stroke as `Stroke::prevailing` gives it. `None` where `part`
+/// states no stroke, or one iced cannot draw (per side and not reduced, or
+/// of an alignment it has no form for).
 fn next_edge(part: &PartStyle, fill: Color) -> Option<iced::Border> {
     if !part.stated.contains(PartStated::STROKE) {
         return None;
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => Some(iced::Border {
             width: 0.0,
             ..iced::Border::default()
@@ -6954,8 +6955,8 @@ fn menu_bar_row(r: &native_theme::next::ResolvedTheme) -> Option<Color> {
 /// `min_h`. Under its padding the connector's rule
 /// (`iced_next::styles::toolbar_rule`, `toolbar.bar(NONE).stroke.color`;
 /// iced's own rule where unstated, none where stated none), a line
-/// `toolbar.bar(NONE).stroke.width` high; a stroke stated per side is not
-/// drawn, iced's rule being one line.
+/// `toolbar.bar(NONE).stroke.width` high; a stroke stated per side and not
+/// reduced is not drawn, iced's rule being one line.
 /// §2.13 has no row for that border; Breeze draws no toolbar frame
 /// (`ToolBar_FrameWidth` 0, cited in §2.13's padding row); the showcase
 /// draws what the theme holds.
@@ -7637,7 +7638,8 @@ fn next_button_floor(r: &native_theme::next::ResolvedTheme) -> iced::Size {
 /// `native_theme_iced::next::button_padding`, the padding inside the
 /// border of `button.body(NONE)` (iced's `button::DEFAULT_PADDING` on a side
 /// it leaves unstated); iced's own, `button::DEFAULT_PADDING`, where the
-/// body's stroke is one iced cannot take (a stroke per side).
+/// body's stroke is one iced cannot take (a stroke per side and not
+/// reduced).
 fn next_button_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     iced_next::button_padding(r).unwrap_or(button::DEFAULT_PADDING)
 }
@@ -12840,7 +12842,8 @@ fn chrome_route(r: &native_theme::next::ResolvedTheme, id: &str, home: &str) -> 
         "toolbar.bar(NONE).stroke.width" => {
             "ToolbarLayout: toolbar.bar(NONE).stroke.width, the bottom rule's height, under \
              the bar's padding; iced's own border width, no line, where unstated or stated \
-             none; a stroke stated per side is not drawn, iced's rule being one line"
+             none; a stroke stated per side and not reduced is not drawn, iced's rule being \
+             one line"
                 .into()
         }
         "toolbar.bar(NONE).padding.top"
@@ -13901,7 +13904,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
 /// stroke; iced measures a padding from the bounds, so each side is the
 /// stroke width more (`native_theme_iced::next::dialog_padding`), none where
 /// the theme states no stroke (iced's own border, `Border::default`). Where
-/// the stroke is per side, which iced cannot draw, the dialog is padded
+/// the stroke is per side and not reduced, which iced cannot draw, the dialog is padded
 /// [`DIALOG_PADDING_PX`] on every side.
 fn dialog_padding(state: &State) -> Padding {
     let panel = &state.next_shown().dialog.panel;
@@ -14460,10 +14463,10 @@ fn stroke_zero(part: &PartStyle, home: &str) -> String {
     if !part.stated.contains(PartStated::STROKE) {
         return format!("{home}.stroke unstated");
     }
-    match &part.stroke {
+    match &part.stroke.prevailing() {
         Stroke::None => format!("{home}.stroke none"),
         Stroke::Uniform { width, .. } => format!("{home}.stroke.width {width}"),
-        Stroke::Complex(_) => format!("{home}.stroke per side"),
+        Stroke::Complex(_) => format!("{home}.stroke per side and not reduced"),
     }
 }
 
@@ -14473,7 +14476,9 @@ fn stroke_zero(part: &PartStyle, home: &str) -> String {
 /// width at rest, so a stroke stated none there draws none, and else the
 /// width at rest, `rest_zero`, makes it 0.
 fn checked_stroke_zero(checked: &PartStyle, home: &str, rest_zero: &str) -> String {
-    if checked.stated.contains(PartStated::STROKE) && matches!(checked.stroke, Stroke::None) {
+    if checked.stated.contains(PartStated::STROKE)
+        && matches!(checked.stroke.prevailing(), Stroke::None)
+    {
         stroke_zero(checked, home)
     } else {
         rest_zero.to_owned()
@@ -18108,7 +18113,8 @@ fn button_info(state: &State) -> String {
             "padding",
             "next_button_padding — the padding inside button.body(NONE)'s border, \
              native_theme_iced::next::button_padding; iced's button::DEFAULT_PADDING on a \
-             side it leaves unstated, and on every side where the body's stroke is per side",
+             side it leaves unstated, and on every side where the body's stroke is per side \
+             and not reduced",
         ),
         ("shadow", "iced's own — the model has no shadow geometry"),
         ("label", label.as_str()),
@@ -18454,7 +18460,7 @@ fn text_input_info(state: &State) -> String {
             "next_input_padding — the padding inside input.field(NONE)'s border, \
              native_theme_iced::next::input_padding; iced's text_input::DEFAULT_PADDING \
              on a side it leaves unstated, and on every side where the field's stroke is \
-             per side",
+             per side and not reduced",
         ),
         ("text", text.as_str()),
     ];
@@ -42413,12 +42419,38 @@ mod tests {
         let stated = p.stated.contains(PartStated::STROKE);
         match kind {
             " unstated" => !stated,
-            " none" => stated && matches!(p.stroke, Stroke::None),
+            " none" => stated && matches!(p.stroke.prevailing(), Stroke::None),
             ".width 0" => {
-                stated && matches!(p.stroke, Stroke::Uniform { width, .. } if width == 0.0)
+                stated
+                    && matches!(p.stroke.prevailing(), Stroke::Uniform { width, .. } if width == 0.0)
             }
             _ => false,
         }
+    }
+
+    /// A part stated with four solid sides 0 wide, which `Stroke::prevailing`
+    /// reduces to a uniform stroke 0 wide, is 0 wide for a reason the checker
+    /// takes as the theme's ([`stroke_zero`], [`zero_reason_holds`]): a button
+    /// body patched to one on kde-breeze.
+    #[test]
+    fn a_four_side_stroke_of_width_0_is_a_reason_that_holds() {
+        use native_theme::next::{
+            ButtonRule, Color, Paint, PartPatch, StrokeAlign, StrokeSide, ThemePatch,
+        };
+        let side = || StrokeSide {
+            width: 0.0,
+            paint: Paint::Solid(Color::rgb(0.0, 0.0, 0.0)),
+        };
+        let mut r = loaded("kde-breeze", false).next_shown().clone();
+        r.apply_patch(
+            &ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().stroke(
+                Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside),
+            ))),
+        );
+        let home = "button.body(NONE)";
+        let reason = stroke_zero(&r.button.body(WidgetState::NONE), home);
+        assert_eq!(reason, format!("{home}.stroke.width 0"));
+        assert!(zero_reason_holds(&reason, &r), "{reason}");
     }
 
     /// A colour line's text after its role, where it names a style row
@@ -46104,7 +46136,11 @@ mod tests {
             let line = match iced_next::stroke_width_of(panel) {
                 Some(width) => width,
                 None if !panel.stated.contains(PartStated::STROKE) => iced::Border::default().width,
-                None => return Err(format!("{at_theme}: dialog.panel's stroke is per side")),
+                None => {
+                    return Err(format!(
+                        "{at_theme}: dialog.panel's stroke is per side and not reduced"
+                    ));
+                }
             };
             let stated = iced_next::padding_of(panel);
             let drawn = dialog_padding(state);

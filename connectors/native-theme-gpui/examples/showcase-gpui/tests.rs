@@ -25208,12 +25208,12 @@ fn the_closed_toggles_size_note_takes_the_rest_border_off_its_padding(cx: &mut T
 
 /// The open side panel's toggle claims the colours it is drawn in: under
 /// kde-breeze light with the flat button's hovered outline patched to
-/// per-side strokes, which gpui cannot take, `next::variants::ghost_button`
-/// fails and with it `demo::ghost_checked_variant`, though the theme still
-/// states the flat button's checked fill. The toggle is then
-/// gpui-component's own selected ghost, and its info claims
-/// `secondary_active` and `secondary_foreground`, names the home the
-/// checked variant lacked, and claims no checked colour.
+/// per-side strokes not reduced, which gpui cannot take,
+/// `next::variants::ghost_button` fails and with it
+/// `demo::ghost_checked_variant`, though the theme still states the flat
+/// button's checked fill. The toggle is then gpui-component's own selected
+/// ghost, and its info claims `secondary_active` and `secondary_foreground`,
+/// names the home the checked variant lacked, and claims no checked colour.
 #[gpui::test]
 fn the_open_toggle_claims_the_selected_ghost_where_its_checked_variant_fails(
     cx: &mut TestAppContext,
@@ -26083,9 +26083,10 @@ fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
         seen.0 && seen.1,
         "the presets did not cover both an indicator and none: {seen:?}"
     );
-    // A selected tab's stroke per side, which gpui cannot draw: TabLook
-    // builds no look, the bar is gpui-component's, and the info gives that
-    // reason, not a theme that states no indicator.
+    // A selected tab's stroke per side that `Stroke::prevailing` does not
+    // reduce (two colours on two sides each), which gpui cannot draw:
+    // TabLook builds no look, the bar is gpui-component's, and the info
+    // gives that reason, not a theme that states no indicator.
     let Some((name, mut r, t)) = variants.first().cloned() else {
         return Ok(());
     };
@@ -26094,7 +26095,11 @@ fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
         .window
         .border
         .ok_or(format!("{name} states no colors.window.border"))?;
-    let side = || native_theme::next::StrokeSide {
+    let other = native_theme::next::Color::rgb(1.0, 0.0, 1.0);
+    if other == colour {
+        return Err(format!("{name}'s window border is the test's other colour"));
+    }
+    let side = |colour| native_theme::next::StrokeSide {
         width: 1.,
         paint: native_theme::next::Paint::Solid(colour),
     };
@@ -26104,10 +26109,10 @@ fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
                 .states(native_theme::next::WidgetState::SELECTED)
                 .tab(native_theme::next::PartPatch::new().stroke(
                     native_theme::next::Stroke::sides(
-                        side(),
-                        side(),
-                        side(),
-                        side(),
+                        side(colour),
+                        side(other),
+                        side(colour),
+                        side(other),
                         native_theme::next::StrokeAlign::Inside,
                     ),
                 )),
@@ -28555,13 +28560,13 @@ fn a_menu_property_the_theme_leaves_unstated_alone_takes_upstreams_own() -> Resu
 }
 
 /// A stroke a rule states for a menu row's hover or pressed state in a form
-/// gpui cannot draw (`Stroke::Complex`, a stroke per side) is reported
-/// unmapped, not unstated (`demo::state_stroke_unmapped`), and the row keeps
-/// gpui-component's own outline for the state (spec §10, rule 0): kde-breeze
-/// light's menu parts with `menu.item(HOVER)` and `menu.item(PRESSED)`
-/// stroked per side by a rule for the state draw no hover outline and no
-/// pressed one, and the Overlays row's info says each is not mapped; the
-/// parts as stated say neither.
+/// gpui cannot draw (`Stroke::Complex`, a stroke per side not reduced) is
+/// reported unmapped, not unstated (`demo::state_stroke_unmapped`), and the
+/// row keeps gpui-component's own outline for the state (spec §10, rule 0):
+/// kde-breeze light's menu parts with `menu.item(HOVER)` and
+/// `menu.item(PRESSED)` stroked per side by a rule for the state draw no
+/// hover outline and no pressed one, and the Overlays row's info says each
+/// is not mapped; the parts as stated say neither.
 #[test]
 fn a_menu_row_stroke_gpui_cannot_draw_for_a_state_is_reported_unmapped() -> Result<(), String> {
     use crate::demo::{MenuRowsLook, MenuRowsParts, state_stroke_unmapped};
@@ -28636,11 +28641,11 @@ fn a_menu_row_stroke_gpui_cannot_draw_for_a_state_is_reported_unmapped() -> Resu
 
 /// A hovered field's, drop-down trigger's and table row's stroke a rule
 /// states for the hover state in a form gpui cannot draw (`Stroke::Complex`,
-/// a stroke per side) is reported unmapped at its home, not left unsaid
-/// (`info::state_stroke_unmapped`, `demo::state_stroke_unmapped`): kde-breeze
-/// light as stated says it of none; patched to stroke `input.field(HOVER)`,
-/// `text_area.field(HOVER)`, `combo_box.field(HOVER)` and
-/// `list.highlight(HOVER)` per side by a rule for the hover state, the
+/// a stroke per side not reduced) is reported unmapped at its home, not left
+/// unsaid (`info::state_stroke_unmapped`, `demo::state_stroke_unmapped`):
+/// kde-breeze light as stated says it of none; patched to stroke
+/// `input.field(HOVER)`, `text_area.field(HOVER)`, `combo_box.field(HOVER)`
+/// and `list.highlight(HOVER)` per side by a rule for the hover state, the
 /// input's and the text area's surface, the drop-down's fill and a table
 /// row's info each say "not mapped" with the home.
 #[test]

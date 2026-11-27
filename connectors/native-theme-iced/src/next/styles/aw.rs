@@ -137,8 +137,8 @@ pub(super) fn menu_source(r: &ResolvedTheme) -> Mapped<MenuSource> {
 /// # Errors
 ///
 /// [`super::super::Unmapped`] where the theme states a value in a form iced
-/// cannot draw (a layered fill with no fallback colour, a per-side stroke,
-/// a concentric radius).
+/// cannot draw (a layered fill with no fallback colour, a per-side stroke
+/// not reduced, a concentric radius).
 pub fn tab_bar(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme, Status) -> iced_aw::style::tab_bar::Style + Clone + use<>> {
@@ -185,7 +185,8 @@ pub(super) fn tab_bar_source(r: &ResolvedTheme) -> Mapped<TabBarSource> {
 /// # Errors
 ///
 /// [`super::super::Unmapped`] where the theme states a value in a form iced
-/// cannot draw (a layered fill with no fallback colour, a per-side stroke).
+/// cannot draw (a layered fill with no fallback colour, a per-side stroke
+/// not reduced).
 pub fn sidebar(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme, Status) -> iced_aw::style::sidebar::Style + Clone + use<>> {
@@ -231,7 +232,8 @@ pub(super) fn sidebar_source(r: &ResolvedTheme) -> Mapped<ListSource> {
 /// # Errors
 ///
 /// [`super::super::Unmapped`] where the theme states a value in a form iced
-/// cannot draw (a layered fill with no fallback colour, a per-side stroke).
+/// cannot draw (a layered fill with no fallback colour, a per-side stroke
+/// not reduced).
 pub fn selection_list(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme, Status) -> iced_aw::style::selection_list::Style + Clone + use<>> {

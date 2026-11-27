@@ -975,9 +975,17 @@ background"), so it draws `Inside`, and the builders give each part as one
 quad. Under an opaque stroke the three look the same, and gpui draws all three
 exactly. A translucent `Center` or `Outside` stroke is drawn in its stated
 colour over the whole fill, so the band shows more of the fill than the
-platform does; no border colour can take the fill away. A per-side stroke
-(different widths or colours per side) is not drawn: the builder reports the
-part's stroke as unmapped.
+platform does; no border colour can take the fill away.
+
+**A stroke per side.** gpui gives a quad one border colour (gpui-pre 0.3.12
+`src/window.rs`, `PaintQuad`, `border_color`). A per-side stroke whose four
+sides have one width and solid colours, at least three of them the same colour,
+is drawn as a uniform stroke of that width and colour in the stroke's alignment
+(`Stroke::prevailing`, docs/v0.8.0-spec.md §10, rule 2): the fourth side's
+other colour, such as WinUI's elevation edge, is not drawn. Every other per-side
+stroke (different widths, a side painted as layers or not painted, two colours
+on two sides each) is not drawn: the builder reports the part's stroke as
+unmapped.
 
 **Gradients and layered fills.** The connector hands gpui-component one colour
 per fill: its `ThemeColor` slots are `Hsla` (gpui-component 0.10.0

@@ -58,7 +58,7 @@ mod tests {
 
     use native_theme::next::{Preset, Theme, ThemeContext};
 
-    use crate::next::values::{STATED_AT_REST, theme_json};
+    use crate::next::values::{STATED_AT_REST, theme_json, without_side_not_drawn};
     use crate::values::NOT_STATED;
 
     type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -428,7 +428,9 @@ mod tests {
     /// On the seven presets, light and dark, each plain row's 0.8.0 text
     /// (its home's) equals the 0.7.2 text (its leaf's, under the same
     /// preset and scheme), a row marked as stated at rest where its text
-    /// without the marker does; a home the 0.8.0 model leaves unstated or
+    /// without the marker does, and a stroke's colour without its side not
+    /// drawn marker (`values::side_not_drawn`: 0.7.2 has no edge colour); a
+    /// home the 0.8.0 model leaves unstated or
     /// states as none where 0.7.2 shows a value, and a marked row where
     /// 0.7.2 shows "not stated" (a change of form), are reported, not
     /// failed. Each (preset, scheme, home, leaf) is counted once.
@@ -500,7 +502,10 @@ mod tests {
                             )
                             .text;
                             let line = format!("{name} {mode:?} {home} `{new}` / {leaf} `{was}`");
-                            let unmarked = new.strip_suffix(&format!(" {STATED_AT_REST}"));
+                            let unmarked = new
+                                .strip_suffix(&format!(" {STATED_AT_REST}"))
+                                .map(without_side_not_drawn);
+                            let new = without_side_not_drawn(&new);
                             if unmarked.is_some() {
                                 marked += 1;
                             }

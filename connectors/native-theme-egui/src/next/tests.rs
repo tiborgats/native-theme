@@ -240,7 +240,8 @@ fn a_checked_tool_buttons_gradient_fill_leaves_its_other_values() {
 }
 
 /// A stated uniform stroke gives its colour and width in every alignment; a
-/// per-side stroke gives neither, which egui cannot draw as one stroke.
+/// per-side stroke `Stroke::prevailing` does not reduce (two colours on two
+/// sides each) gives neither, which egui cannot draw as one stroke.
 #[test]
 fn a_stroke_is_read_as_stated_and_a_per_side_one_not_at_all() {
     let ctx = ThemeContext::light();
@@ -264,25 +265,96 @@ fn a_stroke_is_read_as_stated_and_a_per_side_one_not_at_all() {
         );
         assert_eq!(super::stroke_width_of(&part), Some(2.0), "{align:?}");
     }
-    let side = || StrokeSide {
-        width: 1.0,
-        paint: Paint::Solid(STROKE),
-    };
-    let patch = ThemePatch::new().button(native_theme::next::ButtonRule::new().body(
-        PartPatch::new().stroke(Stroke::sides(
-            side(),
-            side(),
-            side(),
-            side(),
-            StrokeAlign::Inside,
-        )),
-    ));
+    let patch = ThemePatch::new()
+        .button(native_theme::next::ButtonRule::new().body(PartPatch::new().stroke(two_and_two())));
     let r = Theme::preset(Preset::KdeBreeze)
         .with_patch(patch)
         .resolve(&ctx);
     let part = r.button.body(WidgetState::NONE);
     assert_eq!(super::stroke_color_of(&part), None);
     assert_eq!(super::stroke_width_of(&part), None);
+}
+
+/// A solid side 1 wide in `color`.
+fn solid_side(color: Color) -> StrokeSide {
+    StrokeSide {
+        width: 1.0,
+        paint: Paint::Solid(color),
+    }
+}
+
+/// The colour of the other sides of [`three_and_one`]'s and [`two_and_two`]'s strokes.
+const EDGE: Color = Color::new(0.0, 0.0, 0.0, 0.25);
+
+/// A per-side stroke 1 wide `Stroke::prevailing` reduces: [`STROKE`] on three sides, [`EDGE`]
+/// on the bottom.
+fn three_and_one() -> Stroke {
+    Stroke::sides(
+        solid_side(STROKE),
+        solid_side(STROKE),
+        solid_side(EDGE),
+        solid_side(STROKE),
+        StrokeAlign::Inside,
+    )
+}
+
+/// A per-side stroke 1 wide `Stroke::prevailing` does not reduce: [`STROKE`] on the top and
+/// the bottom, [`EDGE`] on the right and the left.
+fn two_and_two() -> Stroke {
+    Stroke::sides(
+        solid_side(STROKE),
+        solid_side(EDGE),
+        solid_side(STROKE),
+        solid_side(EDGE),
+        StrokeAlign::Inside,
+    )
+}
+
+/// A button body's stroke stated 3 + 1 is drawn as the uniform stroke of the three sides'
+/// colour (spec §10, rule 2): every cell of the atlas, light and dark, is the one a uniform
+/// stroke of that colour, width and alignment builds, and nothing is noted unmapped; the part
+/// reads give that colour and width.
+#[test]
+fn a_three_and_one_stroke_draws_as_its_prevailing_colour() -> Result<(), Box<dyn std::error::Error>>
+{
+    let body = |stroke: Stroke| {
+        ThemePatch::new()
+            .button(native_theme::next::ButtonRule::new().body(PartPatch::new().stroke(stroke)))
+    };
+    // An `egui::Style` compares its number formatter's `Arc` by address, so two builds of one
+    // theme are told apart by their printed cells.
+    let cells = |stroke, scheme| -> Result<String, Box<dyn std::error::Error>> {
+        let atlas = atlas_of(&Theme::preset(Preset::KdeBreeze).with_patch(body(stroke)))?;
+        Ok(format!("{:?}", atlas.scheme(scheme).cells))
+    };
+    for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+        let uniform = cells(
+            Stroke::uniform_aligned(1.0, STROKE, StrokeAlign::Inside),
+            scheme,
+        )?;
+        assert!(
+            cells(three_and_one(), scheme)? == uniform,
+            "{scheme:?}: the 3 + 1 stroke's cells are not the uniform stroke's"
+        );
+        assert!(
+            cells(two_and_two(), scheme)? != uniform,
+            "{scheme:?}: the 2 + 2 stroke's cells are the uniform stroke's"
+        );
+    }
+    assert_eq!(
+        unmapped_paths(PartPatch::new().stroke(three_and_one()))?,
+        Vec::<&str>::new()
+    );
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(body(three_and_one()))
+        .resolve(&ThemeContext::light());
+    let part = r.button.body(WidgetState::NONE);
+    assert_eq!(
+        super::stroke_color_of(&part),
+        Some(super::to_color32(STROKE))
+    );
+    assert_eq!(super::stroke_width_of(&part), Some(1.0));
+    Ok(())
 }
 
 /// A stroke read is handed to egui over the fill under it by its alignment: windows-11's primary
@@ -552,17 +624,12 @@ fn concentric_corners_are_noted_unmapped() -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
-/// A stroke stated per side is noted unmapped at its width's home, egui outlining a widget by
-/// one stroke.
+/// A stroke stated per side that `Stroke::prevailing` does not reduce is noted unmapped at its
+/// width's home, egui outlining a widget by one stroke.
 #[test]
 fn a_per_side_stroke_is_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
-    let side = || StrokeSide {
-        width: 1.0,
-        paint: Paint::Solid(STROKE),
-    };
-    let stroke = Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
     assert_eq!(
-        unmapped_paths(PartPatch::new().stroke(stroke))?,
+        unmapped_paths(PartPatch::new().stroke(two_and_two()))?,
         ["button.body(NONE).stroke.width"]
     );
     Ok(())

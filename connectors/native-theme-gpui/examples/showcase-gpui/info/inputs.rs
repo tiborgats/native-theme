@@ -54,7 +54,10 @@ pub fn input_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo 
         Some(text) => info.config("hovered edge", text),
         None => info,
     };
-    let unstroked = matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None);
+    let unstroked = matches!(
+        r.input.field(WidgetState::NONE).stroke.prevailing(),
+        Stroke::None
+    );
     let info = super::own_ring_not_drawn(
         info,
         &r.input.field(WidgetState::FOCUSED),
@@ -92,7 +95,10 @@ pub fn text_area_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetI
         Some(text) => info.config("hovered edge", text),
         None => info,
     };
-    let unstroked = matches!(r.text_area.field(WidgetState::NONE).stroke, Stroke::None);
+    let unstroked = matches!(
+        r.text_area.field(WidgetState::NONE).stroke.prevailing(),
+        Stroke::None
+    );
     surface(info, width, unstroked, "text_area")
 }
 
@@ -499,7 +505,10 @@ pub fn native_number_input(
     // mapped, and the frame keeps upstream's ring (demo::state_stroke_unmapped).
     let focus_unmapped = crate::demo::state_stroke_unmapped(&r.input.field(WidgetState::FOCUSED));
     let info = if width <= 0.0 {
-        if matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None) {
+        if matches!(
+            r.input.field(WidgetState::NONE).stroke.prevailing(),
+            Stroke::None
+        ) {
             info.config("edge", "none: input.field(NONE).stroke is none")
         } else {
             info.config("edge", "none: input.field(NONE).stroke.width is 0")

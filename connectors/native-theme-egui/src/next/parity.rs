@@ -591,7 +591,7 @@ fn icon_width_stated(icon: &IconStyle, state: WidgetState) -> bool {
 /// A part's stroke colour for `state` as the builder reads it: at rest the stated line
 /// (`build::edge`), in a state also a stroke stated as none, transparent (`build::state_line`).
 fn line_value(part: &PartStyle, state: WidgetState) -> Option<HomeValue> {
-    let color = match part.stroke {
+    let color = match part.stroke.prevailing() {
         Stroke::None if state != WidgetState::NONE => Some(build::rgba(Color::TRANSPARENT)),
         _ => build::line(part),
     };

@@ -45,7 +45,7 @@ impl New {
 /// `button.body(NONE)`'s padding inside its border, from its homes: each
 /// stated side plus the stated stroke's width, a stroke stated as none
 /// adding 0 (spec §10, rule 2); `None` where a side or the stroke is
-/// unstated, or the stroke is per side.
+/// unstated, or the stroke is per side and not reduced (`Stroke::prevailing`).
 fn body_padding(new: &native_theme::next::ResolvedTheme) -> Option<iced_core::Padding> {
     use native_theme::next::{PartStated, Stroke, WidgetState};
 
@@ -53,7 +53,7 @@ fn body_padding(new: &native_theme::next::ResolvedTheme) -> Option<iced_core::Pa
     if !body.stated.contains(PartStated::STROKE) {
         return None;
     }
-    let width = match body.stroke {
+    let width = match body.stroke.prevailing() {
         Stroke::None => 0.0,
         Stroke::Uniform { width, .. } => width,
         _ => return None,
@@ -160,8 +160,8 @@ fn stated_content_min_size(new: &native_theme::next::ResolvedTheme) -> Option<St
 /// side plus the stated stroke's width, a stroke stated as none adding 0
 /// (spec §10, rule 2), an unstated side iced's own
 /// (`iced_widget::button::DEFAULT_PADDING`); `None` where the stroke is
-/// unstated or per side, or the right side is stated (an arrow column then
-/// widens it, which this does not reckon).
+/// unstated or per side and not reduced, or the right side is stated (an
+/// arrow column then widens it, which this does not reckon).
 #[cfg(feature = "widgets")]
 fn stated_combo_box_padding(new: &native_theme::next::ResolvedTheme) -> Option<String> {
     use native_theme::next::{PartStated, Stroke, WidgetState};
@@ -172,7 +172,7 @@ fn stated_combo_box_padding(new: &native_theme::next::ResolvedTheme) -> Option<S
     {
         return None;
     }
-    let width = match field.stroke {
+    let width = match field.stroke.prevailing() {
         Stroke::None => 0.0,
         Stroke::Uniform { width, .. } => width,
         _ => return None,

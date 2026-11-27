@@ -143,9 +143,16 @@
 # docs/v0.8.0-spec.md §2), the query's value marked as stated at rest, `<value> (stated at rest)`
 # (a statement about the theme; what a toolkit draws there is the route line's business);
 # the stated form's text where the property is stated in a shape the path does not address
-# (`stroke` "none", a per-side stroke), never "not stated" there; rounded corners whose curve is
-# continuous as their radius marked `<value> (drawn circular)`, the three toolkits' corner being
-# circular (docs/v0.8.0-spec.md §10, rule 2); an error for an unknown name.
+# (`stroke` "none", a per-side stroke that does not reduce), never "not stated" there; rounded
+# corners whose curve is continuous as their radius marked `<value> (drawn circular)`, the three
+# toolkits' corner being circular (docs/v0.8.0-spec.md §10, rule 2); a per-side stroke that
+# `Stroke::prevailing` reduces (four sides of one width and solid colours, at least three of them
+# one colour) as the uniform stroke the toolkits draw (docs/v0.8.0-spec.md §10, rule 2), on a
+# ruled or window part and a static part (`tooltip.panel`), not a focus indicator (`focus_ring.*`,
+# a part's `focus`): its `stroke.color` that colour, with its swatch, marked `<colour> (<side> side
+# <colour> not drawn)` where the fourth side's colour is another, its `stroke.width` the width,
+# unmarked; the marker before `(stated at rest)`, as `4 px (drawn circular) (stated at rest)`
+# stacks; the 0.7.2 comparison strips both. An error for an unknown name.
 # Units from the property's kind (a small table for globals and metrics).
 #
 # ---------------------------------------------------------------------------------------------

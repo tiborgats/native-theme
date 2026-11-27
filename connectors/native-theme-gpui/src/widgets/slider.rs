@@ -185,8 +185,8 @@ impl ThumbOutline {
     ///
     /// # Errors
     ///
-    /// [`Unmapped`] where a stroke is stated per side
-    /// or its width is not finite.
+    /// [`Unmapped`] where a stroke is stated per side and not reduced
+    /// ([`native_theme::next::Stroke::prevailing`]) or its width is not finite.
     pub fn next_of(r: &native_theme::next::ResolvedTheme, disabled: bool) -> Mapped<Option<Self>> {
         use native_theme::next::{PartStated, Stroke, WidgetState};
         let s = &r.slider;
@@ -194,7 +194,7 @@ impl ThumbOutline {
         if !rest.stated.contains(PartStated::STROKE) {
             return Ok(None);
         }
-        let (width, colour) = match &rest.stroke {
+        let (width, colour) = match &rest.stroke.prevailing() {
             Stroke::None => (0.0, None),
             Stroke::Uniform { .. } => (
                 stroke_width(&rest, "slider.thumb(NONE).stroke.width")?,

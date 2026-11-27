@@ -2733,9 +2733,9 @@ fn a_segmented_control_paints_its_dividers_in_the_separator_fill() -> TestResult
     Ok(())
 }
 
-/// A drop-down field stroked per side, which egui cannot draw as one outline, keeps egui's
-/// border width and the theme's stated padding and arrow column (spec §10, rule 0, per
-/// property).
+/// A drop-down field stroked per side and not reduced, which egui cannot draw as one outline,
+/// keeps egui's border width and the theme's stated padding and arrow column (spec §10, rule
+/// 0, per property).
 #[test]
 fn a_combo_box_field_stroked_per_side_keeps_its_stated_sides() -> TestResult {
     use crate::combo_box::Sides;

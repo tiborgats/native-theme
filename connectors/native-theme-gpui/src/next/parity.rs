@@ -2109,7 +2109,7 @@ fn card_edge_of(new: &native_theme::next::ResolvedTheme) -> Option<(f32, Option<
         CornerRadius::Uniform(r) => r,
         _ => return None,
     };
-    let border = match c.stroke {
+    let border = match c.stroke.prevailing() {
         Stroke::None => None,
         Stroke::Uniform { width, color, .. } => Some((width, super::hsla(color))),
         _ => return None,
@@ -2872,8 +2872,8 @@ fn compare_builders(
                 use native_theme::next::{PartStated, Stroke, WidgetState};
                 report.count(button);
                 let body = new.button.body(WidgetState::NONE);
-                let none =
-                    body.stated.contains(PartStated::STROKE) && matches!(body.stroke, Stroke::None);
+                let none = body.stated.contains(PartStated::STROKE)
+                    && matches!(body.stroke.prevailing(), Stroke::None);
                 let mut corrected = o.clone();
                 corrected.border_widths = n.border_widths.clone();
                 corrected.border_color = n.border_color;
@@ -3533,7 +3533,7 @@ fn compare_builders(
                 let hovered = new.button.body(WidgetState::HOVER);
                 let named = if UNSTROKED_HOVER.contains(&report.preset) {
                     (hovered.from_state.contains(PartStated::STROKE)
-                        && matches!(hovered.stroke, Stroke::None))
+                        && matches!(hovered.stroke.prevailing(), Stroke::None))
                     .then(|| super::stroke_color(&hovered, "button.body(HOVER)").ok())
                     .flatten()
                 } else {

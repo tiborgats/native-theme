@@ -110,7 +110,7 @@ pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
     let checked = b.body(WidgetState::CHECKED);
     if checked.from_state.contains(PartStated::STROKE)
-        && let Stroke::Uniform { width, .. } = checked.stroke
+        && let Stroke::Uniform { width, .. } = checked.stroke.prevailing()
         && stroke_width_of(&b.body(WidgetState::NONE)) != Some(width)
     {
         return Err(Unmapped("button.body(CHECKED).stroke.width"));
@@ -553,7 +553,8 @@ pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// §10, rule 2): a builder that sets only the edge's colour sets its width
 /// there too; `None` elsewhere, where it keeps upstream's.
 fn no_line_width(part: &PartStyle) -> Option<f32> {
-    (part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::None)).then_some(0.0)
+    (part.stated.contains(PartStated::STROKE) && matches!(part.stroke.prevailing(), Stroke::None))
+        .then_some(0.0)
 }
 
 /// [`crate::geometry::dialog_entrance`]: the two styles 0.7.2 has as its

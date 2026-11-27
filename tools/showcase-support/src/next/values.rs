@@ -37,13 +37,23 @@
 //! boolean, a name or an enum as it prints; rounded corners whose curve is
 //! continuous as their radius marked [`DRAWN_CIRCULAR`], `<value> (drawn
 //! circular)`, the toolkits' corner being circular (docs/v0.8.0-spec.md §10,
-//! rule 2). [`NOT_STATED`] where the theme
+//! rule 2); a part's stroke stated per side that
+//! `native_theme::next::Stroke::prevailing` reduces (four sides of one width
+//! and solid colours, at least three of them one colour) as the uniform
+//! stroke a toolkit with one border colour draws (spec §10, rule 2): its
+//! `stroke.color` that colour, its swatch too, marked [`side_not_drawn`],
+//! `<colour> (<side> side <colour> not drawn)`, where the fourth side's
+//! colour is another, and its `stroke.width` the width, unmarked. This holds
+//! for a ruled part, a window part and a static part (`tooltip.panel`), not
+//! for a focus indicator (`focus_ring.*`, a part's `focus`); the marker
+//! stands before [`STATED_AT_REST`].
+//! [`NOT_STATED`] where the theme
 //! states nothing: a property whose `stated` bit is clear, a size that is
 //! `None`, a global that is `null`, a part that states nothing; a value
 //! stated only at rest under a query with a state is marked
 //! [`STATED_AT_REST`] (above), never [`NOT_STATED`]. A property stated in a
 //! shape the home's path does not address (a stroke of `none` or
-//! one per side, read at `stroke.color`) is that stated form's text, never
+//! one per side that does not reduce, read at `stroke.color`) is that stated form's text, never
 //! [`NOT_STATED`]. A home of no known name is an error. A text style's family,
 //! of a whole text style or a `*.family` home, is the label the showcase's
 //! lookup gives it ([`crate::status::DrawnFamily::label`]).
@@ -53,8 +63,8 @@ use std::str::FromStr as _;
 use native_theme::next::{
     ButtonKind, ButtonQuery, ButtonShape, ButtonVariant, Color, ControlSize, FontStyle,
     GroupPosition, IconStyle, InputQuery, InputVariant, ListKind, ListQuery, ListVariant,
-    Orientation, PartStated, PartStyle, ResolvedTheme, StyleQuery, Surface, TabQuery, TabVariant,
-    TextStated, TextStyle, WidgetState, WindowState,
+    Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery, Surface,
+    TabQuery, TabVariant, TextStated, TextStyle, WidgetState, WindowState,
 };
 
 use crate::values::{LeafValue, NOT_STATED, number};
@@ -67,6 +77,73 @@ pub const STATED_AT_REST: &str = "(stated at rest)";
 /// which every toolkit the showcases draw with rounds circular
 /// (docs/v0.8.0-spec.md §10, rule 2): `<value> (drawn circular)`.
 pub const DRAWN_CIRCULAR: &str = "(drawn circular)";
+
+/// The four sides of a per-side stroke, by the names its serialised form
+/// gives them.
+const SIDES: [&str; 4] = ["top", "right", "bottom", "left"];
+
+/// The marker after a per-side stroke's colour that [`Stroke::prevailing`]
+/// reduces to the colour of three sides, naming the fourth side and its
+/// colour, which a toolkit with one border colour does not draw
+/// (docs/v0.8.0-spec.md §10, rule 2): `<colour> (<side> side <colour> not
+/// drawn)`.
+#[must_use]
+pub fn side_not_drawn(side: &str, colour: Color) -> String {
+    format!("({side} side {colour} not drawn)")
+}
+
+/// `text` without a [`side_not_drawn`] marker at its end.
+#[must_use]
+pub fn without_side_not_drawn(text: &str) -> &str {
+    text.strip_suffix(" not drawn)")
+        .and_then(|marked| marked.rsplit_once(" ("))
+        .filter(|(_, marker)| {
+            SIDES.iter().any(|side| {
+                marker
+                    .strip_prefix(side)
+                    .is_some_and(|rest| rest.starts_with(" side "))
+            })
+        })
+        .map_or(text, |(value, _)| value)
+}
+
+/// A per-side stroke that [`Stroke::prevailing`] reduces: the uniform stroke
+/// it is drawn as, and the [`side_not_drawn`] marker of the side whose colour
+/// is another, where one is; `None` for every other stroke.
+fn reduced(stroke: &Stroke) -> Option<(Stroke, Option<String>)> {
+    let Stroke::Complex(sides) = stroke else {
+        return None;
+    };
+    let uniform = stroke.prevailing();
+    let Stroke::Uniform { color, .. } = uniform else {
+        return None;
+    };
+    let marker = SIDES
+        .iter()
+        .zip([&sides.top, &sides.right, &sides.bottom, &sides.left])
+        .find_map(|(name, side)| match side.paint {
+            Paint::Solid(other) if other != color => Some(side_not_drawn(name, other)),
+            _ => None,
+        });
+    Some((uniform, marker))
+}
+
+/// `value`, read at the stroke home `property` of a stroke [`reduced`]
+/// gives `marker` for, marked: a colour that is stated carries the marker,
+/// a width none.
+fn marked_stroke(
+    value: LeafValue<Color>,
+    property: &str,
+    marker: Option<String>,
+) -> LeafValue<Color> {
+    match marker {
+        Some(marker) if property == "stroke.color" && value.text != NOT_STATED => LeafValue {
+            text: format!("{} {marker}", value.text),
+            colour: value.colour,
+        },
+        _ => value,
+    }
+}
 
 /// A text style's font as the serialised form states it, which the family
 /// lookup is handed: the family, and the weight and the slant where the
@@ -380,6 +457,15 @@ fn style_value(
     property: Option<&str>,
     family: &dyn Fn(&str, &StatedFont) -> String,
 ) -> Option<Result<LeafValue<Color>, String>> {
+    if let (Styled::Part(part), Some(property @ ("stroke.color" | "stroke.width"))) =
+        (style, property)
+        && let Some((uniform, marker)) = reduced(&part.stroke)
+    {
+        let mut drawn = part.clone();
+        drawn.stroke = uniform;
+        return style_value(path, &Styled::Part(drawn), Some(property), family)
+            .map(|value| value.map(|value| marked_stroke(value, property, marker)));
+    }
     let (json, properties) = match style.json() {
         Ok(json) => json,
         Err(e) => return Some(Err(e)),
@@ -412,6 +498,9 @@ fn global_value(
     family: &dyn Fn(&str, &StatedFont) -> String,
 ) -> Option<Result<LeafValue<Color>, String>> {
     let segments = segments(home);
+    if let Some(value) = reduced_global_stroke(&segments, json) {
+        return Some(value);
+    }
     Some(match walk(json, &segments) {
         Walk::Found(value, in_list) => {
             let label = || match segments.split_last() {
@@ -433,6 +522,41 @@ fn global_value(
             }
         }
     })
+}
+
+/// A static part's stroke colour or width at `segments` of the serialised
+/// form `json` (`tooltip.panel.stroke.color`), where the stroke there,
+/// deserialised, is one [`reduced`] reduces: the uniform stroke's value,
+/// marked as [`marked_stroke`] marks it; `None` for every other home, a
+/// focus indicator's among them (`focus_ring.*`, a part's `focus`), which no
+/// connector reduces.
+fn reduced_global_stroke(
+    segments: &[&str],
+    json: &serde_json::Value,
+) -> Option<Result<LeafValue<Color>, String>> {
+    let (&property, parent) = segments.split_last()?;
+    if !matches!(property, "color" | "width")
+        || parent.last() != Some(&"stroke")
+        || segments.first() == Some(&"focus_ring")
+        || parent.contains(&"focus")
+    {
+        return None;
+    }
+    let Walk::Found(stated, _) = walk(json, parent) else {
+        return None;
+    };
+    let (uniform, marker) = reduced(&serde_json::from_value(stated.clone()).ok()?)?;
+    let drawn = match serde_json::to_value(&uniform) {
+        Ok(drawn) => drawn,
+        Err(e) => return Some(Err(format!("a stroke's JSON: {e}"))),
+    };
+    let Walk::Found(value, in_list) = walk(&drawn, &[property]) else {
+        return None;
+    };
+    Some(
+        found_value(segments, value, in_list, || None)
+            .map(|value| marked_stroke(value, &format!("stroke.{property}"), marker)),
+    )
 }
 
 /// The segments of a path: `.`-separated, an item of a list by its index
@@ -1319,6 +1443,106 @@ mod tests {
             "{vertical}"
         );
         assert_eq!(value("focus_ring.inner_stroke.color")?, "none");
+        Ok(())
+    }
+
+    /// The four sides of a per-side stroke 1 px wide, `odd` on the bottom
+    /// and `main` on the other three.
+    fn three_and_one(main: Color, odd: Color) -> Stroke {
+        use native_theme::next::{StrokeAlign, StrokeSide};
+        let side = |color| StrokeSide {
+            width: 1.0,
+            paint: Paint::Solid(color),
+        };
+        Stroke::sides(
+            side(main),
+            side(main),
+            side(odd),
+            side(main),
+            StrokeAlign::Inside,
+        )
+    }
+
+    /// A per-side stroke `Stroke::prevailing` reduces reads as the uniform
+    /// stroke it is drawn as: a 3 + 1 its three sides' colour and swatch,
+    /// marked with the fourth side's colour as not drawn, its width unmarked,
+    /// on a ruled part and on a static part, the marker before the stated at
+    /// rest one; four equal sides unmarked; a focus indicator's, the global
+    /// one and a static part's own, keeps its stated form; the marker strips
+    /// off.
+    #[test]
+    fn a_reduced_per_side_stroke_is_marked() -> Result {
+        use native_theme::next::{ButtonRule, PartPatch, ThemePatch};
+
+        let main = Color::rgb(0.2, 0.4, 0.6);
+        let odd = Color::BLACK.with_alpha(0.5);
+        let marked = format!("{main} {}", side_not_drawn("bottom", odd));
+        let mut r = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.apply_patch(
+            &ThemePatch::new()
+                .button(ButtonRule::new().body(PartPatch::new().stroke(three_and_one(main, odd)))),
+        );
+        r.tooltip.panel.stroke = three_and_one(main, odd);
+        r.tooltip.panel.stated |= PartStated::STROKE;
+        r.focus_ring.stroke = three_and_one(main, odd);
+        r.tooltip.panel.focus = Some(std::sync::Arc::new(r.focus_ring.clone()));
+        r.tooltip.panel.stated |= PartStated::FOCUS;
+        let json = theme_json(&r)?;
+        let value = |home: &str| text(&r, &json, home);
+        let colour = home_value("button.body(NONE).stroke.color", &r, &json, &as_stated)?;
+        assert_eq!(colour.text, marked);
+        assert_eq!(colour.colour, Some(main));
+        assert_eq!(value("button.body(NONE).stroke.width")?, "1 px");
+        let (_, unruled) = [
+            (WidgetState::PRESSED, "PRESSED"),
+            (WidgetState::DISABLED, "DISABLED"),
+            (WidgetState::CHECKED, "CHECKED"),
+            (WidgetState::HOVER, "HOVER"),
+        ]
+        .into_iter()
+        .find(|(state, _)| {
+            !r.button
+                .body(*state)
+                .from_state
+                .contains(PartStated::STROKE)
+        })
+        .ok_or("kde-breeze states the button's stroke for every state tried")?;
+        assert_eq!(
+            value(&format!("button.body({unruled}).stroke.color"))?,
+            format!("{marked} {STATED_AT_REST}")
+        );
+        assert_eq!(
+            value(&format!("button.body({unruled}).stroke.width"))?,
+            format!("1 px {STATED_AT_REST}")
+        );
+        let panel = home_value("tooltip.panel.stroke.color", &r, &json, &as_stated)?;
+        assert_eq!(panel.text, marked);
+        assert_eq!(panel.colour, Some(main));
+        assert_eq!(value("tooltip.panel.stroke.width")?, "1 px");
+        for home in [
+            "focus_ring.stroke.color",
+            "tooltip.panel.focus.stroke.color",
+        ] {
+            let ring = value(home)?;
+            assert!(
+                ring.starts_with('{') && ring.contains("\"bottom\""),
+                "{home}: {ring}"
+            );
+        }
+        assert_eq!(without_side_not_drawn(&marked), main.to_string());
+        let circular = format!("4 px {DRAWN_CIRCULAR}");
+        assert_eq!(without_side_not_drawn(&circular), circular);
+
+        r.apply_patch(
+            &ThemePatch::new()
+                .button(ButtonRule::new().body(PartPatch::new().stroke(three_and_one(main, main)))),
+        );
+        let json = theme_json(&r)?;
+        assert_eq!(
+            text(&r, &json, "button.body(NONE).stroke.color")?,
+            main.to_string()
+        );
+        assert_eq!(text(&r, &json, "button.body(NONE).stroke.width")?, "1 px");
         Ok(())
     }
 

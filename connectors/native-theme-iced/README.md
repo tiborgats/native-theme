@@ -778,6 +778,15 @@ rule 0).
   check box, a switch's track, the menu, a scroll bar's handle, the
   selected tab's top corners), per-corner radii that differ are
   `Unmapped`; no preset states them.
+- **A stroke per side.** iced's `Border` has one colour and one width
+  (`iced_core` 0.14.0 `src/border.rs`, `Border`). A per-side stroke whose
+  four sides have one width and solid colours, at least three of them the
+  same colour, is drawn as a uniform stroke of that width and colour in the
+  stroke's alignment (`Stroke::prevailing`, spec §10, rule 2): the fourth
+  side's other colour, such as WinUI's elevation edge, is not drawn. Every
+  other per-side stroke (different widths, a side painted as layers or not
+  painted, two colours on two sides each) is `Unmapped` at the part's
+  stroke.
 - **Layered fills.** iced has no backdrop blur, and `next` fills a widget
   with one colour. A fill stated as layers (`Paint::Complex`) is drawn in
   the colour a toolkit without blur renders in its place (spec §10, rule 2,
@@ -805,7 +814,8 @@ rule 0).
   drawn with its corners and the highlighted row is rounded by them too.
 - **The toolbar's rule.** iced's rule is one line (`iced_widget` 0.14.2
   `src/rule.rs`: a `Style` of one colour), so a toolbar stroke stated per
-  side (`toolbar.bar(NONE).stroke`, a `Stroke::Complex`) is not drawn:
+  side and not reduced (`toolbar.bar(NONE).stroke`, a `Stroke::Complex`
+  `Stroke::prevailing` leaves per side) is not drawn:
   `next::styles::toolbar_rule` returns `Unmapped` for it. A stroke stated
   as none is no rule, drawn transparent.
 - **The scroll bar.** A rail's `border` is one `Border` round all four
