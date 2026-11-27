@@ -103,9 +103,9 @@ pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// states it for `CHECKED` (no line, transparent, where it states none),
 /// at [`button`]'s width, else unset, so [`button`]'s border at rest, which
 /// upstream replays over its selected style, stands (spec §10, rule 0).
-/// Where that stroke's stated width is not [`button`]'s, which gpui-component
-/// keeps for a selected Button, `button.body(CHECKED).stroke.width` is not
-/// mapped (spec §10, rule 4).
+/// Where that stroke's stated width is not [`button`]'s, which gpui-component keeps for a
+/// selected Button, `button.body(CHECKED).stroke.width` is not mapped (spec §10, rule 4): gpui's
+/// border, unlike iced's, takes layout space (gpui-fast 0.1.16 `src/taffy.rs`, `to_taffy`).
 pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
     let checked = b.body(WidgetState::CHECKED);

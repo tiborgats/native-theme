@@ -874,11 +874,12 @@ rule 0).
   stroke, windows-11's), `next::styles::button_toggle` draws it at rest,
   and under the pointer, pressed and disabled what it states for
   `CHECKED | HOVER`, `CHECKED | PRESSED` and `DISABLED | CHECKED`
-  (windows-11: none pressed or disabled), at the unchecked button's width
-  and corners; a state it states no checked outline for keeps the
-  unchecked button's there. A checked outline stated at another width
-  than the unchecked button's at rest is reported not mapped at its width
-  (`button.body(<state>).stroke.width`, spec §10, rule 4).
+  (windows-11: none pressed or disabled), each at the width the theme
+  states for it and at the unchecked button's corners; iced lays a button
+  out by its padding alone and draws the border on its bounds
+  (`iced_widget` 0.14.2 `src/button.rs`, `layout` and `draw`), so another
+  width moves no content. A state it states no checked outline for keeps
+  the unchecked button's there.
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted

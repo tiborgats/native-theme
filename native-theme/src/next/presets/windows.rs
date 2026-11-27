@@ -2425,12 +2425,13 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// label is the window's text, pressed the muted text, checked the accent's
 /// text, checked and pressed the accent's secondary text, disabled the
 /// disabled text. Under high contrast the fill is the button face and the
-/// label and the outline the button text ([`HighContrast`]), hovered and
-/// pressed the highlight text behind the highlight, the outline hovered the
-/// highlight, pressed the highlight text and disabled the grey text; checked,
-/// the outline the highlight text, hovered the button text; the primary
-/// button's the highlight where no palette `palette` is kept under high
-/// contrast ([`unless_palette`]). The flat variant is WinUI's subtle button, which has no checked form:
+/// label the button text ([`HighContrast`]), hovered and pressed the
+/// highlight text behind the highlight; the outline the button text, hovered
+/// the highlight, pressed the highlight text and disabled the grey text, and
+/// the primary button's the highlight, each where no palette `palette` is
+/// kept under high contrast ([`unless_palette`]); checked, the outline the
+/// highlight text, hovered the button text. The flat variant is WinUI's
+/// subtle button, which has no checked form:
 /// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
 /// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
 /// cannot be checked, and `ToggleButton_themeresources.xaml` there defines
@@ -2464,10 +2465,22 @@ fn button(
     // (`elevation_stroke`), as disabled ButtonBorderBrushDisabled = ControlStrokeColorDefaultBrush.
     let neutral = elevation_border(c, hc, roles);
     let primary_outline = unless_palette(hc.highlight, palette);
+    let [
+        rest_outline,
+        hover_outline,
+        pressed_outline,
+        disabled_outline,
+    ] = [
+        hc.button_text,
+        hc.highlight,
+        hc.highlight_text,
+        hc.gray_text,
+    ]
+    .map(|color| unless_palette(color, palette));
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
-            hc.button_text
+            rest_outline
                 .or(neutral)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
@@ -2516,7 +2529,7 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             std::iter::once(fill(hc.highlight_text.unwrap_or(c.control_fill_pressed))).chain(
-                hc.highlight_text
+                pressed_outline
                     .or(neutral)
                     .map(|color| outside_stroke(layout.border_width, color)),
             ),
@@ -2525,10 +2538,10 @@ fn button(
         // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45); under high contrast
         // SystemColorHighlightColorBrush (:87).
         .rules(
-            hc.highlight
+            hover_outline
                 .or(neutral)
                 .map(|_| RuleSelector::on(WidgetState::HOVER)),
-            hc.highlight
+            hover_outline
                 .or(neutral)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
@@ -2610,10 +2623,8 @@ fn button(
         // (Button_themeresources.xaml:89, :65 at microsoft-ui-xaml 8463f45), there
         // SystemColorGrayTextColor (generic.xaml:2032 at 8463f45).
         .rules(
-            hc.gray_text
-                .map(|_| RuleSelector::on(WidgetState::DISABLED)),
-            hc.gray_text
-                .map(|color| outside_stroke(layout.border_width, color)),
+            disabled_outline.map(|_| RuleSelector::on(WidgetState::DISABLED)),
+            disabled_outline.map(|color| outside_stroke(layout.border_width, color)),
         )
         // Checked and disabled, ToggleButtonBorderBrushCheckedDisabled =
         // ControlFillColorTransparentBrush, no outline (ToggleButton_themeresources.xaml:154, :38 at

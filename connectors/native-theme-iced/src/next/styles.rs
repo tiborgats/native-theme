@@ -17,14 +17,14 @@ use super::borders::{
     flagged, line, line_or_none, outline_or_iced, part_outline, radius, state_line, stroke_width,
 };
 use super::{
-    Mapped, Unmapped, fill, fill_of, state_fill_of, state_text_color, stated, stroke_width_of,
-    text_color_of, to_color,
+    Mapped, Unmapped, fill, fill_of, state_fill_of, state_text_color, stated, text_color_of,
+    to_color,
 };
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, CheckedBorders, CheckedStates,
     ExpanderSource, InputSource, Layer, Line, LinkSource, MenuSource, Outline, PartOutline,
-    PickListSource, ScrollbarSource, SegmentPosition, SegmentedSource, SliderSource, SwitchSource,
-    ToolbarButtonSource, ToolbarLabels, ToolbarOutline,
+    PickListSource, ScrollbarSource, SegmentPosition, SegmentedSource, SliderSource, StateLine,
+    SwitchSource, ToolbarButtonSource, ToolbarLabels, ToolbarOutline,
 };
 
 /// A part's fill, where stated, as the state's whole fill (spec §9, step
@@ -161,19 +161,16 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
 /// the stroke so for `CHECKED` or for `DISABLED`, the two flags the style
 /// keeps a treatment of there. Each `None` where it does not, and the
 /// unchecked button's border stays in that status (spec §10, rule 0a).
-/// Each is drawn at the unchecked button's width at rest, since
-/// [`CheckedBorders`] carries no width of its own; a stroke stated at
-/// another width is not mapped at its width's home (spec §10, rule 4).
+/// Each is drawn at the width the theme states for it: iced draws a
+/// button's border on its bounds and lays it out by its padding alone
+/// ([`Outline::with_state`]), so the width moves no content.
 fn checked_borders(r: &ResolvedTheme) -> Mapped<CheckedBorders> {
     let b = &r.button;
-    let drawn = stroke_width_of(&b.body(WidgetState::NONE));
     let read = |part: &PartStyle, (color, width): (&'static str, &'static str)| {
-        if let Stroke::Uniform { width: stated, .. } = part.stroke
-            && drawn != Some(stated)
-        {
-            return Err(Unmapped(width));
-        }
-        line_or_none(part, color)
+        Ok(StateLine {
+            line: line_or_none(part, color)?,
+            width: stroke_width(part, width)?,
+        })
     };
     let checked = b.body(WidgetState::CHECKED);
     let at = |state: WidgetState, flag: WidgetState| b.body(ButtonQuery::new(state).asking(flag));
@@ -350,8 +347,8 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
             |query: StyleQuery| t.button_label(query),
             (checked_background, checked_label),
             (
-                "toolbar.button(CHECKED|HOVER).fill",
-                "toolbar.button(CHECKED|PRESSED).fill",
+                "toolbar.button(HOVER|CHECKED).fill",
+                "toolbar.button(PRESSED|CHECKED).fill",
             ),
         )?,
         hover_border_color: state_line(&hover, "toolbar.button(HOVER).stroke.color")?,
@@ -433,9 +430,7 @@ pub fn button(
 /// [`super::Unmapped`] where the theme states no window background or
 /// foreground, or states a value in a form iced cannot draw (a per-side
 /// stroke, a concentric radius); a value at rest it leaves unstated is
-/// iced's own class's (spec §10, rule 0); also where it states a checked
-/// stroke at another width than the button's at rest, which the toggle is
-/// drawn at (spec §10, rule 4).
+/// iced's own class's (spec §10, rule 0).
 pub fn button_toggle(
     r: &ResolvedTheme,
     checked: bool,

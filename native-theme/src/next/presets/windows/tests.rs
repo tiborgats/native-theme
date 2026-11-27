@@ -1203,9 +1203,9 @@ fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
 /// Under a palette kept under high contrast
 /// (`preserve_palette_in_high_contrast`, spec §6, step 1) the palette's
 /// `border` stands over the high-contrast colours of the text field's, the
-/// text area's and the combo box's outline in every state, and the primary
-/// button's outline is the accent elevation border's, as without high
-/// contrast.
+/// text area's, the combo box's and the push button's outline in every state,
+/// and the primary button's outline is the accent elevation border's, as
+/// without high contrast.
 #[test]
 fn a_palette_kept_under_high_contrast_stands_over_its_outlines() {
     let [button_text, highlight, highlight_text, gray] =
@@ -1242,6 +1242,11 @@ fn a_palette_kept_under_high_contrast_stands_over_its_outlines() {
     ] {
         assert_eq!(
             stroke_color(&kept.combo_box.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+        assert_eq!(
+            stroke_color(&kept.button.body(state).stroke),
             Some(p.border),
             "{state:?}"
         );

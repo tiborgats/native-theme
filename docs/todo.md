@@ -5398,6 +5398,10 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
       when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
       slot restates stay.
+      The text field's disabled outline under high contrast has no colour in the rc1 spike table
+      (`docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row TextControlBorderBrushDisabled:
+      its high-contrast column names the brush itself, unresolved, no line), so the preset states no disabled outline
+      of its own there and the rest outline stays.
 - [ ] [0.8.x] **windows-11**'s elevation borders beyond their one colour (M4 N38, 2026-11-27): the preset states each
       as the colour of its three sides (P8); not stated: the edge side's colour, `ControlElevationBorderBrush`'s stop
       0.33 `ControlStrokeColorSecondary` #29000000 / #18FFFFFF at the bottom in light and the top in dark (the dark

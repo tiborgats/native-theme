@@ -1332,27 +1332,28 @@ fn a_windows_checked_or_disabled_button_takes_the_stated_outline() -> TestResult
 }
 
 /// A checked stroke stated at a width other than the unchecked button's at
-/// rest, which the checked toggle is drawn at, is reported not mapped at its
-/// width's home (spec §10, rule 4), at rest and hovered: windows-11 patched
-/// with a 3 px checked stroke over its 1 px rest one.
+/// rest is drawn at its own width, at rest, hovered, pressed and disabled:
+/// iced draws a button's border on its bounds and lays it out by its padding
+/// alone (iced_widget 0.14.2 `src/button.rs`, `layout` and `draw`), so the
+/// width moves no content; windows-11 patched with a 2 px checked stroke
+/// over its 1 px rest one, the unchecked button kept at 1 px.
 #[test]
-fn a_checked_stroke_of_another_width_is_not_mapped() -> TestResult {
-    const PATCHED_WIDTH: f32 = 3.0;
+fn a_checked_stroke_of_another_width_is_drawn_at_its_width() -> TestResult {
+    use iced_widget::button::Status;
+    const PATCHED_WIDTH: f32 = 2.0;
     let ctx = ThemeContext::light();
     let stock = Theme::preset(Preset::Windows11);
     let plain = stock.clone().resolve(&ctx);
-    assert_ne!(
-        super::super::stroke_width_of(&plain.button.body(WidgetState::NONE)),
-        Some(PATCHED_WIDTH),
-        "the rest stroke is the patched width, so this proves nothing"
-    );
-    assert!(super::button_toggle(&plain, true).is_ok());
+    let rest_width = super::super::stroke_width_of(&plain.button.body(WidgetState::NONE));
+    assert_eq!(rest_width, Some(1.0));
     let red = Color::new(1.0, 0.0, 0.0, 1.0);
-    for (state, home) in [
-        (WidgetState::CHECKED, "button.body(CHECKED).stroke.width"),
+    for (state, status) in [
+        (WidgetState::CHECKED, Status::Active),
+        (WidgetState::CHECKED | WidgetState::HOVER, Status::Hovered),
+        (WidgetState::CHECKED | WidgetState::PRESSED, Status::Pressed),
         (
-            WidgetState::CHECKED | WidgetState::HOVER,
-            "button.body(HOVER|CHECKED).stroke.width",
+            WidgetState::CHECKED | WidgetState::DISABLED,
+            Status::Disabled,
         ),
     ] {
         let patch = ThemePatch::new().button(
@@ -1361,9 +1362,17 @@ fn a_checked_stroke_of_another_width_is_not_mapped() -> TestResult {
                 .body(PartPatch::new().stroke(Stroke::uniform(PATCHED_WIDTH, red))),
         );
         let r = stock.clone().with_patch(patch).resolve(&ctx);
+        let theme = to_theme(&r)?;
         assert_eq!(
-            super::button_toggle(&r, true).err(),
-            Some(super::super::Unmapped(home)),
+            super::button_toggle(&r, true)?(&theme, status).border.width,
+            PATCHED_WIDTH,
+            "{state:?}"
+        );
+        assert_eq!(
+            super::button_toggle(&r, false)?(&theme, Status::Active)
+                .border
+                .width,
+            1.0,
             "{state:?}"
         );
     }

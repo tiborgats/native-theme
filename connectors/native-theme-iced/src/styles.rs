@@ -298,6 +298,22 @@ impl Outline {
         }
     }
 
+    /// This outline in `stated`, a state's own stroke at its own width,
+    /// where one is stated. iced lays a button out by its padding alone and
+    /// draws the border on the button's bounds (iced_widget 0.14.2
+    /// `src/button.rs`, `layout` and `draw`), so another width moves no
+    /// content.
+    pub(crate) fn with_state(self, stated: Option<StateLine>) -> Self {
+        match stated {
+            Some(StateLine { line, width }) => Self {
+                line,
+                width,
+                ..self
+            },
+            None => self,
+        }
+    }
+
     /// [`Line::aligned`] of the outline's stroke.
     #[cfg(test)]
     pub(crate) fn aligned(self, align: LineAlign) -> Self {
@@ -535,23 +551,32 @@ impl CheckedStates {
     }
 }
 
+/// A state's own stroke and the width the theme states it at, none for no
+/// stroke.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct StateLine {
+    pub line: Line,
+    pub width: f32,
+}
+
 /// A checked button's stroke at rest, under the pointer, pressed and
 /// disabled, on the 0.8.0 model each the theme's answer for `CHECKED`,
 /// `CHECKED | HOVER`, `CHECKED | PRESSED` and `CHECKED | DISABLED` where it
 /// states the stroke for the state by the spec's two queries (spec §2,
-/// `from_state`; spec §10, rule 0a). `None` is the unchecked button's
-/// border in that status, as on 0.7.2's, which states none.
+/// `from_state`; spec §10, rule 0a), at the width it states there. `None`
+/// is the unchecked button's border in that status, as on 0.7.2's, which
+/// states none.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct CheckedBorders {
-    pub rest: Option<Line>,
-    pub hover: Option<Line>,
-    pub pressed: Option<Line>,
-    pub disabled: Option<Line>,
+    pub rest: Option<StateLine>,
+    pub hover: Option<StateLine>,
+    pub pressed: Option<StateLine>,
+    pub disabled: Option<StateLine>,
 }
 
 impl CheckedBorders {
     /// The checked stroke in `status`, where stated.
-    pub(crate) fn at(&self, status: iced_widget::button::Status) -> Option<Line> {
+    pub(crate) fn at(&self, status: iced_widget::button::Status) -> Option<StateLine> {
         use iced_widget::button::Status;
         match status {
             Status::Active => self.rest,
@@ -918,21 +943,21 @@ pub(crate) fn button_toggle_from(
             }
         };
         // A checked stroke the theme states for the status's state is drawn
-        // over the fill (spec §10, rule 0a: "the function draws what the
-        // theme states for the state"); where it states none, the unchecked
-        // button's border in the status.
+        // over the fill at its own width (spec §10, rule 0a: "the function
+        // draws what the theme states for the state"); where it states none,
+        // the unchecked button's border in the status.
         let checked_line = source.checked_borders.at(status);
         let (background, text_color, border) = match status {
             Status::Active | Status::Hovered | Status::Pressed => (
                 fill,
                 label,
                 match checked_line {
-                    Some(line) => outline.with(Some(line)).over(fill),
+                    Some(stated) => outline.with_state(Some(stated)).over(fill),
                     None => source.border_at(theme, status, fill, iced_widget::button::secondary),
                 },
             ),
             Status::Disabled => {
-                let outline = outline.with(checked_line);
+                let outline = outline.with_state(checked_line);
                 match source.disabled_background {
                     Some(_) => disabled_button(
                         source.checked_disabled_background,

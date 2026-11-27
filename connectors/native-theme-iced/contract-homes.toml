@@ -51,7 +51,7 @@ moves = [
 
 [homes."button.body(CHECKED).stroke.color"]
 moves = [
-  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."button.body(CHECKED; variant=Flat).stroke.color"]
@@ -99,7 +99,7 @@ moves = [
   { row = "styles::button_default.border", statuses = ["Disabled"] },
   { row = "styles::button_primary.border", statuses = ["Disabled"] },
   { row = "styles::button_success.border", statuses = ["Disabled"] },
-  { row = "styles::button_toggle.border", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Disabled)", "(true, Disabled)"] },
   { row = "styles::button_warning.border", statuses = ["Disabled"] },
 ]
 
@@ -111,7 +111,7 @@ moves = [
 
 [homes."button.body(DISABLED|CHECKED).stroke.color"]
 moves = [
-  { row = "styles::button_toggle.border", statuses = ["(true, Disabled)"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Disabled)"] },
 ]
 
 [homes."button.body(FOCUS_VISIBLE).stroke.color"]
@@ -170,7 +170,7 @@ moves = [
 
 [homes."button.body(HOVER|CHECKED).stroke.color"]
 moves = [
-  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"] },
 ]
 
 [homes."button.body(HOVER|CHECKED; variant=Flat).fill"]
@@ -286,7 +286,7 @@ moves = [
 
 [homes."button.body(PRESSED|CHECKED).stroke.color"]
 moves = [
-  { row = "styles::button_toggle.border", statuses = ["(true, Pressed)"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Pressed)"] },
 ]
 
 [homes."button.body(PRESSED|CHECKED; variant=Flat).fill"]

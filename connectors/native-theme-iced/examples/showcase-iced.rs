@@ -12080,6 +12080,13 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
         "button.body(NONE).corners" | "button.body(NONE; variant=Primary).corners" => {
             format!("{class}: button::Style::border.radius, {outline}.corners")
         }
+        "button.body(NONE).stroke.width" if under("basic.buttons.toggle_on") => {
+            "styles::button_toggle: button::Style::border.width, button.body(NONE).stroke.width, \
+             painted over the padding; where a rule states the checked stroke for the state \
+             (button.body(CHECKED), HOVER|CHECKED, PRESSED|CHECKED, DISABLED|CHECKED), that \
+             state's own width, which moves no content (iced_widget 0.14.2 src/button.rs, layout)"
+                .to_owned()
+        }
         "button.body(NONE).stroke.width" | "button.body(NONE; variant=Primary).stroke.width" => {
             format!(
                 "{class}: button::Style::border.width, {outline}.stroke.width, painted over the \
