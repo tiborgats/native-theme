@@ -401,13 +401,34 @@ fn a_push_button_s_fills_are_libadwaita_s_table() {
 /// the entry and the toggle group's track fill with `$button_color`
 /// (_entries.scss:9, _toggle-group.scss:12); a hovered toggle is
 /// `$hover_color`, the window text at 7 % (_toggle-group.scss:65-67,
-/// _colors.scss:268): each the window text at its alpha, translucent.
+/// _colors.scss:268): each the window text at its alpha, translucent. A
+/// checked toggle is `--active-toggle-bg-color`, `#ffffff` in light and
+/// `rgb(255 255 255 / 20%)` in dark, a layer over the track
+/// (_toggle-group.scss:79-80, _colors.scss:238, :245-247; platform-facts.md
+/// (§2.25)). The 8-bit values are those `next_homes.toml` lists for 0.8.0.
 #[test]
 fn the_drop_down_entry_and_toggle_group_take_libadwaita_s_fills() {
     use crate::next::style::PartStated;
-    for (theme, c) in both_schemes()
+    // Rest ($button_color), hovered drop-down ($button_hover_color), hovered
+    // toggle ($hover_color), checked toggle.
+    let literals = [
+        [
+            [0x00, 0x00, 0x06, 0x14],
+            [0x00, 0x00, 0x06, 0x1f],
+            [0x00, 0x00, 0x06, 0x0e],
+            [0xff, 0xff, 0xff, 0xff],
+        ],
+        [
+            [0xff, 0xff, 0xff, 0x1a],
+            [0xff, 0xff, 0xff, 0x26],
+            [0xff, 0xff, 0xff, 0x12],
+            [0xff, 0xff, 0xff, 0x33],
+        ],
+    ];
+    for ((theme, c), [rest, hover, toggle_hover, checked]) in both_schemes()
         .iter()
         .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+        .zip(literals)
     {
         let layer = |alpha: f32| Paint::Solid(c.row_foreground.mul_alpha(alpha));
         for (state, alpha) in [
@@ -419,24 +440,30 @@ fn the_drop_down_entry_and_toggle_group_take_libadwaita_s_fills() {
             assert_eq!(field.fill, layer(alpha), "drop-down {state:?}");
             assert!(field.stated.contains(PartStated::FILL), "{state:?}");
         }
+        let eight_bit = |paint: &Paint| solid(paint).map(Color::to_srgb8);
+        for (name, paint) in [
+            ("drop-down", &theme.combo_box.field(WidgetState::NONE).fill),
+            ("entry", &theme.input.field(WidgetState::NONE).fill),
+            ("text area", &theme.text_area.field(WidgetState::NONE).fill),
+            (
+                "toggle group",
+                &theme.segmented_control.track(WidgetState::NONE).fill,
+            ),
+        ] {
+            assert_eq!(*paint, layer(BUTTON_ALPHA), "{name}");
+            assert_eq!(eight_bit(paint), Some(rest), "{name}");
+        }
         assert_eq!(
-            theme.input.field(WidgetState::NONE).fill,
-            layer(BUTTON_ALPHA)
+            eight_bit(&theme.combo_box.field(WidgetState::HOVER).fill),
+            Some(hover)
         );
+        let toggle = |state| theme.segmented_control.segment(state).fill;
         assert_eq!(
-            theme.segmented_control.track(WidgetState::NONE).fill,
-            layer(BUTTON_ALPHA)
+            toggle(WidgetState::HOVER),
+            Paint::Solid(layer_of(c.row_foreground, TOOLBAR_BUTTON_HOVER_ALPHA))
         );
-        assert_eq!(
-            theme.segmented_control.segment(WidgetState::HOVER).fill,
-            Paint::Solid(c.hover_layer)
-        );
-        assert_eq!(
-            c.hover_layer.to_srgb8(),
-            c.row_foreground
-                .mul_alpha(TOOLBAR_BUTTON_HOVER_ALPHA)
-                .to_srgb8()
-        );
+        assert_eq!(eight_bit(&toggle(WidgetState::HOVER)), Some(toggle_hover));
+        assert_eq!(eight_bit(&toggle(WidgetState::SELECTED)), Some(checked));
     }
 }
 
@@ -749,11 +776,11 @@ fn a_palette_states_its_roles() {
 
 /// The widgets the preset draws in a colour a slot replaces take the slot's
 /// colour, the push button's, the entry's, the drop-down's and the toggle
-/// group's fills and the toolbar's and the flat button's layers of the
-/// window text the palette's foreground at libadwaita's alphas; the fills
-/// the preset states as libadwaita's layers over its own window or of its
-/// own window text (a hovered toggle's), the placeholder and the switch's
-/// hover colour keep the preset's.
+/// group's fills and the toolbar's, the flat button's and the hovered
+/// toggle's layers of the window text the palette's foreground at
+/// libadwaita's alphas; the fills the preset states as libadwaita's layers
+/// over its own window, the placeholder and the switch's hover colour keep
+/// the preset's.
 #[test]
 fn a_palette_recolours_the_widgets_of_its_colours() {
     for scheme in [Scheme::Light, Scheme::Dark] {
@@ -876,8 +903,13 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
             );
         }
         assert_eq!(
-            solid(&theme.segmented_control.segment(WidgetState::HOVER).fill),
-            Some(c.hover_layer)
+            solid(&theme.segmented_control.segment(WidgetState::HOVER).fill).map(Color::to_srgb8),
+            Some(
+                p.foreground
+                    .mul_alpha(TOOLBAR_BUTTON_HOVER_ALPHA)
+                    .to_srgb8()
+            ),
+            "{scheme:?} hovered toggle"
         );
         assert_eq!(theme.input.placeholder(none).color, c.placeholder);
         assert_eq!(

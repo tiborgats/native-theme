@@ -2969,6 +2969,10 @@ difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
 [[row]]
 key = "segmented_control.active_background"
 homes = ["segmented_control.segment(SELECTED).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "adwaita dark: 0.7.2 states AdwToggleGroup's checked toggle, white at 20 %, laid over the group's opaque #38383c (#606063); 0.8.0 states the track in libadwaita's own form, translucent, so it states the checked toggle in that form too, white at 20 %, a layer over the track, which a palette's track then lies under as libadwaita's does; light keeps #ffffff"
+difference_citation = "adwaita: _toggle-group.scss:79-80 (a checked toggle's background: --active-toggle-bg-color), _colors.scss:238 (#ffffff, light), :245-247 (rgb(255 255 255 / 20%), dark) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (active_background)"
+difference_values = { "adwaita" = { light = "#ffffff", dark = "#ffffff33" } }
 
 [[row]]
 key = "segmented_control.active_text_color"

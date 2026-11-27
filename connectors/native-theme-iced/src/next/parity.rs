@@ -1497,18 +1497,19 @@ fn faded_field_fill(
 
 /// adwaita's text field's fill, the entry's `$button_color`, in each status
 /// of the field, faded when disabled, and the focused stroke laid over it
-/// ([`ADWAITA_FIELD_FILLS`]).
+/// ([`ADWAITA_FIELD_FILLS`]); each status reads its own state's fill, which
+/// no rule restates, where the rest states it.
 const ADWAITA_INPUT_FILLS: [Stated; 7] = [
     set(at!(NONE), Field::Background, home!(fill, input.field(NONE))),
     set(
         at!(HOVER),
         Field::Background,
-        home!(fill, input.field(NONE)),
+        home!(fill, input.field(HOVER) by NONE),
     ),
     set(
         at!(FOCUSED),
         Field::Background,
-        home!(fill, input.field(NONE)),
+        home!(fill, input.field(FOCUSED) by NONE),
     ),
     set(
         at!(FOCUSED),
@@ -1518,7 +1519,7 @@ const ADWAITA_INPUT_FILLS: [Stated; 7] = [
     set(
         at!(FOCUSED | HOVER),
         Field::Background,
-        home!(fill, input.field(NONE)),
+        home!(fill, input.field(FOCUSED | HOVER) by NONE),
     ),
     set(
         at!(FOCUSED | HOVER),
@@ -1539,12 +1540,12 @@ const ADWAITA_TEXT_AREA_FILLS: [Stated; 7] = [
     set(
         at!(HOVER),
         Field::Background,
-        home!(fill, text_area.field(NONE)),
+        home!(fill, text_area.field(HOVER) by NONE),
     ),
     set(
         at!(FOCUSED),
         Field::Background,
-        home!(fill, text_area.field(NONE)),
+        home!(fill, text_area.field(FOCUSED) by NONE),
     ),
     set(
         at!(FOCUSED),
@@ -1554,7 +1555,7 @@ const ADWAITA_TEXT_AREA_FILLS: [Stated; 7] = [
     set(
         at!(FOCUSED | HOVER),
         Field::Background,
-        home!(fill, text_area.field(NONE)),
+        home!(fill, text_area.field(FOCUSED | HOVER) by NONE),
     ),
     set(
         at!(FOCUSED | HOVER),
@@ -1569,7 +1570,8 @@ const ADWAITA_TEXT_AREA_FILLS: [Stated; 7] = [
 ];
 
 /// adwaita's drop-down's fills, the push button's table, at rest and under
-/// the pointer, open or not ([`ADWAITA_FIELD_FILLS`]).
+/// the pointer, open or not ([`ADWAITA_FIELD_FILLS`]), each status its own
+/// state's fill (open, the rest's, which no rule restates).
 const ADWAITA_COMBO_FILLS: [Stated; 4] = [
     set(
         at!(NONE),
@@ -1584,7 +1586,7 @@ const ADWAITA_COMBO_FILLS: [Stated; 4] = [
     set(
         at!(OPEN),
         Field::Background,
-        home!(fill, combo_box.field(NONE)),
+        home!(fill, combo_box.field(OPEN) by NONE),
     ),
     set(
         at!(OPEN | HOVER),
@@ -1635,6 +1637,56 @@ const ADWAITA_SEGMENT_FILLS: [Stated; 2] = [
         home!(fill, segmented_control.segment(PRESSED)),
     ),
 ];
+
+/// adwaita's selected segment's fill, AdwToggleGroup's checked toggle, at
+/// rest, hovered and pressed, and faded as one widget over the track when
+/// disabled ([`ADWAITA_CHECKED_TOGGLE`]).
+const ADWAITA_SELECTED_SEGMENT_FILLS: [Stated; 4] = [
+    set(
+        at!(SELECTED),
+        Field::Background,
+        home!(fill, segmented_control.segment(SELECTED)),
+    ),
+    set(
+        at!(SELECTED | HOVER),
+        Field::Background,
+        home!(fill, segmented_control.segment(SELECTED | HOVER)),
+    ),
+    set(
+        at!(SELECTED | PRESSED),
+        Field::Background,
+        home!(fill, segmented_control.segment(SELECTED | PRESSED)),
+    ),
+    set(
+        at!(SELECTED | DISABLED),
+        Field::Background,
+        ADWAITA_DISABLED_SELECTED_SEGMENT,
+    ),
+];
+
+/// The selected segment's fill laid on the track over the window, faded as
+/// one widget by `segmented_control.disabled_opacity`.
+const ADWAITA_DISABLED_SELECTED_SEGMENT: Home = Home {
+    path: "segmented_control.segment(SELECTED).fill on segmented_control.track(NONE).fill, \
+           faded as one over colors.window.background by segmented_control.disabled_opacity",
+    value: |t| {
+        let s = &t.segmented_control;
+        Some(Value::Faded {
+            color: super::fill_color(&s.segment(WidgetState::SELECTED))?,
+            under: Some(super::fill_color(&s.track(WidgetState::NONE))?),
+            ground: super::to_color(t.colors.window.background?),
+            opacity: s.disabled_opacity,
+        })
+    },
+};
+
+/// The reason of adwaita's selected segment's fill.
+const ADWAITA_CHECKED_TOGGLE: &str = "the 0.8.0 adwaita states AdwToggleGroup's checked toggle \
+     in libadwaita's own form, `--active-toggle-bg-color`, #ffffff in light and white at 20 % \
+     in dark, a layer over the track (_toggle-group.scss:79-80, _colors.scss:238, :245-247 at \
+     libadwaita 1.10.0; docs/platform-facts.md §2.25; native-theme/tests/next_homes.toml, row \
+     segmented_control.active_background, a listed difference), as it states the track \
+     translucent; 0.7.2 states the dark one laid over the group's opaque #38383c (#606063)";
 
 /// The reason of adwaita's text field, drop-down and segmented control
 /// fills.
@@ -3383,8 +3435,10 @@ const DIFFERENCES: &[Difference] = &[
             home!(fill, segmented_control.segment(PRESSED)),
         )]],
     ),
-    stated_fields("segment", &["adwaita"], LineAlign::Outside, &[])
-        .stating(&[&ADWAITA_SEGMENT_FILLS], &[STATED, ADWAITA_FIELD_FILLS]),
+    stated_fields("segment", &["adwaita"], LineAlign::Outside, &[]).stating(
+        &[&ADWAITA_SEGMENT_FILLS, &ADWAITA_SELECTED_SEGMENT_FILLS],
+        &[STATED, ADWAITA_FIELD_FILLS, ADWAITA_CHECKED_TOGGLE],
+    ),
     // segmented_control.track(NONE): adwaita's AdwToggleGroup `$button_color`.
     stated_fields("segmented_control", &["adwaita"], LineAlign::Outside, &[])
         .stating(&[&ADWAITA_TRACK_FILLS], &[ADWAITA_FIELD_FILLS]),

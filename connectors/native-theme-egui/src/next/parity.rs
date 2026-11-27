@@ -1932,7 +1932,22 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         Cause::Stated(home!(segmented_control.segment(HOVER).fill)),
         ADWAITA_FIELD_FILLS,
     ),
+    d(
+        "SegmentedControl",
+        &[A],
+        ".visuals.selection.bg_fill",
+        Cause::Stated(home!(segmented_control.segment(SELECTED).fill)),
+        ADWAITA_CHECKED_TOGGLE,
+    ),
 ];
+
+/// adwaita's checked toggle in libadwaita's own form.
+const ADWAITA_CHECKED_TOGGLE: &str = "the 0.8.0 adwaita states AdwToggleGroup's checked toggle \
+     in libadwaita's own form, `--active-toggle-bg-color`, #ffffff in light and white at 20 % \
+     in dark, a layer over the track (_toggle-group.scss:79-80, _colors.scss:238, :245-247 at \
+     libadwaita 1.10.0; docs/platform-facts.md §2.25; native-theme/tests/next_homes.toml, row \
+     segmented_control.active_background, a listed difference), as it states the track \
+     translucent; 0.7.2 states the dark one laid over the group's opaque #38383c (#606063)";
 
 /// adwaita's entry, drop-down and toggle group filled in libadwaita's own form.
 const ADWAITA_FIELD_FILLS: &str = "the 0.8.0 adwaita states the entry's, the drop-down's and \

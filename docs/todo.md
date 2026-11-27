@@ -1297,15 +1297,19 @@ model, the platform presets and the three connectors
         list), the progress bar's padding (§2.10: 0) and the sidebar's
         (§2.12: 6, 6 top / 4 bottom).
         *0.8.0 M4 P6, P7 (2026-11-27):* in 0.8.0's adwaita preset
-        (`native-theme/src/next/presets/adwaita.rs`) none of this item's
-        `#d5d5d5` / `#464649` is left: `button.active_background` is
-        `$button_active_color`, the window text at 30 % (P6);
-        `combo_box.hover_background` is `$button_hover_color`, the window
-        text at 15 % (§2.24), and `segmented_control.hover_background`
-        `$hover_color`, the window text at 7 % over the group's fill (§2.25)
-        (P7); `checkbox.hover_background` is the unchecked box's rest fill,
-        its outline `$trough_hover_color` (§2.5). The rest of this item was
-        not re-checked against the 0.8.0 preset.
+        (`native-theme/src/next/presets/adwaita.rs`) four of this item's
+        entries are settled: `button.active_background` (`#c8c8c8` /
+        `#2e2e32`) is `$button_active_color`, the window text at 30 % (§2.3;
+        P6); `combo_box.hover_background` is `$button_hover_color`, the window
+        text at 15 % (§2.24; P7); `segmented_control.hover_background` is
+        `$hover_color`, the window text at 7 %, a layer over the group's fill
+        (§2.25; P7 and its review fixes); `checkbox.hover_background` is the
+        unchecked box's rest fill under the pointer, its outline
+        `$trough_hover_color` (§2.5; M2.FS4, `eb0402c7c`). Still open:
+        `checkbox.unchecked_border_color` is the preset's `frame`, `#d5d5d5`
+        / `#4a4a4e`, carried as "0.7.2 adwaita.toml (uncited)", where §2.5
+        gives `currentColor` at 15 %. The rest of this item was not
+        re-checked against the 0.8.0 preset.
       - kde-breeze (its pressed button's fill and text and its scroll bar's
         pressed thumb left this list in D7, 2026-10-26: the reader now writes
         them from the colour scheme, and it cannot be right while the preset
@@ -5383,6 +5387,13 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       §2.1.5, `focus_ring_offset`; `CheckBox_themeresources.xaml:275` at microsoft-ui-xaml 8463f45), not round the
       indicator; with no part for that box the check box and the radio keep the Button's global ring (offset 1),
       drawn round the indicator.
+- [ ] [0.8.x] **adwaita**'s pressed toggle under a palette (M4 RV-P7, 2026-11-27): a pressed toggle of the toggle group
+      (`segmented_control.segment(PRESSED)`) fills with `active_layer`, libadwaita's `$active_color`, the window text
+      at 16 % (`_toggle-group.scss:69-70`, `_colors.scss:269` at libadwaita 1.10.0), held as a fixed 8-bit layer of
+      adwaita's own text (`#00000621` / `#ffffff29`), so a palette's foreground does not recolour it, while the track
+      and the hovered toggle under it follow the palette's foreground since P7. State it as the toolbar's pressed
+      layer is, `layer_of(c.row_foreground, TOOLBAR_BUTTON_PRESSED_ALPHA)` (the same 16 %), with the palette test and
+      the module documentation's list of fixed layers.
 - [ ] [0.8.x] **windows-11**: a checked toolbar button's label has no checked colour (window text on the accent fill);
       under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
       when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
