@@ -177,7 +177,7 @@ pub(crate) const MIXED_NOTE: &str = "egui draws a mixed box as its unchecked one
      the theme states for INDETERMINATE are laid over it per call (next::mixed_checkbox, \
      pages::selection::mixed_look), each unstated one the unchecked box's, and under the pointer \
      and pressed egui's own treatment of the hover or the press where the theme states none for \
-     HOVER or PRESSED asked alone";
+     HOVER or PRESSED by either query (the flag alone, or the combined state asking it)";
 
 /// Lay the installed 0.8.0 theme's mixed check box over the visuals of `ui`, the unchecked
 /// box's scope (`next::mixed_checkbox`, in the scheme egui draws), and return the notes on the

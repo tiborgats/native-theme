@@ -1112,11 +1112,13 @@ fn mixed_over_normal(
 /// The mixed box takes what a rule states for `INDETERMINATE` at rest, and under the pointer and
 /// pressed what a rule states for `HOVER` or `PRESSED` asked alone, the combined state's value;
 /// where none does, egui's own treatment of the hover or the press, as the checked box takes it
-/// (spec §2, `from_state`: the flag asked alone; §10, rule 0): on every preset with the same
-/// fill and outline stated for `CHECKED` and for `INDETERMINATE`, the mixed box's hovered and
-/// pressed fill and outline colour are the checked cell's, and where `indicator(HOVER)` states
-/// no fill, egui's own hovered one where egui's changes between rest and hover, else the mixed
-/// fill. A rule for `HOVER` and one for `HOVER` with `INDETERMINATE` give the latter.
+/// (spec §2, `from_state`, the first of its two queries, the flag alone; the second, the
+/// combined state asking it, is [`a_rule_for_two_flags_states_the_value_for_the_flag_asked`]'s;
+/// §10, rule 0): on every preset with the same fill and outline stated for `CHECKED` and for
+/// `INDETERMINATE`, the mixed box's hovered and pressed fill and outline colour are the checked
+/// cell's, and where `indicator(HOVER)` states no fill, egui's own hovered one where egui's
+/// changes between rest and hover, else the mixed fill. A rule for `HOVER` and one for `HOVER`
+/// with `INDETERMINATE` give the latter.
 #[test]
 fn the_mixed_box_under_the_pointer_asks_the_state_alone() -> Result<(), Box<dyn std::error::Error>>
 {
@@ -1266,7 +1268,8 @@ fn a_translucent_mixed_outline_is_drawn_over_its_fill() -> Result<(), Box<dyn st
 
 /// The checked box's outline is drawn at the width a rule states for `CHECKED`, not the
 /// unchecked box's, in every entry at rest, and under the pointer where a rule states the
-/// outline for `HOVER` asked alone (the combined state's, the `CHECKED` rule's here).
+/// outline for `HOVER` asked alone, the first of spec §2's two queries (the combined state's,
+/// the `CHECKED` rule's here).
 #[test]
 fn the_checked_boxs_stated_outline_width_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
     use native_theme::next::PartStated;
@@ -1310,8 +1313,9 @@ fn the_checked_boxs_stated_outline_width_is_drawn() -> Result<(), Box<dyn std::e
 }
 
 /// The checked box's and the mixed box's mark take the width a rule states for their flag at
-/// rest, and under the pointer the width a rule states for `HOVER` asked alone, the
-/// combined state's (spec §2, `from_state`); with no rule for `HOVER` or `PRESSED`, egui's own
+/// rest, and under the pointer the width a rule states for `HOVER` asked alone, the combined
+/// state's (spec §2, `from_state`, the first of its two queries); with no rule for `HOVER` or
+/// `PRESSED`, egui's own
 /// width for the state where egui's changes between rest and that state, else the resting width
 /// (§10, rule 0): egui strokes the mark in the state's `fg_stroke` (egui 0.37.0
 /// `src/theme/default_style.rs`, `StyleProvider<CheckboxStyle>`), and its own entries widen

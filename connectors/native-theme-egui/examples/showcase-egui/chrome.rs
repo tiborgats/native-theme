@@ -621,52 +621,118 @@ pub(crate) fn toggle_icon_colour(
 /// on, `[fill, text, outline]`, each `None` where no rule states it for the state: at the flat
 /// button's own homes, with the theme's values, which the Widget Info rows, at the push button's
 /// homes, do not show, as the gpui showcase names them (`info::buttons::native_ghost_checked`).
-fn toggle_stated_notes(
+/// Where a value is unstated at rest but drawn under the pointer or pressed, stated for
+/// `CHECKED` by the state's own query asking it (spec §2's two queries, [`toggle_checked_in`],
+/// [`toggle_checked_pens`]), the note names those states' homes and values.
+pub(crate) fn toggle_stated_notes(
     r: Option<&native_theme::next::ResolvedTheme>,
 ) -> [Option<(&'static str, String)>; 3] {
+    use native_theme::next::{ButtonQuery, Paint, PartStated, Stroke, TextStated};
     let Some(r) = r else {
         return [None, None, None];
     };
-    let at = native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED);
+    let at = ButtonQuery::flat().with_state(WidgetState::CHECKED);
+    // the query at `CHECKED | state`, asking `CHECKED`
+    let own = |state| at.with_state(state).asking(WidgetState::CHECKED);
+    let paint = |fill: &Paint| match fill {
+        Paint::Solid(colour) => format!(" {colour}"),
+        _ => ", its layers as egui paints them".to_owned(),
+    };
+    let line = |stroke: &Stroke| match stroke {
+        Stroke::Uniform { width, color, .. } => format!(" {width} px {color}"),
+        _ => " none".to_owned(),
+    };
+    let hover = (WidgetState::HOVER, "under the pointer", "HOVER");
+    let press = (WidgetState::PRESSED, "pressed", "PRESSED");
+    let active = if demo::state_pen(
+        &r.button
+            .body(ButtonQuery::flat().with_state(WidgetState::FOCUS_VISIBLE)),
+    )
+    .is_some()
+    {
+        (
+            WidgetState::FOCUS_VISIBLE,
+            "pressed or focused",
+            "FOCUS_VISIBLE",
+        )
+    } else {
+        press
+    };
+    // The hovered and pressed values of a value unstated at rest, each `<when> <home> <value>`
+    // where the state's own query states it for `CHECKED`, joined; `None` where neither does.
+    let in_states = |part: &str,
+                     property: &str,
+                     states: [(WidgetState, &str, &str); 2],
+                     value: &dyn Fn(WidgetState) -> Option<String>| {
+        let drawn: Vec<String> = states
+            .into_iter()
+            .filter_map(|(state, when, name)| {
+                value(state).map(|value| {
+                    format!("{when} button.{part}(CHECKED|{name}; variant=Flat).{property}{value}")
+                })
+            })
+            .collect();
+        (!drawn.is_empty()).then(|| {
+            format!(
+                "not stated at rest; {}, where a rule states it for CHECKED with that state \
+                 (spec §2's two queries)",
+                drawn.join(", ")
+            )
+        })
+    };
     let on = toggle_checked(Some(r));
-    let fill = on.fill.map(|_| {
-        let value = match &r.button.body(at).fill {
-            native_theme::next::Paint::Solid(colour) => format!(" {colour}"),
-            _ => ", its layers as egui paints them".to_owned(),
-        };
+    let fill = match on.fill {
+        Some(_) => Some(format!(
+            "button.body(CHECKED; variant=Flat).fill{}",
+            paint(&r.button.body(at).fill)
+        )),
+        None => in_states("body", "fill", [hover, press], &|state| {
+            let body = r.button.body(own(state));
+            (body.from_state.contains(PartStated::FILL) && demo::drawn_fill(&body).is_some())
+                .then(|| paint(&body.fill))
+        }),
+    }
+    .map(|stated| {
         (
             "fill while on",
-            format!(
-                "button.body(CHECKED; variant=Flat).fill{value}, laid over egui's selected \
-                 button (chrome::ghost_button)"
-            ),
+            format!("{stated}, laid over egui's selected button (chrome::ghost_button)"),
         )
     });
-    let text = on.text.map(|_| r.button.label(at).color).map(|colour| {
+    let text = match on.text {
+        Some(_) => Some(format!(
+            "button.label(CHECKED; variant=Flat).color {}",
+            r.button.label(at).color
+        )),
+        None => in_states("label", "color", [hover, press], &|state| {
+            let label = r.button.label(own(state));
+            (label.from_state.contains(TextStated::COLOR) && next::text_color_of(&label).is_some())
+                .then(|| format!(" {}", label.color))
+        }),
+    }
+    .map(|stated| {
         (
             "text colour while on",
-            format!(
-                "button.label(CHECKED; variant=Flat).color {colour}, the label's colour \
-                 (chrome::ghost_button)"
-            ),
+            format!("{stated}, the label's colour (chrome::ghost_button)"),
         )
     });
     let body = r.button.body(at);
-    let outline = demo::state_pen(&body).map(|_| {
-        let value = match &body.stroke {
-            native_theme::next::Stroke::Uniform { width, color, .. } => {
-                format!(" {width} px {color}")
-            }
-            _ => " none".to_owned(),
-        };
+    let outline = match demo::state_pen(&body) {
+        Some(_) => Some(format!(
+            "button.body(CHECKED; variant=Flat).stroke{}, at rest; under the pointer \
+             (CHECKED|HOVER)'s and pressed or focused (CHECKED|FOCUS_VISIBLE)'s, else \
+             (CHECKED|PRESSED)'s, where a rule states each",
+            line(&body.stroke)
+        )),
+        None => in_states("body", "stroke", [hover, active], &|state| {
+            let part = r.button.body(own(state));
+            (part.from_state.contains(PartStated::STROKE) && demo::stated_pen(&part).is_some())
+                .then(|| line(&part.stroke))
+        }),
+    }
+    .map(|stated| {
         (
             "outline while on",
-            format!(
-                "button.body(CHECKED; variant=Flat).stroke{value}, at rest; under the pointer \
-                 (CHECKED|HOVER)'s and pressed or focused (CHECKED|FOCUS_VISIBLE)'s, else \
-                 (CHECKED|PRESSED)'s, where a rule states each, laid over the scope's entries \
-                 (chrome::toggle_checked_pens)"
-            ),
+            format!("{stated}, laid over the scope's entries (chrome::toggle_checked_pens)"),
         )
     });
     [fill, text, outline]

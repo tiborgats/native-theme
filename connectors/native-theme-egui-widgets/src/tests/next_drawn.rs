@@ -59,9 +59,9 @@ enum Differs {
     /// The dividers' colour alone ([`divider_fills_masked`]): 0.7.2 paints them in the outline's
     /// colour, 0.8.0 in the one the theme states for them.
     DividerFill,
-    /// The rects' fills alone, a rect filled in an outline's colour kept
-    /// ([`rect_fills_masked`]): a drop-down's field, a segmented control's track and its
-    /// segments.
+    /// A rect's fill where both models fill it from a home P7 changed, each in that home's
+    /// value as the case paints it ([`rect_fills_masked`], [`rect_fills`]): a drop-down's field,
+    /// a segmented control's track and its selected segment.
     RectFill,
     /// What each of these lets differ, at once, each of them one that changes no place
     /// ([`masked`]).
@@ -94,7 +94,7 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "radio off disabled",
         presets: &["macos-monterey", "macos-tahoe"],
-        differs: Differs::Each(&[Differs::Fill, Differs::Outline, Differs::Dot]),
+        differs: Differs::Each(&[Differs::Fill, Differs::Outline]),
         reason: MACOS_RADIO_DISABLED,
     },
     Difference {
@@ -114,12 +114,6 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["ios-13"],
         differs: Differs::Ring,
         reason: IOS_RADIO,
-    },
-    Difference {
-        case: "radio off",
-        presets: &["material-3"],
-        differs: Differs::Dot,
-        reason: M3_RADIO,
     },
     Difference {
         case: "radio on",
@@ -152,12 +146,6 @@ const DIFFERENCES: &[Difference] = &[
         reason: IOS_RADIO_DISABLED,
     },
     Difference {
-        case: "radio off disabled",
-        presets: &["kde-breeze"],
-        differs: Differs::Dot,
-        reason: KDE_RADIO_DISABLED,
-    },
-    Difference {
         case: "radio on disabled",
         presets: &["kde-breeze"],
         differs: Differs::Each(&[Differs::Fill, Differs::Outline, Differs::Dot]),
@@ -177,14 +165,8 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         case: "radio off disabled",
-        presets: &["adwaita"],
-        differs: Differs::Dot,
-        reason: ADWAITA_RADIO_DISABLED,
-    },
-    Difference {
-        case: "radio off disabled",
         presets: &["windows-11"],
-        differs: Differs::Each(&[Differs::Outline, Differs::Dot]),
+        differs: Differs::Outline,
         reason: WINDOWS_RADIO_DISABLED,
     },
     Difference {
@@ -508,8 +490,8 @@ const M3_RADIO_DISABLED: &str = "the label's colour, and the circle's fill and o
 
 /// material-3's radio.
 const M3_RADIO: &str = "a checked circle's fill and the dot's colour: 0.7.2 fills a checked \
-     circle in primary and draws the dot, and the cell's fg_stroke an unchecked one paints no dot \
-     in, in its Checkbox cell's on-primary (#ffffff / #381e72); the 0.8.0 material-3 states \
+     circle in primary and draws the dot in its Checkbox cell's on-primary (#ffffff / \
+     #381e72); the 0.8.0 material-3 states \
      material-web's radio, one SVG of a ring and a dot in the icon's colour, nothing filling the \
      space between them (radio.ts:108-120, the ring :113-118, the dot :119; _radio.scss:109-113 \
      at material-web cbd34a8), checked selected-icon-color, primary (_radio.scss:126-127; \
@@ -543,8 +525,8 @@ const IOS_RADIO_DISABLED: &str = "the circle, its outline, the dot and the label
 
 /// kde-breeze's disabled radio.
 const KDE_RADIO_DISABLED: &str = "a checked circle's fill and the dot's colour: 0.7.2 fills a \
-     disabled checked circle in #f0f0f0 / #272a2e and draws the dot, and the cell's fg_stroke an \
-     unchecked one paints no dot in, in #a0a1a3 / #686a6c; the 0.8.0 kde-breeze states Breeze's \
+     disabled checked circle in #f0f0f0 / #272a2e and draws the dot in #a0a1a3 / #686a6c; the \
+     0.8.0 kde-breeze states Breeze's \
      disabled checked circle, Disabled [Colors:Button] BackgroundNormal under the Disabled \
      Highlight at highlightBackgroundAlpha (#eceded / #25272b: breezehelper.cpp:862, :865-869, \
      :1012-1019, :40 at breeze f0b1d75; breezemetrics.h:176; platform-facts.md §2.5), and its \
@@ -564,18 +546,11 @@ const ADWAITA_RADIO_CHECKED: &str = "a checked circle's outline: 0.7.2's adwaita
      the outline is the inset box-shadow, :27), disabled too, `:disabled` changing no colour \
      (:62-64), so the accent fills the circle to its outer edge, which stays";
 
-/// adwaita's disabled radio.
-const ADWAITA_RADIO_DISABLED: &str = "the cell's fg_stroke alone, which an unchecked radio \
-     paints no dot in and its label, lettered in its own colour, does not show: the 0.8.0 \
-     adwaita states the disabled dot as at rest, the accent's text, `:disabled` changing no \
-     colour, only the control's opacity (_checks.scss:52-55, :62-64, :76 at libadwaita \
-     1.10.0), which the radio lays into the cell's fg_stroke, where 0.7.2's is #949799 in light \
-     (in dark the two are one)";
-
 /// windows-11's disabled radio.
 const WINDOWS_RADIO_DISABLED: &str = "the circle's outline, a checked one's fill, and the dot's \
      colour: 0.7.2 draws its Checkbox cell's disabled outline (#00000072 / #ffffff8b unchecked), \
-     no fill, and the dot and the cell's fg_stroke in #0000005c / #ffffff5d; the 0.8.0 windows-11 states WinUI's disabled radio: unchecked, outlined in \
+     no fill, and the dot in #0000005c / #ffffff5d; the 0.8.0 windows-11 states WinUI's \
+     disabled radio: unchecked, outlined in \
      RadioButtonOuterEllipseStrokeDisabled = ControlStrongStrokeColorDisabled (#00000037 / \
      #ffffff28: RadioButton_themeresources.xaml:137, :21 at microsoft-ui-xaml 8463f45), checked, \
      filled and outlined in AccentFillColorDisabled (#00000037 / #ffffff28: \
@@ -591,9 +566,8 @@ const MACOS_RADIO_DISABLED: &str = "the circle's fill and outline and the dot's 
      `*.normal.radio_disabled_off` and `*.normal.radio_disabled_on` `fill`, `edge_*`, the dot \
      `label`; macos-monterey's checked one the unchecked one's fill, macos-tahoe's #0076f470 / \
      #0982ff70), the outline composited over the fill as the \
-     Checkbox cell lays its bg_stroke (RADIO_CELL), and the dot's colour laid into the cell's \
-     fg_stroke, which an unchecked radio paints no dot in and the label, lettered in its own \
-     colour, does not show; macos-monterey states no disabled dot in dark (the run's \
+     Checkbox cell lays its bg_stroke (RADIO_CELL), and the checked dot's colour laid into the \
+     cell's fg_stroke; macos-monterey states no disabled dot in dark (the run's \
      `*.normal.radio_disabled_on` `label` is no one colour), so there the dot is the cell's own \
      disabled fg_stroke, egui's treatment of the state (spec §10, rule 0), where 0.7.2 drew \
      #ffffff";
@@ -782,6 +756,7 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
     for &(key, preset) in crate::next::parity::PRESETS {
         for is_dark in [false, true] {
             let (old, new) = both_installed(key, preset, is_dark)?;
+            let fills = rect_fills(key, preset, is_dark)?;
             for &(case, add) in cases {
                 let _ = response(&old, at(1.0), add);
                 let _ = response(&new, at(1.0), add);
@@ -799,7 +774,7 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
                 // of every shape is equal.
                 if let Some(entry) = entry {
                     listed.push((key, case));
-                    if alike_but(entry.differs, (&a, ra.rect), (&b, rb.rect)) {
+                    if alike_but(entry.differs, &fills, (&a, ra.rect), (&b, rb.rect)) {
                         continue;
                     }
                 }
@@ -918,9 +893,11 @@ fn galleys_taken(a: &[egui::Shape], b: &[egui::Shape]) -> Vec<egui::Shape> {
 
 /// `a` and `b` with what `differs` lets differ masked in both, where it changes no place: a
 /// colour, an outline's width laid into its circle ([`Differs::Ring`]), or several of these
-/// ([`Differs::Each`]), each in turn; `None` for a difference that moves a shape.
+/// ([`Differs::Each`]), each in turn; `None` for a difference that moves a shape. `fills` are
+/// the rect fills [`Differs::RectFill`] lets differ.
 fn masked(
     differs: Differs,
+    fills: &RectFills,
     a: &[egui::Shape],
     b: &[egui::Shape],
 ) -> Option<(Vec<egui::Shape>, Vec<egui::Shape>)> {
@@ -932,10 +909,10 @@ fn masked(
         Differs::Fill => both(fills_masked),
         Differs::Dot => both(|s| fallbacks_masked(&dots_masked(s))),
         Differs::DividerFill => divider_fills_masked(a, b),
-        Differs::RectFill => both(rect_fills_masked),
-        Differs::Each(each) => each
-            .iter()
-            .try_fold((a.to_vec(), b.to_vec()), |(a, b), d| masked(*d, &a, &b)),
+        Differs::RectFill => rect_fills_masked(a, b, fills),
+        Differs::Each(each) => each.iter().try_fold((a.to_vec(), b.to_vec()), |(a, b), d| {
+            masked(*d, fills, &a, &b)
+        }),
         Differs::Gap
         | Differs::Inset
         | Differs::Padding
@@ -973,9 +950,10 @@ fn laid_out_alike(a: &egui::Galley, b: &egui::Galley, colour: bool) -> bool {
 }
 
 /// Whether `b`, drawn in the rect `rb`, is `a`, drawn in `ra`, in every value but what
-/// `differs` lets differ.
+/// `differs` lets differ (`fills`, the rect fills [`Differs::RectFill`] lets differ).
 fn alike_but(
     differs: Differs,
+    fills: &RectFills,
     (a, ra): (&[egui::Shape], egui::Rect),
     (b, rb): (&[egui::Shape], egui::Rect),
 ) -> bool {
@@ -996,7 +974,7 @@ fn alike_but(
         | Differs::Dot
         | Differs::DividerFill
         | Differs::RectFill
-        | Differs::Each(_) => ra == rb && masked(differs, a, b).is_some_and(|(a, b)| a == b),
+        | Differs::Each(_) => ra == rb && masked(differs, fills, a, b).is_some_and(|(a, b)| a == b),
         Differs::Gap => {
             // the row's background spans the row, which the gap's change widens
             let along = egui::vec2(rb.width() - ra.width(), 0.0);
@@ -1362,23 +1340,131 @@ fn divider_fills_masked(
     Some((a, b))
 }
 
-/// `shapes` with each rect's fill made transparent, but a rect filled in an outline's colour
-/// (the segmented control's dividers, [`outlines_masked`]), every other value kept: what a
-/// listed difference, a field's, a track's or a segment's fill, leaves to compare.
-fn rect_fills_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
-    let outlines = outline_colours(shapes);
-    shapes
-        .iter()
-        .cloned()
-        .map(|mut shape| {
-            if let egui::Shape::Rect(r) = &mut shape
-                && !outlines.contains(&r.fill)
-            {
-                r.fill = egui::Color32::TRANSPARENT;
-            }
-            shape
-        })
-        .collect()
+/// `a` and `b` with the fill of each pair of rects at the same place in both, in the same
+/// rect, made transparent where `a`'s is one of `fills.old` and `b`'s one of `fills.new`, every
+/// other value kept: what a listed difference, a field's, a track's or a segment's fill, leaves
+/// to compare; `None` where the two have not as many shapes.
+fn rect_fills_masked(
+    a: &[egui::Shape],
+    b: &[egui::Shape],
+    fills: &RectFills,
+) -> Option<(Vec<egui::Shape>, Vec<egui::Shape>)> {
+    if a.len() != b.len() {
+        return None;
+    }
+    let none = egui::Color32::TRANSPARENT;
+    let (mut a, mut b) = (a.to_vec(), b.to_vec());
+    for (old, new) in a.iter_mut().zip(b.iter_mut()) {
+        if let (egui::Shape::Rect(old), egui::Shape::Rect(new)) = (old, new)
+            && old.rect == new.rect
+            && fills.old.contains(&old.fill)
+            && fills.new.contains(&new.fill)
+        {
+            old.fill = none;
+            new.fill = none;
+        }
+    }
+    Some((a, b))
+}
+
+/// The rect fills a listed [`Differs::RectFill`] lets differ, of the 0.7.2 model (`old`) and
+/// of the 0.8.0 model (`new`).
+#[derive(Debug, Default)]
+struct RectFills {
+    old: Vec<egui::Color32>,
+    new: Vec<egui::Color32>,
+}
+
+/// The fills of the homes P7 changed on adwaita ([`ADWAITA_COMBO`], [`ADWAITA_SEGMENTED`]),
+/// read from the two resolved themes of `preset` (`crate::next::parity::resolve`): 0.7.2's
+/// `combo_box.background_color`, `segmented_control.background_color` and `hover_background`,
+/// and in dark `active_background`; 0.8.0's `combo_box.field(NONE)`,
+/// `segmented_control.track(NONE)` and `segment(HOVER)` fills, and in dark
+/// `segment(SELECTED)`'s (`native-theme/tests/next_homes.toml`, the rows of those keys), each
+/// as the cases paint it ([`painted_fills`]).
+fn rect_fills(
+    key: &str,
+    preset: Preset,
+    is_dark: bool,
+) -> Result<RectFills, Box<dyn std::error::Error>> {
+    use native_theme_egui::native_theme::next::WidgetState;
+    let (old, new) = crate::next::parity::resolve(key, preset, is_dark)?;
+    let (sc, cb) = (&old.segmented_control, &old.combo_box);
+    let old = painted_fills(
+        PaintedHomes {
+            field: Some(to_color32(cb.background_color)),
+            track: Some(to_color32(sc.background_color)),
+            hover: sc.hover_background.map(to_color32),
+            selected: is_dark.then(|| to_color32(sc.active_background)),
+        },
+        crate::segmented_control::Look::of(&old).background,
+        [Some(cb.disabled_opacity), Some(sc.disabled_opacity)],
+    );
+    let fill = |part| {
+        native_theme_egui::next::fill_of(&part, "a P7 home")
+            .ok()
+            .flatten()
+    };
+    let (sc, cb) = (&new.segmented_control, &new.combo_box);
+    let new = painted_fills(
+        PaintedHomes {
+            field: fill(cb.field(WidgetState::NONE)),
+            track: fill(sc.track(WidgetState::NONE)),
+            hover: fill(sc.segment(WidgetState::HOVER)),
+            selected: is_dark
+                .then(|| fill(sc.segment(WidgetState::SELECTED)))
+                .flatten(),
+        },
+        crate::segmented_control::Look::next_of(&new).background,
+        [cb.disabled_opacity, sc.disabled_opacity],
+    );
+    Ok(RectFills { old, new })
+}
+
+/// One model's values at the homes [`rect_fills`] reads.
+struct PaintedHomes {
+    /// The drop-down's field.
+    field: Option<egui::Color32>,
+    /// The segmented control's track.
+    track: Option<egui::Color32>,
+    /// A hovered segment, over the track.
+    hover: Option<egui::Color32>,
+    /// The selected segment, over the track.
+    selected: Option<egui::Color32>,
+}
+
+/// `homes` as the cases paint them: each as given at rest; a disabled drop-down's field faded
+/// by egui, `gamma_multiply` by the cell's `disabled_alpha`, the first of `alphas`
+/// (`combo_box.disabled_opacity`; `Painter::multiply_opacity`, `egui/src/painter.rs` at egui
+/// 0.37.0); a disabled segmented control's track and selected segment faded as one over
+/// `ground`, the window's background, by the second (`segmented_control.disabled_opacity`;
+/// `segmented_control.rs`, `fade_as_one`).
+fn painted_fills(
+    homes: PaintedHomes,
+    ground: Option<egui::Color32>,
+    [combo_alpha, segmented_alpha]: [Option<f32>; 2],
+) -> Vec<egui::Color32> {
+    let PaintedHomes {
+        field,
+        track,
+        hover,
+        selected,
+    } = homes;
+    let mut fills: Vec<egui::Color32> = [field, track, hover, selected]
+        .into_iter()
+        .flatten()
+        .collect();
+    if let (Some(field), Some(alpha)) = (field, combo_alpha) {
+        fills.push(field.gamma_multiply(alpha));
+    }
+    if let (Some(track), Some(ground), Some(alpha)) = (track, ground, segmented_alpha) {
+        let group = ground.blend(track);
+        fills.push(crate::fade::faded(ground, group, alpha));
+        if let Some(selected) = selected {
+            fills.push(crate::fade::faded(ground, group.blend(selected), alpha));
+        }
+    }
+    fills
 }
 
 /// The colours of the outlines `shapes` stroke.
@@ -3067,5 +3153,44 @@ fn a_rule_for_two_flags_states_the_value_for_the_flag_asked() -> TestResult {
         |r| Over::next_of(r, true, true).label,
     )?;
     assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
+/// An unchecked radio's entries take no dot colour, as egui letters a label with no colour of
+/// its own in the entry's `fg_stroke` the dot is painted in (`Over::next_noted`): on
+/// windows-11, light and dark, whose rules for `HOVER | CHECKED` and `PRESSED | CHECKED` state
+/// the dot (the query at `HOVER | CHECKED` asking `HOVER` has the bit), the checked radio's
+/// hovered and pressed dots are those rules', and the unchecked radio's, enabled or disabled,
+/// none in any state.
+#[test]
+fn an_unchecked_radio_takes_no_dot_colour() -> TestResult {
+    use crate::radio_button::Over;
+    use native_theme_egui::native_theme::next::WidgetState;
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let r = NextTheme::preset(Preset::Windows11).resolve(&ctx);
+        let on = Over::next_of(&r, true, false);
+        for (name, entry, state) in [
+            ("hovered", on.hovered, WidgetState::HOVER),
+            ("pressed", on.pressed, WidgetState::PRESSED),
+        ] {
+            let dot = r.radio.dot(state | WidgetState::CHECKED);
+            let stated = native_theme_egui::next::fill_of(&dot, "radio.dot")?;
+            assert!(stated.is_some(), "{ctx:?}: no {name} checked dot");
+            assert_eq!(entry.dot, stated, "{ctx:?}: the {name} checked dot");
+        }
+        for disabled in [false, true] {
+            let off = Over::next_of(&r, false, disabled);
+            for (name, entry) in [
+                ("rest", off.rest),
+                ("hovered", off.hovered),
+                ("pressed", off.pressed),
+            ] {
+                assert_eq!(
+                    entry.dot, None,
+                    "{ctx:?}, disabled {disabled}: the unchecked radio's {name} dot"
+                );
+            }
+        }
+    }
     Ok(())
 }

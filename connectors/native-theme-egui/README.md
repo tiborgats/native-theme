@@ -834,7 +834,7 @@ listed here, and a value the theme leaves unstated is egui's own
   with the resting ones, each where the theme states it for `CHECKED`: a
   rule for `CHECKED` states `toolbar.button(CHECKED)`'s fill (its label
   `toolbar.button_label(CHECKED)`'s), or the state's own query asking
-  `CHECKED` has the fill's bit (spec §2, `from_state`), for the
+  `CHECKED` has the value's bit (spec §2, `from_state`), for the
   application to hand `Button::fill` and `RichText::color`, which override
   every on-hover effect, in the state of the button's previous response
   (`CheckedToolButton::at`); in a state where it does not, egui's own

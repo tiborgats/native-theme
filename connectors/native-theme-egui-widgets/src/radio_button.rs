@@ -211,7 +211,11 @@ impl Over {
                 stroke: at(&ruled, &indicator, PartStated::STROKE)
                     .then_some(stroke)
                     .flatten(),
-                dot: if at(&ruled_dot, &dot, PartStated::FILL) {
+                // An unchecked radio paints no dot, but egui letters a label with no colour of
+                // its own in the entry's `fg_stroke` (egui 0.37.0 `src/widgets/radio_button.rs`,
+                // `fallback_text_color = visuals.text_color()`; `WidgetVisuals::text_color` is
+                // `fg_stroke.color`, `src/style.rs`), so it takes no checked dot's colour.
+                dot: if checked && at(&ruled_dot, &dot, PartStated::FILL) {
                     next::fill(&dot, dot_home, unmapped)
                 } else {
                     None

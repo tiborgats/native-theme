@@ -14462,6 +14462,69 @@ fn a_checked_look_takes_a_rule_for_its_state_with_checked() -> Result<(), String
     Ok(())
 }
 
+/// The side-panel toggle's notes name a checked fill, label colour or outline unstated at rest
+/// but drawn under the pointer or pressed (`chrome::toggle_stated_notes`): on every preset with
+/// the value first stated by a rule of no state, a rule for `CHECKED | HOVER` (`CHECKED |
+/// PRESSED`) gives a note naming that state's home, and a rule for `HOVER` (`PRESSED`) alone
+/// gives none.
+#[test]
+fn the_side_toggle_notes_a_checked_value_stated_for_its_state_only() -> Result<(), String> {
+    use crate::chrome::toggle_stated_notes;
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    let mut misses = Vec::new();
+    for (slot, property, base, value, home) in [
+        (
+            0,
+            "body.fill",
+            "\"#101010\"",
+            "\"#ff00ff\"",
+            "button.body(CHECKED|",
+        ),
+        (
+            1,
+            "label.color",
+            "\"#101010\"",
+            "\"#ff00ff\"",
+            "button.label(CHECKED|",
+        ),
+        (
+            2,
+            "body.stroke",
+            "{ width = 1.0, color = \"#101010\" }",
+            "{ width = 2.0, color = \"#ff00ff\" }",
+            "button.body(CHECKED|",
+        ),
+    ] {
+        let base = format!("[[widgets.button.rules]]\nstates = []\n{property} = {base}\n");
+        for (flag, name) in [("hover", "HOVER"), ("pressed", "PRESSED")] {
+            for (states, stated) in [
+                (format!("\"checked\", \"{flag}\""), true),
+                (format!("\"{flag}\""), false),
+            ] {
+                let patch = format!(
+                    "{base}[[widgets.button.rules]]\nstates = [{states}]\n{property} = {value}\n"
+                );
+                let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+                for &preset in Preset::ALL {
+                    let r = Theme::preset(preset)
+                        .with_patch(patch.clone())
+                        .resolve(&ThemeContext::light());
+                    let notes = toggle_stated_notes(Some(&r));
+                    let note = notes.get(slot).cloned().flatten();
+                    let named = note
+                        .as_ref()
+                        .is_some_and(|(_, text)| text.contains(&format!("{home}{name};")));
+                    if note.is_some() != stated || (stated && !named) {
+                        misses.push(format!("{property}, {preset:?}, [{states}]: {note:?}"));
+                    }
+                }
+            }
+        }
+    }
+    assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
 /// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
 /// icon is not the texture it is painted from unchecked at rest, loaded in the resting
 /// `toolbar.button_icon(NONE).color` #4d4d4d: it takes the colour the rule for `CHECKED`

@@ -1308,10 +1308,10 @@ pub fn expander_icon(r: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
 /// atlas lays the checked box's over the unchecked one, a translucent
 /// outline drawn over the fill under it, and the mark's colour and width;
 /// a hovered or pressed value the theme states for `HOVER` or `PRESSED`
-/// asked alone is the combined state's, an unstated one egui's own
-/// treatment of the hover or the press in `scheme` (spec §2, `from_state`;
-/// §10, rule 0). Returns the notes on values written otherwise than
-/// stated, as the atlas's.
+/// by spec §2's two queries (`from_state`: the flag alone, or the combined
+/// state asking it) is the combined state's, an unstated one egui's own
+/// treatment of the hover or the press in `scheme` (§10, rule 0). Returns
+/// the notes on values written otherwise than stated, as the atlas's.
 #[must_use = "the notes report values written otherwise than stated"]
 pub fn mixed_checkbox(
     r: &ResolvedTheme,
