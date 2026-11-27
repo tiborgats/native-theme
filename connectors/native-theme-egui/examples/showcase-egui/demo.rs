@@ -1815,7 +1815,9 @@ type DrawnPart = (
 /// Every fill the showcase's own drawing sites read ([`DrawnPart`]): the menu bar
 /// (`chrome::menu_panel`), the selected tab's line (`next_indicator_line`), the Icons page's
 /// skeleton, the toggle's and the edit switch's checked fills (`pages::basic::toggle_on_at`,
-/// `edit_look`), the edit switch's hovered and pressed ones (`next::toolbar_button_checked`), a
+/// `edit_look`), the edit switch's hovered and pressed ones (`next::toolbar_button_checked`), the
+/// two toggles' hovered and pressed ones, the push button's and the flat button's
+/// (`pages::basic::toggle_on_in`), a
 /// toolbar button's at rest ([`next_toolbar_button`]), the side-panel toggle's, a flat button's
 /// (`chrome::toggle_checked`), the Basic
 /// list's and the table's frames (`list_frame`), their rows and
@@ -1842,10 +1844,32 @@ const DRAWN_FILLS: &[DrawnPart] = {
         ("button.body(CHECKED).fill", true, |r| {
             r.button.body(S::CHECKED)
         }),
+        ("button.body(HOVER|CHECKED).fill", false, |r| {
+            r.button.body(H | S::CHECKED)
+        }),
+        ("button.body(PRESSED|CHECKED).fill", false, |r| {
+            r.button.body(P | S::CHECKED)
+        }),
         ("button.body(CHECKED; variant=Flat).fill", true, |r| {
             r.button
                 .body(native_theme::next::ButtonQuery::flat().with_state(S::CHECKED))
         }),
+        (
+            "button.body(HOVER|CHECKED; variant=Flat).fill",
+            false,
+            |r| {
+                r.button
+                    .body(native_theme::next::ButtonQuery::flat().with_state(H | S::CHECKED))
+            },
+        ),
+        (
+            "button.body(PRESSED|CHECKED; variant=Flat).fill",
+            false,
+            |r| {
+                r.button
+                    .body(native_theme::next::ButtonQuery::flat().with_state(P | S::CHECKED))
+            },
+        ),
         ("toolbar.button(CHECKED).fill", true, |r| {
             r.toolbar.button(S::CHECKED)
         }),

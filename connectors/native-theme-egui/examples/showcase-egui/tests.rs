@@ -1199,20 +1199,31 @@ fn the_primary_button_is_outlined_in_its_own_pen() -> Result<(), String> {
 /// The side-panel toggle's icon takes the colour the theme states for the flat button's icon
 /// in the state it is in, `button.icon(CHECKED; variant=Flat).color` while on and
 /// `button.icon(NONE; variant=Flat).color` while off; kde-breeze states none, and the icon is
-/// not lettered in the checked label's colour.
+/// not lettered in the checked label's colour. While on and pressed or hovered, where a rule
+/// states the checked colour, the theme's answer for `(CHECKED | PRESSED)` or `(CHECKED |
+/// HOVER)` (N26); where only the resting one is stated, it holds in every state.
 #[test]
 fn the_toggles_icon_takes_the_stated_flat_icon_colour() {
     use native_theme::next::{
         ButtonRule, ButtonVariant, Color, IconPatch, Preset, Theme, ThemeContext, ThemePatch,
         WidgetState,
     };
+    use native_theme_egui::next::to_color32;
+    const REST: (bool, bool) = (false, false);
+    const HOVERED: (bool, bool) = (true, false);
+    const PRESSED: (bool, bool) = (true, true);
+    let colour = |r, open, was| crate::chrome::toggle_icon_colour(Some(r), open, was);
     let stock = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
-    assert_eq!(crate::chrome::toggle_icon_colour(Some(&stock), true), None);
-    assert_eq!(crate::chrome::toggle_icon_colour(Some(&stock), false), None);
-    assert_eq!(crate::chrome::toggle_icon_colour(None, true), None);
-    let [on, off] = [
+    for was in [REST, HOVERED, PRESSED] {
+        assert_eq!(colour(&stock, true, was), None, "{was:?}");
+        assert_eq!(colour(&stock, false, was), None, "{was:?}");
+        assert_eq!(crate::chrome::toggle_icon_colour(None, true, was), None);
+    }
+    let [on, off, hover, press] = [
         Color::new(1.0, 0.0, 1.0, 1.0),
         Color::new(0.0, 1.0, 0.0, 1.0),
+        Color::new(0.0, 0.0, 1.0, 1.0),
+        Color::new(1.0, 1.0, 0.0, 1.0),
     ];
     let rule = |state: WidgetState, colour: Color| {
         ButtonRule::new()
@@ -1220,20 +1231,30 @@ fn the_toggles_icon_takes_the_stated_flat_icon_colour() {
             .states(state)
             .icon(IconPatch::new().color(colour))
     };
+    let rest_only = Theme::preset(Preset::KdeBreeze)
+        .with_patch(ThemePatch::new().button(rule(WidgetState::NONE, off)))
+        .resolve(&ThemeContext::light());
+    for was in [REST, HOVERED, PRESSED] {
+        assert_eq!(
+            colour(&rest_only, true, was),
+            Some(to_color32(off)),
+            "{was:?}"
+        );
+    }
     let patch = ThemePatch::new()
         .button(rule(WidgetState::NONE, off))
-        .button(rule(WidgetState::CHECKED, on));
+        .button(rule(WidgetState::CHECKED, on))
+        .button(rule(WidgetState::CHECKED | WidgetState::HOVER, hover))
+        .button(rule(WidgetState::CHECKED | WidgetState::PRESSED, press));
     let r = Theme::preset(Preset::KdeBreeze)
         .with_patch(patch)
         .resolve(&ThemeContext::light());
-    assert_eq!(
-        crate::chrome::toggle_icon_colour(Some(&r), true),
-        Some(native_theme_egui::next::to_color32(on))
-    );
-    assert_eq!(
-        crate::chrome::toggle_icon_colour(Some(&r), false),
-        Some(native_theme_egui::next::to_color32(off))
-    );
+    assert_eq!(colour(&r, true, REST), Some(to_color32(on)));
+    assert_eq!(colour(&r, true, HOVERED), Some(to_color32(hover)));
+    assert_eq!(colour(&r, true, PRESSED), Some(to_color32(press)));
+    for was in [REST, HOVERED, PRESSED] {
+        assert_eq!(colour(&r, false, was), Some(to_color32(off)), "{was:?}");
+    }
 }
 
 /// The side-panel toggle while the panel is open, under a theme that states no checked flat
@@ -15581,7 +15602,8 @@ fn no_bundled_preset_leaves_a_drawn_fill_unmapped() {
 
 /// The side-panel toggle's checked fill, `button.body(CHECKED; variant=Flat).fill`
 /// (`chrome::toggle_checked`), stated as layers that are all gradients for the flat button
-/// alone, is a drawn fill `demo::drawn_fills_unmapped` reports at its home.
+/// alone, is a drawn fill `demo::drawn_fills_unmapped` reports at its home, and so are the
+/// hovered and pressed checked fills the rule answers too (`chrome::toggle_checked_in`).
 #[test]
 fn the_toggles_checked_flat_fill_is_a_drawn_fill() -> Result<(), String> {
     use native_theme::next::{
@@ -15614,9 +15636,12 @@ fn the_toggles_checked_flat_fill_is_a_drawn_fill() -> Result<(), String> {
     let notes = crate::demo::drawn_fills_unmapped(&r);
     assert_eq!(
         notes,
-        vec![native_theme_egui::Note::unmapped(
-            "button.body(CHECKED; variant=Flat).fill"
-        )],
+        [
+            "button.body(CHECKED; variant=Flat).fill",
+            "button.body(HOVER|CHECKED; variant=Flat).fill",
+            "button.body(PRESSED|CHECKED; variant=Flat).fill",
+        ]
+        .map(native_theme_egui::Note::unmapped),
     );
     Ok(())
 }
@@ -15991,6 +16016,122 @@ fn the_open_toggle_is_outlined_in_its_hovered_and_active_pens() -> Result<(), St
         );
         let strokes: Vec<egui::Stroke> = frames_at(&held, rect).iter().map(|f| f.1).collect();
         assert_eq!(strokes, [want], "{what}");
+    }
+    Ok(())
+}
+
+/// N26: the open side-panel toggle under kde-breeze light, which states the flat button's
+/// checked fill and a pressed checked one of its own (`(CHECKED | PRESSED; variant=Flat)`, the
+/// accent at 0.30), is filled pressed in the pressed one and hovered in `(CHECKED | HOVER;
+/// variant=Flat)`'s, the theme's answer for each state (`chrome::toggle_checked_in`), not in
+/// the resting checked fill in every state.
+#[test]
+fn the_open_toggle_is_filled_in_its_hovered_and_pressed_checked_fills() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, WidgetState as S};
+    const ID: &str = "chrome.status_bar.toggle";
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    probe.run_steps(SETTLE);
+    assert!(
+        probe.state().side_panel_visible,
+        "the side panel starts open"
+    );
+    let rect = element_rect(&probe, ID)?;
+    let r = probe
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?;
+    let fill =
+        |state| crate::demo::drawn_fill(&r.button.body(ButtonQuery::flat().with_state(state)));
+    let rest =
+        crate::demo::drawn_state_fill(&r.button.body(ButtonQuery::flat().with_state(S::CHECKED)))
+            .ok_or("kde-breeze states no checked flat fill")?;
+    let pressed = fill(S::CHECKED | S::PRESSED).ok_or("no pressed checked flat fill")?;
+    let hovered = fill(S::CHECKED | S::HOVER).ok_or("no hovered checked flat fill")?;
+    assert_ne!(
+        rest, pressed,
+        "the resting and pressed checked fills are one, so this proves nothing"
+    );
+    for (press, want, what) in [(false, hovered, "hovered"), (true, pressed, "pressed")] {
+        let held = held_at("kde-breeze", None, rect.center(), press)?;
+        assert!(
+            held.state().side_panel_visible,
+            "{what}: the panel stays open"
+        );
+        let fills: Vec<egui::Color32> = frames_at(&held, rect).iter().map(|f| f.0).collect();
+        assert_eq!(fills, [want], "{what}");
+    }
+    Ok(())
+}
+
+/// The Basic page's "On" toggle, egui's selected button, takes the checked fill and label of the
+/// state of its previous response (`pages::basic::toggle_on_in`, brief-W3 "Settled"): under a
+/// patch stating `button.body(CHECKED)`'s fill and label and the `(CHECKED | HOVER)` and
+/// `(CHECKED | PRESSED)` ones, each its own, the pressed toggle is painted in the pressed pair and
+/// the hovered one in the hovered pair; under a patch stating only `(PRESSED)`'s fill, the
+/// toggle keeps egui's own selected look pressed too (rule 0a).
+#[test]
+fn the_toggle_that_is_on_takes_the_checked_fill_of_its_state() -> Result<(), String> {
+    use crate::pages::basic::{ToggleOn, toggle_on_in};
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, Color, Paint, PartPatch, Preset, TextPatch, Theme, ThemeContext,
+        ThemePatch, WidgetState as S,
+    };
+    use native_theme_egui::next::to_color32;
+    let [on, hover, press] = [
+        Color::new(1.0, 0.0, 1.0, 1.0),
+        Color::new(0.0, 0.0, 1.0, 1.0),
+        Color::new(1.0, 1.0, 0.0, 1.0),
+    ];
+    let rule = |state: S, colour: Color| {
+        ButtonRule::new()
+            .states(state)
+            .body(PartPatch::new().fill(Paint::Solid(colour)))
+            .label(TextPatch::new().color(colour))
+    };
+    let patch = ThemePatch::new()
+        .button(rule(S::CHECKED, on))
+        .button(rule(S::CHECKED | S::HOVER, hover))
+        .button(rule(S::CHECKED | S::PRESSED, press));
+    let (key, _) = unchecked_preset()?;
+    let preset = Preset::ALL
+        .iter()
+        .find(|p| p.as_str() == key)
+        .ok_or("the preset is not bundled")?;
+    let r = Theme::preset(*preset)
+        .with_patch(patch.clone())
+        .resolve(&ThemeContext::light());
+    let checked = ButtonQuery::new(S::CHECKED);
+    let pair = |c: Color| ToggleOn {
+        fill: Some(to_color32(c)),
+        text: Some(to_color32(c)),
+    };
+    assert_eq!(toggle_on_in(Some(&r), checked, (false, false)), pair(on));
+    assert_eq!(toggle_on_in(Some(&r), checked, (true, false)), pair(hover));
+    assert_eq!(toggle_on_in(Some(&r), checked, (true, true)), pair(press));
+    let none = ToggleOn {
+        fill: None,
+        text: None,
+    };
+    assert_eq!(toggle_on_in(None, checked, (true, true)), none);
+    let pressed_only = Theme::preset(*preset)
+        .with_patch(ThemePatch::new().button(rule(S::PRESSED, press)))
+        .resolve(&ThemeContext::light());
+    for was in [(false, false), (true, false), (true, true)] {
+        assert_eq!(
+            toggle_on_in(Some(&pressed_only), checked, was),
+            none,
+            "{was:?}"
+        );
+    }
+
+    let mut probe = open_page_under(Page::Basic, egui::Theme::Light, key);
+    probe.run_steps(SETTLE);
+    let rect = element_rect(&probe, "basic.buttons.toggle_on")?;
+    for (press, want, what) in [(false, hover, "hovered"), (true, press, "pressed")] {
+        let held = held_at(key, Some(&patch), rect.center(), press)?;
+        let fills: Vec<egui::Color32> = frames_at(&held, rect).iter().map(|f| f.0).collect();
+        assert_eq!(fills, [to_color32(want)], "{what}");
     }
     Ok(())
 }

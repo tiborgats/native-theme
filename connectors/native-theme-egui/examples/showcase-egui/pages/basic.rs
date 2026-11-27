@@ -670,10 +670,17 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         }
     });
     // A toggle button: `Off` a button at rest, `On` the same button held on: egui's own selected
-    // button (`Button::selected`), with the checked colours [`toggle_on_at`] reads laid over it per
-    // call where the theme states them (spec §10, rule 0).
-    let on = toggle_on_at(r, native_theme::next::ButtonQuery::new(NextState::CHECKED));
-    let (on_fill, on_text) = (on.fill, on.text);
+    // button (`Button::selected`), with the checked colours [`toggle_on_in`] reads for the state
+    // of its previous response laid over it per call where the theme states them (spec §10,
+    // rule 0).
+    let checked = native_theme::next::ButtonQuery::new(NextState::CHECKED);
+    let on = toggle_on_at(r, checked);
+    let on_key = egui::Id::unique(("basic state", "basic.buttons.toggle_on"));
+    let on_was = demo::previous_state(ui, on_key);
+    let ToggleOn {
+        fill: on_fill,
+        text: on_text,
+    } = toggle_on_in(r, checked, on_was);
     // A dialog's default button, the one Enter activates: where the theme gives it a look of its
     // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
     // in the state of its previous response, kept in the page's memory (focus before hover, as
@@ -700,7 +707,8 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 None => button,
             }
         };
-        text_button(reg, ui, kind, ("On", min), held, true);
+        let response = text_button(reg, ui, kind, ("On", min), held, true);
+        demo::remember_state(ui, on_key, on_was, &response);
         let kind = (
             "basic.buttons.dialog_default",
             "button (dialog default)",
@@ -795,6 +803,43 @@ pub(crate) fn toggle_on_at(
     ToggleOn {
         fill: r.and_then(|r| demo::drawn_state_fill(&r.button.body(on))),
         text: r.and_then(|r| next::state_text_color_of(&r.button.label(on))),
+    }
+}
+
+/// A toggle button's colours while on, of the installed 0.8.0 theme `r`, in the state
+/// `(hovered, pressed)` of its previous response, `on` a query with the checked flag alone: each
+/// colour [`toggle_on_at`] finds stated for `on`, and then pressed the theme's answer for `on`
+/// with `PRESSED` added, else hovered for `on` with `HOVER` added, as egui's selected button
+/// takes neither state of its own (`Button::fill` and `RichText::color` override every on-hover
+/// effect, spec §10, rule 0); at rest, or where that answer is stated in a form egui cannot
+/// paint (`Unmapped`), the one stated for `on`. Each colour [`toggle_on_at`] finds unstated
+/// stays `None`, egui's own selected look in every state (rule 0a).
+pub(crate) fn toggle_on_in(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    on: native_theme::next::ButtonQuery,
+    (hovered, pressed): (bool, bool),
+) -> ToggleOn {
+    let rest = toggle_on_at(r, on);
+    let flag = if pressed {
+        NextState::PRESSED
+    } else if hovered {
+        NextState::HOVER
+    } else {
+        return rest;
+    };
+    let Some(r) = r else {
+        return rest;
+    };
+    let at = on.with_state(flag);
+    ToggleOn {
+        fill: rest
+            .fill
+            .and_then(|_| demo::drawn_fill(&r.button.body(at)))
+            .or(rest.fill),
+        text: rest
+            .text
+            .and_then(|_| next::text_color_of(&r.button.label(at)))
+            .or(rest.text),
     }
 }
 
