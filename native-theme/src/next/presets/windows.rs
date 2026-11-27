@@ -3453,11 +3453,13 @@ fn input(
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])));
     // `input.hover_border_color`: TextControlBorderBrushPointerOver is the rest brush,
     // TextControlElevationBorderBrush (TextBox_themeresources.xaml:135, :134 at microsoft-ui-xaml
-    // 8463f45), the preset's border colour, which high contrast does not change; stated for
-    // `HOVER` (spec §2, `from_state`). Pressed, the same: the TextBox has no Pressed state
-    // (:255, :256, :275, :291), so under the pressing pointer it is PointerOver; the click
-    // focuses it (FOCUSED).
-    let hover_border = Some(c.elevation_stroke);
+    // 8463f45), its three sides (`elevation_stroke`); under high contrast
+    // SystemColorHighlightColor (TextBox_themeresources.xaml:88 > generic.xaml:2072 at
+    // microsoft-ui-xaml 2.5.1; `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on
+    // `v0.8.0-rc1`, row TextControlBorderBrushPointerOver); stated for `HOVER` (spec §2,
+    // `from_state`). Pressed, the same: the TextBox has no Pressed state (:255, :256, :275, :291),
+    // so under the pressing pointer it is PointerOver; the click focuses it (FOCUSED).
+    let hover_border = Some(hc.highlight.unwrap_or(c.elevation_stroke));
     let field = field
         .rules(
             hover_border.into_iter().flat_map(|_| {
@@ -4387,13 +4389,19 @@ fn combo_box(
         // ComboBoxBackgroundPressed = ControlFillColorTertiary (ComboBox_themeresources.xaml:244,
         // Pressed state :433 at microsoft-ui-xaml 8463f45), flattened as `button.active_background`;
         // ComboBoxBorderBrushPressed = ControlStrokeColorDefaultBrush, flat (:266 / :56, Pressed
-        // :435-436; Common_themeresources_any.xaml:333 / :129 → :243 / :39).
+        // :435-436; Common_themeresources_any.xaml:333 / :129 → :243 / :39), the colour of the
+        // elevation border's three sides, which a palette's `border` replaces as at rest; under
+        // high contrast SystemColorHighlightColor (ComboBox_themeresources.xaml:161 >
+        // generic.xaml:2071 at microsoft-ui-xaml 2.5.1;
+        // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row
+        // ComboBoxBorderBrushPressed).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [
-                fill(c.control_fill_pressed),
-                stroke(layout.border_width, c.control_stroke),
-            ],
+            std::iter::once(fill(c.control_fill_pressed)).chain(
+                hc.highlight
+                    .or(elevation_border(c, hc, roles))
+                    .map(|color| stroke(layout.border_width, color)),
+            ),
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),

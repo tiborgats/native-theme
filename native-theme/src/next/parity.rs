@@ -3091,7 +3091,9 @@ pub(crate) fn windows_cases() -> Vec<(
     // button, `SystemControlBackgroundBaseLowBrush`, the button face
     // (Button_themeresources.xaml:81; generic.xaml:2010). The text field's, the text area's and the
     // combo box's outline under high contrast stay the default border, the window text, not the
-    // listed elevation border's three sides, and a checked toolbar button's is
+    // listed elevation border's three sides; the text field's and the text area's hovered outline,
+    // `SystemColorHighlightColor` (TextBox_themeresources.xaml:88 > generic.xaml:2072 at
+    // microsoft-ui-xaml 2.5.1); and a checked toolbar button's is
     // `SystemColorHighlightColor` (AppBarToggleButton_themeresources.xaml:95 at microsoft-ui-xaml
     // 2.5.1), not the listed on-accent one.
     const HIGH_CONTRAST: &[&str] = &[
@@ -3111,6 +3113,7 @@ pub(crate) fn windows_cases() -> Vec<(
         "checkbox.unchecked_background",
         "checkbox.unchecked_border_color",
         "checkbox.border.color",
+        "input.hover_border_color",
         "input.border.color",
         "text_area.border.color",
         "toolbar.button_hover_background",
