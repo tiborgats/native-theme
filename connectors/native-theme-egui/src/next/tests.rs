@@ -125,11 +125,15 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
         ),
     ] {
         let at = format!("{preset:?} {:?}", ctx.scheme);
-        let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx))?;
-        assert_eq!(look.fill, fill.map(|c| Some(rgb(c))), "{at}");
-        assert_eq!(look.text, text.map(|c| Some(rgb(c))), "{at}");
-        let [rest, hover, press] =
-            [0, 1, 2].map(|i| (fill.get(i).copied().map(rgb), text.get(i).copied().map(rgb)));
+        let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx));
+        assert_eq!(look.fill, fill.map(|c| Ok(Some(rgb(c)))), "{at}");
+        assert_eq!(look.text, text.map(|c| Ok(Some(rgb(c)))), "{at}");
+        let [rest, hover, press] = [0, 1, 2].map(|i| {
+            (
+                Ok(fill.get(i).copied().map(rgb)),
+                Ok(text.get(i).copied().map(rgb)),
+            )
+        });
         assert_eq!(look.at(false, false), rest, "{at} at rest");
         assert_eq!(look.at(true, false), hover, "{at} hovered");
         assert_eq!(look.at(true, true), press, "{at} pressed");
@@ -137,10 +141,59 @@ fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
     }
     let ios = super::toolbar_button_checked(
         &Theme::preset(Preset::Ios13).resolve(&ThemeContext::light()),
-    )?;
-    assert_eq!((ios.fill, ios.text), ([None; 3], [None; 3]), "ios-13");
-    assert_eq!(ios.at(true, true), (None, None), "ios-13 pressed");
+    );
+    assert_eq!(
+        (ios.fill, ios.text),
+        ([Ok(None); 3], [Ok(None); 3]),
+        "ios-13"
+    );
+    assert_eq!(ios.at(true, true), (Ok(None), Ok(None)), "ios-13 pressed");
     Ok(())
+}
+
+/// A checked toolbar button's fill stated as layers that are all gradients for `CHECKED |
+/// HOVER` alone, over macos-tahoe light, is `Unmapped` at that home under the pointer, and the
+/// resting and pressed fills and every label stay as the preset states them: each value is read
+/// on its own (spec §10, rule 0, per property; rule 4).
+#[test]
+fn a_checked_tool_buttons_gradient_fill_leaves_its_other_values() {
+    use native_theme::next::{GradientStop, Paint, PaintLayer, ToolbarRule};
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let ctx = ThemeContext::light();
+    let stock = super::toolbar_button_checked(&Theme::preset(Preset::MacosTahoe).resolve(&ctx));
+    let patch = ThemePatch::new().toolbar(
+        ToolbarRule::new()
+            .states(WidgetState::CHECKED | WidgetState::HOVER)
+            .button(PartPatch::new().fill(gradient)),
+    );
+    let r = Theme::preset(Preset::MacosTahoe)
+        .with_patch(patch)
+        .resolve(&ctx);
+    let look = super::toolbar_button_checked(&r);
+    let [rest, _, press] = stock.fill;
+    assert_eq!(
+        look.fill,
+        [
+            rest,
+            Err(super::Unmapped("toolbar.button(HOVER|CHECKED).fill")),
+            press
+        ]
+    );
+    assert!(matches!(rest, Ok(Some(_))) && matches!(press, Ok(Some(_))));
+    assert_eq!(look.text, stock.text);
 }
 
 /// A stated uniform stroke gives its colour and width in every alignment; a
@@ -2438,7 +2491,7 @@ fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
 -> Result<(), Box<dyn std::error::Error>> {
     let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
     let [base, value] = ["\"#101010\"", "\"#ff00ff\""];
-    let checked = |r: &native_theme::next::ResolvedTheme| super::toolbar_button_checked(r).ok();
+    let checked = |r: &native_theme::next::ResolvedTheme| Some(super::toolbar_button_checked(r));
     let mut misses = Vec::new();
     for (i, flag) in [(1, "hover"), (2, "pressed")] {
         two_flag_site(
@@ -2448,7 +2501,7 @@ fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
             ["checked", flag],
             [base, value],
             magenta,
-            |r| checked(r).and_then(|c| c.fill.get(i).copied().flatten()),
+            |r| checked(r).and_then(|c| c.fill.get(i).copied().and_then(Result::ok).flatten()),
         )?;
         two_flag_site(
             &mut misses,
@@ -2457,7 +2510,7 @@ fn a_checked_tool_buttons_states_take_a_rule_for_their_state_with_checked()
             ["checked", flag],
             [base, value],
             magenta,
-            |r| checked(r).and_then(|c| c.text.get(i).copied().flatten()),
+            |r| checked(r).and_then(|c| c.text.get(i).copied().and_then(Result::ok).flatten()),
         )?;
     }
     assert!(misses.is_empty(), "{misses:#?}");

@@ -502,20 +502,23 @@ pub fn toolbar_button_checked_border_color(r: &ResolvedTheme) -> Mapped<Option<C
 /// `RichText::color` override every on-hover effect
 /// (`src/widgets/button.rs`, `Button::fill`). Each array holds the value at
 /// rest, under the pointer and pressed, picked by [`CheckedToolButton::at`]
-/// from the button's previous response.
+/// from the button's previous response. Each value is read on its own: one
+/// egui cannot take is [`Unmapped`] at its home and leaves the others (spec
+/// §10, rule 0, per property).
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct CheckedToolButton {
     /// `toolbar.button(CHECKED)`, `(CHECKED | HOVER)` and `(CHECKED |
     /// PRESSED)`'s fill, each where the theme states it for `CHECKED`;
     /// `None` where it does not, and egui's own selected fill stays in that
-    /// state.
-    pub fill: [Option<Color32>; 3],
+    /// state; [`Unmapped`] where it is stated as layers that are all
+    /// gradients.
+    pub fill: [Mapped<Option<Color32>>; 3],
     /// `toolbar.button_label(CHECKED)`, `(CHECKED | HOVER)` and `(CHECKED |
     /// PRESSED)`'s colour, each where the theme states it for `CHECKED`;
     /// `None` where it does not, and egui's own selected text stays in that
     /// state.
-    pub text: [Option<Color32>; 3],
+    pub text: [Mapped<Option<Color32>>; 3],
 }
 
 impl CheckedToolButton {
@@ -523,8 +526,12 @@ impl CheckedToolButton {
     /// response: pressed, the pressed one's; else hovered, the hovered one's;
     /// else the resting one's.
     #[must_use]
-    pub fn at(&self, hovered: bool, pressed: bool) -> (Option<Color32>, Option<Color32>) {
-        let pick = |values: [Option<Color32>; 3]| {
+    pub fn at(
+        &self,
+        hovered: bool,
+        pressed: bool,
+    ) -> (Mapped<Option<Color32>>, Mapped<Option<Color32>>) {
+        let pick = |values: [Mapped<Option<Color32>>; 3]| {
             let [rest, hover, press] = values;
             if pressed {
                 press
@@ -548,19 +555,16 @@ impl CheckedToolButton {
 /// in that state (spec §10, rules 0 and 0a). The label colours likewise,
 /// from `toolbar.button_label`.
 ///
-/// The result is all or nothing: one value egui cannot take makes the
-/// whole of it [`Unmapped`], so a caller has no hovered or pressed look
-/// from it, not even the values that could be taken, and keeps its resting
-/// look in every state.
-///
-/// # Errors
-///
-/// [`Unmapped`] where a fill is stated as layers that are all gradients, or
-/// a state the checked fill or label is stated for states none of its own
-/// egui can take.
-pub fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<CheckedToolButton> {
+/// Each value is read on its own (spec §10, rule 0, per property): one
+/// egui cannot take is [`Unmapped`] at its home, which the caller reports
+/// (rule 4), and every other value stays. Where the resting fill is
+/// [`Unmapped`], the hovered and pressed fills are still read: the theme
+/// states the fill for `CHECKED`.
+pub fn toolbar_button_checked(r: &ResolvedTheme) -> CheckedToolButton {
     let t = &r.toolbar;
-    let rest_fill = toolbar_button_checked_background(r)?;
+    let rest_part = t.button(WidgetState::CHECKED);
+    let rest_fill = state_fill_of(&rest_part, "toolbar.button(CHECKED).fill");
+    let fill_stated = rest_part.from_state.contains(PartStated::FILL);
     let rest_text = state_text_color_of(&t.button_label(WidgetState::CHECKED));
     // the button at `state | CHECKED`, asking `CHECKED`
     let at = |state: WidgetState| {
@@ -568,7 +572,7 @@ pub fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<CheckedToolButton> {
     };
     let state_fill = |state, home| {
         let part = t.button(at(state));
-        if rest_fill.is_some() || part.from_state.contains(PartStated::FILL) {
+        if fill_stated || part.from_state.contains(PartStated::FILL) {
             stated(fill_of(&part, home)?, home).map(Some)
         } else {
             Ok(None)
@@ -582,24 +586,24 @@ pub fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<CheckedToolButton> {
             Ok(None)
         }
     };
-    Ok(CheckedToolButton {
+    CheckedToolButton {
         fill: [
             rest_fill,
-            state_fill(WidgetState::HOVER, "toolbar.button(HOVER|CHECKED).fill")?,
-            state_fill(WidgetState::PRESSED, "toolbar.button(PRESSED|CHECKED).fill")?,
+            state_fill(WidgetState::HOVER, "toolbar.button(HOVER|CHECKED).fill"),
+            state_fill(WidgetState::PRESSED, "toolbar.button(PRESSED|CHECKED).fill"),
         ],
         text: [
-            rest_text,
+            Ok(rest_text),
             state_text(
                 WidgetState::HOVER,
                 "toolbar.button_label(HOVER|CHECKED).color",
-            )?,
+            ),
             state_text(
                 WidgetState::PRESSED,
                 "toolbar.button_label(PRESSED|CHECKED).color",
-            )?,
+            ),
         ],
-    })
+    }
 }
 
 // ---------------------------------------------------------------------------

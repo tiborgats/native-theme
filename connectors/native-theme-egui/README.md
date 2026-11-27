@@ -838,7 +838,8 @@ listed here, and a value the theme leaves unstated is egui's own
   application to hand `Button::fill` and `RichText::color`, which override
   every on-hover effect, in the state of the button's previous response
   (`CheckedToolButton::at`); in a state where it does not, egui's own
-  selected look stays.
+  selected look stays. Each value is read on its own: one stated as layers
+  that are all gradients is `Unmapped` at its home and leaves the others.
 - **A tool button's icon colour.** egui's only per-state tint of a
   button's image is the label's text colour
   (`Button::image_tint_follows_text_color`, `egui-0.37.0`

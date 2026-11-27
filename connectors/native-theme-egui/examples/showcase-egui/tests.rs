@@ -17119,3 +17119,76 @@ fn the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour() -> Result<(), Str
     })
     .map_err(|e| e.to_string())
 }
+
+/// The On toggle and the edit switch treat a checked fill egui cannot paint by one rule (spec
+/// §10, rule 0, per property; rule 4): under macos-tahoe light, which states the checked fills
+/// at rest, hovered and pressed for both, a `(CHECKED | HOVER)` fill patched to layers that are
+/// all gradients leaves the hovered one at the fill stated for `CHECKED` alone, that colour
+/// alone, and the pressed one at the preset's pressed fill, and each label as before
+/// (`pages::basic::toggle_on_in`, `pages::basic::edit_look_at`).
+#[test]
+fn a_checked_fill_egui_cannot_paint_leaves_the_other_checked_values() -> Result<(), String> {
+    use crate::pages::basic::{edit_look, edit_look_at, toggle_on_in};
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, Color, GradientStop, Paint, PaintLayer, PartPatch, Preset, Theme,
+        ThemeContext, ThemePatch, ToolbarRule, WidgetState as S,
+    };
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: std::sync::Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: Color::new(0.1, 0.2, 0.9, 1.0),
+            },
+            GradientStop {
+                offset: 1.0,
+                color: Color::TRANSPARENT,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let ctx = ThemeContext::light();
+    let stock = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+    let patched = Theme::preset(Preset::MacosTahoe)
+        .with_patch(
+            ThemePatch::new()
+                .button(
+                    ButtonRule::new()
+                        .states(S::CHECKED | S::HOVER)
+                        .body(PartPatch::new().fill(gradient.clone())),
+                )
+                .toolbar(
+                    ToolbarRule::new()
+                        .states(S::CHECKED | S::HOVER)
+                        .button(PartPatch::new().fill(gradient)),
+                ),
+        )
+        .resolve(&ctx);
+    let on = ButtonQuery::new(S::CHECKED);
+    let [rest, hovered, pressed] = [(false, false), (true, false), (true, true)];
+    let toggle_rest = toggle_on_in(Some(&stock), on, rest);
+    let toggle_pressed = toggle_on_in(Some(&stock), on, pressed);
+    if toggle_rest.fill.is_none() || toggle_rest.fill == toggle_pressed.fill {
+        return Err("macos-tahoe no longer states its checked toggle's fills apart".to_owned());
+    }
+    let toggle = toggle_on_in(Some(&patched), on, hovered);
+    assert_eq!(toggle.fill, toggle_rest.fill, "the hovered toggle's fill");
+    assert_eq!(
+        toggle.text,
+        toggle_on_in(Some(&stock), on, hovered).text,
+        "the hovered toggle's label"
+    );
+    assert_eq!(toggle_on_in(Some(&patched), on, pressed), toggle_pressed);
+    let edit_rest = edit_look(Some(&stock));
+    let edit_pressed = edit_look_at(Some(&stock), pressed);
+    if edit_rest.fill.is_none() || edit_rest.fill == edit_pressed.0 {
+        return Err(
+            "macos-tahoe no longer states its checked tool button's fills apart".to_owned(),
+        );
+    }
+    let edit = edit_look_at(Some(&patched), hovered);
+    assert_eq!(edit.0, edit_rest.fill, "the hovered edit switch's fill");
+    assert_eq!(edit.1, edit_look_at(Some(&stock), hovered).1);
+    assert_eq!(edit_look_at(Some(&patched), pressed), edit_pressed);
+    Ok(())
+}
