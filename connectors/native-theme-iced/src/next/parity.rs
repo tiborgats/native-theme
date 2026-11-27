@@ -1961,6 +1961,41 @@ const CHECK_DISABLED_LABEL: Home = Home {
     },
 };
 
+/// A disabled checked box's label: `checkbox.label(DISABLED|CHECKED)` where
+/// a rule for DISABLED states it (`label(DISABLED)`, or
+/// `label(DISABLED|CHECKED)` asking DISABLED), else
+/// [`CHECK_DISABLED_LABEL`]'s, faded as one widget over the window by
+/// `checkbox.disabled_opacity`.
+const CHECKED_DISABLED_LABEL: Home = Home {
+    path: "checkbox.label(DISABLED|CHECKED).color where a rule for DISABLED states it, else \
+           checkbox.label(DISABLED).color, faded as one over colors.window.background by \
+           checkbox.disabled_opacity",
+    value: |t| {
+        use native_theme::next::TextStated;
+        let c = &t.checkbox;
+        let off = c.label(WidgetState::DISABLED);
+        let checked = c.label(asked(
+            WidgetState::DISABLED.union(WidgetState::CHECKED),
+            WidgetState::DISABLED,
+        ));
+        let label = if off
+            .from_state
+            .union(checked.from_state)
+            .contains(TextStated::COLOR)
+        {
+            checked
+        } else {
+            off
+        };
+        Some(Value::Faded {
+            color: super::text_color_of(&label)?,
+            under: None,
+            ground: super::to_color(t.colors.window.background?),
+            opacity: c.disabled_opacity,
+        })
+    },
+};
+
 /// The mark of a disabled check box whose disabled fill the theme states
 /// (`checkbox.indicator(DISABLED)`): the disabled label's colour on that
 /// fill, faded as one widget over the window.
@@ -2034,7 +2069,7 @@ const M3_CHECK: &[Stated] = &[
     set(
         at!(DISABLED | CHECKED),
         Field::TextColor,
-        CHECK_DISABLED_LABEL,
+        CHECKED_DISABLED_LABEL,
     ),
     set(at!(DISABLED), Field::IconColor, CHECK_DISABLED_MARK),
     set(
@@ -2272,7 +2307,7 @@ const IOS_CHECK_DISABLED_COLORS: [Stated; 6] = [
     set(
         at!(DISABLED | CHECKED),
         Field::TextColor,
-        CHECK_DISABLED_LABEL,
+        CHECKED_DISABLED_LABEL,
     ),
     set(at!(DISABLED), Field::IconColor, CHECK_DISABLED_MARK),
     set(

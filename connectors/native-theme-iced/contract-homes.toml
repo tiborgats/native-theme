@@ -483,6 +483,11 @@ moves = [
   { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
 ]
 
+[homes."checkbox.label(DISABLED|CHECKED).color"]
+moves = [
+  { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: true }"] },
+]
+
 [homes."checkbox.label(NONE).color"]
 leaves = ["checkbox.font.color"]
 moves = [
@@ -2442,7 +2447,7 @@ homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(CHECKED).stroke
 homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(DISABLED|CHECKED).color", "checkbox.label(DISABLED).color", "colors.window.background"]
 
 [rows."styles::checkbox.text_color"]
-homes = ["checkbox.label(DISABLED).color", "checkbox.label(NONE).color", "colors.window.background"]
+homes = ["checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.label(NONE).color", "colors.window.background"]
 
 [rows."styles::container_card.background"]
 homes = ["card.container(NONE).fill"]

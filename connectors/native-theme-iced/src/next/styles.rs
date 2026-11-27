@@ -706,6 +706,19 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
         },
         label: text_color_of(&c.label(WidgetState::NONE)),
         disabled_label: text_color_of(&c.label(WidgetState::DISABLED)),
+        checked_disabled_label: {
+            let off = c.label(WidgetState::DISABLED);
+            let checked = c.label(disabled_on);
+            if off
+                .from_state
+                .union(checked.from_state)
+                .contains(TextStated::COLOR)
+            {
+                text_color_of(&checked)
+            } else {
+                text_color_of(&off)
+            }
+        },
         border_width: edge(&rest, "checkbox.indicator(NONE).stroke.width")?.map(|(width, _)| width),
         border_radius: radius_or_iced(&rest, "checkbox.indicator(NONE).corners")?,
     })
@@ -715,7 +728,11 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
 /// window, stroked in what a rule for `DISABLED` states
 /// (`checkbox.indicator(DISABLED)`, `indicator(DISABLED|CHECKED)` checked),
 /// else in iced's own disabled border colour where iced's own box changes
-/// it (spec §2, `from_state`; §10, rule 0).
+/// it (spec §2, `from_state`; §10, rule 0); a disabled checked box
+/// lettered in `checkbox.label(DISABLED|CHECKED)` where a rule for
+/// `DISABLED` states it by the two queries (`label(DISABLED)`, or
+/// `label(DISABLED|CHECKED)` asking `DISABLED`), else as the unchecked one,
+/// in `checkbox.label(DISABLED)`.
 ///
 /// # Errors
 ///

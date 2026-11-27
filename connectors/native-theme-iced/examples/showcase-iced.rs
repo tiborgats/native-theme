@@ -10048,9 +10048,9 @@ fn ghost_route(
             }
             (true, false) => {
                 "not drawn: the toggle is selected, no rule for CHECKED, alone or with HOVER, \
-                 states button.label(CHECKED;variant=Flat).color, and ghost_button letters it under the \
-                 pointer in the label at rest on a stated checked fill, else as the connector's \
-                 primary button under the pointer (spec §10, rule 0a)"
+                 states button.label(CHECKED;variant=Flat).color, and ghost_button letters it \
+                 under the pointer in the label at rest on a stated checked fill, else as the \
+                 connector's primary button under the pointer (spec §10, rule 0a)"
             }
             (false, true) if os_icon => OS_ICON_COLOURS,
             (false, true) => ICON_FOR_LABEL,
@@ -10096,9 +10096,9 @@ fn ghost_route(
             }
             (true, false) => {
                 "not drawn: the toggle is selected, no rule for CHECKED, alone or with PRESSED, \
-                 states button.label(CHECKED;variant=Flat).color, and ghost_button letters it pressed \
-                 in the label at rest on a stated checked fill, else as the connector's primary \
-                 button while pressed (spec §10, rule 0a)"
+                 states button.label(CHECKED;variant=Flat).color, and ghost_button letters it \
+                 pressed in the label at rest on a stated checked fill, else as the connector's \
+                 primary button while pressed (spec §10, rule 0a)"
             }
             _ if !pressed_label => {
                 "not drawn: button.label(PRESSED;variant=Flat).color is unstated, so \
@@ -10339,8 +10339,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         }
         "button.body(HOVER; variant=Flat).stroke.width" if flat && selected && checked_edge => {
             "not drawn: the toggle is open and a rule for CHECKED, alone or with HOVER, states \
-             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines it under the pointer by the theme's answer for \
-             button.body(CHECKED|HOVER;variant=Flat), its width included (next_edge), which \
+             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines it under the \
+             pointer by the theme's answer for button.body(CHECKED|HOVER;variant=Flat), its \
+             width included (next_edge), which \
              button.body(HOVER;variant=Flat).stroke.width gives where its rule follows every rule \
              for CHECKED"
         }
@@ -10373,8 +10374,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
             if flat && !checked_edge =>
         {
             "not drawn: no rule for CHECKED, alone or with the status, states \
-             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines the open toggle as the closed one in the same status, by \
-             button.body(HOVER;variant=Flat).stroke and button.body(PRESSED;variant=Flat).stroke"
+             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines the open toggle \
+             as the closed one in the same status, by button.body(HOVER;variant=Flat).stroke \
+             and button.body(PRESSED;variant=Flat).stroke"
         }
         "button.body(CHECKED; variant=Flat).stroke.color"
         | "button.body(CHECKED; variant=Flat).stroke.width"
@@ -10399,16 +10401,17 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         {
             "ghost_button: the open toggle's Pressed border, the theme's answer for \
              button.body(CHECKED|PRESSED;variant=Flat).stroke.color and its width, a rule for \
-             CHECKED, alone or with PRESSED, stating button.body(CHECKED;variant=Flat).stroke.color \
-             (next_edge)"
+             CHECKED, alone or with PRESSED, stating \
+             button.body(CHECKED;variant=Flat).stroke.color (next_edge)"
         }
         "button.body(HOVER|CHECKED; variant=Flat).fill"
         | "button.body(PRESSED|CHECKED; variant=Flat).fill"
             if flat && !checked_fill =>
         {
             "not drawn: no rule for CHECKED, alone or with the status, states \
-             button.body(CHECKED;variant=Flat).fill, so ghost_button fills the open toggle as the connector's primary button in the same \
-             status (iced_next::styles::button_primary, iced's own button::primary where the \
+             button.body(CHECKED;variant=Flat).fill, so ghost_button fills the open toggle as \
+             the connector's primary button in the same status \
+             (iced_next::styles::button_primary, iced's own button::primary where the \
              connector maps none; spec §10, rule 0a)"
         }
         "button.body(HOVER|CHECKED; variant=Flat).fill" if flat => {
@@ -10438,8 +10441,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
             if flat && !checked_label =>
         {
             "not drawn: no rule for CHECKED, alone or with the status, states \
-             button.label(CHECKED;variant=Flat).color, so ghost_button letters the open toggle in the label at rest on a stated checked fill, \
-             else in the connector's primary button's label in the same status (spec §10, rule 0a)"
+             button.label(CHECKED;variant=Flat).color, so ghost_button letters the open toggle \
+             in the label at rest on a stated checked fill, else in the connector's primary \
+             button's label in the same status (spec §10, rule 0a)"
         }
         "button.label(HOVER|CHECKED; variant=Flat).color" if flat => {
             "ghost_button: the open toggle's Hovered text_color, the theme's answer for \

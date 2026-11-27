@@ -38,11 +38,12 @@ const REGENERATE_HOMES: &str =
 /// names for no colour leaf (the homes of `crate::next::styles`' `Unmapped`
 /// sources): a variant's outline, a disabled or pressed state 0.7.2 had no
 /// field for, a checked indicator's fill under the pointer and a disabled
-/// checked box's mark, each asked at its two flags; the colour homes of the same kind docs/showcase-elements.toml
-/// lists that none of them asks, which [`UNREAD_HOMES`] names: a flat
-/// button's focused and checked looks, a flat button's icon, a toolbar
-/// button's icon; and a home docs/showcase-elements.toml lists in a state
-/// none of them asks, whose rule reaches a state one asks: `toolbar.button(PRESSED|CHECKED)
+/// checked box's mark and label, each asked at its two flags; the colour
+/// homes of the same kind docs/showcase-elements.toml lists that none of
+/// them asks, which [`UNREAD_HOMES`] names: a flat button's focused and
+/// checked looks, a flat button's icon, a toolbar button's icon; and a home
+/// docs/showcase-elements.toml lists in a state none of them asks, whose
+/// rule reaches a state one asks: `toolbar.button(PRESSED|CHECKED)
 /// .stroke.color`, which `toolbar_button` asks as
 /// `toolbar.button(PRESSED|HOVER|CHECKED)`, iced's pressed status being
 /// under the pointer.
@@ -71,6 +72,7 @@ const QUERIED_HOMES: &[&str] = &[
     "checkbox.indicator(DISABLED).stroke.color",
     "checkbox.indicator(DISABLED|CHECKED).stroke.color",
     "checkbox.indicator(HOVER|CHECKED).fill",
+    "checkbox.label(DISABLED|CHECKED).color",
     "expander.header(PRESSED).fill",
     "link.container(PRESSED).fill",
     "menu.panel(NONE).stroke.color",
