@@ -286,6 +286,10 @@ model_only_homes = [
   { home = "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width", reason = "a checked toolbar button's outline width pressed under the pointer (docs/v0.8.0-spec.md §5, `toolbar`'s `button` part); 0.7.2's `[toolbar]` has no outline width" },
   { home = "toolbar.button_label(HOVER).color", reason = "a toolbar button's label colour under the pointer (docs/v0.8.0-spec.md §5, `toolbar`'s `button_label` part); 0.7.2's `[toolbar]` has one label colour, toolbar.font.color, and its hovered label is the push button's, button.hover_text_color" },
   { home = "toolbar.button_label(PRESSED).color", reason = "a toolbar button's label colour while pressed (docs/v0.8.0-spec.md §5, `toolbar`'s `button_label` part); 0.7.2's `[toolbar]` has one label colour, toolbar.font.color, and its pressed label is the push button's, button.active_text_color" },
+  { home = "toolbar.button(DISABLED).fill", reason = "a disabled toolbar button's fill (docs/v0.8.0-spec.md §5, `toolbar`'s `button` part); 0.7.2's `[toolbar]` (docs/property-registry.toml) has no disabled tool button" },
+  { home = "toolbar.button(DISABLED).corners", reason = "a disabled toolbar button's corners (docs/v0.8.0-spec.md §5, `toolbar`'s `button` part); 0.7.2's `[toolbar]` has no radius of its buttons and no disabled tool button" },
+  { home = "toolbar.button_label(DISABLED).color", reason = "a disabled toolbar button's label colour (docs/v0.8.0-spec.md §5, `toolbar`'s `button_label` part); 0.7.2's `[toolbar]` has one label colour, toolbar.font.color, and no disabled tool button" },
+  { home = "toolbar.button_icon(DISABLED).color", reason = "a disabled toolbar button's icon colour (docs/v0.8.0-spec.md §5, `toolbar`'s `button_icon` part); 0.7.2's `[toolbar]` has no icon colour" },
   { home = "scrollbar.thumb(NONE).corners", reason = "the scroll bar thumb's own corners (docs/v0.8.0-spec.md §5, `scrollbar`'s `thumb` part); 0.7.2's `[scrollbar]` (docs/property-registry.toml) has no radius field" },
   { home = "scrollbar.thumb(UNFOCUSED_VIEW).corners", reason = "the thumb's corners in a view without the focus (docs/v0.8.0-spec.md §5, `scrollbar`); 0.7.2 has no radius field for the thumb in any state" },
   { home = "segmented_control.separator(NONE).fill", reason = "the colour of the line between two segments (docs/v0.8.0-spec.md §5, `segmented_control`'s `separator` part); 0.7.2 states only the line's width, segmented_control.separator_width, and no colour of its own" },
@@ -2152,6 +2156,33 @@ parent = "basic.icons.edit"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
 homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(NONE).color", "toolbar.button_icon(HOVER).color", "toolbar.button_icon(PRESSED).color", "toolbar.button_icon(CHECKED).color", "toolbar.button_icon(HOVER|CHECKED).color", "toolbar.button_icon(PRESSED|CHECKED).color"]
 states = ["Checked"]
+part = true
+
+[[element]]
+id = "basic.icons.save"
+name = "Tool button"
+parent = "basic.icons.edit"
+leaves = ["button.disabled_opacity", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.muted_color", "defaults.disabled_opacity", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font.color", "toolbar.icon_size_px", "toolbar.button_hover_border_color"]
+# homes: a tool button that is disabled, never hovered, pressed or checked: its box, its
+#          capsule and its labels at rest and disabled (model_only_homes), and the colours each
+#          toolkit dims a disabled button by where the theme states none for the state:
+#          defaults.muted_color, gpui-component's disabled text; defaults.disabled_opacity,
+#          egui's disabled alpha; button.disabled_opacity, iced's fade of the label at rest.
+#        toolbar.button_hover_border_color: HOVER, which gpui reads to lay out the button's
+#          transparent border at rest, and which no toolkit draws on it.
+#        the toolbar button's own outline at rest (model_only_homes), which iced's
+#          styles::toolbar_button draws in the Disabled status too.
+homes = ["button.disabled_opacity", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "colors.window.foreground_muted", "colors.disabled_opacity", "icons.theme", "icons.set", "toolbar.button_label(NONE).color", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).stroke.color", "toolbar.button(NONE).fill", "toolbar.button(NONE).corners", "toolbar.button(NONE).stroke.color", "toolbar.button(NONE).stroke.width", "toolbar.button(DISABLED).fill", "toolbar.button(DISABLED).corners", "toolbar.button_label(DISABLED).color", "toolbar.button_icon(DISABLED).color"]
+states = ["Disabled"]
+sample = { fill = [0.0, 0.5, 1.5, 0.0] }
+
+[[element]]
+id = "basic.icons.save.icon"
+name = "Icon"
+parent = "basic.icons.save"
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button_icon(DISABLED).color"]
+states = ["Disabled"]
 part = true
 
 [[element]]

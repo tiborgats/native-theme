@@ -1712,6 +1712,52 @@ fn icon_buttons(
                 if let Some(size) = size.filter(|_| drawn) {
                     crate::chrome::place_icon(reg, ui, id, &response, size);
                 }
+                // Save, disabled: the one toolbar button that is never enabled, in the toolbar's
+                // Disabled cell, its capsule `toolbar.button(DISABLED)`'s where stated
+                // (`demo::next_disabled_toolbar_button`), added disabled (`Ui::add_enabled`),
+                // which egui draws in its resting entry, faded by the cell's `disabled_alpha`.
+                let id = "basic.icons.save";
+                let (mut drawn, mut filled) = (false, false);
+                wrap_before(ui, id);
+                let response = demo::scoped(
+                    reg,
+                    ui,
+                    Role::Toolbar,
+                    RoleVariant::Disabled,
+                    "icon button, disabled",
+                    |ui| {
+                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                        filled = demo::next_disabled_toolbar_button(ui, padding, r);
+                        let tint = r.and_then(demo::disabled_tool_icon_color);
+                        let image =
+                            demo::loaded_in(ui, tint, |ui| image_at(ui, IconRole::ActionSave));
+                        drawn = image.is_some();
+                        let button = match image {
+                            Some(image) => Button::image(image),
+                            None => Button::new("Save"),
+                        };
+                        let r = ui.add_enabled(false, button);
+                        r.widget_info(|| {
+                            egui::WidgetInfo::labeled(egui::Role::Button, false, "Save")
+                        });
+                        r
+                    },
+                );
+                if filled {
+                    reg.note_last(
+                        "border",
+                        "transparent, the border's width kept, as a Ghost button's; its fill \
+                         toolbar.button(DISABLED).fill, which the theme states",
+                    );
+                } else {
+                    reg.ghost_last();
+                }
+                unsized_note(reg);
+                reg.tag(id, &response);
+                remember_width(ui, id, response.rect);
+                if let Some(size) = size.filter(|_| drawn) {
+                    crate::chrome::place_icon(reg, ui, id, &response, size);
+                }
             })
             .response
         },

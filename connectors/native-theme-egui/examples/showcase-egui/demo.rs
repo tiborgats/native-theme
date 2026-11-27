@@ -1882,6 +1882,9 @@ const DRAWN_FILLS: &[DrawnPart] = {
         ("toolbar.button(NONE).fill", false, |r| {
             r.toolbar.button(S::NONE)
         }),
+        ("toolbar.button(DISABLED).fill", false, |r| {
+            r.toolbar.button(S::DISABLED)
+        }),
         ("list.container(NONE).fill", false, |r| {
             r.list.container(q(Plain, S::NONE))
         }),
@@ -2049,6 +2052,28 @@ pub(crate) fn next_toolbar_button(
     rest.is_some()
 }
 
+/// Make the rest of `ui`, a «toolbar» scope in `RoleVariant::Disabled`, a disabled toolbar
+/// button's: a tool button ([`next_tool_button`]) filled in `toolbar.button(DISABLED).fill` where
+/// the installed 0.8.0 theme `r` states it, by a rule for the state or at rest ([`drawn_fill`]),
+/// as the connector's Disabled toolbar cell fills the scope's resting entry, which egui draws a
+/// disabled button in, and Ghost, transparent, where it states none. Returns whether it is
+/// filled. Its corners are the scope's, `toolbar.button(DISABLED).corners` where a rule states it
+/// for the state, else `toolbar.button(NONE).corners` where stated; egui fades it all by the
+/// scope's `disabled_alpha` (`Ui::disable`).
+pub(crate) fn next_disabled_toolbar_button(
+    ui: &mut egui::Ui,
+    padding: [Option<f32>; 4],
+    r: Option<&native_theme::next::ResolvedTheme>,
+) -> bool {
+    next_tool_button(ui, padding);
+    let fill =
+        r.and_then(|r| drawn_fill(&r.toolbar.button(native_theme::next::WidgetState::DISABLED)));
+    if let Some(fill) = fill {
+        ui.visuals_mut().widgets.inactive.weak_bg_fill = fill;
+    }
+    fill.is_some()
+}
+
 /// A widget's state in a response, as a look drawn from its previous response keeps it:
 /// `(hovered, pressed)`, or `(hovered, pressed, focused)` for a widget whose focused look is
 /// its own.
@@ -2130,9 +2155,29 @@ pub(crate) fn tool_icon_color(
         let icon = r.toolbar.button_icon(state | WidgetState::CHECKED);
         return Some(native_theme_egui::next::to_color32(icon.color));
     }
+    stated_tool_icon_color(r, state)
+}
+
+/// The colour `toolbar.button_icon(DISABLED).color` of the installed 0.8.0 theme `r` states for
+/// a disabled toolbar button's icon, by a rule for the state or at rest, as [`tool_icon_color`]
+/// takes an unchecked one's: the icon loads in it, and egui fades the disabled button, the icon
+/// with it, by the scope's `disabled_alpha` (`Ui::disable`), its own treatment of the state
+/// (spec §10, rule 0). `None` where it states none, and the icon keeps the colour it is loaded
+/// in. Never the label's.
+pub(crate) fn disabled_tool_icon_color(
+    r: &native_theme::next::ResolvedTheme,
+) -> Option<egui::Color32> {
+    stated_tool_icon_color(r, native_theme::next::WidgetState::DISABLED)
+}
+
+/// `toolbar.button_icon(state).color` of `r` where stated, by a rule for `state` or at rest.
+fn stated_tool_icon_color(
+    r: &native_theme::next::ResolvedTheme,
+    state: native_theme::next::WidgetState,
+) -> Option<egui::Color32> {
     let icon = r.toolbar.button_icon(state);
     icon.stated
-        .contains(IconStated::COLOR)
+        .contains(native_theme::next::IconStated::COLOR)
         .then(|| native_theme_egui::next::to_color32(icon.color))
 }
 

@@ -4916,12 +4916,13 @@ struct ChromeIcons {
     panel: Option<IconData>,
     /// `IconRole::WindowClose`: a dialog's close button.
     close: Option<IconData>,
-    /// `IconRole::ActionCopy`, `ActionPaste`, `ActionDelete`, `ActionEdit`:
-    /// the Basic page's icon buttons.
+    /// `IconRole::ActionCopy`, `ActionPaste`, `ActionDelete`, `ActionEdit`
+    /// and `ActionSave`: the Basic page's icon buttons, Save the disabled one.
     copy: Option<IconData>,
     paste: Option<IconData>,
     delete: Option<IconData>,
     edit: Option<IconData>,
+    save: Option<IconData>,
     /// `IconRole::FolderOpen`: the Basic page's icons at the theme's sizes.
     folder: Option<IconData>,
     /// Whether they are an OS icon theme's, drawn in their own colours;
@@ -4985,6 +4986,7 @@ fn load_chrome_icons(
         paste: by_role(IconRole::ActionPaste),
         delete: by_role(IconRole::ActionDelete),
         edit: by_role(IconRole::ActionEdit),
+        save: by_role(IconRole::ActionSave),
         folder: by_role(IconRole::FolderOpen),
         system: matches!(
             set,
@@ -5041,6 +5043,30 @@ fn tool_icon_colour(r: &native_theme::next::ResolvedTheme, theme: &Theme, select
             use button::Catalog as _;
             let class = <Theme as button::Catalog>::default();
             theme.style(&class, button::Status::Active).text_color
+        }
+    }
+}
+
+/// The colour [`icon_button`] gives a bundled set's icon on a disabled tool
+/// button, as it loads, as [`tool_icon_colour`] an enabled one's:
+/// `toolbar.button_icon(DISABLED).color` where a rule states it for
+/// `DISABLED` (spec §2, `from_state`), a colour stated at rest being no
+/// disabled one, as iced's own treatment of the state changes the label
+/// (spec §10, rule 0); else the label `iced_next::styles::toolbar_button`
+/// gives the button in the Disabled status, which is iced's own button's
+/// where the connector maps no style. An OS icon theme's icons keep theirs.
+fn disabled_tool_icon_colour(r: &native_theme::next::ResolvedTheme, theme: &Theme) -> Color {
+    use native_theme::next::IconStated;
+    let icon = r.toolbar.button_icon(WidgetState::DISABLED);
+    if icon.from_state.contains(IconStated::COLOR) {
+        return next_colour(icon.color);
+    }
+    match iced_next::styles::toolbar_button(r, false) {
+        Ok(style) => style(theme, button::Status::Disabled).text_color,
+        Err(_) => {
+            use button::Catalog as _;
+            let class = <Theme as button::Catalog>::default();
+            theme.style(&class, button::Status::Disabled).text_color
         }
     }
 }
@@ -6571,6 +6597,9 @@ struct IconButton<'a> {
     selected: bool,
     /// Styled as a toolbar's button, `iced_next::styles::toolbar_button`.
     toolbar: bool,
+    /// Disabled: no `on_press`, so iced draws it in the Disabled status, its
+    /// icon loaded as [`disabled_tool_icon_colour`] says.
+    disabled: bool,
     action: Message,
     /// The list's ids of the button and of its icon, where the list names
     /// the button.
@@ -6585,7 +6614,9 @@ struct IconButton<'a> {
 
 fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
     let r = state.next_shown();
-    let color = if spec.toolbar {
+    let color = if spec.toolbar && spec.disabled {
+        disabled_tool_icon_colour(r, &state.current_theme)
+    } else if spec.toolbar {
         tool_icon_colour(r, &state.current_theme, spec.selected)
     } else {
         icon_colour(r, &state.current_theme, spec.selected)
@@ -6623,7 +6654,7 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             }
         }
     }
-    .on_press(spec.action);
+    .on_press_maybe((!spec.disabled).then_some(spec.action));
     let button: Element<'a, Message> = match spec.tags {
         Some((button_id, _)) => tagged(button_id, button).into(),
         None => button.into(),
@@ -6928,6 +6959,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
                 padding: pad,
                 selected: false,
                 toolbar: true,
+                disabled: false,
                 action,
                 tags: Some(tags),
                 tip: tooltip::Position::Bottom,
@@ -8376,6 +8408,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             padding: pad,
             selected: state.side_panel_visible,
             toolbar: false,
+            disabled: false,
             action: Message::ToggleSidePanel,
             tags: Some(("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon")),
             tip: tooltip::Position::Top,
@@ -9214,6 +9247,11 @@ fn tool_button(id: &str) -> bool {
     )
 }
 
+/// The list's id of the Basic page's disabled tool button, Save, drawn in
+/// `iced_next::styles::toolbar_button` in the Disabled status alone, its
+/// icon loaded as [`disabled_tool_icon_colour`] says.
+const DISABLED_TOOL: &str = "basic.icons.save";
+
 /// What draws a colour home of `element` as `shown`: the connector, through
 /// the rows of a [`Drawing`], or the showcase itself (`None`), whose route
 /// [`iced_route`] writes by hand. The class is chosen by the element's id,
@@ -9384,6 +9422,19 @@ fn drawing(element: &ShowcaseElement, home: &str, shown: Shown<'_>) -> Option<Dr
         _ if id == "basic.icons.edit" && shown.basic_edit => {
             Drawing::only(TOOLBAR_BUTTON, &["(true, "], &["Disabled"])
         }
+        // Save, the disabled tool button, is drawn in the Disabled status
+        // alone; the muted colour gpui-component letters a disabled button in
+        // is no home of iced's style, and the hovered outline gpui lays out
+        // is never drawn, which [`disabled_tool_route`] says.
+        _ if id == DISABLED_TOOL
+            && matches!(
+                home,
+                "colors.window.foreground_muted" | "toolbar.button(HOVER).stroke.color"
+            ) =>
+        {
+            return None;
+        }
+        _ if id == DISABLED_TOOL => Drawing::only(TOOLBAR_BUTTON, &["(false, Disabled)"], &[]),
         _ if tool_button(id) => Drawing::only(TOOLBAR_BUTTON, &["(false, "], &["Disabled"]),
         // The toolbar's bar and its rule are the connector's.
         _ if id == "chrome.toolbar" => Drawing::of(&["styles::toolbar.", "styles::toolbar_rule."]),
@@ -9683,6 +9734,98 @@ fn tool_icon_colour_route(
              toolbar.button_icon(NONE).color where stated, else the label \
              iced_next::styles::toolbar_button gives the button at rest (icon_button)"
         }
+    };
+    Some(route.to_owned())
+}
+
+/// The route of the home `home` of Save, the disabled tool button
+/// ([`DISABLED_TOOL`]), or of its icon, as `state` draws it on `installed`
+/// ([`colour_home_route`]): its icon's colour as [`disabled_tool_icon_colour`]
+/// loads it; its label colours and the opacity that fades the label, which
+/// the icon takes where it shows and no rule states its disabled colour,
+/// and which the icon stands in for where one does; the two colours no
+/// iced style reads. `None` for any other home, which the export or
+/// [`button_home_route`] routes.
+fn disabled_tool_route(
+    state: &State,
+    element: &ShowcaseElement,
+    home: &str,
+    installed: Option<&str>,
+) -> Option<String> {
+    use native_theme::next::IconStated;
+    let r = state.next_shown();
+    let icon = ghost_icon(state, DISABLED_TOOL);
+    let os_icon = state.chrome_icons.system;
+    let stated = r
+        .toolbar
+        .button_icon(WidgetState::DISABLED)
+        .from_state
+        .contains(IconStated::COLOR);
+    let route = match home {
+        "colors.window.foreground_muted" => {
+            "not drawn: iced_next::styles::toolbar_button letters a disabled tool button in \
+             toolbar.button_label(DISABLED).color, else the label at rest faded, not in a muted \
+             colour"
+        }
+        "toolbar.button(DISABLED).corners" => {
+            "not drawn: iced_next::styles::toolbar_button rounds a tool button by \
+             toolbar.button(NONE).corners in every status (toolbar_outline), not by a state's own"
+        }
+        "toolbar.button(HOVER).stroke.color" => {
+            "not drawn: iced draws a button with no on_press in the Disabled status alone, never \
+             Hovered (iced_widget 0.14.2 src/button.rs:341-342, update)"
+        }
+        "colors.disabled_opacity" => {
+            "not drawn: iced_next::styles::toolbar_button fades a disabled tool button's label by \
+             button.disabled_opacity, not by colors.disabled_opacity"
+        }
+        "toolbar.button_icon(DISABLED).color" => match icon {
+            _ if os_icon && icon.is_some() => OS_ICON_COLOURS,
+            None => "not drawn: the button shows its label, the icon set having no icon for it",
+            Some(IconData::Rgba { .. }) => {
+                "not drawn: the icon is an image, which takes no tint (iced_widget 0.14.2 \
+                 src/image.rs)"
+            }
+            Some(_) => {
+                "disabled_tool_icon_colour: the icon's colour, set as it loads, \
+                 toolbar.button_icon(DISABLED).color where a rule states it for DISABLED, else \
+                 the label iced_next::styles::toolbar_button gives the button in the Disabled \
+                 status (icon_button)"
+            }
+        },
+        "toolbar.button_label(NONE).color"
+        | "toolbar.button_label(DISABLED).color"
+        | "button.disabled_opacity"
+            if icon.is_some() =>
+        {
+            if os_icon {
+                OS_ICON_COLOURS
+            } else if stated {
+                "not drawn: the set's icon stands in for the label, loaded in \
+                 toolbar.button_icon(DISABLED).color, which a rule states for DISABLED \
+                 (disabled_tool_icon_colour)"
+            } else if home == "button.disabled_opacity" {
+                "disabled_tool_icon_colour: the icon's colour, set as it loads, the label \
+                 iced_next::styles::toolbar_button gives the button in the Disabled status: the \
+                 label at rest faded by button.disabled_opacity where no rule states \
+                 toolbar.button_label(DISABLED).color, iced's own fade where unstated (icon_button)"
+            } else {
+                let route = colour_home_route(element, home, Shown::of(state), installed)?;
+                return Some(match route.strip_prefix("iced: ") {
+                    Some(rows) => format!(
+                        "icon_button: the icon's colour, set as it loads \
+                         (disabled_tool_icon_colour): {rows}"
+                    ),
+                    None => route,
+                });
+            }
+        }
+        "button.disabled_opacity" => {
+            "iced_next::styles::toolbar_button: the label in the Disabled status, the label at \
+             rest faded by button.disabled_opacity where no rule states \
+             toolbar.button_label(DISABLED).color, iced's own fade where unstated"
+        }
+        _ => return None,
     };
     Some(route.to_owned())
 }
@@ -10071,7 +10214,7 @@ fn button_element(id: &str) -> bool {
 /// icon shows, [`tool_icon_route`]'s.
 fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     let r = state.next_shown();
-    let tool = tool_button(id);
+    let tool = tool_button(id) || id == DISABLED_TOOL;
     let flat = flat_element(id);
     let icon = ghost_icon(state, id).filter(|_| flat);
     let os_icon = icon.is_some() && state.chrome_icons.system;
@@ -10101,7 +10244,9 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         return Some(ghost_route(r, home, selected, icon.is_some(), os_icon));
     }
     if let Some(side) = home.strip_prefix("button.body(NONE).padding.") {
-        let border = if tool {
+        let border = if id == DISABLED_TOOL {
+            "the outline at rest is drawn over it"
+        } else if tool {
             "the outline under the pointer is drawn over it"
         } else {
             "a flat button draws no border"
@@ -11458,6 +11603,7 @@ fn ghost_icon<'a>(state: &'a State, id: &str) -> Option<&'a IconData> {
         "basic.icons.paste" => icons.paste.as_ref(),
         "basic.icons.delete" => icons.delete.as_ref(),
         "basic.icons.edit" => icons.edit.as_ref(),
+        "basic.icons.save" => icons.save.as_ref(),
         "chrome.status_bar.toggle" => icons.panel.as_ref(),
         "chrome.page_tabs.menu" => state
             .loaded_icons
@@ -12950,6 +13096,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     // `iced_next::styles::toolbar_button` draws checked.
     let checked = id == "basic.icons.edit" && state.basic_edit;
     let button_id = id.strip_suffix(".icon").unwrap_or(id);
+    if button_id == DISABLED_TOOL
+        && let Some(line) = disabled_tool_route(state, element, home, installed.as_deref())
+    {
+        return line;
+    }
     if tool_button(button_id)
         && let Some(line) = tool_icon_colour_route(
             home,
@@ -13503,6 +13654,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
             padding: Padding::ZERO.left(pad.left).right(pad.right),
             selected: false,
             toolbar: false,
+            disabled: false,
             action: Message::CloseOverlay,
             tags: None,
             tip: tooltip::Position::Bottom,
@@ -16383,9 +16535,10 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // shown set's Copy, Paste, Delete and Edit at
     // `toolbar.button_icon(NONE).size` ([`tool_icon_size`]), the toolbar's
     // item gap apart ([`ToolbarLayout`]). Edit is an edit-mode switch, on at
-    // start: the one toolbar button that is ever checked.
+    // start: the one toolbar button that is ever checked. Save is disabled,
+    // the one that is never enabled.
     let icons = &state.chrome_icons;
-    let tool = |tags, icon, label, selected, action| {
+    let tool = |tags, icon, label, (selected, disabled), action| {
         icon_button(
             state,
             IconButton {
@@ -16397,6 +16550,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 padding: ghost_padding(state.next_shown()),
                 selected,
                 toolbar: true,
+                disabled,
                 action,
                 tags: Some(tags),
                 tip: tooltip::Position::Bottom,
@@ -16408,29 +16562,36 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             ("basic.icons.copy", "basic.icons.copy.icon"),
             &icons.copy,
             "Copy",
-            false,
+            (false, false),
             Message::ButtonPressed,
         ),
         tool(
             ("basic.icons.paste", "basic.icons.paste.icon"),
             &icons.paste,
             "Paste",
-            false,
+            (false, false),
             Message::ButtonPressed,
         ),
         tool(
             ("basic.icons.delete", "basic.icons.delete.icon"),
             &icons.delete,
             "Delete",
-            false,
+            (false, false),
             Message::ButtonPressed,
         ),
         tool(
             ("basic.icons.edit", "basic.icons.edit.icon"),
             &icons.edit,
             "Edit",
-            state.basic_edit,
+            (state.basic_edit, false),
             Message::BasicEditToggled,
+        ),
+        tool(
+            ("basic.icons.save", "basic.icons.save.icon"),
+            &icons.save,
+            "Save",
+            (false, true),
+            Message::ButtonPressed,
         ),
     ]
     .spacing(ToolbarLayout::of(next).gap)
@@ -24885,6 +25046,100 @@ mod tests {
             state.basic_edit,
             "a second click did not turn the edit button on again"
         );
+    }
+
+    /// The Basic page's Save, a disabled tool button, under macos-tahoe light
+    /// with the bundled Material set: it has no `on_press`, so iced draws it
+    /// in the Disabled status and a click on it sends nothing; its icon loads
+    /// in `toolbar.button_icon(DISABLED).color`, #bfbfbf (os-probe run
+    /// 45634379188, `aqua.normal.toolbar_image_disabled` `icon`;
+    /// native-theme/src/next/presets/macos.rs, `toolbar_icon_disabled`), not
+    /// the rest #4d4d4d ([`disabled_tool_icon_colour`]), and its style fills
+    /// it in `toolbar.button(DISABLED).fill`, #ffffff; with that fill patched
+    /// to a mark for `DISABLED` alone, most of its pixels are the mark.
+    #[cfg(feature = "material-icons")]
+    #[test]
+    fn the_disabled_tool_button_takes_the_stated_disabled_look() {
+        let mut state = loaded("macos-tahoe", false);
+        state.icon_set_choice = IconSetChoice::Material;
+        state.reload_icons();
+        assert!(
+            state.chrome_icons.save.is_some(),
+            "the bundled Material set has no Save icon"
+        );
+        let r = state.next_shown().clone();
+        let theme = state.current_theme.clone();
+        let grey = |v: u8| Color::from_rgb8(v, v, v).into_rgba8();
+        assert_eq!(
+            disabled_tool_icon_colour(&r, &theme).into_rgba8(),
+            grey(0xbf)
+        );
+        assert_eq!(tool_icon_colour(&r, &theme, false).into_rgba8(), grey(0x4d));
+        let style = match iced_next::styles::toolbar_button(&r, false) {
+            Ok(style) => style,
+            Err(error) => panic!("macos-tahoe light has no toolbar button style: {error:?}"),
+        };
+        let fill = match style(&theme, button::Status::Disabled).background {
+            Some(iced::Background::Color(fill)) => fill.into_rgba8(),
+            other => panic!("the disabled toolbar button is filled in {other:?}"),
+        };
+        assert_eq!(fill, grey(0xff));
+
+        let mark = "#13579b";
+        let want = match mark.parse::<native_theme::next::Color>() {
+            Ok(colour) => next_colour(colour).into_rgba8(),
+            Err(error) => panic!("{error}"),
+        };
+        let kept = (state.next_resolved.clone(), state.next_inactive.clone());
+        for next in [&mut state.next_resolved, &mut state.next_inactive] {
+            match with_home(next, "toolbar.button(DISABLED).fill", mark) {
+                Some(marked) => *next = marked,
+                None => panic!("no patch reaches toolbar.button(DISABLED).fill"),
+            }
+        }
+        let (image, laid, scale) = basic_frame(&state);
+        (state.next_resolved, state.next_inactive) = kept;
+        assert!(
+            laid.contains_key("basic.icons.save.icon"),
+            "Save's icon is not drawn"
+        );
+        let filled = |id: &str| {
+            let pixels = laid
+                .get(id)
+                .map(|rect| pixels_in(&image, *rect, scale))
+                .unwrap_or_default();
+            let marked = pixels
+                .iter()
+                .filter(|p| p.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
+                .count();
+            !pixels.is_empty() && marked * 2 > pixels.len()
+        };
+        assert!(
+            filled("basic.icons.save"),
+            "Save is not filled with the patched toolbar.button(DISABLED).fill"
+        );
+        assert!(
+            !filled("basic.icons.copy"),
+            "the enabled Copy is filled with toolbar.button(DISABLED).fill"
+        );
+
+        let laid = recording(|| {
+            let mut ui = interface(&state);
+            let _ = texts(&mut ui);
+            surveyed_layout()
+        });
+        let rect = laid.get("basic.icons.save").copied();
+        assert!(rect.is_some(), "basic.icons.save is not laid out");
+        let Some(rect) = rect else {
+            return;
+        };
+        let messages = drive(&mut state, |ui| {
+            let at = rect.center();
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            let _ = ui.simulate(iced_test::simulator::click());
+        });
+        assert!(messages.is_empty(), "Save, disabled: {messages:?}");
     }
 
     // -----------------------------------------------------------------------
@@ -35642,6 +35897,14 @@ mod tests {
     /// platform combination of the home export, so its route says it is not
     /// drawn there.
     const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[
+        (
+            "basic.icons.save",
+            "toolbar.button(NONE).fill",
+            "Save is drawn in the Disabled status alone, filled in the theme's answer for \
+             toolbar.button(DISABLED).fill (next/styles.rs, toolbar_button_source), which is the \
+             fill at rest only where no rule states one for DISABLED; in no bundled combination \
+             does a fill at rest move the Disabled background (contract-homes.toml)",
+        ),
         (
             "basic.text_inputs.focused",
             "focus_ring.stroke.color",

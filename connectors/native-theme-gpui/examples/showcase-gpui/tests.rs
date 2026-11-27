@@ -23918,6 +23918,87 @@ fn a_tool_buttons_icon_takes_the_stated_icon_colour(cx: &mut TestAppContext) {
     );
 }
 
+/// The Basic page's Save, a disabled tool button, under macos-tahoe light:
+/// its icon is tinted in `toolbar.button_icon(DISABLED).color`, #bfbfbf
+/// (os-probe run 45634379188, `aqua.normal.toolbar_image_disabled` `icon`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_icon_disabled`), not
+/// the rest #4d4d4d, and it is painted in `toolbar.button(DISABLED).fill`,
+/// #ffffff; with that fill patched to a mark for `DISABLED` alone it takes
+/// the mark, which the enabled Copy beside it does not, and the pointer over
+/// it leaves it so: a disabled Button takes no hover style. The bundled
+/// Material set has a Save icon, which gpui-component's built-in set lacks.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
+#[gpui::test]
+fn the_disabled_tool_button_takes_the_stated_disabled_look(cx: &mut TestAppContext) {
+    use native_theme::next::{Color, Paint, PartPatch, ThemePatch, ToolbarRule, WidgetState};
+    let button = "basic-icon-save";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "macos-tahoe");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "macos-tahoe installs no 0.8.0 theme");
+    let Some(mut r) = r else { return };
+    let disabled = r.toolbar.button(WidgetState::DISABLED);
+    assert_eq!(
+        drawn_fill(&disabled),
+        Some(crate::info::next_stated(Color::from_srgb8(
+            0xff, 0xff, 0xff, 0xff
+        ))),
+        "macos-tahoe light no longer states #ffffff for the disabled tool button"
+    );
+    let info = settle_on(&mut cx, &showcase, button);
+    let line = info.as_ref().and_then(|info| {
+        info.instance
+            .iter()
+            .find(|n| n.what == "icon colour")
+            .map(|n| n.text.clone())
+    });
+    assert!(
+        line.as_deref().is_some_and(|l| l.starts_with(
+            "toolbar.button_icon(DISABLED).color, a rule stating it for the state #bfbfbf, "
+        )),
+        "Save's icon is not tinted in the disabled icon colour: {line:?}"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, button),
+        drawn_fill(&disabled),
+        "Save is not painted in toolbar.button(DISABLED).fill"
+    );
+    let mark = Color::from_srgb8(0x13, 0x57, 0x9b, 0xff);
+    r.apply_patch(
+        &ThemePatch::new().toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::DISABLED)
+                .button(PartPatch::new().fill(Paint::Solid(mark))),
+        ),
+    );
+    install_next(&mut cx, &r);
+    show(&mut cx, &showcase, Page::Basic);
+    draw(&mut cx);
+    let want = Some(crate::info::next_stated(mark));
+    assert_eq!(
+        painted_fill(&mut cx, button),
+        want,
+        "Save is not painted in the patched toolbar.button(DISABLED).fill"
+    );
+    assert_ne!(
+        painted_fill(&mut cx, "basic-icon-copy"),
+        want,
+        "the enabled Copy takes the disabled fill"
+    );
+    let at = bounds_of(&mut cx, button).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, button),
+        want,
+        "Save under the pointer leaves its disabled fill"
+    );
+}
+
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
 /// with `toolbar.button(CHECKED).fill` and its info, titled a checked

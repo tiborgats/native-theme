@@ -1683,7 +1683,7 @@ pub(crate) fn toolbar_button(
         tool_icon_tinted(
             cx,
             glyph_at(icon, size),
-            false,
+            WidgetState::NONE,
             &TOOLBAR_ICON_TINT,
             &mut button_info,
         )
@@ -1803,7 +1803,7 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         tool_icon_tinted(
             cx,
             glyph_at(icon, size),
-            false,
+            WidgetState::NONE,
             &TOOLBAR_ICON_TINT,
             &mut button_info,
         )
@@ -1995,7 +1995,11 @@ pub(crate) fn panel_toggle(
         tool_icon_tinted(
             cx,
             glyph_at(icon, size),
-            open,
+            if open {
+                WidgetState::CHECKED
+            } else {
+                WidgetState::NONE
+            },
             &FLAT_ICON_TINT,
             &mut button_info,
         )
@@ -11226,12 +11230,13 @@ fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
 
 /// Where a tool button's icon colour comes from ([`tool_icon_tinted`]): the
 /// 0.8.0 builder that gives it for a state, its name, and the homes it reads
-/// at rest and in `CHECKED`.
+/// at rest, in `CHECKED` and in `DISABLED`.
 struct IconTint {
     colour: fn(&native_theme::next::ResolvedTheme, WidgetState) -> Option<Hsla>,
     builder: &'static str,
     rest: &'static str,
     checked: &'static str,
+    disabled: &'static str,
 }
 
 /// A toolbar Button's icon colour, `toolbar.button_icon`'s.
@@ -11240,6 +11245,7 @@ const TOOLBAR_ICON_TINT: IconTint = IconTint {
     builder: "next::geometry::toolbar_button_icon_color",
     rest: "toolbar.button_icon(NONE).color",
     checked: "toolbar.button_icon(CHECKED).color",
+    disabled: "toolbar.button_icon(DISABLED).color",
 };
 
 /// A flat Button's icon colour, `button.icon(<state>; variant=Flat)`'s.
@@ -11248,31 +11254,29 @@ const FLAT_ICON_TINT: IconTint = IconTint {
     builder: "next::geometry::ghost_button_icon_color",
     rest: "button.icon(NONE; variant=Flat).color",
     checked: "button.icon(CHECKED; variant=Flat).color",
+    disabled: "button.icon(DISABLED; variant=Flat).color",
 };
 
-/// A tool button's icon `glyph`, built at rest or, `checked`, in
-/// `CHECKED`, in the colour `tint`'s builder gives the installed 0.8.0
-/// theme for that state, [`TOOLBAR_ICON_TINT`]'s `toolbar.button_icon`'s
-/// or [`FLAT_ICON_TINT`]'s `button.icon(<state>; variant=Flat)`'s; as it is
-/// where that gives none, or before `next::apply` ran: the Button's text
-/// colour then, and an image its own. Its info says so in an "icon colour"
-/// line.
+/// A tool button's icon `glyph`, built in `state`: at rest (`NONE`), in
+/// `CHECKED` or in `DISABLED`, in the colour `tint`'s builder gives the
+/// installed 0.8.0 theme for that state, [`TOOLBAR_ICON_TINT`]'s
+/// `toolbar.button_icon`'s or [`FLAT_ICON_TINT`]'s
+/// `button.icon(<state>; variant=Flat)`'s; as it is where that gives none,
+/// or before `next::apply` ran: the Button's text colour then, and an image
+/// its own. Its info says so in an "icon colour" line.
 fn tool_icon_tinted(
     cx: &App,
     glyph: Glyph,
-    checked: bool,
+    state: WidgetState,
     tint: &IconTint,
     button_info: &mut WidgetInfo,
 ) -> Glyph {
-    let state = if checked {
-        WidgetState::CHECKED
-    } else {
-        WidgetState::NONE
-    };
     match next_value(cx, |r| (tint.colour)(r, state)).flatten() {
         Some(colour) if !matches!(glyph, Glyph::Raster(..)) => {
-            let home = if checked {
+            let home = if state == WidgetState::CHECKED {
                 format!("{}, a rule stating it for the state", tint.checked)
+            } else if state == WidgetState::DISABLED {
+                format!("{}, a rule stating it for the state", tint.disabled)
             } else {
                 tint.rest.to_string()
             };
@@ -11443,6 +11447,9 @@ pub(crate) struct IconButton<'a> {
     /// Whether it is a switch that is on: selected, and refined by
     /// `geometry::toolbar_button_checked`.
     pub selected: bool,
+    /// Whether it is disabled: `Button::disabled(true)`, refined by
+    /// `geometry::toolbar_button_disabled`, its icon tinted for `DISABLED`.
+    pub disabled: bool,
 }
 
 /// An icon-only button as the toolbar's (`toolbar_button`): the toolbar's
@@ -11452,7 +11459,11 @@ pub(crate) struct IconButton<'a> {
 /// icon for the role the button shows `name` instead -- never another set's
 /// icon. A button given `on_click` is a switch (the edit-mode one,
 /// `Showcase::basic_edit`): while `selected` it is shown selected and refined
-/// by `geometry::toolbar_button_checked` after its other refinements.
+/// by `geometry::toolbar_button_checked` after its other refinements. A
+/// `disabled` one is gpui-component's disabled Button, refined by
+/// `geometry::toolbar_button_disabled` after the rest refinement, which
+/// upstream replays over its disabled style (button/button.rs,
+/// `RenderOnce for Button`), its icon tinted for `DISABLED`.
 pub(crate) fn icon_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -11465,7 +11476,15 @@ pub(crate) fn icon_button(
         drawn,
         listed,
         selected,
+        disabled,
     } = spec;
+    let state = if disabled {
+        WidgetState::DISABLED
+    } else if selected {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
     let icon = role_glyph_of(drawn);
     let (variant, from) = toolbar_variant(cx);
     let mut button_info = info::buttons::icon_button(
@@ -11495,7 +11514,7 @@ pub(crate) fn icon_button(
         tool_icon_tinted(
             cx,
             glyph_at(icon, size),
-            selected,
+            state,
             &TOOLBAR_ICON_TINT,
             &mut button_info,
         )
@@ -11516,6 +11535,21 @@ pub(crate) fn icon_button(
             cx,
             next::geometry::toolbar_button_checked,
             "toolbar_button_checked",
+            &mut button_info,
+        )
+    } else {
+        button
+    };
+    let button = if disabled {
+        button_info = button_info.instance(
+            "state",
+            "disabled: Button::disabled(true), gpui-component's disabled style under next::geometry::toolbar_button_rest and next::geometry::toolbar_button_disabled, never hovered or pressed",
+        );
+        next_native_info(
+            button.disabled(true),
+            cx,
+            next::geometry::toolbar_button_disabled,
+            "toolbar_button_disabled",
             &mut button_info,
         )
     } else {

@@ -91,6 +91,7 @@ const QUERIED_HOMES: &[&str] = &[
     "toolbar.button(PRESSED|CHECKED).stroke.color",
     "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
     "toolbar.button_icon(CHECKED).color",
+    "toolbar.button_icon(DISABLED).color",
     "toolbar.button_icon(HOVER).color",
     "toolbar.button_icon(HOVER|CHECKED).color",
     "toolbar.button_icon(NONE).color",
@@ -212,6 +213,11 @@ const UNREAD_HOMES: &[UnreadHome] = &[
     },
     UnreadHome {
         home: "toolbar.button_icon(CHECKED).color",
+        kind: "no receiver",
+        why: TOOL_ICON,
+    },
+    UnreadHome {
+        home: "toolbar.button_icon(DISABLED).color",
         kind: "no receiver",
         why: TOOL_ICON,
     },
