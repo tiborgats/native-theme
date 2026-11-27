@@ -1227,11 +1227,44 @@ const PRIMARY_OUTLINE: [Stated; 8] = button_outline!(; Primary);
 /// [`BUTTON_OUTLINE`].
 const TAHOE_BUTTON: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &BUTTON_OUTLINE];
 
-/// A toggle on macos-tahoe: [`TAHOE_BUTTON`], checked [`CHECKED_OUTLINE`].
-const TAHOE_TOGGLE: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &BUTTON_OUTLINE, &CHECKED_OUTLINE];
+/// A toggle on macos-tahoe: [`TAHOE_BUTTON`], checked [`CHECKED_OUTLINE`],
+/// [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_DISABLED_FILL`].
+const TAHOE_TOGGLE: &[&[Stated]] = &[
+    &BUTTON_STATE_FILLS,
+    &BUTTON_OUTLINE,
+    &CHECKED_OUTLINE,
+    &TOGGLE_CHECKED_FILLS,
+    &TOGGLE_CHECKED_DISABLED_FILL,
+];
 
-/// A toggle's outline, checked or not.
-const TOGGLE_OUTLINE: &[&[Stated]] = &[&BUTTON_OUTLINE, &CHECKED_OUTLINE];
+/// A disabled checked toggle's fill, the theme's answer for
+/// `DISABLED | CHECKED` ([`MEASURED_CHECKED_DISABLED`]).
+const TOGGLE_CHECKED_DISABLED_FILL: [Stated; 1] = [set(
+    at!(DISABLED | CHECKED),
+    Field::Background,
+    home!(fill, button.body(DISABLED | CHECKED)),
+)];
+
+/// The reason of macos-tahoe's disabled checked toggle fill.
+const MEASURED_CHECKED_DISABLED: &str = "0.7.2 has no disabled checked button fill, so its \
+     connector drew a disabled checked toggle in button.disabled_background; the 0.8.0 \
+     macos-tahoe preset states the disabled checked toggle, button.body(DISABLED | CHECKED), \
+     the accent mixed by 0.04 at alpha 0.44 (the comment of BUTTON_CHECKED_DISABLED_MIX there \
+     cites os-probe run 41006842699, os-probe-macos-26/tiebreak-derivations.toml, \
+     derivation.checked_disabled_fill_*), which the 0.8.0 side draws on a disabled checked \
+     toggle where the theme states the disabled fill (docs/v0.8.0-spec.md §10, rule 0)";
+
+/// A toggle on ios-13: its outline, checked or not, and checked
+/// [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
+const IOS_TOGGLE: &[&[Stated]] = &[
+    &BUTTON_OUTLINE,
+    &CHECKED_OUTLINE,
+    &TOGGLE_CHECKED_FILLS,
+    &TOGGLE_CHECKED_LABELS,
+];
+
+/// A checked toggle's hovered and pressed fill ([`TOGGLE_CHECKED_FILLS`]).
+const CHECKED_TOGGLE_FILLS: &[&[Stated]] = &[&TOGGLE_CHECKED_FILLS];
 
 /// A button's stroke colour in the state `$s` (with `| $flag`, a checked
 /// toggle's), of the primary variant with `Primary`.
@@ -1296,20 +1329,80 @@ const TOOLBAR_REST_FILL: [Stated; 3] = [
     set(
         at!(DISABLED | CHECKED),
         Field::Background,
-        home!(fill, toolbar.button(DISABLED)),
+        home!(fill, toolbar.button(DISABLED | CHECKED)),
     ),
 ];
 
 /// A button's hovered and pressed stroke colour.
 const STATE_STROKES: &[&[Stated]] = &[&[button_stroke!(HOVER;), button_stroke!(PRESSED;)]];
 
-/// A toggle's hovered and pressed stroke colour, checked or not.
-const TOGGLE_STATE_STROKES: &[&[Stated]] = &[&[
-    button_stroke!(HOVER;),
-    button_stroke!(PRESSED;),
-    button_stroke!(HOVER | CHECKED;),
-    button_stroke!(PRESSED | CHECKED;),
-]];
+/// A toggle on material-3: its hovered and pressed stroke colour, checked or
+/// not, and checked [`TOGGLE_CHECKED_FILLS`].
+const MATERIAL_TOGGLE: &[&[Stated]] = &[
+    &[
+        button_stroke!(HOVER;),
+        button_stroke!(PRESSED;),
+        button_stroke!(HOVER | CHECKED;),
+        button_stroke!(PRESSED | CHECKED;),
+    ],
+    &TOGGLE_CHECKED_FILLS,
+];
+
+/// A checked toggle's fill under the pointer and pressed, the theme's
+/// answers for `CHECKED | HOVER` and `CHECKED | PRESSED`
+/// ([`CHECKED_STATES`]).
+const TOGGLE_CHECKED_FILLS: [Stated; 2] = [
+    set(
+        at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, button.body(CHECKED | HOVER)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::Background,
+        home!(fill, button.body(CHECKED | PRESSED)),
+    ),
+];
+
+/// A checked toggle's label under the pointer and pressed, the theme's
+/// answers for `CHECKED | HOVER` and `CHECKED | PRESSED`
+/// ([`CHECKED_STATES`]).
+const TOGGLE_CHECKED_LABELS: [Stated; 2] = [
+    set(
+        at!(HOVER | CHECKED),
+        Field::TextColor,
+        home!(color, button.label(CHECKED | HOVER)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::TextColor,
+        home!(color, button.label(CHECKED | PRESSED)),
+    ),
+];
+
+/// The reason of a checked toggle drawn in the theme's answers for its
+/// hovered and pressed states.
+const CHECKED_STATES: &str = "0.7.2 drew a checked toggle in one look in every status (its \
+     checked fill and label, else the pressed pair); the 0.8.0 theme states the checked fill and label for CHECKED alone \
+     (button.body(CHECKED), button.label(CHECKED), docs/v0.8.0-spec.md §2, from_state), and \
+     iced gives the button's hovered and pressed statuses, so the 0.8.0 side draws a checked \
+     toggle under the pointer and pressed in what the theme states for CHECKED | HOVER and \
+     CHECKED | PRESSED (docs/v0.8.0-spec.md §10, rule 0: \"what the theme states for the \
+     state is laid over\"), as the toolbar button";
+
+/// A disabled checked toolbar button's fill, the theme's answer for
+/// `DISABLED | CHECKED` ([`TOOLBAR_CHECKED_DISABLED`]).
+const TOOLBAR_CHECKED_DISABLED_FILL: [Stated; 1] = [set(
+    at!(DISABLED | CHECKED),
+    Field::Background,
+    home!(fill, toolbar.button(DISABLED | CHECKED)),
+)];
+
+/// The reason of a disabled checked toolbar button's fill.
+const TOOLBAR_CHECKED_DISABLED: &str = "0.7.2 has no disabled toolbar button fill, so its \
+     connector drew none; the 0.8.0 theme answers for a disabled checked toolbar button, \
+     toolbar.button(DISABLED | CHECKED), with the fill its rules state for that state, which \
+     the 0.8.0 side draws on a disabled checked button (docs/v0.8.0-spec.md §10, rule 0)";
 
 /// The primary button's hovered and pressed stroke colour.
 const PRIMARY_STATE_STROKES: &[&[Stated]] = &[&[
@@ -1320,9 +1413,13 @@ const PRIMARY_STATE_STROKES: &[&[Stated]] = &[&[
 /// A button's pressed stroke colour.
 const PRESSED_STROKE: &[&[Stated]] = &[&[button_stroke!(PRESSED;)]];
 
-/// A toggle's pressed stroke colour, checked or not.
-const TOGGLE_PRESSED_STROKE: &[&[Stated]] =
-    &[&[button_stroke!(PRESSED;), button_stroke!(PRESSED | CHECKED;)]];
+/// A toggle on windows-11: the pressed stroke colour, checked or not, and
+/// checked [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
+const WINDOWS_TOGGLE: &[&[Stated]] = &[
+    &[button_stroke!(PRESSED;), button_stroke!(PRESSED | CHECKED;)],
+    &TOGGLE_CHECKED_FILLS,
+    &TOGGLE_CHECKED_LABELS,
+];
 
 /// A button's pressed label (`button.label(PRESSED)`).
 const PRESSED_LABEL: Stated = set(
@@ -2270,8 +2367,16 @@ const DIFFERENCES: &[Difference] = &[
     )
     .stating(MONTEREY_BUTTON, &[INSIDE, CHECKED, STATED]),
     stated_fields("button", &["macos-tahoe"], LineAlign::Inside, TAHOE_BUTTON),
-    stated_checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, false)
-        .stating(TAHOE_TOGGLE, &[INSIDE, STATED_CHECKED, STATED]),
+    stated_checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, false).stating(
+        TAHOE_TOGGLE,
+        &[
+            INSIDE,
+            STATED_CHECKED,
+            STATED,
+            CHECKED_STATES,
+            MEASURED_CHECKED_DISABLED,
+        ],
+    ),
     stated_fields(
         "button",
         &["ios-13"],
@@ -2279,26 +2384,25 @@ const DIFFERENCES: &[Difference] = &[
         &[&BUTTON_OUTLINE],
     ),
     stated_checked("button_toggle", &["ios-13"], LineAlign::Outside, false)
-        .stating(TOGGLE_OUTLINE, &[STATED_CHECKED, STATED]),
+        .stating(IOS_TOGGLE, &[STATED_CHECKED, STATED, CHECKED_STATES]),
     stated_fields("button", &["material-3"], LineAlign::Outside, STATE_STROKES),
-    stated_fields(
-        "button_toggle",
-        &["material-3"],
-        LineAlign::Outside,
-        TOGGLE_STATE_STROKES,
-    ),
+    stated_fields("button_toggle", &["material-3"], LineAlign::Outside, &[])
+        .stating(MATERIAL_TOGGLE, &[STATED, CHECKED_STATES]),
     stated_fields(
         "button",
         &["windows-11"],
         LineAlign::Outside,
         PRESSED_STROKE,
     ),
+    stated_fields("button_toggle", &["windows-11"], LineAlign::Outside, &[])
+        .stating(WINDOWS_TOGGLE, &[STATED, CHECKED_STATES]),
     stated_fields(
         "button_toggle",
-        &["windows-11"],
+        &["kde-breeze", "adwaita"],
         LineAlign::Outside,
-        TOGGLE_PRESSED_STROKE,
-    ),
+        &[],
+    )
+    .stating(CHECKED_TOGGLE_FILLS, &[CHECKED_STATES]),
     toolbar_labels(&["macos-tahoe"]).stating(
         &[&TOOLBAR_FILLS, &TOOLBAR_CHECKED_FILL, &TOOLBAR_REST_FILL],
         &[
@@ -2329,7 +2433,10 @@ const DIFFERENCES: &[Difference] = &[
             TOOLBAR_OUTLINE,
         ],
     ),
-    toolbar_labels(&["kde-breeze", "adwaita", "windows-11"]),
+    toolbar_labels(&["kde-breeze", "adwaita", "windows-11"]).stating(
+        &[&TOOLBAR_CHECKED_DISABLED_FILL],
+        &[TOOLBAR_LABELS, TOOLBAR_OUTLINE, TOOLBAR_CHECKED_DISABLED],
+    ),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.
@@ -4212,9 +4319,10 @@ fn compare_styles(
 ) {
     use crate::palette::to_color;
     use crate::styles::{
-        self as o, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource,
-        LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource, SegmentPosition,
-        SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource, ToolbarLabels,
+        self as o, ButtonSource, CheckFills, CheckboxSource, CheckedStates, ExpanderSource,
+        InputSource, LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource,
+        SegmentPosition, SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
+        ToolbarLabels,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
@@ -4253,9 +4361,12 @@ fn compare_styles(
         hover: super::state_text_color_of(&label(WidgetState::HOVER)),
         pressed: super::state_text_color_of(&label(WidgetState::PRESSED)),
         checked: toolbar_checked,
-        checked_hover: checked_label_in(WidgetState::HOVER),
-        checked_pressed: checked_label_in(WidgetState::PRESSED),
         disabled: super::state_text_color_of(&label(WidgetState::DISABLED)),
+    };
+    let toolbar_checked_labels = CheckedStates {
+        hover_label: checked_label_in(WidgetState::HOVER),
+        pressed_label: checked_label_in(WidgetState::PRESSED),
+        ..CheckedStates::default()
     };
     let toolbar_outline = super::styles::toolbar_outline(new).ok();
     stated_style!(
@@ -4298,6 +4409,7 @@ fn compare_styles(
                 let t = ToolbarButtonSource {
                     labels: Some(toolbar_labels),
                     outline: toolbar_outline,
+                    checked_states: toolbar_checked_labels,
                     ..t.listed(l)
                 };
                 o::toolbar_button_from(&b, &t, checked)

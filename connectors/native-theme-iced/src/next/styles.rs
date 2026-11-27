@@ -10,7 +10,7 @@ use iced_core::theme::Theme;
 use iced_core::{Shadow, Vector};
 use native_theme::next::{
     ButtonQuery, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
-    StyleQuery, WidgetState, WindowState,
+    StyleQuery, TextStyle, WidgetState, WindowState,
 };
 
 use super::borders::{
@@ -21,10 +21,10 @@ use super::{
     to_color,
 };
 use crate::styles::{
-    self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
-    Line, LinkSource, MenuSource, Outline, PartOutline, PickListSource, ScrollbarSource,
-    SegmentPosition, SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
-    ToolbarLabels, ToolbarOutline,
+    self as old, ButtonSource, CheckFills, CheckboxSource, CheckedStates, ExpanderSource,
+    InputSource, Layer, Line, LinkSource, MenuSource, Outline, PartOutline, PickListSource,
+    ScrollbarSource, SegmentPosition, SegmentedSource, SliderSource, SwitchSource,
+    ToolbarButtonSource, ToolbarLabels, ToolbarOutline,
 };
 
 /// A part's fill, where stated, as the state's whole fill (spec §9, step
@@ -63,6 +63,12 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let default = b.body(WidgetState::DEFAULT);
     let primary = b.body(ButtonQuery::primary());
     let c = &r.colors;
+    let checked_background =
+        state_fill_of(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?;
+    let checked_label = state_text_color(
+        &b.label(WidgetState::CHECKED),
+        "button.label(CHECKED).color",
+    )?;
     Ok(ButtonSource {
         background: fill_of(&rest, "button.body(NONE).fill")?,
         hover_background: state_layer(&hover, "button.body(HOVER).fill")?,
@@ -71,10 +77,13 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.body(WidgetState::DISABLED),
             "button.body(DISABLED).fill",
         )?,
-        checked_background: state_fill_of(
-            &b.body(WidgetState::CHECKED),
-            "button.body(CHECKED).fill",
+        checked_disabled_background: flagged(
+            &b.body(WidgetState::DISABLED),
+            &b.body(WidgetState::DISABLED | WidgetState::CHECKED),
+            PartStated::FILL,
+            |p| fill(p, "button.body(DISABLED|CHECKED).fill"),
         )?,
+        checked_background,
         checked_primary: true,
         label: text_color_of(&b.label(WidgetState::NONE)),
         hover_label: state_text_color(&b.label(WidgetState::HOVER), "button.label(HOVER).color")?,
@@ -86,9 +95,15 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.label(WidgetState::DISABLED),
             "button.label(DISABLED).color",
         )?,
-        checked_label: state_text_color(
-            &b.label(WidgetState::CHECKED),
-            "button.label(CHECKED).color",
+        checked_label,
+        checked_states: checked_states(
+            |state| b.body(state),
+            |state| b.label(state),
+            (checked_background, checked_label),
+            (
+                "button.body(CHECKED|HOVER).fill",
+                "button.body(CHECKED|PRESSED).fill",
+            ),
         )?,
         disabled_opacity: b.disabled_opacity,
         border: part_outline!(rest, "button.body(NONE)")?,
@@ -153,27 +168,50 @@ pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
     })
 }
 
-/// [`ToolbarButtonSource`] of the 0.8.0 model. A checked button's fill and
-/// label under the pointer and pressed are asked of the theme only where it
-/// states them for `CHECKED` alone (spec §2, `from_state`); where it does
-/// not, the checked button is iced's own way of showing the state in every
-/// status (spec §10, rule 0a).
+/// [`CheckedStates`] of the 0.8.0 model, of a button whose part in a state
+/// is `body`'s and whose label is `label`'s: a checked button's fill under
+/// the pointer and pressed is asked of the theme only where it states the
+/// checked fill for `CHECKED` alone (`checked`'s fill, spec §2,
+/// `from_state`), and its label only where it states the checked label so
+/// (`checked`'s label); each then the theme's answer for `CHECKED | HOVER`
+/// and `CHECKED | PRESSED` (spec §10, rule 0: "what the theme states for
+/// the state is laid over"). Where it does not, the checked button is
+/// iced's own way of showing the state in every status (spec §10, rule 0a).
+/// `homes` are the hovered and the pressed fill's.
+fn checked_states(
+    body: impl Fn(WidgetState) -> PartStyle,
+    label: impl Fn(WidgetState) -> TextStyle,
+    checked: (Option<iced_core::Color>, Option<iced_core::Color>),
+    homes: (&'static str, &'static str),
+) -> Mapped<CheckedStates> {
+    let (checked_fill, checked_label) = checked;
+    let fill = |state: WidgetState, home| match checked_fill {
+        Some(_) => fill_of(&body(WidgetState::CHECKED | state), home),
+        None => Ok(None),
+    };
+    let label_in =
+        |state: WidgetState| checked_label.and(text_color_of(&label(WidgetState::CHECKED | state)));
+    Ok(CheckedStates {
+        hover_background: fill(WidgetState::HOVER, homes.0)?,
+        pressed_background: fill(WidgetState::PRESSED, homes.1)?,
+        hover_label: label_in(WidgetState::HOVER),
+        pressed_label: label_in(WidgetState::PRESSED),
+    })
+}
+
+/// [`ToolbarButtonSource`] of the 0.8.0 model: a checked button's fill and
+/// label under the pointer and pressed as [`checked_states`] reads them,
+/// and a disabled one's fill the theme's answer for the state it is in,
+/// `DISABLED | CHECKED` where checked.
 fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
     let t = &r.toolbar;
     let hover = t.button(WidgetState::HOVER);
     let checked = t.button(WidgetState::CHECKED);
     let checked_background = state_fill_of(&checked, "toolbar.button(CHECKED).fill")?;
-    let checked_fill = |state: WidgetState, home| match checked_background {
-        Some(_) => fill_of(&t.button(WidgetState::CHECKED | state), home),
-        None => Ok(None),
-    };
     let checked_label = state_text_color(
         &t.button_label(WidgetState::CHECKED),
         "toolbar.button_label(CHECKED).color",
     )?;
-    let checked_label_in = |state: WidgetState| {
-        checked_label.and(text_color_of(&t.button_label(WidgetState::CHECKED | state)))
-    };
     Ok(ToolbarButtonSource {
         outline: Some(toolbar_outline(r)?),
         rest_background: fill_of(&t.button(WidgetState::NONE), "toolbar.button(NONE).fill")?,
@@ -181,19 +219,24 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
             &t.button(WidgetState::DISABLED),
             "toolbar.button(DISABLED).fill",
         )?,
+        checked_disabled_background: fill_of(
+            &t.button(WidgetState::DISABLED | WidgetState::CHECKED),
+            "toolbar.button(DISABLED|CHECKED).fill",
+        )?,
         hover_background: state_layer(&hover, "toolbar.button(HOVER).fill")?,
         active_background: state_layer(
             &t.button(WidgetState::PRESSED),
             "toolbar.button(PRESSED).fill",
         )?,
         checked_background,
-        checked_hover_background: checked_fill(
-            WidgetState::HOVER,
-            "toolbar.button(CHECKED|HOVER).fill",
-        )?,
-        checked_pressed_background: checked_fill(
-            WidgetState::PRESSED,
-            "toolbar.button(CHECKED|PRESSED).fill",
+        checked_states: checked_states(
+            |state| t.button(state),
+            |state| t.button_label(state),
+            (checked_background, checked_label),
+            (
+                "toolbar.button(CHECKED|HOVER).fill",
+                "toolbar.button(CHECKED|PRESSED).fill",
+            ),
         )?,
         hover_border_color: state_line(&hover, "toolbar.button(HOVER).stroke.color")?,
         checked_border_color: state_line(&checked, "toolbar.button(CHECKED).stroke.color")?,
@@ -220,8 +263,6 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
                 "toolbar.button_label(PRESSED).color",
             )?,
             checked: checked_label,
-            checked_hover: checked_label_in(WidgetState::HOVER),
-            checked_pressed: checked_label_in(WidgetState::PRESSED),
             disabled: state_text_color(
                 &t.button_label(WidgetState::DISABLED),
                 "toolbar.button_label(DISABLED).color",
@@ -252,7 +293,15 @@ pub fn button(
 /// in the same status, a stated `button.label(CHECKED)` laid over; its
 /// outline, corners and shadow are the unchecked button's. A stated checked
 /// fill is lettered in `button.label(CHECKED)` where stated, else in the
-/// label at rest (spec §10, rule 0a).
+/// label at rest (spec §10, rule 0a). Where the theme states the checked
+/// fill, a checked button under the pointer and pressed is filled in
+/// `button.body(CHECKED | HOVER)`'s and `button.body(CHECKED | PRESSED)`'s;
+/// where it states the checked label, it is lettered in
+/// `button.label(CHECKED | HOVER)`'s and `(CHECKED | PRESSED)`'s (spec §10,
+/// rule 0), as [`toolbar_button`]. Where the theme states the disabled fill
+/// (`button.body(DISABLED)`), a disabled checked toggle is filled in its
+/// answer for `button.body(DISABLED | CHECKED)`, as a disabled checked
+/// toolbar button is.
 ///
 /// # Errors
 ///
@@ -280,7 +329,8 @@ pub fn button_toggle(
 /// it is lettered in `toolbar.button_label(CHECKED | HOVER)`'s and
 /// `(CHECKED | PRESSED)`'s (spec §10, rule 0). A button that is off is filled
 /// at rest in `toolbar.button(NONE)`'s fill, and a disabled one in
-/// `toolbar.button(DISABLED)`'s, each where stated, else in none.
+/// `toolbar.button(DISABLED)`'s, a disabled checked one in
+/// `toolbar.button(DISABLED | CHECKED)`'s, each where stated, else in none.
 /// A hovered or pressed fill is `toolbar.button(HOVER)`'s or
 /// `toolbar.button(PRESSED)`'s where a rule states it, else iced's own
 /// (spec §10, rule 0), never the push button's. The labels are

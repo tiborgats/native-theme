@@ -486,6 +486,55 @@ pub fn button(
     button_from(&ButtonSource::of(resolved))
 }
 
+/// A checked button's fill and label under the pointer and pressed, on the
+/// 0.8.0 model the theme's answers for `CHECKED | HOVER` and
+/// `CHECKED | PRESSED`, each where the theme states the checked fill or
+/// label for `CHECKED` alone (spec §10, rule 0; spec §2, `from_state`).
+/// `None` is the checked one at rest, as on 0.7.2's, which states none.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct CheckedStates {
+    pub hover_background: Option<Color>,
+    pub pressed_background: Option<Color>,
+    pub hover_label: Option<Color>,
+    pub pressed_label: Option<Color>,
+}
+
+impl CheckedStates {
+    /// The checked fill in `status`: the hovered or the pressed one where
+    /// set, else `rest`, the checked fill at rest.
+    pub(crate) fn fill(
+        &self,
+        status: iced_widget::button::Status,
+        rest: Option<Color>,
+    ) -> Option<Color> {
+        Self::in_status(status, rest, self.hover_background, self.pressed_background)
+    }
+
+    /// The checked label in `status`: the hovered or the pressed one where
+    /// set, else `rest`, the checked label at rest.
+    pub(crate) fn label(
+        &self,
+        status: iced_widget::button::Status,
+        rest: Option<Color>,
+    ) -> Option<Color> {
+        Self::in_status(status, rest, self.hover_label, self.pressed_label)
+    }
+
+    fn in_status(
+        status: iced_widget::button::Status,
+        rest: Option<Color>,
+        hovered: Option<Color>,
+        pressed: Option<Color>,
+    ) -> Option<Color> {
+        use iced_widget::button::Status;
+        match status {
+            Status::Hovered => hovered.or(rest),
+            Status::Pressed => pressed.or(rest),
+            Status::Active | Status::Disabled => rest,
+        }
+    }
+}
+
 /// What the button styles read from the theme, of either model: each
 /// field's 0.7.2 name, soft options as `None` where unset. A hover or
 /// pressed fill or label no rule states is `None`, and the button is then
@@ -503,6 +552,11 @@ pub(crate) struct ButtonSource {
     /// that is unset, which its connector drew as the pressed one.
     pub active_background: Option<Layer>,
     pub disabled_background: Option<Color>,
+    /// The fill of a disabled checked button where the theme states the
+    /// disabled fill: on the 0.8.0 model its answer for
+    /// `DISABLED | CHECKED`, on 0.7.2's, which states one disabled fill,
+    /// `disabled_background`.
+    pub checked_disabled_background: Option<Color>,
     pub checked_background: Option<Color>,
     /// Where the theme states no checked fill, whether a checked button is
     /// drawn in the primary button's fill and label in the same status, by
@@ -518,6 +572,8 @@ pub(crate) struct ButtonSource {
     /// The disabled label where the theme states one.
     pub disabled_label: Option<Color>,
     pub checked_label: Option<Color>,
+    /// A checked button's fill and label under the pointer and pressed.
+    pub checked_states: CheckedStates,
     pub disabled_opacity: Option<f32>,
     pub border: PartOutline,
     /// The primary button's own border: 0.7.2's `border`, which the model
@@ -554,6 +610,7 @@ impl ButtonSource {
             hover_background: Some(Layer::Color(hover)),
             active_background: Some(Layer::Color(b.active_background.map_or(hover, to_color))),
             disabled_background: b.disabled_background.map(to_color),
+            checked_disabled_background: b.disabled_background.map(to_color),
             checked_background: b.checked_background.map(to_color),
             checked_primary: false,
             label: Some(to_color(b.font.color)),
@@ -561,6 +618,7 @@ impl ButtonSource {
             active_label: Some(to_color(b.active_text_color)),
             disabled_label: Some(to_color(b.disabled_text_color)),
             checked_label: b.checked_text_color.map(to_color),
+            checked_states: CheckedStates::default(),
             disabled_opacity: Some(b.disabled_opacity),
             border: Outline::of(&b.border).into(),
             primary_border: Outline::of(&b.border).into(),
@@ -794,12 +852,16 @@ pub(crate) fn button_toggle_from(
         // the checked label, else, on the 0.8.0 model, the label at rest
         // (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
         // stated `CHECKED` label, else in the label at rest"); on 0.7.2's,
-        // the pressed one the theme states, else the label at rest.
+        // the pressed one the theme states, else the label at rest. Under
+        // the pointer and pressed, a checked fill and label the theme states
+        // are, on the 0.8.0 model, the state's ([`CheckedStates`]).
         let (_, rest_label, outline) = source.at_rest(theme);
-        let (fill, label) = match source.checked_background {
+        let checked_states = source.checked_states;
+        let checked_label = checked_states.label(status, source.checked_label);
+        let (fill, label) = match checked_states.fill(status, source.checked_background) {
             Some(fill) => {
                 let pressed = source.active_label.filter(|_| !source.checked_primary);
-                (fill, source.checked_label.or(pressed).unwrap_or(rest_label))
+                (fill, checked_label.or(pressed).unwrap_or(rest_label))
             }
             None => {
                 let shown = if source.checked_primary {
@@ -813,7 +875,7 @@ pub(crate) fn button_toggle_from(
                 };
                 (
                     painted(shown.background),
-                    source.checked_label.unwrap_or(shown.text_color),
+                    checked_label.unwrap_or(shown.text_color),
                 )
             }
         };
@@ -825,7 +887,7 @@ pub(crate) fn button_toggle_from(
             ),
             Status::Disabled => match source.disabled_background {
                 Some(_) => disabled_button(
-                    source.disabled_background,
+                    source.checked_disabled_background,
                     fill,
                     source.disabled_label,
                     rest_label,
@@ -906,12 +968,16 @@ pub(crate) struct ToolbarButtonSource {
     pub hover_background: Option<Layer>,
     pub active_background: Option<Layer>,
     pub checked_background: Option<Color>,
-    /// The fill of a checked button under the pointer and pressed, on the
-    /// 0.8.0 model where the theme states a checked fill
-    /// (`toolbar.button(CHECKED | HOVER)`, `(CHECKED | PRESSED)`); `None`
-    /// is the checked fill at rest, as on 0.7.2's.
-    pub checked_hover_background: Option<Color>,
-    pub checked_pressed_background: Option<Color>,
+    /// The fill and the label of a checked button under the pointer and
+    /// pressed, on the 0.8.0 model where the theme states a checked fill or
+    /// label (`toolbar.button(CHECKED | HOVER)`, `(CHECKED | PRESSED)`, and
+    /// their `toolbar.button_label`); `None` is the checked one at rest, as
+    /// on 0.7.2's.
+    pub checked_states: CheckedStates,
+    /// The fill of a disabled checked button, on the 0.8.0 model where the
+    /// theme states it (`toolbar.button(DISABLED | CHECKED)`); `None` is no
+    /// fill, as on 0.7.2's.
+    pub checked_disabled_background: Option<Color>,
     pub hover_border_color: Option<Line>,
     pub checked_border_color: Option<Line>,
     /// The outline of a pressed button that is off, and of a checked one
@@ -946,17 +1012,14 @@ pub(crate) struct ToolbarOutline {
 /// A toolbar button's labels on the 0.8.0 model: the label at rest where
 /// the theme states it, each other state's where a rule states it for the
 /// state; `None` is iced's own there (spec §10, rule 0). A checked button's
-/// label under the pointer and pressed is `(CHECKED | HOVER)`'s and
-/// `(CHECKED | PRESSED)`'s where a rule states the checked label, `None`
-/// where none does.
+/// label under the pointer and pressed is
+/// [`ToolbarButtonSource::checked_states`]'.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ToolbarLabels {
     pub rest: Option<Color>,
     pub hover: Option<Color>,
     pub pressed: Option<Color>,
     pub checked: Option<Color>,
-    pub checked_hover: Option<Color>,
-    pub checked_pressed: Option<Color>,
     pub disabled: Option<Color>,
 }
 
@@ -984,8 +1047,8 @@ impl ToolbarButtonSource {
             hover_background: Some(Layer::Color(to_color(hover))),
             active_background: Some(Layer::Color(to_color(active))),
             checked_background: t.button_checked_background.map(to_color),
-            checked_hover_background: None,
-            checked_pressed_background: None,
+            checked_states: CheckedStates::default(),
+            checked_disabled_background: None,
             hover_border_color: line(t.button_hover_border_color),
             checked_border_color: line(t.button_checked_border_color),
             pressed_border_color: line(t.button_hover_border_color),
@@ -1046,6 +1109,7 @@ pub(crate) fn toolbar_button_from(
     let pressed = t.active_background.map(Layer::as_given);
     let rest = t.rest_background.unwrap_or(Color::TRANSPARENT);
     let disabled = t.disabled_background.unwrap_or(Color::TRANSPARENT);
+    let checked_disabled = t.checked_disabled_background.unwrap_or(Color::TRANSPARENT);
 
     let disabled_opacity = b.disabled_opacity;
 
@@ -1091,11 +1155,7 @@ pub(crate) fn toolbar_button_from(
                 }),
                 l.hover,
                 l.pressed,
-                match status {
-                    Status::Hovered => l.checked_hover.or(l.checked),
-                    Status::Pressed => l.checked_pressed.or(l.checked),
-                    Status::Active | Status::Disabled => l.checked,
-                },
+                t.checked_states.label(status, l.checked),
                 l.disabled,
             ),
             None => (
@@ -1139,11 +1199,7 @@ pub(crate) fn toolbar_button_from(
         // label at rest (spec §10, rule 0a: "a stated `CHECKED` fill is
         // lettered in the stated `CHECKED` label, else in the label at
         // rest"); on 0.7.2's, the pressed one.
-        let checked_fill = match status {
-            Status::Hovered => t.checked_hover_background.or(t.checked_background),
-            Status::Pressed => t.checked_pressed_background.or(t.checked_background),
-            Status::Active | Status::Disabled => t.checked_background,
-        };
+        let checked_fill = t.checked_states.fill(status, t.checked_background);
         let (fill, checked_label) = match (checked_fill, status) {
             (None, Status::Active | Status::Hovered | Status::Pressed) if checked_primary => {
                 let shown = primary(theme, status);
@@ -1178,7 +1234,8 @@ pub(crate) fn toolbar_button_from(
                 t.checked_pressed_border_color,
                 checked_pressed_width,
             ),
-            (_, Status::Disabled) => (disabled, disabled_label, None, None),
+            (false, Status::Disabled) => (disabled, disabled_label, None, None),
+            (true, Status::Disabled) => (checked_disabled, disabled_label, None, None),
         };
         let outline = Outline {
             width: width.unwrap_or(outline.width),
