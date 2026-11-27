@@ -7340,6 +7340,11 @@ struct TwoFlagSite {
     clear: &'static str,
     both: &'static str,
     other: &'static str,
+    /// A home the theme of `other` also states, in a third colour, where
+    /// gpui-component's own treatment reads a state a rule for `T` alone
+    /// would give `other`'s colour too: the mixed box's checked look, read at
+    /// `T|CHECKED`, against a site wrongly reading `T|INDETERMINATE`.
+    also: Option<&'static str>,
     /// The bit at `S` alone.
     alone: fn(&native_theme::next::ResolvedTheme) -> bool,
     /// The value the site draws at `S|T`.
@@ -7375,6 +7380,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).fill",
             both: "checkbox.indicator(DISABLED|CHECKED).fill",
             other: "checkbox.indicator(CHECKED).fill",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .indicator(S::DISABLED)
@@ -7388,6 +7394,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "radio.indicator(NONE).fill",
             both: "radio.indicator(DISABLED|CHECKED).fill",
             other: "radio.indicator(CHECKED).fill",
+            also: None,
             alone: |r| {
                 r.radio
                     .indicator(S::DISABLED)
@@ -7401,6 +7408,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).stroke.color",
             both: "checkbox.indicator(HOVER|CHECKED).stroke.color",
             other: "checkbox.indicator(CHECKED).stroke.color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .indicator(S::HOVER)
@@ -7414,6 +7422,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "radio.indicator(NONE).stroke.color",
             both: "radio.indicator(HOVER|CHECKED).stroke.color",
             other: "radio.indicator(CHECKED).stroke.color",
+            also: None,
             alone: |r| {
                 r.radio
                     .indicator(S::HOVER)
@@ -7427,6 +7436,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).stroke.color",
             both: "checkbox.indicator(DISABLED|CHECKED).stroke.color",
             other: "checkbox.indicator(CHECKED).stroke.color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .indicator(S::DISABLED)
@@ -7440,6 +7450,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "radio.indicator(NONE).stroke.color",
             both: "radio.indicator(DISABLED|CHECKED).stroke.color",
             other: "radio.indicator(CHECKED).stroke.color",
+            also: None,
             alone: |r| {
                 r.radio
                     .indicator(S::DISABLED)
@@ -7453,6 +7464,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.checkmark(NONE).color",
             both: "checkbox.checkmark(DISABLED|CHECKED).color",
             other: "checkbox.checkmark(CHECKED).color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .checkmark(S::DISABLED)
@@ -7466,6 +7478,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "radio.dot(NONE).fill",
             both: "radio.dot(DISABLED|CHECKED).fill",
             other: "radio.dot(CHECKED).fill",
+            also: None,
             alone: |r| {
                 r.radio
                     .dot(S::DISABLED)
@@ -7479,6 +7492,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.label(NONE).color",
             both: "checkbox.label(DISABLED|CHECKED).color",
             other: "checkbox.label(CHECKED).color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .label(S::DISABLED)
@@ -7492,6 +7506,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "radio.label(NONE).color",
             both: "radio.label(DISABLED|CHECKED).color",
             other: "radio.label(CHECKED).color",
+            also: None,
             alone: |r| {
                 r.radio
                     .label(S::DISABLED)
@@ -7507,6 +7522,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).fill",
             both: "checkbox.indicator(DISABLED|INDETERMINATE).fill",
             other: "checkbox.indicator(DISABLED).fill",
+            also: Some("checkbox.indicator(DISABLED|CHECKED).fill"),
             alone: |r| {
                 r.checkbox
                     .indicator(MIXED)
@@ -7520,6 +7536,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).fill",
             both: "checkbox.indicator(DISABLED|INDETERMINATE).fill",
             other: "checkbox.indicator(INDETERMINATE).fill",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .indicator(S::DISABLED)
@@ -7533,6 +7550,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).stroke.color",
             both: "checkbox.indicator(DISABLED|INDETERMINATE).stroke.color",
             other: "checkbox.indicator(DISABLED).stroke.color",
+            also: Some("checkbox.indicator(DISABLED|CHECKED).stroke.color"),
             alone: |r| {
                 r.checkbox
                     .indicator(MIXED)
@@ -7546,6 +7564,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).stroke.color",
             both: "checkbox.indicator(DISABLED|INDETERMINATE).stroke.color",
             other: "checkbox.indicator(INDETERMINATE).stroke.color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .indicator(S::DISABLED)
@@ -7559,6 +7578,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).fill",
             both: "checkbox.indicator(HOVER|INDETERMINATE).fill",
             other: "checkbox.indicator(HOVER).fill",
+            also: Some("checkbox.indicator(HOVER|CHECKED).fill"),
             alone: |r| {
                 r.checkbox
                     .indicator(MIXED)
@@ -7572,6 +7592,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).stroke.color",
             both: "checkbox.indicator(HOVER|INDETERMINATE).stroke.color",
             other: "checkbox.indicator(HOVER).stroke.color",
+            also: Some("checkbox.indicator(HOVER|CHECKED).stroke.color"),
             alone: |r| {
                 r.checkbox
                     .indicator(MIXED)
@@ -7585,6 +7606,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.indicator(NONE).stroke.color",
             both: "checkbox.indicator(HOVER|INDETERMINATE).stroke.color",
             other: "checkbox.indicator(INDETERMINATE).stroke.color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .indicator(S::HOVER)
@@ -7598,6 +7620,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.checkmark(NONE).color",
             both: "checkbox.checkmark(DISABLED|INDETERMINATE).color",
             other: "checkbox.checkmark(DISABLED).color",
+            also: Some("checkbox.checkmark(DISABLED|CHECKED).color"),
             alone: |r| {
                 r.checkbox
                     .checkmark(MIXED)
@@ -7611,6 +7634,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "checkbox.checkmark(NONE).color",
             both: "checkbox.checkmark(DISABLED|INDETERMINATE).color",
             other: "checkbox.checkmark(INDETERMINATE).color",
+            also: None,
             alone: |r| {
                 r.checkbox
                     .checkmark(S::DISABLED)
@@ -7624,6 +7648,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "switch.track(NONE).fill",
             both: "switch.track(HOVER|CHECKED).fill",
             other: "switch.track(CHECKED).fill",
+            also: None,
             alone: |r| {
                 r.switch
                     .track(S::HOVER)
@@ -7631,13 +7656,16 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
                     .contains(PartStated::FILL)
             },
             drawn: |r| Ok(SwitchLook::next_of(r, true, false)?.hover_track),
-            // The checked track without the pointer.
+            // The checked track without the pointer. (ii) checks nothing here:
+            // the rule for `CHECKED` makes the hovered checked track the rest
+            // one, so a site reading `HOVER|CHECKED` unasked draws it too.
             own: |_, c| Ok(Some(c)),
         },
         TwoFlagSite {
             clear: "switch.track(NONE).fill",
             both: "switch.track(DISABLED|CHECKED).fill",
             other: "switch.track(CHECKED).fill",
+            also: None,
             alone: |r| {
                 r.switch
                     .track(S::DISABLED)
@@ -7651,6 +7679,7 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
             clear: "switch.label(NONE).color",
             both: "switch.label(DISABLED|CHECKED).color",
             other: "switch.label(CHECKED).color",
+            also: None,
             alone: |r| {
                 r.switch
                     .label(S::DISABLED)
@@ -7668,7 +7697,12 @@ fn two_flag_sites() -> Vec<TwoFlagSite> {
 /// `home_patch_toml` states a home: the property first stated with no state,
 /// so the query with `S` alone lacks its bit; then (i) a rule for `S|T` alone
 /// is drawn at `S|T`, and (ii) a rule for `T` alone does not state the value
-/// for `S`, and gpui-component's own treatment stays.
+/// for `S`, and gpui-component's own treatment stays. Where that treatment
+/// reads a state the rule for `T` reaches as well, the theme of (ii) also
+/// states [`TwoFlagSite::also`] in a third colour, which the own treatment
+/// draws and a site reading `S|T` unasked does not. The switch's hovered
+/// checked track is the one site (ii) cannot tell apart: the rule for
+/// `CHECKED` is its own treatment's colour too.
 #[test]
 fn a_rule_for_two_flags_states_the_value_for_the_flag_the_connector_treats() -> Result<(), String> {
     use native_theme::next::{Color, Preset, Theme as NextTheme, ThemeContext, ThemePatch};
@@ -7682,24 +7716,29 @@ fn a_rule_for_two_flags_states_the_value_for_the_flag_the_connector_treats() -> 
             .map(|line| format!("{line}\n"))
             .collect::<String>()
     };
-    let patched = |[(clear, rest), (home, colour)]: [(&str, &str); 2]| {
+    let rest = "#102030";
+    let patched = |clear: &str, rules: &[(&str, &str)]| {
         let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
-        for toml in [
-            home_patch_toml(clear, rest).map(unruled),
-            home_patch_toml(home, colour),
-        ] {
-            let toml = toml.ok_or(format!("no patch for {clear} or {home}"))?;
+        let mut tomls = vec![
+            home_patch_toml(clear, rest)
+                .map(unruled)
+                .ok_or(format!("no patch for {clear}"))?,
+        ];
+        for &(home, colour) in rules {
+            tomls.push(home_patch_toml(home, colour).ok_or(format!("no patch for {home}"))?);
+        }
+        for toml in tomls {
             let patch = ThemePatch::from_toml(&toml).map_err(|e| format!("{toml}: {e:?}"))?;
             r.apply_patch(&patch);
         }
         Ok::<_, String>(r)
     };
-    let rest = "#102030";
     let ruled = Color::from_srgb8(0xa1, 0xb2, 0xc3, 0xff);
     let ruled_hex = "#a1b2c3";
+    let third_hex = "#3c5a78";
     let mut faults = Vec::new();
     for site in two_flag_sites() {
-        let both = patched([(site.clear, rest), (site.both, ruled_hex)])?;
+        let both = patched(site.clear, &[(site.both, ruled_hex)])?;
         if (site.alone)(&both) {
             faults.push(format!(
                 "{}: the bit at the flag alone stays set",
@@ -7710,10 +7749,19 @@ fn a_rule_for_two_flags_states_the_value_for_the_flag_the_connector_treats() -> 
         if drawn != Some(crate::next::hsla(ruled)) {
             faults.push(format!("(i) {}: drawn {drawn:?}", site.both));
         }
-        let other = patched([(site.clear, rest), (site.other, ruled_hex)])?;
+        let other = match site.also {
+            Some(also) => patched(site.clear, &[(site.other, ruled_hex), (also, third_hex)])?,
+            None => patched(site.clear, &[(site.other, ruled_hex)])?,
+        };
         let drawn = (site.drawn)(&other).map_err(|e| format!("{}: {e:?}", site.other))?;
         let own = (site.own)(&other, crate::next::hsla(ruled))
             .map_err(|e| format!("{}: {e:?}", site.other))?;
+        if site.also.is_some() && own == Some(crate::next::hsla(ruled)) {
+            faults.push(format!(
+                "(ii) {} under {}: gpui-component's own {own:?} is the rule's colour",
+                site.both, site.other
+            ));
+        }
         if drawn != own {
             faults.push(format!(
                 "(ii) {} under {}: drawn {drawn:?}, not gpui-component's own {own:?}",
