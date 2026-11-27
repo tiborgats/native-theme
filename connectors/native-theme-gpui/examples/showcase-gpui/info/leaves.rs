@@ -187,7 +187,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
             "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
         ],
-        "not drawn: gpui-component styles a focused Button after the caller's style and gives no hook for it, so a focused Primary Button's border is ThemeColor ring where it has a border width, and where it has none a 1 px line inside it in its text colour at 60 %, with the band round it where the band is on (gpui-component 0.10.0 button/button.rs:936-938; styled.rs:250-298, focus_style; native-theme-gpui README, Limits)",
+        "not drawn: gpui-component styles a focused Button after the caller's style and gives no hook for it, so a focused Primary Button's border is ThemeColor ring where it has a border width, and where it has none a 1 px line inside it in its text colour at 60 %, with the band round it where the band is on (gpui-component 0.10.0 button/button.rs:936-938, focus_style; styled.rs:250-298, focus_style; native-theme-gpui README, Limits)",
     ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (
