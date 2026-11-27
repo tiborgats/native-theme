@@ -2377,7 +2377,8 @@
         "fill": "#ffffff0f",
         "stroke": {
           "width": 1.0,
-          "color": "#040404"
+          "color": "#040404",
+          "align": "outside"
         },
         "corners": 4.0,
         "shadows": "none",
@@ -2401,7 +2402,8 @@
             "fill": "#323232",
             "stroke": {
               "width": 1.0,
-              "color": "#050505"
+              "color": "#050505",
+              "align": "outside"
             }
           }
         },
@@ -2413,7 +2415,8 @@
             "fill": "#272727",
             "stroke": {
               "width": 1.0,
-              "color": "#050505"
+              "color": "#050505",
+              "align": "outside"
             }
           }
         },
@@ -2425,7 +2428,8 @@
             "fill": "#33333300",
             "stroke": {
               "width": 1.0,
-              "color": "#070707"
+              "color": "#070707",
+              "align": "outside"
             }
           }
         }

@@ -1415,7 +1415,8 @@ fn an_unstated_checked_toggle_is_egui_s_selected_button_not_the_pressed_one() ->
 
 /// The Basic page's toggle while on, under windows-11 light and dark, is outlined in the checked
 /// stroke the preset states (`button.body(CHECKED)`, ToggleButtonBorderBrushChecked's three
-/// sides, ControlStrokeColorOnAccentDefault #14FFFFFF inside the edge), laid over the fill egui
+/// sides, ControlStrokeColorOnAccentDefault #14FFFFFF inside the edge, `Stroke::prevailing`'s:
+/// the bottom edge is not drawn), laid over the fill egui
 /// paints, not in the pen egui keeps for a selected button, the widget state's
 /// `visuals.widgets.*.bg_stroke` (egui 0.37.0 `src/style.rs`, `Style::interact_selectable`);
 /// under the pointer the theme's answer for `CHECKED | HOVER`, the same colour, and pressed for
@@ -1437,7 +1438,11 @@ fn a_windows_toggle_that_is_on_takes_the_stated_checked_outline() -> Result<(), 
             .clone();
         let on = ButtonQuery::new(WidgetState::CHECKED);
         let checked = r.button.body(on);
-        assert_eq!(checked.stroke, Stroke::uniform(1.0, on_accent), "{theme:?}");
+        assert_eq!(
+            checked.stroke.prevailing(),
+            Stroke::uniform(1.0, on_accent),
+            "{theme:?}"
+        );
         let (fill, _) = button_paint(
             &harness,
             "toggle button (on)",

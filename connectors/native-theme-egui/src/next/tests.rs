@@ -374,7 +374,7 @@ fn a_translucent_inside_stroke_is_handed_over_the_fill() -> Result<(), String> {
     };
     assert!(
         matches!(
-            part.stroke,
+            part.stroke.prevailing(),
             Stroke::Uniform {
                 align: StrokeAlign::Inside,
                 ..

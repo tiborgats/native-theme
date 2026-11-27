@@ -1302,7 +1302,8 @@ fn the_primary_button_reads_its_own_hovered_and_pressed_outline() -> TestResult 
 /// windows-11's checked push button is outlined in the checked body's stroke
 /// the preset states for each state, ToggleButtonBorderBrushChecked and
 /// …CheckedPointerOver's three sides, ControlStrokeColorOnAccentDefault
-/// #14FFFFFF inside the edge, composited over the checked fill, and none
+/// #14FFFFFF inside the edge (`Stroke::prevailing`; the bottom edge is not
+/// drawn), composited over the checked fill, and none
 /// pressed or disabled (…CheckedPressed, …CheckedDisabled =
 /// ControlFillColorTransparentBrush), not in the unchecked button's
 /// outline; its primary button has no outline disabled
@@ -1324,7 +1325,7 @@ fn a_windows_checked_or_disabled_button_takes_the_stated_outline() -> TestResult
         ] {
             let part = r.button.body(state);
             assert_eq!(
-                part.stroke,
+                part.stroke.prevailing(),
                 Stroke::uniform(1.0, on_accent),
                 "{:?} {status:?}",
                 ctx.scheme

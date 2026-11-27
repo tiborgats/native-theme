@@ -2022,8 +2022,9 @@ const WINDOWS_ELEVATION: &str = "the 0.8.0 windows-11 states the push button's, 
      (Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45; \
      native-theme/tests/next_homes.toml, rows button.border.color, input.border.color and \
      combo_box.border.color, listed differences), where 0.7.2 took the default border, \
-     CardStrokeColorDefault, #19000000 in dark: the same in light, the combo box's laid over its \
-     fill";
+     CardStrokeColorDefault, #19000000 in dark: the same in light; the edge of each brush is \
+     not drawn (Stroke::prevailing), and the combo box's outline lies outside its fill \
+     (Border's default InnerBorderEdge), handed to egui as stated";
 
 /// adwaita's checked toggle in libadwaita's own form.
 const ADWAITA_CHECKED_TOGGLE: &str = "the 0.8.0 adwaita states AdwToggleGroup's checked toggle \
