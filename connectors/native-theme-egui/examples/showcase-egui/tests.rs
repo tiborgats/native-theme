@@ -12615,9 +12615,10 @@ fn the_edit_switchs_checked_outline_colour_names_its_pen() -> Result<(), String>
     Ok(())
 }
 
-/// The On toggle's `button.body(NONE).stroke.color`, which a `mapping.toml` row also holds, is
-/// routed to the per-call pen that covers it where the theme states the checked stroke
-/// (`pages::basic::toggle_on_pen`, [`crate::info::TOGGLE_ON_REST_EDGE`]), not to the row (N50).
+/// The On toggle's `button.body(NONE).stroke.color` and `.width`, which `mapping.toml` rows
+/// also hold, are routed to the per-call pen that covers them where the theme states the
+/// checked stroke (`pages::basic::toggle_on_pen`, [`crate::info::TOGGLE_ON_REST_EDGE`],
+/// [`crate::info::TOGGLE_ON_REST_WIDTH`]), not to the rows (N50).
 #[test]
 fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), String> {
     let manifest = Manifest::parse(MANIFEST)?;
@@ -12625,13 +12626,19 @@ fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), Stri
         native_theme_egui::Role::Button,
         RoleVariant::Normal,
     )];
-    let how = crate::info::listed_how(
-        &manifest,
-        "basic.buttons.toggle_on",
-        "button.body(NONE).stroke.color",
-        &seams,
-    );
-    assert_eq!(how, crate::info::TOGGLE_ON_REST_EDGE);
+    for (home, route) in [
+        (
+            "button.body(NONE).stroke.color",
+            crate::info::TOGGLE_ON_REST_EDGE,
+        ),
+        (
+            "button.body(NONE).stroke.width",
+            crate::info::TOGGLE_ON_REST_WIDTH,
+        ),
+    ] {
+        let how = crate::info::listed_how(&manifest, "basic.buttons.toggle_on", home, &seams);
+        assert_eq!(how, route, "{home}");
+    }
     Ok(())
 }
 

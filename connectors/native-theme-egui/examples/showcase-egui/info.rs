@@ -1651,6 +1651,11 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         TOGGLE_ON_REST_EDGE,
     ),
     (
+        "basic.buttons.toggle_on",
+        "button.body(NONE).stroke.width",
+        TOGGLE_ON_REST_WIDTH,
+    ),
+    (
         "basic.buttons.dialog_default",
         "button.body(NONE; variant=Primary).corners",
         DIALOG_DEFAULT_CORNERS,
@@ -2088,6 +2093,16 @@ pub(crate) const TOGGLE_ON_REST_EDGE: &str = "egui: the toggle while on is egui'
      where one does, Button::stroke draws that pen instead, so this colour is not drawn on it: \
      windows-11 states it, ToggleButtonBorderBrushChecked's three sides, \
      ControlStrokeColorOnAccentDefault #14FFFFFF, the same under the pointer and none pressed \
+     (pages::basic::toggle_on_pen)";
+
+/// The route of the On toggle's resting outline width, which the checked pen covers where the
+/// theme states one, as [`TOGGLE_ON_REST_EDGE`] the colour.
+pub(crate) const TOGGLE_ON_REST_WIDTH: &str = "egui: the toggle while on is egui's selected \
+     button, which keeps the widget state's pen, visuals.widgets.*.bg_stroke.width in the button \
+     scope, which next::apply sets from this (mapping.toml, button.border.line_width; egui \
+     0.37.0 src/style.rs, Style::interact_selectable), where no rule states \
+     button.body(CHECKED).stroke for CHECKED; where one does, Button::stroke draws that pen at \
+     its own width instead, so this width is not drawn on it: windows-11 states it \
      (pages::basic::toggle_on_pen)";
 
 /// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
