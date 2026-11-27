@@ -11545,6 +11545,19 @@ pub(crate) fn icon_button(
             "state",
             "disabled: Button::disabled(true), gpui-component's disabled style under next::geometry::toolbar_button_rest and next::geometry::toolbar_button_disabled, never hovered or pressed",
         );
+        let label = next_value(cx, |r| {
+            next::state_text_color_of(&r.toolbar.button_label(WidgetState::DISABLED))
+        })
+        .flatten();
+        if let Some(colour) = label {
+            button_info = button_info.instance(
+                "label colour",
+                format!(
+                    "toolbar.button_label(DISABLED).color, a rule stating it for the state {}, next::geometry::toolbar_button_disabled's text colour: the label's, and the icon's where no rule tints it for the state",
+                    as_rgba(colour)
+                ),
+            );
+        }
         next_native_info(
             button.disabled(true),
             cx,

@@ -809,6 +809,14 @@ const TOOL_CORNERS: &str = "the toolbar cell rounds a tool button by the corners
      `*.normal.toolbar_toggle_on` `box`, `corner_*`; native-theme/src/next/presets/macos.rs, \
      `toolbar_button_corners`); 0.7.2 rounded it by button.border.corner_radius";
 
+const TOOL_DISABLED_LABEL: &str = "the toolbar's Disabled cell letters a disabled tool button, and \
+     loads its icon, in the label the preset states for the disabled state, \
+     toolbar.button_label(DISABLED).color (native-theme/src/next/presets/kde.rs, \
+     `toolbar_button_disabled_foreground`; windows.rs, material.rs and macos.rs, each `toolbar` \
+     builder's DISABLED rule, which cite their sources); 0.7.2's Disabled toolbar cell is a copy \
+     of its Normal cell, the 0.7.2 model stating no disabled tool button, and a disabled tool \
+     button takes the Normal cell's resting label, faded by disabled_alpha";
+
 const TOOL_DISABLED_FILL: &str = "the toolbar's Disabled cell fills a disabled tool button with the \
      fill the macOS preset states for it: on macos-monterey none, the title bar inside the rest \
      ring (measured, os-probe run 45634379188, macOS 15, toolbar states sheet, \
@@ -1733,6 +1741,13 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.inactive.weak_bg_fill",
         Cause::Stated(home!(toolbar.button(DISABLED).fill)),
         TOOL_DISABLED_FILL,
+    ),
+    d(
+        "Toolbar/Disabled",
+        &[K, W, M, T, M3],
+        ".visuals.widgets.{noninteractive,inactive}.fg_stroke.color",
+        Cause::Stated(home!(toolbar.button_label(DISABLED).color)),
+        TOOL_DISABLED_LABEL,
     ),
     s(
         "Tab",

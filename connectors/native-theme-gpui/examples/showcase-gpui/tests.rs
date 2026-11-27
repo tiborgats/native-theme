@@ -24044,6 +24044,69 @@ fn the_disabled_tool_button_takes_the_stated_disabled_look(cx: &mut TestAppConte
     );
 }
 
+/// The Basic page's Save, a disabled tool button, under kde-breeze light,
+/// material-3 light and windows-11 light, each stating
+/// `toolbar.button_label(DISABLED).color`: the Button built for it carries
+/// that colour as its text colour, which its label and its untinted icon
+/// take, and its info names it; under adwaita light, which states none,
+/// no label colour line, and gpui-component's own disabled text stands.
+#[gpui::test]
+fn the_disabled_tool_button_takes_the_stated_disabled_label(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let line = |info: &Option<WidgetInfo>| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "label colour")
+                .map(|n| n.text.clone())
+        })
+    };
+    for (preset, stated) in [
+        ("kde-breeze", true),
+        ("material-3", true),
+        ("windows-11", true),
+        ("adwaita", false),
+    ] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset} installs no 0.8.0 theme");
+        let Some(r) = r else { return };
+        let label = native_theme_gpui::next::state_text_color_of(
+            &r.toolbar.button_label(WidgetState::DISABLED),
+        );
+        assert_eq!(
+            label.is_some(),
+            stated,
+            "{preset} light's toolbar.button_label(DISABLED).color is not as the test expects"
+        );
+        let built = native_theme_gpui::next::geometry::toolbar_button_disabled(&r)
+            .ok()
+            .and_then(|s| s.text.color);
+        assert_eq!(
+            built, label,
+            "{preset}: Save is not lettered in the disabled label"
+        );
+        let info = settle_on(&mut cx, &showcase, "basic-icon-save");
+        let want = label.map(|c| {
+            format!(
+                "toolbar.button_label(DISABLED).color, a rule stating it for the state {}, ",
+                as_rgba(c)
+            )
+        });
+        let got = line(&info);
+        assert_eq!(
+            got.as_deref()
+                .zip(want.as_deref())
+                .map(|(got, want)| got.starts_with(want)),
+            want.as_ref().map(|_| true),
+            "{preset}: Save's info does not name the disabled label: {got:?}"
+        );
+        assert_eq!(got.is_some(), stated, "{preset}: {got:?}");
+    }
+}
+
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
 /// with `toolbar.button(CHECKED).fill` and its info, titled a checked

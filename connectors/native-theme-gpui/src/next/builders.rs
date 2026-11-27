@@ -967,13 +967,26 @@ fn toolbar_capsule(r: &ResolvedTheme, style: StyleRefinement) -> Mapped<StyleRef
 /// each where a rule states it for `DISABLED` (module doc of `next`), else
 /// unset, so the rest refinement upstream replays over the disabled style
 /// (gpui-component 0.10.0 `button/button.rs:843-850`) stands, the theme's
-/// value at rest (spec §10, rule 0). A disabled Button only: upstream
-/// replays the refinement at rest too.
+/// value at rest (spec §10, rule 0); and the text colour
+/// `toolbar.button_label(DISABLED).color` where a rule states it for
+/// `DISABLED`, else unset, and the disabled style's own text colour stands
+/// (gpui-component 0.10.0 `button/button.rs:1374-1385`,
+/// `ButtonVariant::disabled`). An untinted `Icon` takes the Button's text
+/// colour (gpui-component 0.10.0 `src/icon.rs`, `into_svg`), so it follows
+/// the label. A disabled Button only: upstream replays the refinement at
+/// rest too.
 pub(crate) fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let disabled = r.toolbar.button(WidgetState::DISABLED);
     let style = match state_fill_of(&disabled, "toolbar.button(DISABLED).fill")? {
         Some(fill) => StyleRefinement::default().bg(fill),
         None => StyleRefinement::default(),
+    };
+    let style = match state_text_color(
+        &r.toolbar.button_label(WidgetState::DISABLED),
+        "toolbar.button_label(DISABLED).color",
+    )? {
+        Some(color) => style.text_color(color),
+        None => style,
     };
     Ok(if disabled.from_state.contains(PartStated::CORNERS) {
         style.rounded(px(

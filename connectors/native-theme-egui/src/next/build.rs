@@ -1441,6 +1441,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
                 },
             }
         },
+        toolbar_label: state_text_color(&r.toolbar.button_label(S::DISABLED)),
     }
 }
 

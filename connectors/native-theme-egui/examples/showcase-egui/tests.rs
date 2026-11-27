@@ -12442,6 +12442,11 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::SAVE_ICON_DISABLED,
         ),
         (
+            "basic.icons.save.icon",
+            "toolbar.button_label(DISABLED).color",
+            i::SAVE_DISABLED_LABEL,
+        ),
+        (
             "basic.icons.edit",
             "toolbar.button(NONE).fill",
             i::EDIT_REST_FILL,
@@ -14766,6 +14771,137 @@ fn the_disabled_tool_button_takes_the_stated_disabled_look() -> Result<(), Strin
         )?],
         "Save's icon is not loaded in the patched toolbar.button_icon(DISABLED).color"
     );
+    Ok(())
+}
+
+/// The Basic page's Save, a disabled tool button, under kde-breeze, material-3 and windows-11
+/// light, a bundled Material icon: each states `toolbar.button_label(DISABLED).color` and none
+/// `toolbar.button_icon(DISABLED).color`, so the toolbar's Disabled cell letters it in that
+/// label, `inactive.fg_stroke` and `noninteractive.fg_stroke`, and its icon, loaded in the
+/// scope's text colour, is painted from the texture Save's icon loaded in that label takes (a
+/// cache hit of the same key in the same context, so an icon loaded in any other colour fails),
+/// not the label at rest.
+#[cfg(feature = "material-icons")]
+#[test]
+fn the_disabled_tool_button_takes_the_stated_disabled_label() -> Result<(), String> {
+    use native_theme::icons::IconRole;
+    use native_theme::next::{IconStated, TextStated, WidgetState};
+    use native_theme_egui::icons::{IconKey, custom_icon_to_image};
+    use native_theme_egui::next::to_color32;
+    use native_theme_egui::{Role, RoleVariant};
+    const ID: &str = "basic.icons.save";
+    for preset in ["kde-breeze", "material-3", "windows-11"] {
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        harness.state_mut().settings.icon = IconSetChoice::Material;
+        harness.run_steps(SETTLE);
+        harness.remove_cursor();
+        harness.run_steps(3);
+        let r = harness
+            .state()
+            .atlas
+            .next_shown(&harness.ctx)
+            .cloned()
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let label = r.toolbar.button_label(WidgetState::DISABLED);
+        if !label.from_state.contains(TextStated::COLOR) {
+            return Err(format!(
+                "{preset} states no toolbar.button_label(DISABLED).color"
+            ));
+        }
+        if r.toolbar
+            .button_icon(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+        {
+            return Err(format!(
+                "{preset} states toolbar.button_icon(DISABLED).color"
+            ));
+        }
+        let want = to_color32(label.color);
+        let rest = to_color32(r.toolbar.button_label(WidgetState::NONE).color);
+        if want == rest {
+            return Err(format!("{preset}: the disabled label is the label at rest"));
+        }
+        let mut cell = egui::Style::default();
+        harness
+            .state()
+            .atlas
+            .role_modifier(egui::Theme::Light, Role::Toolbar, RoleVariant::Disabled)
+            .apply(&mut cell);
+        let w = &cell.visuals.widgets;
+        assert_eq!(
+            [w.inactive.fg_stroke.color, w.noninteractive.fg_stroke.color],
+            [want; 2],
+            "{preset}: the Disabled toolbar cell is not lettered in the disabled label"
+        );
+        let size = crate::demo::tool_icon_size(Some(&r)).ok_or("no toolbar icon size")?;
+        let (set, icon_theme) = harness.state().chosen_icons();
+        let role = IconRole::ActionSave;
+        let load = |ctx: &egui::Context, colour, side: u32| -> Result<egui::TextureId, String> {
+            let mut key = IconKey::role(role, set).size(size).tint(colour);
+            if let Some(name) = icon_theme.as_deref() {
+                key = key.icon_theme(name);
+            }
+            let image = custom_icon_to_image(ctx, &role, &key).ok_or("the set has no Save icon")?;
+            let hint = egui::SizeHint::Size {
+                width: side,
+                height: side,
+                maintain_aspect_ratio: false,
+            };
+            let source = image.source(ctx).clone();
+            match source.load(ctx, egui::TextureOptions::default(), hint) {
+                Ok(egui::load::TexturePoll::Ready { texture }) => Ok(texture.id),
+                Ok(egui::load::TexturePoll::Pending { .. }) => {
+                    Err("Save's icon is still loading".to_owned())
+                }
+                Err(error) => Err(format!("Save's icon is not loaded: {error}")),
+            }
+        };
+        // Save in view where the page lays it out below the fold (material-3's): egui paints
+        // only what the window shows (`egui-0.37.0/src/widgets/button.rs:369-374`).
+        let save_node = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.element.as_deref() == Some(ID))
+            .map(|r| r.id.accesskit_id())
+            .ok_or_else(|| format!("{preset}: Save is not recorded"))?;
+        harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == save_node))
+            .next()
+            .ok_or_else(|| format!("{preset}: Save has no AccessKit node"))?
+            .scroll_to_me();
+        // The scroll lands on the third pass after the request (as the page scroll tests).
+        harness.run_steps(3);
+        let place = place_of(&harness, ID);
+        let painted: Vec<_> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.expand(1.0).contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| (b.fill_texture_id, r.rect.size()))
+                }
+                _ => None,
+            })
+            .collect();
+        // Loaded at the pixel size egui paints it at (egui-0.37.0 src/widgets/image.rs,
+        // Image::paint_at), its aspect not kept.
+        let side = |extent: f32| (harness.ctx.pixels_per_point() * extent).round() as u32;
+        let [(texture, painted_size)] = painted[..] else {
+            return Err(format!(
+                "{preset}: Save's icon is not painted once: {painted:?}"
+            ));
+        };
+        let in_label = load(&harness.ctx, want, side(painted_size.x))?;
+        let at_rest = load(&harness.ctx, rest, side(painted_size.x))?;
+        assert_eq!(
+            texture, in_label,
+            "{preset}: Save's icon is not loaded in toolbar.button_label(DISABLED).color \
+             (at rest {at_rest:?}, size {size}, painted {painted_size:?})"
+        );
+    }
     Ok(())
 }
 

@@ -332,16 +332,18 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "basic.icons.save",
-        &[
-            "toolbar.button_label(NONE).color",
-            "toolbar.button_label(DISABLED).color",
-        ],
-        "not drawn: no builder reads the toolbar's labels; a disabled Button is lettered in gpui-component's own disabled text colour, muted_foreground at half alpha, its label shown only where the set has no icon for it (gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled)",
+        &["toolbar.button_label(NONE).color"],
+        "not drawn: no builder reads the toolbar's label at rest, and a disabled Button is lettered in its disabled text colour, toolbar.button_label(DISABLED).color where a rule states it, else gpui-component's own (demo::icon_button; gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled)",
+    ),
+    (
+        "basic.icons.save",
+        &["toolbar.button_label(DISABLED).color"],
+        "gpui: next::geometry::toolbar_button_disabled's text colour, where a rule states it for DISABLED, replayed over gpui-component's disabled style: the label's where the set has no icon for the button, and the icon's where no rule states toolbar.button_icon(DISABLED).color, an untinted Icon taking the Button's text colour (demo::icon_button; native-theme-gpui next/builders.rs, toolbar_button_disabled; gpui-component 0.10.0 button/button.rs:834-850, styles; src/icon.rs, into_svg)",
     ),
     (
         "basic.icons.save",
         &["colors.window.foreground_muted"],
-        "gpui: ThemeColor muted_foreground, which next::apply sets from it: gpui-component letters a disabled Button in it at half alpha, the label's colour where the set has no icon for it and the icon's where no rule tints it for DISABLED (gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled; src/icon.rs, into_svg)",
+        "gpui: ThemeColor muted_foreground, which next::apply sets from it: where no rule states toolbar.button_label(DISABLED).color, gpui-component letters a disabled Button in it at half alpha, the label's colour where the set has no icon for it and the icon's where no rule tints it for DISABLED (gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled; src/icon.rs, into_svg)",
     ),
     (
         "basic.icons.save",
@@ -351,7 +353,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.icons.save",
         &["toolbar.button_icon(DISABLED).color"],
-        "gpui: the SVG Icon's colour, next::geometry::toolbar_button_icon_color in DISABLED, where a rule states it for DISABLED; else the disabled Button's text colour, muted_foreground at half alpha (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, into_svg; button/button.rs:1374-1385, ButtonVariant::disabled)",
+        "gpui: the SVG Icon's colour, next::geometry::toolbar_button_icon_color in DISABLED, where a rule states it for DISABLED; else the disabled Button's text colour, toolbar.button_label(DISABLED).color where a rule states it (next::geometry::toolbar_button_disabled), else muted_foreground at half alpha (demo::tool_icon_tinted; gpui-component 0.10.0 src/icon.rs, into_svg; button/button.rs:1374-1385, ButtonVariant::disabled)",
     ),
     (
         "basic.icons.edit",

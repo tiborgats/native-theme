@@ -90,6 +90,8 @@ pub(crate) struct VariantSource {
     pub link: Option<Rgba>,
     /// The disabled tool button's capsule, each value where a rule states it for the state.
     pub toolbar: Capsule,
+    /// The disabled tool button's label, where a rule states it for the state.
+    pub toolbar_label: Option<Rgba>,
 }
 
 impl VariantSource {
@@ -182,6 +184,7 @@ impl VariantSource {
             link: Some(t.link.disabled_text_color),
             // the 0.7.2 model states no disabled tool button
             toolbar: Capsule::default(),
+            toolbar_label: None,
         }
     }
 }
@@ -666,7 +669,9 @@ pub(crate) fn disabled_cell(
         // A disabled tool button is a `Button` in `WidgetState::Inactive`, filled from
         // `weak_bg_fill` and rounded by `corner_radius` (egui 0.37.0
         // `src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`): the capsule a rule states
-        // for the disabled state.
+        // for the disabled state. It is lettered in `inactive`'s `fg_stroke`, and an icon loaded
+        // in the scope's text colour takes `noninteractive`'s (`Visuals::text_color`): the label
+        // a rule states for the disabled state, in both.
         Role::Toolbar => {
             let Capsule { fill, radius: r } = src.toolbar;
             let entry = &mut v.widgets.inactive;
@@ -676,6 +681,7 @@ pub(crate) fn disabled_cell(
             if let Some((r, path)) = r {
                 entry.corner_radius = radius(path, entry.corner_radius, r, notes);
             }
+            labels(&mut v.widgets, src.toolbar_label);
         }
         _ => return None,
     }

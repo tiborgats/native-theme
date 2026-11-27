@@ -208,7 +208,10 @@ pub fn ghost_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// 0.8.0 builder with no 0.7.2 one, applied after [`toolbar_button_rest`]:
 /// `toolbar.button(DISABLED)`'s fill and corners, each where a rule states
 /// it for the state; nothing where none does, and the rest refinement, which
-/// upstream replays over the disabled style, stands. A disabled Button only.
+/// upstream replays over the disabled style, stands. The text colour
+/// `toolbar.button_label(DISABLED).color` where a rule states it for the
+/// state, which an untinted `Icon` takes too; else the disabled style's own.
+/// A disabled Button only.
 pub fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::toolbar_button_disabled(r)
 }
@@ -378,6 +381,36 @@ mod tests {
                 "kde-breeze {:?}",
                 ctx.scheme
             );
+        }
+    }
+
+    /// A disabled toolbar button is lettered in
+    /// `toolbar.button_label(DISABLED).color` where a rule states it for
+    /// `DISABLED`, which kde-breeze, material-3 and windows-11 do, in both
+    /// schemes; on every preset that states none the refinement sets no text
+    /// colour, and gpui-component's disabled one stands.
+    #[test]
+    fn a_disabled_toolbar_button_takes_the_disabled_label() {
+        use native_theme::next::TextStated;
+        for &preset in Preset::ALL {
+            for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+                let r = Theme::preset(preset).resolve(&ctx);
+                let label = r.toolbar.button_label(WidgetState::DISABLED);
+                let stated = label.from_state.contains(TextStated::COLOR);
+                if matches!(
+                    preset,
+                    Preset::KdeBreeze | Preset::Material3 | Preset::Windows11
+                ) {
+                    assert!(stated, "{preset:?} {:?} states no label", ctx.scheme);
+                }
+                let want = stated.then(|| super::super::hsla(label.color));
+                assert_eq!(
+                    toolbar_button_disabled(&r).map(|s| s.text.color),
+                    Ok(want),
+                    "{preset:?} {:?}",
+                    ctx.scheme
+                );
+            }
         }
     }
 
