@@ -48,6 +48,38 @@ fn a_primary_button_keeps_the_accent_until_disabled() {
     }
 }
 
+/// A checked tonal button keeps its checked look under the pointer and
+/// pressed: hovered on-secondary at the hover state layer's opacity over
+/// secondary, pressed secondary alone, not the unchecked hover and pressed
+/// fills; the constants are that composite, as a seed derives it again.
+#[test]
+fn a_checked_tonal_button_hovered_or_pressed_keeps_its_checked_look() {
+    for (theme, c) in both_schemes().iter().zip([LIGHT, DARK]) {
+        let mut derived = c;
+        derive_state_layers(&mut derived);
+        assert_eq!(
+            derived.button_checked_hover.to_srgb8(),
+            c.button_checked_hover.to_srgb8()
+        );
+        let body = |state| theme.button.body(ButtonQuery::new(state)).fill;
+        let (hover, pressed) = (WidgetState::HOVER, WidgetState::PRESSED);
+        assert_eq!(
+            body(WidgetState::CHECKED | hover),
+            Paint::Solid(c.button_checked_hover)
+        );
+        assert_eq!(
+            body(WidgetState::CHECKED | pressed),
+            Paint::Solid(c.secondary)
+        );
+        assert_eq!(
+            body(WidgetState::CHECKED | pressed),
+            body(WidgetState::CHECKED)
+        );
+        assert_ne!(body(WidgetState::CHECKED | hover), body(hover));
+        assert_ne!(body(WidgetState::CHECKED | pressed), body(pressed));
+    }
+}
+
 /// The flat button, M3's text button: no container and no outline at rest;
 /// hovered and pressed primary at the state layer's opacities, disabled the
 /// on-surface container at the text button's disabled opacity; its label

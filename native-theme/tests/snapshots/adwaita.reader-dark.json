@@ -382,6 +382,24 @@
           }
         },
         {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(1, 1, 1, 0.35)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "#ffffff66"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#3584e4",

@@ -330,6 +330,34 @@ fn a_flat_button_lays_the_window_text_s_layers() {
     }
 }
 
+/// A checked push button keeps its checked look under the pointer and
+/// pressed: the window text at libadwaita's 35 and 40 %
+/// (`$button_checked_hover_color`, `$button_checked_active_color`), not the
+/// unchecked hover and pressed fills, each stated for its state.
+#[test]
+fn a_checked_push_button_hovered_or_pressed_keeps_its_checked_look() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
+        let body = |state| theme.button.body(ButtonQuery::new(state));
+        for (pointer, alpha) in [
+            (WidgetState::HOVER, BUTTON_CHECKED_HOVER_ALPHA),
+            (WidgetState::PRESSED, BUTTON_CHECKED_PRESSED_ALPHA),
+        ] {
+            let checked = body(WidgetState::CHECKED | pointer);
+            assert_eq!(
+                checked.fill,
+                Paint::Solid(c.row_foreground.mul_alpha(alpha)),
+                "{pointer:?}"
+            );
+            assert_ne!(checked.fill, body(pointer).fill, "{pointer:?}");
+            assert!(checked.from_state.contains(PartStated::FILL), "{pointer:?}");
+        }
+    }
+}
+
 /// A disabled check, radio and off switch state their rest fill for
 /// `DISABLED`, the fade alone changing them; checked, each keeps its checked
 /// fill, the accent.

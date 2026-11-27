@@ -2302,11 +2302,13 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// colour, radius and width (0.7.2's `resolve_border_inheritance`; the
 /// default shadow, which is on), outside the fill (`InnerBorderEdge`),
 /// padded, of least sizes; its hovered, pressed and disabled fills, checked
-/// the accent's fill; the primary variant filled with the accent's fill, its
-/// outline inside its edge (`OuterBorderEdge`), lettered in the accent's text
-/// (0.7.2: `primary_text_color` is `defaults.accent_text_color` where
-/// unstated). Its label is the window's text, pressed the muted text, checked
-/// the accent's text, disabled the disabled text. Under high contrast the
+/// the accent's fill, checked and hovered or pressed the accent's secondary
+/// and tertiary fills, pressed in no outline; the primary variant filled with
+/// the accent's fill, its outline inside its edge (`OuterBorderEdge`),
+/// lettered in the accent's text (0.7.2: `primary_text_color` is
+/// `defaults.accent_text_color` where unstated). Its label is the window's
+/// text, pressed the muted text, checked the accent's text, checked and
+/// pressed the accent's secondary text, disabled the disabled text. Under high contrast the
 /// fill is the button face and the label and the outline the button text
 /// ([`HighContrast`]), hovered and pressed the highlight text behind the
 /// highlight, the outline hovered the highlight, pressed the highlight text
@@ -2392,6 +2394,42 @@ fn button(
             hc.highlight
                 .or(roles.window.border)
                 .map(|color| outside_stroke(layout.border_width, color)),
+        )
+        // The push button checked is WinUI's ToggleButton checked, after the HOVER and PRESSED
+        // rules so that its own win (ToggleButton_themeresources.xaml at microsoft-ui-xaml 2.5.1;
+        // `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-022). Hovered,
+        // ToggleButtonBackgroundCheckedPointerOver = AccentFillColorSecondaryBrush, the accent's
+        // fill at ACCENT_FILL_SECONDARY_OPACITY (:12, :128); under high contrast
+        // SystemColorButtonTextColorBrush (:70) in the same outline (:94). Pressed,
+        // ToggleButtonBackgroundCheckedPressed = AccentFillColorTertiaryBrush, at
+        // ACCENT_FILL_TERTIARY_OPACITY (:13, :129), in ToggleButtonBorderBrushCheckedPressed =
+        // ControlFillColorTransparentBrush, no outline (:37, :153), not the unchecked pressed one;
+        // under high contrast SystemColorHighlightTextColorBrush filling it and its outline (:71,
+        // :95).
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(hc.button_text.unwrap_or(
+                c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY),
+            ))],
+        )
+        .rules(
+            hc.button_text
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
+            hc.button_text
+                .map(|color| outside_stroke(layout.border_width, color)),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [
+                fill(
+                    hc.highlight_text
+                        .unwrap_or(c.accent_fill.mul_alpha(ACCENT_FILL_TERTIARY_OPACITY)),
+                ),
+                hc.highlight_text
+                    .map_or(PartProp::Stroke(Stroke::None), |color| {
+                        outside_stroke(layout.border_width, color)
+                    }),
+            ],
         )
         .rule(
             primary(),
@@ -2491,6 +2529,23 @@ fn button(
         [TextProp::Color(
             hc.highlight.unwrap_or(c.window_foreground_muted),
         )],
+    )
+    // Checked and pressed, ToggleButtonForegroundCheckedPressed = TextOnAccentFillColorSecondary
+    // (ToggleButton_themeresources.xaml:25, :141 at microsoft-ui-xaml 2.5.1; `docs/facts/windows/
+    // button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-022), after the PRESSED rule so that it
+    // wins; under high contrast SystemColorHighlightColorBrush (:83). Checked and hovered, the
+    // checked label, TextOnAccentFillColorPrimary (:24), which the CHECKED rule after HOVER keeps;
+    // under high contrast SystemColorButtonFaceColorBrush (:82).
+    .rule(
+        RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+        [TextProp::Color(
+            hc.highlight.unwrap_or(c.accent_text_secondary),
+        )],
+    )
+    .rules(
+        hc.button_face
+            .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
+        hc.button_face.map(TextProp::Color),
     )
     .rule(primary(), [TextProp::Color(roles.accent.foreground)])
     // Disabled, ButtonForegroundDisabled = TextFillColorDisabled (Button_themeresources.xaml:135 at
