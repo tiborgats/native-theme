@@ -42,7 +42,7 @@ const REGENERATE_HOMES: &str =
 /// homes of the same kind docs/showcase-elements.toml lists that none of
 /// them asks, which [`UNREAD_HOMES`] names: a flat button's own label at
 /// rest, hovered, pressed, focused and checked looks, a flat button's icon, a toolbar
-/// button's icon; and a home
+/// button's icon, the primary button's focused outline; and a home
 /// docs/showcase-elements.toml lists in a state none of them asks, whose
 /// rule reaches a state one asks: `toolbar.button(PRESSED|CHECKED)
 /// .stroke.color`, which `toolbar_button` asks as
@@ -50,12 +50,14 @@ const REGENERATE_HOMES: &str =
 /// under the pointer.
 const QUERIED_HOMES: &[&str] = &[
     "button.body(CHECKED).stroke.color",
+    "button.body(CHECKED; variant=Flat).fill",
     "button.body(CHECKED; variant=Flat).stroke.color",
     "button.body(DISABLED).stroke.color",
     "button.body(DISABLED; variant=Primary).stroke.color",
     "button.body(DISABLED|CHECKED).stroke.color",
     "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
     "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color",
+    "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
     "button.body(HOVER; variant=Flat).fill",
     "button.body(HOVER; variant=Flat).stroke.color",
     "button.body(HOVER; variant=Primary).stroke.color",
@@ -77,6 +79,7 @@ const QUERIED_HOMES: &[&str] = &[
     "button.icon(NONE; variant=Flat).color",
     "button.icon(PRESSED; variant=Flat).color",
     "button.icon(PRESSED|CHECKED; variant=Flat).color",
+    "button.label(CHECKED; variant=Flat).color",
     "button.label(HOVER; variant=Flat).color",
     "button.label(HOVER|CHECKED).color",
     "button.label(HOVER|CHECKED; variant=Flat).color",
@@ -105,7 +108,9 @@ const QUERIED_HOMES: &[&str] = &[
     "switch.thumb(HOVER|CHECKED).fill",
     "tab.tab(NONE).stroke.color",
     "toolbar.button(DISABLED).fill",
+    "toolbar.button(DISABLED).stroke.color",
     "toolbar.button(DISABLED|CHECKED).fill",
+    "toolbar.button(DISABLED|CHECKED).stroke.color",
     "toolbar.button(HOVER|CHECKED).fill",
     "toolbar.button(NONE).fill",
     "toolbar.button(NONE).stroke.color",
@@ -188,7 +193,24 @@ const UNREAD_HOMES: &[UnreadHome] = &[
         why: FLAT_BUTTON,
     },
     UnreadHome {
+        home: "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+        kind: "no receiver",
+        why: "an iced button takes no keyboard focus: it implements no `operate` for \
+             `Focusable`, and its status has no focused variant \
+             (`iced_widget-0.14.2/src/button.rs:257-273`, `:471-498`)",
+    },
+    UnreadHome {
         home: "button.label(NONE; variant=Flat).color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.label(CHECKED; variant=Flat).color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.body(CHECKED; variant=Flat).fill",
         kind: "no widget",
         why: FLAT_BUTTON,
     },

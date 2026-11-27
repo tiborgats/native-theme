@@ -710,7 +710,9 @@ in none of them:
 - **A button's and a slider's focus.** An iced button takes no keyboard
   focus (`iced_widget` 0.14.2 `src/button.rs:257-273`), so
   `button.focus_border_color` has no receiver, nor has a stroke stated for
-  a focused button (`button.body(FOCUS_VISIBLE)`, of a flat button too:
+  a focused button (`button.body(FOCUS_VISIBLE)`, of the primary button's
+  own outline, `button.body(FOCUS_VISIBLE; variant=Primary)`, and of a flat
+  button too:
   Breeze's flat button turns its pen Highlight when focused, as when
   hovered or pressed, and the showcase's flat buttons draw that pen hovered
   and pressed only), and iced's slider has no
@@ -889,7 +891,13 @@ rule 0).
   corners; iced lays a button out by its padding alone and draws the
   border on its bounds (`iced_widget` 0.14.2 `src/button.rs`, `layout` and
   `draw`), so another width moves no content. A state it states no checked
-  outline for keeps the unchecked button's there.
+  outline for keeps the unchecked button's there. A disabled checked
+  toolbar button is outlined in what the theme states for
+  `DISABLED | CHECKED` where it states the stroke for `CHECKED` or for
+  `DISABLED` (kde-breeze's, windows-11's and the macOS presets' checked
+  toolbar outlines), else in the outline at rest; one that is off, in
+  `toolbar.button(DISABLED)`'s stroke where a rule states it for `DISABLED`
+  (no preset does), else in the outline at rest.
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted

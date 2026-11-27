@@ -24,7 +24,8 @@ pub(crate) use native_theme_egui::next::{
 use native_theme_egui::Note;
 use native_theme_egui::egui::Color32;
 use native_theme_egui::native_theme::next::{
-    CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme,
+    CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme, TextStated,
+    TextStyle,
 };
 
 /// [`fill_of`] `part` at `home`: the fill where the theme states it, `None` where it does not,
@@ -68,6 +69,15 @@ pub(crate) fn ruled_fill(
 pub(crate) fn ruled_stroke(ruled: &PartStyle, part: &PartStyle) -> Option<Color32> {
     (ruled.from_state.contains(PartStated::STROKE) || part.from_state.contains(PartStated::STROKE))
         .then(|| stroke_color_of(part))
+        .flatten()
+}
+
+/// [`text_color_of`] `text` where the theme states the colour for a state's flag: `ruled`, the
+/// text queried with the flag alone, or `text`, the text's own query asking the flag, has its
+/// bit (spec §2, `from_state`, the two queries).
+pub(crate) fn ruled_text(ruled: &TextStyle, text: &TextStyle) -> Option<Color32> {
+    (ruled.from_state.contains(TextStated::COLOR) || text.from_state.contains(TextStated::COLOR))
+        .then(|| text_color_of(text))
         .flatten()
 }
 

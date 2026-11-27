@@ -665,9 +665,9 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
 /// The route of the primary button's own outline, which the Basic page hands its button per call.
 pub(crate) const PRIMARY_OUTLINE: &str = "egui: per call, Button::stroke, the primary button's outline, \
      button.body(<state>; variant=Primary).stroke, its width and colour, at rest where stated, \
-     hovered and pressed where a rule states it for the state, a translucent one laid inside \
-     composited over the button's fill; else the button scope's own entry for the state; \
-     focused, the scope's own (pages::basic, primary_pen)";
+     hovered, pressed and focused (FOCUS_VISIBLE) where a rule states it for the state, a \
+     translucent one laid inside composited over the button's fill; else the button scope's \
+     own entry for the state (pages::basic, primary_pen)";
 /// The route of the dialog's default button's outline: its own look where the theme gives it
 /// one, else the primary button's outline, both per call.
 pub(crate) const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke, in the state of the \
@@ -675,9 +675,9 @@ pub(crate) const DIALOG_DEFAULT_OUTLINE: &str = "egui: per call, Button::stroke,
      button's own frame (native-theme-egui next::default_button: button.body(DEFAULT).stroke, \
      hovered and pressed button.body(HOVER).stroke, focused button.body(FOCUS_VISIBLE).stroke \
      where a rule states each, else egui's own); else it is the primary button, filled as it is and outlined in \
-     button.body(<state>; variant=Primary).stroke at rest where stated, hovered and pressed \
-     where a rule states it for the state, else in the button scope's own entry for the state, \
-     which this home gives; focused, the scope's own (pages::basic, primary_pen)";
+     button.body(<state>; variant=Primary).stroke at rest where stated, hovered, pressed and \
+     focused (FOCUS_VISIBLE) where a rule states it for the state, else in the button scope's \
+     own entry for the state, which this home gives (pages::basic, primary_pen)";
 /// The route of the primary button's own corners: egui reads them nowhere.
 pub(crate) const PRIMARY_CORNERS_UNREAD: &str = "not drawn: the primary button is egui's selected Button in \
      the button scope (pages::basic, primary), rounded as the push button, by \
@@ -768,6 +768,111 @@ pub(crate) const FLAT_PRESSED_LABEL: &str = "egui: per call, the flat button's l
      pressed or focused, egui's one active entry, visuals.widgets.active.fg_stroke, \
      button.label(PRESSED; variant=Flat).color where a rule states it for PRESSED, else egui's \
      own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+
+/// The route of the push button's hovered and pressed fills on a flat button (the Pages menu
+/// button, the side-panel toggle), which `next::flat_button` replaces in the scope per call.
+pub(crate) const FLAT_PUSH_FILL: &str = "not drawn: next::flat_button lays the flat button's own \
+     fills over the scope's hovered and active entries in its place, button.body(HOVER; \
+     variant=Flat).fill and button.body(PRESSED; variant=Flat).fill where a rule states them for \
+     the state, else egui's own treatment of the state (native-theme-egui next::flat_button; \
+     demo::flat); the side-panel toggle while open is filled in its checked fill of the state \
+     (chrome::toggle_checked_in)";
+/// As [`FLAT_PUSH_FILL`], of the push button's hovered and pressed labels.
+pub(crate) const FLAT_PUSH_LABEL: &str = "not drawn: next::flat_button lays the flat button's \
+     own labels over the scope's hovered and active entries in its place, button.label(HOVER; \
+     variant=Flat).color and button.label(PRESSED; variant=Flat).color where a rule states them \
+     for the state, else egui's own treatment of the state (native-theme-egui next::flat_button; \
+     demo::flat); the side-panel toggle while open is lettered in its checked label of the state \
+     (chrome::toggle_checked_in)";
+/// As [`FLAT_PUSH_FILL`], of the push button's hovered and pressed outlines.
+pub(crate) const FLAT_PUSH_EDGE: &str = "not drawn: next::flat_button lays the flat button's own \
+     outlines over the scope's hovered and active entries in its place, button.body(HOVER; \
+     variant=Flat).stroke.color and button.body(PRESSED; variant=Flat).stroke.color where a rule \
+     states them for the state, else egui's own treatment of the state (native-theme-egui \
+     next::flat_button; demo::flat); the side-panel toggle while open takes its checked pens \
+     where stated (chrome::toggle_checked_pens)";
+
+/// The route of the Pages menu button's caret's colour: the caret is loaded tinted before the
+/// flat button's states are laid over the scope, in the flat button's icon colour of the state
+/// of the button's previous response where stated.
+pub(crate) const MENU_ICON_COLOUR: &str = "egui: per call, the colour the caret loads in, \
+     button.icon(NONE; variant=Flat).color where stated, a colour stated at rest holding under \
+     the pointer and pressed where no rule states one for the state, as egui changes an image in \
+     no state; else the text colour of the Ui it is laid out in, visuals.text_color() \
+     (chrome::toggle_icon_colour, demo::loaded_in, demo::role_image; chrome::page_tabs)";
+/// The route of the Pages menu button's caret's colour under the pointer.
+pub(crate) const MENU_ICON_HOVER: &str = "egui: per call, the colour the caret loads in under \
+     the pointer, in the state of the menu button's previous response, where stated \
+     (chrome::toggle_icon_colour, as demo::tool_icon_color the tool buttons'; chrome::page_tabs)";
+/// The route of the Pages menu button's caret's colour pressed.
+pub(crate) const MENU_ICON_PRESSED: &str = "egui: per call, the colour the caret loads in \
+     pressed, in the state of the menu button's previous response, where stated \
+     (chrome::toggle_icon_colour, as demo::tool_icon_color the tool buttons'; chrome::page_tabs)";
+/// The route of the flat button's label colour at rest on the Pages menu button's caret.
+pub(crate) const MENU_ICON_LABEL: &str = "not drawn: the caret loads in the flat button's icon \
+     colour of the button's state where stated (chrome::toggle_icon_colour), else in the text \
+     colour of the Ui it is laid out in, visuals.text_color(), never in the flat button's label \
+     (demo::role_image; chrome::page_tabs)";
+/// The route of the side-panel toggle's label colours on its icon, which loads in an icon
+/// colour or the bar's text, not in the toggle's label.
+pub(crate) const TOGGLE_ICON_LABEL: &str = "not drawn: the toggle's icon loads in the flat button's icon \
+     colour of the toggle's state where stated (chrome::toggle_icon_colour), else in the status \
+     bar's text, never in the toggle's label (chrome::status_bar)";
+
+/// The route of the open side-panel toggle's checked fill, the flat button's.
+pub(crate) const TOGGLE_OPEN_FILL: &str = "egui: per call, Button::fill, the toggle's fill while \
+     the side panel is open, in the state of its previous response: where a rule states \
+     button.body(CHECKED; variant=Flat).fill for CHECKED, at rest this, under the pointer \
+     button.body(HOVER|CHECKED; variant=Flat).fill and pressed button.body(PRESSED|CHECKED; \
+     variant=Flat).fill, each also where a rule for that state with CHECKED states it (the query \
+     asking CHECKED); else egui's own selected button's in that state, visuals.selection.bg_fill \
+     (chrome::ghost_button, chrome::toggle_checked_in)";
+/// The route of the open side-panel toggle's checked label, the flat button's.
+pub(crate) const TOGGLE_OPEN_LABEL: &str = "egui: per call, the toggle's label colour while the \
+     side panel is open, in the state of its previous response: where a rule states \
+     button.label(CHECKED; variant=Flat).color for CHECKED, at rest this, under the pointer \
+     button.label(HOVER|CHECKED; variant=Flat).color and pressed button.label(PRESSED|CHECKED; \
+     variant=Flat).color, each also where a rule for that state with CHECKED states it (the query \
+     asking CHECKED); else egui's own selected button's in that state, visuals.selection.stroke; \
+     an icon shown in the label's place keeps the colour it loads in (chrome::ghost_button, \
+     chrome::toggle_checked_in)";
+/// The route of the push button's checked fill on the side-panel toggle, which draws the flat
+/// button's in its place.
+pub(crate) const TOGGLE_PUSH_CHECKED_FILL: &str = "not drawn: chrome::toggle_checked_in fills the \
+     open toggle with the flat button's button.body(CHECKED; variant=Flat).fill in its place, not \
+     the push button's (chrome::ghost_button)";
+/// As [`TOGGLE_PUSH_CHECKED_FILL`], of the checked label.
+pub(crate) const TOGGLE_PUSH_CHECKED_LABEL: &str = "not drawn: chrome::toggle_checked_in letters \
+     the open toggle in the flat button's button.label(CHECKED; variant=Flat).color in its place, \
+     not the push button's (chrome::ghost_button)";
+
+/// The route of Widget Info's Copy box's corners, which `info::widget_tab` takes from the push
+/// button.
+const COPY_CORNERS_NOT_LAYOUT: &str = "not drawn: info::widget_tab rounds the Copy box by \
+     button.body(NONE).corners where stated, else by the scope's own \
+     visuals.widgets.inactive.corner_radius, not by layout.corner_radius";
+
+/// The route of Widget Info's Copy box's top padding, which `info::widget_tab` lays out per side
+/// ([`copy_padding`]).
+pub(crate) const COPY_PAD_TOP: &str = "egui: per call, info::widget_tab pads the Copy box above \
+     its label by button.body(NONE).padding.top where stated, else by the scope's own \
+     spacing.button_padding.y (info::copy_padding)";
+/// As [`COPY_PAD_TOP`], of the right side.
+pub(crate) const COPY_PAD_RIGHT: &str = "egui: per call, info::widget_tab pads the Copy box right \
+     of its label by button.body(NONE).padding.right where stated, else by the scope's own \
+     spacing.button_padding.x (info::copy_padding)";
+/// As [`COPY_PAD_TOP`], of the bottom side.
+pub(crate) const COPY_PAD_BOTTOM: &str = "egui: per call, info::widget_tab pads the Copy box \
+     below its label by button.body(NONE).padding.bottom where stated, else by the scope's own \
+     spacing.button_padding.y (info::copy_padding)";
+/// As [`COPY_PAD_TOP`], of the left side.
+pub(crate) const COPY_PAD_LEFT: &str = "egui: per call, info::widget_tab pads the Copy box left \
+     of its label by button.body(NONE).padding.left where stated, else by the scope's own \
+     spacing.button_padding.x (info::copy_padding)";
+/// The route of the flat button's padding on Widget Info's Copy box, which the push button's pads.
+pub(crate) const COPY_PAD_FLAT: &str = "not drawn: info::widget_tab pads the Copy box by the \
+     push button's button.body(NONE).padding sides in its place, not the flat variant's \
+     (info::copy_padding)";
 
 /// The route of a disabled checked box's own label colour.
 const CHECKED_DISABLED_LABEL: &str = "egui: the check box's SelectedDisabled cell's text, \
@@ -893,8 +998,8 @@ pub(crate) const TOOL_REST_EDGE: &str = "not drawn: egui's toolbar scope reads n
 /// The homes of a toolbar button the toolbar scope or the showcase applies from the installed
 /// 0.8.0 theme, which no `mapping.toml` row holds, each with its route: the rest capsule, the
 /// hovered and pressed outline widths and labels, the edit switch's checked looks
-/// (`pages::basic::edit_look_at`) and the icon's colour (`demo::tool_icon_color`). Only the
-/// tool buttons and their icons ([`TOOL_BUTTONS`]) take them.
+/// (`pages::basic::edit_look_at`) and the icon's colour (`demo::tool_icon_color`). Only the tool
+/// buttons and their icons ([`TOOL_BUTTONS`]) take them.
 pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
     ("toolbar.button(NONE).stroke.color", TOOL_REST_EDGE),
     ("toolbar.button(NONE).stroke.width", TOOL_REST_EDGE),
@@ -928,6 +1033,58 @@ pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
         EDIT_ICON_PRESSED_CHECKED,
     ),
 ];
+
+/// The push button's padding sides and the flat button's, which a tool button takes per call
+/// (`demo::next_tool_button`) rather than as `mapping.toml`'s rows route them, each with its
+/// route: the tool buttons and their icons ([`TOOL_BUTTONS`]) and the flat buttons padded as tool
+/// buttons ([`TOOL_PADDED`]) take them.
+pub(crate) const TOOL_PADDING_ROUTES: [(&str, &str); 8] = [
+    ("button.body(NONE).padding.top", TOOL_PAD_TOP),
+    ("button.body(NONE).padding.right", TOOL_PAD_RIGHT),
+    ("button.body(NONE).padding.bottom", TOOL_PAD_BOTTOM),
+    ("button.body(NONE).padding.left", TOOL_PAD_LEFT),
+    ("button.body(NONE; variant=Flat).padding.top", TOOL_PAD_FLAT),
+    (
+        "button.body(NONE; variant=Flat).padding.right",
+        TOOL_PAD_FLAT,
+    ),
+    (
+        "button.body(NONE; variant=Flat).padding.bottom",
+        TOOL_PAD_FLAT,
+    ),
+    (
+        "button.body(NONE; variant=Flat).padding.left",
+        TOOL_PAD_FLAT,
+    ),
+];
+
+/// The flat buttons padded as tool buttons (`demo::next_tool_button`), by id, whose elements take
+/// [`TOOL_PADDING_ROUTES`]: the Pages menu button and the side-panel toggle.
+const TOOL_PADDED: [&str; 2] = ["chrome.page_tabs.menu", TOGGLE];
+
+/// The route of a tool button's top padding: egui pads a button by one pair
+/// (`Spacing::button_padding`), so the top side pads above and below.
+pub(crate) const TOOL_PAD_TOP: &str = "egui: per call, spacing.button_padding.y, above and below \
+     the icon or label, button.body(NONE).padding.top where stated, egui padding a button by one \
+     pair; else the scope's own (demo::next_tool_button, demo::tool_padding)";
+/// As [`TOOL_PAD_TOP`], of the left side, which pads left and right.
+pub(crate) const TOOL_PAD_LEFT: &str = "egui: per call, spacing.button_padding.x, left and right \
+     of the icon or label, button.body(NONE).padding.left where stated, egui padding a button by \
+     one pair; else the scope's own (demo::next_tool_button, demo::tool_padding)";
+/// The route of a tool button's bottom padding, which the top side's stands for.
+pub(crate) const TOOL_PAD_BOTTOM: &str = "not drawn where button.body(NONE).padding.top is \
+     stated: demo::next_tool_button pads below the icon or label by it, egui padding a button by \
+     one pair (Spacing::button_padding); where it is not, by the scope's own \
+     spacing.button_padding.y (demo::tool_padding)";
+/// The route of a tool button's right padding, which the left side's stands for.
+pub(crate) const TOOL_PAD_RIGHT: &str = "not drawn where button.body(NONE).padding.left is \
+     stated: demo::next_tool_button pads right of the icon or label by it, egui padding a button \
+     by one pair (Spacing::button_padding); where it is not, by the scope's own \
+     spacing.button_padding.x (demo::tool_padding)";
+/// The route of the flat button's padding on a tool button, which the push button's pads.
+pub(crate) const TOOL_PAD_FLAT: &str = "not drawn: demo::next_tool_button pads a tool button by \
+     the push button's button.body(NONE).padding, its top and left sides, in its place, not the \
+     flat variant's (demo::tool_padding)";
 
 /// The route of a tool button's fill at rest, the toolbar scope's rest capsule.
 pub(crate) const TOOL_REST_FILL: &str = "egui: the toolbar scope's resting fill, \
@@ -1493,6 +1650,16 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         PRIMARY_OUTLINE,
     ),
     (
+        "basic.buttons.primary",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+        PRIMARY_OUTLINE,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+        PRIMARY_OUTLINE,
+    ),
+    (
         "basic.buttons.dialog_default",
         "button.body(NONE; variant=Primary).stroke.color",
         DIALOG_DEFAULT_OUTLINE,
@@ -1523,27 +1690,34 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         DIALOG_DEFAULT_OUTLINE,
     ),
     (
+        "basic.buttons.dialog_default",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
         "chrome.status_bar.toggle",
         "button.body(CHECKED).fill",
-        "egui: per call, Button::fill, the toggle's fill while the side panel is open, in the \
-         state of its previous response: where a rule states button.body(CHECKED; \
-         variant=Flat).fill for CHECKED, at rest this, under the pointer \
-         button.body(HOVER|CHECKED; variant=Flat).fill and pressed button.body(PRESSED|CHECKED; \
-         variant=Flat).fill, each also where a rule for that state with CHECKED states it (the \
-         query asking CHECKED); else egui's own selected button's in that state, \
-         visuals.selection.bg_fill (chrome::ghost_button, chrome::toggle_checked_in)",
+        TOGGLE_PUSH_CHECKED_FILL,
     ),
     (
         "chrome.status_bar.toggle",
         "button.label(CHECKED).color",
-        "egui: per call, the toggle's label colour while the side panel is open, in the state of \
-         its previous response: where a rule states button.label(CHECKED; variant=Flat).color \
-         for CHECKED, at rest this, under the pointer button.label(HOVER|CHECKED; \
-         variant=Flat).color and pressed button.label(PRESSED|CHECKED; variant=Flat).color, each \
-         also where a rule for that state with CHECKED states it (the query asking CHECKED); \
-         else egui's own selected button's in that state, visuals.selection.stroke; an icon \
-         shown in the label's place keeps the colour it loads in (chrome::ghost_button, \
-         chrome::toggle_checked_in)",
+        TOGGLE_PUSH_CHECKED_LABEL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(CHECKED; variant=Flat).fill",
+        TOGGLE_OPEN_FILL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.label(CHECKED; variant=Flat).color",
+        TOGGLE_OPEN_LABEL,
     ),
     (
         "basic.buttons.toggle_on",
@@ -1641,6 +1815,11 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         TOGGLE_ON_REST_EDGE,
     ),
     (
+        "basic.buttons.toggle_on",
+        "button.body(NONE).stroke.width",
+        TOGGLE_ON_REST_WIDTH,
+    ),
+    (
         "basic.buttons.dialog_default",
         "button.body(NONE; variant=Primary).corners",
         DIALOG_DEFAULT_CORNERS,
@@ -1733,15 +1912,132 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          (pages::basic::edit_look_at, \
          demo::tool_icon_color)",
     ),
+    // The push button's states on the flat buttons, which next::flat_button replaces.
     (
         "chrome.status_bar.toggle",
         "button.body(HOVER).stroke.color",
-        TOGGLE_HOVER_EDGE,
+        FLAT_PUSH_EDGE,
     ),
     (
         "chrome.status_bar.toggle",
         "button.body(PRESSED).stroke.color",
-        TOGGLE_PRESSED_EDGE,
+        FLAT_PUSH_EDGE,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(HOVER).fill",
+        FLAT_PUSH_FILL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.label(HOVER).color",
+        FLAT_PUSH_LABEL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(HOVER).stroke.color",
+        FLAT_PUSH_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(PRESSED).stroke.color",
+        FLAT_PUSH_EDGE,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(HOVER).fill",
+        FLAT_PUSH_FILL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.label(HOVER).color",
+        FLAT_PUSH_LABEL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.body(PRESSED).fill",
+        FLAT_PUSH_FILL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        "button.label(PRESSED).color",
+        FLAT_PUSH_LABEL,
+    ),
+    // The flat buttons' icons, which load in no colour of the flat button's label.
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.label(NONE; variant=Flat).color",
+        MENU_ICON_LABEL,
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.icon(NONE; variant=Flat).color",
+        MENU_ICON_COLOUR,
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.icon(HOVER; variant=Flat).color",
+        MENU_ICON_HOVER,
+    ),
+    (
+        "chrome.page_tabs.menu.icon",
+        "button.icon(PRESSED; variant=Flat).color",
+        MENU_ICON_PRESSED,
+    ),
+    (
+        "chrome.status_bar.toggle.icon",
+        "button.label(NONE; variant=Flat).color",
+        TOGGLE_ICON_LABEL,
+    ),
+    (
+        "chrome.status_bar.toggle.icon",
+        "button.label(CHECKED; variant=Flat).color",
+        TOGGLE_ICON_LABEL,
+    ),
+    (
+        "chrome.info.copy",
+        "layout.corner_radius",
+        COPY_CORNERS_NOT_LAYOUT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.top",
+        COPY_PAD_TOP,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.right",
+        COPY_PAD_RIGHT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.bottom",
+        COPY_PAD_BOTTOM,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE).padding.left",
+        COPY_PAD_LEFT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.top",
+        COPY_PAD_FLAT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.right",
+        COPY_PAD_FLAT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.bottom",
+        COPY_PAD_FLAT,
+    ),
+    (
+        "chrome.info.copy",
+        "button.body(NONE; variant=Flat).padding.left",
+        COPY_PAD_FLAT,
     ),
     (
         "basic.buttons.dialog_default",
@@ -1762,31 +2058,6 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "basic.buttons.dialog_default",
         "button.body(PRESSED).stroke.color",
         DIALOG_DEFAULT_OUTLINE,
-    ),
-    (
-        "chrome.page_tabs.menu",
-        "button.body(HOVER).stroke.color",
-        FLAT_HOVER_EDGE,
-    ),
-    (
-        "chrome.page_tabs.menu",
-        "button.body(PRESSED).stroke.color",
-        FLAT_PRESSED_EDGE,
-    ),
-    (
-        "chrome.info.copy",
-        "button.body(HOVER).stroke.color",
-        FLAT_HOVER_EDGE,
-    ),
-    (
-        "chrome.info.copy",
-        "button.body(PRESSED).stroke.color",
-        FLAT_PRESSED_EDGE,
-    ),
-    (
-        "chrome.info.copy",
-        "button.body(HOVER).stroke.width",
-        FLAT_HOVER_WIDTH,
     ),
     (
         "basic.list.scrollbar",
@@ -2080,6 +2351,16 @@ pub(crate) const TOGGLE_ON_REST_EDGE: &str = "egui: the toggle while on is egui'
      ControlStrokeColorOnAccentDefault #14FFFFFF, the same under the pointer and none pressed \
      (pages::basic::toggle_on_pen)";
 
+/// The route of the On toggle's resting outline width, which the checked pen covers where the
+/// theme states one, as [`TOGGLE_ON_REST_EDGE`] the colour.
+pub(crate) const TOGGLE_ON_REST_WIDTH: &str = "egui: the toggle while on is egui's selected \
+     button, which keeps the widget state's pen, visuals.widgets.*.bg_stroke.width in the button \
+     scope, which next::apply sets from this (mapping.toml, button.border.line_width; egui \
+     0.37.0 src/style.rs, Style::interact_selectable), where no rule states \
+     button.body(CHECKED).stroke for CHECKED; where one does, Button::stroke draws that pen at \
+     its own width instead, so this width is not drawn on it: windows-11 states it \
+     (pages::basic::toggle_on_pen)";
+
 /// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
 /// the page tabs and the inspector's tabs.
 pub(crate) const TAB_ELEMENTS: [&str; 9] = [
@@ -2165,17 +2446,17 @@ pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
     ),
     (
         "switch.label(CHECKED).color",
-        "egui: not read by native-theme-egui-widgets Switch \
-         (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as the off \
-         one, in switch.label(NONE).color where stated, else the body text's, \
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it: the on label's colour where a rule for CHECKED states it, else the off \
+         label's, switch.label(NONE).color where stated, else the body text's, \
          typography.body.color (native-theme-egui-widgets switch.rs, Look::next_of)",
     ),
     (
         "switch.label(DISABLED|CHECKED).color",
         "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
-         paints it as switch.label(DISABLED).color, a disabled switch's label, where a rule \
-         states it for DISABLED; else colors.disabled_text (native-theme-egui-widgets switch.rs, \
-         Look::next_of)",
+         paints it, a disabled on switch's label, where the theme states it for DISABLED \
+         (switch.label(DISABLED), or switch.label(DISABLED|CHECKED) asking DISABLED); else \
+         colors.disabled_text (native-theme-egui-widgets switch.rs, Look::next_of)",
     ),
 ];
 
@@ -2184,7 +2465,8 @@ pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
 /// other ids name one element each; [`TAB_PER_CALL_ROUTES`] on [`TAB_ELEMENTS`]), the companion
 /// crate's switch where it reads a home of its label ([`SWITCH_LABEL_ROUTES`]), the toolbar
 /// scope or the showcase where it applies a tool button's own ([`TOOL_BUTTON_ROUTES`], on a
-/// tool button or its icon, [`TOOL_BUTTONS`]), the chrome where it lays the side-panel toggle's
+/// tool button or its icon, [`TOOL_BUTTONS`]), the showcase where it pads a tool button
+/// ([`TOOL_PADDING_ROUTES`], on those and on [`TOOL_PADDED`]), the chrome where it lays the side-panel toggle's
 /// own looks or icon colour ([`TOGGLE_ROUTES`], on the toggle or its icon, [`TOGGLE`]), the
 /// flat button's own states on the other flat buttons ([`FLAT_BUTTON_ROUTES`], [`FLAT_BUTTONS`]), else
 /// [`how_line`]'s, from the `mapping.toml` row that holds the home, a tab's label with its
@@ -2211,6 +2493,10 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .then(|| TOOL_BUTTON_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
         .map(|(_, line)| *line);
+    let padding_route = (tool || TOOL_PADDED.contains(&element))
+        .then(|| TOOL_PADDING_ROUTES.iter().find(|(h, _)| *h == home))
+        .flatten()
+        .map(|(_, line)| *line);
     let toggle_route = button_or_icon(element, TOGGLE)
         .then(|| TOGGLE_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
@@ -2227,6 +2513,7 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .or(tab_route)
         .or(switch_route)
         .or(tool_route)
+        .or(padding_route)
         .or(toggle_route)
         .or(flat_route)
         .map_or_else(
@@ -2598,13 +2885,29 @@ fn painted(ui: &egui::Ui, rect: egui::Rect, galley: &egui::Galley) -> egui::Rect
     )
 }
 
+/// Widget Info's Copy box's padding, top, right, bottom, left: each side
+/// `button.body(NONE).padding` of the installed 0.8.0 theme `r` states, else the scope's own
+/// button padding `own` (`Spacing::button_padding`, `y` above and below, `x` left and right), as
+/// egui's other buttons keep it on a side the theme leaves unstated (spec §10, rule 0).
+pub(crate) fn copy_padding(own: egui::Vec2, r: Option<&ResolvedTheme>) -> [f32; 4] {
+    let [top, right, bottom, left] = r.map_or([None; 4], |r| {
+        native_theme_egui::next::padding_of(&r.button.body(WidgetState::NONE))
+    });
+    [
+        top.unwrap_or(own.y),
+        right.unwrap_or(own.x),
+        bottom.unwrap_or(own.y),
+        left.unwrap_or(own.x),
+    ]
+}
+
 /// The Widget tab (R11 §B), laid out as the three showcases lay it out: the title flush left
 /// and Copy flush right on one row, `layout.section_gap` below it the "Theme" section's name,
 /// then each row `layout.widget_gap` below the one before — a colour's swatch, a square one line
 /// tall, `layout.widget_gap` before the text `<leaf> <value>`, and under the text the muted line
 /// of how egui applies it — and, `layout.section_gap` below, "Not themeable" and its lines. A
 /// gap the theme leaves unstated is none. Copy is a flat button, padded by
-/// `button.body(NONE).padding` and rounded by its corners, unframed at rest, and under the
+/// `button.body(NONE).padding` ([`copy_padding`]) and rounded by its corners, unframed at rest, and under the
 /// pointer and while pressed or focused filled, outlined and lettered as
 /// `button.body(HOVER|PRESSED; variant=Flat)` and its label state, the outline focused
 /// `FOCUS_VISIBLE`'s, where a rule states them for the state, else egui's own
@@ -2642,11 +2945,7 @@ pub(crate) fn widget_tab(
     // The title row: the title and Copy, centred on each other.
     let title = text.galley(ui, &view.title, &text.semibold, text.colour);
     let copy_text = text.galley(ui, "Copy", &text.regular, text.colour);
-    let [top, right, bottom, left] = r
-        .map_or([None; 4], |r| {
-            nx::padding_of(&r.button.body(WidgetState::NONE))
-        })
-        .map(Option::unwrap_or_default);
+    let [top, right, bottom, left] = copy_padding(ui.spacing().button_padding, r);
     let copy_size = egui::vec2(copy_text.size().x + left + right, text.line + top + bottom);
     let row_height = copy_size.y.max(text.line);
     let (row, title_row) = ui.allocate_exact_size(

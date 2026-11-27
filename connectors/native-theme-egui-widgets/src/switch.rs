@@ -59,7 +59,10 @@ use crate::{next, scope};
 /// the body text's, hovered and pressed in `switch.label(HOVER)`'s and `switch.label(PRESSED)`'s
 /// where a rule for the state states it, else in egui's own hovered and pressed label colours,
 /// `widgets.hovered.fg_stroke` and `widgets.active.fg_stroke`, as egui's `Checkbox` letters its
-/// label where `override_text_color` is unset (spec §10 rule 0), at `switch.label(NONE)`'s size where stated, else
+/// label where `override_text_color` is unset (spec §10 rule 0), an on switch's at
+/// `switch.label(CHECKED)` where a rule for `CHECKED` states it and hovered, pressed or disabled
+/// at `switch.label(<state>|CHECKED)` where the theme states it for the state (spec §2,
+/// `from_state`, the two queries), at `switch.label(NONE)`'s size where stated, else
 /// egui's own, in egui's `Proportional` family as the connector's role fonts are (a family,
 /// weight or slant the label states is not drawn: the crate's README, *Limits under the 0.8.0
 /// model*), `switch.label_gap` from the track where stated, else egui's own `icon_spacing`,
@@ -300,6 +303,21 @@ pub(crate) struct Look {
     pub(crate) pressed_text: Option<egui::Color32>,
     /// `defaults.disabled_text_color`: a disabled switch's label; `None`, egui's own.
     pub(crate) disabled_text: Option<egui::Color32>,
+    /// An on switch's label: the 0.8.0 theme's `switch.label(CHECKED)` colour where a rule for
+    /// `CHECKED` states it, else as [`Self::text`]; 0.7.2's [`Self::text`].
+    pub(crate) checked_text: Option<egui::Color32>,
+    /// A hovered on switch's label: the 0.8.0 theme's `switch.label(HOVER|CHECKED)` colour
+    /// where it states one for `HOVER`, 0.7.2's [`Self::text`]; `None`, egui's own hovered
+    /// label colour, as [`Self::hover_text`]'s.
+    pub(crate) checked_hover_text: Option<egui::Color32>,
+    /// A pressed on switch's label: the 0.8.0 theme's `switch.label(PRESSED|CHECKED)` colour
+    /// where it states one for `PRESSED`, 0.7.2's [`Self::text`]; `None`, egui's own pressed
+    /// label colour, as [`Self::pressed_text`]'s.
+    pub(crate) checked_pressed_text: Option<egui::Color32>,
+    /// A disabled on switch's label: the 0.8.0 theme's `switch.label(DISABLED|CHECKED)` colour
+    /// where it states one for `DISABLED`, else as [`Self::disabled_text`]; 0.7.2's
+    /// [`Self::disabled_text`].
+    pub(crate) checked_disabled_text: Option<egui::Color32>,
     /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
     /// egui's own fade of a disabled widget.
     pub(crate) background: Option<egui::Color32>,
@@ -317,7 +335,11 @@ impl Look {
     /// `switch.label(PRESSED)` where a rule for that state states it, else egui's own hovered
     /// and pressed label colours ([`Self::hover_text`], [`Self::pressed_text`]), a
     /// disabled one's at `switch.label(DISABLED)` where a rule states it, else
-    /// `colors.disabled_text`; the window's background as the ground. A fill stated as layers
+    /// `colors.disabled_text`; an on switch's label at `switch.label(CHECKED)` where a rule for
+    /// `CHECKED` states it, else as an off one's, and hovered, pressed or disabled at
+    /// `switch.label(<state>|CHECKED)` where the query with that state's flag alone or the one
+    /// at `<state>|CHECKED` asking it states it ([`Self::checked_text`] and the fields after
+    /// it); the window's background as the ground. A fill stated as layers
     /// that are all gradients is read as unstated ([`next::fill`]). `None` where the theme
     /// states no fill, or one as such layers, at `switch.track(NONE)`, `switch.track(CHECKED)`
     /// or `switch.thumb(CHECKED)`, which sends the switch to egui's own counterpart.
@@ -337,11 +359,25 @@ impl Look {
             WidgetState::DISABLED | WidgetState::CHECKED,
         );
         let hover = track(WidgetState::HOVER);
+        let (body, disabled) = (next::body_text(r), next::disabled_text_color(r));
         let (text, disabled_text) = Self::label_colors(
             next::text_color_of(&sw.label(WidgetState::NONE)),
             next::state_text_color_of(&sw.label(off)),
-            next::body_text(r),
-            next::disabled_text_color(r),
+            body,
+            disabled,
+        );
+        // An on switch's label in a state: where the theme states it for the state's flag.
+        let on_label = |flag: WidgetState| {
+            next::ruled_text(
+                &sw.label(flag),
+                &sw.label(StyleQuery::new(flag | on).asking(flag)),
+            )
+        };
+        let (checked_text, checked_disabled_text) = Self::label_colors(
+            next::text_color_of(&sw.label(on)),
+            on_label(off),
+            body,
+            disabled,
         );
         let mut fill = |part: &PartStyle, home: &'static str| next::fill(part, home, unmapped);
         let checked_background = fill(&track(on), "switch.track(CHECKED).fill");
@@ -386,14 +422,19 @@ impl Look {
             hover_text: next::state_text_color_of(&sw.label(WidgetState::HOVER)),
             pressed_text: next::state_text_color_of(&sw.label(WidgetState::PRESSED)),
             disabled_text: Some(disabled_text),
+            checked_text,
+            checked_hover_text: on_label(WidgetState::HOVER),
+            checked_pressed_text: on_label(WidgetState::PRESSED),
+            checked_disabled_text: Some(checked_disabled_text),
             background: next::window_background(r),
         })
     }
 
     /// The label's colours at rest and disabled of what the theme states of them: `stated`,
-    /// `switch.label(NONE)`'s colour, else `body`, the body text's (`typography.body.color`);
-    /// `stated_disabled`, the colour a rule for `DISABLED` states of `switch.label`, else
-    /// `disabled`, the theme's disabled text (`colors.disabled_text`).
+    /// `switch.label`'s colour at the switch's state (`NONE`, or `CHECKED` on an on switch),
+    /// else `body`, the body text's (`typography.body.color`); `stated_disabled`, the colour a
+    /// rule for `DISABLED` states of `switch.label`, else `disabled`, the theme's disabled text
+    /// (`colors.disabled_text`).
     pub(crate) fn label_colors(
         stated: Option<egui::Color32>,
         stated_disabled: Option<egui::Color32>,
@@ -473,6 +514,10 @@ impl Look {
             hover_text: Some(c(t.defaults.font.color)),
             pressed_text: Some(c(t.defaults.font.color)),
             disabled_text: Some(c(t.defaults.disabled_text_color)),
+            checked_text: Some(c(t.defaults.font.color)),
+            checked_hover_text: Some(c(t.defaults.font.color)),
+            checked_pressed_text: Some(c(t.defaults.font.color)),
+            checked_disabled_text: Some(c(t.defaults.disabled_text_color)),
             background: Some(c(t.defaults.background_color)),
         }
     }
@@ -646,20 +691,24 @@ fn switch_ui(
     let position = ui
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
-    let text = if !enabled {
-        sw.disabled_text
-    } else if pressed {
-        Some(
-            sw.pressed_text
-                .unwrap_or(ui.visuals().widgets.active.text_color()),
-        )
-    } else if hovered {
-        Some(
-            sw.hover_text
-                .unwrap_or(ui.visuals().widgets.hovered.text_color()),
+    let (rest_text, hover_text, pressed_text, disabled_text) = if checked {
+        (
+            sw.checked_text,
+            sw.checked_hover_text,
+            sw.checked_pressed_text,
+            sw.checked_disabled_text,
         )
     } else {
-        sw.text
+        (sw.text, sw.hover_text, sw.pressed_text, sw.disabled_text)
+    };
+    let text = if !enabled {
+        disabled_text
+    } else if pressed {
+        Some(pressed_text.unwrap_or(ui.visuals().widgets.active.text_color()))
+    } else if hovered {
+        Some(hover_text.unwrap_or(ui.visuals().widgets.hovered.text_color()))
+    } else {
+        rest_text
     };
     let text = text.unwrap_or(prepared.container.fallback_text_color);
     prepared.container.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));

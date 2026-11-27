@@ -999,9 +999,9 @@ fn the_open_toggle_names_the_checked_fill_it_is_drawn_in() -> Result<(), String>
     Ok(())
 }
 
-/// The flat buttons' hovered and pressed outlines (the side-panel toggle, the Pages menu button,
-/// Widget Info's Copy) route to the flat button's homes `next::flat_button` lays over their
-/// scope per call, not to the push button's row of `mapping.toml`.
+/// The flat buttons' push button's hovered and pressed outlines (the side-panel toggle, the Pages
+/// menu button) are routed not drawn, naming the flat button's homes `next::flat_button` lays
+/// over their scope per call in their place, not the push button's row of `mapping.toml`.
 #[test]
 fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
     let manifest = Manifest::parse(MANIFEST)?;
@@ -1009,11 +1009,7 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
         native_theme_egui::Role::Button,
         RoleVariant::Normal,
     )];
-    for element in [
-        "chrome.status_bar.toggle",
-        "chrome.page_tabs.menu",
-        "chrome.info.copy",
-    ] {
+    for element in ["chrome.status_bar.toggle", "chrome.page_tabs.menu"] {
         for (home, drawn) in [
             (
                 "button.body(HOVER).stroke.color",
@@ -1026,11 +1022,149 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
         ] {
             let how = crate::info::listed_how(&manifest, element, home, &seams);
             assert!(
-                how.contains(drawn) && how.contains("next::flat_button"),
+                how.starts_with("not drawn")
+                    && how.contains(drawn)
+                    && how.contains("next::flat_button"),
                 "{element} {home}: {how}"
             );
         }
     }
+    Ok(())
+}
+
+/// The push button's checked fill and label on the side-panel toggle are routed not drawn, naming
+/// the flat button's checked homes `chrome::toggle_checked_in` draws in their place, and that
+/// holds: on every preset in both schemes, each stated for the push button alone (`variant =
+/// "standard"`) in two colours in turn moves none of the open toggle's colours in any state.
+#[test]
+fn the_toggles_push_checked_homes_move_nothing_it_draws() -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    use native_theme_showcase_support::next::patch::home_patch_toml;
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let homes = [
+        (
+            "button.body(CHECKED).fill",
+            "button.body(CHECKED; variant=Flat).fill",
+        ),
+        (
+            "button.label(CHECKED).color",
+            "button.label(CHECKED; variant=Flat).color",
+        ),
+    ];
+    for (home, drawn) in homes {
+        let how = crate::info::listed_how(&manifest, "chrome.status_bar.toggle", home, &seams);
+        assert!(
+            how.starts_with("not drawn") && how.contains(drawn),
+            "{home}: {how}"
+        );
+    }
+    let patched = |r: &native_theme::next::ResolvedTheme, home: &str, colour: &str| {
+        let toml = home_patch_toml(home, colour).ok_or(format!("no patch states {home}"))?;
+        let patch = ThemePatch::from_toml(&toml).map_err(|e| format!("{home}: {e}"))?;
+        let mut r = r.clone();
+        r.apply_patch(&patch);
+        Ok::<_, String>(r)
+    };
+    let mut faults = Vec::new();
+    for &preset in Preset::ALL {
+        for context in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(preset).resolve(&context);
+            for (home, _) in homes {
+                let standard = home.replacen(").", "; variant=Standard).", 1);
+                let one = patched(&r, &standard, "#13579b")?;
+                let other = patched(&r, &standard, "#2468ac")?;
+                for was in [(false, false), (true, false), (false, true)] {
+                    if crate::chrome::toggle_checked_in(Some(&one), was)
+                        != crate::chrome::toggle_checked_in(Some(&other), was)
+                    {
+                        faults.push(format!(
+                            "{preset:?} {context:?} {was:?}: {standard} moves it"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+    Ok(())
+}
+
+/// What the routes of the push button's hovered and pressed fill, label and outline on a flat
+/// button claim, "not drawn" ([`crate::info::FLAT_PUSH_FILL`], [`crate::info::FLAT_PUSH_LABEL`],
+/// [`crate::info::FLAT_PUSH_EDGE`]), holds: `next::flat_button` gives the hovered and active
+/// entries the same values whatever the scope held there before, and on every preset in both
+/// schemes, each of those homes stated for the push button alone (`variant = "standard"`, as a
+/// rule naming no variant answers the flat button's query too) in two colours in turn moves
+/// neither entry; each flat button's own home, stated so, moves one on some preset.
+#[test]
+fn a_flat_button_reads_none_of_the_push_buttons_states() -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    use native_theme_showcase_support::next::patch::home_patch_toml;
+    let homes = [
+        "button.body(HOVER).fill",
+        "button.body(PRESSED).fill",
+        "button.label(HOVER).color",
+        "button.label(PRESSED).color",
+        "button.body(HOVER).stroke.color",
+        "button.body(PRESSED).stroke.color",
+    ];
+    let entries = |r: &native_theme::next::ResolvedTheme, dark: bool, seed: egui::Color32| {
+        let (mut visuals, scheme) = if dark {
+            (egui::Visuals::dark(), egui::Theme::Dark)
+        } else {
+            (egui::Visuals::light(), egui::Theme::Light)
+        };
+        for entry in [&mut visuals.widgets.hovered, &mut visuals.widgets.active] {
+            entry.weak_bg_fill = seed;
+            entry.fg_stroke.color = seed;
+            entry.bg_stroke = egui::Stroke::new(1.0, seed);
+        }
+        let _notes = native_theme_egui::next::flat_button(r, scheme, &mut visuals);
+        (visuals.widgets.hovered, visuals.widgets.active)
+    };
+    let patched = |r: &native_theme::next::ResolvedTheme, home: &str, colour: &str| {
+        let toml = home_patch_toml(home, colour).ok_or(format!("no patch states {home}"))?;
+        let patch = ThemePatch::from_toml(&toml).map_err(|e| format!("{home}: {e}"))?;
+        let mut r = r.clone();
+        r.apply_patch(&patch);
+        Ok::<_, String>(r)
+    };
+    let mut faults = Vec::new();
+    let mut flat_moved = BTreeSet::new();
+    for &preset in Preset::ALL {
+        for (dark, context) in [(false, ThemeContext::light()), (true, ThemeContext::dark())] {
+            let r = Theme::preset(preset).resolve(&context);
+            let red = entries(&r, dark, egui::Color32::RED);
+            if red != entries(&r, dark, egui::Color32::BLUE) {
+                faults.push(format!(
+                    "{preset:?} (dark: {dark}): the scope's state entries show"
+                ));
+            }
+            for home in homes {
+                let moves = |at: &str| -> Result<bool, String> {
+                    let one = entries(&patched(&r, at, "#13579b")?, dark, egui::Color32::RED);
+                    let other = entries(&patched(&r, at, "#2468ac")?, dark, egui::Color32::RED);
+                    Ok(one != other)
+                };
+                let standard = home.replacen(").", "; variant=Standard).", 1);
+                if moves(&standard)? {
+                    faults.push(format!(
+                        "{preset:?} (dark: {dark}): {standard} moves the drawing"
+                    ));
+                }
+                if moves(&home.replacen(").", "; variant=Flat).", 1))? {
+                    flat_moved.insert(home);
+                }
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+    // The flat homes move the entries somewhere, so the test can see a move.
+    assert_eq!(flat_moved.len(), homes.len(), "only {flat_moved:?} moved");
     Ok(())
 }
 
@@ -12615,9 +12749,10 @@ fn the_edit_switchs_checked_outline_colour_names_its_pen() -> Result<(), String>
     Ok(())
 }
 
-/// The On toggle's `button.body(NONE).stroke.color`, which a `mapping.toml` row also holds, is
-/// routed to the per-call pen that covers it where the theme states the checked stroke
-/// (`pages::basic::toggle_on_pen`, [`crate::info::TOGGLE_ON_REST_EDGE`]), not to the row (N50).
+/// The On toggle's `button.body(NONE).stroke.color` and `.width`, which `mapping.toml` rows
+/// also hold, are routed to the per-call pen that covers them where the theme states the
+/// checked stroke (`pages::basic::toggle_on_pen`, [`crate::info::TOGGLE_ON_REST_EDGE`],
+/// [`crate::info::TOGGLE_ON_REST_WIDTH`]), not to the rows (N50).
 #[test]
 fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), String> {
     let manifest = Manifest::parse(MANIFEST)?;
@@ -12625,13 +12760,19 @@ fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), Stri
         native_theme_egui::Role::Button,
         RoleVariant::Normal,
     )];
-    let how = crate::info::listed_how(
-        &manifest,
-        "basic.buttons.toggle_on",
-        "button.body(NONE).stroke.color",
-        &seams,
-    );
-    assert_eq!(how, crate::info::TOGGLE_ON_REST_EDGE);
+    for (home, route) in [
+        (
+            "button.body(NONE).stroke.color",
+            crate::info::TOGGLE_ON_REST_EDGE,
+        ),
+        (
+            "button.body(NONE).stroke.width",
+            crate::info::TOGGLE_ON_REST_WIDTH,
+        ),
+    ] {
+        let how = crate::info::listed_how(&manifest, "basic.buttons.toggle_on", home, &seams);
+        assert_eq!(how, route, "{home}");
+    }
     Ok(())
 }
 
@@ -12640,7 +12781,8 @@ fn the_on_toggles_rest_outline_colour_names_the_checked_pen() -> Result<(), Stri
 /// and the Copy box's hovered width, which no `mapping.toml` row holds (the list's
 /// `model_only_homes`), are routed to the call that applies them, not shown as held by no row:
 /// each such home a listed tool button, its icon, the toggle, its icon, the three buttons, the
-/// On toggle's label and the Copy box list is pinned to its own route, the line of the call that
+/// On toggle's label, the Copy box and the Pages menu button's icon list is pinned to its own
+/// route, the line of the call that
 /// draws it or says why not ([`crate::info::TOOL_BUTTON_ROUTES`], [`crate::info::TOGGLE_ROUTES`],
 /// the per-call routes), so a route moved to another home fails; a model-only home of theirs
 /// pinned to no route fails, and so does a pin no listed home reaches.
@@ -12693,6 +12835,66 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             "basic.icons.save.icon",
             "toolbar.button_label(DISABLED).color",
             i::SAVE_DISABLED_LABEL,
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            "button.label(NONE; variant=Flat).color",
+            i::MENU_ICON_LABEL,
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            "button.icon(NONE; variant=Flat).color",
+            i::MENU_ICON_COLOUR,
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            "button.icon(HOVER; variant=Flat).color",
+            i::MENU_ICON_HOVER,
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            "button.icon(PRESSED; variant=Flat).color",
+            i::MENU_ICON_PRESSED,
+        ),
+        (
+            "chrome.info.copy",
+            "button.body(NONE; variant=Flat).padding.top",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "chrome.info.copy",
+            "button.body(NONE; variant=Flat).padding.right",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "chrome.info.copy",
+            "button.body(NONE; variant=Flat).padding.bottom",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "chrome.info.copy",
+            "button.body(NONE; variant=Flat).padding.left",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "chrome.status_bar.toggle.icon",
+            "button.label(NONE; variant=Flat).color",
+            i::TOGGLE_ICON_LABEL,
+        ),
+        (
+            "chrome.status_bar.toggle.icon",
+            "button.label(CHECKED; variant=Flat).color",
+            i::TOGGLE_ICON_LABEL,
+        ),
+        (
+            "chrome.status_bar.toggle",
+            "button.body(CHECKED; variant=Flat).fill",
+            i::TOGGLE_OPEN_FILL,
+        ),
+        (
+            "chrome.status_bar.toggle",
+            "button.label(CHECKED; variant=Flat).color",
+            i::TOGGLE_OPEN_LABEL,
         ),
         (
             "basic.icons.edit",
@@ -12811,6 +13013,16 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         ),
         (
             "basic.buttons.primary",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+            i::PRIMARY_OUTLINE,
+        ),
+        (
+            "basic.buttons.primary",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+            i::PRIMARY_OUTLINE,
+        ),
+        (
+            "basic.buttons.primary",
             "button.body(NONE; variant=Primary).corners",
             i::PRIMARY_CORNERS_UNREAD,
         ),
@@ -12846,13 +13058,18 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         ),
         (
             "basic.buttons.dialog_default",
-            "button.body(NONE; variant=Primary).corners",
-            i::DIALOG_DEFAULT_CORNERS,
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+            i::DIALOG_DEFAULT_OUTLINE,
         ),
         (
-            "chrome.info.copy",
-            "button.body(HOVER).stroke.width",
-            i::FLAT_HOVER_WIDTH,
+            "basic.buttons.dialog_default",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+            i::DIALOG_DEFAULT_OUTLINE,
+        ),
+        (
+            "basic.buttons.dialog_default",
+            "button.body(NONE; variant=Primary).corners",
+            i::DIALOG_DEFAULT_CORNERS,
         ),
         (
             "basic.buttons.toggle_on",
@@ -12917,6 +13134,22 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     ];
     // The routes of every tool button and its icon.
     let tool: &[(&str, &str)] = &[
+        (
+            "button.body(NONE; variant=Flat).padding.top",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.right",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.bottom",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.left",
+            i::TOOL_PAD_FLAT,
+        ),
         ("toolbar.button(NONE).fill", i::TOOL_REST_FILL),
         ("toolbar.button(NONE).corners", i::TOOL_REST_CORNERS),
         ("toolbar.button(NONE).stroke.color", i::TOOL_REST_EDGE),
@@ -12954,6 +13187,22 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     ];
     // The routes of the side-panel toggle and its icon.
     let toggle: &[(&str, &str)] = &[
+        (
+            "button.body(NONE; variant=Flat).padding.top",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.right",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.bottom",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.left",
+            i::TOOL_PAD_FLAT,
+        ),
         (
             "button.label(NONE; variant=Flat).color",
             i::TOGGLE_REST_LABEL,
@@ -13072,8 +13321,25 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::TOGGLE_ICON_OPEN,
         ),
     ];
-    // The routes of the other flat buttons, the Pages menu button and Widget Info's Copy.
+    // The routes of the other flat buttons, the Pages menu button and Widget Info's Copy, whose
+    // padding is its own.
     let flat: &[(&str, &str)] = &[
+        (
+            "button.body(NONE; variant=Flat).padding.top",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.right",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.bottom",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.left",
+            i::TOOL_PAD_FLAT,
+        ),
         ("button.label(NONE; variant=Flat).color", i::FLAT_REST_LABEL),
         (
             "button.body(NONE; variant=Flat).corners",
@@ -13132,7 +13398,7 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             || e.id == "basic.buttons.primary"
             || e.id == "basic.buttons.dialog_default"
             || e.id == "chrome.info.copy"
-            || e.id == "chrome.page_tabs.menu"
+            || e.id.starts_with("chrome.page_tabs.menu")
     }) {
         let id = element.id.as_str();
         let group = if id.starts_with("chrome.toolbar.") || id.starts_with("basic.icons.") {
@@ -13188,12 +13454,124 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             &crate::info::TOOL_BUTTON_ROUTES[..],
         ),
         ("basic.icons.heading", &crate::info::TOOL_BUTTON_ROUTES[..]),
+        (
+            "basic.buttons.default",
+            &crate::info::TOOL_PADDING_ROUTES[..],
+        ),
+        ("chrome.info.copy", &crate::info::TOOL_PADDING_ROUTES[..]),
     ] {
         for (home, line) in routes {
             let how = crate::info::listed_how(&manifest, element, home, &seams);
             assert_ne!(how, *line, "{element} takes the route of {home}");
         }
     }
+    Ok(())
+}
+
+/// The Pages menu button and the side-panel toggle, padded as the tool buttons are
+/// (`demo::next_tool_button`, which pads by the left and top sides alone), take the tool
+/// buttons' padding routes, their right and bottom sides not drawn where the left and top stand
+/// for them, not `mapping.toml`'s rows; Widget Info's Copy, which `info::widget_tab` pads per
+/// side, takes its own: each push padding side drawn, each flat one not drawn.
+#[test]
+fn the_flat_buttons_padding_routes_name_what_pads_them() -> Result<(), String> {
+    use crate::info as i;
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let copy = [
+        ("button.body(NONE).padding.top", i::COPY_PAD_TOP),
+        ("button.body(NONE).padding.right", i::COPY_PAD_RIGHT),
+        ("button.body(NONE).padding.bottom", i::COPY_PAD_BOTTOM),
+        ("button.body(NONE).padding.left", i::COPY_PAD_LEFT),
+        (
+            "button.body(NONE; variant=Flat).padding.top",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.right",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.bottom",
+            i::COPY_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.left",
+            i::COPY_PAD_FLAT,
+        ),
+    ];
+    let mut wrong = Vec::new();
+    for (element, routes) in [
+        ("chrome.page_tabs.menu", &i::TOOL_PADDING_ROUTES[..]),
+        ("chrome.status_bar.toggle", &i::TOOL_PADDING_ROUTES[..]),
+        ("chrome.info.copy", &copy[..]),
+    ] {
+        let listed = listed_elements()
+            .into_iter()
+            .find(|e| e.id == element)
+            .ok_or(format!("the list has no {element}"))?;
+        for (home, line) in routes {
+            if !listed.homes.iter().any(|h| h == home) {
+                wrong.push(format!("{element} lists no {home}"));
+            }
+            let how = crate::info::listed_how(&manifest, element, home, &seams);
+            if how != *line {
+                wrong.push(format!("{element} {home}: {how:?}, not {line:?}"));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    Ok(())
+}
+
+/// Widget Info's Copy box keeps the scope's own button padding on a side the theme leaves
+/// unstated (spec §10, rule 0), as egui's other buttons do, and takes each stated side: on every
+/// preset in both schemes, each side of `info::copy_padding` is `button.body(NONE).padding`'s
+/// where stated, else `Spacing::button_padding`'s, `y` above and below and `x` left and right;
+/// at least one preset leaves a side unstated, so the fallback is tested; without a 0.8.0 theme
+/// all four are the scope's own.
+#[test]
+fn the_copy_box_keeps_egui_s_padding_where_the_theme_states_none() -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext, WidgetState};
+    let own = egui::Style::default().spacing.button_padding;
+    assert_eq!(
+        crate::info::copy_padding(own, None),
+        [own.y, own.x, own.y, own.x]
+    );
+    let mut unstated = Vec::new();
+    let mut wrong = Vec::new();
+    for &preset in Preset::ALL {
+        for (scheme, context) in [
+            ("light", ThemeContext::light()),
+            ("dark", ThemeContext::dark()),
+        ] {
+            let r = Theme::preset(preset).resolve(&context);
+            let stated = native_theme_egui::next::padding_of(&r.button.body(WidgetState::NONE));
+            let drawn = crate::info::copy_padding(own, Some(&r));
+            for ((side, stated), (drawn, egui)) in ["top", "right", "bottom", "left"]
+                .into_iter()
+                .zip(stated)
+                .zip(drawn.into_iter().zip([own.y, own.x, own.y, own.x]))
+            {
+                if stated.is_none() {
+                    unstated.push(format!("{preset:?} {scheme} {side}"));
+                }
+                if drawn != stated.unwrap_or(egui) {
+                    wrong.push(format!(
+                        "{preset:?} {scheme} {side}: {drawn}, stated {stated:?}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{wrong:#?}");
+    assert!(
+        !unstated.is_empty(),
+        "every preset states every side of the push button's padding, so the fallback is untested"
+    );
     Ok(())
 }
 
@@ -13207,14 +13585,7 @@ fn the_switch_label_routes_name_the_switch_that_draws_them() -> Result<(), Strin
     const CLAIMS: [(&str, Option<&str>); 4] = [
         ("switch.label(NONE)", None),
         ("switch.label(NONE).color", None),
-        (
-            "switch.label(CHECKED).color",
-            Some(
-                "egui: not read by native-theme-egui-widgets Switch \
-                 (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as \
-                 the off one",
-            ),
-        ),
+        ("switch.label(CHECKED).color", None),
         ("switch.label(DISABLED|CHECKED).color", None),
     ];
     let manifest = Manifest::parse(MANIFEST)?;
@@ -17111,11 +17482,11 @@ fn the_primary_buttons_unstated_hover_keeps_the_scopes_outline() -> Result<(), S
     Ok(())
 }
 
-/// Under kde-breeze light with the primary button's hovered and pressed outlines patched in
-/// (`button.body(HOVER; variant=Primary).stroke` 3 px magenta, `(PRESSED; variant=Primary)`
-/// 2 px green), the hovered primary is drawn in the first and the pressed in the second, each
-/// state's whole pen, its width too, not the resting one's; focused, in the button scope's own
-/// active entry.
+/// Under kde-breeze light with the primary button's hovered, pressed and focused outlines
+/// patched in (`button.body(HOVER; variant=Primary).stroke` 3 px magenta, `(PRESSED;
+/// variant=Primary)` 2 px green, `(FOCUS_VISIBLE; variant=Primary)` 4 px blue), the hovered
+/// primary is drawn in the first, the pressed in the second and the focused in the third, each
+/// state's whole pen, its width too, not the resting one's.
 #[test]
 fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
     use native_theme::next::{
@@ -17125,6 +17496,7 @@ fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
     const ID: &str = "basic.buttons.primary";
     let magenta = Color::new(1.0, 0.0, 1.0, 1.0);
     let green = Color::new(0.0, 1.0, 0.0, 1.0);
+    let blue = Color::new(0.0, 0.0, 1.0, 1.0);
     let rule = |state, width, colour| {
         ButtonRule::new()
             .variant(ButtonVariant::Primary)
@@ -17133,7 +17505,8 @@ fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
     };
     let patch = ThemePatch::new()
         .button(rule(WidgetState::HOVER, 3.0, magenta))
-        .button(rule(WidgetState::PRESSED, 2.0, green));
+        .button(rule(WidgetState::PRESSED, 2.0, green))
+        .button(rule(WidgetState::FOCUS_VISIBLE, 4.0, blue));
     let mut probe = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     probe.run_steps(SETTLE);
     let rect = element_rect(&probe, ID)?;
@@ -17159,6 +17532,45 @@ fn the_primary_button_takes_each_stated_states_pen() -> Result<(), String> {
         Some(patch_for)
     })?;
     harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    harness
+        .query_all_by_label("Primary")
+        .next()
+        .ok_or("no node labelled Primary")?
+        .focus();
+    harness.run_steps(4);
+    let rect = element_rect(&harness, ID)?;
+    let strokes: Vec<egui::Stroke> = frames_at(&harness, rect).iter().map(|f| f.1).collect();
+    assert_eq!(
+        strokes,
+        [egui::Stroke::new(4.0, next::to_color32(blue))],
+        "focused"
+    );
+    Ok(())
+}
+
+/// Under macos-monterey light, which states no focused outline for the primary button
+/// (`button.body(FOCUS_VISIBLE; variant=Primary).stroke`), the focused primary is drawn in the
+/// button scope's own active entry, egui's treatment of a focused button (spec §10, rule 0).
+#[test]
+fn the_primary_buttons_unstated_focus_keeps_the_scopes_outline() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, PartStated, WidgetState};
+    const ID: &str = "basic.buttons.primary";
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.run_steps(SETTLE);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("macos-monterey: no 0.8.0 theme installed")?;
+    assert!(
+        !r.button
+            .body(ButtonQuery::primary().with_state(WidgetState::FOCUS_VISIBLE))
+            .from_state
+            .contains(PartStated::STROKE),
+        "macos-monterey states the primary's focused outline, so the test proves nothing"
+    );
     harness.remove_cursor();
     harness.run_steps(3);
     let own = scope_widgets(&harness, native_theme_egui::Role::Button)?
@@ -17502,6 +17914,130 @@ fn the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour() -> Result<(), Str
         )
     })
     .map_err(|e| e.to_string())
+}
+
+/// The Pages menu's caret, a bundled Material icon, loads in `button.icon(NONE;
+/// variant=Flat).color` where the theme states it (spec §10, rule 0), as the closed side-panel
+/// toggle's icon does (`chrome::toggle_icon_colour`): kde-breeze light states none; with that
+/// home patched to a mark, the caret is painted from the texture its key takes tinted in the
+/// mark, a cache hit of the same key in the same context, so a caret loaded in any other colour
+/// fails; with `button.icon(HOVER; variant=Flat).color` patched to another mark, the caret under
+/// the pointer is painted from that mark's texture, in the state of the menu button's previous
+/// response, as the toggle's icon is.
+#[cfg(feature = "material-icons")]
+#[test]
+fn the_pages_menu_caret_loads_in_the_stated_flat_icon_colour() -> Result<(), String> {
+    use native_theme::icons::IconRole;
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::icons::{IconKey, custom_icon_to_image};
+    const ID: &str = "chrome.page_tabs.menu.icon";
+    // The textures painted inside the caret's place.
+    let painted = |harness: &Harness<'_, App>| -> Vec<egui::TextureId> {
+        let place = place_of(harness, ID);
+        harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.expand(1.0).contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| b.fill_texture_id)
+                }
+                _ => None,
+            })
+            .collect()
+    };
+    // The texture of the caret loaded in `colour` as the page tabs load it (`demo::role_image`
+    // in `demo::loaded_in`), at `icons.sizes.small`, from the chosen set and theme, as egui
+    // paints it: at the pixel size of its square (egui-0.37.0 src/widgets/image.rs,
+    // Image::paint_at).
+    let loaded_in = |harness: &Harness<'_, App>, colour| -> Result<egui::TextureId, String> {
+        let app = harness.state();
+        let r = app.atlas.next_shown(&harness.ctx).ok_or("no 0.8.0 theme")?;
+        let size = r.icons.sizes.small.ok_or("no small icon size")?;
+        let (set, icon_theme) = app.chosen_icons();
+        let role = IconRole::NavDown;
+        let mut key = IconKey::role(role, set).size(size).tint(colour);
+        if let Some(name) = icon_theme.as_deref() {
+            key = key.icon_theme(name);
+        }
+        let image =
+            custom_icon_to_image(&harness.ctx, &role, &key).ok_or("the set has no caret")?;
+        let side = (harness.ctx.pixels_per_point() * size).round() as u32;
+        let hint = egui::SizeHint::Size {
+            width: side,
+            height: side,
+            maintain_aspect_ratio: false,
+        };
+        let source = image.source(&harness.ctx).clone();
+        match source.load(&harness.ctx, egui::TextureOptions::default(), hint) {
+            Ok(egui::load::TexturePoll::Ready { texture }) => Ok(texture.id),
+            Ok(egui::load::TexturePoll::Pending { .. }) => {
+                Err("the caret is still loading".to_owned())
+            }
+            Err(error) => Err(format!("the caret is not loaded: {error}")),
+        }
+    };
+    let settle = |harness: &mut Harness<'static, App>| {
+        harness.state_mut().settings.icon = IconSetChoice::Material;
+        harness.run_steps(SETTLE);
+        harness.remove_cursor();
+        harness.run_steps(3);
+    };
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    settle(&mut harness);
+    let stock = harness
+        .state()
+        .atlas
+        .next_shown(&harness.ctx)
+        .cloned()
+        .ok_or("kde-breeze: no 0.8.0 theme installed")?;
+    assert_eq!(
+        crate::chrome::toggle_icon_colour(Some(&stock), false, (false, false)),
+        None,
+        "kde-breeze light states a flat icon colour at rest, so this test proves nothing"
+    );
+    let before = painted(&harness);
+    let mark = Color::from_srgb8(0x9b, 0x57, 0x13, 0xff);
+    let hover_mark = Color::from_srgb8(0x13, 0x57, 0x9b, 0xff);
+    let rule = |state, colour| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .icon(IconPatch::new().color(colour))
+    };
+    let patch = ThemePatch::new()
+        .button(rule(WidgetState::NONE, mark))
+        .button(rule(WidgetState::HOVER, hover_mark));
+    let pair = harness.state().atlas.clone().patched(&patch)?;
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt_pair(&ctx, pair);
+    harness.run_steps(4);
+    settle(&mut harness);
+    let marked = loaded_in(&harness, egui::Color32::from_rgb(0x9b, 0x57, 0x13))?;
+    assert_ne!(
+        before,
+        [marked],
+        "the stock caret is painted from the mark's texture, so this test proves nothing"
+    );
+    assert_eq!(
+        painted(&harness),
+        [marked],
+        "the caret is not loaded in the patched button.icon(NONE; variant=Flat).color"
+    );
+    let hovered = loaded_in(&harness, egui::Color32::from_rgb(0x13, 0x57, 0x9b))?;
+    assert_ne!(hovered, marked, "the two marks load one texture");
+    let pos = place_of(&harness, ID).center();
+    harness.hover_at(pos);
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        painted(&harness),
+        [hovered],
+        "the caret under the pointer is not loaded in the patched \
+         button.icon(HOVER; variant=Flat).color"
+    );
+    Ok(())
 }
 
 /// The On toggle and the edit switch treat a checked fill egui cannot paint by one rule (spec
