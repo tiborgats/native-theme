@@ -2377,7 +2377,7 @@
         "fill": "#ffffffb3",
         "stroke": {
           "width": 1.0,
-          "color": "#020202"
+          "color": "#040404"
         },
         "corners": 4.0,
         "shadows": "none",
@@ -2422,7 +2422,11 @@
             "disabled"
           ],
           "field": {
-            "fill": "#f9f9f900"
+            "fill": "#f9f9f900",
+            "stroke": {
+              "width": 1.0,
+              "color": "#070707"
+            }
           }
         }
       ]

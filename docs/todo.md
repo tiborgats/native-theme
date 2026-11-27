@@ -5411,9 +5411,8 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       stops themselves (0→3 px, stops 0.33 and 1.0; the text box's 0→2 px, 0.5 and 1.0), which
       `PaintLayer::LinearGradient` cannot state (no absolute extent). The per-side form (`Stroke::sides`, three sides
       and the edge) with a model reduction for one-colour toolkits waits for the maintainer
-      (`.superpowers/sdd/v0.8.0-plan/M4/design/N38-elevation-borders.md`, option b). The combo box's and a checked
-      toolbar button's `BackgroundSizing` under high contrast and the high-contrast colour of the elevation brushes
-      (the preset keeps the default border there) are not read.
+      (`.superpowers/sdd/v0.8.0-plan/M4/design/N38-elevation-borders.md`, option b). The combo box's
+      `BackgroundSizing` under high contrast is not read.
 - [ ] [0.8.x] **macos-monterey / macos-tahoe**: under a palette the title bar keeps its measured fill (AppKit names no
       colour for `header_bg`); colours no palette slot names keep the preset's (alternate row, list header, field,
       button, pop-up, placeholder, hover fills); white text on a light explicit accent; the text selection under an

@@ -3090,12 +3090,13 @@ pub(crate) fn windows_cases() -> Vec<(
     // highlight (AppBarButton_themeresources.xaml:41-42; generic.xaml:2079-2080); a disabled
     // button, `SystemControlBackgroundBaseLowBrush`, the button face
     // (Button_themeresources.xaml:81; generic.xaml:2010). The text field's, the text area's and the
-    // combo box's outline under high contrast stay the default border, the window text, not the
-    // listed elevation border's three sides; the text field's and the text area's hovered outline,
-    // `SystemColorHighlightColor` (TextBox_themeresources.xaml:88 > generic.xaml:2072 at
-    // microsoft-ui-xaml 2.5.1); and a checked toolbar button's is
-    // `SystemColorHighlightColor` (AppBarToggleButton_themeresources.xaml:95 at microsoft-ui-xaml
-    // 2.5.1), not the listed on-accent one.
+    // combo box's outline under high contrast, `SystemColorButtonTextColor`, the button text
+    // (TextBox_themeresources.xaml:87, ComboBox_themeresources.xaml:159 > generic.xaml:2041 at
+    // microsoft-ui-xaml 2.5.1), not the listed elevation border's three sides; the text field's
+    // and the text area's hovered outline, `SystemColorHighlightColor`
+    // (TextBox_themeresources.xaml:88 > generic.xaml:2072 at microsoft-ui-xaml 2.5.1); and a
+    // checked toolbar button's is `SystemColorHighlightColor` (AppBarToggleButton_themeresources.xaml
+    // :95 at microsoft-ui-xaml 2.5.1), not the listed on-accent one.
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_background",
         "button.hover_text_color",

@@ -1135,6 +1135,125 @@ fn a_high_contrast_field_and_hovered_combo_box_and_a_palette_s_pressed_button() 
     }
 }
 
+/// Light high-contrast system colours: the button text, the highlight and its
+/// text where `highlight` is set, and the grey text.
+fn high_contrast_system(
+    button_text: Color,
+    highlight: Option<[Color; 2]>,
+    gray: Color,
+) -> SystemOverrides {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: highlight.map(|[highlight, text]| {
+            OsSelectionColors::new(Some(highlight), Some(text), None, None)
+        }),
+        disabled_text: Some(gray),
+        ..OsColors::default()
+    };
+    SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    }
+}
+
+/// Under high contrast the combo box's outline is ComboBoxBorderBrush,
+/// SystemColorButtonTextColor, and disabled ComboBoxBorderBrushDisabled,
+/// SystemColorGrayTextColor (ComboBox_themeresources.xaml:159 >
+/// generic.xaml:2041, :162 > generic.xaml:2025 at microsoft-ui-xaml 2.5.1,
+/// the rc1 spike table). Where the system states no highlight, the text
+/// field's hovered outline and the combo box's hovered and pressed ones are
+/// the rest outline, the button text, no normal-contrast colour.
+#[test]
+fn a_high_contrast_combo_box_takes_the_button_text_and_the_grey_text() {
+    let [button_text, highlight, highlight_text, gray] =
+        [2, 3, 4, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let high = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(
+            button_text,
+            Some([highlight, highlight_text]),
+            gray,
+        ))
+        .resolve(&ctx);
+    assert_eq!(high.context.contrast, Contrast::High);
+    let combo = |t: &ResolvedTheme, state| stroke_color(&t.combo_box.field(state).stroke);
+    assert_eq!(combo(&high, WidgetState::NONE), Some(button_text));
+    assert_eq!(combo(&high, WidgetState::DISABLED), Some(gray));
+    let partial = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(button_text, None, gray))
+        .resolve(&ctx);
+    assert_eq!(partial.context.contrast, Contrast::High);
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke_color(&partial.input.field(state).stroke),
+            Some(button_text),
+            "{state:?}"
+        );
+        assert_eq!(combo(&partial, state), Some(button_text), "{state:?}");
+    }
+}
+
+/// Under a palette kept under high contrast
+/// (`preserve_palette_in_high_contrast`, spec §6, step 1) the palette's
+/// `border` stands over the high-contrast colours of the text field's, the
+/// text area's and the combo box's outline in every state, and the primary
+/// button's outline is the accent elevation border's, as without high
+/// contrast.
+#[test]
+fn a_palette_kept_under_high_contrast_stands_over_its_outlines() {
+    let [button_text, highlight, highlight_text, gray] =
+        [2, 3, 4, 5].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let p = distinct_palette(Scheme::Light);
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let kept = Theme::preset(Preset::Windows11)
+        .with_system_overrides(high_contrast_system(
+            button_text,
+            Some([highlight, highlight_text]),
+            gray,
+        ))
+        .with_palette(p.clone())
+        .preserve_palette_in_high_contrast(true)
+        .resolve(&ctx);
+    assert_eq!(kept.context.contrast, Contrast::High);
+    for state in [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke_color(&kept.input.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+        assert_eq!(
+            stroke_color(&kept.text_area.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+    }
+    for state in [
+        WidgetState::NONE,
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+    ] {
+        assert_eq!(
+            stroke_color(&kept.combo_box.field(state).stroke),
+            Some(p.border),
+            "{state:?}"
+        );
+    }
+    let primary = |state| kept.button.body(ButtonQuery::primary().state(state)).stroke;
+    assert_eq!(
+        primary(WidgetState::NONE),
+        Stroke::uniform(kept.layout.border_width, srgb8(0xffff_ff14))
+    );
+    assert_eq!(primary(WidgetState::PRESSED), Stroke::None);
+}
+
 /// The focus visual is the 2px outer ring around the 1px inner one in
 /// `FocusStrokeColorInner` (#B3FFFFFF / #B3000000), 1 px outside the part
 /// (Button's `FocusVisualMargin` -3); a list row's lies inside it, its outer

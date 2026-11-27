@@ -25,8 +25,9 @@
 //! `border` are the window's, so every outline drawn in the default border,
 //! the separator and the neutral elevation borders' colour (the push
 //! button's, the combo box's and the text field's outline at rest, hovered
-//! and disabled), one colour as without a palette; `link` is the link, whose hovered and pressed colours,
-//! shades of another colour, are then not stated (spec §6, step 2); `error`,
+//! and disabled), one colour as without a palette; `link` is the link,
+//! whose hovered and pressed colours, shades of another colour, are then not
+//! stated (spec §6, step 2); `error`,
 //! `warning`, `success` and `info` are the status fills; `accent` is the
 //! accent, written as given as an explicit accent is (below), and `accent_fg`
 //! the text on it; `selection_bg` and `selection_fg` are the selection's,
@@ -1693,7 +1694,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             shape: None,
         },
         elevations: Arc::from([]),
-        button: button(c, &hc, &colors, &typography, &layout),
+        button: button(c, &hc, &colors, inputs.palette, &typography, &layout),
         checkbox: checkbox(c, &hc, &colors, &typography, &layout),
         radio: radio(c, &hc, &colors, &typography, &layout),
         scrollbar: scrollbar(
@@ -1726,6 +1727,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             c,
             &hc,
             &colors,
+            inputs.palette,
             &typography,
             &layout,
             physical_edges(
@@ -1743,6 +1745,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             c,
             &hc,
             &colors,
+            inputs.palette,
             &typography,
             &layout,
             physical_edges(
@@ -1765,7 +1768,15 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, &hc, &typography),
         dialog: dialog(c, &colors, &typography, units, &layout, motion),
-        combo_box: combo_box(c, &hc, &colors, &typography, &layout, direction),
+        combo_box: combo_box(
+            c,
+            &hc,
+            &colors,
+            inputs.palette,
+            &typography,
+            &layout,
+            direction,
+        ),
         segmented_control: segmented_control(c, &hc, &typography, &layout),
         card: card(c, &colors),
         expander: expander(c, &colors, &typography, &layout, direction),
@@ -1797,12 +1808,18 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// [`HIGH_CONTRAST_PROGRESS_BAR_BORDER_WIDTH`]); `COLOR_BTNFACE` the push
 /// button's, the text field's and the segmented control's fills and the
 /// hovered on switch; `COLOR_BTNTEXT` the push button's, the text field's,
-/// the menu's, the title's and the segmented control's text;
-/// `COLOR_HIGHLIGHT` the selection, the accent and every accent fill, the
-/// list's selected row, the segmented control's outline and selected
-/// segment and the focused text field's outline; `COLOR_HIGHLIGHTTEXT` the
-/// text on them and the hovered unchecked box and circle; `COLOR_HOTLIGHT`
-/// the link; `COLOR_GRAYTEXT` the disabled text, the inactive title and a
+/// the menu's, the title's and the segmented control's text, the push
+/// button's, the text field's and the combo box's outline and a checked
+/// hovered button's fill and outline; `COLOR_HIGHLIGHT` the selection, the
+/// accent and every accent fill, the list's selected row, the segmented
+/// control's outline and selected segment, the focused text field's outline,
+/// the primary button's outline, the hovered push button's, text field's
+/// and combo box's outline, the pressed combo box's and a checked toolbar
+/// button's; `COLOR_HIGHLIGHTTEXT` the text on them, the hovered unchecked
+/// box and circle, the hovered and pressed push button's fill, its pressed
+/// outline and a checked button's outline; `COLOR_HOTLIGHT` the link;
+/// `COLOR_GRAYTEXT` the disabled text, the inactive title, the disabled push
+/// button's, primary button's, checked button's and combo box's outline and a
 /// disabled checked or mixed box's fill and outline, a disabled checked
 /// circle's outline and its dot; `COLOR_WINDOW` also a disabled checked or
 /// mixed box's mark and a disabled checked circle's fill ([`checkbox`],
@@ -2360,6 +2377,14 @@ fn elevation_border(c: &SchemeColors, hc: &HighContrast, roles: &ColorRoles) -> 
     }
 }
 
+/// The high-contrast colour `color` where no palette `palette` is kept under
+/// high contrast (spec §6, resolution step 1,
+/// `preserve_palette_in_high_contrast`): a colour the palette states stands
+/// over the high-contrast one, as in [`roles`].
+fn unless_palette(color: Option<Color>, palette: Option<&Palette>) -> Option<Color> {
+    color.filter(|_| palette.is_none())
+}
+
 /// A part's corners at `radius`.
 fn corners(radius: f32) -> PartProp {
     PartProp::Corners(Corners::uniform(radius))
@@ -2395,16 +2420,17 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// accent's secondary and tertiary fills, checked and pressed or disabled in
 /// no outline; the primary variant filled with the accent's fill in the
 /// accent elevation border's colour inside its edge (`OuterBorderEdge`), in
-/// no outline pressed or disabled, lettered in the accent's text (0.7.2: `primary_text_color` is
-/// `defaults.accent_text_color` where unstated). Its label is the window's
-/// text, pressed the muted text, checked the accent's text, checked and
-/// pressed the accent's secondary text, disabled the disabled text. Under high contrast the
-/// fill is the button face and the label and the outline the button text
-/// ([`HighContrast`]), hovered and pressed the highlight text behind the
-/// highlight, the outline hovered the highlight, pressed the highlight text
-/// and disabled the grey text; checked, the outline the highlight text,
-/// hovered the button text; the primary button's the highlight.
-/// The flat variant is WinUI's subtle button, which has no checked form:
+/// no outline pressed or disabled, lettered in the accent's text (0.7.2:
+/// `primary_text_color` is `defaults.accent_text_color` where unstated). Its
+/// label is the window's text, pressed the muted text, checked the accent's
+/// text, checked and pressed the accent's secondary text, disabled the
+/// disabled text. Under high contrast the fill is the button face and the
+/// label and the outline the button text ([`HighContrast`]), hovered and
+/// pressed the highlight text behind the highlight, the outline hovered the
+/// highlight, pressed the highlight text and disabled the grey text; checked,
+/// the outline the highlight text, hovered the button text; the primary
+/// button's the highlight where no palette `palette` is kept under high
+/// contrast ([`unless_palette`]). The flat variant is WinUI's subtle button, which has no checked form:
 /// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
 /// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
 /// cannot be checked, and `ToggleButton_themeresources.xaml` there defines
@@ -2415,6 +2441,7 @@ fn button(
     c: &SchemeColors,
     hc: &HighContrast,
     roles: &ColorRoles,
+    palette: Option<&Palette>,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> ButtonWidget {
@@ -2436,6 +2463,7 @@ fn button(
     // Outside high contrast ButtonBorderBrush = ControlElevationBorderBrush, its three sides
     // (`elevation_stroke`), as disabled ButtonBorderBrushDisabled = ControlStrokeColorDefaultBrush.
     let neutral = elevation_border(c, hc, roles);
+    let primary_outline = unless_palette(hc.highlight, palette);
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
@@ -2557,16 +2585,17 @@ fn button(
                 fill(c.accent_fill),
                 stroke(
                     layout.border_width,
-                    hc.highlight.unwrap_or(c.on_accent_stroke),
+                    primary_outline.unwrap_or(c.on_accent_stroke),
                 ),
             ],
         )
         .rule(
             primary(WidgetState::PRESSED),
-            [hc.highlight
-                .map_or(PartProp::Stroke(Stroke::None), |color| {
+            [
+                primary_outline.map_or(PartProp::Stroke(Stroke::None), |color| {
                     stroke(layout.border_width, color)
-                })],
+                }),
+            ],
         )
         // Disabled, ButtonBackgroundDisabled = ControlFillColorDisabledBrush
         // (Button_themeresources.xaml:131, :33 at microsoft-ui-xaml 8463f45); under high contrast
@@ -3424,14 +3453,20 @@ fn window(
 /// shadow; hovered, the same outline (`input.hover_border_color`); focused,
 /// the outline in the accent's fill; disabled, the disabled fill; the
 /// window's text, its own disabled colour; the placeholder in the muted
-/// text. Under high contrast the fill is the button face, the text and the
-/// outline the button text, the hovered outline the highlight, the
+/// text. Under high contrast the fill is the button face, the text the
+/// button text, the outline the button text and hovered the highlight where
+/// no palette `palette` is kept under high contrast ([`unless_palette`]), the
 /// placeholder the window text and the focused outline the mapping's accent
 /// fill ([`HighContrast::focused_outline`]).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the colours, the high-contrast ones and the palette over them, the typography, the layout, and the text field's or the text area's own padding and height"
+)]
 fn input(
     c: &SchemeColors,
     hc: &HighContrast,
     roles: &ColorRoles,
+    palette: Option<&Palette>,
     typography: &Typography,
     layout: &LayoutMetrics,
     padding: Edges,
@@ -3444,13 +3479,10 @@ fn input(
     // text (TextBox_themeresources.xaml:87 > generic.xaml:2041 at microsoft-ui-xaml 2.5.1;
     // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row
     // TextControlBorderBrush), not the window text the default border is.
+    let rest_border = unless_palette(hc.button_text, palette).or(elevation_border(c, hc, roles));
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
-        .base(
-            hc.button_text
-                .or(elevation_border(c, hc, roles))
-                .map(|color| outside_stroke(layout.border_width, color)),
-        )
+        .base(rest_border.map(|color| outside_stroke(layout.border_width, color)))
         .base([
             corners(layout.corner_radius),
             // `input.border.shadow_enabled`: platform-facts.md (§2.4): no shadow
@@ -3465,8 +3497,10 @@ fn input(
     // microsoft-ui-xaml 2.5.1; `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on
     // `v0.8.0-rc1`, row TextControlBorderBrushPointerOver); stated for `HOVER` (spec §2,
     // `from_state`). Pressed, the same: the TextBox has no Pressed state (:255, :256, :275, :291),
-    // so under the pressing pointer it is PointerOver; the click focuses it (FOCUSED).
-    let hover_border = Some(hc.highlight.unwrap_or(c.elevation_stroke));
+    // so under the pressing pointer it is PointerOver; the click focuses it (FOCUSED). The source
+    // gives the hovered outline under high contrast as the highlight alone; where the system states
+    // none, or a palette is kept, it is the rest outline, as PointerOver is outside high contrast.
+    let hover_border = unless_palette(hc.highlight, palette).or(rest_border);
     let field = field
         .rules(
             hover_border.into_iter().flat_map(|_| {
@@ -4354,21 +4388,30 @@ fn dialog(
 /// The combo box: `ControlFillColorDefault` in the elevation border's colour
 /// ([`elevation_border`]) at the default radius and width
 /// (`resolve_border_inheritance`), no shadow, padded, of least sizes, its
-/// hover and disabled fills, its outline under high contrast the highlight
-/// hovered and pressed; the window's text, the disabled text's colour when
-/// disabled; its arrow's size and column.
+/// hover and disabled fills, its outline under high contrast the button text,
+/// the highlight hovered and pressed and the grey text disabled where no
+/// palette `palette` is kept under high contrast ([`unless_palette`]); the
+/// window's text, the disabled text's colour when disabled; its arrow's size
+/// and column.
 fn combo_box(
     c: &SchemeColors,
     hc: &HighContrast,
     roles: &ColorRoles,
+    palette: Option<&Palette>,
     typography: &Typography,
     layout: &LayoutMetrics,
     direction: Direction,
 ) -> ComboBoxWidget {
     // ComboBoxBorderBrush = ControlElevationBorderBrush, its three sides (`elevation_stroke`), as
     // disabled ComboBoxBorderBrushDisabled = ControlStrokeColorDefaultBrush
-    // (ComboBox_themeresources.xaml:264, :267 / :54, :57 at microsoft-ui-xaml 8463f45).
-    let outline = elevation_border(c, hc, roles).map(|color| stroke(layout.border_width, color));
+    // (ComboBox_themeresources.xaml:264, :267 / :54, :57 at microsoft-ui-xaml 8463f45); under high
+    // contrast SystemColorButtonTextColor, the button text, and disabled SystemColorGrayTextColor
+    // (ComboBox_themeresources.xaml:159 > generic.xaml:2041, :162 > generic.xaml:2025 at
+    // microsoft-ui-xaml 2.5.1; `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on
+    // `v0.8.0-rc1`, rows ComboBoxBorderBrush and ComboBoxBorderBrushDisabled).
+    let rest_border = unless_palette(hc.button_text, palette).or(elevation_border(c, hc, roles));
+    let outline = rest_border.map(|color| stroke(layout.border_width, color));
+    let highlight = unless_palette(hc.highlight, palette);
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(c.control_fill)])
         .base(outline.clone())
@@ -4396,7 +4439,7 @@ fn combo_box(
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             std::iter::once(fill(c.control_fill_hover)).chain(
-                hc.highlight
+                highlight
                     .map(|color| stroke(layout.border_width, color))
                     .or(outline),
             ),
@@ -4413,14 +4456,17 @@ fn combo_box(
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             std::iter::once(fill(c.control_fill_pressed)).chain(
-                hc.highlight
-                    .or(elevation_border(c, hc, roles))
+                highlight
+                    .or(rest_border)
                     .map(|color| stroke(layout.border_width, color)),
             ),
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.control_fill_disabled)],
+            std::iter::once(fill(c.control_fill_disabled)).chain(
+                unless_palette(hc.gray_text, palette)
+                    .map(|color| stroke(layout.border_width, color)),
+            ),
         )
         .build();
     // Hovered, the label as at rest: ComboBoxForegroundPointerOver = TextFillColorPrimary
