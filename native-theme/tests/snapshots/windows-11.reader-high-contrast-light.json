@@ -647,7 +647,7 @@
         "fill": "#030303",
         "stroke": {
           "width": 1.0,
-          "color": "#020202",
+          "color": "#040404",
           "align": "outside"
         },
         "corners": 4.0,
@@ -765,7 +765,7 @@
         "fill": "#030303",
         "stroke": {
           "width": 1.0,
-          "color": "#020202",
+          "color": "#040404",
           "align": "outside"
         },
         "corners": 4.0,
@@ -2401,7 +2401,7 @@
             "fill": "#f6f6f6",
             "stroke": {
               "width": 1.0,
-              "color": "#020202"
+              "color": "#050505"
             }
           }
         },

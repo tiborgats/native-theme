@@ -462,11 +462,11 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "button_disabled",
-        "button.body(DISABLED).fill and button.label(DISABLED).color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
+        "button.body(DISABLED).fill and button.label(DISABLED).color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button); its border colour button.body(DISABLED).stroke.color where a rule states it for the disabled state, else none, and the rest border of next::geometry::button stands",
     ),
     (
         "button_checked",
-        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, each where a rule states it for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where a rule states neither, the refinement sets none and upstream's selected fill or label stands: its fill ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, the toolkit's own selected fill themed, and its label button_foreground, not the pressed label (spec §10, rule 0a)",
+        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, each where a rule states it for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where a rule states neither, the refinement sets none and upstream's selected fill or label stands: its fill ThemeColor button_active, which next::apply sets from button.body(PRESSED).fill, the toolkit's own selected fill themed, and its label button_foreground, not the pressed label (spec §10, rule 0a). Its border colour is button.body(CHECKED).stroke.color where a rule states it, at next::geometry::button's width, else none, and the rest border stands; it stays under the pointer and pressed, where a selected Button takes no hover or press style",
     ),
     (
         "default_button_rest",

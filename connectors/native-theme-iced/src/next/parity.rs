@@ -1779,49 +1779,67 @@ const W11_ELEVATION: &str = "windows-11's elevation borders take WinUI's colours
      ControlStrokeColorDefault #0F000000 / #12FFFFFF (ControlElevationBorderBrush, \
      TextControlElevationBorderBrush; Common_themeresources_any.xaml:243, :39 at \
      microsoft-ui-xaml 8463f45), where 0.7.2 gives the default border, \
-     CardStrokeColorDefault #0F000000 / #19000000; the primary button's and a checked toolbar \
-     button's ControlStrokeColorOnAccentDefault #14FFFFFF (AccentControlElevationBorderBrush, \
-     :245, :41), inside the edge, the primary button's none pressed or disabled, where 0.7.2 \
-     gives the default border and the toolbar button none (native-theme/tests/next_homes.toml, \
+     CardStrokeColorDefault #0F000000 / #19000000; the primary button's, a checked push \
+     button's and a checked toolbar button's ControlStrokeColorOnAccentDefault #14FFFFFF \
+     (AccentControlElevationBorderBrush, :245, :41), inside the edge, the primary and the \
+     checked push button's none pressed or disabled, which the connector draws (a checked \
+     push button's by styles::CheckedBorders), where 0.7.2 gives the default border, the \
+     checked push button the unchecked one's, and the toolbar button none \
+     (native-theme/tests/next_homes.toml, \
      rows button.border.color, input.border.color, text_area.border.color, \
      combo_box.border.color, toolbar.button_checked_border_color, listed differences); the \
      connector lays each over the fill the status paints";
 
-/// A toggle on windows-11: [`BUTTON_OUTLINE`], checked [`W11_CHECKED_OUTLINE`]
-/// and the pressed stroke colour, and checked [`TOGGLE_CHECKED_FILLS`] and
-/// [`TOGGLE_CHECKED_LABELS`].
+/// A toggle on windows-11: [`BUTTON_OUTLINE`], checked [`W11_CHECKED_OUTLINE`],
+/// and checked [`TOGGLE_CHECKED_FILLS`] and [`TOGGLE_CHECKED_LABELS`].
 const WINDOWS_TOGGLE: &[&[Stated]] = &[
     &BUTTON_OUTLINE,
     &W11_CHECKED_OUTLINE,
-    &[button_stroke!(PRESSED | CHECKED;)],
     &TOGGLE_CHECKED_FILLS,
     &TOGGLE_CHECKED_LABELS,
 ];
 
-/// A checked toggle's outline at rest, disabled and under the pointer, the
-/// unchecked button's (`button.body(NONE)`, `body(HOVER)`), as the connector
-/// draws it.
-const W11_CHECKED_OUTLINE: [Stated; 3] = [
+/// A checked toggle's outline in each status, the checked body's the
+/// preset states for its state (`button.body(CHECKED)`, `(HOVER | CHECKED)`,
+/// `(PRESSED | CHECKED)`, `(DISABLED | CHECKED)`), which the connector draws
+/// (`styles::CheckedBorders`).
+const W11_CHECKED_OUTLINE: [Stated; 6] = [
     set(
         at!(NONE | CHECKED),
         Field::BorderColor,
-        home!(stroke, button.body(NONE)),
+        home!(stroke, button.body(CHECKED)),
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderWidth,
+        home!(width, button.body(DISABLED | CHECKED)),
     ),
     set(
         at!(DISABLED | CHECKED),
         Field::BorderColor,
-        home!(stroke, button.body(NONE) faded by button.disabled_opacity),
+        home!(stroke, button.body(DISABLED | CHECKED) faded by button.disabled_opacity),
     ),
     set(
         at!(HOVER | CHECKED),
         Field::BorderColor,
-        home!(stroke, button.body(HOVER)),
+        home!(stroke, button.body(HOVER | CHECKED)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::BorderWidth,
+        home!(width, button.body(PRESSED | CHECKED)),
+    ),
+    set(
+        at!(PRESSED | CHECKED),
+        Field::BorderColor,
+        home!(stroke, button.body(PRESSED | CHECKED)),
     ),
 ];
 
-/// windows-11's primary button's outline: [`PRIMARY_OUTLINE`]'s at rest,
-/// disabled and pressed, and under the pointer the rest one, no rule for
-/// HOVER stating the primary body's stroke.
+/// windows-11's primary button's outline: [`PRIMARY_OUTLINE`]'s at rest and
+/// pressed, disabled the disabled primary body's the preset states
+/// (`button.body(DISABLED; variant=Primary)`, none), and under the pointer
+/// the rest one, no rule for HOVER stating the primary body's stroke.
 const W11_PRIMARY_OUTLINE: [Stated; 7] = [
     set(
         at!(NONE),
@@ -1836,12 +1854,12 @@ const W11_PRIMARY_OUTLINE: [Stated; 7] = [
     set(
         at!(DISABLED),
         Field::BorderWidth,
-        home!(width, button.body(NONE; Primary)),
+        home!(width, button.body(DISABLED; Primary)),
     ),
     set(
         at!(DISABLED),
         Field::BorderColor,
-        home!(stroke, button.body(NONE; Primary) faded by button.disabled_opacity),
+        home!(stroke, button.body(DISABLED; Primary) faded by button.disabled_opacity),
     ),
     set(
         at!(HOVER),

@@ -671,8 +671,8 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     });
     // A toggle button: `Off` a button at rest, `On` the same button held on: egui's own selected
     // button (`Button::selected`), with the checked colours [`toggle_on_in`] reads for the state
-    // of its previous response laid over it per call where the theme states them (spec §10,
-    // rule 0).
+    // of its previous response laid over it per call where the theme states them, and the
+    // checked outline [`toggle_on_pen`] reads likewise (spec §10, rule 0).
     let checked = native_theme::next::ButtonQuery::new(NextState::CHECKED);
     let on = toggle_on_at(r, checked);
     let on_key = egui::Id::unique(("basic state", "basic.buttons.toggle_on"));
@@ -681,6 +681,7 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         fill: on_fill,
         text: on_text,
     } = toggle_on_in(r, checked, on_was);
+    let on_pen = toggle_on_pen(r, checked, on_was);
     // A dialog's default button, the one Enter activates: where the theme gives it a look of its
     // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
     // in the state of its previous response, kept in the page's memory (focus before hover, as
@@ -696,12 +697,22 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
-        let held = |_: &egui::Ui, text: egui::RichText| {
+        let held = |ui: &egui::Ui, text: egui::RichText| {
             let text = match on_text {
                 Some(color) => text.color(color),
                 None => text,
             };
             let button = Button::new(text).selected(true);
+            // The checked outline over the fill egui paints the button in: the checked fill
+            // where stated, else egui's selected button's.
+            let button = match &on_pen {
+                Some((part, pen)) => button.stroke(demo::pen_over(
+                    part,
+                    *pen,
+                    on_fill.unwrap_or(ui.visuals().selection.bg_fill),
+                )),
+                None => button,
+            };
             match on_fill {
                 Some(fill) => button.fill(fill),
                 None => button,
@@ -844,6 +855,39 @@ pub(crate) fn toggle_on_in(
             .then(|| next::text_color_of(&label))
             .flatten()
             .or(rest.text),
+    }
+}
+
+/// A toggle button's outline while on, of the installed 0.8.0 theme `r`, in the state `(hovered,
+/// pressed)` of its previous response, `on` a query with the checked flag alone, with the part
+/// that states it: at rest the pen a rule states for `button.body(on)`; pressed the theme's
+/// answer for `on` with `PRESSED` added, else hovered for `on` with `HOVER` added, where the
+/// theme states the stroke for the checked flag by spec §2's two queries (`from_state`: a rule
+/// for `on`, or the state's own query asking `on`'s flag), as [`toggle_on_in`] takes the colours,
+/// since `Button::stroke` overrides every on-hover effect (spec §10, rule 0). `None` where it
+/// states the stroke by neither, or in a form egui cannot draw, and egui's own selected button's
+/// pen stays (`visuals.selection.stroke`, rule 0a).
+pub(crate) fn toggle_on_pen(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    on: native_theme::next::ButtonQuery,
+    (hovered, pressed): (bool, bool),
+) -> Option<(native_theme::next::PartStyle, egui::Stroke)> {
+    use native_theme::next::PartStated;
+    let r = r?;
+    let rest = r.button.body(on);
+    let pen = demo::state_pen(&rest);
+    let flag = if pressed {
+        NextState::PRESSED
+    } else if hovered {
+        NextState::HOVER
+    } else {
+        return pen.map(|pen| (rest, pen));
+    };
+    let part = r.button.body(on.with_state(flag).asking(on.state));
+    let stated = pen.is_some() || part.from_state.contains(PartStated::STROKE);
+    match stated.then(|| demo::stated_pen(&part)).flatten() {
+        Some(own) => Some((part, own)),
+        None => pen.map(|pen| (rest, pen)),
     }
 }
 

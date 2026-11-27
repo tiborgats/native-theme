@@ -21,9 +21,9 @@ use super::{
     to_color,
 };
 use crate::styles::{
-    self as old, ButtonSource, CheckFills, CheckboxSource, CheckedStates, ExpanderSource,
-    InputSource, Layer, Line, LinkSource, MenuSource, Outline, PartOutline, PickListSource,
-    ScrollbarSource, SegmentPosition, SegmentedSource, SliderSource, SwitchSource,
+    self as old, ButtonSource, CheckFills, CheckboxSource, CheckedBorders, CheckedStates,
+    ExpanderSource, InputSource, Layer, Line, LinkSource, MenuSource, Outline, PartOutline,
+    PickListSource, ScrollbarSource, SegmentPosition, SegmentedSource, SliderSource, SwitchSource,
     ToolbarButtonSource, ToolbarLabels, ToolbarOutline,
 };
 
@@ -129,6 +129,15 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.body(ButtonQuery::primary().state(WidgetState::PRESSED)),
             "button.body(PRESSED; variant=Primary).stroke.color",
         )?,
+        disabled_border_color: state_line(
+            &b.body(WidgetState::DISABLED),
+            "button.body(DISABLED).stroke.color",
+        )?,
+        primary_disabled_border_color: state_line(
+            &b.body(ButtonQuery::primary().state(WidgetState::DISABLED)),
+            "button.body(DISABLED; variant=Primary).stroke.color",
+        )?,
+        checked_borders: checked_borders(r)?,
         primary_background: fill_of(&primary, "button.body(NONE; variant=Primary).fill")?,
         primary_label: text_color_of(&b.label(ButtonQuery::primary())),
         default_background: state_fill_of(&default, "button.body(DEFAULT).fill")?,
@@ -139,6 +148,52 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
         default_border_color: state_line(&default, "button.body(DEFAULT).stroke.color")?,
         window_background: to_color(stated(c.window.background, "colors.window.background")?),
         window_text: to_color(stated(c.window.foreground, "colors.window.foreground")?),
+    })
+}
+
+/// [`CheckedBorders`] of the 0.8.0 model: a checked push button's stroke at
+/// rest where a rule states `button.body(CHECKED)`'s; under the pointer and
+/// pressed the theme's answer for `CHECKED | HOVER` and `CHECKED | PRESSED`
+/// where it states the stroke for `CHECKED` by the spec's two queries
+/// (spec §2, `from_state`: `CHECKED` alone, or the state's own query asking
+/// `CHECKED`); disabled its answer for `DISABLED | CHECKED` where it states
+/// the stroke so for `CHECKED` or for `DISABLED`, the two flags the style
+/// keeps a treatment of there. Each `None` where it does not, and the
+/// unchecked button's border stays in that status (spec §10, rule 0a).
+fn checked_borders(r: &ResolvedTheme) -> Mapped<CheckedBorders> {
+    let b = &r.button;
+    let checked = b.body(WidgetState::CHECKED);
+    let at = |state: WidgetState, flag: WidgetState| b.body(ButtonQuery::new(state).asking(flag));
+    let on = |state: WidgetState, home| {
+        flagged(
+            &checked,
+            &at(WidgetState::CHECKED | state, WidgetState::CHECKED),
+            PartStated::STROKE,
+            |p| line_or_none(p, home),
+        )
+    };
+    let both = WidgetState::DISABLED | WidgetState::CHECKED;
+    let home = "button.body(DISABLED|CHECKED).stroke.color";
+    let disabled = match on(WidgetState::DISABLED, home)? {
+        Some(line) => Some(line),
+        None => flagged(
+            &b.body(WidgetState::DISABLED),
+            &at(both, WidgetState::DISABLED),
+            PartStated::STROKE,
+            |p| line_or_none(p, home),
+        )?,
+    };
+    Ok(CheckedBorders {
+        rest: state_line(&checked, "button.body(CHECKED).stroke.color")?,
+        hover: on(
+            WidgetState::HOVER,
+            "button.body(CHECKED|HOVER).stroke.color",
+        )?,
+        pressed: on(
+            WidgetState::PRESSED,
+            "button.body(CHECKED|PRESSED).stroke.color",
+        )?,
+        disabled,
     })
 }
 
@@ -295,7 +350,9 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
     })
 }
 
-/// [`crate::styles::button`].
+/// [`crate::styles::button`]; disabled, outlined in
+/// `button.body(DISABLED)`'s stroke where a rule states it for `DISABLED`,
+/// else in the one at rest, faded as the fill is.
 ///
 /// # Errors
 ///
@@ -315,7 +372,14 @@ pub fn button(
 /// so a checked toggle whose theme states no checked fill
 /// (`button.body(CHECKED)`) is drawn in [`button_primary`]'s fill and label
 /// in the same status, a stated `button.label(CHECKED)` laid over; its
-/// outline, corners and shadow are the unchecked button's. A stated checked
+/// corners and shadow are the unchecked button's, and so is its outline in a
+/// status the theme states no checked stroke for: a checked stroke stated
+/// for `CHECKED` is drawn at rest, and under the pointer, pressed and
+/// disabled the theme's answer for `CHECKED | HOVER`, `CHECKED | PRESSED`
+/// and `DISABLED | CHECKED` where it states it by the spec's two queries
+/// for `CHECKED`, or for `DISABLED` there. A disabled toggle that is off
+/// takes `button.body(DISABLED)`'s stroke where a rule states it for
+/// `DISABLED`, as [`button`]. A stated checked
 /// fill is lettered in `button.label(CHECKED)` where stated, else in the
 /// label at rest (spec §10, rule 0a). Where the theme states the checked
 /// fill, a checked button under the pointer and pressed is filled in
@@ -386,7 +450,10 @@ pub fn toolbar_button(
     ))
 }
 
-/// [`crate::styles::button_primary`].
+/// [`crate::styles::button_primary`]; disabled, outlined in
+/// `button.body(DISABLED; variant=Primary)`'s stroke where a rule states it
+/// for `DISABLED` (windows-11: none), else in the one at rest, faded as the
+/// fill is.
 ///
 /// # Errors
 ///

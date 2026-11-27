@@ -998,6 +998,20 @@ const DIFFERENCES: &[Difference] = &[
                  refinement is equal",
     },
     Difference {
+        leaf: "geometry::button_checked",
+        presets: &["windows-11"],
+        reason: "0.7.2 states no checked push button outline, so its refinement of a checked \
+                 button sets no border colour and the rest outline stands; the 0.8.0 \
+                 windows-11 states ToggleButtonBorderBrushChecked = \
+                 AccentControlElevationBorderBrush's three sides, \
+                 ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes \
+                 (ToggleButton_themeresources.xaml:151, :35, Common_themeresources_any.xaml:397-405, \
+                 :198-206, :245, :41 at microsoft-ui-xaml 8463f45; docs/facts/windows/button.toml \
+                 on v0.8.0-rc1 at 78ee0efd, row W1-022), which next::geometry::button_checked \
+                 draws (docs/v0.8.0-spec.md §10, rule 0), so the refinement's border colour is \
+                 button.body(CHECKED)'s stroke colour; its fill and label are equal",
+    },
+    Difference {
         leaf: "geometry::toolbar_button_checked",
         presets: &["windows-11"],
         reason: "0.7.2's windows-11 states no checked toolbar button outline, so its refinement \
@@ -1906,6 +1920,11 @@ const RECOLOURED_BUTTON: &[&str] = &["windows-11"];
 /// entries whose checked toolbar button the 0.8.0 preset outlines where
 /// 0.7.2 states no outline, its fill and label as 0.7.2's.
 const TOOLBAR_CHECKED_OUTLINED: &[&str] = &["windows-11"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries whose
+/// checked push button the 0.8.0 preset outlines where 0.7.2 states no
+/// checked outline, its fill and label as 0.7.2's.
+const BUTTON_CHECKED_OUTLINED: &[&str] = &["windows-11"];
 
 /// The presets of [`DIFFERENCES`]' `variants::bordered_button` entries
 /// whose hovered push button the 0.8.0 preset strokes as none.
@@ -2957,6 +2976,25 @@ fn compare_builders(
     }
     let button_checked = "geometry::button_checked";
     match report.listed(button_checked) {
+        Some(listed) if BUTTON_CHECKED_OUTLINED.contains(&report.preset) => {
+            if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
+                report.count(button_checked);
+                let o = crate::geometry::button_checked(Native::unscaled(old));
+                let body = new.button.body(native_theme::next::WidgetState::CHECKED);
+                let mut corrected = o.clone();
+                corrected.border_color = n.border_color;
+                if o.border_color.is_some()
+                    || n.border_color != super::stroke_color(&body, "button.body(CHECKED)").ok()
+                    || corrected != n
+                {
+                    report.failures.push(format!(
+                        "{}: {button_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
         Some(listed) if RESTATED_BUTTON_FILLS.contains(&report.preset) => {
             if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
                 report.count(button_checked);

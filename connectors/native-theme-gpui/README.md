@@ -1016,7 +1016,17 @@ its selected style (`:836-842`). So a checked button, the push button
 label and pen under the pointer and pressed too, and a fill, label or pen the
 theme states for `CHECKED | HOVER` or `CHECKED | PRESSED` (the macOS presets
 state the toolbar button's fills and labels, kde-breeze the flat button's
-hovered Highlight pen) is not drawn; the connector draws nothing of its own in
+hovered Highlight pen, windows-11 the push and toolbar buttons' pressed
+`Stroke::None`) is not drawn; the connector draws nothing of its own in
+its place.
+
+**A primary button has no outline.** gpui-component lays a border out only
+for a `Default` Button and an outline one (gpui-component 0.10.0
+`src/button/button.rs:727-732`), so a `.primary()` Button is drawn without
+one, and the primary body's stroke the theme states at rest, hovered,
+pressed or disabled (`button.body(<state>; variant=Primary).stroke`:
+windows-11's AccentControlElevationBorderBrush at rest and hovered, none
+pressed and disabled) is not drawn; the connector draws nothing of its own in
 its place.
 
 **A toolbar or flat button's icon takes one colour.** gpui-component's

@@ -1067,6 +1067,74 @@ fn a_high_contrast_hovered_field_and_a_pressed_combo_box_take_the_highlight() {
     }
 }
 
+/// Under high contrast the text field's (and the text area's, a TextBox too)
+/// outline at rest is TextControlBorderBrush, SystemColorButtonTextColor
+/// (TextBox_themeresources.xaml:87 > generic.xaml:2041), and the combo box's
+/// hovered one ComboBoxBorderBrushPointerOver, SystemColorHighlightColor
+/// (ComboBox_themeresources.xaml:160 > generic.xaml:2072 at microsoft-ui-xaml
+/// 2.5.1, the rc1 spike table); outside it the push button's pressed outline
+/// is ButtonBorderBrushPressed = ControlStrokeColorDefault, the elevation
+/// border's three sides, which a palette's `border` replaces.
+#[test]
+fn a_high_contrast_field_and_hovered_combo_box_and_a_palette_s_pressed_button() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [button_text, highlight, highlight_text] =
+        [2, 3, 4].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                foreground: Some(button_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let high = Theme::preset(Preset::Windows11)
+        .with_system_overrides(system)
+        .resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(
+        stroke_color(&high.input.field(WidgetState::NONE).stroke),
+        Some(button_text)
+    );
+    assert_eq!(
+        stroke_color(&high.text_area.field(WidgetState::NONE).stroke),
+        Some(button_text)
+    );
+    assert_eq!(
+        stroke_color(&high.combo_box.field(WidgetState::HOVER).stroke),
+        Some(highlight)
+    );
+    for (scheme, want) in [
+        (Scheme::Light, srgb8(0x0000_000f)),
+        (Scheme::Dark, srgb8(0xffff_ff12)),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let pressed = |t: &ResolvedTheme| stroke_color(&t.button.body(WidgetState::PRESSED).stroke);
+        let p = distinct_palette(scheme);
+        let custom = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        assert_eq!(
+            pressed(&Theme::preset(Preset::Windows11).resolve(&ctx)),
+            Some(want),
+            "{scheme:?}"
+        );
+        assert_eq!(pressed(&custom), Some(p.border), "{scheme:?}");
+    }
+}
+
 /// The focus visual is the 2px outer ring around the 1px inner one in
 /// `FocusStrokeColorInner` (#B3FFFFFF / #B3000000), 1 px outside the part
 /// (Button's `FocusVisualMargin` -3); a list row's lies inside it, its outer

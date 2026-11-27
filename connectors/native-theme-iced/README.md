@@ -854,8 +854,8 @@ rule 0).
   ios-13 and material-3), `next::styles::button_toggle` and
   `next::styles::toolbar_button` draw a checked button in the primary
   button's fill and label in the same status, a label the theme states for
-  `CHECKED` laid over; its outline, corners and shadow are the unchecked
-  button's. A checked fill the theme states is lettered in the label it
+  `CHECKED` laid over; its outline where the theme states no checked one,
+  its corners and its shadow are the unchecked button's. A checked fill the theme states is lettered in the label it
   states for `CHECKED`, else in the label at rest, never in the pressed
   one (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
   stated `CHECKED` label, else in the label at rest"). iced gives the
@@ -868,7 +868,14 @@ rule 0).
   theirs (spec §10, rule 0). A disabled checked toolbar button is filled in
   what the theme states for `DISABLED | CHECKED`, where stated, and a
   disabled checked toggle likewise where the theme states the disabled
-  fill (macos-tahoe's measured disabled checked toggle).
+  fill (macos-tahoe's measured disabled checked toggle). Where the theme
+  states the checked push button's outline (`button.body(CHECKED)`'s
+  stroke, windows-11's), `next::styles::button_toggle` draws it at rest,
+  and under the pointer, pressed and disabled what it states for
+  `CHECKED | HOVER`, `CHECKED | PRESSED` and `DISABLED | CHECKED`
+  (windows-11: none pressed or disabled), at the unchecked button's width
+  and corners; a state it states no checked outline for keeps the
+  unchecked button's there.
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted

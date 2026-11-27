@@ -67,21 +67,29 @@ pub(crate) fn toggle(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     button_label(r)
 }
 
-/// [`crate::geometry::button_disabled`].
+/// [`crate::geometry::button_disabled`], and the border colour
+/// `button.body(DISABLED).stroke.color` where a rule states it for
+/// `DISABLED` (module doc of `next`), else unset, so [`button`]'s border at
+/// rest, which upstream replays over its disabled style, stands (spec §10,
+/// rule 0).
 pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
-    Ok(geometry::button_disabled_from(
-        Some(fill(
-            &b.body(WidgetState::DISABLED),
-            "button.body(DISABLED).fill",
-        )?),
+    let disabled = b.body(WidgetState::DISABLED);
+    let style = geometry::button_disabled_from(
+        Some(fill(&disabled, "button.body(DISABLED).fill")?),
         fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?,
         text_color(
             &b.label(WidgetState::DISABLED),
             "button.label(DISABLED).color",
         )?,
         stated(b.disabled_opacity, "button.disabled_opacity")?,
-    ))
+    );
+    Ok(
+        match state_stroke_color(&disabled, "button.body(DISABLED).stroke.color")? {
+            Some(pen) => style.border_color(pen),
+            None => style,
+        },
+    )
 }
 
 /// [`crate::geometry::button_checked`]: `button.checked_text_color` and
@@ -91,17 +99,28 @@ pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// `ButtonVariant::selected`): never the pressed pair the 0.7.2 path stands
 /// in with, `button.active_text_color` and `button.active_background`, since
 /// which state looks like which is the theme's to state (spec §10, rule 0a).
+/// The border colour is `button.body(CHECKED).stroke.color` where a rule
+/// states it for `CHECKED` (no line, transparent, where it states none),
+/// at [`button`]'s width, else unset, so [`button`]'s border at rest, which
+/// upstream replays over its selected style, stands (spec §10, rule 0).
 pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
-    Ok(geometry::button_checked_from(
+    let checked = b.body(WidgetState::CHECKED);
+    let style = geometry::button_checked_from(
         state_text_color(
             &b.label(WidgetState::CHECKED),
             "button.label(CHECKED).color",
         )?,
         None,
-        state_fill_of(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
+        state_fill_of(&checked, "button.body(CHECKED).fill")?,
         None,
-    ))
+    );
+    Ok(
+        match state_stroke_color(&checked, "button.body(CHECKED).stroke.color")? {
+            Some(pen) => style.border_color(pen),
+            None => style,
+        },
+    )
 }
 
 /// [`crate::geometry::default_button_rest`].

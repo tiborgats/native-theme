@@ -535,6 +535,33 @@ impl CheckedStates {
     }
 }
 
+/// A checked button's stroke at rest, under the pointer, pressed and
+/// disabled, on the 0.8.0 model each the theme's answer for `CHECKED`,
+/// `CHECKED | HOVER`, `CHECKED | PRESSED` and `CHECKED | DISABLED` where it
+/// states the stroke for the state by the spec's two queries (spec §2,
+/// `from_state`; spec §10, rule 0a). `None` is the unchecked button's
+/// border in that status, as on 0.7.2's, which states none.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct CheckedBorders {
+    pub rest: Option<Line>,
+    pub hover: Option<Line>,
+    pub pressed: Option<Line>,
+    pub disabled: Option<Line>,
+}
+
+impl CheckedBorders {
+    /// The checked stroke in `status`, where stated.
+    pub(crate) fn at(&self, status: iced_widget::button::Status) -> Option<Line> {
+        use iced_widget::button::Status;
+        match status {
+            Status::Active => self.rest,
+            Status::Hovered => self.hover,
+            Status::Pressed => self.pressed,
+            Status::Disabled => self.disabled,
+        }
+    }
+}
+
 /// What the button styles read from the theme, of either model: each
 /// field's 0.7.2 name, soft options as `None` where unset. A hover or
 /// pressed fill or label no rule states is `None`, and the button is then
@@ -587,6 +614,13 @@ pub(crate) struct ButtonSource {
     /// `hover_border_color`, which the model gives every button.
     pub primary_hover_border_color: Option<Line>,
     pub primary_pressed_border_color: Option<Line>,
+    /// The border of a disabled button where the theme states one for
+    /// `DISABLED`, else the one at rest, faded; 0.7.2 states none.
+    pub disabled_border_color: Option<Line>,
+    /// The primary button's own disabled border.
+    pub primary_disabled_border_color: Option<Line>,
+    /// A checked button's border in each status.
+    pub checked_borders: CheckedBorders,
     pub primary_background: Option<Color>,
     pub primary_label: Option<Color>,
     pub default_background: Option<Color>,
@@ -626,6 +660,9 @@ impl ButtonSource {
             pressed_border_color: line(b.hover_border_color),
             primary_hover_border_color: line(b.hover_border_color),
             primary_pressed_border_color: line(b.hover_border_color),
+            disabled_border_color: None,
+            primary_disabled_border_color: None,
+            checked_borders: CheckedBorders::default(),
             primary_background: Some(to_color(b.primary_background)),
             primary_label: Some(to_color(b.primary_text_color)),
             default_background: b.default_button_background.map(to_color),
@@ -729,6 +766,7 @@ impl ButtonSource {
             border: self.primary_border,
             hover_border_color: self.primary_hover_border_color,
             pressed_border_color: self.primary_pressed_border_color,
+            disabled_border_color: self.primary_disabled_border_color,
             ..self
         }
     }
@@ -779,7 +817,7 @@ pub(crate) fn button_from(
                     idle,
                     source.disabled_label,
                     label,
-                    outline,
+                    outline.with(source.disabled_border_color),
                     opacity,
                 );
                 (Some(Background::Color(fill)), label, border)
@@ -879,23 +917,34 @@ pub(crate) fn button_toggle_from(
                 )
             }
         };
+        // A checked stroke the theme states for the status's state is drawn
+        // over the fill (spec §10, rule 0a: "the function draws what the
+        // theme states for the state"); where it states none, the unchecked
+        // button's border in the status.
+        let checked_line = source.checked_borders.at(status);
         let (background, text_color, border) = match status {
             Status::Active | Status::Hovered | Status::Pressed => (
                 fill,
                 label,
-                source.border_at(theme, status, fill, iced_widget::button::secondary),
+                match checked_line {
+                    Some(line) => outline.with(Some(line)).over(fill),
+                    None => source.border_at(theme, status, fill, iced_widget::button::secondary),
+                },
             ),
-            Status::Disabled => match source.disabled_background {
-                Some(_) => disabled_button(
-                    source.checked_disabled_background,
-                    fill,
-                    source.disabled_label,
-                    rest_label,
-                    outline,
-                    opacity,
-                ),
-                None => disabled_button(None, fill, None, label, outline, opacity),
-            },
+            Status::Disabled => {
+                let outline = outline.with(checked_line);
+                match source.disabled_background {
+                    Some(_) => disabled_button(
+                        source.checked_disabled_background,
+                        fill,
+                        source.disabled_label,
+                        rest_label,
+                        outline,
+                        opacity,
+                    ),
+                    None => disabled_button(None, fill, None, label, outline, opacity),
+                }
+            }
         };
         Style {
             background: Some(Background::Color(background)),
@@ -1326,8 +1375,14 @@ pub(crate) fn class_button(
                     ),
                     None => (None, None, idle_label),
                 };
-                let (fill, label, border) =
-                    disabled_button(fill, idle, label, idle_label, outline, opacity);
+                let (fill, label, border) = disabled_button(
+                    fill,
+                    idle,
+                    label,
+                    idle_label,
+                    outline.with(source.disabled_border_color),
+                    opacity,
+                );
                 (Some(Background::Color(fill)), label, border)
             }
         };

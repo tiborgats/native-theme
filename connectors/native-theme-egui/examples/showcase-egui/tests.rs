@@ -1320,6 +1320,74 @@ fn an_unstated_checked_toggle_is_egui_s_selected_button_not_the_pressed_one() ->
     Ok(())
 }
 
+/// The Basic page's toggle while on, under windows-11 light and dark, is outlined in the checked
+/// stroke the preset states (`button.body(CHECKED)`, ToggleButtonBorderBrushChecked's three
+/// sides, ControlStrokeColorOnAccentDefault #14FFFFFF inside the edge), laid over the fill egui
+/// paints, not in egui's selected button's pen; under the pointer the theme's answer for
+/// `CHECKED | HOVER`, the same colour, and pressed for `CHECKED | PRESSED`, none
+/// (`pages::basic::toggle_on_pen`).
+#[test]
+fn a_windows_toggle_that_is_on_takes_the_stated_checked_outline() -> Result<(), String> {
+    use crate::pages::basic::toggle_on_pen;
+    use native_theme::next::{ButtonQuery, Color, Stroke, WidgetState};
+    use native_theme_egui::next::to_color32;
+    let on_accent = Color::from_srgb8(0xff, 0xff, 0xff, 0x14);
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let mut harness = open_page_under(Page::Basic, theme, "windows-11");
+        harness.run_steps(SETTLE);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(theme)
+            .ok_or("no 0.8.0 theme is installed")?
+            .clone();
+        let on = ButtonQuery::new(WidgetState::CHECKED);
+        let checked = r.button.body(on);
+        assert_eq!(checked.stroke, Stroke::uniform(1.0, on_accent), "{theme:?}");
+        let (fill, _) = button_paint(
+            &harness,
+            "toggle button (on)",
+            "On",
+            "basic.buttons.toggle_on",
+        )?;
+        let want = crate::demo::pen_over(
+            &checked,
+            egui::Stroke::new(1.0, to_color32(on_accent)),
+            fill,
+        );
+        let rect = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == "toggle button (on)")
+            .map(|r| r.rect)
+            .ok_or("no toggle button (on) record")?;
+        let drawn = harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(s) if s.rect == rect => Some(s.stroke),
+                _ => None,
+            })
+            .ok_or("no frame painted at the toggle's place")?;
+        assert_eq!(drawn, want, "{theme:?}");
+        let pen = |was| toggle_on_pen(Some(&r), on, was).map(|(_, pen)| pen);
+        assert_eq!(
+            pen((true, false)),
+            Some(egui::Stroke::new(1.0, to_color32(on_accent))),
+            "{theme:?} hovered"
+        );
+        assert_eq!(
+            pen((false, true)),
+            Some(egui::Stroke::NONE),
+            "{theme:?} pressed"
+        );
+    }
+    Ok(())
+}
+
 /// The side-panel toggle while the panel is open letters its label in
 /// `button.label(CHECKED; variant=Flat).color` where a rule states it, and in egui's own selected
 /// button's text colour, the suggested-action button's, where none does, never the flat button's

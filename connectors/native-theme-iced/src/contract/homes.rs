@@ -48,16 +48,22 @@ const REGENERATE_HOMES: &str =
 /// `toolbar.button(PRESSED|HOVER|CHECKED)`, iced's pressed status being
 /// under the pointer.
 const QUERIED_HOMES: &[&str] = &[
+    "button.body(CHECKED).stroke.color",
     "button.body(CHECKED; variant=Flat).stroke.color",
+    "button.body(DISABLED).stroke.color",
+    "button.body(DISABLED; variant=Primary).stroke.color",
+    "button.body(DISABLED|CHECKED).stroke.color",
     "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
     "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color",
     "button.body(HOVER; variant=Primary).stroke.color",
     "button.body(HOVER|CHECKED).fill",
+    "button.body(HOVER|CHECKED).stroke.color",
     "button.body(HOVER|CHECKED; variant=Flat).fill",
     "button.body(HOVER|CHECKED; variant=Flat).stroke.color",
     "button.body(NONE; variant=Primary).stroke.color",
     "button.body(PRESSED; variant=Primary).stroke.color",
     "button.body(PRESSED|CHECKED).fill",
+    "button.body(PRESSED|CHECKED).stroke.color",
     "button.body(PRESSED|CHECKED; variant=Flat).fill",
     "button.body(PRESSED|CHECKED; variant=Flat).stroke.color",
     "button.icon(CHECKED; variant=Flat).color",

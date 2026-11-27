@@ -2480,17 +2480,18 @@ fn button(
         )
         // Pressed, the outline flat ControlStrokeColorDefault: ButtonBorderBrushPressed =
         // ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state
-        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); under
-        // high contrast SystemColorHighlightTextColorBrush (Button_themeresources.xaml:88).
+        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45;
+        // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row
+        // ButtonBorderBrushPressed), the colour of the elevation border's three sides, which a
+        // palette's `border` replaces as at rest, as the combo box's pressed outline; under high
+        // contrast SystemColorHighlightTextColorBrush (Button_themeresources.xaml:88).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [
-                fill(hc.highlight_text.unwrap_or(c.control_fill_pressed)),
-                outside_stroke(
-                    layout.border_width,
-                    hc.highlight_text.unwrap_or(c.control_stroke),
-                ),
-            ],
+            std::iter::once(fill(hc.highlight_text.unwrap_or(c.control_fill_pressed))).chain(
+                hc.highlight_text
+                    .or(neutral)
+                    .map(|color| outside_stroke(layout.border_width, color)),
+            ),
         )
         // Hovered, the outline as at rest: ButtonBorderBrushPointerOver is the rest brush
         // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45); under high contrast
@@ -3423,9 +3424,10 @@ fn window(
 /// shadow; hovered, the same outline (`input.hover_border_color`); focused,
 /// the outline in the accent's fill; disabled, the disabled fill; the
 /// window's text, its own disabled colour; the placeholder in the muted
-/// text. Under high contrast the fill is the button face, the text the
-/// button text, the placeholder the window text and the focused outline the
-/// mapping's accent fill ([`HighContrast::focused_outline`]).
+/// text. Under high contrast the fill is the button face, the text and the
+/// outline the button text, the hovered outline the highlight, the
+/// placeholder the window text and the focused outline the mapping's accent
+/// fill ([`HighContrast::focused_outline`]).
 fn input(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -3438,11 +3440,16 @@ fn input(
     // TextControlBorderBrush = TextControlElevationBorderBrush, its three sides
     // (`elevation_stroke`), as disabled TextControlBorderBrushDisabled =
     // ControlStrokeColorDefaultBrush (TextBox_themeresources.xaml:134, :137 / :27, :30 at
-    // microsoft-ui-xaml 8463f45).
+    // microsoft-ui-xaml 8463f45); under high contrast SystemColorButtonTextColor, the button
+    // text (TextBox_themeresources.xaml:87 > generic.xaml:2041 at microsoft-ui-xaml 2.5.1;
+    // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row
+    // TextControlBorderBrush), not the window text the default border is.
     let field = RuleBuilder::new(PartStyle::default())
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
-            elevation_border(c, hc, roles).map(|color| outside_stroke(layout.border_width, color)),
+            hc.button_text
+                .or(elevation_border(c, hc, roles))
+                .map(|color| outside_stroke(layout.border_width, color)),
         )
         .base([
             corners(layout.corner_radius),
@@ -4347,8 +4354,9 @@ fn dialog(
 /// The combo box: `ControlFillColorDefault` in the elevation border's colour
 /// ([`elevation_border`]) at the default radius and width
 /// (`resolve_border_inheritance`), no shadow, padded, of least sizes, its
-/// hover and disabled fills; the window's text, the disabled text's colour
-/// when disabled; its arrow's size and column.
+/// hover and disabled fills, its outline under high contrast the highlight
+/// hovered and pressed; the window's text, the disabled text's colour when
+/// disabled; its arrow's size and column.
 fn combo_box(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -4381,10 +4389,17 @@ fn combo_box(
         ])
         // Hovered, the edge as at rest: ComboBoxBorderBrushPointerOver = ControlElevationBorderBrush,
         // the rest brush (ComboBox_themeresources.xaml:265 / :55, rest :264 / :54, PointerOver
-        // :416-417 at microsoft-ui-xaml 8463f45).
+        // :416-417 at microsoft-ui-xaml 8463f45); under high contrast SystemColorHighlightColor
+        // (ComboBox_themeresources.xaml:160 > generic.xaml:2072 at microsoft-ui-xaml 2.5.1;
+        // `docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row
+        // ComboBoxBorderBrushPointerOver).
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            std::iter::once(fill(c.control_fill_hover)).chain(outline),
+            std::iter::once(fill(c.control_fill_hover)).chain(
+                hc.highlight
+                    .map(|color| stroke(layout.border_width, color))
+                    .or(outline),
+            ),
         )
         // ComboBoxBackgroundPressed = ControlFillColorTertiary (ComboBox_themeresources.xaml:244,
         // Pressed state :433 at microsoft-ui-xaml 8463f45), flattened as `button.active_background`;
