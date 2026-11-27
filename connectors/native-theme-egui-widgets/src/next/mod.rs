@@ -45,28 +45,28 @@ pub(crate) fn fill(
     })
 }
 
-/// [`fill`] `part` at `home` where `ruled`, the part queried with the state's flag alone, has
-/// its fill from a rule for that state (spec §2, `from_state`): a state's fill laid over
-/// another state (`HOVER|CHECKED`), read only where the theme states one for the state.
+/// [`fill`] `part` at `home` where the theme states the fill for a state's flag (spec §2,
+/// `from_state`, the two queries): `ruled`, the part queried with the flag alone, or `part`, the
+/// part's own query asking the flag, has its bit: a state's fill laid over another state
+/// (`HOVER|CHECKED`), read only where the theme states one for the state.
 pub(crate) fn ruled_fill(
     ruled: &PartStyle,
     part: &PartStyle,
     home: &'static str,
     unmapped: &mut Vec<Note>,
 ) -> Option<Color32> {
-    if ruled.from_state.contains(PartStated::FILL) {
+    if ruled.from_state.contains(PartStated::FILL) || part.from_state.contains(PartStated::FILL) {
         fill(part, home, unmapped)
     } else {
         None
     }
 }
 
-/// [`stroke_color_of`] `part` where `ruled`, the part queried with the state's flag alone, has
-/// its stroke from a rule for that state.
+/// [`stroke_color_of`] `part` where the theme states the stroke for a state's flag: `ruled`, the
+/// part queried with the flag alone, or `part`, the part's own query asking the flag, has its
+/// bit.
 pub(crate) fn ruled_stroke(ruled: &PartStyle, part: &PartStyle) -> Option<Color32> {
-    ruled
-        .from_state
-        .contains(PartStated::STROKE)
+    (ruled.from_state.contains(PartStated::STROKE) || part.from_state.contains(PartStated::STROKE))
         .then(|| stroke_color_of(part))
         .flatten()
 }

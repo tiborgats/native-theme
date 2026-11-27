@@ -507,13 +507,15 @@ pub fn toolbar_button_checked_border_color(r: &ResolvedTheme) -> Mapped<Option<C
 #[non_exhaustive]
 pub struct CheckedToolButton {
     /// `toolbar.button(CHECKED)`, `(CHECKED | HOVER)` and `(CHECKED |
-    /// PRESSED)`'s fill; `None` where no rule states `CHECKED`'s, and egui's
-    /// own selected fill stays in every state.
-    pub fill: Option<[Color32; 3]>,
+    /// PRESSED)`'s fill, each where the theme states it for `CHECKED`;
+    /// `None` where it does not, and egui's own selected fill stays in that
+    /// state.
+    pub fill: [Option<Color32>; 3],
     /// `toolbar.button_label(CHECKED)`, `(CHECKED | HOVER)` and `(CHECKED |
-    /// PRESSED)`'s colour; `None` where no rule states `CHECKED`'s, and
-    /// egui's own selected text stays in every state.
-    pub text: Option<[Color32; 3]>,
+    /// PRESSED)`'s colour, each where the theme states it for `CHECKED`;
+    /// `None` where it does not, and egui's own selected text stays in that
+    /// state.
+    pub text: [Option<Color32>; 3],
 }
 
 impl CheckedToolButton {
@@ -522,7 +524,7 @@ impl CheckedToolButton {
     /// else the resting one's.
     #[must_use]
     pub fn at(&self, hovered: bool, pressed: bool) -> (Option<Color32>, Option<Color32>) {
-        let pick = |values: [Color32; 3]| {
+        let pick = |values: [Option<Color32>; 3]| {
             let [rest, hover, press] = values;
             if pressed {
                 press
@@ -532,17 +534,19 @@ impl CheckedToolButton {
                 rest
             }
         };
-        (self.fill.map(pick), self.text.map(pick))
+        (pick(self.fill), pick(self.text))
     }
 }
 
 /// A checked toolbar button's fills and label colours at rest, under the
-/// pointer and pressed ([`CheckedToolButton`]). Each is asked with the
-/// checked flag alone first: where a rule states `toolbar.button(CHECKED)`'s
-/// fill, the hovered and pressed fills are the theme's answers for
-/// `(CHECKED | HOVER)` and `(CHECKED | PRESSED)`; where none does, none,
-/// and egui's own selected look stays (spec §10, rules 0 and 0a). The label
-/// colours likewise, from `toolbar.button_label`.
+/// pointer and pressed ([`CheckedToolButton`]). At rest, the fill where a
+/// rule states `toolbar.button(CHECKED)`'s; under the pointer and pressed,
+/// the theme's answers for `(CHECKED | HOVER)` and `(CHECKED | PRESSED)`
+/// where it states the fill for `CHECKED` by spec §2's two queries
+/// (`from_state`): the checked flag alone, or the state's own query asking
+/// `CHECKED`; where it does not, none, and egui's own selected look stays
+/// in that state (spec §10, rules 0 and 0a). The label colours likewise,
+/// from `toolbar.button_label`.
 ///
 /// The result is all or nothing: one value egui cannot take makes the
 /// whole of it [`Unmapped`], so a caller has no hovered or pressed look
@@ -556,27 +560,46 @@ impl CheckedToolButton {
 /// egui can take.
 pub fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<CheckedToolButton> {
     let t = &r.toolbar;
-    let hover = WidgetState::HOVER | WidgetState::CHECKED;
-    let press = WidgetState::PRESSED | WidgetState::CHECKED;
-    let state_fill = |state, home| stated(fill_of(&t.button(state), home)?, home);
-    let fill = match toolbar_button_checked_background(r)? {
-        Some(rest) => Some([
-            rest,
-            state_fill(hover, "toolbar.button(HOVER|CHECKED).fill")?,
-            state_fill(press, "toolbar.button(PRESSED|CHECKED).fill")?,
-        ]),
-        None => None,
+    let rest_fill = toolbar_button_checked_background(r)?;
+    let rest_text = state_text_color_of(&t.button_label(WidgetState::CHECKED));
+    // the button at `state | CHECKED`, asking `CHECKED`
+    let at = |state: WidgetState| {
+        StyleQuery::new(state | WidgetState::CHECKED).asking(WidgetState::CHECKED)
     };
-    let state_text = |state, home| stated(text_color_of(&t.button_label(state)), home);
-    let text = match state_text_color_of(&t.button_label(WidgetState::CHECKED)) {
-        Some(rest) => Some([
-            rest,
-            state_text(hover, "toolbar.button_label(HOVER|CHECKED).color")?,
-            state_text(press, "toolbar.button_label(PRESSED|CHECKED).color")?,
-        ]),
-        None => None,
+    let state_fill = |state, home| {
+        let part = t.button(at(state));
+        if rest_fill.is_some() || part.from_state.contains(PartStated::FILL) {
+            stated(fill_of(&part, home)?, home).map(Some)
+        } else {
+            Ok(None)
+        }
     };
-    Ok(CheckedToolButton { fill, text })
+    let state_text = |state, home| {
+        let label = t.button_label(at(state));
+        if rest_text.is_some() || label.from_state.contains(TextStated::COLOR) {
+            stated(text_color_of(&label), home).map(Some)
+        } else {
+            Ok(None)
+        }
+    };
+    Ok(CheckedToolButton {
+        fill: [
+            rest_fill,
+            state_fill(WidgetState::HOVER, "toolbar.button(HOVER|CHECKED).fill")?,
+            state_fill(WidgetState::PRESSED, "toolbar.button(PRESSED|CHECKED).fill")?,
+        ],
+        text: [
+            rest_text,
+            state_text(
+                WidgetState::HOVER,
+                "toolbar.button_label(HOVER|CHECKED).color",
+            )?,
+            state_text(
+                WidgetState::PRESSED,
+                "toolbar.button_label(PRESSED|CHECKED).color",
+            )?,
+        ],
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -1285,10 +1308,10 @@ pub fn expander_icon(r: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
 /// atlas lays the checked box's over the unchecked one, a translucent
 /// outline drawn over the fill under it, and the mark's colour and width;
 /// a hovered or pressed value the theme states for `HOVER` or `PRESSED`
-/// asked alone is the combined state's, an unstated one egui's own
-/// treatment of the hover or the press in `scheme` (spec §2, `from_state`;
-/// §10, rule 0). Returns the notes on values written otherwise than
-/// stated, as the atlas's.
+/// by spec §2's two queries (`from_state`: the flag alone, or the combined
+/// state asking it) is the combined state's, an unstated one egui's own
+/// treatment of the hover or the press in `scheme` (§10, rule 0). Returns
+/// the notes on values written otherwise than stated, as the atlas's.
 #[must_use = "the notes report values written otherwise than stated"]
 pub fn mixed_checkbox(
     r: &ResolvedTheme,

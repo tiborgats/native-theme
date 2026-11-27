@@ -807,18 +807,21 @@ pub(crate) fn toggle_on_at(
 }
 
 /// A toggle button's colours while on, of the installed 0.8.0 theme `r`, in the state
-/// `(hovered, pressed)` of its previous response, `on` a query with the checked flag alone: each
-/// colour [`toggle_on_at`] finds stated for `on`, and then pressed the theme's answer for `on`
-/// with `PRESSED` added, else hovered for `on` with `HOVER` added, as egui's selected button
-/// takes neither state of its own (`Button::fill` and `RichText::color` override every on-hover
-/// effect, spec §10, rule 0); at rest, or where that answer is stated in a form egui cannot
-/// paint (`Unmapped`), the one stated for `on`. Each colour [`toggle_on_at`] finds unstated
-/// stays `None`, egui's own selected look in every state (rule 0a).
+/// `(hovered, pressed)` of its previous response, `on` a query with the checked flag alone: at
+/// rest each colour [`toggle_on_at`] finds stated for `on`; pressed the theme's answer for `on`
+/// with `PRESSED` added, else hovered for `on` with `HOVER` added, where the theme states the
+/// colour for the checked flag by spec §2's two queries (`from_state`): [`toggle_on_at`] finds
+/// it stated for `on`, or the state's own query asking `on`'s flag has the bit; as egui's
+/// selected button takes neither state of its own (`Button::fill` and `RichText::color`
+/// override every on-hover effect, spec §10, rule 0). Where that answer is stated in a form egui
+/// cannot paint (`Unmapped`), or the theme states the colour by neither query, the one stated
+/// for `on`, and `None` where it states none there, egui's own selected look (rule 0a).
 pub(crate) fn toggle_on_in(
     r: Option<&native_theme::next::ResolvedTheme>,
     on: native_theme::next::ButtonQuery,
     (hovered, pressed): (bool, bool),
 ) -> ToggleOn {
+    use native_theme::next::{PartStated, TextStated};
     let rest = toggle_on_at(r, on);
     let flag = if pressed {
         NextState::PRESSED
@@ -830,15 +833,16 @@ pub(crate) fn toggle_on_in(
     let Some(r) = r else {
         return rest;
     };
-    let at = on.with_state(flag);
+    let at = on.with_state(flag).asking(on.state);
+    let (body, label) = (r.button.body(at), r.button.label(at));
     ToggleOn {
-        fill: rest
-            .fill
-            .and_then(|_| demo::drawn_fill(&r.button.body(at)))
+        fill: (rest.fill.is_some() || body.from_state.contains(PartStated::FILL))
+            .then(|| demo::drawn_fill(&body))
+            .flatten()
             .or(rest.fill),
-        text: rest
-            .text
-            .and_then(|_| next::text_color_of(&r.button.label(at)))
+        text: (rest.text.is_some() || label.from_state.contains(TextStated::COLOR))
+            .then(|| next::text_color_of(&label))
+            .flatten()
             .or(rest.text),
     }
 }
@@ -1787,10 +1791,12 @@ pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
 }
 
 /// The Basic page's edit-mode switch's fill and text colour while on, in the state `(hovered,
-/// pressed)` of its previous response, of the installed 0.8.0 theme `r`: where a rule states
-/// `toolbar.button(CHECKED)`'s fill, `(HOVER|CHECKED)`'s under the pointer and
+/// pressed)` of its previous response, of the installed 0.8.0 theme `r`: where the theme states
+/// the fill for `CHECKED` by spec §2's two queries (`from_state`: a rule for `CHECKED`, or the
+/// state's own query asking `CHECKED`), `(HOVER|CHECKED)`'s under the pointer and
 /// `(PRESSED|CHECKED)`'s pressed, and the labels likewise from `toolbar.button_label`
-/// (`next::toolbar_button_checked`), as egui's selected button takes neither state of its own
+/// (`next::toolbar_button_checked`), as the switch's icon takes its colour
+/// (`demo::tool_icon_color`), as egui's selected button takes neither state of its own
 /// (spec §10, rule 0); each unstated one [`edit_look`]'s, the same in every state, as egui's own
 /// selected look is, and both [`edit_look`]'s where `next::toolbar_button_checked` reports a fill
 /// stated in a form egui cannot paint (`Unmapped`, which the Theme tab lists).

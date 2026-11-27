@@ -1215,8 +1215,8 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         home!(checkbox.indicator(NONE).stroke.color),
     ),
-    // the checked box's hover and press outline, the combined state's where a rule states one
-    // for the state alone (`build::variant_source`)
+    // the checked box's hover and press outline, the combined state's where the theme states one
+    // for the state, alone or asked at the combined state (`build::variant_source`)
     s(
         "Checkbox/Selected",
         &[A, W, M, T, I],
@@ -1284,10 +1284,12 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // measured edge, checked or not, macos-tahoe's none (os-probe run 45345116763,
     // `*.normal.checkbox_disabled_{off,on}` `edge_*`), ios-13's none round a checked box, its
     // rule for `DISABLED` stating WebKit's disabled outline (RenderThemeIOS.mm:1355, :1359-1362,
-    // :1502 at WebKit 31adf9d)
+    // :1502 at WebKit 31adf9d), kde-breeze's the Disabled Highlight its `DISABLED | CHECKED` rule
+    // states (breezehelper.cpp:853-854, :1005-1006 at breeze f0b1d75; platform-facts.md
+    // (§2.5), (§2.21)), stated for `DISABLED` by the query asking it (spec §2, `from_state`)
     s(
         "Checkbox/SelectedDisabled",
-        &[W, M, T, I],
+        &[K, W, M, T, I],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(DISABLED | CHECKED).stroke.color),
     ),
@@ -2008,8 +2010,8 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     // ios-13 states no hovered fill for the box (WebKit's checkboxRadioBackgroundColor reads no
     // hover state; next_homes.toml, row checkbox.hover_background, "unstated" there); the
-    // checked box's takes the combined state's only where a rule states one for HOVER alone
-    // (`build::variant_source`)
+    // checked box's takes the combined state's only where the theme states one for HOVER, alone
+    // or asked at the combined state (`build::variant_source`)
     r0(
         "Checkbox",
         &[I],

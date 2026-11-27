@@ -14316,6 +14316,250 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
     Ok(())
 }
 
+/// A checked toolbar button's icon keeps egui's selected look only where the theme states its
+/// colour for `CHECKED` by neither of spec §2's two queries (`from_state`): on every preset
+/// with `toolbar.button_icon`'s colour first stated by a rule of no state, which clears the bit
+/// of the query at `CHECKED` alone, a rule for `HOVER | CHECKED` (`PRESSED | CHECKED`) alone
+/// colours the hovered (pressed) checked icon, as `home_patch_toml` (`tools/showcase-support`)
+/// states that home, and a rule for `HOVER` (`PRESSED`) alone does not
+/// (`demo::tool_icon_color`).
+#[test]
+fn a_checked_tool_icon_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
+    use crate::demo::tool_icon_color;
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    let magenta = Some(egui::Color32::from_rgb(0xff, 0, 0xff));
+    let base = "[[widgets.toolbar.rules]]\nstates = []\nbutton_icon.color = \"#101010\"\n";
+    let mut misses = Vec::new();
+    for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
+        for (states, expected) in [
+            (format!("\"{flag}\", \"checked\""), magenta),
+            (format!("\"{flag}\""), None),
+        ] {
+            let patch = format!(
+                "{base}[[widgets.toolbar.rules]]\nstates = [{states}]\nbutton_icon.color = \"#ff00ff\"\n"
+            );
+            let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+            for &preset in Preset::ALL {
+                let r = Theme::preset(preset)
+                    .with_patch(patch.clone())
+                    .resolve(&ThemeContext::light());
+                let got = tool_icon_color(Some(&r), was, true);
+                if got != expected {
+                    misses.push(format!(
+                        "{preset:?}, a rule for [{states}]: {got:?}, not {expected:?}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
+/// A checked-look site keeps its look at rest under the pointer and pressed only where the
+/// theme states its value for `CHECKED` by neither of spec §2's two queries (`from_state`): on
+/// every preset with `widget`'s `property` first stated by a rule of no state (`base`), which
+/// clears the bit of the query at `CHECKED` alone, a rule for `CHECKED | HOVER` (`CHECKED |
+/// PRESSED`) alone, stating `value`, gives `drawn` in that state, as `home_patch_toml`
+/// (`tools/showcase-support`) states such a home, and a rule for `HOVER` (`PRESSED`) alone
+/// gives the site's value at rest. `read` is the site's value in the state `(hovered, pressed)`
+/// of the previous response; each preset and rule that reads otherwise is pushed to `misses`.
+fn checked_site<T: PartialEq + std::fmt::Debug>(
+    misses: &mut Vec<String>,
+    site: &str,
+    (widget, property): (&str, &str),
+    [base, value]: [&str; 2],
+    drawn: &T,
+    read: impl Fn(&native_theme::next::ResolvedTheme, (bool, bool)) -> T,
+) -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    let base = format!("[[widgets.{widget}.rules]]\nstates = []\n{property} = {base}\n");
+    for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
+        for (states, stated) in [
+            (format!("\"checked\", \"{flag}\""), true),
+            (format!("\"{flag}\""), false),
+        ] {
+            let patch = format!(
+                "{base}[[widgets.{widget}.rules]]\nstates = [{states}]\n{property} = {value}\n"
+            );
+            let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+            for &preset in Preset::ALL {
+                let r = Theme::preset(preset)
+                    .with_patch(patch.clone())
+                    .resolve(&ThemeContext::light());
+                let got = read(&r, was);
+                let rest = read(&r, (false, false));
+                let expected = if stated { drawn } else { &rest };
+                if &got != expected || (stated && &rest == drawn) {
+                    misses.push(format!(
+                        "{site}, {preset:?}, a rule for [{states}]: {got:?}, not {expected:?} \
+                         (at rest {rest:?})"
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The Basic page's toggle and edit switch and the side-panel toggle take a hovered or pressed
+/// checked fill, label colour, outline and icon colour the theme states for `CHECKED` by either
+/// of the two queries ([`checked_site`]): `pages::basic::toggle_on_in`,
+/// `pages::basic::edit_look_at` (`next::toolbar_button_checked`), `chrome::toggle_checked_in`,
+/// `chrome::toggle_checked_pens` and `chrome::toggle_icon_colour`.
+#[test]
+fn a_checked_look_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
+    use crate::chrome::{toggle_checked_in, toggle_checked_pens, toggle_icon_colour};
+    use crate::pages::basic::{edit_look_at, toggle_on_in};
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
+    let colours = ["\"#101010\"", "\"#ff00ff\""];
+    let lines = [
+        "{ width = 1.0, color = \"#101010\" }",
+        "{ width = 2.0, color = \"#ff00ff\" }",
+    ];
+    let on = ButtonQuery::new(WidgetState::CHECKED);
+    let mut misses = Vec::new();
+    let some = Some(magenta);
+    checked_site(
+        &mut misses,
+        "toggle fill",
+        ("button", "body.fill"),
+        colours,
+        &some,
+        |r, was| toggle_on_in(Some(r), on, was).fill,
+    )?;
+    checked_site(
+        &mut misses,
+        "toggle label",
+        ("button", "label.color"),
+        colours,
+        &some,
+        |r, was| toggle_on_in(Some(r), on, was).text,
+    )?;
+    checked_site(
+        &mut misses,
+        "side toggle fill",
+        ("button", "body.fill"),
+        colours,
+        &some,
+        |r, was| toggle_checked_in(Some(r), was).fill,
+    )?;
+    checked_site(
+        &mut misses,
+        "side toggle label",
+        ("button", "label.color"),
+        colours,
+        &some,
+        |r, was| toggle_checked_in(Some(r), was).text,
+    )?;
+    checked_site(
+        &mut misses,
+        "side toggle icon",
+        ("button", "icon.color"),
+        colours,
+        &some,
+        |r, was| toggle_icon_colour(Some(r), true, was),
+    )?;
+    let pen = Some(egui::Stroke::new(2.0, magenta));
+    checked_site(
+        &mut misses,
+        "side toggle outline",
+        ("button", "body.stroke"),
+        lines,
+        &pen,
+        |r, was| {
+            let [rest, hovered, active] = toggle_checked_pens(Some(r), egui::Color32::WHITE);
+            match was {
+                (_, true) => active,
+                (true, _) => hovered,
+                _ => rest,
+            }
+        },
+    )?;
+    checked_site(
+        &mut misses,
+        "edit switch fill",
+        ("toolbar", "button.fill"),
+        colours,
+        &some,
+        |r, was| edit_look_at(Some(r), was).0,
+    )?;
+    checked_site(
+        &mut misses,
+        "edit switch label",
+        ("toolbar", "button_label.color"),
+        colours,
+        &some,
+        |r, was| edit_look_at(Some(r), was).1,
+    )?;
+    assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
+/// The side-panel toggle's notes name a checked fill, label colour or outline unstated at rest
+/// but drawn under the pointer or pressed (`chrome::toggle_stated_notes`): on every preset with
+/// the value first stated by a rule of no state, a rule for `CHECKED | HOVER` (`CHECKED |
+/// PRESSED`) gives a note naming that state's home, and a rule for `HOVER` (`PRESSED`) alone
+/// gives none.
+#[test]
+fn the_side_toggle_notes_a_checked_value_stated_for_its_state_only() -> Result<(), String> {
+    use crate::chrome::toggle_stated_notes;
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    let mut misses = Vec::new();
+    for (slot, property, base, value, home) in [
+        (
+            0,
+            "body.fill",
+            "\"#101010\"",
+            "\"#ff00ff\"",
+            "button.body(CHECKED|",
+        ),
+        (
+            1,
+            "label.color",
+            "\"#101010\"",
+            "\"#ff00ff\"",
+            "button.label(CHECKED|",
+        ),
+        (
+            2,
+            "body.stroke",
+            "{ width = 1.0, color = \"#101010\" }",
+            "{ width = 2.0, color = \"#ff00ff\" }",
+            "button.body(CHECKED|",
+        ),
+    ] {
+        let base = format!("[[widgets.button.rules]]\nstates = []\n{property} = {base}\n");
+        for (flag, name) in [("hover", "HOVER"), ("pressed", "PRESSED")] {
+            for (states, stated) in [
+                (format!("\"checked\", \"{flag}\""), true),
+                (format!("\"{flag}\""), false),
+            ] {
+                let patch = format!(
+                    "{base}[[widgets.button.rules]]\nstates = [{states}]\n{property} = {value}\n"
+                );
+                let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+                for &preset in Preset::ALL {
+                    let r = Theme::preset(preset)
+                        .with_patch(patch.clone())
+                        .resolve(&ThemeContext::light());
+                    let notes = toggle_stated_notes(Some(&r));
+                    let note = notes.get(slot).cloned().flatten();
+                    let named = note
+                        .as_ref()
+                        .is_some_and(|(_, text)| text.contains(&format!("{home}{name};")));
+                    if note.is_some() != stated || (stated && !named) {
+                        misses.push(format!("{property}, {preset:?}, [{states}]: {note:?}"));
+                    }
+                }
+            }
+        }
+    }
+    assert!(misses.is_empty(), "{misses:#?}");
+    Ok(())
+}
+
 /// The Basic page's Edit switch under macos-tahoe light, a bundled Material icon: checked, its
 /// icon is not the texture it is painted from unchecked at rest, loaded in the resting
 /// `toolbar.button_icon(NONE).color` #4d4d4d: it takes the colour the rule for `CHECKED`
