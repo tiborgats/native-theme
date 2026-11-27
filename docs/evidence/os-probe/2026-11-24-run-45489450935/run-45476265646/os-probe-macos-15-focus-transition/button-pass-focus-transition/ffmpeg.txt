@@ -1,0 +1,115 @@
+==> Downloading bottle manifests
+✔︎ Bottle Manifest ffmpeg (9.0.2_1)
+==> Would install 1 formula:
+ffmpeg 9.0.2_1
+==> Would install 11 dependencies for ffmpeg:
+dav1d        1.5.5
+mpg123       1.33.7
+lame         4.0
+libvmaf      3.2.1
+libvpx       1.17.0
+opus         1.6.1
+sdl3         3.4.20
+sdl2-compat  2.32.74
+svt-av1      4.3.0
+x264         r3222
+x265         4.3
+==> Fetching downloads for: ffmpeg
+✔︎ Bottle Manifest dav1d (1.5.5)
+✔︎ Bottle Manifest mpg123 (1.33.7)
+✔︎ Bottle Manifest lame (4.0)
+✔︎ Bottle Manifest libvpx (1.17.0)
+✔︎ Bottle Manifest libvmaf (3.2.1)
+✔︎ Bottle dav1d (1.5.5)
+✔︎ Bottle Manifest opus (1.6.1)
+✔︎ Bottle mpg123 (1.33.7)
+✔︎ Bottle lame (4.0)
+✔︎ Bottle libvpx (1.17.0)
+✔︎ Bottle Manifest sdl3 (3.4.20)
+✔︎ Bottle Manifest sdl2-compat (2.32.74)
+✔︎ Bottle Manifest svt-av1 (4.3.0)
+✔︎ Bottle Manifest x264 (r3222)
+✔︎ Bottle libvmaf (3.2.1)
+✔︎ Bottle ffmpeg (9.0.2_1)
+✔︎ Bottle Manifest x265 (4.3)
+✔︎ Bottle opus (1.6.1)
+✔︎ Bottle sdl3 (3.4.20)
+✔︎ Bottle sdl2-compat (2.32.74)
+✔︎ Bottle x264 (r3222)
+✔︎ Bottle svt-av1 (4.3.0)
+✔︎ Bottle x265 (4.3)
+==> Installing dependencies for ffmpeg: dav1d, mpg123, lame, libvmaf, libvpx, opus, sdl3, sdl2-compat, svt-av1, x264 and x265
+==> Installing ffmpeg dependency: dav1d (1.5.5)
+==> Pouring dav1d--1.5.5.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/dav1d/1.5.5: 16 files, 978.3KB
+==> Installing ffmpeg dependency: mpg123 (1.33.7)
+==> Pouring mpg123--1.33.7.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/mpg123/1.33.7: 34 files, 1.9MB
+==> Installing ffmpeg dependency: lame (4.0)
+==> Pouring lame--4.0.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/lame/4.0: 29 files, 1.9MB
+==> Installing ffmpeg dependency: libvmaf (3.2.1)
+==> Pouring libvmaf--3.2.1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/libvmaf/3.2.1: 243 files, 8.2MB
+==> Installing ffmpeg dependency: libvpx (1.17.0)
+==> Pouring libvpx--1.17.0.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/libvpx/1.17.0: 22 files, 4.4MB
+==> Installing ffmpeg dependency: opus (1.6.1)
+==> Pouring opus--1.6.1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/opus/1.6.1: 16 files, 1.1MB
+==> Installing ffmpeg dependency: sdl3 (3.4.20)
+==> Pouring sdl3--3.4.20.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/sdl3/3.4.20: 103 files, 6.3MB
+==> Installing ffmpeg dependency: sdl2-compat (2.32.74)
+==> Pouring sdl2-compat--2.32.74.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/sdl2-compat/2.32.74: 117 files, 3.3MB
+==> Installing ffmpeg dependency: svt-av1 (4.3.0)
+==> Pouring svt-av1--4.3.0.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/svt-av1/4.3.0: 23 files, 3.4MB
+==> Installing ffmpeg dependency: x264 (r3222)
+==> Pouring x264--r3222.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/x264/r3222: 12 files, 4.4MB
+==> Installing ffmpeg dependency: x265 (4.3)
+==> Pouring x265--4.3.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/x265/4.3: 12 files, 17.4MB
+==> Installing ffmpeg
+==> Pouring ffmpeg--9.0.2_1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/ffmpeg/9.0.2_1: 290 files, 54.4MB
+==> Caveats
+==> ffmpeg
+ffmpeg-full includes additional tools and libraries that are not included in the regular ffmpeg formula.
+brew install ffmpeg: exit 0
+ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers
+[image2 @ 0x1376070b0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 15 >= 14
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-caret.mov crop=104:54:208:406: exit 0,      565 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-caret.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-default.mov crop=99:56:348:380: exit 0,      575 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-default.mov: exit 0
+[image2 @ 0x1496072d0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 16 >= 16
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-plain.mov crop=99:56:208:380: exit 0,      563 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-plain.mov: exit 0
+[image2 @ 0x12ee05810] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 15 >= 15
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-caret.mov crop=104:54:208:406: exit 0,      559 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-caret.mov: exit 0
+[image2 @ 0x14df04a30] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 13 >= 11
+[image2 @ 0x14df04a30] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 13 >= 13
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-default.mov crop=99:56:348:380: exit 0,      559 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-default.mov: exit 0
+[image2 @ 0x1356049e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 16 >= 16
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-plain.mov crop=99:56:208:380: exit 0,      575 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-plain.mov: exit 0
+[image2 @ 0x128704ef0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 18
+ffmpeg os-probe-out/button-pass-focus-transition/aqua/transition-caret.mov crop=104:54:208:406: exit 0,      567 frames
+ffprobe os-probe-out/button-pass-focus-transition/aqua/transition-caret.mov: exit 0
+[image2 @ 0x148e04cc0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 16 >= 16
+ffmpeg os-probe-out/button-pass-focus-transition/aqua/transition-regular-default.mov crop=99:56:348:380: exit 0,      555 frames
+ffprobe os-probe-out/button-pass-focus-transition/aqua/transition-regular-default.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/aqua/transition-regular-plain.mov crop=99:56:208:380: exit 0,      433 frames
+ffprobe os-probe-out/button-pass-focus-transition/aqua/transition-regular-plain.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/darkAqua/transition-caret.mov crop=104:54:208:406: exit 0,      575 frames
+ffprobe os-probe-out/button-pass-focus-transition/darkAqua/transition-caret.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-default.mov crop=99:56:348:380: exit 0,      577 frames
+ffprobe os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-default.mov: exit 0
+[image2 @ 0x159804b00] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 14 >= 14
+ffmpeg os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-plain.mov crop=99:56:208:380: exit 0,      562 frames
+ffprobe os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-plain.mov: exit 0

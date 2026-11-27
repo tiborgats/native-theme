@@ -19,13 +19,13 @@ use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
 use native_theme::detect::{system_icon_set, system_icon_theme};
 use native_theme::icons::{
-    AnimatedIcon, IconData, MAX_ICON_SIZE, TransformAnimation, load_icon_indicator,
+    AnimatedIcon, IconData, IconSet, MAX_ICON_SIZE, TransformAnimation, load_icon_indicator,
 };
-use native_theme::theme::{IconSet, ResolvedTheme};
+use native_theme::theme::ResolvedTheme;
 
-use super::{color, length};
+use super::{ThemeSource, color, finite, length, rgba};
+use crate::NativeTheme;
 use crate::icons::{animated_frames_to_image_sources_for, with_spin_animation};
-use crate::{ActiveNativeTheme, NativeTheme};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
 /// and `size_6` for XSmall, Small, Medium and Large: 0.75, 0.875, 1 and 1.5
@@ -458,13 +458,26 @@ impl Sizable for Spinner {
 
 impl RenderOnce for Spinner {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some((look, fill, text)) = cx.native().and_then(|n| {
-            let r = n.resolved;
-            Some((
-                SpinnerLook::of_size(r, self.size)?,
-                r.spinner.fill_color,
-                r.defaults.text_color,
-            ))
+        let Some((fill, text, look)) = ThemeSource::of(cx).and_then(|t| {
+            t.look(
+                |r| {
+                    Some((
+                        r.spinner.fill_color,
+                        r.defaults.text_color,
+                        SpinnerLook::of_size(r, self.size)?,
+                    ))
+                },
+                |r| {
+                    Ok((
+                        rgba(r.spinner.color),
+                        rgba(crate::next::stated(
+                            r.colors.window.foreground,
+                            "colors.window.foreground",
+                        )?),
+                        SpinnerLook::next_of_size(r, self.size)?,
+                    ))
+                },
+            )
         }) else {
             return div()
                 .child(gpui_component::spinner::Spinner::new().with_size(self.size))
@@ -547,6 +560,50 @@ impl RenderOnce for Spinner {
                 .into_any_element()
             }
         }
+    }
+}
+
+impl SpinnerLook {
+    /// The look of a Medium spinner of a 0.8.0 theme
+    /// ([`SpinnerLook::next_of_size`]).
+    ///
+    /// # Errors
+    ///
+    /// As [`SpinnerLook::next_of_size`]'s.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme) -> crate::next::Mapped<Self> {
+        Self::next_of_size(r, Size::Medium)
+    }
+
+    /// The look of a spinner of `size` of a 0.8.0 theme, read at the homes of
+    /// [`SpinnerLook::of_size`]'s fields: `spinner.diameter`,
+    /// `spinner.min_diameter`, `spinner.stroke_width` and `spinner.color`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`](crate::next::Unmapped) where a length the theme gives, or
+    /// a `Size::Size`, is not finite and non-negative.
+    pub fn next_of_size(
+        r: &native_theme::next::ResolvedTheme,
+        size: Size,
+    ) -> crate::next::Mapped<Self> {
+        let s = &r.spinner;
+        let look = || {
+            let medium = length(s.diameter)?;
+            let min = length(s.min_diameter)?;
+            let diameter = match size {
+                Size::Size(own) => length(f32::from(own))?,
+                Size::XSmall => px(f32::from(medium) * XSMALL_RATIO),
+                Size::Small => px(f32::from(medium) * SMALL_RATIO),
+                Size::Medium => medium,
+                Size::Large => px(f32::from(medium) * LARGE_RATIO),
+            };
+            Some(Self {
+                diameter: diameter.max(min),
+                stroke: length(s.stroke_width)?,
+                color: crate::next::hsla(r.spinner.color),
+            })
+        };
+        finite(look(), "spinner.diameter")
     }
 }
 

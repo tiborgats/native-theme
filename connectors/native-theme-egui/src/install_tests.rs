@@ -57,8 +57,9 @@ fn the_atlas_reports_what_the_builder_was_given() {
         .icon_theme(egui::Theme::Dark, "breeze-dark")
         .build();
     assert_eq!(atlas.name(), "Mixed");
-    assert_eq!(atlas.resolved_for(egui::Theme::Light), &light);
-    assert_eq!(atlas.resolved_for(egui::Theme::Dark), &dark);
+    assert_eq!(atlas.resolved_for(egui::Theme::Light), Some(&light));
+    assert_eq!(atlas.resolved_for(egui::Theme::Dark), Some(&dark));
+    assert!(atlas.next_resolved_for(egui::Theme::Light).is_none());
     assert_eq!(atlas.accessibility(), &prefs);
     assert_eq!(atlas.layout(), &layout);
     assert_eq!(atlas.os_mode(), Some(ColorMode::Dark));
@@ -789,9 +790,9 @@ fn role_with_radius_other_than(
 fn a_clicked_borderless_text_field_shows_the_focus_ring() {
     let (ctx, atlas, probe) = ring_harness("adwaita");
     let theme = ctx.theme();
-    let t = atlas.resolved_for(theme);
     assert_eq!(
-        t.input.border.line_width, 0.0,
+        atlas.resolved_for(theme).map(|t| t.input.border.line_width),
+        Some(0.0),
         "adwaita's field has no rest line"
     );
     let ring = atlas
@@ -829,13 +830,17 @@ fn the_ring_marks_keyboard_focus_only_while_the_window_has_it() {
     let ring = atlas
         .focus_ring(theme)
         .expect("kde-breeze states a focus ring");
-    let t = atlas.resolved_for(theme);
+    let stated = atlas.resolved_for(theme).map(|t| {
+        (
+            crate::convert::to_color32(t.defaults.focus_ring_color),
+            t.defaults.focus_ring_width,
+            t.defaults.focus_ring_offset,
+        )
+    });
     assert_eq!(
-        ring.stroke.color,
-        crate::convert::to_color32(t.defaults.focus_ring_color)
+        stated,
+        Some((ring.stroke.color, ring.stroke.width, ring.offset))
     );
-    assert_eq!(ring.stroke.width, t.defaults.focus_ring_width);
-    assert_eq!(ring.offset, t.defaults.focus_ring_offset);
     let base_radius = atlas
         .scheme(theme)
         .base
@@ -936,8 +941,10 @@ fn pointer_moved(pos: egui::Pos2) -> egui::RawInput {
 /// kde-breeze's ring stroke, asserted to be keyboard only: the harness of the tests below.
 fn keyboard_only_ring(atlas: &ThemeAtlas, theme: egui::Theme) -> egui::Stroke {
     assert_eq!(
-        atlas.resolved_for(theme).defaults.focus_ring_keyboard_only,
-        Some(true),
+        atlas
+            .resolved_for(theme)
+            .map(|t| t.defaults.focus_ring_keyboard_only),
+        Some(Some(true)),
         "kde-breeze says keyboard only, or the test proves nothing"
     );
     let ring = atlas
@@ -978,8 +985,10 @@ fn a_click_into_a_text_edit_draws_the_ring_where_not_keyboard_only() {
     let (ctx, atlas, probe) = ring_harness("ios-13");
     let theme = ctx.theme();
     assert_eq!(
-        atlas.resolved_for(theme).defaults.focus_ring_keyboard_only,
-        Some(false),
+        atlas
+            .resolved_for(theme)
+            .map(|t| t.defaults.focus_ring_keyboard_only),
+        Some(Some(false)),
         "ios-13 says any focus, or the test proves nothing"
     );
     let ring = atlas.focus_ring(theme).expect("ios-13 states a focus ring");
@@ -1773,26 +1782,31 @@ mod t6_fonts {
     }
 
     /// T6 (c): a family the OS has no face of is reported, and drawn in the family the
-    /// platform draws in its place — `native_theme::fonts::substitute_family`, fontconfig's
-    /// best match — whose face heads the chain; where `fc-match` cannot be run, and on macOS
-    /// and Windows, there is no substitute and egui's own faces stay.
+    /// platform draws in its place — `native_theme::fonts::substitute_family_cached`,
+    /// fontconfig's best match — whose face heads the chain; where the platform gives no
+    /// substitute, egui's own face stays in that family's place: where `fc-match` cannot be run,
+    /// on macOS and Windows, and where `fc-match` does not answer within its bound (2 s,
+    /// `SUBPROCESS_TIMEOUT` in native-theme's `src/detect.rs`), as under a heavy load. The
+    /// answers are read from the cache the plan asked, after it, so the test checks the drawing
+    /// of the answer the plan had, not of a second ask that load can time out differently.
     #[cfg(feature = "system-fonts")]
     #[test]
-    fn t6_c_a_family_no_system_has_is_reported_and_drawn_in_the_platform_substitute() {
+    fn t6_c_a_family_no_system_has_is_reported_and_drawn_in_the_platform_substitute()
+    -> Result<(), String> {
         let mut t = resolved("adwaita", ColorMode::Light);
         let pid = std::process::id();
         let sans: Arc<str> = Arc::from(format!("native-theme-egui-no-such-sans-{pid}"));
         let mono: Arc<str> = Arc::from(format!("native-theme-egui-no-such-mono-{pid}"));
         t.defaults.font.family = Arc::clone(&sans);
         t.defaults.mono_font.family = Arc::clone(&mono);
+        let plan = FontPlan::from_system(&t);
         let substituted = |spec: &native_theme::theme::ResolvedFontSpec| {
-            native_theme::fonts::substitute_family(&spec.family).and_then(|substitute| {
+            native_theme::fonts::substitute_family_cached(&spec.family).and_then(|substitute| {
                 native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
             })
         };
         let sans_face = substituted(&t.defaults.font);
         let mono_face = substituted(&t.defaults.mono_font);
-        let plan = FontPlan::from_system(&t);
         let (defs, notes) = font_definitions(&t, &plan);
         let unavailable: Vec<&Note> = notes
             .iter()
@@ -1826,11 +1840,13 @@ mod t6_fonts {
             assert_eq!(plan.face_count(), 0);
             assert_eq!(notes.len(), 2);
             assert_eq!(defs, FontDefinitions::default());
-            return;
+            return Ok(());
         }
-        let sans_face = sans_face.expect("fontconfig's substitute for the sans family has a face");
-        let mono_face = mono_face.expect("fontconfig's substitute for the mono family has a face");
-        assert_eq!(plan.face_count(), 2);
+        let own = FontDefinitions::default();
+        assert_eq!(
+            plan.face_count(),
+            [&sans_face, &mono_face].into_iter().flatten().count()
+        );
         for (family, key, face) in [
             (
                 FontFamily::Proportional,
@@ -1843,18 +1859,37 @@ mod t6_fonts {
                 &mono_face,
             ),
         ] {
-            let data = defs.font_data.get(key).expect("the substitute's face");
+            let head = defs
+                .families
+                .get(&family)
+                .and_then(|chain| chain.first())
+                .map(String::as_str);
+            let Some(face) = face else {
+                println!("t6_c: {family}: no substitute from fc-match; egui's own face stays");
+                assert!(!defs.font_data.contains_key(key), "{family}");
+                assert_eq!(
+                    head,
+                    own.families
+                        .get(&family)
+                        .and_then(|chain| chain.first())
+                        .map(String::as_str),
+                    "{family}: egui's own face heads the chain"
+                );
+                continue;
+            };
+            let data = defs
+                .font_data
+                .get(key)
+                .ok_or_else(|| format!("{family}: the substitute's face is not registered"))?;
             assert_eq!(data.bytes(), face.data.as_ref(), "{family}");
             assert_eq!(data.index, face.index, "{family}");
             assert_eq!(
-                defs.families
-                    .get(&family)
-                    .and_then(|chain| chain.first())
-                    .map(String::as_str),
+                head,
                 Some(key),
                 "{family}: the substitute's face heads the chain"
             );
         }
+        Ok(())
     }
 
     /// T6 (d): the face `select_face` picks heads its chain, at the theme's `wght`.
@@ -2788,13 +2823,13 @@ mod t18_constructors {
                 assert_eq!(atlas.name(), spec.name, "{}", preset.key);
                 assert_eq!(
                     atlas.resolved_for(egui::Theme::Light),
-                    &light.variant,
+                    Some(&light.variant),
                     "{}",
                     preset.key
                 );
                 assert_eq!(
                     atlas.resolved_for(egui::Theme::Dark),
-                    &dark.variant,
+                    Some(&dark.variant),
                     "{}",
                     preset.key
                 );
@@ -2846,8 +2881,8 @@ mod t18_constructors {
         let atlas = to_theme(&r, "gruvbox twice");
         let direct = ThemeAtlas::builder("gruvbox twice", &r, &r).build();
         assert_eq!(atlas.name(), "gruvbox twice");
-        assert_eq!(atlas.resolved_for(egui::Theme::Light), &r);
-        assert_eq!(atlas.resolved_for(egui::Theme::Dark), &r);
+        assert_eq!(atlas.resolved_for(egui::Theme::Light), Some(&r));
+        assert_eq!(atlas.resolved_for(egui::Theme::Dark), Some(&r));
         assert_eq!(atlas.os_mode(), None);
         assert!(same_styles(&atlas, &direct));
     }
@@ -2885,8 +2920,8 @@ mod t18_constructors {
         sys.accessibility.reduce_motion = !sys.accessibility.reduce_motion;
         sys.layout.widget_gap = Some(gap);
         sys.icon_set = match sys.icon_set {
-            native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
-            _ => native_theme::theme::IconSet::Lucide,
+            native_theme::icons::IconSet::Lucide => native_theme::icons::IconSet::Material,
+            _ => native_theme::icons::IconSet::Lucide,
         };
         assert_ne!(sys.mode, detected.mode);
         assert_ne!(
@@ -2906,8 +2941,8 @@ mod t18_constructors {
         assert_eq!(atlas.accessibility(), &sys.accessibility);
         assert_eq!(atlas.layout(), &sys.layout);
         assert_eq!(atlas.icon_set(), sys.icon_set);
-        assert_eq!(atlas.resolved_for(egui::Theme::Light), &sys.light);
-        assert_eq!(atlas.resolved_for(egui::Theme::Dark), &sys.dark);
+        assert_eq!(atlas.resolved_for(egui::Theme::Light), Some(&sys.light));
+        assert_eq!(atlas.resolved_for(egui::Theme::Dark), Some(&sys.dark));
         assert_eq!(
             atlas.icon_theme(egui::Theme::Light),
             sys.icon_theme_for(ColorMode::Light)
@@ -2942,8 +2977,8 @@ mod t18_constructors {
         assert_eq!(again.name(), fresh.name);
         assert_eq!(again.os_mode(), Some(fresh.mode));
         assert_eq!(loaded.mode, fresh.mode);
-        assert_eq!(again.resolved_for(egui::Theme::Light), &fresh.light);
-        assert_eq!(again.resolved_for(egui::Theme::Dark), &fresh.dark);
+        assert_eq!(again.resolved_for(egui::Theme::Light), Some(&fresh.light));
+        assert_eq!(again.resolved_for(egui::Theme::Dark), Some(&fresh.dark));
         assert_eq!(&loaded.resolved, fresh.pick(fresh.mode));
         assert_eq!(loaded.accessibility, fresh.accessibility);
         assert_eq!(loaded.icon_set, fresh.icon_set);
@@ -3163,8 +3198,10 @@ fn t8b_a_window_scrollbar_keeps_the_base_radius() {
     );
     let thumb = base.visuals.widgets.inactive.bg_fill; // scrollbar.thumb_color (§5.9)
     assert_eq!(
-        thumb,
-        crate::convert::to_color32(atlas.resolved_for(scheme).scrollbar.thumb_color)
+        Some(thumb),
+        atlas
+            .resolved_for(scheme)
+            .map(|t| crate::convert::to_color32(t.scrollbar.thumb_color))
     );
     assert_ne!(
         thumb, base.visuals.extreme_bg_color,
@@ -3299,8 +3336,10 @@ mod t13_accessibility {
                     .expect("Body")
                     .size;
                 assert_eq!(
-                    body,
-                    scaled_text_size(scaled.resolved_for(scheme).defaults.font.size, &prefs),
+                    Some(body),
+                    scaled
+                        .resolved_for(scheme)
+                        .map(|t| scaled_text_size(t.defaults.font.size, &prefs)),
                     "{key} {scheme:?}"
                 );
             }
@@ -3463,7 +3502,7 @@ mod t13_accessibility {
     /// the slider `expansion` of §6.6, with the Body row height taken from egui itself
     /// (`epaint/src/text/fonts.rs:865-875`) on a `Context` given the definitions the atlas installs.
     #[test]
-    fn t5_line_spacing_and_slider_expansion_at_factor_two() {
+    fn t5_line_spacing_and_slider_expansion_at_factor_two() -> Result<(), &'static str> {
         let mut prefs = AccessibilityPreferences::default();
         prefs.text_scaling_factor = 2.0;
         let hack = epaint_default_fonts::HACK_REGULAR;
@@ -3483,7 +3522,9 @@ mod t13_accessibility {
                 // §6.15: the plan's definitions, else egui's default.
                 let defs = atlas.fonts().cloned().unwrap_or_default();
                 for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-                    let t = atlas.resolved_for(scheme);
+                    let t = atlas
+                        .resolved_for(scheme)
+                        .ok_or("an atlas of the 0.7.2 model")?;
                     let size = scaled_text_size(t.defaults.font.size, &prefs);
                     let ctx = egui::Context::default();
                     ctx.set_fonts(defs.clone());
@@ -3535,6 +3576,7 @@ mod t13_accessibility {
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -4170,7 +4212,10 @@ fn a_stated_row_height_is_the_drawn_row_at_a_text_scale_of_one() {
         for (scheme, is_dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
             let prefs = AccessibilityPreferences::default();
             let (atlas, _) = crate::from_preset(name.key, is_dark, &prefs).unwrap();
-            let t = atlas.resolved_for(scheme).clone();
+            let Some(t) = atlas.resolved_for(scheme).cloned() else {
+                faults.push(format!("{} {scheme:?}: no 0.7.2 theme", name.key));
+                continue;
+            };
             for (role, stated) in [
                 (Role::Menu, t.menu.row_height),
                 (Role::List, t.list.row_height),
@@ -4211,15 +4256,16 @@ fn above_a_text_scale_of_one_the_row_padding_is_the_themes() {
     let mut prefs = AccessibilityPreferences::default();
     prefs.text_scaling_factor = 1.5;
     let (atlas, _) = crate::from_preset("macos-monterey", false, &prefs).unwrap();
-    let t = atlas.resolved_for(egui::Theme::Light);
     let mut own = egui::Style::default();
     egui::containers::menu::menu_style(&mut own);
-    let want = crate::convert::to_button_padding(own.spacing.button_padding, &t.menu.border).y;
-    assert_eq!(want, 3.0, "macos-monterey's stated menu padding");
+    let want = atlas
+        .resolved_for(egui::Theme::Light)
+        .map(|t| crate::convert::to_button_padding(own.spacing.button_padding, &t.menu.border).y);
+    assert_eq!(want, Some(3.0), "macos-monterey's stated menu padding");
     let cell = atlas
         .scheme(egui::Theme::Light)
         .cell(Role::Menu, RoleVariant::Normal);
-    assert_eq!(cell.spacing.button_padding.y, want);
+    assert_eq!(Some(cell.spacing.button_padding.y), want);
 }
 
 /// The height egui's own `CollapsingHeader` is drawn at in the `Role::Expander` scope
@@ -4280,7 +4326,13 @@ fn a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one() {
     atlases.push(("material-3 at 24".to_string(), egui::Theme::Light, atlas));
     let mut faults = Vec::new();
     for (name, scheme, atlas) in &atlases {
-        let stated = atlas.resolved_for(*scheme).expander.header_height;
+        let Some(stated) = atlas
+            .resolved_for(*scheme)
+            .map(|t| t.expander.header_height)
+        else {
+            faults.push(format!("{name} {scheme:?}: no 0.7.2 theme"));
+            continue;
+        };
         let (drawn, title) = drawn_header_height(atlas, *scheme);
         let want = if title > stated {
             title.round()
@@ -4311,12 +4363,16 @@ struct FieldInsets {
 
 /// The field of [`FieldInsets`] under `atlas` in `scheme`, drawn plain (`framed` false) or with
 /// `input_frame`, after the passes that load its fonts.
-fn field_insets(atlas: &ThemeAtlas, scheme: egui::Theme, framed: bool) -> FieldInsets {
+fn field_insets(
+    atlas: &ThemeAtlas,
+    t: &ResolvedTheme,
+    scheme: egui::Theme,
+    framed: bool,
+) -> FieldInsets {
     use crate::NativeThemeUiExt as _;
     let ctx = egui::Context::default();
     atlas.install(&ctx);
     ctx.set_theme(scheme);
-    let t = atlas.resolved_for(scheme).clone();
     let id = egui::Id::unique("e6-field");
     let mut text = "a field whose text runs past its right edge ".repeat(8);
     let mut measured = None;
@@ -4325,7 +4381,7 @@ fn field_insets(atlas: &ThemeAtlas, scheme: egui::Theme, framed: bool) -> FieldI
             ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
                 let edit = egui::TextEdit::singleline(&mut text).id(id);
                 let edit = if framed {
-                    edit.frame(crate::input_frame(ui, id, &t))
+                    edit.frame(crate::input_frame(ui, id, t))
                 } else {
                     edit
                 };
@@ -4368,7 +4424,10 @@ fn e6_a_resting_field_keeps_the_platform_padding_either_way() {
         let dark = resolved(name.key, ColorMode::Dark);
         let atlas = ThemeAtlas::builder(name.key, &light, &dark).build();
         for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-            let t = atlas.resolved_for(scheme);
+            let Some(t) = atlas.resolved_for(scheme) else {
+                faults.push(format!("{} {scheme:?}: no 0.7.2 theme", name.key));
+                continue;
+            };
             let styles = atlas.scheme(scheme);
             let cell = styles.cell(Role::Input, RoleVariant::Normal);
             let state = cell.visuals.widgets.inactive;
@@ -4406,8 +4465,8 @@ fn e6_a_resting_field_keeps_the_platform_padding_either_way() {
                 y.map(|v| two(egui::vec2(0.0, v)).top),
                 y.map(|v| two(egui::vec2(0.0, v)).bottom),
             ];
-            let plain = field_insets(&atlas, scheme, false);
-            let framed = field_insets(&atlas, scheme, true);
+            let plain = field_insets(&atlas, t, scheme, false);
+            let framed = field_insets(&atlas, t, scheme, true);
             let tag = format!("{} {scheme:?}", name.key);
             if left.is_some() != right.is_some() || top.is_some() != bottom.is_some() {
                 faults.push(format!(
@@ -4496,7 +4555,10 @@ fn the_field_accessors_take_the_input_cell_s_padding_where_none_is_stated() {
         let dark = resolved(name.key, ColorMode::Dark);
         let atlas = ThemeAtlas::builder(name.key, &light, &dark).build();
         for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-            let t = atlas.resolved_for(scheme);
+            let Some(t) = atlas.resolved_for(scheme) else {
+                faults.push(format!("{} {scheme:?}: no 0.7.2 theme", name.key));
+                continue;
+            };
             let cell = egui::Margin::from(
                 atlas
                     .scheme(scheme)
@@ -4638,4 +4700,308 @@ fn egui_s_own_row_height_stands_on_all_but_macos_monterey() {
     }) {
         assert_eq!(got, want);
     }
+}
+
+/// The 0.8.0 kde-breeze with `patch` laid over it, its atlas installed with a probe after it.
+fn next_ring_harness(
+    patch: native_theme::next::ThemePatch,
+) -> Result<(egui::Context, ThemeAtlas, LayerProbe), Box<dyn std::error::Error>> {
+    use native_theme::next::{Preset, ThemeContext};
+    let theme = native_theme::next::Theme::preset(Preset::KdeBreeze).with_patch(patch);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let atlas = crate::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+    let ctx = bare_context();
+    atlas.install(&ctx);
+    let probe = LayerProbe::default();
+    ctx.add_plugin(probe.clone());
+    Ok((ctx, atlas, probe))
+}
+
+/// A ring of `width` in magenta at `offset`, of `kind`.
+fn magenta_ring(
+    kind: native_theme::next::FocusKind,
+    width: f32,
+    offset: f32,
+) -> Option<Arc<native_theme::next::FocusIndicator>> {
+    triggered_ring(kind, width, offset, None)
+}
+
+/// [`magenta_ring`] shown as `trigger` says.
+fn triggered_ring(
+    kind: native_theme::next::FocusKind,
+    width: f32,
+    offset: f32,
+    trigger: Option<native_theme::next::FocusTrigger>,
+) -> Option<Arc<native_theme::next::FocusIndicator>> {
+    use native_theme::next::{Color, FocusIndicator, Stroke};
+    Some(Arc::new(FocusIndicator::new(
+        kind,
+        Stroke::uniform(width, Color::new(1.0, 0.0, 1.0, 1.0)),
+        Stroke::None,
+        offset,
+        None,
+        trigger,
+    )))
+}
+
+/// FR4: where the part a role's cell reads states a ring of its own at the focused state, the
+/// plugin paints it round a widget in that role's scope in place of the global ring, on the
+/// same geometry (the widget's rect grown by the ring's offset); a role whose part states none
+/// paints none; another role keeps the global ring; a widget in no scope takes the button body's
+/// ring, as it takes its look.
+#[test]
+fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::plugin::PartRing;
+    use native_theme::next::{
+        ButtonRule, CheckboxRule, FocusKind, PartPatch, ThemePatch, WidgetState,
+    };
+    let patch = || {
+        ThemePatch::new()
+            .button(
+                ButtonRule::new()
+                    .states(WidgetState::FOCUSED)
+                    .body(PartPatch::new().focus(magenta_ring(FocusKind::Ring, 3.0, 1.0))),
+            )
+            .checkbox(
+                CheckboxRule::new()
+                    .states(WidgetState::FOCUSED)
+                    .indicator(PartPatch::new().focus(None)),
+            )
+    };
+    for role in [
+        Some(Role::Button),
+        Some(Role::Tab),
+        Some(Role::Checkbox),
+        None,
+    ] {
+        let (ctx, atlas, probe) = next_ring_harness(patch())?;
+        let theme = ctx.theme();
+        let global = *atlas
+            .focus_ring(theme)
+            .ok_or("kde-breeze states no focus ring")?;
+        let PartRing::Own(Some(own)) = atlas
+            .scheme(theme)
+            .part_rings(Role::Button, RoleVariant::Normal)
+            .keyboard
+        else {
+            return Err("the button's body states no ring of its own".into());
+        };
+        assert_eq!((own.stroke.width, own.offset), (3.0, 1.0));
+        assert_ne!(
+            own.stroke, global.stroke,
+            "the test could not tell the rings apart"
+        );
+        let mut show = |ui: &mut egui::Ui| {
+            in_window(ui, |ui| match role {
+                Some(role) => {
+                    ui.native_scope(role, RoleVariant::Normal, |ui| ui.button("b"))
+                        .inner
+                }
+                None => ui.button("b"),
+            })
+        };
+        let first = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+        watch(&probe, &[first.layer_id]);
+        let focused = pass_ui(&ctx, tab_press(), &mut show);
+        assert!(focused.has_focus(), "{role:?}: Tab focuses the button");
+        let seen = seen(&probe);
+        let (owns, globals) = (
+            rings_on(&seen, first.layer_id, own.stroke),
+            rings_on(&seen, first.layer_id, global.stroke),
+        );
+        match role {
+            Some(Role::Button) | None => {
+                assert_eq!(globals.len(), 0, "{role:?}: the global ring is not drawn");
+                assert_eq!(
+                    owns.iter().map(|r| r.rect).collect::<Vec<_>>(),
+                    [focused.rect.expand(own.offset)],
+                    "{role:?}: the body's own ring, on the ring's geometry"
+                );
+            }
+            Some(Role::Tab) => {
+                assert_eq!(owns.len(), 0, "the tab states no ring of its own");
+                assert_eq!(globals.len(), 1, "the global ring");
+            }
+            _ => assert_eq!(
+                (owns.len(), globals.len()),
+                (0, 0),
+                "the indicator states none"
+            ),
+        }
+    }
+    Ok(())
+}
+
+/// FR4: a part's own ring is asked at `FOCUS_VISIBLE` for a focus that followed a key press
+/// and at `FOCUSED` for another (which `FOCUS_VISIBLE` holds too), a checked check box's with
+/// `CHECKED`; one egui cannot draw (a fill) is none, noted unmapped at its home.
+#[test]
+fn a_parts_own_ring_is_read_at_the_focus_s_state() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::plugin::PartRing;
+    use native_theme::next::{
+        ButtonRule, CheckboxRule, FocusKind, PartPatch, ThemePatch, WidgetState,
+    };
+    let ring = |kind| PartPatch::new().focus(magenta_ring(kind, 2.0, 0.0));
+    let patch = ThemePatch::new()
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::FOCUS_VISIBLE)
+                .body(ring(FocusKind::Ring)),
+        )
+        .checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::FOCUSED | WidgetState::CHECKED)
+                .indicator(ring(FocusKind::Ring)),
+        )
+        .tab(
+            native_theme::next::TabRule::new()
+                .states(WidgetState::FOCUSED)
+                .tab(ring(FocusKind::Fill)),
+        );
+    let (ctx, atlas, _) = next_ring_harness(patch)?;
+    let rings = |role, variant| atlas.scheme(ctx.theme()).part_rings(role, variant);
+    let own = |ring: PartRing| matches!(ring, PartRing::Own(Some(_)));
+    let button = rings(Role::Button, RoleVariant::Normal);
+    assert_eq!(
+        button.pointer,
+        PartRing::Global,
+        "a pointer focus asks at FOCUSED"
+    );
+    assert!(
+        own(button.keyboard),
+        "a keyboard focus asks at FOCUS_VISIBLE"
+    );
+    let checked = rings(Role::Checkbox, RoleVariant::Selected);
+    assert!(
+        own(checked.pointer) && own(checked.keyboard),
+        "the checked box's"
+    );
+    assert_eq!(
+        rings(Role::Checkbox, RoleVariant::Normal),
+        crate::plugin::PartRings::default(),
+        "the unchecked box states none"
+    );
+    let tab = rings(Role::Tab, RoleVariant::Normal);
+    assert_eq!(
+        (tab.pointer, tab.keyboard),
+        (PartRing::Own(None), PartRing::Own(None))
+    );
+    for at in ["FOCUSED", "FOCUS_VISIBLE"] {
+        let path = format!("tab.tab({at}).focus.kind");
+        assert!(
+            atlas
+                .notes()
+                .iter()
+                .any(|note| matches!(note, crate::Note::Unmapped { path: p } if *p == path)),
+            "{path} noted unmapped"
+        );
+    }
+    Ok(())
+}
+
+/// FR4: egui has no radio role, so a ring `radio.indicator` states of its own is not drawn and
+/// is noted unmapped at its home, at the state it is stated for: a rule for `FOCUS_VISIBLE`
+/// notes `radio.indicator(FOCUS_VISIBLE).focus` and not the `FOCUSED` one, which the unpatched
+/// kde-breeze notes neither of.
+#[test]
+fn a_radios_own_ring_is_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{FocusKind, PartPatch, RadioRule, ThemePatch, WidgetState};
+    let noted = |atlas: &ThemeAtlas, path: &str| {
+        atlas
+            .notes()
+            .iter()
+            .any(|note| matches!(note, crate::Note::Unmapped { path: p } if *p == path))
+    };
+    let [pointer, keyboard] = [
+        "radio.indicator(FOCUSED).focus",
+        "radio.indicator(FOCUS_VISIBLE).focus",
+    ];
+    let (_, bare, _) = next_ring_harness(ThemePatch::new())?;
+    assert!(
+        !noted(&bare, pointer) && !noted(&bare, keyboard),
+        "the unpatched kde-breeze states no radio ring"
+    );
+    let patch = ThemePatch::new().radio(
+        RadioRule::new()
+            .states(WidgetState::FOCUS_VISIBLE)
+            .indicator(PartPatch::new().focus(magenta_ring(FocusKind::Ring, 2.0, 0.0))),
+    );
+    let (_, atlas, _) = next_ring_harness(patch)?;
+    assert!(noted(&atlas, keyboard), "{keyboard} noted unmapped");
+    assert!(!noted(&atlas, pointer), "{pointer} is not stated");
+    Ok(())
+}
+
+/// The pass that clicks into a single-line text edit in a `Role::Input` scope of `ctx`, a focus
+/// that follows no key, with the layer it is drawn on watched by `probe`.
+fn click_into_input(ctx: &egui::Context, probe: &LayerProbe) -> egui::Response {
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| {
+        in_window(ui, |ui| {
+            ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
+                ui.text_edit_singleline(&mut text)
+            })
+            .inner
+        })
+    };
+    let field = pass_ui(ctx, egui::RawInput::default(), &mut show);
+    watch(probe, &[field.layer_id]);
+    let field = pass_ui(ctx, egui::RawInput::default(), &mut show);
+    let centre = field.rect.center();
+    let _ = pass_ui(ctx, primary(centre, true), &mut show);
+    pass_ui(ctx, primary(centre, false), &mut show)
+}
+
+/// FR4: a part's own ring is shown as its own trigger says, not as the global ring's: stated
+/// `KeyboardOnly`, a text field a click focuses draws none; stated `Always`, under kde-breeze's
+/// keyboard-only global ring, the same click draws the field's own ring.
+#[test]
+fn a_parts_own_ring_is_shown_as_its_trigger_says() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{
+        FocusKind, FocusTrigger, InputRule, PartPatch, ThemePatch, WidgetState,
+    };
+    for (trigger, drawn) in [(FocusTrigger::KeyboardOnly, 0), (FocusTrigger::Always, 1)] {
+        let patch = ThemePatch::new().input(InputRule::new().states(WidgetState::FOCUSED).field(
+            PartPatch::new().focus(triggered_ring(FocusKind::Ring, 3.0, 1.0, Some(trigger))),
+        ));
+        let (ctx, atlas, probe) = next_ring_harness(patch)?;
+        let theme = ctx.theme();
+        let global = atlas
+            .focus_ring(theme)
+            .ok_or("kde-breeze states no focus ring")?;
+        if !global.keyboard_only {
+            return Err(
+                "kde-breeze's global ring is not keyboard only: the test proves nothing".into(),
+            );
+        }
+        let crate::plugin::PartRing::Own(Some(own)) = atlas
+            .scheme(theme)
+            .part_rings(Role::Input, RoleVariant::Normal)
+            .pointer
+        else {
+            return Err(format!("{trigger:?}: the field states no ring of its own").into());
+        };
+        let field = click_into_input(&ctx, &probe);
+        if !field.has_focus() {
+            return Err("the click does not focus the field".into());
+        }
+        let seen = seen(&probe);
+        assert_eq!(
+            rings_on(&seen, field.layer_id, own.stroke).len(),
+            drawn,
+            "{trigger:?}: the field's own ring after a click"
+        );
+        assert!(
+            rings_on(&seen, field.layer_id, global.stroke).is_empty(),
+            "{trigger:?}: the global ring is not drawn"
+        );
+    }
+    Ok(())
 }

@@ -6,21 +6,18 @@
 //! (`nested_panels`).
 
 use egui::emath::TSTransform;
-use native_theme_egui::{PanelSide, Role, RoleVariant, Surface, ThemeAtlas, expander_icon};
+use native_theme_egui::next::expander_icon;
+use native_theme_egui::{PanelSide, Role, RoleVariant, Surface};
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 /// The rows the scroll areas scroll: a datum.
 const SCROLL_ROWS: usize = 100;
 
-pub(crate) fn show(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
 
     caption(
@@ -67,10 +64,13 @@ pub(crate) fn show(
         normal,
         "CollapsingHeader (expander_icon)",
         |ui| {
-            egui::CollapsingHeader::new("CollapsingHeader with expander_icon")
-                .icon(expander_icon(t))
-                .show(ui, |ui| ui.label("The body"))
-                .header_response
+            // `next::expander_icon` of the installed 0.8.0 theme; without one, egui's own icon
+            let header = egui::CollapsingHeader::new("CollapsingHeader with expander_icon");
+            let header = match r {
+                Some(r) => header.icon(expander_icon(r)),
+                None => header,
+            };
+            header.show(ui, |ui| ui.label("The body")).header_response
         },
     );
     demo::scoped(reg, ui, Role::Expander, normal, "ui.collapsing", |ui| {
@@ -99,15 +99,17 @@ pub(crate) fn show(
             egui::Resize::default()
                 .id_salt("containers/scroll-vertical")
                 .show(ui, |ui| {
-                    egui::ScrollArea::vertical()
-                        .id_salt("containers/vertical")
-                        .show(ui, |ui| {
-                            for row in 0..SCROLL_ROWS {
-                                demo::base(reg, ui, "scrolled label", |ui| {
-                                    ui.label(format!("Vertical row {row}"))
-                                });
-                            }
-                        });
+                    demo::nested_scroll(ui, |ui| {
+                        egui::ScrollArea::vertical()
+                            .id_salt("containers/vertical")
+                            .show(ui, |ui| {
+                                for row in 0..SCROLL_ROWS {
+                                    demo::base(reg, ui, "scrolled label", |ui| {
+                                        ui.label(format!("Vertical row {row}"))
+                                    });
+                                }
+                            })
+                    });
                     ui.response()
                 })
         });
@@ -115,20 +117,23 @@ pub(crate) fn show(
             egui::Resize::default()
                 .id_salt("containers/scroll-both")
                 .show(ui, |ui| {
-                    egui::ScrollArea::both()
-                        .id_salt("containers/both")
-                        .show(ui, |ui| {
-                            for row in 0..SCROLL_ROWS {
-                                demo::base(reg, ui, "scrolled label", |ui| {
-                                    ui.add(
-                                        egui::Label::new(format!(
-                                            "Row {row}, a line wider than the area it scrolls in"
-                                        ))
-                                        .extend(),
-                                    )
-                                });
-                            }
-                        });
+                    demo::nested_scroll(ui, |ui| {
+                        egui::ScrollArea::both()
+                            .id_salt("containers/both")
+                            .show(ui, |ui| {
+                                for row in 0..SCROLL_ROWS {
+                                    demo::base(reg, ui, "scrolled label", |ui| {
+                                        ui.add(
+                                            egui::Label::new(format!(
+                                                "Row {row}, a line wider than the area it \
+                                                 scrolls in"
+                                            ))
+                                            .extend(),
+                                        )
+                                    });
+                                }
+                            })
+                    });
                     ui.response()
                 })
         });
@@ -143,15 +148,17 @@ pub(crate) fn show(
                     .id_salt("containers/scroll-rows")
                     .show(ui, |ui| {
                         let row_height = ui.text_style_height(&egui::TextStyle::Body);
-                        egui::ScrollArea::vertical()
-                            .id_salt("containers/rows")
-                            .show_rows(ui, row_height, SCROLL_ROWS, |ui, rows| {
-                                for row in rows {
-                                    scrollbar.add(reg, ui, "show_rows label", |ui| {
-                                        ui.label(format!("show_rows row {row}"))
-                                    });
-                                }
-                            });
+                        demo::nested_scroll(ui, |ui| {
+                            egui::ScrollArea::vertical()
+                                .id_salt("containers/rows")
+                                .show_rows(ui, row_height, SCROLL_ROWS, |ui, rows| {
+                                    for row in rows {
+                                        scrollbar.add(reg, ui, "show_rows label", |ui| {
+                                            ui.label(format!("show_rows row {row}"))
+                                        });
+                                    }
+                                })
+                        });
                         ui.response()
                     })
             },

@@ -1,0 +1,6 @@
+image's reduceTransparency: 1
+write reduceTransparency false: exit 0
+read back: 0
+image's AppleAccentColor: absent
+write AppleAccentColor 0: exit 0
+read back: 0

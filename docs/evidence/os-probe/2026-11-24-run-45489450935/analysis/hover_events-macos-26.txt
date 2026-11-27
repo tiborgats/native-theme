@@ -1,0 +1,76 @@
+docs/evidence/os-probe/2026-11-24-run-45345116763/os-probe-macos-26-button/button-pass/probe.toml
+  push aqua: 20 hovered, mouseEntered 2, mouseExited 0, entered on ['mini-plain']
+  push darkAqua: 20 hovered, mouseEntered 2, mouseExited 0, entered on ['mini-plain']
+  styles_a aqua: 35 hovered, mouseEntered 2, mouseExited 0, entered on ['mini-flexible_push']
+  styles_a darkAqua: 35 hovered, mouseEntered 2, mouseExited 0, entered on ['mini-flexible_push']
+  styles_b aqua: 35 hovered, mouseEntered 7, mouseExited 5, entered on ['mini-help', 'mini-glass', 'small-glass', 'regular-glass', 'large-glass', 'extraLarge-glass']
+    mini-glass: 590 pixels differ, max 10
+    small-glass: 1061 pixels differ, max 10
+    regular-glass: 1500 pixels differ, max 10
+    large-glass: 1758 pixels differ, max 10
+    extraLarge-glass: 2503 pixels differ, max 10
+  styles_b darkAqua: 35 hovered, mouseEntered 7, mouseExited 5, entered on ['mini-help', 'mini-glass', 'small-glass', 'regular-glass', 'large-glass', 'extraLarge-glass']
+    mini-glass: 594 pixels differ, max 22
+    small-glass: 1090 pixels differ, max 22
+    regular-glass: 1548 pixels differ, max 23
+    large-glass: 1808 pixels differ, max 22
+    extraLarge-glass: 2552 pixels differ, max 22
+  styles_c aqua: 35 hovered, mouseEntered 2, mouseExited 0, entered on ['mini-capsule']
+  styles_c darkAqua: 35 hovered, mouseEntered 2, mouseExited 0, entered on ['mini-capsule']
+docs/evidence/os-probe/2026-11-24-run-45456990497/os-probe-macos-26-button/button-pass/probe.toml
+  push aqua: 20 hovered, mouseEntered 0, mouseExited 0, entered on []
+  push darkAqua: 20 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_a aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_a darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_b aqua: 35 hovered, mouseEntered 5, mouseExited 5, entered on ['mini-glass', 'small-glass', 'regular-glass', 'large-glass', 'extraLarge-glass']
+    mini-glass: 590 pixels differ, max 10
+    small-glass: 1061 pixels differ, max 10
+    regular-glass: 1500 pixels differ, max 10
+    large-glass: 1758 pixels differ, max 10
+    extraLarge-glass: 2503 pixels differ, max 10
+  styles_b darkAqua: 35 hovered, mouseEntered 5, mouseExited 5, entered on ['mini-glass', 'small-glass', 'regular-glass', 'large-glass', 'extraLarge-glass']
+    mini-glass: 594 pixels differ, max 22
+    small-glass: 1090 pixels differ, max 22
+    regular-glass: 1548 pixels differ, max 23
+    large-glass: 1808 pixels differ, max 22
+    extraLarge-glass: 2552 pixels differ, max 22
+  styles_c aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_c darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+docs/evidence/os-probe/2026-11-24-run-45489450935/run-45476265646/os-probe-macos-26-button/button-pass/probe.toml
+  push aqua: 20 hovered, mouseEntered 0, mouseExited 0, entered on []
+  push darkAqua: 20 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_a aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_a darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_b aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+    mini-glass: 6 pixels differ, max 1
+    small-glass: 7 pixels differ, max 1
+    regular-glass: 1 pixels differ, max 1
+    large-glass: 14 pixels differ, max 1
+    extraLarge-glass: 12 pixels differ, max 1
+  styles_b darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+    mini-glass: 0 pixels differ, max 0
+    small-glass: 0 pixels differ, max 0
+    regular-glass: 0 pixels differ, max 0
+    large-glass: 0 pixels differ, max 0
+    extraLarge-glass: 0 pixels differ, max 0
+  styles_c aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_c darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+docs/evidence/os-probe/2026-11-24-run-45489450935/os-probe-macos-26-button/button-pass/probe.toml
+  push aqua: 20 hovered, mouseEntered 0, mouseExited 0, entered on []
+  push darkAqua: 20 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_a aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_a darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_b aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+    mini-glass: 6 pixels differ, max 1
+    small-glass: 7 pixels differ, max 1
+    regular-glass: 1 pixels differ, max 1
+    large-glass: 14 pixels differ, max 1
+    extraLarge-glass: 12 pixels differ, max 1
+  styles_b darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+    mini-glass: 0 pixels differ, max 0
+    small-glass: 0 pixels differ, max 0
+    regular-glass: 0 pixels differ, max 0
+    large-glass: 0 pixels differ, max 0
+    extraLarge-glass: 0 pixels differ, max 0
+  styles_c aqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []
+  styles_c darkAqua: 35 hovered, mouseEntered 0, mouseExited 0, entered on []

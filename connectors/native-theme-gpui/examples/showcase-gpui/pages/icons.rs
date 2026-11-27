@@ -3,17 +3,17 @@
 use gpui::{AnyElement, App, Context, IntoElement, ParentElement, Styled, div, prelude::*};
 use gpui_component::{IconName, IconNamed as _, h_flex, v_flex};
 
+use native_theme::icons::IconSet;
 use native_theme::icons::icon_name as native_icon_name;
-use native_theme::theme::IconSet;
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, AnimatedArt, IconArt, IconCell, IconSizeContext};
-use crate::pages::{ICON_GRID_GAP, page_root};
+use crate::pages::{ICON_GRID_GAP, next_page_root};
 #[cfg(feature = "svg-rasterize")]
 use crate::support::GPUI_ICONS;
-use crate::support::{IconSource, is_native_icon_set, with_gap};
+use crate::support::{IconSource, is_native_icon_set, next_metric, with_gap};
 #[cfg(feature = "svg-rasterize")]
 use gpui::SharedString;
 #[cfg(feature = "svg-rasterize")]
@@ -33,7 +33,7 @@ impl Showcase {
         let cells = IconSizeContext::ALL.map(|context| {
             demo::icon_size_cell(ui, cx, context, &drawn, &ICON_SIZES_ICON, &set, preset)
         });
-        let widget_gap = geometry::widget_gap(&self.layout);
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
         with_gap(v_flex(), widget_gap)
             .child(demo::heading(ui, cx, "icons-heading-sizes", "Icon Sizes"))
             .child(
@@ -115,12 +115,12 @@ impl Showcase {
             )
             .into_any_element()
         } else {
-            with_gap(h_flex(), geometry::widget_gap(&self.layout))
+            with_gap(h_flex(), next_metric(cx, next::geometry::widget_gap))
                 .flex_wrap()
                 .children(cards)
                 .into_any_element()
         };
-        with_gap(v_flex(), geometry::widget_gap(&self.layout))
+        with_gap(v_flex(), next_metric(cx, next::geometry::widget_gap))
             .child(demo::heading(
                 ui,
                 cx,
@@ -214,7 +214,7 @@ impl Showcase {
         // failed: the set's label leaves the reason out, as a label is short;
         // the iced and egui Icons pages give it too.
         let unavailable = self.icon_theme_unavailable();
-        with_gap(v_flex(), geometry::widget_gap(&self.layout))
+        with_gap(v_flex(), next_metric(cx, next::geometry::widget_gap))
             .child(demo::heading(ui, cx, "icons-heading-native", title))
             .when_some(unavailable, |this, reason| {
                 this.child(demo::caption(ui, cx, "icons-theme-unavailable", reason))
@@ -291,7 +291,7 @@ impl Showcase {
         #[cfg(not(feature = "svg-rasterize"))]
         let widget_icons = widget_icons_caption();
 
-        with_gap(v_flex(), geometry::widget_gap(&self.layout))
+        with_gap(v_flex(), next_metric(cx, next::geometry::widget_gap))
             .child(demo::heading(ui, cx, "icons-heading-gpui", title))
             .child(demo::caption(
                 ui,
@@ -310,7 +310,7 @@ impl Showcase {
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        page_root(&self.layout)
+        next_page_root(cx)
             .child(self.render_icon_sizes_section(cx))
             .child(self.render_animated_icons_section(cx))
             .child(self.render_native_icons_section(cx))

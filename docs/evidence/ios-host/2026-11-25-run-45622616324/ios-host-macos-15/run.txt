@@ -1,0 +1,53 @@
+quick: 0
+passes: hover
+specimen set: lists; device: ipad; settings: none
+headers: 80 files
+simctl help io: exit 0
+colour names from UIColor.h and UIInterface.h: exit 0, 58
+choose the runtime and device: exit 0
+runtime: com.apple.CoreSimulator.SimRuntime.iOS-18-6 (18.6, 22G86)
+device: iPad Pro (12.9-inch) (3rd generation) (com.apple.CoreSimulator.SimDeviceType.iPad-Pro--12-9-inch---3rd-generation-)
+xcodebuild build-for-testing: exit 0
+xctestrun: /Users/runner/work/_temp/ios-host-build/Build/Products/IosHost_iphonesimulator18.5-arm64.xctestrun
+Info.plist DTXcodeBuild: 16F6
+simctl create: exit 0, B427F240-82A6-424A-A286-C417F0F3F68A
+simctl bootstatus -b: exit 0
+simctl install: exit 0
+warm-up screenshot: exit 0, 10 s
+hover 1 xcodebuild test-without-building: exit 65
+hover 1: 0 screenshots, done: light/segmented_control/default/system/hovered: no hover within 30.0 s light/segmented_control/default/black/hovered: no hover within 30.0 s light/segmented_control/default/white/hovered: no hover within 30.0 s light/sidebar_row/default/system/hovered: no hover within 30.0 s light/sidebar_row/default/black/hovered: no hover within 30.0 s light/sidebar_row/default/white/hovered: no hover within 30.0 s light/outline_header/default/system/hovered: no hover within 30.0 s light/outline_header/default/black/hovered: no hover within 30.0 s light/outline_header/default/white/hovered: no hover within 30.0 s light/bar_plain/default/system/hovered: no hover within 30.0 s light/bar_plain/default/black/hovered: no hover within 30.0 s light/bar_plain/default/white/hovered: no hover within 30.0 s dark/segmented_control/default/system/hovered: no hover within 30.0 s dark/segmented_control/default/black/hovered: no hover within 30.0 s dark/segmented_control/default/white/hovered: no hover within 30.0 s dark/sidebar_row/default/system/hovered: no hover within 30.0 s dark/sidebar_row/default/black/hovered: no hover within 30.0 s dark/sidebar_row/default/white/hovered: no hover within 30.0 s dark/outline_header/default/system/hovered: no hover within 30.0 s dark/outline_header/default/black/hovered: no hover within 30.0 s dark/outline_header/default/white/hovered: no hover within 30.0 s dark/bar_plain/default/system/hovered: no hover within 30.0 s dark/bar_plain/default/black/hovered: no hover within 30.0 s dark/bar_plain/default/white/hovered: no hover within 30.0 s 
+hover 1 retake: light/segmented_control/default/white/hovered press 2: the touch ended before the capture
+hover 1 retake: light/bar_plain/default/system/hovered press 10: the touch ended before the capture
+hover 1 retake: dark/bar_plain/default/white/hovered press 25: the touch ended before the capture
+hover 1: 0 drawn, 0 cropped PNGs
+hover 2 xcodebuild test-without-building: exit 65
+hover 2: 0 screenshots, done: light/segmented_control/default/system/hovered: no hover within 30.0 s light/segmented_control/default/black/hovered: no hover within 30.0 s light/segmented_control/default/white/hovered: no hover within 30.0 s light/sidebar_row/default/system/hovered: no hover within 30.0 s light/sidebar_row/default/black/hovered: no hover within 30.0 s light/sidebar_row/default/white/hovered: no hover within 30.0 s light/outline_header/default/system/hovered: no hover within 30.0 s light/outline_header/default/black/hovered: no hover within 30.0 s light/outline_header/default/white/hovered: no hover within 30.0 s light/bar_plain/default/system/hovered: no hover within 30.0 s light/bar_plain/default/black/hovered: no hover within 30.0 s light/bar_plain/default/white/hovered: no hover within 30.0 s dark/segmented_control/default/system/hovered: no hover within 30.0 s dark/segmented_control/default/black/hovered: no hover within 30.0 s dark/segmented_control/default/white/hovered: no hover within 30.0 s dark/sidebar_row/default/system/hovered: no hover within 30.0 s dark/sidebar_row/default/black/hovered: no hover within 30.0 s dark/sidebar_row/default/white/hovered: no hover within 30.0 s dark/outline_header/default/system/hovered: no hover within 30.0 s dark/outline_header/default/black/hovered: no hover within 30.0 s dark/outline_header/default/white/hovered: no hover within 30.0 s dark/bar_plain/default/system/hovered: no hover within 30.0 s dark/bar_plain/default/black/hovered: no hover within 30.0 s dark/bar_plain/default/white/hovered: no hover within 30.0 s 
+hover 2: 0 drawn, 0 cropped PNGs
+choose the iPad: exit 0
+focus: not run
+hover1 and hover2 differ: 1 of 1 files, 1 outside draw/
+./index.toml:44: press_number = 3 | press_number = 2
+./index.toml:50: press_number = 4 | press_number = 3
+./index.toml:56: press_number = 5 | press_number = 4
+./index.toml:62: press_number = 6 | press_number = 5
+./index.toml:68: press_number = 7 | press_number = 6
+./index.toml:74: press_number = 8 | press_number = 7
+./index.toml:80: press_number = 9 | press_number = 8
+./index.toml:86: press_number = 11 | press_number = 9
+./index.toml:92: press_number = 12 | press_number = 10
+./index.toml:98: press_number = 13 | press_number = 11
+./index.toml:104: press_number = 14 | press_number = 12
+./index.toml:110: press_number = 15 | press_number = 13
+./index.toml:116: press_number = 16 | press_number = 14
+./index.toml:122: press_number = 17 | press_number = 15
+./index.toml:128: press_number = 18 | press_number = 16
+./index.toml:134: press_number = 19 | press_number = 17
+./index.toml:140: press_number = 20 | press_number = 18
+./index.toml:146: press_number = 21 | press_number = 19
+./index.toml:152: press_number = 22 | press_number = 20
+./index.toml:158: press_number = 23 | press_number = 21
+./index.toml: differs (382 and 340 lines)
+compare.swift hover1 hover2: exit 0
+0 pairs solved
+solve.swift hover1: exit 0
+crash reports: 0

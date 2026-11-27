@@ -5,12 +5,12 @@ use gpui::{
 };
 use gpui_component::{IconName, h_flex, v_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, InputField, InputGroupStates, StepIcons, WaveformKind};
-use crate::pages::page_root;
-use crate::support::with_gap;
+use crate::pages::next_page_root;
+use crate::support::{next_metric, with_gap};
 use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
     INPUTS_FIELD_HEIGHT_ONLY, INPUTS_SELECT_HIGHLIGHT, INPUTS_TEXTAREA, PROBE_RATING, probe,
@@ -26,7 +26,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        let widget_gap = geometry::widget_gap(&self.layout);
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
         let on_checkbox_a = cx.listener(|this, val: &bool, _w, cx| {
             this.checkbox_a = *val;
             cx.notify();
@@ -53,7 +53,7 @@ impl Showcase {
             self.speech_stop_focus.is_focused(window) && window.last_input_was_keyboard();
         let speech_state = self.speech_state.clone();
 
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(
                 ui,
@@ -208,11 +208,7 @@ impl Showcase {
                             ui,
                             cx,
                             "inputs-checkbox-mixed-theme",
-                            if demo::theme_checkbox(cx).is_some() {
-                                "Mixed, theme-drawn"
-                            } else {
-                                "Mixed, gpui-component's"
-                            },
+                            demo::mixed_checkbox_label(cx),
                             true,
                         )
                         .self_start(),

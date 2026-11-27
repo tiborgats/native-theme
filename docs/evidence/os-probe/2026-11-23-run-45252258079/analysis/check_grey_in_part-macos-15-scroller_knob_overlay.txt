@@ -1,0 +1,6 @@
+aqua.normal.scroller_knob_overlay: over_grey: 0 px over 2, max 0.0; window: 0 px over 2, max 0.0
+aqua.hovered.scroller_knob_overlay: over_grey: 0 px over 2, max 0.8; window: 0 px over 2, max 0.9
+aqua.pressed.scroller_knob_overlay: over_grey: 0 px over 2, max 0.8; window: 0 px over 2, max 0.9
+darkAqua.normal.scroller_knob_overlay: over_grey: 0 px over 2, max 0.0; window: 0 px over 2, max 0.0
+darkAqua.hovered.scroller_knob_overlay: over_grey: 0 px over 2, max 0.9; window: 0 px over 2, max 1.0
+darkAqua.pressed.scroller_knob_overlay: over_grey: 0 px over 2, max 0.9; window: 0 px over 2, max 1.0

@@ -3,9 +3,11 @@
 //! and egui_extras's code view in the base style.
 
 use egui_extras::syntax_highlighting::{CodeTheme, code_view_ui};
-use native_theme_egui::{Role, RoleVariant, TextRole, ThemeAtlas, text_role_weight};
+use native_theme_egui::next::text_role_weight;
+use native_theme_egui::{Role, RoleVariant, TextRole};
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 const LONG: &str = "A label long enough to wrap onto a second line where the page is narrow, \
@@ -18,13 +20,8 @@ const TEXT_ROLES: [(TextRole, &str); 4] = [
     (TextRole::Display, "Display"),
 ];
 
-pub(crate) fn show(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
 
     caption(reg, ui, "Label (the base style)");
@@ -57,11 +54,16 @@ pub(crate) fn show(
         "Text roles (text_role_font, text_role_line_height, text_role_weight)",
     );
     // Each label at the weight it names, as the Basic page's Typography lines are: its size and
-    // line height through `text_role_font` and `text_role_line_height`, its weight through the
-    // face the showcase registers at it (`demo::role_text`).
+    // line height through `next::text_role_font` and `next::text_role_line_height` of the
+    // installed 0.8.0 theme, its weight through the face the showcase registers at it
+    // (`demo::next_role_text`); without an installed 0.8.0 theme, egui's `Body` text, which
+    // names no weight.
     for (role, name) in TEXT_ROLES {
-        let weight = text_role_weight(t, role);
-        let text = demo::role_text(ui, role, format!("{name}, weight {weight}"));
+        let text = match r.map(|r| text_role_weight(r, role)) {
+            Some(weight) => format!("{name}, weight {weight}"),
+            None => name.to_owned(),
+        };
+        let text = demo::next_role_text(ui, role, text);
         demo::base(reg, ui, "text role label", |ui| ui.label(text));
     }
 

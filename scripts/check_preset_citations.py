@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read every preset comment's platform-facts citation, and count them by kind.
+"""Read every preset comment's citation, and count them by kind.
 
 A preset value's comment cites the docs/platform-facts.md row it comes from
 in one of two forms: by line, `# platform-facts.md:1192 (§2.3): ...`, or by
@@ -10,17 +10,23 @@ citation of either form and its kind, and fails on a preset it cannot read.
 A third form, `# platform-facts.md §2.3 <key>: ...`, with neither a number
 nor parentheses, is read by neither this script nor another.
 
+Until the cut it reads both kinds of preset: the 0.7.2 TOMLs by the rule
+below, and the 0.8.0 builders, native-theme/src/next/presets/*.rs, by the
+rule "Builders" further down.
+
 Run from the repository root:
 
     python3 scripts/check_preset_citations.py
     python3 scripts/check_preset_citations.py --self-test
 
-It prints, on stderr, the counts of every preset: its citations, and how
-many of them cite named keys, a value and rows. Exit 0 when it reads every
-preset, 2 on an input it cannot read: a file that is not UTF-8 or TOML, a
-facts file with no Chapter 2 rows, or a preset that cites
-`platform-facts.md:N` or `platform-facts.md (§x)` where the rule reads no
-citation.
+It prints, on stderr, the counts of every preset: for a TOML its citations,
+and how many of them cite named keys, a value and rows; for a builder its
+citations, and how many of them cite platform-facts.md, `(uncited)` and
+another source. Exit 0 when it reads every preset, 2 on an input it cannot
+read: a file that is not UTF-8 or TOML, a facts file with no Chapter 2
+rows, a TOML preset that cites `platform-facts.md:N` or
+`platform-facts.md (§x)` where the rule reads no citation, or a builder
+citation the rule "Builders" refuses.
 
 Rule
 ----
@@ -47,6 +53,38 @@ Kinds. A citation cites one of three things:
   citation wherever it sits (`# role (docs/platform-facts.md:1056)`);
 - rows: else nothing: a citation mid-sentence after another, or above a
   blank line or a table header.
+
+Builders
+--------
+Presets: each native-theme/src/next/presets/*.rs but mod.rs.
+
+Citations. A citation is a `//` comment (not `///` or `//!`) that starts
+with the keys it cites, each in backticks, joined by `, `, ` and ` or
+`, also `, the list going on to the next line after a trailing comma, then
+optionally one word (`corners`) or words that start with `in` (`in the
+view that has the focus`), then `:` and its source; the source runs over the `//` lines below it up to the
+next citation or the comment's end, the lines joined by a space (spec rule
+4: a comment is not stretched over the lines below it). A key is a model
+key, lower case (`list.hover_border_color`), its alternatives in braces
+(`defaults.{danger,warning}_text_color`); a comment that starts with
+another backticked word (`L2`) is no citation.
+
+Kinds. By the start of the source:
+
+- facts: `platform-facts.md` or `docs/platform-facts.md`, by its sections
+  in parentheses, `(§2.3)` or `(§2.1.3, §2.3)`, or bare, `§2.13`, the
+  third form the 0.7.2 TOMLs carry;
+- uncited: `0.7.2 <file> (uncited)`, a value the 0.7.2 TOML `<file>`
+  (native-theme/src/presets/<file>) leaves uncited;
+- other: any other source (an upstream file at its version, another
+  document of the repository).
+
+Every `platform-facts.md` in a builder's comments, a citation's or not, is
+read: one followed by `:` and a number cites a line, which the rule refuses
+(spec rule 4); one followed by parentheses must hold `§` sections and
+nothing else; and every section either form names must be a `###` or
+`####` heading of the facts file. A citation with no source, a `(uncited)`
+not in the form above, or a TOML that does not exist is refused too.
 """
 
 from __future__ import annotations
@@ -59,6 +97,7 @@ from collections import Counter
 from pathlib import Path
 
 PRESETS = Path("native-theme/src/presets")
+BUILDERS = Path("native-theme/src/next/presets")
 FACTS = Path("docs/platform-facts.md")
 
 SECTIONS = r"\(§\d+(?:\.\d+)*(?:, §\d+(?:\.\d+)*)*\)"
@@ -101,6 +140,7 @@ class Facts:
 
     def __init__(self, text: str):
         self.rows = 0
+        self.sections: set[str] = set()
         chapter: str | None = None
         section: str | None = None
         for line in text.splitlines():
@@ -112,6 +152,7 @@ class Facts:
             m = SECTION.match(line)
             if m:
                 section = m.group(1)
+                self.sections.add(section)
             if chapter == "2" and section is not None and ROW.match(line):
                 self.rows += 1
         if not self.rows:
@@ -198,6 +239,117 @@ def load_presets(root: Path) -> dict[str, str]:
         raise InputError(f"{root}: no presets")
     return out
 
+RS_COMMENT = re.compile(r"^\s*//(?![/!])\s?(.*)$")
+RS_ANY_COMMENT = re.compile(r"^\s*//[/!]?\s?(.*)$")
+RS_KEY = r"`[a-z_{][a-z0-9_.{},]*`"
+RS_KEYS = rf"{RS_KEY}(?:(?:, also |, | and ){RS_KEY})*"
+RS_HEAD = re.compile(rf"^({RS_KEYS})((?: in [^:`]*| [a-z]+)?):\s*(.*)$")
+RS_KEYS_GO_ON = re.compile(rf"^{RS_KEYS},$")
+RS_FACTS = re.compile(
+    r"(?<![\w.-])(?:docs/)?platform-facts\.md"
+    r"(?::(?P<line>\d+)|\s+\((?P<paren>§[^)]*)\)|\s+(?P<bare>§\d+(?:\.\d+)*))"
+)
+RS_SECTIONS = re.compile(r"§(\d+(?:\.\d+)*)(?:, §(\d+(?:\.\d+)*))*")
+RS_LEADS_WITH_FACTS = re.compile(r"^(?:docs/)?platform-facts\.md\s+(?:\(§|§)")
+RS_UNCITED = re.compile(r"^0\.7\.2 (\S+) \(uncited\)")
+
+
+def comment_runs(lines: list[str], pattern: re.Pattern) -> list[list[tuple[int, str]]]:
+    """The runs of consecutive comment lines `pattern` matches, each line's
+    number (from 1) and text without its marker."""
+    runs: list[list[tuple[int, str]]] = []
+    current: list[tuple[int, str]] = []
+    for number, line in enumerate(lines, start=1):
+        m = pattern.match(line)
+        if m:
+            current.append((number, m.group(1).strip()))
+        elif current:
+            runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+    return runs
+
+
+def builder_citations(name: str, text: str) -> list[tuple[int, str]]:
+    """The citations of a builder: each one's line and source, its lines
+    joined by a space."""
+    out: list[tuple[int, str]] = []
+    for run in comment_runs(text.splitlines(), RS_COMMENT):
+        current: tuple[int, list[str]] | None = None
+        i = 0
+        while i < len(run):
+            number, line = run[i]
+            head = line
+            j = i
+            while RS_KEYS_GO_ON.match(head) and j + 1 < len(run):
+                j += 1
+                head = f"{head} {run[j][1]}"
+            m = RS_HEAD.match(head)
+            if m:
+                if current is not None:
+                    out.append((current[0], " ".join(current[1]).strip()))
+                current = (number, [m.group(3)])
+                i = j + 1
+                continue
+            if current is not None:
+                current[1].append(line)
+            i += 1
+        if current is not None:
+            out.append((current[0], " ".join(current[1]).strip()))
+    return out
+
+
+def check_builder_facts(name: str, text: str, facts: Facts) -> None:
+    """Every `platform-facts.md` in the builder's comments, as the rule
+    "Builders" reads it."""
+    for run in comment_runs(text.splitlines(), RS_ANY_COMMENT):
+        joined = " ".join(line for _, line in run)
+        for m in RS_FACTS.finditer(joined):
+            where = f"{name}:{run[0][0]}"
+            if m.group("line") is not None:
+                raise InputError(f"{where}: cites platform-facts.md:{m.group('line')}, a line")
+            cited = m.group("paren") or m.group("bare")
+            if not RS_SECTIONS.fullmatch(cited):
+                raise InputError(f"{where}: platform-facts.md ({cited}) names no sections alone")
+            for section in re.findall(r"§(\d+(?:\.\d+)*)", cited):
+                if section not in facts.sections:
+                    raise InputError(f"{where}: platform-facts.md has no section §{section}")
+
+
+def check_builder(name: str, text: str, facts: Facts, presets: Path) -> Counter:
+    """One builder's citations, counted by kind."""
+    check_builder_facts(name, text, facts)
+    counts: Counter = Counter()
+    for number, source in builder_citations(name, text):
+        where = f"{name}:{number}"
+        counts["citations"] += 1
+        uncited = RS_UNCITED.match(source)
+        if not source:
+            raise InputError(f"{where}: a citation with no source")
+        if RS_LEADS_WITH_FACTS.match(source):
+            counts["facts"] += 1
+        elif uncited:
+            if not (presets / uncited.group(1)).is_file():
+                raise InputError(f"{where}: no 0.7.2 preset {presets / uncited.group(1)}")
+            counts["uncited"] += 1
+        else:
+            counts["other"] += 1
+        if "(uncited)" in source and not uncited:
+            raise InputError(f"{where}: `(uncited)` outside the form `0.7.2 <file> (uncited)`")
+    return counts
+
+
+def count_builder_citations(builders: dict[str, str], facts: Facts, presets: Path) -> dict[str, Counter]:
+    return {name: check_builder(name, text, facts, presets) for name, text in builders.items()}
+
+
+def load_builders(root: Path) -> dict[str, str]:
+    out = {path.name: read_text(path) for path in sorted(root.glob("*.rs")) if path.name != "mod.rs"}
+    if not out:
+        raise InputError(f"{root}: no builders")
+    return out
+
 
 SELF_TEST_FACTS = """# Title
 ## Chapter 1: What OSes Provide
@@ -252,6 +404,25 @@ padding_left_px = 6.0
 padding_horizontal_px = 6.0
 """
 
+SELF_TEST_BUILDER = """//! The module: `docs/platform-facts.md` by section, no citation.
+/// A doc comment citing docs/platform-facts.md §2.3, checked, not counted.
+const A: u8 = 0;
+    // `defaults.text_color`: platform-facts.md (§2.3): a section, the source going on
+    // to this line (BreezeLight.colors:137, breeze v6.7.5)
+    // `defaults.danger_text_color`, `warning_text_color`,
+    // `info_text_color`: platform-facts.md
+    // (§2.3): a key list and a source split over lines
+    // `toolbar.background_color`: platform-facts.md §2.3 background_color: the third form
+    // `defaults.border.color`, also `input.font.color`: 0.7.2 p.toml
+    // (uncited)
+    // `menu.active_text_color` and `menu.bar_hover_text_color`: 0.7.2 p.toml (uncited)
+    // `scrollbar.thumb` in the view that has the focus: docs/issues/x.md (S3): another source
+    // `L2`: no citation, and so is this line
+    // `list.hover_border_color`: "a quote", another source
+    // `defaults.{danger,warning}_text_color`: platform-facts.md (§2.3), braces
+    // `inputs.palette` and `inputs.accent` are not applied yet: no citation
+"""
+
 
 def self_test() -> int:
     failures = []
@@ -282,6 +453,28 @@ def self_test() -> int:
             failures.append("a preset that is not UTF-8: accepted")
         except InputError:
             pass
+    facts = Facts(SELF_TEST_FACTS)
+    with tempfile.TemporaryDirectory() as root:
+        (Path(root) / "p.toml").write_text("", encoding="utf-8")
+        counts = count_builder_citations({"p.rs": SELF_TEST_BUILDER}, facts, Path(root))
+        want = {"citations": 8, "facts": 4, "uncited": 2, "other": 2}
+        if dict(counts["p.rs"]) != want:
+            failures.append(f"builder counts: got {dict(counts['p.rs'])}, want {want}")
+        for label, builder in (
+            ("a builder citing a line", "// `a`: platform-facts.md:12 (§2.3)\n"),
+            ("a builder citing a line in a doc comment", "/// x (docs/platform-facts.md:12)\n"),
+            ("a builder citing a section the facts lack", "// `a`: platform-facts.md (§2.4)\n"),
+            ("a builder citing a bare section the facts lack", "//! platform-facts.md §9\n"),
+            ("a builder citing more than sections", "// `a`: platform-facts.md (§2.3, rows)\n"),
+            ("a builder citation with no source", "// `a`:\n"),
+            ("a builder citing a TOML that does not exist", "// `a`: 0.7.2 q.toml (uncited)\n"),
+            ("a builder's `(uncited)` in another form", "// `a`: p.toml (uncited)\n"),
+        ):
+            try:
+                count_builder_citations({"p.rs": builder}, facts, Path(root))
+                failures.append(f"{label}: accepted")
+            except InputError:
+                pass
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
@@ -296,8 +489,9 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 2
     try:
-        Facts(read_text(FACTS))
+        facts = Facts(read_text(FACTS))
         counts = count_citations(load_presets(PRESETS))
+        builder_counts = count_builder_citations(load_builders(BUILDERS), facts, PRESETS)
     except (OSError, InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
@@ -305,6 +499,12 @@ def main(argv: list[str]) -> int:
         print(
             f"{name}: {c['citations']} citations, {c['named']} named, "
             f"{c['value']} value, {c['rows']} rows",
+            file=sys.stderr,
+        )
+    for name, c in builder_counts.items():
+        print(
+            f"{BUILDERS / name}: {c['citations']} citations, {c['facts']} platform-facts.md, "
+            f"{c['uncited']} uncited, {c['other']} other",
             file=sys.stderr,
         )
     return 0

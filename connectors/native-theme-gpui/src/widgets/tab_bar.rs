@@ -14,8 +14,8 @@ use gpui_base::{LayoutDirection, LogicalStyledExt as _, Tab as BaseTab, Tabs as 
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
-use super::{Part, PartBounds, color, font_text, length, outer_edge, over, part_bounds_above};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, ThemeSource, color, length, outer_edge, over, part_bounds_above};
+use crate::next::{Mapped, Unmapped, fill, radius, state_fill_of, stated, text_color};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:112-118,
@@ -252,6 +252,195 @@ impl TabLook {
                 .filter(|r| *r > px(0.)),
         })
     }
+
+    /// The look of a tab bar of a 0.8.0 theme, each field read at its home:
+    /// the bar's `tab.bar(NONE)` fill; an unselected tab's `tab.tab(NONE)`
+    /// fill, minimum size and padding and its `tab.label(NONE)` colour; a
+    /// hovered one's fill where a rule states it for `HOVER`, and its label's
+    /// colour (the selected tab's where unruled); the selected tab's `tab.tab(SELECTED)` fill, its stroke where
+    /// stated (no outline where not), its corners where stated (gpui-component's
+    /// square ones where not) and its label's colour; the selected tab's
+    /// indicator, `tab.indicator(SELECTED)`, its fill where stated and its
+    /// minimum height, an exact thickness being stated as its minimum and
+    /// maximum; and `tab.item_gap`, `tab.indicator_side` and
+    /// `tab.active_outward_corner_radius`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the theme leaves one of the
+    /// others unstated, states one in a form gpui cannot draw, or gives a
+    /// length that is not finite.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Self> {
+        use native_theme::next::{PartStated, WidgetState};
+        let t = &r.tab;
+        let tab = t.tab(WidgetState::NONE);
+        let selected = t.tab(WidgetState::SELECTED);
+        let line = t.indicator(WidgetState::SELECTED);
+        let (border, border_width) = selected_outline(&selected)?;
+        super::finite(
+            Self::from_reads(&TabReads {
+                bar: fill(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
+                idle: fill(&tab, "tab.tab(NONE).fill")?,
+                idle_text: text_color(&t.label(WidgetState::NONE), "tab.label(NONE).color")?,
+                hover: state_fill_of(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
+                hover_text: hover_label(t, "tab.label(HOVER).color")?,
+                active: fill(&selected, "tab.tab(SELECTED).fill")?,
+                active_text: text_color(
+                    &t.label(WidgetState::SELECTED),
+                    "tab.label(SELECTED).color",
+                )?,
+                border,
+                border_width,
+                radius: if selected.stated.contains(PartStated::CORNERS) {
+                    radius(&selected, "tab.tab(SELECTED).corners")?
+                } else {
+                    TAB_RADIUS
+                },
+                min_width: stated(tab.min_size[0], "tab.tab(NONE).min_size[0]")?,
+                min_height: stated(tab.min_size[1], "tab.tab(NONE).min_size[1]")?,
+                padding: crate::next::padding_of(&tab),
+                item_gap: t.item_gap,
+                indicator_color: line
+                    .stated
+                    .contains(PartStated::FILL)
+                    .then(|| fill(&line, "tab.indicator(SELECTED).fill"))
+                    .transpose()?,
+                indicator_width: line.min_size[1],
+                indicator_side: t.indicator_side.map(|side| match side {
+                    native_theme::next::TabIndicatorSide::Top => TabIndicatorSide::Top,
+                    native_theme::next::TabIndicatorSide::Bottom => TabIndicatorSide::Bottom,
+                }),
+                outward_radius: t.active_outward_corner_radius,
+            }),
+            "tab.tab(NONE)",
+        )
+    }
+
+    fn from_reads(t: &TabReads) -> Option<Self> {
+        let unstated = px(TAB_PADDING);
+        let [top, right, bottom, left] = t.padding;
+        Some(Self {
+            bar: t.bar,
+            idle: t.idle,
+            idle_text: t.idle_text,
+            hover: t.hover.map_or(t.idle, |hover| over(t.bar, hover)),
+            hover_text: t.hover_text,
+            active: t.active,
+            active_text: t.active_text,
+            border: t.border,
+            border_width: length(t.border_width)?,
+            radius: length(t.radius)?,
+            min_width: length(t.min_width)?,
+            min_height: length(t.min_height)?,
+            padding_left: side(left).ok()?.unwrap_or(unstated),
+            padding_right: side(right).ok()?.unwrap_or(unstated),
+            padding_top: side(top).ok()?,
+            padding_bottom: side(bottom).ok()?,
+            gap: side(t.item_gap).ok()?.unwrap_or(px(TAB_GAP)),
+            indicator: match (
+                t.indicator_color,
+                side(t.indicator_width).ok()?,
+                t.indicator_side,
+            ) {
+                (Some(color), Some(width), Some(side)) => Some(TabIndicator { color, width, side }),
+                _ => None,
+            },
+            outward_radius: side(t.outward_radius).ok()?.filter(|r| *r > px(0.)),
+        })
+    }
+
+    /// The fields of the focus ring [`TabBar`] draws round a tab, `part` the
+    /// tab at its focused state, that it draws other than a 0.8.0 theme `r`
+    /// states, at their homes: the tab's own ring where the theme states one
+    /// (`tab.tab(FOCUSED).focus`), else the global one
+    /// ([`part_focus`](super::part_focus)). The ring is an inset shadow,
+    /// against the tab's edge and inside it, in the tab's own corners: so
+    /// stated `corners` are not drawn, nor an `offset` other than minus the
+    /// stroke's width, the one that puts the stroke's band against the edge
+    /// inside the tab (spec §2, `FocusIndicator`). Empty where the ring is
+    /// drawn as stated, or none is drawn
+    /// ([`part_ring_unmapped`](super::part_ring_unmapped) names a ring no
+    /// theme-drawn control draws).
+    #[must_use]
+    pub fn next_ring_unmapped(
+        r: &native_theme::next::ResolvedTheme,
+        part: &native_theme::next::PartStyle,
+    ) -> Vec<Unmapped> {
+        let Some((f, homes)) = super::part_focus(r, part, super::RingHomes::TAB) else {
+            return Vec::new();
+        };
+        let Ok(Some(ring)) = super::FocusRing::next_indicator(f, &homes) else {
+            return Vec::new();
+        };
+        let mut unmapped = Vec::new();
+        if ring.offset != -ring.width {
+            unmapped.push(Unmapped(homes.offset));
+        }
+        if ring.corners.is_some() {
+            unmapped.push(Unmapped(homes.corners));
+        }
+        unmapped
+    }
+}
+
+/// The selected tab's corner radius where a 0.8.0 theme states none:
+/// gpui-component's square corners for its default variant, `TabVariant::Tab`
+/// (gpui-component 0.10.0 tab/tab.rs:410-419, `TabVariant::radius`).
+const TAB_RADIUS: f32 = 0.;
+
+/// The selected tab's outline of a 0.8.0 theme, as its colour and width: the
+/// stroke of `tab.tab(SELECTED)` where stated as one; none where the theme
+/// states no stroke or states that it has none, a width of 0 and a colour no
+/// border of no width paints, transparent.
+fn selected_outline(part: &native_theme::next::PartStyle) -> Mapped<(Hsla, f32)> {
+    use native_theme::next::{PartStated, Stroke};
+    if !part.stated.contains(PartStated::STROKE) {
+        return Ok((transparent_black(), 0.));
+    }
+    match &part.stroke.prevailing() {
+        Stroke::None => Ok((transparent_black(), 0.)),
+        Stroke::Uniform { width, .. } => Ok((
+            crate::next::stroke_color(part, "tab.tab(SELECTED).stroke.color")?,
+            *width,
+        )),
+        _ => Err(Unmapped("tab.tab(SELECTED).stroke")),
+    }
+}
+
+/// A hovered tab's label colour of the tab bar `t`, its home `home`: where a
+/// rule states it for `HOVER`, that one; else gpui-component's own hovered
+/// label, `tab_active_foreground` (gpui-component 0.10.0 tab/tab.rs:219-222,
+/// `TabVariant::hovered`), which the connector colours from the selected
+/// tab's label, `tab.label(SELECTED).color` (spec §10, rule 0).
+fn hover_label(t: &native_theme::next::TabWidget, home: &'static str) -> Mapped<Hsla> {
+    use native_theme::next::WidgetState;
+    match crate::next::state_text_color(&t.label(WidgetState::HOVER), home)? {
+        Some(hover) => Ok(hover),
+        None => text_color(&t.label(WidgetState::SELECTED), "tab.label(SELECTED).color"),
+    }
+}
+
+/// The values [`TabLook::next_of`] builds the look from; the padding top,
+/// right, bottom, left.
+struct TabReads {
+    bar: Hsla,
+    idle: Hsla,
+    idle_text: Hsla,
+    hover: Option<Hsla>,
+    hover_text: Hsla,
+    active: Hsla,
+    active_text: Hsla,
+    border: Hsla,
+    border_width: f32,
+    radius: f32,
+    min_width: f32,
+    min_height: f32,
+    padding: [Option<f32>; 4],
+    item_gap: Option<f32>,
+    indicator_color: Option<Hsla>,
+    indicator_width: Option<f32>,
+    indicator_side: Option<TabIndicatorSide>,
+    outward_radius: Option<f32>,
 }
 
 /// The selected tab's indicator: a strip `line.width` thick across the tab's
@@ -351,7 +540,9 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// tab, and the arrow keys, Home and End move it to the next, previous, first
 /// and last enabled tab. The tab that has it shows the theme's focus ring
 /// (`defaults.focus_ring_color`, `focus_ring_width`) as an inset shadow
-/// inside its edge, as wide as the ring; where the theme says the platform
+/// inside its edge, as wide as the ring, and a 0.8.0 theme's second ring
+/// (`focus_ring.inner_stroke`) as a band inward from it; its offset and its
+/// corners are the inset's ([`TabLook::next_ring_unmapped`]); where the theme says the platform
 /// shows its ring for keyboard focus only (`defaults.focus_ring_keyboard_only`),
 /// only for a focus that followed a key press, kept until the focus moves, so
 /// through a click on another tab, which moves none; the strip scrolls the tab
@@ -499,7 +690,8 @@ impl Styled for TabBar {
 
 impl RenderOnce for TabBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(look) = cx.native().and_then(|n| TabLook::of(n.resolved)) else {
+        let Some(look) = ThemeSource::of(cx).and_then(|t| t.look(TabLook::of, TabLook::next_of))
+        else {
             return self.fallback();
         };
         // Without a tracked handle the bar keeps one, to reveal a clicked
@@ -551,11 +743,30 @@ impl RenderOnce for TabBar {
         // edge until it overflows (below).
         let push_end = rtl && !self.wrap;
         // Read again: the keyed handles took `cx` mutably.
-        let Some(n) = cx.native() else {
+        let Some(theme) = ThemeSource::of(cx) else {
             return self.fallback();
         };
-        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
-        let ring = super::FocusRing::of(n.resolved).filter(|_| !keyboard_only || by_key);
+        let Some(font) = theme.label_font(
+            |r| &r.tab.font,
+            |r| r.tab.label(native_theme::next::WidgetState::NONE),
+            "tab.label(NONE)",
+        ) else {
+            return self.fallback();
+        };
+        // A tab's own ring where the theme states one, at the tab's selected
+        // state or not; else the global ring.
+        let tab_ring = |at: native_theme::next::WidgetState| {
+            theme.ring(
+                by_key,
+                super::OwnTrigger::KeyboardOnly,
+                move |r, focus| r.tab.tab(focus | at),
+                super::RingHomes::TAB,
+            )
+        };
+        let (idle_ring, selected_ring) = (
+            tab_ring(native_theme::next::WidgetState::NONE),
+            tab_ring(native_theme::next::WidgetState::SELECTED),
+        );
         // The tab's sides from its start edge: the left in a left-to-right
         // layout, the right in a right-to-left one.
         let (pad_left, pad_right) = if rtl {
@@ -618,7 +829,7 @@ impl RenderOnce for TabBar {
                             .hover(move |style| style.bg(look.hover).text_color(look.hover_text))
                     }
                 })
-                .child(font_text(&n.resolved.tab.font, n).child(tab.label))
+                .child(font.text().child(tab.label))
                 .when_some(look.indicator.filter(|_| is_selected), |tab, line| {
                     tab.relative().child(indicator(line, &look, bottom))
                 })
@@ -656,18 +867,51 @@ impl RenderOnce for TabBar {
                 // While the tab has the focus (where the theme says keyboard
                 // only, a focus that followed a key, `focus_followed_key`): the
                 // theme's ring as an inset shadow, inside the tab, its spread
-                // the ring's width.
-                .when_some(ring, |tab, ring| {
-                    tab.focus(move |style| {
-                        style.shadow(vec![gpui::BoxShadow {
-                            color: ring.color,
-                            offset: point(px(0.), px(0.)),
-                            blur_radius: px(0.),
-                            spread_radius: px(ring.width),
-                            inset: true,
-                        }])
-                    })
-                })
+                // the ring's width; the second ring, where the theme states
+                // one, a band of its width inward from the first, as
+                // `FocusRing::draw` lays it, its corners the shadow's inner
+                // ones (gpui-pre 0.3.12 `src/window.rs`,
+                // `paint_inset_shadows`: the tab's less the spread, floored
+                // at 0). The offset and the corners are the inset's
+                // (`TabLook::next_ring_unmapped`).
+                .when_some(
+                    if is_selected {
+                        selected_ring
+                    } else {
+                        idle_ring
+                    },
+                    |tab, ring| {
+                        let inner =
+                            ring.inner
+                                .filter(|_| focused == Some(ix))
+                                .map(|(color, width)| {
+                                    let top = if is_selected {
+                                        f32::from(look.radius)
+                                    } else {
+                                        0.
+                                    };
+                                    let radii =
+                                        [top, top, 0., 0.].map(|r| (r - ring.width).max(0.));
+                                    let edge = f32::from(look.border_width);
+                                    super::band(
+                                        [edge, edge, f32::from(bottom), edge],
+                                        -ring.width,
+                                        Some(super::FOCUS_RING_INNER_SELECTOR),
+                                        &super::ring_band(radii, width, color),
+                                    )
+                                });
+                        tab.focus(move |style| {
+                            style.shadow(vec![gpui::BoxShadow {
+                                color: ring.color,
+                                offset: point(px(0.), px(0.)),
+                                blur_radius: px(0.),
+                                spread_radius: px(ring.width),
+                                inset: true,
+                            }])
+                        })
+                        .children(inner)
+                    },
+                )
                 // Right to left, the last tab, the leftmost, takes the free
                 // space before it, so the strip runs from the right; once the
                 // tabs overflow the margin is none, and they scroll from the

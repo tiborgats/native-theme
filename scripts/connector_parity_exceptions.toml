@@ -50,8 +50,8 @@ reason = "an egui `FontId`, the font `list.header_font` is drawn in, of which eg
 [[exception]]
 connector = "egui"
 name = "expander_icon"
-kind = "name"
-reason = "a painter for `CollapsingHeader::icon`, not the leaf's value: a closure that paints egui's own arrow in `expander.arrow_color`, or in egui's colour where the theme states none"
+kind = "undecided"
+reason = "a painter for `CollapsingHeader::icon`, not the leaf's value: a closure that paints egui's own arrow in `expander.arrow_color`, or in egui's colour where the theme states none; it passes the theme to `expander_arrow`, which reads that one leaf, so that the 0.8.0 twin's closure is the same one fed from `expander.arrow(NONE).color`"
 
 # ── absent: gpui ────────────────────────────────────────────────────────────
 # `to_theme` writes these leaves into gpui-component's `Theme` (its
@@ -213,19 +213,19 @@ reason = "iced draws no focus ring of its own: a focused widget shows its `Focus
 
 [[exception]]
 connector = "iced"
-name = "selection_inactive_background"
+name = ["selection_inactive_background", "next::selection_inactive_background"]
 kind = "absent"
 reason = "iced's text widgets have no unfocused-window state (`text_input::Status` is Active, Hovered, Focused or Disabled, iced_widget 0.14.2 src/text_input.rs:1697-1709), so no style takes an inactive selection"
 
 [[exception]]
 connector = "iced"
-name = "selection_inactive_text_color"
+name = ["selection_inactive_text_color", "next::selection_inactive_text_color"]
 kind = "absent"
 reason = "iced's text widgets have no unfocused-window state (`text_input::Status` is Active, Hovered, Focused or Disabled, iced_widget 0.14.2 src/text_input.rs:1697-1709), so no style takes an inactive selection, and so no style takes its text colour either"
 
 [[exception]]
 connector = "iced"
-name = "selection_text_color"
+name = ["selection_text_color", "next::selection_text_color"]
 kind = "absent"
 reason = "iced's text styles take a selection fill and no selection text colour (`text_input::Style::selection`, `text_editor::Style::selection`, iced_widget 0.14.2 src/text_input.rs:1713-1726, src/text_editor.rs:1425-1436)"
 
@@ -305,6 +305,18 @@ name = "dialog_padding"
 kind = "absent"
 reason = "the atlas writes `dialog.border.padding` to the dialog surface's `inner_margin` (src/mapping.md, `dialog.border.padding.*`: SCOPED), the frame `native_frame(Surface::Dialog)` returns"
 
+[[exception]]
+connector = "gpui"
+name = ["next::border_color", "next::border_corner_radius", "next::border_corner_radius_lg", "next::button_content_min_size", "next::button_padding", "next::combo_box_padding", "next::dialog_max_height", "next::dialog_max_width", "next::dialog_min_height", "next::dialog_min_width", "next::dialog_padding", "next::dialog_title_font_color", "next::expander_arrow_color", "next::focus_ring_color", "next::font_family", "next::font_size", "next::info_color", "next::info_text_color", "next::input_padding", "next::link_color", "next::list_header_height", "next::mono_font_family", "next::mono_font_size", "next::selection_background", "next::text_area_padding", "next::toolbar_bar_height", "next::toolbar_border_line_width", "next::toolbar_item_gap", "next::toolbar_padding", "next::warning_text_color"]
+kind = "absent"
+reason = "iced's `next` gives each of iced's crate-root helpers a twin on the 0.8.0 model, and gpui's crate root has none of them, each for the reason its entry above gives for the root name: gpui-component takes the value through the `Theme` that `to_theme` writes, or through a `geometry` builder; gpui's `next` gives its own `to_theme` and each `geometry` builder a twin of the same name on the 0.8.0 model (connectors/native-theme-gpui/src/next/mod.rs, the module's doc), so it has the same receivers and needs none of these"
+
+[[exception]]
+connector = "gpui"
+name = ["next::control_line_height", "next::focus_ring", "next::font", "next::pick_list_handle", "next::radio", "next::spinner", "next::switch", "next::switch_over", "next::system_font_family", "next::tab_flares", "next::tab_indicator", "next::tab_indicator_line"]
+kind = "absent"
+reason = "iced's `next` gives each of iced's crate-root widgets, widget parts and font helpers a twin on the 0.8.0 model (the spinner's is `next::spinner`, `Spinner::new`'s), and gpui has none of them, each for the reason its entry above gives for the root name: gpui's `widgets` module draws its own switch, radio and tab bar, gpui-component its own focus ring, select caret and control heights, and gpui's `geometry` builders set each stated font; gpui's `next` has none of these at its root either, as its crate root has none (connectors/native-theme-gpui/src/next/mod.rs, the module's doc: twins of `to_theme` and of the `geometry`, `variants` and `base_layer` builders)"
+
 # ── installing a theme, and watching the OS ─────────────────────────────────
 
 [[exception]]
@@ -356,6 +368,12 @@ connector = ["gpui", "egui"]
 name = "to_theme_in"
 kind = "absent"
 reason = "the public mode-taking builder is iced's alone (the Step 6 ruling on the mode-taking builder, docs/archive/todo_v0.7.0_code-review-findings.md:11164): iced's `to_theme` leaves the light/dark flag to iced's lightness guess, and `to_theme_in` takes the mode instead. gpui's `to_theme` already takes the mode as `is_dark`, and egui needs nothing: its builder holds both variants and the OS mode (`Builder::os_mode`)"
+
+[[exception]]
+connector = "iced"
+name = ["next::apply", "next::is_dark_resolved"]
+kind = "absent"
+reason = "gpui's `next::apply` installs `next::to_theme` of the 0.8.0 theme as gpui-component's one global `Theme` (connectors/native-theme-gpui/src/next/mod.rs, `apply`'s doc); iced has no theme global: its application hands iced the `Theme` value `next::to_theme` returns. `is_dark_resolved` is gpui's lightness test of the window background; iced's `next::to_theme` takes the theme's own scheme (`context.scheme`) for iced's light/dark flag, and `ResolvedTheme::is_dark` gives it to an application"
 
 [[exception]]
 connector = ["iced", "egui"]
@@ -531,6 +549,18 @@ connector = "egui"
 name = "focus_ring"
 kind = "absent"
 reason = "iced's wrapper rings a field the application wraps (connectors/native-theme-iced/src/lib.rs, `focus_ring`'s doc); the egui connector's install plugin strokes the theme's ring round whichever widget holds the focus at the end of each pass, with no call of the application's (src/plugin.rs, `paint_focus_ring`)"
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = ["next::ring_look", "next::focus_ring_with"]
+kind = "absent"
+reason = "iced's `next::focus_ring` keeps the field it is given, so iced's `next` maps the ring apart (`ring_look`) and wraps the field in a ring it mapped (`focus_ring_with`), for an application that draws the field alone where the ring is unmapped (connectors/native-theme-iced/src/next/mod.rs, `focus_ring_with`'s doc); gpui and egui have no `next::focus_ring`, each for the reason its `focus_ring` entry above gives: gpui-component draws a focused Input's ring itself, and the egui connector's install plugin strokes the ring with no call of the application's"
+
+[[exception]]
+connector = ["gpui", "egui"]
+name = ["next::part_focus", "next::part_ring_look", "next::focus_rings_with"]
+kind = "absent"
+reason = "iced's `next` maps the ring a part states of its own (`PartStyle.focus`, FR4) for the field the application wraps, read at FOCUSED and at FOCUS_VISIBLE (`part_ring_look`), and wraps the field in the two (`focus_rings_with`; connectors/native-theme-iced/src/next/mod.rs); gpui's theme-drawn controls pick a part's own ring themselves (its `widgets::part_focus`, outside `next`), and the egui connector's install plugin strokes the ring with no call of the application's, as the `next::ring_look` entry above says"
 
 [[exception]]
 connector = "gpui"
@@ -763,3 +793,102 @@ connector = "egui"
 name = ["toolbar_padding", "toolbar_item_gap", "toolbar_bar_height", "toolbar_border_line_width"]
 kind = "absent"
 reason = "the atlas writes the toolbar's leaves to the toolbar role and the top panel (src/mapping.md, `toolbar.border.padding.*`: SCOPED to `[panel_top]` `inner_margin`, `toolbar.item_gap`: SCOPED to «toolbar» `spacing.item_spacing.x`, `toolbar.bar_height`: DERIVED to `spacing.interact_size.y`, `toolbar.border.line_width`: SCOPED to «toolbar» `visuals.widgets.noninteractive.bg_stroke.width`), so no crate-root accessor is needed; iced has no toolbar, so its consumer reads them through these accessors"
+
+# ── egui's `next` ───────────────────────────────────────────────────────────
+[[exception]]
+connector = "egui"
+name = ["next::apply", "next::border_line_width", "next::border_opacity", "next::border_shadow_enabled", "next::button_content_min_size", "next::button_padding", "next::combo_box_padding", "next::control_line_height", "next::dialog_button_gap", "next::dialog_max_height", "next::dialog_max_width", "next::dialog_min_height", "next::dialog_min_width", "next::dialog_padding", "next::dialog_title_font_color", "next::expander_arrow_color", "next::focus_ring", "next::font", "next::icon_sizes", "next::input_padding", "next::is_dark_resolved", "next::link_color", "next::pick_list_handle", "next::radio", "next::selection_background", "next::selection_text_color", "next::spinner", "next::switch", "next::switch_over", "next::system_font_family", "next::tab_flares", "next::tab_indicator", "next::tab_indicator_line", "next::text_area_padding", "next::text_scale", "next::toolbar_bar_height", "next::toolbar_border_line_width", "next::toolbar_item_gap", "next::toolbar_padding"]
+kind = "absent"
+reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model (connectors/native-theme-egui/src/next/mod.rs, the module's doc), and egui's crate root has none of these, each for the reason its entry above gives for the root name (the spinner's: iced's `next::spinner` is `Spinner::new`'s twin, and egui draws its own `Spinner`)"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["next::default_button", "next::expander_icon", "next::icon_size", "next::input_frame", "next::input_margin", "next::list_header_font", "next::role_font_is_italic", "next::role_font_weight", "next::text_area_frame", "next::text_area_margin", "next::text_role_font", "next::text_role_line_height", "next::text_role_weight", "next::toolbar_button_checked_background", "next::toolbar_button_checked_border_color", "next::window_title_bar_font", "next::window_title_bar_text_color"]
+kind = "absent"
+reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model, and iced's and gpui's crate roots have none of these, each for the reason its entry above gives for the root name"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["next::font_definitions", "next::font_plan_from_system"]
+kind = "absent"
+reason = "the 0.8.0 twins of egui's `fonts::font_definitions` and `fonts::FontPlan::from_system`: egui draws no family by name, so the atlas installs the faces' bytes under `FontFamily::Proportional` and `Monospace` (the egui spec §4.9). iced draws through its own font database by the family fontdb filed the face under (connectors/native-theme-iced/src/lib.rs, `system_font_family`'s doc), and gpui by the name `font_family(&Arc<str>)` gives it, so neither has a font plan"
+
+[[exception]]
+connector = "egui"
+name = "next::to_theme"
+kind = "unlike"
+reason = "an egui atlas holds both schemes, as the crate root's `ThemeAtlas::builder` takes a light and a dark theme, and its `WindowTitleBar` frame fills from the theme resolved for a window that is not active, which the caller passes beside each scheme's theme as gpui's `next::geometry::title_bar_inactive` takes it, so that patches, system overrides and the accent stay in it (connectors/native-theme-egui/src/next/mod.rs, `to_theme`'s doc); iced's and gpui's `next::to_theme` build one theme of one scheme and read no inactive window"
+
+# ── gpui's label-font checks ────────────────────────────────────────────────
+
+[[exception]]
+connector = "egui"
+name = ["next::body_text_unmapped", "next::label_font_unmapped"]
+kind = "absent"
+reason = "gpui's checks of whether a theme-drawn widget's label has a font gpui can letter it in, where gpui shows gpui-component's own control in its place (connectors/native-theme-gpui/src/next/mod.rs, `label_font_unmapped`'s and `body_text_unmapped`'s doc). egui gives no widget way over a font: where the theme leaves a font property unstated egui keeps its own (spec §10, rule 0). The atlas writes a text slot's size only where the theme states it, else egui's own slot size stays (src/style/base.rs, `base_style_from`, the five `text_styles` slots; src/next/build.rs, `size`), the font plan asks for a face only where family, weight and slant are all stated, else egui's own face stays (src/next/mod.rs, `face_request`), and native-theme-egui-widgets reads no text style's font: it lays its labels out in the font egui's style gives them (connectors/native-theme-egui-widgets/src/switch.rs, `switch_ui`, and src/radio_button.rs, `RadioButton::ui`: `egui::FontSelection::Default`; src/combo_box.rs, `show_ui`: the scope's `override_font_id`, else the `Body` slot)"
+
+[[exception]]
+connector = "iced"
+name = ["next::body_text_unmapped", "next::label_font_unmapped"]
+kind = "absent"
+reason = "gpui's checks of whether a theme-drawn widget's label has a font gpui can letter it in, where gpui shows gpui-component's own control in its place (connectors/native-theme-gpui/src/next/mod.rs, `label_font_unmapped`'s and `body_text_unmapped`'s doc). iced's connector sets no widget's font: its style builders give a label only its colour (src/next/styles.rs, `button_source`: `button.label(..).color`), and the application sets each text's font and size itself (src/lib.rs, `radio`'s doc: \"Set the label's `text_size` and `font` on `radio` before passing it\"), from `next::font`, which returns `Unmapped` where the style states no family, weight or slant, or a slant iced has no face for (src/next/mod.rs, `face_style`), and `next::font_size`"
+
+[[exception]]
+connector = "gpui"
+name = "next::to_color32"
+kind = "absent"
+reason = "egui's conversion of a model colour to its `Color32` (connectors/native-theme-egui/src/next/mod.rs, `to_color32`), public so the egui showcase converts a leaf it draws itself with the connector's own conversion, not a twin of it; gpui's conversion of a model colour is its own type's, `next::hsla` (src/next/mod.rs), crate-private"
+
+[[exception]]
+connector = "iced"
+name = "next::to_color32"
+kind = "absent"
+reason = "egui's conversion of a model colour to its `Color32` (connectors/native-theme-egui/src/next/mod.rs, `to_color32`), public so the egui showcase converts a leaf it draws itself with the connector's own conversion, not a twin of it; iced's conversion of a model colour is its own type's, `next::to_color` (src/next/mod.rs), crate-private"
+
+[[exception]]
+connector = "gpui"
+name = "next::mixed_checkbox"
+kind = "absent"
+reason = "egui's mixed check box: egui draws `Checkbox::indeterminate` as its unchecked box with a dash in the scope's visuals (egui 0.37.0 src/widgets/checkbox.rs:135-141), and the atlas has no cell for the mixed state, so the function lays what the theme states for `INDETERMINATE` over the unchecked box's visuals per call, through the code the atlas lays the checked box with (connectors/native-theme-egui/src/next/mod.rs, `mixed_checkbox`'s doc). gpui draws its check box in its own widget, which takes its parts from the theme itself and shows the mixed state as when checked with gpui-component's dash (connectors/native-theme-gpui/src/widgets/checkbox.rs, `Checkbox::indeterminate`'s doc)"
+
+[[exception]]
+connector = "iced"
+name = "next::mixed_checkbox"
+kind = "absent"
+reason = "egui's mixed check box: egui draws `Checkbox::indeterminate` as its unchecked box with a dash in the scope's visuals (egui 0.37.0 src/widgets/checkbox.rs:135-141), and the atlas has no cell for the mixed state, so the function lays what the theme states for `INDETERMINATE` over the unchecked box's visuals per call, through the code the atlas lays the checked box with (connectors/native-theme-egui/src/next/mod.rs, `mixed_checkbox`'s doc). iced's checkbox has no mixed state (iced_widget 0.14.2 src/checkbox.rs: `is_checked` alone)"
+
+[[exception]]
+connector = "gpui"
+name = "next::flat_button"
+kind = "absent"
+reason = "egui's flat button: egui draws a `Button::frame_when_inactive(false)` unframed at rest and in its scope's hovered and `active` entries (egui 0.37.0 src/theme/default_style.rs:77-87), and the atlas has no cell for the flat variant, so the function lays `button.body(<state>; variant=Flat)` over a scope's visuals per call (connectors/native-theme-egui/src/next/mod.rs, `flat_button`'s doc). gpui-component's ghost button and its other controls unfilled at rest take the flat button's hovered and pressed fills from the global theme, `secondary_hover` and `secondary_active`, which `next::theme_color` writes from the same query (connectors/native-theme-gpui/src/next/mod.rs, `flat_button_states`)"
+
+[[exception]]
+connector = "iced"
+name = "next::flat_button"
+kind = "absent"
+reason = "egui's flat button: egui draws a `Button::frame_when_inactive(false)` unframed at rest and in its scope's hovered and `active` entries (egui 0.37.0 src/theme/default_style.rs:77-87), and the atlas has no cell for the flat variant, so the function lays `button.body(<state>; variant=Flat)` over a scope's visuals per call (connectors/native-theme-egui/src/next/mod.rs, `flat_button`'s doc). iced takes a button's look from the style function the application hands it (connectors/native-theme-iced/src/next/styles.rs, `button` and its siblings), so a flat button there is a style function, not a lay-over of a scope; the iced connector has none for the flat variant yet"
+
+[[exception]]
+connector = "gpui"
+name = "next::toolbar_button_checked"
+kind = "absent"
+reason = "egui's checked toolbar button: egui fills and letters a `Button::selected` from `visuals.selection` in every state (egui 0.37.0 src/theme/default_style.rs, `StyleProvider<ButtonStyle>`), so no scope gives it a hovered or pressed look, and the function returns `toolbar.button(CHECKED)`, `(HOVER|CHECKED)` and `(PRESSED|CHECKED)`'s fills and labels for the application to hand `Button::fill` per call from the button's previous response (connectors/native-theme-egui/src/next/mod.rs, `toolbar_button_checked`'s doc). A selected gpui-component Button takes no hover or press style (gpui-component 0.10.0 src/button/button.rs), so gpui has no hovered or pressed look to hand it (connectors/native-theme-gpui/src/geometry.rs, `toolbar_button_checked`'s doc)"
+
+[[exception]]
+connector = "iced"
+name = "next::toolbar_button_checked"
+kind = "absent"
+reason = "egui's checked toolbar button: egui fills and letters a `Button::selected` from `visuals.selection` in every state (egui 0.37.0 src/theme/default_style.rs, `StyleProvider<ButtonStyle>`), so no scope gives it a hovered or pressed look, and the function returns `toolbar.button(CHECKED)`, `(HOVER|CHECKED)` and `(PRESSED|CHECKED)`'s fills and labels for the application to hand `Button::fill` per call from the button's previous response (connectors/native-theme-egui/src/next/mod.rs, `toolbar_button_checked`'s doc). iced hands the style function a button's status, so its checked toolbar button's look per status is the style function's (connectors/native-theme-iced/src/next/styles.rs, `toolbar_button`)"
+
+[[exception]]
+connector = "gpui"
+name = "next::stroke_color_over"
+kind = "absent"
+reason = "egui's per-call stroke: egui ends a rect's fill at the stroke's inner edge (epaint 0.37.0 src/tessellator.rs, `stroke_and_fill_path`), so a translucent stroke an application hands `Button::stroke` per call is composited over the fill as the atlas composites its own (connectors/native-theme-egui/src/next/mod.rs, `stroke_color_over`'s doc). gpui paints a quad's border over its background, inside its bounds, so the fill runs under the whole border and a stroke laid inside is drawn from the stated colour (connectors/native-theme-gpui/src/next/mod.rs, the stroke readers' doc): there is nothing to composite"
+
+[[exception]]
+connector = "iced"
+name = "next::stroke_color_over"
+kind = "absent"
+reason = "egui's per-call stroke: egui ends a rect's fill at the stroke's inner edge (epaint 0.37.0 src/tessellator.rs, `stroke_and_fill_path`), so a translucent stroke an application hands `Button::stroke` per call is composited over the fill as the atlas composites its own (connectors/native-theme-egui/src/next/mod.rs, `stroke_color_over`'s doc). iced's style functions take a stroke with its alignment and composite it over the fill each state paints themselves (connectors/native-theme-iced/src/next/borders.rs, the module's doc, `Line::over`), and an iced application hands a style function, not a stroke, per call"

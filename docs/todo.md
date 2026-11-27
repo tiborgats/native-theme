@@ -132,7 +132,7 @@ not look for one.
       :36-37), collapsed under the selected tab (:337).
       Modelling the separator needs a colour, a width, an inset and when it
       hides, in the three connectors (a gpui `TabLook` field, an iced contract
-      row with its `contract-leaves.toml` entries, an egui mapping row); the
+      row with its `contract-homes.toml` entries, an egui mapping row); the
       rule needs no new field, since its brush is `tab.border.color`'s, but it
       gives `tab.border`, the selected tab's outline, a second meaning (a rule
       under the whole bar) and meets the showcases' own `separator.*` rule under
@@ -1296,6 +1296,20 @@ model, the platform presets and the three connectors
         toolbar's border (§2.13: none), the list's (§2.15: none for a plain
         list), the progress bar's padding (§2.10: 0) and the sidebar's
         (§2.12: 6, 6 top / 4 bottom).
+        *0.8.0 M4 P6, P7 (2026-11-27):* in 0.8.0's adwaita preset
+        (`native-theme/src/next/presets/adwaita.rs`) four of this item's
+        entries are settled: `button.active_background` (`#c8c8c8` /
+        `#2e2e32`) is `$button_active_color`, the window text at 30 % (§2.3;
+        P6); `combo_box.hover_background` is `$button_hover_color`, the window
+        text at 15 % (§2.24; P7); `segmented_control.hover_background` is
+        `$hover_color`, the window text at 7 %, a layer over the group's fill
+        (§2.25; P7 and its review fixes); `checkbox.hover_background` is the
+        unchecked box's rest fill under the pointer, its outline
+        `$trough_hover_color` (§2.5; M2.FS4, `eb0402c7c`). Still open:
+        `checkbox.unchecked_border_color` is the preset's `frame`, `#d5d5d5`
+        / `#4a4a4e`, carried as "0.7.2 adwaita.toml (uncited)", where §2.5
+        gives `currentColor` at 15 %. The rest of this item was not
+        re-checked against the 0.8.0 preset.
       - kde-breeze (its pressed button's fill and text and its scroll bar's
         pressed thumb left this list in D7, 2026-10-26: the reader now writes
         them from the colour scheme, and it cannot be right while the preset
@@ -4163,12 +4177,14 @@ the gap — closing it is a change, and each wants its own decision.
       §10.4), which is the question this entry leaves to decide: whether an
       iced info can be generated the same way from the iced contract's rows.
       M9b T3 (2026-10-21, 9f8f89e2, b3d5a8ca): the generation question is
-      answered, yes: the iced contract's colour-leaf walk is exported as
-      `connectors/native-theme-iced/contract-leaves.toml` (per colour leaf the
-      rows it moves, under which statuses and in which bundled combinations),
-      and the showcase's Widget Info reads a listed element's colour routes
+      answered, yes: the iced contract's colour-leaf walk was exported as
+      `contract-leaves.toml`, and on the 0.8.0 model its colour-home walk is
+      exported as `connectors/native-theme-iced/contract-homes.toml` (per
+      colour home the rows it moves, under which statuses and in which
+      platform combinations, and the 0.7.2 leaves it holds), which replaced
+      it; the showcase's Widget Info reads a listed element's colour routes
       from it; the colours the showcase draws itself keep routes by hand, each
-      naming the function a test splices. The innermost-instance half stays
+      naming the function and the homes a test states. The innermost-instance half stays
       open: iced's widget tree offers no hover walk (`iced_selector` sees only
       `operate` implementors), so the half an iced showcase can give is the
       hovered element's identity (M9b T7), not the innermost instance under
@@ -5324,6 +5340,127 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
 
 ### Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours
 - [ ] [1.0] For the maintainer to decide. Where a theme states neither `button.checked_background` nor `button.active_background` (macos-tahoe, `macos-tahoe.toml` `[light.button]` and `[dark.button]`; neither inherits, `docs/inheritance-rules.toml:409`, `:411`), the two connectors give a pressed button different fills, and the showcases' Basic "On" toggle shows it. egui's connector presses in `button.hover_background` (`active_background.unwrap_or(hover_background)`, `connectors/native-theme-egui/src/style/roles.rs:206` and `src/style/base.rs:354` at 5de1f8b1), and the egui showcase draws the toggle in that leaf, naming it under Not themeable (`pages/basic.rs`, the toggle's `fill_instead`). gpui's connector derives a colour no theme states, `secondary_active` = `active_color(secondary, is_dark)` (`connectors/native-theme-gpui/src/colors.rs:315-322`, `src/derive.rs:40`), and lays it over the button fill as `button_active` (`colors.rs:381`); `geometry::button_checked` sets no fill there (`src/geometry.rs:1339-1342`), so the gpui toggle keeps upstream's selected fill in that token. Each showcase draws its toolkit's own pressed look, and the colours differ because the connectors' fallbacks do. Copying gpui's derived colour into the egui showcase would draw a colour the theme does not state, and the egui toggle would then disagree with egui's own pressed button, so the showcase keeps reading theme data (M9c B1 item 13 (e)). macos-tahoe is offered on macOS alone. Settle before 1.0 whether the connectors share one fallback for an unstated `button.active_background`.
+
+### KDE: what 0.8.0's KDE unit left open (2026-11-23)
+
+- [ ] [1.0] The `kde-breeze` builder of the 0.8.0 model (`native-theme/src/next/presets/kde.rs`) states issue #4's
+      `L1`–`L5`, `S1`, `S2`, `S4` (in a view without the focus) and `Z1`/`Z2`, with the sources its comments cite.
+      Left, each without a source in what was gathered:
+      - **L4**, beyond the row padding of 7 / 3 px: Breeze shrinks the inset for long text; the first row has an extra
+        top margin; a framed view uses 6 px instead of 7; a table has no vertical padding; an icon's inset in a row is
+        not settled (Breeze cites a Qt quirk not found in `qcommonstyle.cpp` v6.11.0).
+      - **S3 under another colour scheme**: the focused view's handle is stated for Breeze's own colours only
+        (#b1d9ef / #2a546b, measured); `docs/platform-facts.md` §2.8's `focusColor()` rule does not reproduce it.
+      - **S4 in the view that has the focus**: no source states the handle there while the pointer is on the bar.
+      - **L2's fill**: one 8-bit step from the measurement in both schemes; not explained.
+      - **S1 for a horizontal bar and under right-to-left**: from Breeze's source only, not measured.
+      - `MotionPreference::Reduced`: no KDE source states a policy; it changes nothing.
+      - Plasma's `TintFactor` and `TitlebarIsAccentColored` (`[General]` of kdeglobals) are not read, so an explicit
+        accent runs without tint and without an accent-coloured title bar (Plasma's code defaults).
+      - A palette does not recolour the Button colour set, `BackgroundAlternate`, or the preset colours the system
+        path never replaces (the same holds for a non-Breeze system scheme in 0.7.2).
+      - Citations in `kde.rs` (`scripts/check_preset_citations.py`, 2026-11-23): 416, of which 284 cite
+        `platform-facts.md`, 128 are `0.7.2 kde-breeze.toml (uncited)`, 4 other; the uncited ones are unverified.
+- [ ] [1.0] The spec does not say what `StrokeAlign` means on a `FocusIndicator`'s stroke
+      (`docs/v0.8.0-spec.md` §2; the fill/stroke rule covers a part's stroke only).
+
+### 0.8.0's platform units: what has no source yet (2026-11-23)
+
+- [ ] [0.8.x] **adwaita** (`native-theme/src/next/presets/adwaita.rs`): libadwaita 1.10.0's high-contrast values beyond
+      the focus ring (border opacity 50 %, disabled opacity 40 %, dim opacity 90 %, trough, window outline, dimmer
+      variants) are not applied, as in 0.7.2; the link colour #1b6acb has no source and does not follow the accent
+      (libadwaita derives it from the accent, `_colors.scss`); under a palette the preset's pre-mixed fills (button,
+      hover, toolbar, switch) keep their values (no rule recomputes them); white status text on dark palettes' status
+      fills falls as low as 1.27:1 (spec §7 keeps a status role's text from the layer below); the light placeholder is
+      2.42:1 on its field; GNOME without the `portal` feature gives `FeatureDisabled` where 0.7.2 gave the preset.
+- [ ] [0.8.x] **adwaita**'s focus rings the model cannot place (M2.FS4, 2026-11-24): libadwaita 1.10.0 rings a check
+      box and a radio button on `checkbutton`, the box of the indicator and its label (`border-radius: $check_radius +
+      3px`, 9 px; `padding: 3px`, 4 px with `.text-button`; `_checks.scss:3-12`),
+      not on the indicator, and `CheckboxParts` has no part for that box, so the check box and the radio keep the
+      global ring (2 at -2), drawn round the indicator; a colour swatch's ring (`colorswatch`, 4 at -2,
+      `_color-chooser.scss`) has no widget in the model; a checked toggle in a toggle group is ringed 1 px outside in
+      white at 75 % mixed 50 % with transparent (`_toggle-group.scss:118`), which the preset does not state (a segment
+      states the normal toggle's ring at 0, `:63`, checked or not); OSD and opaque buttons, card buttons and boxed
+      rows have no part of their own (`_buttons.scss:116`, `:158`, `:334`, `_lists.scss:344`).
+      The same gap on **windows-11** (2026-11-24): WinUI's CheckBox and RadioButton set `FocusVisualMargin`
+      -7,-3,-7,-3, the focus visual round the whole control, its indicator and its label (`docs/platform-facts.md`
+      §2.1.5, `focus_ring_offset`; `CheckBox_themeresources.xaml:275` at microsoft-ui-xaml 8463f45), not round the
+      indicator; with no part for that box the check box and the radio keep the Button's global ring (offset 1),
+      drawn round the indicator.
+- [ ] [0.8.x] **windows-11**: a checked toolbar button's label has no checked colour (window text on the accent fill);
+      under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
+      when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
+      slot restates stay.
+      The text field's disabled outline under high contrast has no colour in the rc1 spike table
+      (`docs/todo_v0.7.1_model-completeness-spike-w-coverage.md` on `v0.8.0-rc1`, row TextControlBorderBrushDisabled:
+      its high-contrast column names the brush itself, unresolved, no line), so the preset states no disabled outline
+      of its own there and the rest outline stays.
+- [ ] [0.8.x] **windows-11**'s elevation borders beyond their one colour (M4 N38, 2026-11-27): the preset states each
+      as the colour of its three sides (P8); not stated: the edge side's colour, `ControlElevationBorderBrush`'s stop
+      0.33 `ControlStrokeColorSecondary` #29000000 / #18FFFFFF at the bottom in light and the top in dark (the dark
+      dictionary has no flip), `AccentControlElevationBorderBrush`'s `ControlStrokeColorOnAccentSecondary` #66000000 /
+      #23000000 at the bottom in both (Common_themeresources_any.xaml:186-206, :382-405, :40, :42, :244, :246 at
+      microsoft-ui-xaml 8463f45), and the text field's `ControlStrongStrokeColorDefault` #72000000 / #8BFFFFFF bottom
+      (`TextControlElevationBorderBrush`, TextBox_themeresources.xaml:155-163, :48-56; platform-facts.md §2.4), whose
+      gradient stops are in the repository only as prose: a facts task quotes them; the focused text field's 2 px
+      accent bottom over three neutral sides (`TextControlElevationBorderFocusedBrush`, :164-173, :57-66), where the
+      preset states the accent on four sides at 1 px (`FocusKind::Underline` the likely home); the brushes' gradient
+      stops themselves (0→3 px, stops 0.33 and 1.0; the text box's 0→2 px, 0.5 and 1.0), which
+      `PaintLayer::LinearGradient` cannot state (no absolute extent). The per-side form (`Stroke::sides`, three sides
+      and the edge) with a model reduction for one-colour toolkits waits for the maintainer
+      (`.superpowers/sdd/v0.8.0-plan/M4/design/N38-elevation-borders.md`, option b). The combo box's
+      `BackgroundSizing` under high contrast is not read.
+- [ ] [0.8.x] **macos-monterey / macos-tahoe**: under a palette the title bar keeps its measured fill (AppKit names no
+      colour for `header_bg`); colours no palette slot names keep the preset's (alternate row, list header, field,
+      button, pop-up, placeholder, hover fills); white text on a light explicit accent; the text selection under an
+      accent differs from AppKit's pale variant (a fit on two accents is not built: a probe pass over the other six
+      `AppleAccentColor` values would settle it); a palette accent's alpha is replaced in the focus ring and the
+      disabled switch track (no source); 19 reader colours are checked only by the live CI run.
+- [ ] [0.8.x] **material-3**: about 110 0.7.2 keys are carried `(uncited)` in `material.rs`; five state colours (expander
+      hover; link hover, pressed and disabled; scroll bar pressed handle) have no source for what they become under a
+      seed; whether `surface_bg` reaches the menu panel (the popover's token in Material) is not settled; many fields are
+      unstated (default button, combo box arrow area and open states, list row height and header states, menu active
+      and bar states, tab gaps and borders, toolbar padding and button states, card border and padding, expander arrow
+      and indent, `font_whole_pixels`).
+- [ ] [0.8.x] **ios-13**: every widget padding, the button's checked pair and default colours, the check mark's stroke,
+      the radio dot's size, list and menu row heights, the tab indicator, toolbar height, dialog entrance, tooltip delay,
+      card outline and corners are unstated; whether UIKit's link, focus ring and caret follow the tint is unverified.
+      **ios-26** is not bundled: rc1's facts leave at least 30 of the 38 fields without an iOS 26 source (no dialog,
+      spinner, expander, splitter, scroll bar, segmented control, tab, tooltip, progress bar, slider thumb, switch,
+      icon sizes, check box and menu gaps).
+- [ ] [0.8.x] **macOS list and table row hover**: `docs/platform-facts.md` §2.15 has no source (AppKit publishes no hover
+      colour for a row; the OS probe never hovers one), so the macOS presets leave `list.highlight(HOVER).fill` unstated and
+      the gpui connector shows gpui-component's own hovered row (the accent at 0.6) where 0.7.2 showed the list's own
+      background. Measure it on macOS 14/15/26 (a probe pass hovering a table row) and state it.
+- [ ] [0.8.x] **State values 0.7.2 states without a source** (M2.FS, 2026-11-23): model parity now requires a value
+      the unresolved 0.7.2 theme states under a state to be a rule for that state (`from_state` set), so the builders
+      state these as 0.7.2 does, each equal to the rest value and cited `0.7.2 <preset>.toml (uncited)`: **adwaita**
+      `button.hover_text_color`, `button.active_text_color`, `link.hover_text_color`, `link.active_text_color`,
+      `list.hover_text_color`, `menu.hover_text_color`, `tab.hover_text_color`, `tab.active_text_color`;
+      **material-3** `button.hover_text_color`, `button.active_text_color`, `link.hover_text_color`,
+      `slider.thumb_hover_color`; **ios-13** `link.hover_text_color`, `list.hover_text_color`, `tab.hover_text_color`.
+      The switch's on-thumb diameter is stated for `CHECKED` from constants already carried `(uncited)` on adwaita
+      and windows-11 (`switch.thumb_diameter`). Find each one's source; where `docs/platform-facts.md` has a row for
+      it, check that the row gives this value (not checked in M2.FS).
+- [ ] [0.8.x] Motion tokens: no bundled preset states any, so no connector maps them yet (gpui-component's
+      `MotionTokens` slots and the model's tokens are not paired; built in the first unit that states them).
+
+### 0.8.0's checked buttons: what the parked facts leave pending (2026-11-23)
+
+- [ ] [0.8.x] **macos-monterey**: a checked toggle's fill and label (`button.body(CHECKED)`, `button.label(CHECKED)`)
+      are unstated: a key window of macOS 12–15 draws it as a gradient, which the parked facts leave pending (U141;
+      `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`). `macos-tahoe` states both (M2.FS3).
+- [ ] [0.8.x] The checked toolbar button (`toolbar.button(CHECKED)`) on **macos-monterey**, **macos-tahoe** and
+      **ios-13** is unstated: the parked facts leave its fill pending (macOS: U695, U750; iOS: U114, U116, U118, U123;
+      `docs/facts/macos/button.toml` and `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`). Since M2.FS3 the
+      ios-13 push button states its checked fill, its checked and pressed fill and its checked label, which the
+      **ios-13** item above still names among the unstated values.
+      On macos-monterey and macos-tahoe gpui draws such a button as an unchecked one. Its checked fill falls back to
+      `secondary_active` (`toolbar_button_checked` in `native-theme-gpui/src/next/builders.rs`), which is the flat
+      button's pressed fill, and since `8ace5c2a2` that fill is measured as none (transparent). This is read from the
+      code, not run. The FS4 probe lane reads the toolbar-bezel button as an on toggle (M2.FS4c13), and the CHECKED
+      fill it gives closes this. The NSToolbar image item's selected look (runs 45537062519, 45542850219) is another
+      widget and is not a source for `toolbar.button` (`M2/FS4/measured.md`, section "M2.FS4c11 → specimen").
 
 ### Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts
 - [ ] [1.0] For the maintainer to decide. Under `--capture`, `--screenshot` and `--dump-layout` on macOS, gpui's keyboard shield stops ⌘Q, ⌘H, ⌥⌘H, ⌘M and ⌘W too, which are its own keymap bindings: a key equivalent reaches gpui's window first (gpui-pre-macos 0.3.9 `src/window.rs:2572-2574`, `handle_key_equivalent`, and `:2659-2668`, the event reported as handled where it did not propagate), and the shield stops every keystroke (`cx.intercept_keystrokes`, gpui-pre 0.3.9 `src/window.rs:6075-6092`, installed by the gpui showcase's `apply_cli_args`). The egui showcase leaves AppKit's predefined items (Close, Quit, Hide, Hide Others, Minimize) running there, as its `shields_keyboard` doc says since M9c B1 FR-M3 (d2e34ccc), and drops only the showcase's own menu actions. Read from the source, not run on macOS. Settle before 1.0 whether the two shields cover the same keys.

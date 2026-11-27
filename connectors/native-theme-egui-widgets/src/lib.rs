@@ -39,8 +39,11 @@
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
-//! in the colour scheme egui is drawing. It contains no colour, no radius and
-//! no metric of its own: a size the theme leaves unstated is the value egui
+//! in the colour scheme egui is drawing. Under an atlas of the 0.8.0 model
+//! ([`next::to_theme`](native_theme_egui::next::to_theme)) every widget reads the 0.8.0
+//! theme, each value where the theme states it and egui's own where it does not (the README's
+//! section "Under an atlas of the 0.8.0 model" lists what each reads). It contains no colour,
+//! no radius and no metric of its own: a size the theme leaves unstated is the value egui
 //! itself uses there. **With no atlas installed, every widget renders as
 //! egui's own counterpart** — [`switch::Switch`] as `egui::Checkbox`,
 //! [`slider::Slider`] as `egui::Slider`, [`spinner::Spinner`] as
@@ -136,9 +139,36 @@ pub mod slider;
 pub mod spinner;
 pub mod switch;
 
+mod next;
 mod scope;
 
 pub use native_theme_egui as connector;
+
+/// The fills the crate's widgets read of the 0.8.0 theme `r` that egui cannot paint, each a
+/// [`Note::Unmapped`](connector::Note::Unmapped) at its home, the channel the atlas reports its
+/// own on ([`ThemeAtlas::notes`](connector::ThemeAtlas::notes)): a fill the theme states as
+/// layers that are all gradients, which have no single colour for egui to paint
+/// (docs/v0.8.0-spec.md §10, rule 4). The [`switch::Switch`], [`radio_button::RadioButton`],
+/// [`slider::Slider`], [`segmented_control::SegmentedControl`] and the links ([`links::link`],
+/// [`links::hyperlink`]) draw egui's own there, as where the theme states no fill (rule 0); a
+/// switch whose fill at `switch.track(NONE)`, `switch.track(CHECKED)` or
+/// `switch.thumb(CHECKED)` is one is egui's own `Checkbox`. Empty where every
+/// fill they read is mapped. The switch's state glyphs are
+/// [`switch::Switch::next_glyphs_unmapped`]'s.
+#[must_use]
+pub fn next_fills_unmapped(
+    r: &connector::native_theme::next::ResolvedTheme,
+) -> Vec<connector::Note> {
+    let mut unmapped = Vec::new();
+    switch::Look::next_noted(r, &mut unmapped);
+    slider::Look::next_noted(r, &mut unmapped);
+    links::Look::next_noted(r, &mut unmapped);
+    segmented_control::Look::next_noted(r, &mut unmapped);
+    for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)] {
+        radio_button::Over::next_noted(r, checked, disabled, &mut unmapped);
+    }
+    unmapped
+}
 
 #[cfg(test)]
 mod tests;

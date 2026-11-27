@@ -46,6 +46,14 @@ const LISTED: &[(&str, &str)] = &[
         "chrome.side_panel.settings.theme_label",
     ),
     ("chrome-settings-preset", "chrome.side_panel.settings.theme"),
+    (
+        "chrome-label-palette",
+        "chrome.side_panel.settings.palette_label",
+    ),
+    (
+        "chrome-settings-palette",
+        "chrome.side_panel.settings.palette",
+    ),
     ("chrome-label-mode", "chrome.side_panel.settings.mode_label"),
     (
         "chrome-settings-color-mode",
@@ -125,6 +133,7 @@ const LISTED: &[(&str, &str)] = &[
     ("basic-icon-paste", "basic.icons.paste"),
     ("basic-icon-delete", "basic.icons.delete"),
     ("basic-icon-edit", "basic.icons.edit"),
+    ("basic-icon-save", "basic.icons.save"),
     ("basic-icon-small", "basic.icons.small"),
     ("basic-icon-toolbar", "basic.icons.toolbar"),
     ("basic-icon-large", "basic.icons.large"),

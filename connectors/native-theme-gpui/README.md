@@ -469,6 +469,41 @@ InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
 # }
 ```
 
+Under a theme from the 0.8.0 model, `next::variants::ghost_button(r, cx)` is
+that flat button edged in its hovered outline,
+`button.body(HOVER; variant=Flat).stroke.color`, where a rule states it.
+gpui-component draws a custom variant's colour as the border in every state
+and lays out no border width for it, so a Button built on it is refined at
+rest as well: `next::geometry::ghost_button_rest` hides the edge at rest and
+lays it out inside the push button's padding, for a Button
+`next::geometry::button` pads; `next::geometry::ghost_button_rest_own_padding`
+does the same and sets no padding, for a Button that keeps the toolkit's own
+(a small Button, a button an input group sizes), the edge then lying around
+that padding:
+
+```rust,no_run
+use gpui_kit::component::IconName;
+use gpui_kit::component::StyledExt as _;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::input::InputGroupButton;
+use native_theme_gpui::{ActiveNativeTheme as _, next};
+
+# fn f(cx: &gpui_kit::App) -> next::Mapped<()> {
+if let Some(r) = cx.native_theme().and_then(|theme| theme.next_resolved(cx)) {
+    Button::new("close")
+        .icon(IconName::Close)
+        .custom(next::variants::ghost_button(r, cx)?)
+        .refine_style(&next::geometry::button(r)?)
+        .refine_style(&next::geometry::ghost_button_rest(r)?);
+    InputGroupButton::new("copy")
+        .label("Copy")
+        .custom(next::variants::ghost_button(r, cx)?)
+        .refine_style(&next::geometry::ghost_button_rest_own_padding(r)?);
+}
+# Ok(())
+# }
+```
+
 Build it in `render`: it reads the installed theme, so it follows a light/dark
 switch. Buttons gpui-component creates internally (a dialog's close button,
 calendar navigation, the tab bar) cannot be reached this way.
@@ -603,6 +638,14 @@ and `Select` (an open combo box's fill and frame: it shows `ring` while
 open). The showcase draws the first four with its own elements; the
 `widgets` module's `Slider` draws the thumb's outline.
 
+A pressed button's border: the bordered, default and toolbar variants are
+custom variants, and a custom variant has one border colour for hover and
+press (gpui-component 0.10.0 `button/button.rs:1134`, `border_color`'s
+`Custom` arm). A pressed bordered or default button keeps
+`button.body(HOVER).stroke.color`, and a pressed tool button
+`toolbar.button(HOVER).stroke.color`; a `PRESSED` stroke the theme states
+apart from its hover one is not drawn.
+
 ## Theme-drawn widgets
 
 With the `widgets` feature (on by default), `native_theme_gpui::widgets` has
@@ -614,7 +657,7 @@ role, and paints every part from the theme leaf that states it:
 | Widget | Paints | Instead of gpui-component's |
 |---|---|---|
 | `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border and its colour under the pointer (`hover_border_color`), radius, mark and its stroke (`check_mark_stroke_width`), the mixed state's dash (`Checkbox::indeterminate`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
-| `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
+| `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover; on a 0.8.0 theme the label in `switch.label` (its colour per state), `switch.label_gap` from the track, before it where `switch.label_side` says leading, and at the far end of a row laid out wider than its content where `switch.label_gap_stretches` says so. The on and off glyphs `switch.show_state_glyphs` asks for are not drawn: gpui-component's switch draws none and the model gives no glyph (`SwitchLook::next_glyphs_unmapped`) | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; the thumb's outline where `slider.thumb_border_line_width` is stated (`ThumbOutline`), in its hover colour with the pointer on the thumb though not while it is dragged (gpui applies no hover style during a drag), and on the end thumb in its focus colour while the slider has the focus (a press on the rail gives it, a press on a thumb does not); keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size and a ring of its fill at half alpha |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
 | `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across at `Size::Medium` and × 0.75 / × 0.875 / × 1.5 at XSmall / Small / Large -- gpui-component's own spinner's ratios to its Medium (`icon.rs`, `Icon::with_size`) -- never below `spinner.min_diameter`, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
@@ -921,6 +964,111 @@ Theme::update(cx, |theme| theme.table_active = theme.table_active.alpha(0.25));
 # }
 ```
 
+One more limit is gpui's own and concerns the builders from the 0.8.0
+model (`native_theme_gpui::next`). **A translucent stroke shows the whole fill under
+it.** The 0.8.0 model says how far a part's fill runs under its stroke: under
+the whole band (`StrokeAlign::Inside`), to the band's centre line (`Center`,
+as Breeze draws a scroll bar's handle), or to its inner edge (`Outside`). gpui
+paints a quad's border over its background inside its bounds (gpui-pre-wgpu
+0.3.12 `src/shaders.wgsl`, `fs_quad`: "Blend the border on top of the
+background"), so it draws `Inside`, and the builders give each part as one
+quad. Under an opaque stroke the three look the same, and gpui draws all three
+exactly. A translucent `Center` or `Outside` stroke is drawn in its stated
+colour over the whole fill, so the band shows more of the fill than the
+platform does; no border colour can take the fill away.
+
+**A stroke per side.** gpui gives a quad one border colour (gpui-pre 0.3.12
+`src/window.rs`, `PaintQuad`, `border_color`). A per-side stroke whose four
+sides have one width and solid colours, at least three of them the same colour,
+is drawn as a uniform stroke of that width and colour in the stroke's alignment
+(`Stroke::prevailing`, docs/v0.8.0-spec.md §10, rule 2): the fourth side's
+other colour, such as WinUI's elevation edge, is not drawn. Every other per-side
+stroke (different widths, a side painted as layers or not painted, two colours
+on two sides each) is not drawn: the builder reports the part's stroke as
+unmapped.
+
+**Gradients and layered fills.** The connector hands gpui-component one colour
+per fill: its `ThemeColor` slots are `Hsla` (gpui-component 0.10.0
+`src/theme/theme_color.rs`, `ThemeColor`), and the builders set a part's fill
+as one colour. A fill the theme states as layers (`Paint::Complex`, a gradient
+among them) is drawn in the one colour the model gives in its place, its
+fallback colour (docs/v0.8.0-spec.md §10, rule 2), and as gpui-component's own
+fill where it gives none, layers that are all gradients. The fill readers
+`next::fill_of` and `next::state_fill_of` take the fill's home and return
+those layers as `Unmapped` at it (rule 4), not as the `None` of a fill the
+theme leaves unstated, and a builder that reads such a fill returns that
+`Unmapped`; the showcase's Widget Info names the home in a line,
+`gpui-component's own: the theme states no value gpui can take at <home>`, in
+place of the fill's swatch. No bundled preset states such a fill.
+
+**Corners are circular, one radius a part.** gpui rounds a quad with four
+circular radii (gpui-pre 0.3.12 `src/geometry.rs`, `Corners`), and
+gpui-component's theme and widgets take one radius each. A continuous corner
+(`CornerCurve::Continuous`, Apple's) is drawn as the circular corner of the
+stated radius (docs/v0.8.0-spec.md §10, rule 2), and Widget Info marks its
+value `(drawn circular)`. A pill is drawn as gpui-component's full radius,
+9999 px, which gpui clamps to half the shorter side (gpui-component 0.10.0
+`src/theme/mod.rs`, `RADIUS_FULL`). Per-corner radii that differ, and a
+concentric radius (`CornerRadius::Concentric`, the container's radius less an
+inset, which a builder does not know), are reported as unmapped; no preset
+states either.
+
+**A checked button looks the same hovered and pressed.** gpui-component
+gives a selected `Button` no hover or press style: it registers its hover and
+active styles only while the Button is not selected (gpui-component 0.10.0
+`src/button/button.rs:733`, `:758`), and replays the caller's refinement over
+its selected style (`:836-842`). So a checked button, the push button
+(`next::geometry::button_checked`), the toolbar's
+(`next::geometry::toolbar_button_checked`) and the flat one's edge
+(`next::geometry::ghost_button_checked`), is drawn in its checked fill,
+label and pen under the pointer and pressed too, and a fill, label or pen the
+theme states for `CHECKED | HOVER` or `CHECKED | PRESSED` (the macOS presets
+state the toolbar button's fills and labels, kde-breeze the flat button's
+hovered Highlight pen, windows-11 the push and toolbar buttons' pressed
+`Stroke::None`) is not drawn; the connector draws nothing of its own in
+its place. No builder reads a checked button that is disabled either:
+`next::geometry::button_checked` reads `CHECKED` and
+`next::geometry::button_disabled` `DISABLED`, so the stroke the theme states
+for `DISABLED | CHECKED` (windows-11's `Stroke::None`, under high contrast
+the grey text) is not drawn. `next::geometry::button_checked` draws the
+checked pen at `next::geometry::button`'s width, which the selected Button
+keeps; a checked stroke stated at another width is reported not mapped
+(`button.body(CHECKED).stroke.width`, spec §10, rule 4), and the builder,
+which returns one refinement or the one home it does not map, is then not
+applied: the checked fill and label the theme states go with it, and the
+selected Button keeps gpui-component's own selected fill and label.
+
+**A primary button has no outline.** gpui-component lays a border out only
+for a `Default` Button and an outline one (gpui-component 0.10.0
+`src/button/button.rs:727-732`), so a `.primary()` Button is drawn without
+one, and the primary body's stroke the theme states at rest, hovered,
+pressed, focused (`FOCUS_VISIBLE`) or disabled
+(`button.body(<state>; variant=Primary).stroke`:
+windows-11's AccentControlElevationBorderBrush at rest and hovered, none
+pressed and disabled) is not drawn; the connector draws nothing of its own in
+its place. A focused one takes gpui-component's own focus look, which it
+lays over the caller's style (*The focus ring*, under
+[Overriding theme values](#overriding-theme-values)).
+
+**A toolbar or flat button's icon takes one colour.** gpui-component's
+`Button` gives its icon no colour of its own: an `Icon` is drawn in the colour
+it is given (`src/icon.rs`, `Styled for Icon`), else in the Button's text
+colour. `next::geometry::toolbar_button_icon_color` gives
+`toolbar.button_icon`'s colour for the state a Button is built in, at rest,
+checked or disabled, and `next::geometry::ghost_button_icon_color`
+`button.icon(<state>; variant=Flat)`'s for a flat Button; an `Icon` keeps it
+under the pointer and pressed, so a hovered or pressed icon colour the theme
+states (the macOS presets state a hovered toolbar one) is not drawn.
+
+**An expander's edge keeps gpui-component's width.** `next::geometry::accordion`
+gives the edge's colour (and a width of 0 where the stroke is stated as none),
+but not a stated visible width: its one refinement lands on the `Accordion`,
+edged on every side, and on each `AccordionItem`, edged only at the bottom and
+not the last (gpui-component 0.10.0 `src/accordion.rs:108-114`, `:380-384`),
+so a width on every side would frame each item. Upstream's 1 px stands where
+the macOS presets and ios-13 state `expander.container(NONE)`'s stroke 0.5 px
+wide.
+
 ## Overriding theme values
 
 An application that wants a value of its own writes it over the installed
@@ -1081,17 +1229,43 @@ argument has no effect. `icons::to_image_source` documents it.
 Non-finite or non-positive scaling factors count as 1.0.
 
 Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw the
-theme's focus ring while focused: `defaults.focus_ring_color` as stated, a band
-`defaults.focus_ring_width` wide whose outer edge lies `focus_ring_offset` plus the
-width outside the control, over its other parts; where the ring lies inset at the
-edge (libadwaita's) it is a band inside the edge, the control having no border of
-its own. Where the theme says the platform shows its ring for keyboard focus
+theme's focus ring while focused, placed as the model places it
+(docs/v0.8.0-spec.md §2, `FocusIndicator`): its base line is the control's edge
+moved out by `defaults.focus_ring_offset` (inward where negative), its corners the
+control's grown by the offset, floored at 0, or, on a 0.8.0 theme,
+`focus_ring.corners` where stated; the ring is a band
+`defaults.focus_ring_width` wide outward from that line in
+`defaults.focus_ring_color` as stated (on a 0.8.0 theme `focus_ring.stroke`'s own
+width and colour), and a 0.8.0 theme's `focus_ring.inner_stroke` a second band
+inward from it, each far edge concentric. Both are painted over the control,
+inside its edge too, where an inset ring (libadwaita's) lies; gpui paints a box's
+border after its children (gpui-pre 0.3.12 `src/style.rs`, `Style::paint`), so
+where the ring reaches inside the edge of a control whose border shows, that
+border is drawn as a child under the ring. A 0.8.0 indicator that is not a ring
+(`focus_ring.kind` `Fill` or `Underline`), a ring stated per side and concentric
+corners are unmapped (`widgets::focus_ring_unmapped`), and no ring is drawn.
+Where a 0.8.0 theme states a ring of the part's own (`PartStyle.focus` of
+`checkbox.indicator`, `radio.indicator`, `switch.track`, `slider.thumb` or
+`tab.tab`, read at the focused state), the control draws that ring round that
+part in place of the global one, by its own trigger, and none where the part
+states none (`widgets::part_focus`, `widgets::part_ring_unmapped`); gpui-component's
+own widgets (the button, the text field, the list row, the segment, the
+expander's header) draw their own ring and take no part's, which Widget Info
+reports not mapped.
+Where the theme says the platform shows its ring for keyboard focus
 only, a control draws it only for a focus that followed a key press: the answer
 is `Window::last_input_was_keyboard` when the focus arrives, kept until it
-leaves. The theme-drawn `TabBar` rings the focused tab by the same rule, inside
-the tab, in `defaults.focus_ring_color` and `focus_ring_width`;
-`focus_ring_offset` is not reached there, since the tabs' scrolling row would
-cut a band outside the tab away. A click selects a tab without focusing it;
+leaves. The theme-drawn `TabBar` rings the focused tab by the same rule (with
+`tab.tab`'s own ring where a 0.8.0 theme states one) as an inset shadow inside
+the tab, against its edge, in `defaults.focus_ring_color` and
+`focus_ring_width`, and a 0.8.0 theme's `focus_ring.inner_stroke` as a second
+band inward from it. The ring's offset (unless it is minus the width, which
+puts the band against the edge) and its stated corners are not drawn there,
+and Widget Info reports them not mapped (`TabLook::next_ring_unmapped`): the
+ring keeps inside the tab and in its corners because the tabs' row scrolls
+sideways, and gpui clips a scrolling box on its scrolling axis (gpui-pre
+0.3.12 `src/style.rs`, `Style::overflow_mask`), so a ring outside the tabs
+would lose its band left of the first tab and right of the last. A click selects a tab without focusing it;
 the tabs take the focus from the keyboard, the arrow keys moving it along the
 bar. gpui-component's own widgets draw their 3 px ring in `ring` with its
 alpha set to 0.5, whatever the colour's own, where `Theme::focus_ring` is on
@@ -1474,8 +1648,26 @@ a Wayland client, the window's title bar is gpui-component's, with the
 menus, labelled with this crate's name and version. The rest of the window
 is built from the same widgets: a toolbar of actions (the command palette, a
 theme reload and the Preferences), and two resizable panels. The side panel holds the theme
-settings, each labelled -- Theme, Mode and Icon theme -- and below a
-separator, the inspector. The content panel shows the page, with a tab per
+settings, each labelled -- Theme, Palette, Mode and Icon theme -- and below a
+separator, the inspector. Theme offers `default`, the desktop's own theme,
+and the platform presets meant for the platform it runs on (`kde-breeze`
+on KDE Plasma, `adwaita` on Linux, `windows-11` on Windows, `macos-monterey`,
+`macos-tahoe` and `ios-13` on macOS, and `material-3` everywhere); Palette
+lays one of the bundled palettes (`Palette::BUNDLED_NAMES`: the Catppuccin
+four, Dracula, Alucard, Nord, Solarized, Tokyo Night, Gruvbox and One, each
+for one scheme) over it, or `none`, the preset's own colours, and locks the
+mode to the palette's scheme. Under a palette, gpui-component's theme colours
+and the connector's own widgets are drawn from the 0.8.0 theme with the
+palette. Still read from the 0.7.2 preset, which has no palettes, until their
+pages move to the 0.8.0 model, as the palette's tooltip says: the button
+variant and rest fill the showcase gives the Basic page's default-button
+sample (`variants::default_button`, `geometry::default_button_rest`), the checked
+track of the Switches built without the `widgets` feature
+(`variants::switch_color`: Basic, Inputs and Preferences), and the
+showcase's own refinements -- its colours and geometry, its menus, and the
+side panel's padding and label font. While High contrast is on, a preset
+with a High level for the mode asked sets the palette aside, and the
+palette's and the High contrast switch's infos say so. The content panel shows the page, with a tab per
 page above it. A status bar has the side panel's toggle at its left end.
 Resting the pointer on any widget shows in the inspector what the theme sets
 on it, with the upstream line each colour is read at. Two parts report
@@ -1484,7 +1676,10 @@ between the panels and the side panel do), and the inspector's own content
 below its tabs, by design, so the pointer can move into it without replacing
 what it shows.
 
-Flags: `--theme NAME` (a preset), `--variant light|dark|system`,
+Flags: `--theme NAME` (`default` or a preset the Theme setting offers; a
+community preset of 0.7.2, such as `nord`, is reported, its colours being a
+palette), `--palette NAME` (`none` or a palette the Palette setting offers),
+`--variant light|dark|system`,
 `--tab PAGE` (`basic`, `buttons`, `inputs`, `data`, `feedback`, `typography`,
 `layout`, `overlays`, `charts`, `icons`, `theme-map`),
 `--icon-set default|material|lucide|gpui-builtin|system|freedesktop|<installed theme>`

@@ -2,14 +2,17 @@
 
 use native_theme_egui::convert::{to_color32, to_margin};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
-use native_theme_egui::native_theme::theme::{
-    ArrowSide, ResolvedExpanderTheme, ResolvedPadding, ResolvedTheme,
+use native_theme_egui::native_theme::next::{
+    ArrowSide as NextArrowSide, IconStated, ResolvedTheme as NextResolvedTheme, TextStated,
+    WidgetState,
 };
+use native_theme_egui::native_theme::theme::{ArrowSide, ResolvedPadding, ResolvedTheme};
+use native_theme_egui::next::{expander_icon as next_expander_icon, padding_of};
 use native_theme_egui::{
     AccessibilityPreferences, NativeThemeUiExt as _, Role, ThemeAtlas, expander_icon,
 };
 
+use crate::next;
 use crate::parts::Parts;
 use crate::scope;
 
@@ -44,8 +47,9 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// * `arrow_gap` lies between the arrow's box and the title (`Spacing::icon_spacing` where
 ///   unstated);
 /// * the body is `content_indent` in (`Spacing::indent` where unstated), with no guide line;
-/// * where `frame_enabled` is true, one frame in `expander.border`'s colour, width and radius
-///   (the scope's `noninteractive` stroke and radius) holds the header and the body; where it
+/// * where `frame_enabled` is true, one frame in `expander.border`'s colour as stated, width and
+///   radius (the scope's `noninteractive` stroke width and radius) holds the header and the
+///   body; where it
 ///   is false or unstated there is none.
 ///
 /// Where the theme states none of the four, or with no atlas installed, it is egui's own
@@ -60,6 +64,13 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// outlines and text, and the focus ring a focused widget in it shows (the connector's install
 /// plugin) takes the caller's radius too, which the body records with
 /// `NativeThemeUiExt::native_set_style_with_ring`.
+///
+/// Under an atlas of the 0.8.0 model each of these is read at its home: `expander.arrow_side`,
+/// `arrow_gap`, `content_indent` and `frame_enabled`, the header's padding at
+/// `expander.header(NONE)`, the arrow's size and colour at `expander.arrow(NONE)`, the title's
+/// line box at `expander.header_label(NONE)`'s line height, else its size (which holds the text
+/// scale already) at `typography.line_height_multiplier`; the arrow over egui's own header is
+/// `native_theme_egui::next::expander_icon`'s.
 #[must_use = "You should call .show()"]
 pub struct Expander {
     title: egui::WidgetText,
@@ -85,15 +96,108 @@ pub struct ExpanderResponse<R> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `expander.arrow_color`: the arrow, egui's `fg_stroke` where unstated.
-    pub(crate) arrow_color: Option<Rgba>,
+    pub(crate) arrow_color: Option<egui::Color32>,
+    /// `expander.border.color`: the frame, as stated; the scope's `noninteractive` stroke
+    /// colour where unstated.
+    pub(crate) frame: Option<egui::Color32>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            arrow_color: t.expander.arrow_color,
+            arrow_color: t.expander.arrow_color.map(to_color32),
+            frame: Some(to_color32(t.expander.border.color)),
         }
     }
+
+    /// The colours of an expander of a 0.8.0 theme: `expander.arrow(NONE)`'s and the frame's,
+    /// `expander.container(NONE)`'s stroke colour, where stated. The frame is that colour as
+    /// stated, not the scope's `noninteractive` stroke: the connector composites a translucent
+    /// stroke laid inside a part over the entry's fill, and the frame has no fill under it.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self {
+            arrow_color: next::icon(&r.expander.arrow(WidgetState::NONE)),
+            frame: next::stroke_color_of(&r.expander.container(WidgetState::NONE)),
+        }
+    }
+}
+
+/// What an expander's layout reads of a theme, of either model, each `None` where the theme
+/// states none and egui's own stays.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Layout {
+    /// `expander.arrow_side`: whether the arrow lies after the title.
+    pub(crate) trailing: Option<bool>,
+    /// `expander.arrow_gap`.
+    pub(crate) arrow_gap: Option<f32>,
+    /// `expander.content_indent`.
+    pub(crate) content_indent: Option<f32>,
+    /// `expander.frame_enabled`.
+    pub(crate) frame_enabled: Option<bool>,
+    /// `expander.border.padding`.
+    pub(crate) padding: ResolvedPadding,
+    /// `expander.arrow_icon_size`: the arrow's box.
+    pub(crate) arrow_size: Option<f32>,
+    /// The header's line box above a text scale of 1 ([`scaled_line`]).
+    pub(crate) line: Option<f32>,
+}
+
+impl Layout {
+    pub(crate) fn of(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> Self {
+        let e = &t.expander;
+        Self {
+            trailing: e.arrow_side.map(|side| side == ArrowSide::Trailing),
+            arrow_gap: e.arrow_gap,
+            content_indent: e.content_indent,
+            frame_enabled: e.frame_enabled,
+            padding: e.border.padding,
+            arrow_size: Some(e.arrow_icon_size),
+            line: scaled_line(t, prefs),
+        }
+    }
+
+    /// The layout of an expander of a 0.8.0 theme, at the homes of the 0.7.2 fields `of`
+    /// reads: `expander.arrow_side`, `arrow_gap`, `content_indent` and `frame_enabled`,
+    /// `expander.header(NONE)`'s padding and `expander.arrow(NONE)`'s size, and the line box
+    /// ([`next_line`]).
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let e = &r.expander;
+        let arrow = e.arrow(WidgetState::NONE);
+        let [top, right, bottom, left] = padding_of(&e.header(WidgetState::NONE));
+        Self {
+            trailing: e.arrow_side.map(|side| side == NextArrowSide::Trailing),
+            arrow_gap: e.arrow_gap,
+            content_indent: e.content_indent,
+            frame_enabled: e.frame_enabled,
+            padding: ResolvedPadding {
+                top,
+                right,
+                bottom,
+                left,
+            },
+            arrow_size: arrow
+                .stated
+                .contains(IconStated::SIZE)
+                .then_some(arrow.size),
+            line: next_line(r),
+        }
+    }
+
+    /// Whether the theme states any of the four the crate lays out itself: the arrow's side,
+    /// its gap, the body's indent and the frame.
+    pub(crate) fn lays_out(&self) -> bool {
+        self.trailing.is_some()
+            || self.arrow_gap.is_some()
+            || self.content_indent.is_some()
+            || self.frame_enabled.is_some()
+    }
+}
+
+/// The theme an expander reads, of either model.
+#[derive(Clone, Copy)]
+enum Model<'a> {
+    Old(&'a ResolvedTheme),
+    Next(&'a NextResolvedTheme),
 }
 
 impl Expander {
@@ -148,11 +252,8 @@ impl Expander {
     ) -> ExpanderResponse<R> {
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
         let Some(atlas) = atlas else {
-            return own(ui, self, None, None, add_body);
+            return own(ui, self, Within::NoAtlas, None, add_body);
         };
-        let t = atlas.resolved_for(ui.ctx().theme());
-        let e = &t.expander;
-        let line = scaled_line(t, atlas.accessibility());
         let enabled = self.enabled;
         // The body is drawn in the style the expander is shown in, not in the header's cell,
         // which `native_scope` puts in place of the whole style: a widget in the body is the
@@ -164,18 +265,30 @@ impl Expander {
             ui.native_set_style_with_ring(outer);
             add_body(ui)
         };
-        if e.arrow_side.is_none()
-            && e.arrow_gap.is_none()
-            && e.content_indent.is_none()
-            && e.frame_enabled.is_none()
-        {
+        let theme = ui.ctx().theme();
+        let read = match atlas.resolved_for(theme) {
+            Some(t) => Some((
+                Layout::of(t, atlas.accessibility()),
+                Look::of(t),
+                Model::Old(t),
+            )),
+            None => atlas
+                .next_resolved_for(theme)
+                .map(|r| (Layout::next_of(r), Look::next_of(r), Model::Next(r))),
+        };
+        // An atlas with no theme for the scheme: the role's cell, egui's own header in it.
+        let Some((layout, look, model)) = read else {
             return scope::open(ui, Role::Expander, enabled, |ui| {
-                own(ui, self, Some(t), line, add_body)
+                own(ui, self, Within::Scope(None), None, add_body)
+            });
+        };
+        if !layout.lays_out() {
+            return scope::open(ui, Role::Expander, enabled, |ui| {
+                own(ui, self, Within::Scope(Some(model)), layout.line, add_body)
             });
         }
-        let look = Look::of(t);
         scope::open(ui, Role::Expander, enabled, |ui| {
-            painted(ui, self, e, look, line, add_body)
+            painted(ui, self, layout, look, add_body)
         })
     }
 }
@@ -193,13 +306,42 @@ fn scaled_line(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> Option<f3
         .then(|| (prefs.scaled(t.expander.font.size) * t.defaults.line_height).ceil())
 }
 
+/// [`scaled_line`] of a 0.8.0 theme, resolved for a text scale above 1: the title's line box,
+/// `expander.header_label(NONE)`'s own `line_height` where the theme states one, else its size
+/// times `typography.line_height_multiplier`, each of which holds the text scale already,
+/// rounded up. `None` at a text scale of 1 or less, and where the theme states neither the
+/// title's line height nor its size.
+fn next_line(r: &NextResolvedTheme) -> Option<f32> {
+    if r.context.text_scale <= 1.0 {
+        return None;
+    }
+    let title = r.expander.header_label(WidgetState::NONE);
+    if title.stated.contains(TextStated::LINE_HEIGHT) {
+        return Some(title.line_height.ceil());
+    }
+    title
+        .stated
+        .contains(TextStated::SIZE_PX)
+        .then(|| (title.size_px * r.typography.line_height_multiplier).ceil())
+}
+
+/// Where [`own`] draws egui's own header.
+enum Within<'a> {
+    /// No atlas is installed: the header is disabled by `CollapsingHeader::enabled`.
+    NoAtlas,
+    /// The expander's scope, which `scope::open` has disabled already where the expander is,
+    /// with the theme whose arrow the header draws, `None` for an atlas with no theme for the
+    /// scheme, whose header keeps egui's own arrow.
+    Scope(Option<Model<'a>>),
+}
+
 /// egui's own `CollapsingHeader`, with the connector's arrow where a theme is given; above a
 /// text scale of 1 at least `line`, the scaled line box, and its padding above and below it
 /// tall.
 fn own<R>(
     ui: &mut egui::Ui,
     expander: Expander,
-    t: Option<&ResolvedTheme>,
+    within: Within<'_>,
     line: Option<f32>,
     add_body: impl FnOnce(&mut egui::Ui) -> R,
 ) -> ExpanderResponse<R> {
@@ -239,9 +381,11 @@ fn own<R>(
         .open(open);
     // In the expander's scope, `scope::open` has disabled the `Ui` already, and a second
     // `Ui::disable` would fade it twice (`egui/src/ui.rs:497-502`).
-    let header = match t {
-        Some(t) => header.icon(expander_icon(t)),
-        None => header.enabled(enabled),
+    let header = match within {
+        Within::NoAtlas => header.enabled(enabled),
+        Within::Scope(Some(Model::Old(t))) => header.icon(expander_icon(t)),
+        Within::Scope(Some(Model::Next(r))) => header.icon(next_expander_icon(r)),
+        Within::Scope(None) => header,
     };
     let out = header.show(ui, add_body);
     let rect = out.header_response.rect;
@@ -276,13 +420,13 @@ fn stated_or(v: Option<f32>, own: f32) -> f32 {
     v.and_then(scope::length).unwrap_or(own)
 }
 
-/// The expander laid out as `e` states it, its header's height by `line` ([`scaled_line`]).
+/// The expander laid out as `layout` states it, its header's height by its line box
+/// ([`scaled_line`]).
 fn painted<R>(
     ui: &mut egui::Ui,
     expander: Expander,
-    e: &ResolvedExpanderTheme,
+    layout: Layout,
     look: Look,
-    line: Option<f32>,
     add_body: impl FnOnce(&mut egui::Ui) -> R,
 ) -> ExpanderResponse<R> {
     let Expander {
@@ -299,17 +443,19 @@ fn painted<R>(
         default_open,
     );
     let edge = ui.visuals().widgets.noninteractive;
-    let frame = if e.frame_enabled == Some(true) {
+    let framed = layout.frame_enabled == Some(true);
+    let frame = if framed {
+        let colour = look.frame.unwrap_or(edge.bg_stroke.color);
         egui::Frame::NONE
-            .stroke(edge.bg_stroke)
+            .stroke(egui::Stroke::new(edge.bg_stroke.width, colour))
             .corner_radius(edge.corner_radius)
     } else {
         egui::Frame::NONE
     };
     let out = frame.show(ui, |ui| {
-        let (header, mut parts) = header(ui, &mut state, id, open, title, (e, look, line));
+        let (header, mut parts) = header(ui, &mut state, id, open, title, (layout, look));
         let own_indent = ui.spacing().indent;
-        let indent = stated_or(e.content_indent, own_indent);
+        let indent = stated_or(layout.content_indent, own_indent);
         let body = state.show_body_unindented(ui, |ui| {
             let inset = ResolvedPadding {
                 top: None,
@@ -329,7 +475,7 @@ fn painted<R>(
     });
     let (header_response, body_returned, mut parts) = out.inner;
     // The frame around header and body, where `frame_enabled` draws one.
-    if e.frame_enabled == Some(true) {
+    if framed {
         parts.push("frame", out.response.rect);
     }
     parts.store(ui.ctx(), header_response.id);
@@ -341,18 +487,18 @@ fn painted<R>(
 
 /// The header row: allocated, sensed and painted, toggling `state` on a click, or to `open`
 /// where that is given; with the `header`, `arrow` and `title` [`Parts`] it painted. Its height
-/// is the scope's `interact_size.y`, the stated one, where `line` is `None`, a text scale of 1
-/// or less; else at least `line` and the padding ([`scaled_line`]).
+/// is the scope's `interact_size.y`, the stated one, where the layout's `line` is `None`, a
+/// text scale of 1 or less; else at least `line` and the padding ([`scaled_line`]).
 fn header(
     ui: &mut egui::Ui,
     state: &mut egui::collapsing_header::CollapsingState,
     id: egui::Id,
     open: Option<bool>,
     title: egui::WidgetText,
-    (e, look, line): (&ResolvedExpanderTheme, Look, Option<f32>),
+    (layout, look): (Layout, Look),
 ) -> (egui::Response, Parts) {
     let own_pad = ui.spacing().button_padding;
-    let pad = &e.border.padding;
+    let pad = layout.padding;
     let (left, right) = (
         stated_or(pad.left, own_pad.x),
         stated_or(pad.right, own_pad.x),
@@ -361,9 +507,10 @@ fn header(
         stated_or(pad.top, own_pad.y),
         stated_or(pad.bottom, own_pad.y),
     );
-    let arrow = stated_or(Some(e.arrow_icon_size), ui.spacing().icon_width_inner);
-    let gap = stated_or(e.arrow_gap, ui.spacing().icon_spacing);
-    let trailing = e.arrow_side == Some(ArrowSide::Trailing);
+    let arrow = stated_or(layout.arrow_size, ui.spacing().icon_width_inner);
+    let gap = stated_or(layout.arrow_gap, ui.spacing().icon_spacing);
+    let trailing = layout.trailing == Some(true);
+    let line = layout.line;
 
     let available = ui.available_width();
     let wrap = (available - left - right - arrow - gap).max(0.0);
@@ -436,7 +583,7 @@ fn header(
     let visuals = ui.style().interact(&response);
     let painter = ui.painter();
     painter.rect_filled(rect, visuals.corner_radius, visuals.weak_bg_fill);
-    let colour = look.arrow_color.map_or(visuals.fg_stroke.color, to_color32);
+    let colour = look.arrow_color.unwrap_or(visuals.fg_stroke.color);
     painter.add(egui::Shape::convex_polygon(
         triangle(arrow_box, state.openness(ui.ctx()), trailing),
         colour,

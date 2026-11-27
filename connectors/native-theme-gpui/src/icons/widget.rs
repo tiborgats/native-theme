@@ -6,8 +6,8 @@ use super::{GpuiIcon, IconUse, load_gpui_icon};
 use gpui::{App, AssetSource, Global, SharedString};
 use gpui_component::theme::Theme as GpuiTheme;
 use gpui_component::{IconName, IconNamed};
-use native_theme::icons::IconData;
-use native_theme::theme::{ColorMode, IconSet};
+use native_theme::icons::{IconData, IconSet};
+use native_theme::theme::ColorMode;
 use native_theme::{Resolved, SystemTheme};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -156,8 +156,8 @@ const WIDGET_ICON_SIZE: u32 = 16;
 const EMPTY_PATH: &str = "native-theme-gpui/empty.svg";
 
 /// An icon set and the freedesktop icon theme of each colour mode, as the
-/// handle is told them. A `Resolved` and a `Loaded` carry one mode's icon
-/// theme: told one mode, the handle keeps the other mode's while the set stays
+/// handle is told them. A `Resolved`, a `Loaded` and a 0.8.0 `ResolvedTheme`
+/// carry one mode's icon theme: told one mode, the handle keeps the other mode's while the set stays
 /// the same, and takes the told one for both when the set changes, until it is
 /// told the other. An icon theme of `None` is the system's, detected when the
 /// handle makes a choice from it (it is told it while following, fixed to it,
@@ -252,6 +252,20 @@ impl From<&SystemTheme> for ThemeIcons {
 impl From<&crate::Loaded> for ThemeIcons {
     fn from(loaded: &crate::Loaded) -> Self {
         Self::for_mode(loaded.icon_set, loaded.mode, loaded.icon_theme.as_deref())
+    }
+}
+
+/// A 0.8.0 theme's icons, read at the homes of the fields `From<&Resolved>`
+/// reads: the set and the icon theme of `icons` (`icons.set`, `icons.theme`)
+/// for the mode of its scheme (`context.scheme`).
+impl From<&native_theme::next::ResolvedTheme> for ThemeIcons {
+    fn from(r: &native_theme::next::ResolvedTheme) -> Self {
+        let mode = if r.is_dark() {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        };
+        Self::for_mode(r.icons.set, mode, r.icons.theme.as_deref())
     }
 }
 
@@ -1470,6 +1484,33 @@ mod tests {
                 ThemeIcons::from(&sys.to_gpui_theme()),
                 ThemeIcons::for_mode(IconSet::Freedesktop, mode, Some(theme))
             );
+        }
+        Ok(())
+    }
+
+    /// A 0.8.0 theme tells the handle what the 0.7.2 theme of the same preset
+    /// and mode tells it: its set and its mode's icon theme, on the presets
+    /// the connector parity covers, light and dark.
+    #[test]
+    fn a_next_theme_tells_what_its_0_7_2_theme_tells() -> Result<(), Box<dyn std::error::Error>> {
+        use native_theme::next::{Preset, Theme, ThemeContext};
+        for (key, preset) in [
+            ("kde-breeze", Preset::KdeBreeze),
+            ("adwaita", Preset::Adwaita),
+            ("windows-11", Preset::Windows11),
+        ] {
+            for (mode, ctx) in [
+                (ColorMode::Light, ThemeContext::light()),
+                (ColorMode::Dark, ThemeContext::dark()),
+            ] {
+                let old = native_theme::Theme::preset(key)?.resolve(mode)?;
+                let new = Theme::preset(preset).resolve(&ctx);
+                assert_eq!(
+                    ThemeIcons::from(&new),
+                    ThemeIcons::from(&old),
+                    "{key} {mode:?}"
+                );
+            }
         }
         Ok(())
     }

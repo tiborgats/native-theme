@@ -709,7 +709,13 @@ in none of them:
   `basic_table` does.
 - **A button's and a slider's focus.** An iced button takes no keyboard
   focus (`iced_widget` 0.14.2 `src/button.rs:257-273`), so
-  `button.focus_border_color` has no receiver, and iced's slider has no
+  `button.focus_border_color` has no receiver, nor has a stroke stated for
+  a focused button (`button.body(FOCUS_VISIBLE)`, of the primary button's
+  own outline, `button.body(FOCUS_VISIBLE; variant=Primary)`, and of a flat
+  button too:
+  Breeze's flat button turns its pen Highlight when focused, as when
+  hovered or pressed, and the showcase's flat buttons draw that pen hovered
+  and pressed only), and iced's slider has no
   focused status, so `slider.thumb_focus_border_color` is not drawn.
 - **The window frame.** iced takes no colour for the title bar or the window
   border (`window::Settings::decorations` is a `bool`); it passes the
@@ -744,6 +750,168 @@ as wide as it is tall, `radio` for the dot's size, `focus_ring` for a ring
 outside the field's edge, `tab_indicator` and `tab_flares` for the active
 tab's line and WinUI 3's folder-tab corners, and `pick_list_handle` for the
 platforms' open chevron.
+
+### What the 0.8.0 model states that iced cannot draw
+
+The `next` module maps the 0.8.0 model (`native_theme::next`), which states
+more than 0.7.2 did. Where iced has a receiver, `next` wires the value
+through; where it has none, the value is dropped as listed here, and a
+value the theme leaves unstated is iced's own (docs/v0.8.0-spec.md §10,
+rule 0).
+
+- **Borders on the tiny-skia renderer.** iced on wgpu ends a widget's fill
+  at the border's inner edge (`iced_wgpu` 0.14.0
+  `src/shader/quad/solid.wgsl`); iced on tiny-skia fills the whole bounds
+  and strokes the border over it (`iced_tiny_skia` 0.14.1 `src/engine.rs`),
+  as gpui does. A style function does not know the renderer, so `next`
+  computes a border's colour for wgpu: an `Inside` stroke composited over
+  the fill, a `Center` one over the fill at half its alpha, the band's mean
+  (spec §2, `StrokeAlign`). On tiny-skia the computed `Inside` colour is
+  still exact over an opaque fill, and a translucent `Center` or `Outside`
+  border shows the fill under it. Breeze's scroll bar handle, a pen 1.001
+  wide centred on its edge, is drawn as that band's mean.
+- **Corners.** iced rounds a quad with four circular radii
+  (`iced_core` 0.14.0 `src/border.rs`, `Radius`). A continuous corner
+  (`CornerCurve::Continuous`, Apple's) is drawn as the circular corner of
+  the stated radius (spec §10, rule 2), and Widget Info marks its value
+  `(drawn circular)`. A concentric radius (`CornerRadius::Concentric`) is
+  the container's radius less an inset, which a style function does not
+  know: it is `Unmapped`. Where `next` takes one radius for a part (a
+  check box, a switch's track, the menu, a scroll bar's handle, the
+  selected tab's top corners), per-corner radii that differ are
+  `Unmapped`; no preset states them.
+- **A stroke per side.** iced's `Border` has one colour and one width
+  (`iced_core` 0.14.0 `src/border.rs`, `Border`). A per-side stroke whose
+  four sides have one width and solid colours, at least three of them the
+  same colour, is drawn as a uniform stroke of that width and colour in the
+  stroke's alignment (`Stroke::prevailing`, spec §10, rule 2): the fourth
+  side's other colour, such as WinUI's elevation edge, is not drawn. Every
+  other per-side stroke (different widths, a side painted as layers or not
+  painted, two colours on two sides each) is `Unmapped` at the part's
+  stroke.
+- **Layered fills.** iced has no backdrop blur, and `next` fills a widget
+  with one colour. A fill stated as layers (`Paint::Complex`) is drawn in
+  the colour a toolkit without blur renders in its place (spec §10, rule 2,
+  `Paint::fallback_color`): each solid layer its colour, each material its
+  `fallback`, the topmost opaque one. Layers that are all gradients have no
+  such colour, so the style is `Unmapped` at the fill's home
+  (`button.body(NONE).fill`), not iced's own fill, and so are
+  `next::fill_of` and `next::state_fill_of`, the readers the styles take a
+  fill through; no preset states layers.
+- **Shadows.** iced's `Shadow` is one outset shadow: a colour, an offset and
+  a blur (`iced_core` 0.14.0 `src/shadow.rs`). The menu, the segmented
+  control's track and the expander's frame cast the first outset layer the
+  theme states; its spread, an inset layer and every further layer are
+  dropped. The expander casts its shadow only where its frame is drawn
+  (`next::styles::expander_frame`). `iced_aw`'s `card::Style` has no shadow
+  (`iced_aw` 0.14.1 `src/style/card.rs`), so `card.container`'s shadow
+  reaches nothing.
+- **The menu's corners.** iced's menu `Style` has one border, whose radius
+  rounds both the popup and the highlighted row (`iced_widget` 0.14.2
+  `src/overlay/menu.rs`). It is `menu.item`'s corners, the highlight's (spec
+  §5, `menu.border`), where the theme states them, else `menu.panel`'s. So
+  where the theme states both, the panel's corners are dropped; and on
+  material-3, which states the container's 4 px corners and no item
+  corners (docs/platform-facts.md §2.6, `container-shape`), the popup is
+  drawn with its corners and the highlighted row is rounded by them too.
+- **The toolbar's rule.** iced's rule is one line (`iced_widget` 0.14.2
+  `src/rule.rs`: a `Style` of one colour), so a toolbar stroke stated per
+  side and not reduced (`toolbar.bar(NONE).stroke`, a `Stroke::Complex`
+  `Stroke::prevailing` leaves per side) is not drawn:
+  `next::styles::toolbar_rule` returns `Unmapped` for it. A stroke stated
+  as none is no rule, drawn transparent.
+- **The scroll bar.** A rail's `border` is one `Border` round all four
+  sides (`iced_widget` 0.14.2 `src/scrollable.rs`, `Rail`), so the line
+  Breeze draws along the bar's inner edge alone (spec §5, issue #4's
+  leftovers, `S1`: `scrollbar.track.stroke`, one side) is not drawn. iced's
+  `Status::Hovered` says whether the pointer is over the bar, not whether it
+  is over the handle, so the handle while the pointer is on the bar but off
+  the handle (`S4`, `scrollbar.thumb(HOVER_WITHIN)`) is drawn as the hovered
+  handle. The groove's and the handle's widths are set once, on the
+  `Scrollbar` (`width`, `scroller_width`), and the `Style` has none, so a
+  width the theme states for a hovered or dragged bar is not drawn. A pill
+  (Breeze's handle) is drawn as a radius larger than any side, which both
+  renderers clamp to half the shorter side, as iced rounds its own
+  autoscroll overlay (`iced_widget` 0.14.2 `src/scrollable.rs`).
+- **`iced_aw`'s sidebar and selection list.** Neither `sidebar::Style` nor
+  `selection_list::Style` has a border radius (`iced_aw` 0.14.1
+  `src/style/sidebar.rs`, `src/style/selection_list.rs`), so the corners
+  the theme states for their outline are not drawn.
+- **A list row's highlight.** A `SelectionList` fills a hovered or selected
+  row with a quad over the row's whole bounds, square and unframed
+  (`iced_aw` 0.14.1 `src/widget/selection_list/list.rs`), so
+  `list.highlight`'s margin and corners (spec §5, issue #4's leftovers,
+  `L4`) are not drawn.
+- **A focus indicator that is not a ring.** The model's `FocusIndicator`
+  is a ring round the part, a fill of it or a line under it (spec §2,
+  `FocusKind`: `Ring`, `Fill`, `Underline`). `focus_ring` draws a ring,
+  bordered quads round the field (the theme's `inner_stroke` as a second
+  ring inside the first, its `corners` as those of the line between the
+  two, the outer ring's edge grown by its width), so
+  `next::focus_ring` returns `Unmapped("focus_ring.kind")` for `Fill` and
+  `Underline`; no preset states either. A ring a part states of its own
+  (`PartStyle.focus`, on `input.field` or `text_area.field`) is drawn in
+  place of the global one (`next::part_ring_look`, read at `FOCUSED` and at
+  `FOCUS_VISIBLE`, and `next::focus_rings_with`), and is `Unmapped` at the
+  part's home (`input.field(FOCUSED).focus.kind`) where it is not a ring.
+  A ring inset at the field's edge
+  (`offset` minus its width, adwaita's) is painted over the field by
+  `next::focus_ring` too, a band over the part's outermost width (FR2);
+  `next::styles::text_input` and `text_editor` draw no ring.
+- **A checked button.** iced's button has no checked status. iced marks a
+  chosen button by its primary class: its own `todos` example draws the
+  chosen filter with `button::primary` (iced 0.14.0
+  `examples/todos/src/main.rs`). So where the theme states no checked fill
+  (`button.body(CHECKED)` on macos-monterey, `toolbar.button(CHECKED)` on
+  ios-13 and material-3), `next::styles::button_toggle` and
+  `next::styles::toolbar_button` draw a checked button in the primary
+  button's fill and label in the same status, a label the theme states for
+  `CHECKED` laid over; its outline where the theme states no checked one,
+  its corners and its shadow are the unchecked button's. A checked fill
+  the theme states is lettered in the label it states for `CHECKED`, else
+  in the label at rest, never in the pressed one (spec §10, rule 0a: "a
+  stated `CHECKED` fill is lettered in the stated `CHECKED` label, else in
+  the label at rest"). iced gives the
+  button's hovered and pressed statuses, so where the theme states the
+  checked fill, `next::styles::button_toggle` and
+  `next::styles::toolbar_button` fill a checked button under the pointer
+  and pressed in what it states for `CHECKED | HOVER` and
+  `CHECKED | PRESSED` (on the toolbar, macos-monterey's and macos-tahoe's
+  measured shades), and where it states the checked label, letter it in
+  theirs (spec §10, rule 0). A disabled checked toolbar button is filled in
+  what the theme states for `DISABLED | CHECKED`, where stated, and a
+  disabled checked toggle likewise where the theme states the disabled
+  fill (macos-tahoe's measured disabled checked toggle). Where the theme
+  states the checked push button's outline (`button.body(CHECKED)`'s
+  stroke, windows-11's), `next::styles::button_toggle` draws it at rest,
+  and under the pointer, pressed and disabled what it states for
+  `CHECKED | HOVER`, `CHECKED | PRESSED` and `DISABLED | CHECKED`
+  (windows-11: none pressed or disabled outside high contrast), each at
+  the width the theme states for it and at the unchecked button's
+  corners; iced lays a button out by its padding alone and draws the
+  border on its bounds (`iced_widget` 0.14.2 `src/button.rs`, `layout` and
+  `draw`), so another width moves no content. A state it states no checked
+  outline for keeps the unchecked button's there. A disabled checked
+  toolbar button is outlined in what the theme states for
+  `DISABLED | CHECKED` where it states the stroke for `CHECKED` or for
+  `DISABLED` (kde-breeze's, windows-11's and the macOS presets' checked
+  toolbar outlines), else in the outline at rest; one that is off, in
+  `toolbar.button(DISABLED)`'s stroke where a rule states it for `DISABLED`
+  (no preset does), else in the outline at rest.
+- **A button's icon colour.** iced's button draws its content with
+  one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
+  `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted
+  only by its own `svg::Style::color`, whose status is the pointer over the
+  svg's own bounds, not the button's (`src/svg.rs`, `Status`), and an
+  `image` takes no tint (`src/image.rs`). So the connector gives no style
+  for a button's icon, and `toolbar.button_icon(<state>).color`
+  (macos-monterey's and macos-tahoe's measured glyph colours) and
+  `button.icon(<state>).color` (a flat button's,
+  `button.icon(<state>; variant=Flat).color`) are not drawn by it: an icon
+  follows no hovered or pressed state of its button. An application can
+  load the icon in a colour of a state it knows itself, checked or not
+  (`icons::to_svg_handle`), as the showcase loads its tool buttons' and its
+  status-bar toggle's.
 
 ## Common recipes
 

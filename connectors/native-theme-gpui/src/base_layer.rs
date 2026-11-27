@@ -73,17 +73,49 @@ pub struct ScrollbarGeometry {
 pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
     let sb = &resolved.scrollbar;
     let d = &resolved.defaults;
-    ScrollbarGeometry {
-        track_width: px(sb.groove_width),
-        thumb_width: px(sb.thumb_width),
-        thumb_inset: px(((sb.groove_width - sb.thumb_width) / 2.0).max(0.0)),
-        thumb_radius: px(d.border.corner_radius),
-        min_thumb_length: px(sb.min_thumb_length),
+    geometry_of(&ScrollbarSource {
+        groove_width: sb.groove_width,
+        thumb_width: sb.thumb_width,
+        corner_radius: d.border.corner_radius,
+        min_thumb_length: sb.min_thumb_length,
         track: rgba_to_hsla(sb.track_color),
-        track_active_border: rgba_to_hsla(d.border.color),
+        border: rgba_to_hsla(d.border.color),
         thumb: rgba_to_hsla(sb.thumb_color),
         thumb_hover: rgba_to_hsla(sb.thumb_hover_color),
-        thumb_active: rgba_to_hsla(sb.thumb_active_color.unwrap_or(sb.thumb_hover_color)),
+        thumb_active: sb.thumb_active_color.map(rgba_to_hsla),
+    })
+}
+
+/// The theme's values a [`ScrollbarGeometry`] is made of, read from a 0.7.2
+/// resolved theme by [`scrollbar_geometry`] and from the 0.8.0 model by the
+/// connector's `next` module, so both share [`geometry_of`].
+pub(crate) struct ScrollbarSource {
+    pub(crate) groove_width: f32,
+    pub(crate) thumb_width: f32,
+    pub(crate) corner_radius: f32,
+    pub(crate) min_thumb_length: f32,
+    pub(crate) track: Hsla,
+    pub(crate) border: Hsla,
+    pub(crate) thumb: Hsla,
+    pub(crate) thumb_hover: Hsla,
+    /// `None` where the theme leaves the pressed thumb unset (a soft option).
+    pub(crate) thumb_active: Option<Hsla>,
+}
+
+/// The geometry of `s`: [`ScrollbarGeometry`]'s fields, as its field docs
+/// say.
+pub(crate) fn geometry_of(s: &ScrollbarSource) -> ScrollbarGeometry {
+    ScrollbarGeometry {
+        track_width: px(s.groove_width),
+        thumb_width: px(s.thumb_width),
+        thumb_inset: px(((s.groove_width - s.thumb_width) / 2.0).max(0.0)),
+        thumb_radius: px(s.corner_radius),
+        min_thumb_length: px(s.min_thumb_length),
+        track: s.track,
+        track_active_border: s.border,
+        thumb: s.thumb,
+        thumb_hover: s.thumb_hover,
+        thumb_active: s.thumb_active.unwrap_or(s.thumb_hover),
     }
 }
 
@@ -150,9 +182,17 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// (`src/setting/settings.rs:465`, `src/dock/dock.rs:142`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
+    resizable_theme_of(
+        rgba_to_hsla(resolved.splitter.divider_color),
+        rgba_to_hsla(resolved.splitter.hover_color),
+    )
+}
+
+/// [`resizable_theme`] of the splitter's `divider` and `hover` colours.
+pub(crate) fn resizable_theme_of(divider: Hsla, hover: Hsla) -> ResizableTheme {
     let mut theme = ResizableTheme::default();
-    theme.handle = Some(rgba_to_hsla(resolved.splitter.divider_color));
-    theme.active_handle = Some(rgba_to_hsla(resolved.splitter.hover_color));
+    theme.handle = Some(divider);
+    theme.active_handle = Some(hover);
     theme
 }
 

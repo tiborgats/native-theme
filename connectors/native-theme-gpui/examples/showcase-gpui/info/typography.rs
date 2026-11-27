@@ -2,12 +2,11 @@
 //! themselves (spec §3.4). Its Labels are `info::text`'s.
 
 use gpui_component::theme::Theme;
-use native_theme_gpui::ResolvedTheme;
 
 use super::{
     WidgetInfo,
     chrome::{GhostContent, ghost_colours},
-    claim, drawn_font, px_text,
+    claim, px_text,
 };
 use crate::demo::{DecorationKind, HeadingLevel, TextSize, WeightKind};
 use crate::support::DIFF_DECORATED_LINE;
@@ -118,49 +117,108 @@ pub fn muted_text(t: &Theme) -> WidgetInfo {
 }
 
 /// The monospace sample: plain text in a div given `native`'s
-/// `defaults.mono_font` where a native theme is installed
-/// (`demo::text_in`), the mono family and nothing else without one.
-pub fn mono_text(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// `typography.monospace` where a 0.8.0 theme is installed and states a
+/// font gpui can letter it in (`demo::mono_sample`), the mono family and
+/// nothing else otherwise.
+pub fn mono_text(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Text").variant("monospace").color(claim(
         "text, inherited",
         "foreground",
         t.foreground,
         "showcase",
     ));
-    match native {
-        Some(r) => info
-            .config(
-                "mono font",
-                format!("defaults.mono_font: {}", drawn_font(&r.defaults.mono_font)),
-            )
-            .config(
-                "size",
-                format!(
-                    "{}px: defaults.mono_font.size scaled by the text-scaling factor, the size the sample sets, which is Theme::mono_font_size (native-theme-gpui lib.rs, to_theme)",
-                    px_text(t.mono_font_size.as_f32())
-                ),
-            ),
-        None => info
-            .config(
+    let mono = native.map(|r| {
+        let style = &r.typography.monospace;
+        (
+            r,
+            native_theme_gpui::next::label_font_unmapped(style, "typography.monospace"),
+        )
+    });
+    let own = |info: WidgetInfo, why: String| {
+        info.config(
                 "mono font",
                 format!("mono_font_family: {}", t.mono_font_family),
             )
             .config(
-            "size",
+                "size",
+                format!(
+                    "{}px: font_size, the window's rem. The sample sets the mono family and no size, so mono_font_size ({}px) does not reach it: {why}",
+                    px_text(t.font_size.as_f32()),
+                    px_text(t.mono_font_size.as_f32())
+                ),
+            )
+    };
+    match mono {
+        Some((r, None)) => info
+            .config(
+                "mono font",
+                format!(
+                    "typography.monospace: {}",
+                    super::next_drawn_font(
+                        &r.typography.monospace,
+                        &line_box_text(&r.typography, &r.typography.monospace)
+                    )
+                ),
+            )
+            .config(
+                "size",
+                format!(
+                    "{}px: typography.monospace.size_px, which the theme's text scale has already scaled, the size the sample sets, which is Theme::mono_font_size (native-theme-gpui next/mod.rs, theme_scalars)",
+                    px_text(t.mono_font_size.as_f32())
+                ),
+            ),
+        Some((_, Some(unstated))) => own(
+            info,
             format!(
-                "{}px: font_size, the window's rem. The sample sets the mono family and no size, so mono_font_size ({}px) does not reach it: no native theme is installed",
-                px_text(t.font_size.as_f32()),
-                px_text(t.mono_font_size.as_f32())
+                "the theme states no value gpui can take at {}, so gpui's own (spec §10, rule 0)",
+                unstated.home()
             ),
         ),
+        None => own(info, "no native theme is installed".to_string()),
     }
 }
 
+/// The line box of a text style of the installed 0.8.0 theme as the
+/// showcase letters plain text in it (`demo::next_text_in`,
+/// `demo::line_box`), the `line` of its info's font line
+/// (`super::next_drawn_font`).
+pub fn line_box_text(
+    typography: &native_theme::next::Typography,
+    style: &native_theme::next::TextStyle,
+) -> String {
+    let line = if style
+        .stated
+        .contains(native_theme::next::TextStated::LINE_HEIGHT)
+    {
+        "its line_height"
+    } else {
+        "its size by typography.line_height_multiplier, as it states no line_height (spec §4)"
+    };
+    format!(
+        "a line box of {}px, {line}",
+        px_text(crate::demo::line_box(typography, style))
+    )
+}
+
 /// A `Link`, wherever the showcase shows one; the caller adds what it reads
-/// and where it goes. `underline` is the `link.underline_enabled` that
-/// `geometry::link` refined it by, `None` where no native theme is installed
-/// and none refines it.
-pub fn link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
+/// and where it goes. `underline` is whether
+/// `link.label(NONE).decoration` underlines the resting Link, as
+/// `next::geometry::link` refined it, `None` where no 0.8.0 theme is
+/// installed or the builder took none of it (its geometry line names the
+/// home the theme leaves without a value gpui can take).
+pub fn next_link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
+    let info = link_colours(t, underline);
+    let info = match underline {
+        Some(true) => info.config("underline", "at rest, as upstream draws it: link.label(NONE).decoration is an underline, so geometry::link leaves the underline gpui-component sets on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link)"),
+        Some(false) => info.config("underline", "none at rest: link.label(NONE).decoration is none, so geometry::link removes the resting underline; hover and press still underline. The refinement sets the underline's thickness to 0, which paints none, over the text_decoration_1 upstream sets on the base style first, and upstream's hover and active styles set it again over the refinement (gpui-component/link.rs, RenderOnce for Link)"),
+        None => info.not_themeable("underline", "always on, gpui-component's own: it sets it on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link), and no geometry::link refines it -- no 0.8.0 theme is installed, or the geometry line names the home it leaves without a value gpui can take --, which removes it at rest where link.label(NONE).decoration is none"),
+    };
+    link_states(info, "link.label(HOVER).color", "link.label(PRESSED).color")
+}
+
+/// A Link's colours, every one from the one `link` token; the resting
+/// underline where `underline` is not `Some(false)`.
+fn link_colours(t: &Theme, underline: Option<bool>) -> WidgetInfo {
     // link.rs:74-88: the text and its underline, then a hover and an active
     // style over them, all from the one token. The resting underline and the
     // hovered and pressed text are literal opacities of it, so those
@@ -178,38 +236,37 @@ pub fn link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
             "gpui-component/link.rs:78",
         ))
     };
-    let info = info
-        .color(claim(
-            "hover text, at 80%",
-            "link",
-            t.link.opacity(0.8),
-            "gpui-component/link.rs:80",
-        ))
-        .color(claim(
-            "hover underline",
-            "link",
-            t.link,
-            "gpui-component/link.rs:82",
-        ))
-        .color(claim(
-            "pressed text, at 60%",
-            "link",
-            t.link.opacity(0.6),
-            "gpui-component/link.rs:85",
-        ))
-        .color(claim(
-            "pressed underline",
-            "link",
-            t.link,
-            "gpui-component/link.rs:87",
-        ));
-    let info = match underline {
-        Some(true) => info.config("underline", "at rest, as upstream draws it: link.underline_enabled is true, so geometry::link leaves the underline gpui-component sets on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link)"),
-        Some(false) => info.config("underline", "none at rest: link.underline_enabled is false, so geometry::link removes the resting underline; hover and press still underline. The refinement sets the underline's thickness to 0, which paints none, over the text_decoration_1 upstream sets on the base style first, and upstream's hover and active styles set it again over the refinement (gpui-component/link.rs, RenderOnce for Link)"),
-        None => info.not_themeable("underline", "always on: gpui-component sets it on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link), and no native theme is installed, so no geometry::link refines it, which removes it at rest where link.underline_enabled is false"),
-    };
-    info.not_themeable("hover text", "link at 0.8, computed from the one token (gpui-component/link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U")
-        .not_themeable("pressed text", "link at 0.6, the same story: link_active is written by the connector from link.active_text_color and read by the Button variant, not here (gpui-component/link.rs, Link)")
+    info.color(claim(
+        "hover text, at 80%",
+        "link",
+        t.link.opacity(0.8),
+        "gpui-component/link.rs:80",
+    ))
+    .color(claim(
+        "hover underline",
+        "link",
+        t.link,
+        "gpui-component/link.rs:82",
+    ))
+    .color(claim(
+        "pressed text, at 60%",
+        "link",
+        t.link.opacity(0.6),
+        "gpui-component/link.rs:85",
+    ))
+    .color(claim(
+        "pressed underline",
+        "link",
+        t.link,
+        "gpui-component/link.rs:87",
+    ))
+}
+
+/// What a Link does not take of the hovered and pressed link colours the
+/// connector writes, from `hover` and `pressed`, their homes.
+fn link_states(info: WidgetInfo, hover: &str, pressed: &str) -> WidgetInfo {
+    info.not_themeable("hover text", format!("link at 0.8, computed from the one token (gpui-component/link.rs, Link). Upstream has a link_hover token, the connector writes it from {hover}, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U"))
+        .not_themeable("pressed text", format!("link at 0.6, the same story: link_active is written by the connector from {pressed} and read by the Button variant, not here (gpui-component/link.rs, Link)"))
 }
 
 /// A `Kbd` for `keys`, which `Kbd::format` draws as `drawn` on this

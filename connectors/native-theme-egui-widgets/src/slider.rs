@@ -2,19 +2,25 @@
 
 use std::ops::RangeInclusive;
 
-use native_theme_egui::convert::{composite_over, to_color32};
+use native_theme_egui::convert::to_color32;
 use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::{self, accesskit};
-use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::native_theme::theme::ResolvedSliderTheme;
-use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::{
+    NativeThemeUiExt as _, Note, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
+};
 
 use crate::parts::Parts;
-use crate::scope;
+use crate::{next, scope};
 
 /// How far, in points, one arrow-key press or AccessKit increment moves the knob: egui's own
 /// slider step (`ui_point_per_step`, `egui/src/widgets/slider.rs:722`).
 const KEY_STEP: f32 = 1.0;
+
+/// egui's knob radius is the slider's height over this (`SliderGeometry::handle_radius`,
+/// `egui-0.37.0/src/widgets/slider_core.rs`).
+const EGUI_HANDLE_DIVISOR: f32 = 2.5;
 
 /// A horizontal slider over a linear range: `slider.*`'s rail, trailing fill and knob.
 ///
@@ -29,7 +35,8 @@ const KEY_STEP: f32 = 1.0;
 ///   theme states none); the trailing fill runs from its start to the knob's centre in
 ///   `fill_color`.
 /// * The knob is a `slider.thumb_diameter` circle, its outline included, in `thumb_color`,
-///   with `thumb_hover_color` composited over it while hovered. Where the theme states
+///   with `thumb_hover_color` composited over it while hovered (under the 0.8.0 model the
+///   hovered thumb's stated fill, taken as it is, spec §9, step 2). Where the theme states
 ///   `slider.thumb_border_line_width`, the outline is that wide inside the knob: at rest in
 ///   `thumb_border_color`, with the pointer on the knob or while it is dragged in
 ///   `thumb_hover_border_color`, while the slider has the focus in `thumb_focus_border_color`
@@ -66,7 +73,12 @@ const KEY_STEP: f32 = 1.0;
 /// (`WidgetInfo::slider`, `:967`).
 ///
 /// With no atlas installed, or a slider size that is not finite, it adds `egui::Slider`
-/// without its value field.
+/// without its value field. Under an atlas of the 0.8.0 model each fill and size the theme
+/// leaves unstated, or states in a form egui cannot paint as one colour, is egui's own
+/// (`egui-0.37.0/src/widgets/slider_core.rs`): the rail `Spacing::slider_rail_height` tall in
+/// `inactive.bg_fill`, the trailing fill in `selection.bg_fill` where `slider_trailing_fill`
+/// is on, else none, and the knob in its interaction state's fill, its radius the slider's
+/// height over 2.5, that height the body text's row, at least `interact_size.y`.
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct Slider<'a> {
     value: &'a mut f64,
@@ -118,19 +130,25 @@ impl<'a> Slider<'a> {
 struct Fade {
     ground: egui::Color32,
     alpha: f32,
-    outline: egui::Stroke,
+    /// The scope's `inactive` visuals before the fade: egui's knob outline, and egui's rail and
+    /// knob fill where the theme states none.
+    before: egui::style::WidgetVisuals,
 }
 
 impl Fade {
-    /// The fade of the faded slider scope `ui` over `ground`, its knob's `outline` read before
-    /// the fade; `None` where `disabled_alpha` is 1, a platform that dims by colour alone,
-    /// whose colours are painted as stated.
-    fn of(ui: &egui::Ui, ground: egui::Color32, outline: egui::Stroke) -> Option<Self> {
+    /// The fade of the faded slider scope `ui` over `ground`, its `inactive` visuals read
+    /// before the fade; `None` where `disabled_alpha` is 1, a platform that dims by colour
+    /// alone, whose colours are painted as stated.
+    fn of(
+        ui: &egui::Ui,
+        ground: egui::Color32,
+        before: egui::style::WidgetVisuals,
+    ) -> Option<Self> {
         let alpha = ui.visuals().disabled_alpha();
         (alpha < 1.0).then_some(Self {
             ground,
             alpha,
-            outline,
+            before,
         })
     }
 
@@ -145,60 +163,171 @@ impl Fade {
 /// colour-leaf coverage test sees the widget's reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
-    pub(crate) track_color: Rgba,
-    pub(crate) fill_color: Rgba,
-    pub(crate) thumb_color: Rgba,
-    pub(crate) thumb_hover_color: Option<Rgba>,
-    pub(crate) disabled_track_color: Option<Rgba>,
-    pub(crate) disabled_fill_color: Option<Rgba>,
-    pub(crate) disabled_thumb_color: Option<Rgba>,
-    pub(crate) thumb_border_color: Option<Rgba>,
-    pub(crate) thumb_hover_border_color: Option<Rgba>,
-    pub(crate) thumb_focus_border_color: Option<Rgba>,
-    /// `defaults.background_color`: the colour faded over where no backdrop is given.
-    pub(crate) background: Rgba,
+    /// The rail; `None`, egui's own, the scope's `inactive.bg_fill`.
+    pub(crate) track_color: Option<egui::Color32>,
+    /// The trailing fill; `None`, egui's own, `selection.bg_fill` where the scope's
+    /// `slider_trailing_fill` is on, else none.
+    pub(crate) fill_color: Option<egui::Color32>,
+    /// The knob; `None`, egui's own, the fill of the interaction state's visuals.
+    pub(crate) thumb_color: Option<egui::Color32>,
+    /// The hovered knob's whole fill: the 0.8.0 theme's stated fill as it is, or 0.7.2's
+    /// `thumb_hover_color` composited over `thumb_color`; `None`, the rest fill.
+    pub(crate) thumb_hover_color: Option<egui::Color32>,
+    pub(crate) disabled_track_color: Option<egui::Color32>,
+    pub(crate) disabled_fill_color: Option<egui::Color32>,
+    pub(crate) disabled_thumb_color: Option<egui::Color32>,
+    pub(crate) thumb_border_color: Option<egui::Color32>,
+    pub(crate) thumb_hover_border_color: Option<egui::Color32>,
+    pub(crate) thumb_focus_border_color: Option<egui::Color32>,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
+    /// egui's own fade of a disabled widget.
+    pub(crate) background: Option<egui::Color32>,
 }
 
 impl Look {
+    /// The colours of a slider of a 0.8.0 theme, at the homes of the 0.7.2 fields `of` reads:
+    /// `slider.track`, `slider.active_track` and `slider.thumb`'s fills at `NONE`, and at
+    /// `DISABLED` where a rule for it states them; the hovered thumb's fill
+    /// (`slider.thumb(HOVER)`'s) where a rule for `HOVER` states it (spec §2,
+    /// `from_state`); the thumb's outline colour at `NONE`, and at `HOVER` and `FOCUSED` where
+    /// a rule states it; the window's background as the ground. Each `None` where the theme
+    /// states none, which keeps egui's own (spec §10, rule 0).
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self::next_noted(r, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at each fill's home the
+    /// theme states as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(r: &NextResolvedTheme, unmapped: &mut Vec<Note>) -> Self {
+        let sl = &r.slider;
+        let off = WidgetState::DISABLED;
+        let rest = sl.thumb(WidgetState::NONE);
+        let (hover, focus) = (sl.thumb(WidgetState::HOVER), sl.thumb(WidgetState::FOCUSED));
+        let (track_off, active_off, thumb_off) =
+            (sl.track(off), sl.active_track(off), sl.thumb(off));
+        Self {
+            track_color: next::fill(
+                &sl.track(WidgetState::NONE),
+                "slider.track(NONE).fill",
+                unmapped,
+            ),
+            fill_color: next::fill(
+                &sl.active_track(WidgetState::NONE),
+                "slider.active_track(NONE).fill",
+                unmapped,
+            ),
+            thumb_color: next::fill(&rest, "slider.thumb(NONE).fill", unmapped),
+            thumb_hover_color: next::ruled_fill(
+                &hover,
+                &hover,
+                "slider.thumb(HOVER).fill",
+                unmapped,
+            ),
+            disabled_track_color: next::ruled_fill(
+                &track_off,
+                &track_off,
+                "slider.track(DISABLED).fill",
+                unmapped,
+            ),
+            disabled_fill_color: next::ruled_fill(
+                &active_off,
+                &active_off,
+                "slider.active_track(DISABLED).fill",
+                unmapped,
+            ),
+            disabled_thumb_color: next::ruled_fill(
+                &thumb_off,
+                &thumb_off,
+                "slider.thumb(DISABLED).fill",
+                unmapped,
+            ),
+            thumb_border_color: next::stroke_color_of(&rest),
+            thumb_hover_border_color: next::ruled_stroke(&hover, &hover),
+            thumb_focus_border_color: next::ruled_stroke(&focus, &focus),
+            background: next::window_background(r),
+        }
+    }
+
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         let sl = &t.slider;
         Self {
-            track_color: sl.track_color,
-            fill_color: sl.fill_color,
-            thumb_color: sl.thumb_color,
-            thumb_hover_color: sl.thumb_hover_color,
-            disabled_track_color: sl.disabled_track_color,
-            disabled_fill_color: sl.disabled_fill_color,
-            disabled_thumb_color: sl.disabled_thumb_color,
-            thumb_border_color: sl.thumb_border_color,
-            thumb_hover_border_color: sl.thumb_hover_border_color,
-            thumb_focus_border_color: sl.thumb_focus_border_color,
-            background: t.defaults.background_color,
+            track_color: Some(to_color32(sl.track_color)),
+            fill_color: Some(to_color32(sl.fill_color)),
+            thumb_color: Some(to_color32(sl.thumb_color)),
+            thumb_hover_color: sl
+                .thumb_hover_color
+                .map(|layer| to_color32(sl.thumb_color).blend(to_color32(layer))),
+            disabled_track_color: sl.disabled_track_color.map(to_color32),
+            disabled_fill_color: sl.disabled_fill_color.map(to_color32),
+            disabled_thumb_color: sl.disabled_thumb_color.map(to_color32),
+            thumb_border_color: sl.thumb_border_color.map(to_color32),
+            thumb_hover_border_color: sl.thumb_hover_border_color.map(to_color32),
+            thumb_focus_border_color: sl.thumb_focus_border_color.map(to_color32),
+            background: Some(to_color32(t.defaults.background_color)),
+        }
+    }
+
+    /// The look as the slider paints it, so two looks that paint alike compare equal: a hover
+    /// fill that is the knob's rest fill given as none.
+    #[cfg(test)]
+    pub(crate) fn painted(self) -> Self {
+        Self {
+            thumb_hover_color: self
+                .thumb_hover_color
+                .filter(|&hover| Some(hover) != self.thumb_color),
+            ..self
         }
     }
 }
 
-/// The knob and rail sizes, every one finite, the slider's width, and the knob's outline width
-/// where the theme states one (`slider.thumb_border_line_width`).
-#[derive(Clone, Copy)]
-struct Geometry {
-    thumb: f32,
-    rail: f32,
-    width: f32,
-    outline: Option<f32>,
+/// The knob and rail sizes, the slider's width, and the knob's outline width where the theme
+/// states one (`slider.thumb_border_line_width`), every one finite; a knob or rail size `None`
+/// is egui's own.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Geometry {
+    pub(crate) thumb: Option<f32>,
+    pub(crate) rail: Option<f32>,
+    pub(crate) width: f32,
+    pub(crate) outline: Option<f32>,
 }
 
 impl Geometry {
-    fn of(sl: &ResolvedSliderTheme, width: f32) -> Option<Self> {
-        let border = |width: Option<f32>| match width {
-            Some(w) => scope::length(w).map(Some),
+    pub(crate) fn of(sl: &ResolvedSliderTheme, width: f32) -> Option<Self> {
+        Self::checked(
+            Some(sl.thumb_diameter),
+            Some(sl.track_height),
+            width,
+            sl.thumb_border_line_width,
+        )
+    }
+
+    /// The sizes of a slider of a 0.8.0 theme, `width` wide: `slider.thumb(NONE)`'s minimum
+    /// width, `slider.track(NONE)`'s minimum height and the thumb's outline width where it is
+    /// stated as one stroke, or as none, a width of 0 (spec §10, rule 2), each where stated.
+    pub(crate) fn next_of(r: &NextResolvedTheme, width: f32) -> Option<Self> {
+        let sl = &r.slider;
+        let thumb = sl.thumb(WidgetState::NONE);
+        let [diameter, _] = thumb.min_size;
+        let [_, rail] = sl.track(WidgetState::NONE).min_size;
+        Self::checked(diameter, rail, width, next::stroke_width_of(&thumb))
+    }
+
+    /// The sizes, `None` where one is not finite.
+    fn checked(
+        thumb: Option<f32>,
+        rail: Option<f32>,
+        width: f32,
+        outline: Option<f32>,
+    ) -> Option<Self> {
+        let finite = |v: Option<f32>| match v {
+            Some(v) => scope::length(v).map(Some),
             None => Some(None),
         };
         Some(Self {
-            thumb: scope::length(sl.thumb_diameter)?,
-            rail: scope::length(sl.track_height)?,
+            thumb: finite(thumb)?,
+            rail: finite(rail)?,
             width: scope::length(width)?,
-            outline: border(sl.thumb_border_line_width)?,
+            outline: finite(outline)?,
         })
     }
 }
@@ -218,10 +347,16 @@ impl egui::Widget for Slider<'_> {
         let under = crate::fade::outer_fade(ui);
         let as_one = (!enabled && ui.is_enabled()) || under.is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
-            let t = atlas.resolved_for(ui.ctx().theme());
-            let look = Look::of(t);
-            let ground = as_one.then(|| backdrop.unwrap_or_else(|| to_color32(look.background)));
-            Geometry::of(&t.slider, width).map(|g| (g, look, ground))
+            let theme = ui.ctx().theme();
+            let (look, geometry) = match atlas.resolved_for(theme) {
+                Some(t) => (Look::of(t), Geometry::of(&t.slider, width)?),
+                None => {
+                    let r = atlas.next_resolved_for(theme)?;
+                    (Look::next_of(r), Geometry::next_of(r, width)?)
+                }
+            };
+            let ground = as_one.then(|| backdrop.or(look.background)).flatten();
+            Some((geometry, look, ground))
         });
         let Some((geometry, sl, ground)) = paint else {
             let mut slider = egui::Slider::new(value, range).show_value(false);
@@ -246,12 +381,12 @@ impl egui::Widget for Slider<'_> {
             // `scope::open_faded`'s fading arms, with the knob's outline read before the fade.
             Some(ground) => {
                 ui.native_scope(Role::Slider, RoleVariant::Disabled, |ui| {
-                    let outline = ui.visuals().widgets.inactive.fg_stroke;
+                    let before = ui.visuals().widgets.inactive;
                     match under {
                         Some(under) => crate::fade::fade_as_one_under(ui, ground, under),
                         None => crate::fade::fade_as_one(ui, ground),
                     }
-                    let fade = Fade::of(ui, ground, outline);
+                    let fade = Fade::of(ui, ground, before);
                     add(ui, fade)
                 })
                 .inner
@@ -303,10 +438,27 @@ fn slider_ui(
 ) -> egui::Response {
     let old = *value;
     *value = clamp_to(*value, range);
-    let size = egui::vec2(g.width, g.thumb.max(g.rail));
+    // egui's own sizes where the theme states none (`egui-0.37.0/src/widgets/slider_core.rs`):
+    // the rail `Spacing::slider_rail_height` tall (`paint_rail`), and the slider as tall as the
+    // body text's row, at least `interact_size.y` (`SliderGeometry::desired_size`), its knob a
+    // radius of that height over `EGUI_HANDLE_DIVISOR` (`SliderGeometry::handle_radius`).
+    let rail_height = g
+        .rail
+        .unwrap_or_else(|| ui.spacing().slider_rail_height.max(0.0));
+    let thickness = ui
+        .text_style_height(&egui::TextStyle::Body)
+        .max(ui.spacing().interact_size.y);
+    let (thumb, height) = match g.thumb {
+        Some(thumb) => (thumb, thumb.max(rail_height)),
+        None => {
+            let radius = thickness / EGUI_HANDLE_DIVISOR;
+            (radius + radius, thickness.max(rail_height))
+        }
+    };
+    let size = egui::vec2(g.width, height);
     let mut response = ui.allocate_response(size, egui::Sense::drag());
     let rect = response.rect;
-    let knob_radius = 0.5 * g.thumb;
+    let knob_radius = 0.5 * thumb;
     let travel = rect.x_range().shrink(knob_radius);
     let position_of = |v: f64| egui::lerp(travel.min..=travel.max, fraction(v, range));
     let value_of = |x: f32| {
@@ -382,7 +534,7 @@ fn slider_ui(
         }
     });
 
-    let rail = egui::Rect::from_center_size(rect.center(), egui::vec2(rect.width(), g.rail));
+    let rail = egui::Rect::from_center_size(rect.center(), egui::vec2(rect.width(), rail_height));
     let centre = egui::pos2(position_of(current), rail.center().y);
     let mut trailing = rail;
     trailing.max.x = centre.x;
@@ -391,21 +543,37 @@ fn slider_ui(
     parts.push("fill", trailing);
     parts.push(
         "thumb",
-        egui::Rect::from_center_size(centre, egui::Vec2::splat(g.thumb)),
+        egui::Rect::from_center_size(centre, egui::Vec2::splat(thumb)),
     );
     parts.store(ui.ctx(), response.id);
     if ui.is_rect_visible(rect) {
+        // egui's own colours where the theme states none (`slider_core.rs`, `paint_rail`,
+        // `paint_fill`, `paint_handle`): the rail in `inactive.bg_fill`, the trailing fill in
+        // `selection.bg_fill` where `slider_trailing_fill` is on, the knob in its interaction
+        // state's fill; a faded slider's read before the fade.
+        let own = fade.map_or(ui.visuals().widgets.inactive, |f| f.before);
+        let visuals = ui.visuals();
+        let rest_track = sl.track_color.unwrap_or(own.bg_fill);
+        let rest_fill = sl.fill_color.or_else(|| {
+            visuals
+                .slider_trailing_fill
+                .then_some(visuals.selection.bg_fill)
+        });
+        let rest_thumb = sl.thumb_color.unwrap_or_else(|| match fade {
+            Some(_) => own.bg_fill,
+            None => ui.style().interact(&response).bg_fill,
+        });
         let (track, fill, thumb) = if enabled {
             let thumb = match sl.thumb_hover_color {
-                Some(layer) if response.hovered() => composite_over(layer, sl.thumb_color),
-                _ => to_color32(sl.thumb_color),
+                Some(hover) if response.hovered() => hover,
+                _ => rest_thumb,
             };
-            (to_color32(sl.track_color), to_color32(sl.fill_color), thumb)
+            (rest_track, rest_fill, thumb)
         } else {
             (
-                to_color32(sl.disabled_track_color.unwrap_or(sl.track_color)),
-                to_color32(sl.disabled_fill_color.unwrap_or(sl.fill_color)),
-                to_color32(sl.disabled_thumb_color.unwrap_or(sl.thumb_color)),
+                sl.disabled_track_color.unwrap_or(rest_track),
+                sl.disabled_fill_color.or(rest_fill),
+                sl.disabled_thumb_color.unwrap_or(rest_thumb),
             )
         };
         let radius = ui.visuals().widgets.inactive.corner_radius;
@@ -428,9 +596,7 @@ fn slider_ui(
                 };
                 colour
                     .filter(|_| width > 0.0)
-                    .map_or(egui::Stroke::NONE, |c| {
-                        egui::Stroke::new(width, to_color32(c))
-                    })
+                    .map_or(egui::Stroke::NONE, |c| egui::Stroke::new(width, c))
             }
         };
         // Faded as one: the rail over the ground, the fill over the rail, the knob and its
@@ -439,13 +605,13 @@ fn slider_ui(
         let (track, fill, thumb) = match fade {
             Some(f) => {
                 if g.outline.is_none() {
-                    outline.color = f.over(f.ground, f.outline.color);
+                    outline.color = f.over(f.ground, f.before.fg_stroke.color);
                 } else if !outline.is_empty() {
                     outline.color = f.over(f.ground, outline.color);
                 }
                 (
                     f.over(f.ground, track),
-                    f.over(f.ground.blend(track), fill),
+                    fill.map(|fill| f.over(f.ground.blend(track), fill)),
                     f.over(f.ground, thumb),
                 )
             }
@@ -453,7 +619,9 @@ fn slider_ui(
         };
         let painter = ui.painter();
         painter.rect_filled(rail, radius, track);
-        painter.rect_filled(trailing, radius, fill);
+        if let Some(fill) = fill {
+            painter.rect_filled(trailing, radius, fill);
+        }
         // epaint strokes a circle outside its radius (`epaint/src/tessellator.rs:1531`), so
         // the disc is the knob less its outline.
         painter.add(egui::epaint::CircleShape {

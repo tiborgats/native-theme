@@ -30,26 +30,24 @@ use gpui_component::{
     tree::{TreeItem, TreeState},
     v_flex,
 };
-use std::borrow::Cow;
-use std::cell::Cell;
 use std::num::NonZeroU32;
-use std::rc::Rc;
 use std::time::Duration;
 
 use native_theme::detect::{system_icon_set, system_icon_theme};
+use native_theme::icons::IconSet;
 use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, TransformAnimation,
     default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
-use native_theme::pipeline::platform_preset_name;
-use native_theme::theme::IconSet;
+use native_theme::next::{
+    Contrast, Direction, MotionPreference, Palette, Preset, Scheme, ThemeContext,
+};
 #[cfg(feature = "svg-rasterize")]
 use native_theme_gpui::icons::{ThemeIcons, WidgetIcons, WidgetIconsReport};
 use native_theme_gpui::icons::{
     animated_frames_to_image_sources_for, mask_drawable, to_image_source,
 };
-use native_theme_gpui::to_theme;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _};
 use native_theme_showcase_support::rows;
 
 use crate::chrome;
@@ -77,26 +75,23 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
     }
 }
 
-/// native-theme's colour mode for the showcase's light/dark flag.
-pub(crate) fn color_mode_of(is_dark: bool) -> native_theme_gpui::ColorMode {
-    if is_dark {
-        native_theme_gpui::ColorMode::Dark
-    } else {
-        native_theme_gpui::ColorMode::Light
-    }
+/// The accessibility preferences of `ctx`, as the connector reads a 0.8.0
+/// theme's context back as them (`NativeTheme::accessibility`;
+/// docs/v0.8.0-spec.md §5, the table of homes: `reduce_motion` is a motion
+/// other than `Full`, `high_contrast` a contrast other than `Normal`).
+fn preferences_of(ctx: &ThemeContext) -> AccessibilityPreferences {
+    let mut prefs = AccessibilityPreferences::DEFAULT.clone();
+    prefs.text_scaling_factor = ctx.text_scale;
+    prefs.reduce_motion = ctx.motion != MotionPreference::Full;
+    prefs.high_contrast = ctx.contrast != Contrast::Normal;
+    prefs.reduce_transparency = ctx.reduced_transparency;
+    prefs
 }
 
-/// The font the status bar and the inspector name where the OS theme could
-/// not be read: no source stated a family, a size or a colour.
-fn unread_font() -> native_theme::theme::ResolvedFontSpec {
-    native_theme::theme::ResolvedFontSpec {
-        family: "(default)".into(),
-        size: 0.0,
-        defined_size: None,
-        weight: 400,
-        style: native_theme::theme::FontStyle::Normal,
-        color: native_theme::color::Rgba::TRANSPARENT,
-    }
+/// The colour `color` as the icon loaders take it, its 8-bit sRGB channels.
+fn loader_colour(color: native_theme::next::Color) -> native_theme::Rgba {
+    let [r, g, b, a] = color.to_srgb8();
+    native_theme::Rgba::new(r, g, b, a)
 }
 
 // ---------------------------------------------------------------------------
@@ -313,21 +308,39 @@ pub(crate) struct Showcase {
     pub(crate) current_theme_name: String,
     /// The platform preset the "default" theme is built on, which the preset
     /// switch's `default` row and the status bar both name
-    /// (`Showcase::default_label`): `SystemTheme::preset`, the preset the
-    /// pipeline settled on, or `platform_preset_name` where the OS theme
-    /// could not be read.
+    /// (`Showcase::default_label`): the preset of the desktop's settings as
+    /// the 0.8.0 model read them (`next::Theme::preset_id`), or
+    /// `Preset::detect` where they could not be read.
     pub(crate) default_preset: String,
-    /// The desktop's own theme as `default` last installed it, both variants
-    /// and the OS's preferences as read: a colour-mode switch under
-    /// `default` installs its other variant without reading the OS again,
-    /// which only a reload (Reload System Theme, the theme watcher) does.
-    pub(crate) system: Option<native_theme::SystemTheme>,
+    /// The desktop's settings as the 0.8.0 model reads them
+    /// (`next::Theme::from_system`), the OS's preferences in its context:
+    /// what `default` installs, and the context every theme is resolved in
+    /// starts from (`Showcase::next_context`). A colour-mode switch under
+    /// `default` resolves them in its other scheme without reading the OS
+    /// again, which only a reload (Reload System Theme, the theme watcher)
+    /// does. `None` before a read; a failed read is kept as its error, as a
+    /// read that succeeded is, until a reload reads again
+    /// (`reload_system_theme`).
+    pub(crate) next_system: Option<Result<native_theme::next::Theme, String>>,
+    /// The palette chosen in the theme settings' palette Select, laid over
+    /// whichever theme is installed: a name of `Palette::BUNDLED_NAMES`, or
+    /// `None`, the theme's own colours.
+    pub(crate) palette: Option<&'static str>,
+    /// The theme settings' palette Select.
+    pub(crate) palette_select: Entity<SelectState<SearchableVec<SharedString>>>,
+    /// Re-installs the theme when the Preferences sheet changes a
+    /// preference (`demo::PreferenceOverrides`), so the theme is resolved
+    /// again for the context they make.
+    _preferences: Subscription,
     pub(crate) is_dark: bool,
     pub(crate) color_mode: AppColorMode,
-    /// Original native-theme font spec, for display purposes.
-    pub(crate) original_font: native_theme::theme::ResolvedFontSpec,
-    /// Original native-theme mono font spec, for display purposes.
-    pub(crate) original_mono_font: native_theme::theme::ResolvedFontSpec,
+    /// The installed theme's body text style (`typography.body`), which the
+    /// status bar and the inspector name; before a theme installs,
+    /// `TextStyle::default()`, which states nothing.
+    pub(crate) original_font: native_theme::next::TextStyle,
+    /// The installed theme's monospace text style (`typography.monospace`),
+    /// as `original_font` is its body's.
+    pub(crate) original_mono_font: native_theme::next::TextStyle,
 
     pub(crate) active_page: Page,
     /// Whether the side panel -- the theme settings and the inspector -- is
@@ -347,6 +360,9 @@ pub(crate) struct Showcase {
     pub(crate) menus: Entity<demo::MenuBar>,
     /// Where the content panel's page is scrolled (`support::gutter_scroll`).
     pub(crate) content_scroll: gpui::ScrollHandle,
+    /// Where the side panel's content is scrolled, where it is taller than
+    /// the panel (`support::gutter_scroll`).
+    pub(crate) side_panel_scroll: gpui::ScrollHandle,
     /// The inspector, in the side panel, which shows the info the registry
     /// settles on.
     pub(crate) inspector: Entity<Inspector>,
@@ -403,22 +419,12 @@ pub(crate) struct Showcase {
     /// window.rs:6755-6763), out of the view's handlers' reach.
     _refocus: Subscription,
 
-    /// `geometry::widget_gap` of `layout`, set as each frame starts, for the
-    /// overlays: gpui-component's `WindowState` root plugin builds them anew
-    /// for every frame from builders that cannot borrow the view (root.rs,
-    /// `WindowState::dialog_layer`), so this
-    /// is how the gap they read is the installed theme's, not the one they
-    /// opened under.
-    pub(crate) overlay_gap: Rc<Cell<Option<Pixels>>>,
-
     /// The icons of the Overlays page's dialogs, of the chosen icon theme,
-    /// set as each frame starts for the reason `overlay_gap` is.
+    /// set as each frame starts: gpui-component's `WindowState` root plugin
+    /// builds them anew for every frame from builders that cannot borrow the
+    /// view (root.rs, `WindowState::dialog_layer`), so this is how they show
+    /// the icon theme installed now, not the one they opened under.
     pub(crate) dialog_icons: SharedDialogIcons,
-
-    /// Layout spacing of the installed theme. It lives on the model, not on
-    /// `ResolvedTheme`, so the geometry accessors take it from here rather
-    /// than from `cx.native_theme()`.
-    pub(crate) layout: native_theme::theme::LayoutTheme,
 
     /// Whether a box over the whole window takes the pointer, so what is
     /// drawn does not depend on where the pointer happens to be: set for a
@@ -698,15 +704,17 @@ const BASIC_LIST_SELECTED: usize = 1;
 
 /// The colour the system icon sets' loaders recolour a symbolic icon in
 /// (`load_all_icons`, `load_gpui_icons`): the installed native theme's
-/// `defaults.font.color`, and none without a native theme, so an icon keeps
-/// its own colours. The placeholder font shown where the OS theme could not
-/// be read is transparent black (`unread_font`), which the loaders would
-/// take as black, as they keep only its red, green and blue.
+/// `typography.body.color` (`font`) where the theme states it, and none
+/// without a native theme or where `font` states no colour, so an icon
+/// keeps its own colours. The text style kept before a theme installs
+/// (`TextStyle::default()`) states no colour, and its black is not the
+/// theme's.
 pub(crate) fn icon_tint(
     native_installed: bool,
-    font_colour: native_theme::Rgba,
+    font: &native_theme::next::TextStyle,
 ) -> Option<native_theme::Rgba> {
-    native_installed.then_some(font_colour)
+    (native_installed && font.stated.contains(native_theme::next::TextStated::COLOR))
+        .then(|| loader_colour(font.color))
 }
 
 #[cfg(test)]
@@ -714,7 +722,7 @@ thread_local! {
     /// How often a tick of the animation timer (`start_animation_timer`)
     /// stepped the frames and asked for a redraw on this thread; a test reads
     /// how much an action adds to it.
-    pub(crate) static ANIMATION_STEPS: Cell<usize> = const { Cell::new(0) };
+    pub(crate) static ANIMATION_STEPS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// What the Icons page's icons were loaded as (`Showcase::reload_icons`),
@@ -1212,7 +1220,7 @@ impl Showcase {
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
         let theme = self.freedesktop_theme().map(str::to_string);
-        let fg_color = icon_tint(cx.native_theme().is_some(), self.original_font.color);
+        let fg_color = icon_tint(cx.native_theme().is_some(), &self.original_font);
         let load = IconLoad {
             set: self.icon_set_enum,
             effective,
@@ -1582,8 +1590,8 @@ impl Showcase {
         let is_dark = color_mode.is_dark();
         let system = crate::support::read_system_theme();
         let initial_default_preset = match &system {
-            Ok(system) => system.preset.clone(),
-            Err(_) => platform_preset_name().name.to_string(),
+            Ok(system) => system.preset_id().as_str().to_string(),
+            Err(_) => Preset::detect().as_str().to_string(),
         };
         let preset_combobox = cx.new(|cx| {
             ComboboxState::new(
@@ -1610,6 +1618,38 @@ impl Showcase {
             },
         )
         .detach();
+
+        let palette_select = cx.new(|cx| {
+            SelectState::new(
+                SearchableVec::new(crate::support::palette_rows()),
+                Some(gpui_component::IndexPath::default().row(0)),
+                window,
+                cx,
+            )
+        });
+        cx.subscribe_in(
+            &palette_select,
+            window,
+            |this: &mut Self,
+             _entity,
+             event: &SelectEvent<SearchableVec<SharedString>>,
+             window,
+             cx| {
+                if let SelectEvent::Confirm(Some(value)) = event {
+                    this.choose_palette(value.as_ref(), window, cx);
+                    cx.notify();
+                }
+            },
+        )
+        .detach();
+        let _preferences = cx.observe_global_in::<demo::PreferenceOverrides>(
+            window,
+            |this: &mut Self, window, cx| {
+                let name = this.current_theme_name.clone();
+                this.apply_theme_by_name(&name, window, cx);
+                cx.notify();
+            },
+        );
 
         // Its rows and the row chosen are the installed theme's, which
         // `show_icon_choice` sets once the theme is installed.
@@ -1842,11 +1882,14 @@ impl Showcase {
             preset_combobox,
             current_theme_name: "default".into(),
             default_preset: initial_default_preset,
-            system: None,
+            next_system: None,
+            palette: None,
+            palette_select,
+            _preferences,
             is_dark,
             color_mode,
-            original_font: unread_font(),
-            original_mono_font: unread_font(),
+            original_font: native_theme::next::TextStyle::default(),
+            original_mono_font: native_theme::next::TextStyle::default(),
             active_page: Page::Basic,
             side_panel_visible: true,
             body_layout,
@@ -1854,6 +1897,7 @@ impl Showcase {
             info_ui,
             menus,
             content_scroll: gpui::ScrollHandle::new(),
+            side_panel_scroll: gpui::ScrollHandle::new(),
             inspector,
             panel_look: None,
             _native_theme,
@@ -1871,11 +1915,7 @@ impl Showcase {
             palette_state,
             focus_handle,
             _refocus,
-            overlay_gap: Rc::new(Cell::new(None)),
             dialog_icons: SharedDialogIcons::default(),
-            // Nothing was read yet, so nothing is claimed: every key stays
-            // `None` and the layout accessors report it as such.
-            layout: native_theme::theme::LayoutTheme::default(),
             pointer_shield: false,
             keyboard_shield: None,
             basic_hint_state,
@@ -1970,13 +2010,23 @@ impl Showcase {
             #[cfg(feature = "watch")]
             _theme_watcher,
         };
-        match system {
+        // Where the desktop's theme does not install -- its read failed, or
+        // it cannot be installed -- the error is reported (`Showcase::install`
+        // reports the last) and gpui-component's built-in theme stays, in
+        // the system's mode. A failed read is kept, as `next_system` keeps
+        // one, until a reload.
+        let installed = match system {
             Ok(system) => showcase.install_system(system, window, cx),
             Err(e) => {
-                Theme::sync_system_appearance(Some(window), cx);
-                showcase.current_icon_theme = system_icon_theme().ok();
-                showcase.error_message = Some(format!("Failed to load OS theme: {e}"));
+                let message = format!("Failed to load OS theme: {e}");
+                showcase.error_message = Some(message.clone());
+                showcase.next_system = Some(Err(message));
+                false
             }
+        };
+        if !installed {
+            Theme::sync_system_appearance(Some(window), cx);
+            showcase.current_icon_theme = system_icon_theme().ok();
         }
         showcase.show_window_appearance(cx);
         showcase.show_icon_choice(window, cx);
@@ -2019,66 +2069,266 @@ impl Showcase {
         demo::PreferenceOverrides::of(cx).over(os)
     }
 
-    /// The OS's accessibility preferences as last read, from the detection
-    /// cache that the last system read filled and a reload clears
+    /// The OS's accessibility preferences as last read: those of the
+    /// desktop's settings as the 0.8.0 model read them (`next_system`, its
+    /// context, `preferences_of`), which a reload reads again
     /// (`reload_system_theme`), so a preset switch runs no platform reader;
-    /// in the self-tests, the ones `os_preferences_for_test` holds, where it
+    /// where that read failed, the detection cache's, which a reload clears.
+    /// In the self-tests, the ones `os_preferences_for_test` holds, where it
     /// holds any.
-    fn os_preferences(&self) -> AccessibilityPreferences {
+    fn os_preferences(&mut self) -> AccessibilityPreferences {
         #[cfg(test)]
         if let Some(prefs) = &self.os_preferences_for_test {
             return prefs.clone();
         }
-        native_theme::detect::accessibility_preferences()
+        self.next_system().map_or_else(
+            |_| native_theme::detect::accessibility_preferences(),
+            |system| preferences_of(system.context()),
+        )
     }
 
-    /// Install `system`, the desktop's own theme as `SystemTheme::from_system`
-    /// read it, in the mode shown, and keep it (`Showcase::system`): what
-    /// `default` installs, at startup too. Its accessibility preferences are
-    /// the OS's it read, with the user's over them.
-    ///
-    /// The preset the pipeline settled on is what the preset switch's
-    /// `default` row and the status bar name, so a change of it relabels
-    /// that row.
+    /// Install the desktop's own theme with `system` as its settings, as
+    /// `next::Theme::from_system` reads them, and keep them
+    /// (`Showcase::next_system`): what `default` installs, at startup too
+    /// (`Showcase::install`). Its accessibility preferences are the OS's in
+    /// its context, with the user's over them. False, with the error
+    /// reported and the settings and the installed theme left as they are,
+    /// where the theme cannot be installed.
     pub(crate) fn install_system(
         &mut self,
-        mut system: native_theme::SystemTheme,
+        system: native_theme::next::Theme,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let kept = self.next_system.replace(Ok(system));
+        let installed = self.install("default", window, cx);
+        if !installed {
+            self.next_system = kept;
+        }
+        installed
+    }
+
+    /// The desktop's settings as the 0.8.0 model reads them
+    /// (`next::Theme::from_system`, `support::read_system_theme`), read
+    /// where no read is kept (`Showcase::next_system`); the error to report
+    /// where the read failed. The failure is kept as the settings are, so a
+    /// preset switch or a preference change does not read the desktop
+    /// again; a reload does (`reload_system_theme`). No preset stands in for
+    /// the desktop's settings.
+    fn next_system(&mut self) -> Result<&native_theme::next::Theme, String> {
+        self.next_system
+            .get_or_insert_with(|| {
+                crate::support::read_system_theme()
+                    .map_err(|e| format!("Failed to load OS theme: {e}"))
+            })
+            .as_ref()
+            .map_err(String::clone)
+    }
+
+    /// The context a theme is installed in (spec §6): the desktop's, as the
+    /// 0.8.0 model read it -- where the read fails, the default context
+    /// every preset alone is resolved in (`next::Theme::preset`), which only
+    /// a preset is installed in: `default` reports the failed read
+    /// (`next_theme`) -- in the mode shown (`is_dark`), for an active
+    /// window, left to right as the showcase lays itself out (`main`), with
+    /// `prefs` as its text scale, motion, contrast and reduced transparency:
+    /// the accessibility preferences the theme is installed with, the OS's
+    /// with the user's over them (`try_install`). A preference set
+    /// keeps the desktop's own level where that is one of its kind (a
+    /// contrast `Increased`, a motion `None`); the connector reads the
+    /// context back as these preferences (`NativeTheme::accessibility`).
+    fn next_context(&mut self, prefs: &AccessibilityPreferences) -> ThemeContext {
+        let mut ctx = self
+            .next_system()
+            .map(|system| system.context().clone())
+            .unwrap_or_default();
+        ctx.scheme = if self.is_dark {
+            Scheme::Dark
+        } else {
+            Scheme::Light
+        };
+        ctx.text_scale = prefs.text_scaling_factor;
+        ctx.motion = match (prefs.reduce_motion, ctx.motion) {
+            (false, _) => MotionPreference::Full,
+            (true, MotionPreference::Full) => MotionPreference::Reduced,
+            (true, reduced) => reduced,
+        };
+        ctx.contrast = match (prefs.high_contrast, ctx.contrast) {
+            (false, _) => Contrast::Normal,
+            (true, Contrast::Normal) => Contrast::High,
+            (true, raised) => raised,
+        };
+        ctx.reduced_transparency = prefs.reduce_transparency;
+        ctx.direction = Direction::Ltr;
+        ctx.window_active = true;
+        ctx
+    }
+
+    /// The 0.8.0 theme of `name` -- `default`, the desktop's own as the
+    /// 0.8.0 model read it (`next_system`), or a preset alone -- with the
+    /// palette chosen laid over it (`Theme::with_palette`, which locks the
+    /// scheme to the palette's); the error to report where there is none.
+    fn next_theme(&mut self, name: &str) -> Result<native_theme::next::Theme, String> {
+        let theme = self.next_theme_alone(name)?;
+        match self.palette {
+            None => Ok(theme),
+            Some(palette) => Palette::from_name(palette)
+                .map(|palette| theme.with_palette(palette))
+                .ok_or_else(|| format!("Failed to load palette '{palette}': no bundled palette")),
+        }
+    }
+
+    /// The 0.8.0 theme of `name`, as [`next_theme`](Self::next_theme) builds
+    /// it, without the palette.
+    fn next_theme_alone(&mut self, name: &str) -> Result<native_theme::next::Theme, String> {
+        if name == "default" {
+            return self.next_system().cloned();
+        }
+        let preset = Preset::from_name(name).ok_or_else(|| {
+            format!("Failed to load preset '{name}': the 0.8.0 model has no preset of that name")
+        })?;
+        Ok(native_theme::next::Theme::preset(preset))
+    }
+
+    /// Why `resolved`, the 0.8.0 theme of `name` with the palette chosen
+    /// resolved in `ctx`, is at a lower contrast level than `ctx` asks for
+    /// (docs/v0.8.0-spec.md §6, resolution step 1): the palette holds `High`
+    /// back where the theme without it, resolved in the palette's scheme,
+    /// reaches `High`; else the theme defines the level for none of its
+    /// sources. `None` where it is at the level asked.
+    fn contrast_held(
+        &mut self,
+        name: &str,
+        ctx: &ThemeContext,
+        resolved: &native_theme::next::ResolvedTheme,
+    ) -> Result<Option<crate::support::ContrastHeld>, String> {
+        let (asked, used) = (ctx.contrast, resolved.context.contrast);
+        if used == asked {
+            return Ok(None);
+        }
+        let by_palette = asked == Contrast::High && self.palette.is_some() && {
+            let mut alone = ctx.clone();
+            alone.scheme = resolved.context.scheme;
+            self.next_theme_alone(name)?
+                .with_context(alone)
+                .resolve_current()
+                .context
+                .contrast
+                == Contrast::High
+        };
+        Ok(Some(crate::support::ContrastHeld {
+            asked,
+            used,
+            by_palette,
+        }))
+    }
+
+    /// Install the theme of `name` -- `default`, the desktop's own, or a
+    /// preset's -- with the palette chosen: the one place that builds the
+    /// theme from the theme settings' choice. It is resolved in the context
+    /// of the mode shown and the preferences (`next_context`) and installed
+    /// (`native_theme_gpui::next::apply`); the mode shown becomes the scheme
+    /// it resolved to, the palette's where one is chosen. The showcase keeps
+    /// its fonts and icon choice (`keep_installed`), the theme resolved for
+    /// an inactive window (`support::NextInactive`), and the preferences
+    /// asked for, with why the theme's contrast is lower than they ask where
+    /// it is and the palette High contrast set aside where it set one aside
+    /// (`support::Requested`). Where the theme cannot be built or installed
+    /// nothing is installed or changed, the error is reported and false is
+    /// returned.
+    fn install(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) -> bool {
+        match self.try_install(name, window, cx) {
+            Ok(()) => {
+                self.error_message = None;
+                true
+            }
+            Err(e) => {
+                self.show_theme_error(&e);
+                false
+            }
+        }
+    }
+
+    /// [`install`](Self::install), with the error to report.
+    fn try_install(
+        &mut self,
+        name: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        let theme = self.next_theme(name)?;
+        // Accessibility is orthogonal to the theme choice, so a preset is
+        // installed with the OS's preferences and the user's over them, as
+        // the desktop's own theme is.
+        let os = self.os_preferences();
+        let prefs = Self::install_preferences(cx, os);
+        let ctx = self.next_context(&prefs);
+        let mut inactive_ctx = ctx.clone();
+        inactive_ctx.window_active = false;
+        let inactive = theme.resolve(&inactive_ctx);
+        let theme = theme.with_context(ctx.clone());
+        let resolved = theme.resolve_current();
+        let contrast_held = self.contrast_held(name, &ctx, &resolved)?;
+        // `High` meets a palette only where the theme preserves it, which
+        // the showcase never asks for: resolved at `High`, the theme was
+        // resolved without the palette chosen (spec §6, resolution step 1).
+        let palette_set_aside = self
+            .palette
+            .filter(|_| resolved.context.contrast == Contrast::High);
+        native_theme_gpui::next::apply(&resolved, cx)
+            .map_err(|e| format!("Theme '{name}' cannot be installed: {e}"))?;
+        self.is_dark = resolved.is_dark();
+        self.keep_installed(name, &theme, &ctx, &resolved, window, cx);
+        cx.set_global(crate::support::Requested {
+            context: ctx,
+            preferences: prefs,
+            contrast_held,
+            palette_set_aside,
+        });
+        cx.set_global(crate::support::NextInactive(inactive));
+        Ok(())
+    }
+
+    /// Keep what the showcase reads of `resolved`, the theme of `name` --
+    /// `theme` resolved in `ctx` -- installed in the mode shown: its body
+    /// and monospace text styles (`typography.body`, `typography.monospace`)
+    /// and its icons (`icons.set`, `icons.theme`, `icons.theme_explicit`),
+    /// and, for the widget icons, which serve both modes, the icon theme of
+    /// `theme` resolved in the other scheme.
+    ///
+    /// Under `default`, the preset of the desktop's settings is what the
+    /// preset switch's `default` row and the status bar name, so a change of
+    /// it relabels that row.
+    fn keep_installed(
+        &mut self,
+        name: &str,
+        #[cfg_attr(not(feature = "svg-rasterize"), allow(unused_variables))]
+        theme: &native_theme::next::Theme,
+        #[cfg_attr(not(feature = "svg-rasterize"), allow(unused_variables))] ctx: &ThemeContext,
+        resolved: &native_theme::next::ResolvedTheme,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let mode = color_mode_of(self.is_dark);
-        let resolved = system.pick(mode);
-        self.original_font = resolved.defaults.font.clone();
-        self.original_mono_font = resolved.defaults.mono_font.clone();
-        // The mode shown's own variant's: `system.icon_theme` is the one of
-        // the mode the OS is in.
-        self.current_icon_theme = system.icon_theme_for(mode).map(str::to_owned);
-        self.current_icon_set = system.icon_set;
-        self.layout = system.layout.clone();
-        // Platform presets always specify icon_theme
-        self.has_toml_icon_theme = true;
-        // The other mode's, from its own variant, which the system theme
-        // holds too.
+        self.original_font = resolved.typography.body.clone();
+        self.original_mono_font = resolved.typography.monospace.clone();
+        self.current_icon_set = resolved.icons.set;
+        self.current_icon_theme = resolved.icons.theme.as_deref().map(str::to_owned);
+        self.has_toml_icon_theme = resolved.icons.theme_explicit;
         #[cfg(feature = "svg-rasterize")]
         {
-            self.other_icon_theme = system
-                .icon_theme_for(color_mode_of(!self.is_dark))
-                .map(str::to_owned);
-            self.other_icon_theme_explicit = true;
+            let mut other_ctx = ctx.clone();
+            other_ctx.scheme = if resolved.is_dark() {
+                Scheme::Light
+            } else {
+                Scheme::Dark
+            };
+            let other = theme.resolve(&other_ctx).icons;
+            self.other_icon_theme_explicit = other.theme_explicit;
+            self.other_icon_theme = other.theme.as_deref().map(str::to_owned);
         }
-        // Installed with both variants stored, so the showcase's own
-        // light/dark choice goes through upstream's mode switch, which
-        // reproduces the native palette from the installed configs (D34).
-        // Kept with the OS's preferences as read.
-        let prefs = Self::install_preferences(cx, system.accessibility.clone());
-        let os = std::mem::replace(&mut system.accessibility, prefs);
-        native_theme_gpui::apply_system_theme(&system, cx);
-        system.accessibility = os;
-        if self.is_dark != system.mode.is_dark() {
-            Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
-        }
-        if self.default_preset != system.preset {
-            self.default_preset = system.preset.clone();
+        let preset = resolved.preset.as_str();
+        if name == "default" && self.default_preset != preset {
+            self.default_preset = preset.to_string();
             let rows = PresetDelegate::new(&self.default_preset);
             self.preset_combobox.update(cx, |combobox, cx| {
                 let chosen = combobox.selected_values();
@@ -2086,67 +2336,20 @@ impl Showcase {
                 combobox.set_selected_values(&chosen, window, cx);
             });
         }
-        self.error_message = None;
-        self.system = Some(system);
-    }
-
-    /// Install the preset of `name`. False, with the error reported and the
-    /// installed theme left as it is, where it cannot be read or resolved.
-    fn install_preset(&mut self, name: &str, cx: &mut Context<Self>) -> bool {
-        let nt = match native_theme::theme::Theme::preset(name) {
-            Ok(t) => t,
-            Err(e) => {
-                self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
-                return false;
-            }
-        };
-        let r = match nt.resolve(color_mode_of(self.is_dark)) {
-            Ok(r) => r,
-            Err(e) => {
-                self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
-                return false;
-            }
-        };
-        self.layout = nt.layout.clone();
-        self.has_toml_icon_theme = r.icon_theme_explicit;
-        self.current_icon_set = r.icon_set;
-        self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
-        // The other mode's icon theme, as the theme resolves it in that mode;
-        // where that fails, the shown mode's, so no earlier theme's decides
-        // what the widget icons serve.
-        #[cfg(feature = "svg-rasterize")]
-        match nt.resolve(color_mode_of(!self.is_dark)) {
-            Ok(other) => {
-                self.other_icon_theme_explicit = other.icon_theme_explicit;
-                self.other_icon_theme = other.icon_theme.map(Cow::into_owned);
-            }
-            Err(_) => {
-                self.other_icon_theme_explicit = self.has_toml_icon_theme;
-                self.other_icon_theme = self.current_icon_theme.clone();
-            }
-        }
-        self.original_font = r.variant.defaults.font.clone();
-        self.original_mono_font = r.variant.defaults.mono_font.clone();
-        // Accessibility is orthogonal to the theme choice, so a preset is
-        // installed with the OS's preferences and the user's over them, as
-        // the desktop's own theme is.
-        let prefs = Self::install_preferences(cx, self.os_preferences());
-        let theme = to_theme(&r.variant, &nt.name, r.mode.is_dark(), &prefs);
-        native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
-        self.error_message = None;
-        true
     }
 
     /// Install the theme of `name`: `default`, the desktop's own, or a
-    /// preset's. Every preset, colour-mode, reload and palette switch
-    /// installs through here. A theme that fails to load leaves the
-    /// installed one -- its name, layout, mode and every colour
+    /// preset's, with the palette chosen (`Showcase::install`). Every
+    /// preset, colour-mode, palette, preference and reload switch installs
+    /// through here. A theme that fails to load leaves the installed one --
+    /// its name, layout, mode and every colour
     /// (`Showcase::keep_installed_theme`) -- and false is returned.
     ///
     /// `default` installs the desktop's theme kept from its last install
-    /// (`Showcase::system`), in the mode now shown, and reads the OS only
-    /// where none is kept: at the first install, where the last read
-    /// failed, and after a reload (`reload_system_theme`).
+    /// (`Showcase::next_system`), in the mode now shown, and reads the OS
+    /// only where none is kept: at the first install and after a reload
+    /// (`reload_system_theme`). A failed read is kept, as the settings are,
+    /// until the reload.
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,
@@ -2154,21 +2357,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> bool {
         self.info_ui.update(cx, |r, _| r.screen_changed());
-        let installed = if name == "default" {
-            let kept = self.system.take();
-            match kept.map_or_else(crate::support::read_system_theme, Ok) {
-                Ok(system) => {
-                    self.install_system(system, window, cx);
-                    true
-                }
-                Err(e) => {
-                    self.show_theme_error(&format!("Failed to load OS theme: {e}"));
-                    false
-                }
-            }
-        } else {
-            self.install_preset(name, cx)
-        };
+        let installed = self.install(name, window, cx);
         if installed {
             self.current_theme_name = name.to_string();
         } else {
@@ -2277,6 +2466,39 @@ impl Showcase {
         });
     }
 
+    /// Lay the palette of the palette Select's row `row` over the installed
+    /// theme, none for `support::NO_PALETTE`, and install the theme again
+    /// in the mode chosen, which a palette's scheme replaced while it was
+    /// laid over. Where that fails, the palette laid over before stays, and
+    /// so does the Select's row.
+    pub(crate) fn choose_palette(
+        &mut self,
+        row: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let before = self.palette;
+        self.palette = crate::support::palette_of_row(row);
+        if self.palette == before {
+            return;
+        }
+        self.is_dark = self.color_mode.is_dark();
+        let name = self.current_theme_name.clone();
+        if !self.apply_theme_by_name(&name, window, cx) {
+            self.palette = before;
+            self.show_palette(window, cx);
+        }
+    }
+
+    /// Show the palette laid over the installed theme chosen in the palette
+    /// Select, whichever way it was chosen.
+    pub(crate) fn show_palette(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let row = SharedString::from(self.palette.unwrap_or(crate::support::NO_PALETTE));
+        self.palette_select.update(cx, |select, cx| {
+            select.set_selected_value(&row, window, cx);
+        });
+    }
+
     /// What the theme watcher does when the OS theme changes, in every colour
     /// mode: read the desktop's settings again and re-install the current
     /// theme in the mode chosen (`reload_system_theme`). A chosen Light or
@@ -2296,7 +2518,7 @@ impl Showcase {
         // The desktop's theme is read again, and a system set's icons
         // loaded again: the system icon theme may have changed with it. A
         // bundled set's cannot, and stay.
-        self.system = None;
+        self.next_system = None;
         self.icon_load = self
             .icon_load
             .take()
@@ -2439,10 +2661,9 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.overlay_gap.set(geometry::widget_gap(&self.layout));
         // Before the inspector, a child view, renders and borrows it.
         if self.panel_look.is_none() {
-            self.panel_look = PanelLook::of(self, cx);
+            self.panel_look = PanelLook::of(cx);
         }
         self.dialog_icons.set(DialogIcons {
             dialog: self.sample_icon(IconName::CircleX),

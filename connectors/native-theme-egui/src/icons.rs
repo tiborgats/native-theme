@@ -12,8 +12,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use native_theme::color::Rgba;
+use native_theme::icons::IconSet;
 use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
-use native_theme::theme::IconSet;
 
 use crate::{ResolvedTheme, ThemeAtlas};
 
@@ -206,15 +206,14 @@ pub fn uri(icon: &IconData) -> String {
 }
 
 /// The colour a freedesktop icon, or a system set's monochrome glyph, is loaded in: the key's
-/// tint, else `defaults.text_color` of the installed atlas's theme for `ctx.theme()`; `None`
-/// with neither (spec §9.2). Two `Context` accessors, one after the other, never nested (spec §10.3).
+/// tint, else `defaults.text_color` of the installed atlas's theme for `ctx.theme()`
+/// (`colors.window.foreground` of a 0.8.0 theme's); `None` with neither (spec §9.2). Two
+/// `Context` accessors, one after the other, never nested (spec §10.3).
 fn load_color(ctx: &egui::Context, key: &IconKey) -> Option<Rgba> {
     if let Some(tint) = key.tint_rgba() {
         return Some(tint);
     }
-    let atlas = ThemeAtlas::from_ctx(ctx)?;
-    let theme = ctx.theme();
-    Some(atlas.resolved_for(theme).defaults.text_color)
+    ThemeAtlas::from_ctx(ctx)?.text_color(ctx.theme())
 }
 
 /// The final bytes of an SVG the application loaded (spec §9.2): a freedesktop icon's
@@ -582,8 +581,11 @@ pub fn custom_icon_to_image_source(
 ///         return;
 ///     };
 ///     let scheme = ui.ctx().theme();
+///     let Some(theme) = atlas.resolved_for(scheme) else {
+///         return;
+///     };
 ///     let role = IconRole::DialogWarning;
-///     let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+///     let side = icon_size(theme, IconContext::Toolbar);
 ///     let mut key = IconKey::role(role, atlas.icon_set())
 ///         .size(side)
 ///         .tint(ui.visuals().warn_fg_color);
@@ -872,10 +874,10 @@ mod tests {
             (egui::Theme::Light, light_bytes),
             (egui::Theme::Dark, dark_bytes),
         ] {
-            let hex = hex_rgb(atlas.resolved_for(theme).defaults.text_color);
+            let hex = atlas.text_color(theme).map(hex_rgb);
             let text = String::from_utf8(bytes).unwrap();
             assert!(
-                text.contains(&hex) && !text.contains("currentColor"),
+                hex.is_some_and(|hex| text.contains(&hex)) && !text.contains("currentColor"),
                 "{theme:?}: {text}"
             );
         }
@@ -1052,7 +1054,7 @@ mod tests {
             crate::from_preset("adwaita", false, &AccessibilityPreferences::default()).unwrap();
         atlas.install(&ctx);
         ctx.set_theme(egui::Theme::Light);
-        let text = atlas.resolved_for(egui::Theme::Light).defaults.text_color;
+        let text = atlas.text_color(egui::Theme::Light);
         let tint = egui::Color32::from_rgb(0x12, 0x34, 0x56);
         let provider = Provider {
             name: None,
@@ -1072,8 +1074,8 @@ mod tests {
         ] {
             let key = IconKey::name("brand-mark", set);
             assert_eq!(
-                loaded(&key),
-                native_theme::icons::colorize_monochrome_svg(MONOCHROME, text),
+                Some(loaded(&key)),
+                text.map(|text| native_theme::icons::colorize_monochrome_svg(MONOCHROME, text)),
                 "{set:?}"
             );
             assert_eq!(
@@ -1130,7 +1132,11 @@ mod tests {
                 crate::from_preset("adwaita", false, &AccessibilityPreferences::default())?;
             atlas.install(&ctx);
             ctx.set_theme(egui::Theme::Light);
-            let text = hex_rgb(atlas.resolved_for(egui::Theme::Light).defaults.text_color);
+            let text = hex_rgb(
+                atlas
+                    .text_color(egui::Theme::Light)
+                    .ok_or("the atlas states no text colour")?,
+            );
             let tint = egui::Color32::from_rgb(0x12, 0x34, 0x56);
             let loaded = |icon: &'static str, key: &IconKey| {
                 custom_icon_to_image_source(&ctx, &named(icon), key)

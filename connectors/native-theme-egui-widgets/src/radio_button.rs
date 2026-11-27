@@ -1,12 +1,16 @@
 //! [`RadioButton`]: egui's radio button, its dot the theme's size.
 
-use native_theme_egui::convert::{clamp_length, to_color32};
+use native_theme_egui::convert::{clamp_length, to_color32, unit_interval};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
-use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
+use native_theme_egui::native_theme::next::{
+    PartStated, PartStyle, ResolvedTheme as NextResolvedTheme, Stroke as NextStroke, StrokeAlign,
+    StyleQuery, TextStated, WidgetState,
+};
+use native_theme_egui::next::{stroke_color_of, stroke_width_of, text_color_of};
+use native_theme_egui::{Note, ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
-use crate::scope;
+use crate::{next, scope};
 
 /// egui's radio dot is a circle of radius `small_icon_rect.width() / 3.0`
 /// (`egui/src/widgets/radio_button.rs:101`), `small_icon_rect` being `Spacing::icon_width_inner`
@@ -36,6 +40,11 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 /// (`epaint/src/tessellator.rs:1531`), so this radio's `expansion` gives back the stroke's
 /// width. Everything else is egui's: layout, interaction and accessibility
 /// (`Role::RadioButton`).
+///
+/// Under an atlas of the 0.8.0 model the radio is drawn from its own homes, laid over the
+/// check box's cell before egui's radio is added: `radio.indicator`'s fill and stroke at rest,
+/// hovered and pressed, `radio.dot`'s fill checked, `radio.label`'s colour and
+/// `radio.disabled_opacity`, each where the theme states it, the cell's elsewhere (`Over`).
 ///
 /// Like egui's, it holds no value: a click is `Response::clicked`, and the caller selects it.
 ///
@@ -108,18 +117,348 @@ fn radio_parts(
     parts
 }
 
+/// One state of a radio of a 0.8.0 theme, laid over the scope's entry for it: each value where
+/// the theme states it.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub(crate) struct Entry {
+    /// `radio.indicator`'s fill: the circle, `bg_fill`.
+    pub(crate) fill: Option<egui::Color32>,
+    /// `radio.indicator`'s stroke width, 0 for a stroke stated as none: `bg_stroke.width`.
+    pub(crate) stroke_width: Option<f32>,
+    /// `radio.indicator`'s stroke colour and where it lies: `bg_stroke.color`.
+    pub(crate) stroke: Option<(egui::Color32, StrokeAlign)>,
+    /// `radio.dot`'s fill, checked: the dot, which egui paints in `fg_stroke.color`
+    /// (`egui/src/widgets/radio_button.rs`).
+    pub(crate) dot: Option<egui::Color32>,
+}
+
+/// What a radio of a 0.8.0 theme lays over the check box's cell its scope opens: its own homes
+/// in place of the check box's, so a theme that styles the radio unlike the check box draws it
+/// so.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Over {
+    /// At rest: the scope's `inactive` entry.
+    pub(crate) rest: Entry,
+    /// Hovered: its `hovered` entry.
+    pub(crate) hovered: Entry,
+    /// Pressed: its `active` entry.
+    pub(crate) pressed: Entry,
+    /// `radio.label`'s colour, at rest: the label, on `override_text_color`, as the cell
+    /// letters the check box's.
+    pub(crate) label: Option<egui::Color32>,
+    /// `radio.disabled_opacity`: the scope's `disabled_alpha`.
+    pub(crate) disabled_opacity: Option<f32>,
+}
+
+impl Over {
+    /// The radio of `r`, `checked` or not, `disabled` or not, at rest, hovered and pressed. A
+    /// hovered or pressed value is read where the theme states it for that state (the part
+    /// queried with the state's flag alone, or at its own state asking the flag, spec §2,
+    /// `from_state`, the two queries); else it is taken as the connector takes an unstated
+    /// state (spec §10, rule 0): egui's own where egui's own entries change it between rest and
+    /// that state, else the radio's at rest. A disabled radio's values, its label's colour
+    /// among them, are read where the theme states them for `DISABLED` by the same two queries,
+    /// the scope's disabled cell elsewhere (its disabled colours, faded as egui fades a
+    /// disabled widget).
+    pub(crate) fn next_of(r: &NextResolvedTheme, checked: bool, disabled: bool) -> Self {
+        Self::next_noted(r, checked, disabled, &mut Vec::new())
+    }
+
+    /// [`Self::next_of`], with a [`Note::Unmapped`] in `unmapped` at each fill's home the
+    /// theme states as layers that are all gradients, read as unstated ([`next::fill`]).
+    pub(crate) fn next_noted(
+        r: &NextResolvedTheme,
+        checked: bool,
+        disabled: bool,
+        unmapped: &mut Vec<Note>,
+    ) -> Self {
+        let radio = &r.radio;
+        let mut base = WidgetState::NONE;
+        if checked {
+            base |= WidgetState::CHECKED;
+        }
+        if disabled {
+            base |= WidgetState::DISABLED;
+        }
+        // Each read at `base | state` asking `rule`, where the theme states it for `rule` (`NONE`:
+        // always): the part queried with `rule` alone, or that query, has the bit (spec §2,
+        // `from_state`, the two queries); `homes` the indicator's and the dot's fills there.
+        let mut entry = |state: WidgetState,
+                         rule: WidgetState,
+                         homes: (&'static str, &'static str)| {
+            let indicator = radio.indicator(StyleQuery::new(base | state).asking(rule));
+            let dot = radio.dot(StyleQuery::new(base | state | WidgetState::CHECKED).asking(rule));
+            let (ruled_dot, ruled) = (radio.dot(rule), radio.indicator(rule));
+            let at = |alone: &PartStyle, own: &PartStyle, bit: PartStated| {
+                rule == WidgetState::NONE
+                    || alone.from_state.contains(bit)
+                    || own.from_state.contains(bit)
+            };
+            let stroke = match (&indicator.stroke.prevailing(), stroke_color_of(&indicator)) {
+                (NextStroke::Uniform { align, .. }, Some(colour)) => Some((colour, *align)),
+                _ => None,
+            };
+            let (fill_home, dot_home) = homes;
+            Entry {
+                fill: if at(&ruled, &indicator, PartStated::FILL) {
+                    next::fill(&indicator, fill_home, unmapped)
+                } else {
+                    None
+                },
+                stroke_width: at(&ruled, &indicator, PartStated::STROKE)
+                    .then(|| stroke_width_of(&indicator))
+                    .flatten(),
+                stroke: at(&ruled, &indicator, PartStated::STROKE)
+                    .then_some(stroke)
+                    .flatten(),
+                // An unchecked radio paints no dot, but egui letters a label with no colour of
+                // its own in the entry's `fg_stroke` (egui 0.37.0 `src/widgets/radio_button.rs`,
+                // `fallback_text_color = visuals.text_color()`; `WidgetVisuals::text_color` is
+                // `fg_stroke.color`, `src/style.rs`), so it takes no checked dot's colour.
+                dot: if checked && at(&ruled_dot, &dot, PartStated::FILL) {
+                    next::fill(&dot, dot_home, unmapped)
+                } else {
+                    None
+                },
+            }
+        };
+        let (none, off) = (WidgetState::NONE, WidgetState::DISABLED);
+        let (hover, press) = (WidgetState::HOVER, WidgetState::PRESSED);
+        let (rest, hovered, pressed) = match (disabled, checked) {
+            (true, false) => (
+                entry(
+                    none,
+                    off,
+                    (
+                        "radio.indicator(DISABLED).fill",
+                        "radio.dot(DISABLED|CHECKED).fill",
+                    ),
+                ),
+                Entry::default(),
+                Entry::default(),
+            ),
+            (true, true) => (
+                entry(
+                    none,
+                    off,
+                    (
+                        "radio.indicator(DISABLED|CHECKED).fill",
+                        "radio.dot(DISABLED|CHECKED).fill",
+                    ),
+                ),
+                Entry::default(),
+                Entry::default(),
+            ),
+            (false, false) => (
+                entry(
+                    none,
+                    none,
+                    ("radio.indicator(NONE).fill", "radio.dot(CHECKED).fill"),
+                ),
+                entry(
+                    hover,
+                    hover,
+                    (
+                        "radio.indicator(HOVER).fill",
+                        "radio.dot(HOVER|CHECKED).fill",
+                    ),
+                ),
+                entry(
+                    press,
+                    press,
+                    (
+                        "radio.indicator(PRESSED).fill",
+                        "radio.dot(PRESSED|CHECKED).fill",
+                    ),
+                ),
+            ),
+            (false, true) => (
+                entry(
+                    none,
+                    none,
+                    ("radio.indicator(CHECKED).fill", "radio.dot(CHECKED).fill"),
+                ),
+                entry(
+                    hover,
+                    hover,
+                    (
+                        "radio.indicator(HOVER|CHECKED).fill",
+                        "radio.dot(HOVER|CHECKED).fill",
+                    ),
+                ),
+                entry(
+                    press,
+                    press,
+                    (
+                        "radio.indicator(PRESSED|CHECKED).fill",
+                        "radio.dot(PRESSED|CHECKED).fill",
+                    ),
+                ),
+            ),
+        };
+        let label_at = radio.label(StyleQuery::new(base).asking(off));
+        let label = (!disabled
+            || radio.label(off).from_state.contains(TextStated::COLOR)
+            || label_at.from_state.contains(TextStated::COLOR))
+        .then(|| text_color_of(&label_at))
+        .flatten();
+        Self {
+            rest,
+            hovered,
+            pressed,
+            label,
+            disabled_opacity: radio.disabled_opacity,
+        }
+    }
+
+    /// Lay the radio over the scope's entries, before it is faded. `stock` is egui's own entries
+    /// for the scheme. A translucent stroke laid inside or across the circle's edge is
+    /// composited over the entry's fill, as the connector hands egui the check box's
+    /// (`native-theme-egui`, `style::line`): egui ends the circle's fill where its stroke
+    /// begins.
+    fn lay(&self, visuals: &mut egui::Visuals, stock: &egui::style::Widgets) {
+        if let Some(label) = self.label {
+            visuals.override_text_color = Some(label);
+        }
+        if let Some(opacity) = self.disabled_opacity.filter(|o| o.is_finite()) {
+            visuals.disabled_alpha = unit_interval(opacity);
+        }
+        let Self {
+            rest,
+            hovered,
+            pressed,
+            ..
+        } = *self;
+        let w = &mut visuals.widgets;
+        let stock_rest = &stock.inactive;
+        for (entry, state, own) in [
+            (&mut w.inactive, rest, stock_rest),
+            (&mut w.hovered, hovered, &stock.hovered),
+            (&mut w.active, pressed, &stock.active),
+        ] {
+            if let Some(fill) = pick(state.fill, rest.fill, stock_rest.bg_fill, own.bg_fill) {
+                entry.bg_fill = fill;
+            }
+            if let Some(width) = pick(
+                state.stroke_width,
+                rest.stroke_width,
+                stock_rest.bg_stroke.width,
+                own.bg_stroke.width,
+            ) {
+                entry.bg_stroke.width = width;
+            }
+            let own_line =
+                |e: &egui::style::WidgetVisuals| (e.bg_stroke.color, StrokeAlign::Outside);
+            if let Some((colour, align)) = pick(
+                state.stroke,
+                rest.stroke,
+                own_line(stock_rest),
+                own_line(own),
+            ) {
+                entry.bg_stroke.color = laid_over(colour, align, entry.bg_fill);
+            }
+            if let Some(dot) = pick(
+                state.dot,
+                rest.dot,
+                stock_rest.fg_stroke.color,
+                own.fg_stroke.color,
+            ) {
+                entry.fg_stroke.color = dot;
+            }
+        }
+    }
+}
+
+/// One property of a state's entry: as `stated`; where it is unstated and the radio states it
+/// at rest (`at_rest`), egui's own value for the state where egui's own entries change it
+/// between rest (`own_rest`) and that state (`own_state`), else the radio's at rest; `None`,
+/// the scope's, where the radio states neither.
+fn pick<T: PartialEq>(
+    stated: Option<T>,
+    at_rest: Option<T>,
+    own_rest: T,
+    own_state: T,
+) -> Option<T> {
+    stated.or_else(|| {
+        at_rest.map(|at_rest| {
+            if own_state == own_rest {
+                at_rest
+            } else {
+                own_state
+            }
+        })
+    })
+}
+
+/// A stroke's colour as egui is handed it over `fill`: as stated where it is opaque or lies
+/// outside the edge; else composited over `fill` (inside) or over `fill` at half its alpha
+/// (centred on the edge), as the connector's `Line::over` hands egui a part's stroke.
+fn laid_over(colour: egui::Color32, align: StrokeAlign, fill: egui::Color32) -> egui::Color32 {
+    if colour.a() == u8::MAX {
+        return colour;
+    }
+    match align {
+        StrokeAlign::Inside => fill.blend(colour),
+        StrokeAlign::Center => fill.gamma_multiply(0.5).blend(colour),
+        _ => colour,
+    }
+}
+
 /// The colours a radio button reads of a theme, every colour read in one place, so the crate's
 /// colour-leaf coverage test sees the widget's reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
-    /// `defaults.background_color`: the colour faded over where no backdrop is given.
-    pub(crate) background: Rgba,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
+    /// egui's own fade of a disabled widget.
+    pub(crate) background: Option<egui::Color32>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            background: t.defaults.background_color,
+            background: Some(to_color32(t.defaults.background_color)),
+        }
+    }
+
+    /// The colours of a radio button of a 0.8.0 theme: the window's background
+    /// (`colors.window.background`), where stated.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self {
+            background: next::window_background(r),
+        }
+    }
+}
+
+/// The sizes a radio button reads of a theme, each `None` where egui's own stays.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Geometry {
+    /// `checkbox.radio_dot_diameter`: the dot.
+    pub(crate) dot: Option<f32>,
+    /// `checkbox.radio_indicator_width`: the circle.
+    pub(crate) width: Option<f32>,
+    /// The space between the circle and the label; `None`, the cell's `icon_spacing`.
+    pub(crate) label_gap: Option<f32>,
+}
+
+impl Geometry {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let checkbox = &t.checkbox;
+        Self {
+            dot: checkbox.radio_dot_diameter.and_then(scope::length),
+            width: checkbox.radio_indicator_width.and_then(scope::length),
+            label_gap: None,
+        }
+    }
+
+    /// The sizes of a radio button of a 0.8.0 theme: `radio.dot` and `radio.indicator`'s
+    /// minimum widths at rest and `radio.label_gap`, each where stated and finite.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let [dot, _] = r.radio.dot(WidgetState::NONE).min_size;
+        let [width, _] = r.radio.indicator(WidgetState::NONE).min_size;
+        Self {
+            dot: dot.and_then(scope::length),
+            width: width.and_then(scope::length),
+            label_gap: scope::length(r.radio.label_gap),
         }
     }
 }
@@ -135,12 +474,34 @@ impl egui::Widget for RadioButton {
         let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
             return ui.add_enabled(enabled, egui::RadioButton::new(checked, text));
         };
-        let resolved = atlas.resolved_for(ui.ctx().theme());
-        let checkbox = &resolved.checkbox;
-        let dot = checkbox.radio_dot_diameter.and_then(scope::length);
-        let width = checkbox.radio_indicator_width.and_then(scope::length);
-        let ground = backdrop.unwrap_or_else(|| to_color32(Look::of(resolved).background));
-        scope::open_faded(ui, Role::Checkbox, checked, enabled, Some(ground), |ui| {
+        let theme = ui.ctx().theme();
+        let read = match atlas.resolved_for(theme) {
+            Some(t) => Some((Look::of(t), Geometry::of(t), None)),
+            None => atlas
+                .next_resolved_for(theme)
+                .map(|r| (Look::next_of(r), Geometry::next_of(r), Some(r))),
+        };
+        let Some((look, geometry, next)) = read else {
+            return scope::open_faded(ui, Role::Checkbox, checked, enabled, None, |ui| {
+                ui.add(egui::RadioButton::new(checked, text))
+            });
+        };
+        let Geometry {
+            dot,
+            width,
+            label_gap,
+        } = geometry;
+        let ground = backdrop.or(look.background);
+        let over = |ui: &mut egui::Ui, disabled: bool| {
+            if let Some(r) = next {
+                let stock = ui.ctx().theme().default_visuals().widgets;
+                Over::next_of(r, checked, disabled).lay(ui.visuals_mut(), &stock);
+            }
+        };
+        scope::open_faded_with(ui, Role::Checkbox, checked, enabled, ground, over, |ui| {
+            if let Some(gap) = label_gap {
+                ui.spacing_mut().icon_spacing = gap;
+            }
             if let Some(width) = width {
                 ui.spacing_mut().icon_width = clamp_length(width);
             }

@@ -127,7 +127,15 @@ pub fn switch_color(n: Native<'_>) -> Hsla {
 /// ```
 #[must_use]
 pub fn bordered_button(n: Native<'_>, cx: &App) -> Option<ButtonCustomVariant> {
-    hover_border(n).map(|c| {
+    bordered_button_from(hover_border(n), cx)
+}
+
+/// [`bordered_button`] of the hover border `hover_border`.
+pub(crate) fn bordered_button_from(
+    hover_border: Option<Hsla>,
+    cx: &App,
+) -> Option<ButtonCustomVariant> {
+    hover_border.map(|c| {
         let theme = cx.theme();
         ButtonCustomVariant::new(cx)
             .color(c)
@@ -212,11 +220,19 @@ pub(crate) fn toolbar_button_states(n: Native<'_>) -> ToolbarButtonStates {
 /// (`with_variant`, 0.10.0 `button/button.rs:603-606`).
 #[must_use]
 pub fn toolbar_button(cx: &App) -> ButtonCustomVariant {
+    toolbar_button_from(cx.native().map(toolbar_button_states), cx)
+}
+
+/// [`toolbar_button`] of the toolbar button states `states`, `None` where no
+/// native theme is installed.
+pub(crate) fn toolbar_button_from(
+    states: Option<ToolbarButtonStates>,
+    cx: &App,
+) -> ButtonCustomVariant {
     let variant = ghost_button(cx);
-    let Some(n) = cx.native() else {
+    let Some(states) = states else {
         return variant;
     };
-    let states = toolbar_button_states(n);
     let variant = match states.hover {
         Some(hover) => variant.hover(hover),
         None => variant,
@@ -321,7 +337,15 @@ pub(crate) fn default_button_states(n: Native<'_>) -> Option<DefaultButtonStates
 /// so that one stays the primary button.
 #[must_use]
 pub fn default_button(n: Native<'_>, cx: &App) -> Option<ButtonCustomVariant> {
-    default_button_states(n).map(|s| {
+    default_button_from(default_button_states(n), cx)
+}
+
+/// [`default_button`] of the default button states `states`.
+pub(crate) fn default_button_from(
+    states: Option<DefaultButtonStates>,
+    cx: &App,
+) -> Option<ButtonCustomVariant> {
+    states.map(|s| {
         ButtonCustomVariant::new(cx)
             .color(s.hover_frame)
             .foreground(s.foreground)

@@ -82,11 +82,12 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
 /// - `lfCaptionFont` -- title bar font
 /// - `lfMenuFont` -- menu item font
 /// - `lfStatusFont` -- status bar and tooltip font
-struct AllFonts {
-    msg: FontSpec,
-    caption: FontSpec,
-    menu: FontSpec,
-    status: FontSpec,
+#[derive(Clone, Debug)]
+pub(crate) struct AllFonts {
+    pub(crate) msg: FontSpec,
+    pub(crate) caption: FontSpec,
+    pub(crate) menu: FontSpec,
+    pub(crate) status: FontSpec,
 }
 
 /// The GetSysColor colours WinUI 3's HighContrast dictionaries draw with,
@@ -94,24 +95,61 @@ struct AllFonts {
 /// `SystemColorWindowColor`, see `apply_sys_colors`).
 ///
 /// COLORREF format: 0x00BBGGRR (blue in high byte, red in low byte).
-struct SysColors {
-    window_bg: crate::Rgba,
-    window_text: crate::Rgba,
-    btn_face: crate::Rgba,
-    btn_text: crate::Rgba,
-    highlight: crate::Rgba,
-    highlight_text: crate::Rgba,
-    hotlight: crate::Rgba,
-    gray_text: crate::Rgba,
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct SysColors {
+    pub(crate) window_bg: crate::Rgba,
+    pub(crate) window_text: crate::Rgba,
+    pub(crate) btn_face: crate::Rgba,
+    pub(crate) btn_text: crate::Rgba,
+    pub(crate) highlight: crate::Rgba,
+    pub(crate) highlight_text: crate::Rgba,
+    pub(crate) hotlight: crate::Rgba,
+    pub(crate) gray_text: crate::Rgba,
 }
 
 /// Accessibility data from UISettings and SystemParametersInfoW.
-struct AccessibilityData {
-    text_scaling_factor: Option<f32>,
-    high_contrast: Option<bool>,
-    reduce_motion: Option<bool>,
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct AccessibilityData {
+    pub(crate) text_scaling_factor: Option<f32>,
+    pub(crate) high_contrast: Option<bool>,
+    pub(crate) reduce_motion: Option<bool>,
     /// `UISettings.AdvancedEffectsEnabled`: the *Transparency effects* setting.
-    advanced_effects_enabled: Option<bool>,
+    pub(crate) advanced_effects_enabled: Option<bool>,
+}
+
+/// The scrollbar and border metrics, in logical pixels (see
+/// `logical_system_metric`): `SM_CXVSCROLL`, `SM_CYVTHUMB` and `SM_CXBORDER`.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct WidgetSizing {
+    pub(crate) scrollbar_width: f32,
+    pub(crate) min_thumb_length: f32,
+    pub(crate) border_width: f32,
+}
+
+/// Everything the reader reads, each as read: what [`reader_result`] builds
+/// the 0.7.2 reader's result from, and the 0.8.0 reader its snapshot
+/// (`next::reader::windows`).
+#[derive(Clone, Debug)]
+pub(crate) struct WindowsSettings {
+    /// `UIColorType::Accent`.
+    pub(crate) accent: crate::Rgba,
+    /// `UIColorType::Foreground`, which tells light from dark ([`is_dark_mode`]).
+    pub(crate) foreground: crate::Rgba,
+    /// `[AccentDark1, AccentDark2, AccentDark3, AccentLight1, AccentLight2,
+    /// AccentLight3]`, each `None` where its read failed.
+    pub(crate) accent_shades: [Option<crate::Rgba>; 6],
+    /// The four `NONCLIENTMETRICSW` fonts.
+    pub(crate) fonts: AllFonts,
+    /// The scrollbar and border metrics.
+    pub(crate) sizing: WidgetSizing,
+    /// `SM_CXSMICON` and `SM_CXICON`.
+    pub(crate) icon_sizes: Option<(f32, f32)>,
+    /// The accessibility settings.
+    pub(crate) accessibility: Option<AccessibilityData>,
+    /// The high-contrast colours, read only under high contrast.
+    pub(crate) sys_colors: Option<SysColors>,
+    /// What `GetCaretBlinkTime` returned ([`apply_caret_blink_time`]).
+    pub(crate) caret_blink_time: u32,
 }
 
 /// Convert a `windows::UI::Color` to our `Rgba` type.
@@ -252,19 +290,30 @@ fn logical_system_metric(index: SYSTEM_METRICS_INDEX) -> f32 {
 /// `SM_CXFOCUSBORDER` is 1, and WinUI 3 draws a 2 px ring, which the preset
 /// states.
 #[cfg(all(target_os = "windows", feature = "windows"))]
-fn read_widget_sizing(variant: &mut crate::ThemeMode) {
-    variant.scrollbar.groove_width = Some(logical_system_metric(SM_CXVSCROLL));
-    variant.scrollbar.min_thumb_length = Some(logical_system_metric(SM_CYVTHUMB));
-    variant.defaults.border.line_width = Some(logical_system_metric(SM_CXBORDER));
+fn read_widget_sizing() -> WidgetSizing {
+    WidgetSizing {
+        scrollbar_width: logical_system_metric(SM_CXVSCROLL),
+        min_thumb_length: logical_system_metric(SM_CYVTHUMB),
+        border_width: logical_system_metric(SM_CXBORDER),
+    }
 }
 
 /// The scrollbar and border metrics at 96 DPI (non-Windows testable version).
 #[cfg(not(all(target_os = "windows", feature = "windows")))]
-fn read_widget_sizing(variant: &mut crate::ThemeMode) {
-    variant.scrollbar.groove_width = Some(17.0);
-    // SM_CYVTHUMB at 96 DPI on the OS probe's three Windows images (platform-facts.md:386)
-    variant.scrollbar.min_thumb_length = Some(17.0);
-    variant.defaults.border.line_width = Some(1.0); // SM_CXBORDER default, platform-facts.md:382
+fn read_widget_sizing() -> WidgetSizing {
+    WidgetSizing {
+        scrollbar_width: 17.0,
+        // SM_CYVTHUMB at 96 DPI on the OS probe's three Windows images (platform-facts.md:386)
+        min_thumb_length: 17.0,
+        border_width: 1.0, // SM_CXBORDER default, platform-facts.md:382
+    }
+}
+
+/// Write the scrollbar and border metrics `sizing` into `variant`.
+fn apply_widget_sizing(variant: &mut crate::ThemeMode, sizing: &WidgetSizing) {
+    variant.scrollbar.groove_width = Some(sizing.scrollbar_width);
+    variant.scrollbar.min_thumb_length = Some(sizing.min_thumb_length);
+    variant.defaults.border.line_width = Some(sizing.border_width);
 }
 
 /// Convert a Win32 COLORREF (0x00BBGGRR) to Rgba.
@@ -520,14 +569,9 @@ fn read_icon_sizes() -> (f32, f32) {
     )
 }
 
-/// Testable core: given the accent and its shades, the foreground, fonts,
-/// system colours and sizing data, build a `Theme` with a sparse `ThemeMode`.
-///
-/// Determines light/dark variant based on foreground luminance, then populates
-/// the appropriate variant with the accent colours, per-widget fonts and
-/// sizing, and, under high contrast only, the system colours
-/// (`apply_sys_colors`). Only one variant is ever populated (matching KDE/GNOME
-/// reader pattern).
+/// [`build_theme_from`] on these settings, with the scrollbar and border
+/// metrics [`read_widget_sizing`] gives and no caret blink time.
+#[cfg(test)]
 fn build_theme(
     accent: crate::Rgba,
     fg: crate::Rgba,
@@ -537,12 +581,47 @@ fn build_theme(
     icon_sizes: Option<(f32, f32)>,
     accessibility: Option<&AccessibilityData>,
 ) -> crate::ReaderResult {
-    let dark = is_dark_mode(&fg);
+    build_theme_from(&WindowsSettings {
+        accent,
+        foreground: fg,
+        accent_shades,
+        fonts,
+        sizing: read_widget_sizing(),
+        icon_sizes,
+        accessibility: accessibility.copied(),
+        sys_colors: sys_colors.copied(),
+        caret_blink_time: CARET_BLINK_FAILED,
+    })
+}
+
+/// The 0.7.2 reader's result from the settings it read: [`build_theme_from`]
+/// with the caret's blink time applied ([`apply_caret_blink_to_reader`]).
+pub(crate) fn reader_result(settings: &WindowsSettings) -> crate::ReaderResult {
+    let mut result = build_theme_from(settings);
+    apply_caret_blink_to_reader(&mut result, settings.caret_blink_time);
+    result
+}
+
+/// Testable core: given the accent and its shades, the foreground, fonts,
+/// system colours and sizing data, build a `Theme` with a sparse `ThemeMode`.
+///
+/// Determines light/dark variant based on foreground luminance, then populates
+/// the appropriate variant with the accent colours, per-widget fonts and
+/// sizing, and, under high contrast only, the system colours
+/// (`apply_sys_colors`). Only one variant is ever populated (matching KDE/GNOME
+/// reader pattern).
+fn build_theme_from(settings: &WindowsSettings) -> crate::ReaderResult {
+    let accent = settings.accent;
+    let fonts = settings.fonts.clone();
+    let sys_colors = settings.sys_colors.as_ref();
+    let icon_sizes = settings.icon_sizes;
+    let accessibility = settings.accessibility.as_ref();
+    let dark = is_dark_mode(&settings.foreground);
 
     // `accent_shades` is [Dark1, Dark2, Dark3, Light1, Light2, Light3]; WinUI 3's
     // SystemAccentColor* resources are those UISettings shades
     // (SystemThemingInterop.cpp:262-291, microsoft-ui-xaml 8463f45).
-    let [dark1, dark2, dark3, _, light2, light3] = accent_shades;
+    let [dark1, dark2, dark3, _, light2, light3] = settings.accent_shades;
     let high_contrast = accessibility.and_then(|a| a.high_contrast) == Some(true);
 
     let mut variant = crate::ThemeMode::default();
@@ -602,7 +681,7 @@ fn build_theme(
     variant.status_bar.font = Some(fonts.status);
 
     // --- Widget sizing ---
-    read_widget_sizing(&mut variant);
+    apply_widget_sizing(&mut variant, &settings.sizing);
 
     // --- The high-contrast colours (WIN-03); outside high contrast the
     // GetSysColor indices are classic Win32 values WinUI 3 does not draw ---
@@ -654,12 +733,12 @@ fn build_theme(
 
 /// What `GetCaretBlinkTime` returns where it fails: 0
 /// (<https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcaretblinktime>).
-const CARET_BLINK_FAILED: u32 = 0;
+pub(crate) const CARET_BLINK_FAILED: u32 = 0;
 
 /// What `GetCaretBlinkTime` returns where the caret does not blink: Win32's
 /// `INFINITE`, 4294967295
 /// (<https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcaretblinktime>).
-const CARET_BLINK_NONE: u32 = 4_294_967_295;
+pub(crate) const CARET_BLINK_NONE: u32 = 4_294_967_295;
 
 /// Map the caret blink `time` `GetCaretBlinkTime` returned onto `input`:
 /// [`CARET_BLINK_FAILED`] states nothing, and the preset's blink applies;
@@ -669,7 +748,7 @@ const CARET_BLINK_NONE: u32 = 4_294_967_295;
 /// 2.5.1 `src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:55-89`). No
 /// time-out is written. The watcher is not told of a change of the blink
 /// time: it shows at the next read.
-fn apply_caret_blink_time(input: &mut crate::model::InputTheme, time: u32) {
+pub(crate) fn apply_caret_blink_time(input: &mut crate::model::InputTheme, time: u32) {
     match time {
         CARET_BLINK_FAILED => {}
         CARET_BLINK_NONE => input.caret_blink_off = Some(0),
@@ -681,7 +760,7 @@ fn apply_caret_blink_time(input: &mut crate::model::InputTheme, time: u32) {
 }
 
 /// Apply the caret blink `time` `GetCaretBlinkTime` returned to the variant
-/// [`build_theme`] filled in `result`, by [`apply_caret_blink_time`]'s
+/// `build_theme` filled in `result`, by [`apply_caret_blink_time`]'s
 /// mapping (microsoft-ui-xaml 2.5.1
 /// `src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:55-89`), and to both
 /// variants of a reader output that holds two, the blink being one setting
@@ -727,6 +806,17 @@ impl crate::reader::ThemeReader for WindowsReader {
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 fn read_windows() -> crate::Result<crate::ReaderResult> {
+    read_windows_settings().map(|settings| reader_result(&settings))
+}
+
+/// Read every setting the reader reads ([`WindowsSettings`]): what
+/// [`read_windows`] builds its result from, and the 0.8.0 reader its
+/// snapshot (`next::reader::windows::read`).
+///
+/// Returns `Error::ReaderFailed` if UISettings cannot be created, or the
+/// accent or the foreground cannot be read.
+#[cfg(all(target_os = "windows", feature = "windows"))]
+pub(crate) fn read_windows_settings() -> crate::Result<WindowsSettings> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: crate::error::reader_names::WINDOWS,
         source: format!("UISettings unavailable: {e}").into(),
@@ -753,17 +843,17 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
     let accessibility = read_accessibility(&settings);
     let sys_colors = (accessibility.high_contrast == Some(true)).then(read_sys_colors);
 
-    let mut result = build_theme(
+    Ok(WindowsSettings {
         accent,
-        fg,
+        foreground: fg,
         accent_shades,
         fonts,
-        sys_colors.as_ref(),
-        Some((small, large)),
-        Some(&accessibility),
-    );
-    apply_caret_blink_to_reader(&mut result, read_caret_blink_time());
-    Ok(result)
+        sizing: read_widget_sizing(),
+        icon_sizes: Some((small, large)),
+        accessibility: Some(accessibility),
+        sys_colors,
+        caret_blink_time: read_caret_blink_time(),
+    })
 }
 
 /// Read the caret's blink time, in milliseconds, with `GetCaretBlinkTime`:
@@ -1545,7 +1635,7 @@ mod tests {
         };
 
         let mut variant = crate::ThemeMode::default();
-        read_widget_sizing(&mut variant);
+        apply_widget_sizing(&mut variant, &read_widget_sizing());
         assert_eq!(variant.scrollbar.groove_width, Some(at_96(SM_CXVSCROLL)));
         assert_eq!(variant.scrollbar.min_thumb_length, Some(at_96(SM_CYVTHUMB)));
         assert_eq!(variant.defaults.border.line_width, Some(at_96(SM_CXBORDER)));

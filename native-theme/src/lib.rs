@@ -60,18 +60,18 @@
 //! resolved yourself into the toolkit's theme.
 //!
 //! Watch for OS theme changes (the `watch` feature). The callback runs on a
-//! background thread and carries no theme: clear the detection caches, which
-//! hold the dark mode, reduced motion, accessibility preferences, icon theme
-//! and, on Linux, desktop detected before (the OS read takes its icon theme
-//! and desktop from them), and read the OS theme again. Keep the subscription
-//! alive; dropping it stops watching:
+//! background thread and carries no theme: read the OS theme again. Before
+//! each call the watcher clears the detection caches, which hold the dark
+//! mode, reduced motion, accessibility preferences, icon theme and, on
+//! Linux, desktop detected before (the OS read takes its icon theme and
+//! desktop from them). Keep the subscription alive; dropping it stops
+//! watching:
 //!
 //! ```no_run
 //! # #[cfg(feature = "watch")]
 //! # {
 //! let _subscription = native_theme::watch::on_theme_change(|_event| {
-//!     // Tell the UI thread to call `detect::invalidate_caches()`, then
-//!     // `SystemTheme::from_system()` again.
+//!     // Tell the UI thread to call `SystemTheme::from_system()` again.
 //! })?;
 //! # }
 //! # Ok::<(), native_theme::Error>(())
@@ -279,6 +279,11 @@ pub mod kde;
 pub(crate) mod kde_metrics;
 /// Theme data model types, public through [`theme`].
 mod model;
+/// The 0.8.0 theme model, under construction beside this one.
+///
+/// Not a stable API: it changes with every step of the 0.8.0 work, and none
+/// of it is re-exported from the crate root.
+pub mod next;
 pub mod pipeline;
 pub mod presets;
 /// Internal `ThemeReader` trait (see module docs for Option A rationale).

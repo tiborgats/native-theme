@@ -1,2 +1,7 @@
 # Treat rendered SVG diagrams as binary so PR diffs focus on .dot sources.
 docs/assets/*.svg binary
+
+# Golden snapshots and vector tables are compared byte for byte: keep LF on every checkout (Windows runners convert text
+# files to CRLF otherwise).
+native-theme/tests/snapshots/** text eol=lf
+native-theme/tests/vectors/** text eol=lf

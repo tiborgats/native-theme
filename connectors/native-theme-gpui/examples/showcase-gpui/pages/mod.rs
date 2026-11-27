@@ -1,11 +1,10 @@
 //! One module per page of the content area.
 
-use gpui::{Div, Pixels, Rems, px, rems};
+use gpui::{App, Div, Pixels, Rems, px, rems};
 use gpui_component::v_flex;
-use native_theme::theme::LayoutTheme;
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
-use crate::support::{with_gap, with_padding};
+use crate::support::{next_metric, with_gap, with_padding};
 
 pub(crate) mod basic;
 mod buttons;
@@ -74,12 +73,12 @@ pub(crate) const SWATCH_SIZE: Pixels = crate::inspector::SWATCH_SIZE;
 /// §3.1). Each swatch's info says so.
 pub(crate) const SWATCH_LABEL_GAP: Rems = rems(0.5);
 
-/// A page's root, as the Basic page lays out its own: padded by
+/// A page's root, as the Basic page lays out its own: padded by the installed 0.8.0 theme's
 /// `layout.window_margin`, its sections `layout.section_gap` apart, and
 /// neither where the theme states none.
-pub(crate) fn page_root(layout: &LayoutTheme) -> Div {
+pub(crate) fn next_page_root(cx: &App) -> Div {
     with_gap(
-        with_padding(v_flex(), geometry::window_margin(layout)),
-        geometry::section_gap(layout),
+        with_padding(v_flex(), next_metric(cx, next::geometry::window_margin)),
+        next_metric(cx, next::geometry::section_gap),
     )
 }

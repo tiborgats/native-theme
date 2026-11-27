@@ -1,0 +1,381 @@
+[environment]
+mode = "hover"
+specimen_set = "base"
+quick = false
+simulator_runtime_version = "18.6"
+simulator_runtime_build = "22G86"
+simulator_device_name = "ios-host"
+simulator_model_identifier = "iPad8,5"
+system_version = "18.6"
+operating_system_version = "Version 18.6 (Build 22G86)"
+xcode = "1640"
+xcode_build = "16F6"
+sdk = "iphonesimulator18.5"
+sdk_build = "22F76"
+platform_version = "18.5"
+platform_build = "22F76"
+compiler = "com.apple.compilers.llvm.clang.1_0"
+styles = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent"]
+specimens = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent", "system", "info_light", "info_dark", "detail_disclosure", "contact_add", "close", "plain+role_destructive", "plain+role_cancel", "plain+role_primary", "gray+role_destructive", "gray+role_cancel", "gray+role_primary", "tinted+role_destructive", "tinted+role_cancel", "tinted+role_primary", "filled+role_destructive", "filled+role_cancel", "filled+role_primary", "borderless+role_destructive", "borderless+role_cancel", "borderless+role_primary", "bordered+role_destructive", "bordered+role_cancel", "bordered+role_primary", "bordered_tinted+role_destructive", "bordered_tinted+role_cancel", "bordered_tinted+role_primary", "bordered_prominent+role_destructive", "bordered_prominent+role_cancel", "bordered_prominent+role_primary", "gray+corner_style_fixed", "gray+corner_style_dynamic", "gray+corner_style_small", "gray+corner_style_medium", "gray+corner_style_large", "gray+corner_style_capsule", "filled+corner_style_fixed", "filled+corner_style_dynamic", "filled+corner_style_small", "filled+corner_style_medium", "filled+corner_style_large", "filled+corner_style_capsule", "plain+image_star", "plain+image_star+title_none", "plain+subtitle_Subtitle", "plain+activity_indicator_shown", "gray+image_star", "gray+image_star+title_none", "gray+subtitle_Subtitle", "gray+activity_indicator_shown", "tinted+image_star", "tinted+image_star+title_none", "tinted+subtitle_Subtitle", "tinted+activity_indicator_shown", "filled+image_star", "filled+image_star+title_none", "filled+subtitle_Subtitle", "filled+activity_indicator_shown", "borderless+image_star", "borderless+image_star+title_none", "borderless+subtitle_Subtitle", "borderless+activity_indicator_shown", "bordered+image_star", "bordered+image_star+title_none", "bordered+subtitle_Subtitle", "bordered+activity_indicator_shown", "bordered_tinted+image_star", "bordered_tinted+image_star+title_none", "bordered_tinted+subtitle_Subtitle", "bordered_tinted+activity_indicator_shown", "bordered_prominent+image_star", "bordered_prominent+image_star+title_none", "bordered_prominent+subtitle_Subtitle", "bordered_prominent+activity_indicator_shown", "filled+image_star+image_placement_trailing", "filled+image_star+image_placement_top", "filled+image_star+image_placement_bottom", "plain+menu_primary_action", "plain+menu_primary_action+indicator_popup", "plain+menu_primary_action+indicator_none", "plain+menu_on_hold", "gray+menu_primary_action", "gray+menu_primary_action+indicator_popup", "gray+menu_primary_action+indicator_none", "gray+menu_on_hold", "filled+menu_primary_action", "filled+menu_primary_action+indicator_popup", "filled+menu_primary_action+indicator_none", "filled+menu_on_hold", "bar_plain", "bar_done", "bar_system_done", "bar_system_cancel", "bar_system_close", "bar_system_action", "bar_system_add", "bar_image", "back_default", "back_generic", "back_minimal", "paste_control", "paste_control+icon_and_label", "paste_control+icon_only", "paste_control+label_only", "route_picker"]
+sizes = ["mini", "small", "medium", "large"]
+pages = 8
+title = "Button"
+render_draw = "drawHierarchy(in:afterScreenUpdates: true), UIGraphicsImageRenderer, standard range"
+render_screen = "xcrun simctl io screenshot, cropped to the cell"
+settle_seconds = 2.0
+press_settle_seconds = 1.5
+animations = "enabled"
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "system/hovered"
+press_number = 0
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "black/hovered"
+press_number = 1
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 3
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "system/hovered"
+press_number = 4
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 5
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "white/hovered"
+press_number = 6
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "system/hovered"
+press_number = 7
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "black/hovered"
+press_number = 8
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "white/hovered"
+press_number = 9
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 11
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "black/hovered"
+press_number = 12
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "white/hovered"
+press_number = 13
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "system/hovered"
+press_number = 14
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "black/hovered"
+press_number = 15
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "white/hovered"
+press_number = 16
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "system/hovered"
+press_number = 17
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "black/hovered"
+press_number = 18
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "white/hovered"
+press_number = 19
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "system/hovered"
+press_number = 20
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "black/hovered"
+press_number = 21
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 22
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "system/hovered"
+press_number = 23
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "black/hovered"
+press_number = 24
+wait_seconds = 30.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 26
+wait_seconds = 30.0
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "system/hovered"
+press_number = 0
+phase = "rest"
+samples = [{ t = 0.031708, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "black/hovered"
+press_number = 1
+phase = "rest"
+samples = [{ t = 0.000685, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 2
+phase = "rest"
+samples = [{ t = 0.020870, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 2
+phase = "press"
+samples = [{ t = 0.050655, highlighted = false, animations = [{ layer = "0.1.0.0", key = "opacity", class = "CABasicAnimation", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 0.000000, speed = 1.000000, timing_function = "default", key_path = "opacity", from = 0.9329882, to = "absent" }, { layer = "0.4", key = "_UIPointerContentEffect.sourceViewZPositionMatchProperty", class = "CAMatchPropertyAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.4", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.6", key = "ShadowAnimation", class = "CAAnimationGroup", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 0.000000, speed = 1.000000, timing_function = "absent", group = "\"[<CABasicAnimation:0x; toValue = 0.12; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOpacity>, <CABasicAnimation:0x; toValue = 3; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowRadius>, <CABasicAnimation:0x; toValue = NSSize: {0, 2.5}; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOffset>]\"" }], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.1.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.932988, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = ["opacity"] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.025810, 0.000000, 0.000000, 1.025810, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 55.000, 32.000], position_pt = [83.500, 16.000], animation_keys = ["_UIPointerContentEffect.sourceViewZPositionMatchProperty", "_UIPointerContentEffect.sourceViewMatchMove"] }, { layer = "0.6", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 61.000, 38.000], position_pt = [27.500, 16.000], animation_keys = ["ShadowAnimation"] }] }, { t = 0.087681, highlighted = false, animations = [{ layer = "0.1.0.0", key = "opacity", class = "CABasicAnimation", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 0.000000, speed = 1.000000, timing_function = "default", key_path = "opacity", from = 0.9329882, to = "absent" }, { layer = "0.4", key = "_UIPointerContentEffect.sourceViewZPositionMatchProperty", class = "CAMatchPropertyAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.4", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.6", key = "ShadowAnimation", class = "CAAnimationGroup", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 0.000000, speed = 1.000000, timing_function = "absent", group = "\"[<CABasicAnimation:0x; toValue = 0.12; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOpacity>, <CABasicAnimation:0x; toValue = 3; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowRadius>, <CABasicAnimation:0x; toValue = NSSize: {0, 2.5}; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOffset>]\"" }], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.1.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.932988, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = ["opacity"] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.025810, 0.000000, 0.000000, 1.025810, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 55.000, 32.000], position_pt = [83.500, 16.000], animation_keys = ["_UIPointerContentEffect.sourceViewZPositionMatchProperty", "_UIPointerContentEffect.sourceViewMatchMove"] }, { layer = "0.6", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 61.000, 38.000], position_pt = [27.500, 16.000], animation_keys = ["ShadowAnimation"] }] }, { t = 0.091062, highlighted = false, animations = [{ layer = "0.1.0.0", key = "opacity", class = "CABasicAnimation", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "default", key_path = "opacity", from = 0.9329882, to = "absent" }, { layer = "0.3", key = "ShadowAnimation", class = "CAAnimationGroup", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "absent", group = "\"[<CABasicAnimation:0x; toValue = 0.12; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOpacity>, <CABasicAnimation:0x; toValue = 3; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowRadius>, <CABasicAnimation:0x; toValue = NSSize: {0, 2.5}; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOffset>]\"" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewZPositionMatchProperty", class = "CAMatchPropertyAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.1.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.933086, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = ["opacity"] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 61.000, 38.000], position_pt = [27.500, 16.000], animation_keys = ["ShadowAnimation"] }, { layer = "0.5", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.036140, 0.000000, 0.000000, 1.036140, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 55.000, 32.000], position_pt = [83.500, 16.000], animation_keys = ["_UIPointerContentEffect.sourceViewZPositionMatchProperty", "_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.100644, highlighted = false, animations = [{ layer = "0.1.0.0", key = "opacity", class = "CABasicAnimation", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "default", key_path = "opacity", from = 0.9329882, to = "absent" }, { layer = "0.3", key = "ShadowAnimation", class = "CAAnimationGroup", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "absent", group = "\"[<CABasicAnimation:0x; toValue = 0.12; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOpacity>, <CABasicAnimation:0x; toValue = 3; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowRadius>, <CABasicAnimation:0x; toValue = NSSize: {0, 2.5}; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOffset>]\"" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewZPositionMatchProperty", class = "CAMatchPropertyAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.1.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.933901, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = ["opacity"] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 61.000, 38.000], position_pt = [27.500, 16.000], animation_keys = ["ShadowAnimation"] }, { layer = "0.5", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.036140, 0.000000, 0.000000, 1.036140, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 55.000, 32.000], position_pt = [83.500, 16.000], animation_keys = ["_UIPointerContentEffect.sourceViewZPositionMatchProperty", "_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.203853, highlighted = false, animations = [{ layer = "0.1.0.0", key = "opacity", class = "CABasicAnimation", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "default", key_path = "opacity", from = 0.9329882, to = "absent" }, { layer = "0.3", key = "ShadowAnimation", class = "CAAnimationGroup", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "absent", group = "\"[<CABasicAnimation:0x; toValue = 0.12; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOpacity>, <CABasicAnimation:0x; toValue = 3; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowRadius>, <CABasicAnimation:0x; toValue = NSSize: {0, 2.5}; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOffset>]\"" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewZPositionMatchProperty", class = "CAMatchPropertyAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.1.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.964270, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = ["opacity"] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 61.000, 38.000], position_pt = [27.500, 16.000], animation_keys = ["ShadowAnimation"] }, { layer = "0.5", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.021028, 0.000000, 0.000000, 1.021028, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 55.000, 32.000], position_pt = [83.500, 16.000], animation_keys = ["_UIPointerContentEffect.sourceViewZPositionMatchProperty", "_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.366885, highlighted = false, animations = [{ layer = "0.1.0.0", key = "opacity", class = "CABasicAnimation", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "default", key_path = "opacity", from = 0.9329882, to = "absent" }, { layer = "0.3", key = "ShadowAnimation", class = "CAAnimationGroup", duration_s = 0.410000, repeat_count = 0.000000, autoreverses = false, begin_time = 461.557607, speed = 1.000000, timing_function = "absent", group = "\"[<CABasicAnimation:0x; toValue = 0.12; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOpacity>, <CABasicAnimation:0x; toValue = 3; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowRadius>, <CABasicAnimation:0x; toValue = NSSize: {0, 2.5}; timingFunction = easeInEaseOut; duration = 0.41; keyPath = shadowOffset>]\"" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewZPositionMatchProperty", class = "CAMatchPropertyAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }, { layer = "0.5", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 461.482951, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.1.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.995236, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = ["opacity"] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 61.000, 38.000], position_pt = [27.500, 16.000], animation_keys = ["ShadowAnimation"] }, { layer = "0.5", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [0.998109, 0.000000, 0.000000, 0.998109, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 55.000, 32.000], position_pt = [83.500, 16.000], animation_keys = ["_UIPointerContentEffect.sourceViewZPositionMatchProperty", "_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.516883, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }, { t = 1.023218, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 3
+phase = "rest"
+samples = [{ t = 0.031315, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "system/hovered"
+press_number = 4
+phase = "rest"
+samples = [{ t = 0.017711, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 5
+phase = "rest"
+samples = [{ t = 0.038328, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "white/hovered"
+press_number = 6
+phase = "rest"
+samples = [{ t = 0.002154, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "system/hovered"
+press_number = 7
+phase = "rest"
+samples = [{ t = 0.034187, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "black/hovered"
+press_number = 8
+phase = "rest"
+samples = [{ t = 0.000406, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "white/hovered"
+press_number = 9
+phase = "rest"
+samples = [{ t = 0.042889, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 10
+phase = "rest"
+samples = [{ t = 0.004574, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 10
+phase = "press"
+samples = [{ t = 0.051725, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.290957, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.007975, 0.000000, 0.000000, 1.007975, 0.000000, -0.001994, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.054891, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.290957, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.007975, 0.000000, 0.000000, 1.007975, 0.000000, -0.001994, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.056446, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.290957, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.007975, 0.000000, 0.000000, 1.007975, 0.000000, -0.001994, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.101827, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.352083, speed = 1.000000, timing_function = "absent" }, { layer = "0.1.1.2", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.290957, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }, { layer = "0.1.1.2", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.012880, 0.000000, 0.000000, 1.012880, 0.000000, -0.003220, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.209426, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.352083, speed = 1.000000, timing_function = "absent" }, { layer = "0.1.1.2", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.290957, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }, { layer = "0.1.1.2", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.006765, 0.000000, 0.000000, 1.006765, 0.000000, -0.001691, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.363144, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.352083, speed = 1.000000, timing_function = "absent" }, { layer = "0.1.1.2", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.290957, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }, { layer = "0.1.1.2", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [0.999050, 0.000000, 0.000000, 0.999050, 0.000000, 0.000237, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.524460, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.352083, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }] }, { t = 1.023848, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.352083, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 11
+phase = "rest"
+samples = [{ t = 0.000934, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 703.352083, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "black/hovered"
+press_number = 12
+phase = "rest"
+samples = [{ t = 0.001320, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "white/hovered"
+press_number = 13
+phase = "rest"
+samples = [{ t = 0.000779, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "system/hovered"
+press_number = 14
+phase = "rest"
+samples = [{ t = 0.000371, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "black/hovered"
+press_number = 15
+phase = "rest"
+samples = [{ t = 0.000572, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "white/hovered"
+press_number = 16
+phase = "rest"
+samples = [{ t = 0.000690, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "system/hovered"
+press_number = 17
+phase = "rest"
+samples = [{ t = 0.000219, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "black/hovered"
+press_number = 18
+phase = "rest"
+samples = [{ t = 0.000935, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "white/hovered"
+press_number = 19
+phase = "rest"
+samples = [{ t = 0.074479, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "system/hovered"
+press_number = 20
+phase = "rest"
+samples = [{ t = 0.056560, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "black/hovered"
+press_number = 21
+phase = "rest"
+samples = [{ t = 0.000450, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 22
+phase = "rest"
+samples = [{ t = 0.000915, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "system/hovered"
+press_number = 23
+phase = "rest"
+samples = [{ t = 0.000693, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "black/hovered"
+press_number = 24
+phase = "rest"
+samples = [{ t = 0.001901, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 25
+phase = "rest"
+samples = [{ t = 0.002103, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 25
+phase = "press"
+samples = [{ t = 0.052090, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.391694, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.002017, 0.000000, 0.000000, 1.002017, 0.000000, -0.000504, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.055158, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.391694, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.002017, 0.000000, 0.000000, 1.002017, 0.000000, -0.000504, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.059756, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.391694, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.002017, 0.000000, 0.000000, 1.002017, 0.000000, -0.000504, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.103534, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.437969, speed = 1.000000, timing_function = "absent" }, { layer = "0.1.1.2", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.391694, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }, { layer = "0.1.1.2", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.022355, 0.000000, 0.000000, 1.022355, 0.000000, -0.005589, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.201291, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.437969, speed = 1.000000, timing_function = "absent" }, { layer = "0.1.1.2", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.391694, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }, { layer = "0.1.1.2", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.009548, 0.000000, 0.000000, 1.009548, 0.000000, -0.002387, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.362367, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.437969, speed = 1.000000, timing_function = "absent" }, { layer = "0.1.1.2", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.391694, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }, { layer = "0.1.1.2", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [0.999063, 0.000000, 0.000000, 0.999063, 0.000000, 0.000234, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.518042, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.437969, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }] }, { t = 1.047356, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.437969, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 26
+phase = "rest"
+samples = [{ t = 0.001749, highlighted = false, animations = [{ layer = "0.1.1.0", key = "samplingBackdropMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 1187.437969, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CABackdropLayer", delegate = "_UILumaTrackingBackdropView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 1.000, 1.000], position_pt = [0.500, 0.500], animation_keys = ["samplingBackdropMatchMove"] }] }]

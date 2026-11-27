@@ -38,20 +38,25 @@ pub(crate) fn show(
             "checkbox (checked)",
             |ui| ui.add(egui::Checkbox::new(&mut checked, "Checked")),
         );
-        // The mixed mark is painted as a checked box's is, so it takes the checked look.
+        // The mixed box: the unchecked box with what the theme states for the mixed state
+        // (`mixed_look`), not the checked look.
+        let mut notes = Vec::new();
         demo::scoped(
             reg,
             ui,
             Role::Checkbox,
-            RoleVariant::Selected,
+            normal,
             "checkbox (indeterminate)",
             |ui| {
+                notes = mixed_look(ui);
                 ui.add(
                     egui::Checkbox::new(&mut state.indeterminate, "Indeterminate")
                         .indeterminate(true),
                 )
             },
         );
+        reg.note_last("mixed state", MIXED_NOTE);
+        reg.notes_last("mixed state", &notes);
         // Unchecked and disabled, the `Disabled` cell; the Basic page draws a checked one in
         // `SelectedDisabled`.
         let mut disabled = false;
@@ -163,4 +168,32 @@ pub(crate) fn show(
             },
         );
     });
+}
+
+/// The *Not themeable* line of the mixed box: what it draws where the theme states nothing for
+/// the mixed state.
+pub(crate) const MIXED_NOTE: &str = "egui draws a mixed box as its unchecked one with a dash in \
+     the mark's stroke (egui 0.37.0 src/widgets/checkbox.rs:135-141); the fill, outline and mark \
+     the theme states for INDETERMINATE are laid over it per call (next::mixed_checkbox, \
+     pages::selection::mixed_look), each unstated one the unchecked box's, and under the pointer \
+     and pressed egui's own treatment of the hover or the press where the theme states none for \
+     HOVER or PRESSED by either query (the flag alone, or the combined state asking it)";
+
+/// Lay the installed 0.8.0 theme's mixed check box over the visuals of `ui`, the unchecked
+/// box's scope (`next::mixed_checkbox`, in the scheme egui draws), and return the notes on the
+/// values it wrote otherwise than stated; without a 0.8.0 theme, egui's own mixed box and no
+/// note.
+pub(crate) fn mixed_look(ui: &mut egui::Ui) -> Vec<native_theme_egui::Note> {
+    let scheme = ui.ctx().theme();
+    let mut visuals = ui.visuals().clone();
+    let notes = demo::next_value(ui, |r| {
+        native_theme_egui::next::mixed_checkbox(r, scheme, &mut visuals)
+    });
+    match notes {
+        Some(notes) => {
+            *ui.visuals_mut() = visuals;
+            notes
+        }
+        None => Vec::new(),
+    }
 }

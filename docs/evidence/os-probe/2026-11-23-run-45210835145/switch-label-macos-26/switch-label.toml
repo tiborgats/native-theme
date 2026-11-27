@@ -1,0 +1,273 @@
+[environment]
+os = "Version 26.7.2 (Build 25G332)"
+backing_scale = 1.000
+window_frame_pt = [200.000, 63.000, 320.000, 674.000]
+screen_frame_pt = [0.000, 0.000, 1024.000, 768.000]
+active = true
+key = true
+item_size_pt = [280.000, 40.000]
+[[colours]]
+appearance = "NSAppearanceNameAqua"
+label = "#000000d8"
+secondary_label = "#0000007f"
+tertiary_label = "#00000042"
+quaternary_label = "#00000019"
+control_text = "#000000d8"
+disabled_control_text = "#0000003f"
+window_background = "#ffffffff"
+[[colours]]
+appearance = "NSAppearanceNameDarkAqua"
+label = "#ffffffd8"
+secondary_label = "#ffffff8c"
+tertiary_label = "#ffffff3f"
+quaternary_label = "#ffffff19"
+control_text = "#ffffffd8"
+disabled_control_text = "#ffffff3f"
+window_background = "#1e1e1eff"
+[[item]]
+name = "toggle_off"
+frame_pt = [20.000, 52.000, 280.000, 40.000]
+fitting_size_pt = [95.000, 24.000]
+switch_frame_pt = [61.000, 60.000, 54.000, 24.000]
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<ModifiedContent<Toggle<Text>, ToggleStyleModifier<SwitchToggleStyle>>, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 52.000, 280.000, 40.000] },
+{ path = "0.0", class = "AppKitPlatformViewHost<PlatformViewRepresentableAdaptor<Switch>>", frame_pt = [61.000, 60.000, 54.000, 24.000] },
+{ path = "0.0.0", class = "PlatformSwitch", frame_pt = [61.000, 60.000, 54.000, 24.000], switch_state = 0, enabled = true },
+{ path = "0.0.0.0", class = "_NSCoreHostingView<AppKitSwitch>", frame_pt = [61.000, 60.000, 54.000, 24.000] },
+{ path = "0.0.0.0.0", class = "NSCorePlatformViewHost<PlatformViewRepresentableAdaptor<WindowPortal<_ViewModifier_Content<LiftPortalEffect>>>>", frame_pt = [63.000, 62.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0", class = "LiftPortalView", frame_pt = [63.000, 62.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0.0", class = "_NSCoreHostingView<_ViewModifier_Content<LiftPortalEffect>>", frame_pt = [63.000, 62.000, 32.000, 20.000] }
+]
+[[item]]
+name = "toggle_on"
+frame_pt = [20.000, 96.000, 280.000, 40.000]
+fitting_size_pt = [95.000, 24.000]
+switch_frame_pt = [61.000, 104.000, 54.000, 24.000]
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<ModifiedContent<Toggle<Text>, ToggleStyleModifier<SwitchToggleStyle>>, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 96.000, 280.000, 40.000] },
+{ path = "0.0", class = "AppKitPlatformViewHost<PlatformViewRepresentableAdaptor<Switch>>", frame_pt = [61.000, 104.000, 54.000, 24.000] },
+{ path = "0.0.0", class = "PlatformSwitch", frame_pt = [61.000, 104.000, 54.000, 24.000], switch_state = 1, enabled = true },
+{ path = "0.0.0.0", class = "_NSCoreHostingView<AppKitSwitch>", frame_pt = [61.000, 104.000, 54.000, 24.000] },
+{ path = "0.0.0.0.0", class = "NSCorePlatformViewHost<PlatformViewRepresentableAdaptor<WindowPortal<_ViewModifier_Content<LiftPortalEffect>>>>", frame_pt = [81.000, 106.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0", class = "LiftPortalView", frame_pt = [81.000, 106.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0.0", class = "_NSCoreHostingView<_ViewModifier_Content<LiftPortalEffect>>", frame_pt = [81.000, 106.000, 32.000, 20.000] }
+]
+[[item]]
+name = "toggle_off_disabled"
+frame_pt = [20.000, 140.000, 280.000, 40.000]
+fitting_size_pt = [95.000, 24.000]
+switch_frame_pt = [61.000, 148.000, 54.000, 24.000]
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<ModifiedContent<ModifiedContent<Toggle<Text>, ToggleStyleModifier<SwitchToggleStyle>>, _EnvironmentKeyTransformModifier<Bool>>, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 140.000, 280.000, 40.000] },
+{ path = "0.0", class = "AppKitPlatformViewHost<PlatformViewRepresentableAdaptor<Switch>>", frame_pt = [61.000, 148.000, 54.000, 24.000] },
+{ path = "0.0.0", class = "PlatformSwitch", frame_pt = [61.000, 148.000, 54.000, 24.000], switch_state = 0, enabled = false },
+{ path = "0.0.0.0", class = "_NSCoreHostingView<AppKitSwitch>", frame_pt = [61.000, 148.000, 54.000, 24.000] },
+{ path = "0.0.0.0.0", class = "NSCorePlatformViewHost<PlatformViewRepresentableAdaptor<WindowPortal<_ViewModifier_Content<LiftPortalEffect>>>>", frame_pt = [63.000, 150.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0", class = "LiftPortalView", frame_pt = [63.000, 150.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0.0", class = "_NSCoreHostingView<_ViewModifier_Content<LiftPortalEffect>>", frame_pt = [63.000, 150.000, 32.000, 20.000] }
+]
+[[item]]
+name = "toggle_on_disabled"
+frame_pt = [20.000, 184.000, 280.000, 40.000]
+fitting_size_pt = [95.000, 24.000]
+switch_frame_pt = [61.000, 192.000, 54.000, 24.000]
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<ModifiedContent<ModifiedContent<Toggle<Text>, ToggleStyleModifier<SwitchToggleStyle>>, _EnvironmentKeyTransformModifier<Bool>>, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 184.000, 280.000, 40.000] },
+{ path = "0.0", class = "AppKitPlatformViewHost<PlatformViewRepresentableAdaptor<Switch>>", frame_pt = [61.000, 192.000, 54.000, 24.000] },
+{ path = "0.0.0", class = "PlatformSwitch", frame_pt = [61.000, 192.000, 54.000, 24.000], switch_state = 1, enabled = false },
+{ path = "0.0.0.0", class = "_NSCoreHostingView<AppKitSwitch>", frame_pt = [61.000, 192.000, 54.000, 24.000] },
+{ path = "0.0.0.0.0", class = "NSCorePlatformViewHost<PlatformViewRepresentableAdaptor<WindowPortal<_ViewModifier_Content<LiftPortalEffect>>>>", frame_pt = [81.000, 194.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0", class = "LiftPortalView", frame_pt = [81.000, 194.000, 32.000, 20.000] },
+{ path = "0.0.0.0.0.0.0", class = "_NSCoreHostingView<_ViewModifier_Content<LiftPortalEffect>>", frame_pt = [81.000, 194.000, 32.000, 20.000] }
+]
+[[item]]
+name = "text_primary"
+frame_pt = [20.000, 228.000, 280.000, 40.000]
+fitting_size_pt = [33.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 228.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_secondary"
+frame_pt = [20.000, 272.000, 280.000, 40.000]
+fitting_size_pt = [33.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 272.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_tertiary"
+frame_pt = [20.000, 316.000, 280.000, 40.000]
+fitting_size_pt = [33.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 316.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_quaternary"
+frame_pt = [20.000, 360.000, 280.000, 40.000]
+fitting_size_pt = [33.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 360.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_size_11"
+frame_pt = [20.000, 404.000, 280.000, 40.000]
+fitting_size_pt = [29.000, 14.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 404.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_size_12"
+frame_pt = [20.000, 448.000, 280.000, 40.000]
+fitting_size_pt = [31.000, 15.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 448.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_size_13"
+frame_pt = [20.000, 492.000, 280.000, 40.000]
+fitting_size_pt = [33.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 492.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_size_14"
+frame_pt = [20.000, 536.000, 280.000, 40.000]
+fitting_size_pt = [36.000, 17.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 536.000, 280.000, 40.000] }
+]
+[[item]]
+name = "text_size_15"
+frame_pt = [20.000, 580.000, 280.000, 40.000]
+fitting_size_pt = [38.000, 19.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSHostingView<ModifiedContent<ModifiedContent<Text, _FixedSizeLayout>, _FlexFrameLayout>>", frame_pt = [20.000, 580.000, 280.000, 40.000] }
+]
+[[item]]
+name = "label_field"
+frame_pt = [20.000, 636.000, 37.000, 16.000]
+fitting_size_pt = [37.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSTextField", frame_pt = [20.000, 636.000, 37.000, 16.000], font_pt = 13.000, font = ".AppleSystemUIFont", text_color = "#000000d8" },
+{ path = "0.0", class = "NSTextFieldSimpleLabel", frame_pt = [20.000, 636.000, 37.000, 16.000] }
+]
+[[item]]
+name = "label_field_disabled"
+frame_pt = [20.000, 680.000, 37.000, 16.000]
+fitting_size_pt = [37.000, 16.000]
+switch_frame_pt = "absent"
+views = [
+{ path = "0", class = "NSTextField", frame_pt = [20.000, 680.000, 37.000, 16.000], font_pt = 13.000, font = ".AppleSystemUIFont", text_color = "#000000d8" },
+{ path = "0.0", class = "NSTextFieldSimpleLabel", frame_pt = [20.000, 680.000, 37.000, 16.000] }
+]
+[[capture]]
+appearance = "NSAppearanceNameAqua"
+state = "normal"
+target = "none"
+file = "NSAppearanceNameAqua/normal.png"
+mouse_global_pt = "parked"
+button_held = false
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameAqua"
+state = "hovered_toggle_off"
+target = "toggle_off"
+file = "NSAppearanceNameAqua/hovered_toggle_off.png"
+mouse_global_pt = [288.000, 103.000]
+button_held = false
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameAqua"
+state = "pressed_toggle_off"
+target = "toggle_off"
+file = "NSAppearanceNameAqua/pressed_toggle_off.png"
+mouse_global_pt = [288.000, 103.000]
+button_held = true
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameAqua"
+state = "hovered_toggle_on"
+target = "toggle_on"
+file = "NSAppearanceNameAqua/hovered_toggle_on.png"
+mouse_global_pt = [288.000, 147.000]
+button_held = false
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameAqua"
+state = "pressed_toggle_on"
+target = "toggle_on"
+file = "NSAppearanceNameAqua/pressed_toggle_on.png"
+mouse_global_pt = [288.000, 147.000]
+button_held = true
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameDarkAqua"
+state = "normal"
+target = "none"
+file = "NSAppearanceNameDarkAqua/normal.png"
+mouse_global_pt = "parked"
+button_held = false
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameDarkAqua"
+state = "hovered_toggle_off"
+target = "toggle_off"
+file = "NSAppearanceNameDarkAqua/hovered_toggle_off.png"
+mouse_global_pt = [288.000, 103.000]
+button_held = false
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameDarkAqua"
+state = "pressed_toggle_off"
+target = "toggle_off"
+file = "NSAppearanceNameDarkAqua/pressed_toggle_off.png"
+mouse_global_pt = [288.000, 103.000]
+button_held = true
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameDarkAqua"
+state = "hovered_toggle_on"
+target = "toggle_on"
+file = "NSAppearanceNameDarkAqua/hovered_toggle_on.png"
+mouse_global_pt = [288.000, 147.000]
+button_held = false
+active = true
+key = true
+
+[[capture]]
+appearance = "NSAppearanceNameDarkAqua"
+state = "pressed_toggle_on"
+target = "toggle_on"
+file = "NSAppearanceNameDarkAqua/pressed_toggle_on.png"
+mouse_global_pt = [288.000, 147.000]
+button_held = true
+active = true
+key = true
+notes = []
+failures = []

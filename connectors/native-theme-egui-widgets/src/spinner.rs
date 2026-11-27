@@ -9,14 +9,14 @@ use native_theme_egui::egui;
 use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::mutex::Mutex;
 use native_theme_egui::icons::{self, IconKey};
-use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::icons::IconSet;
 use native_theme_egui::native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, load_icon_indicator,
 };
-use native_theme_egui::native_theme::theme::IconSet;
+use native_theme_egui::native_theme::next::ResolvedTheme as NextResolvedTheme;
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
-use crate::scope;
+use crate::{next, scope};
 
 /// The painted arc's widest sweep, egui's own (`egui/src/widgets/spinner.rs:49`).
 const SWEEP_DEGREES: f64 = 240.0;
@@ -69,16 +69,35 @@ impl Spinner {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `spinner.fill_color`: the arc, and a Material or Lucide indicator's tint.
-    pub(crate) fill_color: Rgba,
-    /// `defaults.text_color`: a freedesktop indicator's `currentColor`.
-    pub(crate) text_color: Rgba,
+    pub(crate) fill_color: egui::Color32,
+    /// `defaults.text_color`: a freedesktop indicator's `currentColor`; `None`, egui's own
+    /// text colour.
+    pub(crate) text_color: Option<egui::Color32>,
+    /// `spinner.diameter`.
+    pub(crate) diameter: f32,
+    /// `spinner.stroke_width`: the arc's width.
+    pub(crate) stroke_width: f32,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            fill_color: t.spinner.fill_color,
-            text_color: t.defaults.text_color,
+            fill_color: to_color32(t.spinner.fill_color),
+            text_color: Some(to_color32(t.defaults.text_color)),
+            diameter: t.spinner.diameter,
+            stroke_width: t.spinner.stroke_width,
+        }
+    }
+
+    /// The look of a spinner of a 0.8.0 theme: `spinner.color`, `spinner.diameter`,
+    /// `spinner.stroke_width`, and the window's text (`colors.window.foreground`) where stated.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let s = &r.spinner;
+        Self {
+            fill_color: next::to_color32(s.color),
+            text_color: r.colors.window.foreground.map(next::to_color32),
+            diameter: s.diameter,
+            stroke_width: s.stroke_width,
         }
     }
 }
@@ -99,14 +118,15 @@ impl egui::Widget for Spinner {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let theme = ui.ctx().theme();
-            let t = atlas.resolved_for(theme);
-            let s = &t.spinner;
-            let look = Look::of(t);
+            let look = match atlas.resolved_for(theme) {
+                Some(t) => Look::of(t),
+                None => Look::next_of(atlas.next_resolved_for(theme)?),
+            };
             Some(Paint {
-                diameter: scope::length(s.diameter)?,
-                stroke_width: scope::length(s.stroke_width)?,
-                colour: to_color32(look.fill_color),
-                current_colour: to_color32(look.text_color),
+                diameter: scope::length(look.diameter)?,
+                stroke_width: scope::length(look.stroke_width)?,
+                colour: look.fill_color,
+                current_colour: look.text_color.unwrap_or_else(|| ui.visuals().text_color()),
                 set: atlas.icon_set(),
                 icon_theme: atlas.icon_theme(theme).map(str::to_string),
                 reduce_motion: atlas.accessibility().reduce_motion,

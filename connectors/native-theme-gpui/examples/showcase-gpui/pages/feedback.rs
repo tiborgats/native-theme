@@ -3,12 +3,12 @@
 use gpui::{App, Context, IntoElement, Keystroke, ParentElement, Styled, Window, prelude::*, px};
 use gpui_component::{IconName, h_flex, kbd::Kbd, v_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
-use crate::pages::page_root;
-use crate::support::with_gap;
+use crate::pages::next_page_root;
+use crate::support::{next_metric, with_gap};
 use crate::{
     FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
     FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, PROBE_NOTIFICATION, probe,
@@ -216,8 +216,8 @@ impl Showcase {
         let ui = &self.info_ui;
         let spinner_icons = self.spinner_icons();
         let marker_icon = self.sample_icon(IconName::CircleCheck);
-        let widget_gap = geometry::widget_gap(&self.layout);
-        page_root(&self.layout)
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(
                 ui,

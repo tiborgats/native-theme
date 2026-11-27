@@ -186,21 +186,30 @@ fn main() -> eframe::Result {
 }
 ```
 
-Or a bundled preset, with both its variants in one atlas. `is_dark` picks the
-`ResolvedTheme` returned beside the atlas; egui's own `set_theme` picks the
-scheme on screen. This recipe pins the scheme `is_dark` named. The atlas also
-carries the OS colour mode, so with `ThemePreference::System` the preset
-follows the OS instead, as `from_system`'s atlas does:
+Or a bundled preset with a bundled palette laid over it, in the 0.8.0 model
+(`native_theme::next`): the preset's geometry and fonts in the palette's
+colours. A palette locks both schemes to its own (`catppuccin-mocha` is dark),
+so both scheme slots resolve dark; each slot is resolved for an active and an
+inactive window, and `next::to_theme` builds one atlas of the four. That atlas
+carries no OS colour mode, so this recipe pins the scheme:
 
 ```rust,no_run
 use native_theme_egui::egui::{self, ThemePreference};
-use native_theme_egui::{AccessibilityPreferences, from_preset};
+use native_theme_egui::native_theme::next::{Palette, Preset, Theme, ThemeContext};
 
-fn install_preset(ctx: &egui::Context, is_dark: bool) -> native_theme_egui::Result<()> {
-    let prefs = AccessibilityPreferences::default();
-    let (atlas, _resolved) = from_preset("catppuccin-mocha", is_dark, &prefs)?;
-    atlas.install(ctx);
-    ctx.set_theme(if is_dark { ThemePreference::Dark } else { ThemePreference::Light });
+fn install_preset(ctx: &egui::Context) -> Result<(), Box<dyn std::error::Error>> {
+    let palette = Palette::from_name("catppuccin-mocha").ok_or("not a bundled palette")?;
+    let theme = Theme::preset(Preset::Material3).with_palette(palette);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|context| theme.resolve(&context));
+    native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)?
+        .install(ctx);
+    ctx.set_theme(ThemePreference::Dark);
     Ok(())
 }
 ```
@@ -304,9 +313,12 @@ column-header section where the theme states them (`None` otherwise), for a
 header the application paints, since egui_extras' header row has no hover. A
 leaf that needs no conversion is read from the `ResolvedTheme` itself
 (`ThemeAtlas::resolved_for`). A button in the toolbar
-role is a flat tool button: the role colours its hover and press and leaves its rest
-to the button. Make it flat with `Button::frame_when_inactive(false)`, or in a scope
-whose resting fill and border colour are transparent; both keep its size.
+role is a flat tool button: the role colours its hover and press, and at rest fills and
+rounds it as `toolbar.button(NONE)` states (macos-tahoe's capsule), leaving the rest to the
+button where the theme states none; its `RoleVariant::Disabled` cell fills a disabled one as
+a rule states `toolbar.button(DISABLED)`'s fill. Make it flat with
+`Button::frame_when_inactive(false)`, or in a scope whose resting fill and border colour are
+transparent; both keep its size, and both hide a stated rest fill.
 
 ## Fonts
 
@@ -511,8 +523,11 @@ fn play_pause_icon(ui: &mut egui::Ui) {
         return;
     };
     let scheme = ui.ctx().theme();
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
     let set = atlas.icon_set();
-    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let side = icon_size(theme, IconContext::Toolbar);
     let icon = AppIcon::PlayPause;
     let mut key = IconKey::name(icon.icon_name(set).unwrap_or("play-pause"), set)
         .size(side)
@@ -540,8 +555,11 @@ fn warning_icon(ui: &mut egui::Ui) {
         return;
     };
     let scheme = ui.ctx().theme();
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
     let role = IconRole::DialogWarning;
-    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let side = icon_size(theme, IconContext::Toolbar);
     let mut key = IconKey::role(role, atlas.icon_set())
         .size(side)
         .tint(ui.visuals().warn_fg_color);
@@ -585,7 +603,10 @@ fn spinner(ui: &mut egui::Ui, anim: &AnimatedIcon) {
         return;
     };
     let scheme = ui.ctx().theme();
-    let side = atlas.resolved_for(scheme).spinner.diameter;
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
+    let side = theme.spinner.diameter;
     let reduce_motion = atlas.accessibility().reduce_motion;
     // The text colour: a Material or Lucide frame is tinted it, and a
     // freedesktop frame's `currentColor` takes it where the frame sets no
@@ -684,6 +705,194 @@ radio button. Where the handle is pale, as Breeze's grey is (`kde-breeze`, #cbcd
 #46494b), an unscoped slider's rail all but disappears on the window (1.4:1 /
 1.7:1). A slider inside `Role::Slider` takes `slider.track_color`.
 
+### What the 0.8.0 model states that egui cannot draw
+
+The `next` module maps the 0.8.0 model (`native_theme::next`), which states
+more than 0.7.2 did: `next::to_theme` builds the same `ThemeAtlas` from it,
+and each crate-root accessor has a twin there. Where egui has a receiver,
+`next` wires the value through; where it has none, the value is dropped as
+listed here, and a value the theme leaves unstated is egui's own
+(docs/v0.8.0-spec.md §10, rule 0).
+
+- **The focus ring's kind.** The install plugin strokes one ring round
+  the focused widget's rect grown by the ring's offset, outward from that
+  line (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
+  `StrokeKind::Outside`, `egui-0.37.0/src/painter.rs`), in
+  `focus_ring.stroke`'s colour and width, shown as `focus_ring.trigger`
+  says; a second ring is drawn inward from the same line where the theme
+  states `inner_stroke` (a second `rect_stroke`, `StrokeKind::Inside`), as
+  the model places a ring (spec §2, `FocusIndicator`). The line's corners
+  are the widget's grown by the offset, or `focus_ring.corners` where the
+  theme states them; each ring's far edge is concentric. A `kind` of
+  `Fill` or `Underline` is no ring: `next::to_theme` returns
+  `Unmapped("focus_ring.kind")` for it; a second ring stated per side is
+  `Unmapped`, and so are concentric corners, which need the container's
+  radius. A ring stated per side is no ring, with no error and no note.
+- **A part's own focus ring.** Where the part a role's cell reads its fill
+  and stroke from states a ring of its own (`PartStyle.focus`, spec §2
+  `FocusIndicator`), the plugin strokes that ring in place of
+  `focus_ring` round a widget in the role's scope (`native_scope`,
+  `native_set_style`), on the same geometry, shown as its own `trigger`
+  says; where the part states none, no ring; where it states nothing, the
+  global ring. The part is asked at `FOCUS_VISIBLE` for a focus that
+  followed a key press, else at `FOCUSED`, a checked check box's
+  (`RoleVariant::Selected`) with `CHECKED`:
+
+  | Role | Part |
+  |---|---|
+  | `Button` | `button.body` |
+  | `Input` | `input.field` |
+  | `Checkbox` | `checkbox.indicator` |
+  | `Slider` | `slider.thumb` |
+  | `Tab` | `tab.tab` |
+  | `Switch` | `switch.track` |
+  | `ComboBox` | `combo_box.field` |
+  | `SegmentedControl` | `segmented_control.segment` |
+  | `Expander` | `expander.header` |
+  | `Menu` | `menu.item` |
+  | `List` | `list.row` |
+  | `Toolbar` | `toolbar.button` |
+  | `Sidebar` | `sidebar.item` |
+
+  A widget in no scope takes the base style's look, `button.body`'s, and
+  so `button.body`'s own ring. Every other role, and a scope
+  `native_set_style_with_ring` styled, takes the global ring. egui has no radio role: a `RadioButton` in a
+  `Role::Checkbox` scope takes `checkbox.indicator`'s ring, and
+  `radio.indicator`'s own is not drawn, reported as a `Note::Unmapped` at
+  `radio.indicator(FOCUSED).focus` or `radio.indicator(FOCUS_VISIBLE).focus`
+  where the theme states one. A part's ring egui cannot draw (a
+  fill, an underline, a stroke stated per side, concentric corners) is
+  none, reported as a `Note::Unmapped` at its home in `ThemeAtlas::notes`
+  (`button.body(FOCUSED).focus.kind`, ...).
+- **A stroke per side.** egui strokes a rect with one `Stroke`, one width
+  and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
+  `RectShape::stroke`). A part's stroke stated per side (`Stroke::Complex`)
+  whose four sides have one width and solid colours, at least three of them
+  the same colour, is drawn as a uniform stroke of that width and colour in
+  the stroke's alignment (`Stroke::prevailing`, docs/v0.8.0-spec.md §10,
+  rule 2): the fourth side's other colour, such as WinUI's elevation edge,
+  is not drawn. Every other per-side stroke (different widths, a side
+  painted as layers or not painted, two colours on two sides each) keeps
+  egui's own stroke, as if the theme stated none, and the part reads
+  (`next::stroke_color_of`, `next::stroke_width_of`) return `None`; the
+  atlas reports each such stroke it meets as a `Note::Unmapped` at its home
+  in `ThemeAtlas::notes`.
+- **Corners.** egui rounds a rect with four circular radii, each a whole
+  point up to 255 (`epaint-0.37.0/src/corner_radius.rs`, `CornerRadius`),
+  and the atlas rounds each part by one radius (`next::radius_of`). A
+  continuous corner (`CornerCurve::Continuous`, Apple's) is drawn as the
+  circular corner of the stated radius (docs/v0.8.0-spec.md §10, rule 2),
+  and Widget Info marks its value `(drawn circular)`; per-corner radii
+  that are one are drawn as that radius, and a pill as 255, which epaint
+  clamps to half the rect's shorter side (`epaint-0.37.0`
+  `src/rounded_rect.rs`, `RoundedRect::new`), so a part whose shorter side
+  passes 510 points is rounded by 255 only. Where the theme states a
+  part's radii per corner and they differ, or states them concentric with
+  a container, the part keeps egui's own radius, and the atlas (and
+  `next::text_area_frame`, for the multi-line field) reports it as a
+  `Note::Unmapped` at the corners' home. Per-corner radii that differ are
+  a limit of this connector, not of egui, whose `CornerRadius` holds one
+  radius per corner: the atlas carries one radius per part (one `f32`). A
+  concentric radius is the container's radius less an inset, which the
+  atlas does not know.
+- **Shadows beyond one outset layer.** egui's `Shadow` is one outset
+  shadow: an offset in whole points (`[i8; 2]`), a blur and a spread in
+  whole points (`u8`), and a colour (`epaint-0.37.0/src/shadow.rs`), one
+  per frame (`Frame::shadow`, `egui-0.37.0/src/containers/frame.rs`) and
+  one each for windows and popups (`Visuals::window_shadow`,
+  `popup_shadow`). The atlas draws the first outset layer a surface states
+  (docs/v0.8.0-spec.md §10, rule 2): the window frame's into
+  `window_shadow`, the menu panel's (else the popover panel's) into
+  `popup_shadow`, and each dialog's, popover's, tooltip's, card's and
+  panel's into its frame, its lengths rounded to whole points. An inset layer and every layer after the
+  first are not drawn: `Shadow` has no inset form and a frame takes one
+  shadow. A widget's own shadow (a button's, a field's) is not drawn:
+  egui's `WidgetVisuals` has no shadow (`egui-0.37.0/src/style.rs`).
+- **Gradients and layered fills.** egui fills a shape with one `Color32`
+  (`epaint-0.37.0/src/shapes/rect_shape.rs`, `RectShape::fill`). A fill the
+  theme states as layers (`Paint::Complex`, a gradient among them) is drawn
+  in the one colour the model gives in its place, its fallback colour
+  (docs/v0.8.0-spec.md §10, rule 2), and as egui's own fill where it gives
+  none, layers that are all gradients. The fill readers `next::fill_of` and
+  `next::state_fill_of` take the fill's home and return those layers as
+  `Unmapped` at it (rule 4), not as the `None` of a fill the theme leaves
+  unstated; the atlas reports each such fill its styles take as a
+  `Note::Unmapped` at its home in its notes, and the companion crate
+  `native-theme-egui-widgets` each one its widgets read
+  (`next_fills_unmapped`), egui's own drawn there.
+- **Where a translucent stroke lies.** egui ends a rect's fill at the
+  stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
+  `stroke_and_fill_path`), so a stroke the theme lays `Outside` the part is
+  drawn as stated. One it lays `Inside`, over the fill, is handed to egui
+  composited over the fill the state paints, which looks the same; one
+  `Center`ed on the edge is composited over that fill at half its alpha, so
+  the whole band is drawn in the band's mean colour where the platform shows
+  the fill under its inner half only (src/style/line.rs). An opaque stroke
+  is drawn exactly in every alignment. An application that hands a stroke
+  per call (`Button::stroke`) composites it the same way with
+  `next::stroke_color_over`.
+- **A checked toolbar button hovered or pressed.** egui fills and letters
+  a selected `Button` from `visuals.selection` in every state
+  (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`),
+  so no cell gives a checked tool button the hovered and pressed fills and
+  labels a theme states (`toolbar.button(HOVER|CHECKED)`,
+  `(PRESSED|CHECKED)`, macOS). `next::toolbar_button_checked` returns them
+  with the resting ones, each where the theme states it for `CHECKED`: a
+  rule for `CHECKED` states `toolbar.button(CHECKED)`'s fill (its label
+  `toolbar.button_label(CHECKED)`'s), or the state's own query asking
+  `CHECKED` has the value's bit (spec §2, `from_state`), for the
+  application to hand `Button::fill` and `RichText::color`, which override
+  every on-hover effect, in the state of the button's previous response
+  (`CheckedToolButton::at`); in a state where it does not, egui's own
+  selected look stays. Each value is read on its own: one stated as layers
+  that are all gradients is `Unmapped` at its home and leaves the others.
+  In a state whose value is `Unmapped`, hand egui the resting checked
+  value, because egui's selected look does not change with the state
+  (rule 0; the home is reported, rule 4).
+- **A tool button's icon colour.** egui's only per-state tint of a
+  button's image is the label's text colour
+  (`Button::image_tint_follows_text_color`, `egui-0.37.0`
+  `src/widgets/button.rs`; `src/theme/default_style.rs`, the `image_tint`
+  branch), and the theme states the icon's colour apart from the label's
+  (macos-monterey light: the label #606060, the icon #676767 at rest), so
+  no cell carries both. The application loads the icon in
+  `toolbar.button_icon(<state>).color` (`IconKey::tint`) where the theme
+  states it, in the state of the button's previous response; checked, in
+  `toolbar.button_icon(<state> | CHECKED).color` (the side-panel toggle
+  while open in `button.icon(CHECKED | <state>; variant=Flat).color`)
+  where stated, as the plain query answers it, a colour stated at rest
+  holding in every state no rule states one for, because egui has no
+  treatment of `CHECKED` for a button's image (a selected button changes
+  only its fills and text stroke, `src/theme/default_style.rs`); where the
+  theme states none, the icon keeps the colour it is loaded in.
+- **A flat button's narrower hovered or pressed outline.** egui lays a
+  button out at the inner margin `button_padding + expansion −
+  bg_stroke.width` of its state (`egui-0.37.0/src/theme/default_style.rs`,
+  `src/containers/frame.rs`), with one `button_padding` for every state,
+  and `expansion` grows the painted rect too, so egui has no per-state room
+  to keep a button's box when a state's outline is narrower than the
+  resting one. A flat button's hovered or pressed outline stated as no
+  width is drawn as a transparent one of the resting width, which keeps the
+  box; one stated between none and the resting width is drawn at its
+  stated width, and the button grows by the difference in that state
+  (src/style/variants.rs, `flat_cell`; docs/v0.8.0-spec.md §10, rule 4).
+  No bundled preset states such a width.
+- **A disabled primary button's own outline.** egui outlines every button
+  of a state from that state's `bg_stroke`, and a selected one only fills
+  and letters from `visuals.selection` (`egui-0.37.0`
+  `src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`), so the
+  disabled scope (`RoleVariant::Disabled` of `Role::Button`) draws the push
+  button's and the primary button's outline from one
+  `widgets.inactive.bg_stroke`, the push button's disabled outline where a
+  rule states it, else its resting one; only the fill and the text go
+  through `visuals.selection` (src/style/variants.rs, `disabled_cell`).
+  `button.body(DISABLED; variant=Primary).stroke` is not drawn apart:
+  windows-11 states no outline for the disabled primary button
+  (`AccentButtonBorderBrushDisabled`, transparent) and egui draws the push
+  button's resting one on it; under high contrast with a palette kept, the
+  palette's border in place of the grey text the primary button states
+  (docs/v0.8.0-spec.md §10, rule 4).
+
 ## Semver
 
 1. The crate version equals the workspace version.
@@ -729,10 +938,22 @@ per-instance Widget Info for every widget on screen. It opens on the Basic
 page, the controls all three showcases draw — buttons, checkboxes, radio
 buttons, text, text fields, a drop-down, a slider and a progress bar — in
 the same order and states, packed onto one screen, so the three showcases'
-captures compare control by control. Its flags `--theme`, `--variant`,
-`--icon-set`, `--tab` and `--screenshot` start it on a given preset,
-variant, icon set and tab, or capture the window with its title bar to a
-PNG (macOS and Windows; on Linux the capture scripts take it). The window
+captures compare control by control. The side panel's theme settings are
+Theme, Palette, Mode and Icon theme, as the gpui showcase's. Theme offers
+`default`, the desktop's own theme, and the platform presets meant for the
+platform it runs on (`kde-breeze` on KDE Plasma, `adwaita` on Linux,
+`windows-11` on Windows, `macos-monterey`, `macos-tahoe` and `ios-13` on
+macOS, and `material-3` everywhere); Palette lays one of the bundled
+palettes (`Palette::BUNDLED_NAMES`) over it, or `none`, the preset's own
+colours, and locks both schemes to the palette's. The installed egui styles
+and frames are built from the 0.8.0 theme of that choice
+(`ThemeAtlas::next_builder`), and the showcase's own refinements on the
+pages and the chrome read the same theme, as the Palette row's hover text
+says.
+Its flags `--theme`, `--palette`, `--variant`, `--icon-set`, `--tab` and
+`--screenshot` start it on a given preset, palette, variant, icon set and
+tab, or capture the window with its title bar to a PNG (macOS and Windows;
+on Linux the capture scripts take it). The window
 opens at 1280 × 720; with `--screenshot`, or `--capture` for a capture
 taken by another tool, it opens at that size whatever size the desktop
 remembers for it. `--pointer X,Y` holds the pointer at that point of the

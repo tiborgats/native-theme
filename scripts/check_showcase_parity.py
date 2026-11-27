@@ -468,7 +468,7 @@ def load_elements(path, leaves_known):
         where = f"{path}: element #{n}"
         if not isinstance(row, dict):
             raise Failure(f"{where}: not a table")
-        unknown = set(row) - {"id", "name", "parent", "leaves", "states", "sample", "part", "when", "clip"}
+        unknown = set(row) - {"id", "name", "parent", "leaves", "homes", "states", "sample", "part", "when", "clip"}
         if unknown:
             raise Failure(f"{where}: unknown keys {sorted(unknown)}")
         ident = row.get("id")
@@ -480,12 +480,14 @@ def load_elements(path, leaves_known):
         for key in ("name", "parent"):
             if not isinstance(row.get(key), str) or not row[key]:
                 raise Failure(f"{where}: `{key}` must be a non-empty string")
-        for key in ("leaves", "states"):
+        for key in ("leaves", "homes", "states"):
             value = row.get(key)
             if not isinstance(value, list) or not all(isinstance(v, str) and v for v in value):
                 raise Failure(f"{where}: `{key}` must be a list of non-empty strings")
         if len(set(row["leaves"])) != len(row["leaves"]):
             raise Failure(f"{where}: a leaf is listed twice")
+        if len(set(row["homes"])) != len(row["homes"]):
+            raise Failure(f"{where}: a home is listed twice")
         if not row["states"]:
             raise Failure(f"{where}: `states` names at least the state shown")
         if not isinstance(row.get("part", False), bool):
@@ -507,6 +509,7 @@ def load_elements(path, leaves_known):
             "name": row["name"],
             "parent": row["parent"],
             "leaves": row["leaves"],
+            "homes": row["homes"],
             "states": row["states"],
             "samples": samples,
             "when": row.get("when"),
@@ -1305,6 +1308,7 @@ id = "t.panel"
 name = "Panel"
 parent = "window"
 leaves = ["card.background_color", "card.border.color"]
+homes = ["card.container(NONE).fill", "card.container(NONE).stroke.color"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.5], border = [0.0, 0.5, 0.5, 0.0] }
 clip = true
@@ -1314,6 +1318,7 @@ id = "t.panel.label"
 name = "Label"
 parent = "t.panel"
 leaves = ["defaults.font", "defaults.font.color"]
+homes = ["typography.body", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1322,6 +1327,7 @@ id = "t.panel.tip"
 name = "Tooltip"
 parent = "t.panel"
 leaves = ["tooltip.background_color"]
+homes = ["tooltip.panel.fill"]
 states = ["Normal"]
 when = "the panel is hovered"
 """
@@ -1479,6 +1485,19 @@ def self_test():
             write_file(path, parity(*exceptions) if grouped else "[parity]\n" + exceptions)
             try:
                 load_parity_exceptions(path, elements, presets)
+            except Failure:
+                report(name, True)
+                return
+        report(name, False)
+
+    def refused_list(name, old, new):
+        """`--check-list` must refuse the self-test list with `old` in it
+        replaced by `new`."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "elements.toml")
+            write_file(path, SELF_TEST_ELEMENTS.replace(old, new, 1))
+            try:
+                load_elements(path, known)
             except Failure:
                 report(name, True)
                 return
@@ -1837,6 +1856,15 @@ def self_test():
         False,
         change=lambda *a: wider(*a) or recoloured(*a),
         exceptions=(("self-test reason", ["t.panel.w", "t.panel.fill"]),),
+    )
+    tip_homes = 'homes = ["tooltip.panel.fill"]\n'
+    refused_list("--check-list refuses an element with `leaves` and no `homes`", tip_homes, "")
+    refused_list("--check-list refuses an empty home", tip_homes, 'homes = [""]\n')
+    refused_list("--check-list refuses a home that is no string", tip_homes, "homes = [1]\n")
+    refused_list(
+        "--check-list refuses a home listed twice",
+        tip_homes,
+        'homes = ["tooltip.panel.fill", "tooltip.panel.fill"]\n',
     )
     rejected("--check-list refuses an unknown preset", (("r", ["no-such-preset:t.panel.w"]),))
     rejected("--check-list refuses an unknown variant", (("r", ["test-preset/dim:t.panel.w"]),))

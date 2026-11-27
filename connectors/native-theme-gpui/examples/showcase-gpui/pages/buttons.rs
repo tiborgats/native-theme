@@ -2,12 +2,12 @@
 
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, prelude::*};
 use gpui_component::{IconName, Size, h_flex};
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, ButtonKind, ButtonState, DemoButton};
-use crate::pages::page_root;
-use crate::support::with_gap;
+use crate::pages::next_page_root;
+use crate::support::{next_metric, with_gap};
 use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_LOADING_NO_ICON,
     BUTTONS_PRIMARY, BUTTONS_TEXT, PROBE_CLIPBOARD, probe,
@@ -89,7 +89,8 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         // Controls side by side, `layout.widget_gap` apart.
-        let row = || with_gap(h_flex(), geometry::widget_gap(&self.layout));
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
+        let row = || with_gap(h_flex(), widget_gap);
         let on_bold = cx.listener(|this, checked: &bool, _w, cx| {
             this.toggle_bold = *checked;
             cx.notify();
@@ -98,7 +99,7 @@ impl Showcase {
             this.toggle_italic = *checked;
             cx.notify();
         });
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(ui, cx, BUTTONS_HEADING_VARIANTS, "Button Variants: eight of upstream's, the connector's ghost_button, and Primary outlined"))
             .child(

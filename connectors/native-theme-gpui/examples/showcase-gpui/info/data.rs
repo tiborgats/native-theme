@@ -2,12 +2,14 @@
 
 use gpui_component::{Colorize as _, attachment::AttachmentStatus, theme::Theme};
 
-use native_theme_gpui::ResolvedTheme;
+use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
+use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_color_of};
 
 use super::{
-    ColorClaim, WidgetInfo,
+    ColorClaim, LINE_AT_THE_MULTIPLIER, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
-    claim, drawn_font, edge_claim, px_text, stated, stated_claim,
+    claim, edge_claim, next_drawn_font, next_stated, px_text, radius_of, state_stroke_color_of,
+    stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState, inactive_selection_differs};
 use crate::support::SampleIcon;
@@ -49,9 +51,11 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
 
 /// The striped, bordered `DataTable`: its frame and fill. Its rows report
 /// themselves (`data_table_row`). `styled` where a native theme is installed,
-/// so the table takes `geometry::data_table_size` and its container
-/// `geometry::table`; `header` where the theme states `list.header_height`,
-/// which the header row takes through `geometry::list_header_height`.
+/// so the table takes `next::geometry::data_table_size` and its container
+/// `next::geometry::table`; `header` where the theme states
+/// `list.header(NONE).min_size[1]`, which the header row takes through
+/// `next::geometry::list_header_height`. Their geometry lines are recorded
+/// where `demo::data_table` applies them.
 pub fn data_table(
     t: &Theme,
     rows: usize,
@@ -107,13 +111,11 @@ pub fn data_table(
                          and the text its container gives the cells",
         );
     let info = if styled && header {
-        info.geometry("data_table_size")
-            .geometry("table")
-            .geometry("list_header_height")
+        info
     } else if styled {
-        info.geometry("data_table_size").geometry("table").not_themeable("header height", "the body rows' height: the theme states no list.header_height, and a header row height left unset matches the body rows (table/state.rs, header_row_height)")
+        info.not_themeable("header height", "the body rows' height: the theme states no list.header(NONE).min_size[1], and a header row height left unset matches the body rows (table/state.rs, header_row_height)")
     } else {
-        info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
+        info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row(NONE).min_size[1] (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
     };
     info.config("keyboard focus", "a focused DataTable takes `ring` while the last input was a key press, so a click alone shows none of it, an arrow key after the click does, and a mouse move takes it away: its edge in `ring`, with the focus ring outside it where the theme's focus_ring is on (gpui-component/styled.rs:250-271, focus_style); DataTable::new turns it on (table/data_table.rs:114, 255-262)")
@@ -345,118 +347,148 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
     info.instance("cells", cells.to_string())
 }
 
-/// The Basic page's table frame the showcase draws as `r`'s `list.*`
-/// states a list (`demo::files_table`), holding a header and `rows` body
-/// rows.
-pub fn native_table_frame(r: &ResolvedTheme, rows: usize) -> WidgetInfo {
-    let l = &r.list;
+/// The Basic page's table frame the showcase draws as the installed 0.8.0
+/// theme `r` states a list (`demo::files_table`), holding a header and
+/// `rows` body rows; `next::geometry::list` frames and fills it, whose line
+/// the caller records.
+pub fn native_table_frame(r: &NextTheme, rows: usize) -> WidgetInfo {
+    let width = stroke_width_of(&r.list.container(WidgetState::NONE));
     let info = WidgetInfo::new("Table")
         .variant("drawn by the showcase")
-        .color(claim(
+        .colors(stated_claim(
             "bg",
-            "background_color",
-            stated(l.background_color),
-            "showcase",
+            "list.container(NONE).fill",
+            fill_of(
+                &r.list.container(WidgetState::NONE),
+                "list.container(NONE).fill",
+            ),
+            "native-theme-gpui/next/builders.rs:174",
         ))
         .colors(edge_claim(
             "edge",
-            "border",
-            Some(l.border.color),
-            Some(l.border.line_width),
-            "showcase",
+            "list.container(NONE).stroke.color",
+            stroke_color_of(&r.list.container(WidgetState::NONE)),
+            width,
+            "native-theme-gpui/next/builders.rs:172",
         ));
-    let info = if l.border.line_width > 0.0 {
-        info.config(
+    let info = match width.filter(|width| *width > 0.0) {
+        Some(width) => info.config(
             "edge",
             format!(
-                "list.border at {}px, round the header and the rows",
-                px_text(l.border.line_width)
+                "list.container(NONE).stroke at {}px, round the header and the rows",
+                px_text(width)
             ),
-        )
-    } else {
-        info.config("edge", "none: list.border.line_width is 0")
+        ),
+        None => info.config("edge", "none: list.container(NONE).stroke.width is 0"),
     };
     // The frame clips the rows to its corners whether or not it draws an
-    // edge, at the radius demo::files_table rounds it with.
-    let info = info.config(
-        "corners",
-        format!(
-            "list.border.corner_radius, {}px, which the header and the rows are clipped to",
-            px_text(l.border.corner_radius.max(0.0))
+    // edge, at the radius next::geometry::list rounds it with.
+    let info = match radius_of(&r.list.container(WidgetState::NONE)) {
+        Some(radius) => info.config(
+            "corners",
+            format!(
+                "list.container(NONE).corners, {}px, which the header and the rows are clipped to",
+                px_text(radius.max(0.0))
+            ),
         ),
-    );
-    info.config("why drawn", "upstream's Table fills itself with the table token and rules every row after the first with table_row_border (table/table.rs, Table and TableRow), so list.selection_background, selection_text_color, the list.hover_* pair and grid_color would have no receiver there")
+        None => info,
+    };
+    info.config("why drawn", "upstream's Table fills itself with the table token and rules every row after the first with table_row_border (table/table.rs, Table and TableRow), so list.highlight(SELECTED).fill, list.item_label(SELECTED).color, list.highlight(HOVER), list.item_label(HOVER) and list.grid_color would have no receiver there")
         .instance("rows", format!("a header and {rows} body rows, written out rather than driven by a delegate; each reports itself"))
 }
 
-/// The header row of the Basic page's table the showcase draws as `r`'s
-/// `list.*` states a list (`demo::files_table`), reading `columns`. Its
-/// geometry line is recorded where `demo::files_table` applies
-/// `geometry::list_header_height`.
-pub fn native_table_header(r: &ResolvedTheme, columns: &str) -> WidgetInfo {
-    let l = &r.list;
+/// The header row of the Basic page's table the showcase draws as the
+/// installed 0.8.0 theme `r` states a list (`demo::files_table`), reading
+/// `columns`. Its geometry line is recorded where `demo::files_table`
+/// applies `next::geometry::list_header_height`.
+pub fn native_table_header(r: &NextTheme, columns: &str) -> WidgetInfo {
     let info = WidgetInfo::new("Table header")
         .variant("drawn by the showcase")
-        .color(claim(
+        .colors(stated_claim(
             "bg",
-            "header_background",
-            stated(l.header_background),
+            "list.header(NONE).fill",
+            fill_of(&r.list.header(WidgetState::NONE), "list.header(NONE).fill"),
             "showcase",
         ))
-        .color(claim(
+        .colors(stated_claim(
             "text",
-            "header_font",
-            stated(l.header_font.color),
+            "list.header_label(NONE).color",
+            text_color_of(&r.list.header_label(WidgetState::NONE)),
             "showcase",
         ));
+    let hovered = state_fill_of(
+        &r.list.header(WidgetState::HOVER),
+        "list.header(HOVER).fill",
+    )
+    .is_ok_and(|fill| fill.is_some());
+    let pressed = state_fill_of(
+        &r.list.header(WidgetState::PRESSED),
+        "list.header(PRESSED).fill",
+    )
+    .is_ok_and(|fill| fill.is_some());
     let info = info
         .colors(stated_claim(
             "hovered section bg",
-            "header_hover_background",
-            l.header_hover_background,
+            "list.header(HOVER).fill",
+            state_fill_of(
+                &r.list.header(WidgetState::HOVER),
+                "list.header(HOVER).fill",
+            ),
             "showcase",
         ))
         .colors(stated_claim(
             "pressed section bg",
-            "header_active_background",
-            l.header_active_background,
+            "list.header(PRESSED).fill",
+            state_fill_of(
+                &r.list.header(WidgetState::PRESSED),
+                "list.header(PRESSED).fill",
+            ),
             "showcase",
         ));
-    let info = if l.header_active_background.is_none() && l.header_hover_background.is_some() {
+    let info = if !pressed && hovered {
         info.config(
             "pressed section bg",
-            "the hovered section's fill, list.header_hover_background: the theme states no list.header_active_background",
+            "the hovered section's fill, list.header(HOVER).fill: no rule states list.header(PRESSED).fill, and a pressed section is under the pointer",
         )
     } else {
         info
     };
-    let sections = if l.header_hover_background.is_some() || l.header_active_background.is_some() {
-        "each of the two is filled on its own while hovered (list.header_hover_background) and while pressed (list.header_active_background, else the hovered fill), rounded by the frame's inner radius where it meets the frame; gpui-component's own table header has no hover or pressed state (gpui-component/table/state.rs, render_th), so the showcase draws it"
+    let sections = if hovered || pressed {
+        "each of the two is filled on its own while hovered (list.header(HOVER).fill) and while pressed (list.header(PRESSED).fill, else the hovered fill), rounded by the frame's inner radius where it meets the frame; gpui-component's own table header has no hover or pressed state (gpui-component/table/state.rs, render_th), so the showcase draws it"
     } else {
-        "none hovered or pressed: the theme states neither list.header_hover_background nor list.header_active_background, so a section keeps the header's fill; gpui-component's own table header has no hover or pressed state either (gpui-component/table/state.rs, render_th)"
+        "none hovered or pressed: no rule states list.header(HOVER).fill or list.header(PRESSED).fill, so a section keeps the header's fill, as gpui-component's own table header, which has no hover or pressed state, does (gpui-component/table/state.rs, render_th)"
     };
     let lines = "a line inside its bottom edge, under the header, and one down the first column's right edge, laid over the header's and a section's fill; the second section, the last, has none of its own (platform-facts §2.15)";
     let info = info.config("sections", sections);
-    let info = match l.header_separator_color {
-        Some(_) => section_lines(info, r, lines),
-        None => grid_lines(info, r, lines),
+    let info = match fill_of(
+        &r.list.header_separator(WidgetState::NONE),
+        "list.header_separator(NONE).fill",
+    ) {
+        Ok(None) => grid_lines(info, r, lines),
+        Ok(Some(_)) | Err(_) => section_lines(info, r, lines),
     };
     info.config(
         "font",
-        format!("list.header_font: {}", drawn_font(&l.header_font)),
+        format!(
+            "list.header_label(NONE): {}",
+            next_drawn_font(
+                &r.list.header_label(WidgetState::NONE),
+                LINE_AT_THE_MULTIPLIER
+            )
+        ),
     )
     .instance("columns", columns.to_string())
 }
 
-/// A body row of the Basic page's table the showcase draws as `r`'s
-/// `list.*` states a list (`demo::files_table`), reading `cells`;
-/// `selected` is whether it is the selected row. The info does not follow
-/// the pointer: a row that is not selected names the fill and text it takes
-/// under the pointer beside the ones it rests in. Nor does it follow the
-/// window's state: where the theme's unfocused selection has a fill of its
-/// own, the selected row's names that pair beside the list's.
-pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> WidgetInfo {
-    let l = &r.list;
+/// A body row of the Basic page's table the showcase draws as the installed
+/// 0.8.0 theme `r` states a list (`demo::files_table`), reading `cells`;
+/// `selected` is whether it is the selected row, and `t` the theme whose
+/// `list_hover` a hovered row takes where `r` states no hover fill. The info
+/// does not follow the pointer: a row that is not selected names the fill
+/// and text it takes under the pointer beside the ones it rests in. Nor does
+/// it follow the window's state: where the theme's unfocused selection has a
+/// fill of its own, the selected row's names that pair beside the list's.
+pub fn native_table_row(r: &NextTheme, t: &Theme, selected: bool, cells: &str) -> WidgetInfo {
     let info = WidgetInfo::new("Table row").variant(if selected {
         "drawn by the showcase, selected"
     } else {
@@ -464,88 +496,138 @@ pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> Widge
     });
     let info = if selected {
         let info = info
-            .color(claim(
+            .colors(stated_claim(
                 "bg",
-                "selection_background",
-                stated(l.selection_background),
+                "list.highlight(SELECTED).fill",
+                fill_of(
+                    &r.list.highlight(WidgetState::SELECTED),
+                    "list.highlight(SELECTED).fill",
+                ),
                 "showcase",
             ))
-            .color(claim(
+            .colors(stated_claim(
                 "text",
-                "selection_text_color",
-                stated(l.selection_text_color),
+                "list.item_label(SELECTED).color",
+                text_color_of(&r.list.item_label(WidgetState::SELECTED)),
                 "showcase",
             ))
             .config(
                 "hover",
                 "none: the selected row keeps its fill and text under the pointer",
             );
-        if inactive_selection_differs(r) {
-            info.color(claim(
-                "bg, window not active",
-                "selection_inactive_background",
-                stated(r.defaults.selection_inactive_background),
-                "showcase",
-            ))
-            .color(claim(
-                "text, window not active",
-                "selection_inactive_text_color",
-                stated(r.defaults.selection_inactive_text_color),
-                "showcase",
-            ))
-            .config(
+        if inactive_selection_differs(r).is_some() {
+            let info = info
+                .colors(stated_claim(
+                    "bg, window not active",
+                    "colors.selection.unfocused_background",
+                    r.colors.selection.unfocused_background.map(next_stated),
+                    "showcase",
+                ))
+                .colors(stated_claim(
+                    "text, window not active",
+                    "colors.selection.unfocused_foreground",
+                    r.colors.selection.unfocused_foreground.map(next_stated),
+                    "showcase",
+                ));
+            let text = if r.colors.selection.unfocused_foreground.is_some() {
+                "lettered colors.selection.unfocused_foreground"
+            } else {
+                "lettered list.item_label(SELECTED).color, as the theme states no colors.selection.unfocused_foreground and gpui-component letters a selected row alike in either state (list/list_item.rs, ListItem::render)"
+            };
+            info.config(
                 "window not active",
-                "the row takes defaults.selection_inactive_background and selection_inactive_text_color while its window is not active, since the theme gives the unfocused selection a fill of its own (demo::selection_pair); this info names both pairs whatever the window's state",
+                format!("the row takes colors.selection.unfocused_background, {text}, while its window is not active, since the theme gives the unfocused selection a fill of its own (demo::selection_pair); this info names both pairs whatever the window's state"),
             )
         } else {
             info.config(
                 "window not active",
-                "the same pair: the theme's defaults.selection_inactive_background is its selection_background, so the row does not change with the window's state (demo::selection_pair)",
+                "the same pair: the theme states no colors.selection.unfocused_background other than colors.selection.background, and gpui-component paints a selected row alike in either state (list/list_item.rs, ListItem::render), so the row does not change with the window's state (demo::selection_pair)",
             )
         }
     } else {
         let info = info
-            .color(claim(
+            .colors(stated_claim(
                 "bg, the frame's",
-                "background_color",
-                stated(l.background_color),
+                "list.container(NONE).fill",
+                fill_of(
+                    &r.list.container(WidgetState::NONE),
+                    "list.container(NONE).fill",
+                ),
                 "showcase",
             ))
-            .color(claim(
+            .colors(stated_claim(
                 "text",
-                "item_font",
-                stated(l.item_font.color),
-                "showcase",
-            ))
-            .color(claim(
-                "hovered bg",
-                "hover_background",
-                stated(l.hover_background),
-                "showcase",
-            ))
-            .color(claim(
-                "hovered text",
-                "hover_text_color",
-                stated(l.hover_text_color),
-                "showcase",
-            ))
-            .colors(edge_claim(
-                "hovered edge",
-                "hover_border_color",
-                l.hover_border_color,
-                Some(r.defaults.border.line_width),
+                "list.item_label(NONE).color",
+                text_color_of(&r.list.item_label(WidgetState::NONE)),
                 "showcase",
             ));
-        if l.hover_border_color.is_some() && r.defaults.border.line_width > 0.0 {
-            info.config(
-                "hovered edge",
-                format!(
-                    "list.hover_border_color at defaults.border.line_width, {}px, a box the showcase lays over the row while it is hovered, on the shape of its hover fill",
-                    px_text(r.defaults.border.line_width)
+        let hovered = fill_of(
+            &r.list.highlight(WidgetState::HOVER),
+            "list.highlight(HOVER).fill",
+        );
+        let info = match hovered {
+            Ok(Some(_)) | Err(_) => info.colors(stated_claim(
+                "hovered bg",
+                "list.highlight(HOVER).fill",
+                fill_of(
+                    &r.list.highlight(WidgetState::HOVER),
+                    "list.highlight(HOVER).fill",
                 ),
-            )
-        } else {
-            info
+                "showcase",
+            )),
+            Ok(None) => info
+                .color(claim(
+                    "hovered bg",
+                    "list_hover",
+                    t.list_hover,
+                    "gpui-component/list/list_item.rs:233",
+                ))
+                .config(
+                    "hovered bg",
+                    "list_hover, a hovered ListItem's own: the theme states no list.highlight(HOVER).fill (list/list_item.rs, ListItem::render)",
+                ),
+        };
+        let info = match state_text_color_of(&r.list.item_label(WidgetState::HOVER)) {
+            Some(_) => info.colors(stated_claim(
+                "hovered text",
+                "list.item_label(HOVER).color",
+                state_text_color_of(&r.list.item_label(WidgetState::HOVER)),
+                "showcase",
+            )),
+            None => info.config(
+                "hovered text",
+                "the row's own: no rule states list.item_label(HOVER).color, and a ListItem's hover sets its fill alone (list/list_item.rs, ListItem::render)",
+            ),
+        };
+        let width = stroke_width_of(&r.list.highlight(WidgetState::HOVER));
+        let info = info.colors(edge_claim(
+            "hovered edge",
+            "list.highlight(HOVER).stroke.color",
+            state_stroke_color_of(&r.list.highlight(WidgetState::HOVER)),
+            width,
+            "showcase",
+        ));
+        match width.filter(|width| *width > 0.0) {
+            Some(width)
+                if state_stroke_color_of(&r.list.highlight(WidgetState::HOVER)).is_some() =>
+            {
+                info.config(
+                    "hovered edge",
+                    format!(
+                        "list.highlight(HOVER).stroke, {}px, a box the showcase lays over the row while it is hovered, on the shape of its hover fill",
+                        px_text(width)
+                    ),
+                )
+            }
+            _ => match super::state_stroke_unmapped(
+                &r.list.highlight(WidgetState::HOVER),
+                "list.highlight(HOVER).stroke",
+                "hover",
+                "a hovered row has no outline (demo::TableLook, hover_edge)",
+            ) {
+                Some(text) => info.config("hovered edge", text),
+                None => info,
+            },
         }
     };
     grid_lines(info, r, "a line down the first column's right edge")
@@ -555,56 +637,65 @@ pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> Widge
         )
         .config(
             "font",
-            format!("list.item_font: {}", drawn_font(&l.item_font)),
+            format!(
+                "list.item_label(NONE): {}",
+                next_drawn_font(
+                    &r.list.item_label(WidgetState::NONE),
+                    LINE_AT_THE_MULTIPLIER
+                )
+            ),
         )
         .instance("cells", cells.to_string())
 }
 
 /// `info` given the claim and the config line of the header's lines in
-/// `list.header_separator_color` (`demo::files_table`), where the theme
-/// states it, as [`grid_lines`] gives a body row's.
-fn section_lines(info: WidgetInfo, r: &ResolvedTheme, where_drawn: &str) -> WidgetInfo {
-    if r.separator.line_width > 0.0 {
+/// `list.header_separator(NONE).fill` (`demo::files_table`), where the
+/// theme states it, as [`grid_lines`] gives a body row's.
+fn section_lines(info: WidgetInfo, r: &NextTheme, where_drawn: &str) -> WidgetInfo {
+    if r.separator.thickness > 0.0 {
         info.colors(stated_claim(
             "section line",
-            "header_separator_color",
-            r.list.header_separator_color,
+            "list.header_separator(NONE).fill",
+            fill_of(
+                &r.list.header_separator(WidgetState::NONE),
+                "list.header_separator(NONE).fill",
+            ),
             "showcase",
         ))
         .config(
             "grid",
             format!(
-                "{where_drawn}, list.header_separator_color at separator.line_width, {}px, \
+                "{where_drawn}, list.header_separator(NONE).fill at separator.thickness, {}px, \
                  one device pixel at least",
-                px_text(r.separator.line_width)
+                px_text(r.separator.thickness)
             ),
         )
     } else {
-        info.config("grid", "none: separator.line_width is 0")
+        info.config("grid", "none: separator.thickness is 0")
     }
 }
 
 /// `info` given the claim and the config line of the grid lines a row of the
 /// Basic page's table draws, `where_drawn` saying which:
-/// `list.grid_color` at `separator.line_width`, or none at a 0 width.
-fn grid_lines(info: WidgetInfo, r: &ResolvedTheme, where_drawn: &str) -> WidgetInfo {
-    if r.separator.line_width > 0.0 {
+/// `list.grid_color` at `separator.thickness`, or none at a 0 width.
+fn grid_lines(info: WidgetInfo, r: &NextTheme, where_drawn: &str) -> WidgetInfo {
+    if r.separator.thickness > 0.0 {
         info.color(claim(
             "grid line",
-            "grid_color",
-            stated(r.list.grid_color),
+            "list.grid_color",
+            next_stated(r.list.grid_color),
             "showcase",
         ))
         .config(
             "grid",
             format!(
-                "{where_drawn}, list.grid_color at separator.line_width, {}px, one device \
+                "{where_drawn}, list.grid_color at separator.thickness, {}px, one device \
                  pixel at least",
-                px_text(r.separator.line_width)
+                px_text(r.separator.thickness)
             ),
         )
     } else {
-        info.config("grid", "none: separator.line_width is 0")
+        info.config("grid", "none: separator.thickness is 0")
     }
 }
 
@@ -696,25 +787,35 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
 /// The fill every List and Tree row lacks.
 const NO_LIST_FILL: &str = "none: a ListItem paints no idle background (list/list_item.rs, ListItem::render), so the fill of the box around the rows shows through";
 
-/// The fill of the box around a List's or a Tree's rows: `list.background_color`,
-/// which `geometry::list` paints on it, where a native theme is installed.
-fn list_fill(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
-    match native {
-        Some(r) => info.color(claim(
+/// The fill of the box around a List's or a Tree's rows:
+/// `list.container(NONE).fill`, which `next::geometry::list` paints on it,
+/// where the installed 0.8.0 theme `native` gives that builder all it reads.
+fn list_fill(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
+    match native.filter(|r| native_theme_gpui::next::geometry::list(r).is_ok()) {
+        Some(r) => info.colors(stated_claim(
             "fill",
-            "background_color",
-            stated(r.list.background_color),
-            "native-theme-gpui/geometry.rs:749",
+            "list.container(NONE).fill",
+            fill_of(&r.list.container(WidgetState::NONE), "list.container(NONE).fill"),
+            "native-theme-gpui/next/builders.rs:174",
         )),
-        None => info.not_themeable("fill", "none: no native theme is installed, so geometry::list, which paints list.background_color on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
+        None => info.not_themeable("fill", "none: no native theme is installed, or it states no value gpui can take at a home geometry::list reads, so geometry::list, which paints list.container(NONE).fill on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
     }
 }
 
 /// The List, with the box around it that is its frame and its fill. Its
 /// geometry line is recorded where `demo::list` applies the builder; its
 /// rows report themselves (`list_row`).
-pub fn list(rows: usize, native: Option<&ResolvedTheme>) -> WidgetInfo {
-    list_fill(WidgetInfo::new("List").variant("selectable"), native)
+pub fn list(rows: usize, native: Option<&NextTheme>) -> WidgetInfo {
+    let info = list_fill(WidgetInfo::new("List").variant("selectable"), native);
+    let info = match native {
+        Some(r) => super::own_ring_not_drawn(
+            info,
+            &r.list.row(native_theme::next::WidgetState::FOCUSED),
+            "list.row(FOCUSED).focus",
+        ),
+        None => info,
+    };
+    info
         .not_themeable("even rows", "the list_even token has no reader anywhere in gpui-component or gpui-base: a List paints every row the same, and the connector writes the slot for nothing (Tier U)")
         .instance("frame", "List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's: the box around it")
         .instance("rows", format!("{rows}; a click selects one, and each reports itself"))
@@ -726,19 +827,19 @@ pub fn list(rows: usize, native: Option<&ResolvedTheme>) -> WidgetInfo {
 fn scrollbar_room(styled: bool, gutter: Option<gpui::Pixels>) -> String {
     match (styled, gutter) {
         (_, Some(gutter)) => format!(
-            "{}px, scrollbar.groove_width: the List and the Tree lay their scrollbar over the rows' right end (gpui-component/list/list.rs, List::render; gpui-component/tree.rs, Tree), and the theme's is no overlay (scrollbar.overlay_mode false), so the row ends that groove short of it (demo::list_gutter)",
+            "{}px, scrollbar.track(NONE; orientation=Vertical).min_size[0]: the List and the Tree lay their scrollbar over the rows' right end (gpui-component/list/list.rs, List::render; gpui-component/tree.rs, Tree), and the theme's is no overlay (scrollbar.overlay_mode false), so the row ends that groove short of it (demo::list_gutter)",
             px_text(gutter.as_f32())
         ),
-        (true, None) => "none: the theme's scrollbar is an overlay (scrollbar.overlay_mode), which the List and the Tree lay over the rows' right end".to_string(),
-        (false, None) => "none: no native theme is installed, and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
+        (true, None) => "none: the theme's scrollbar is an overlay (scrollbar.overlay_mode), or the theme states no groove width (scrollbar.track(NONE; orientation=Vertical).min_size[0]), and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
+        (false, None) => "none: no native theme is installed, or it states no value gpui can take at a home geometry::list_item reads, and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
     }
 }
 
 /// What a `ListItem` row reading `label` paints in `state`, for the List and
 /// the Tree, keeping `gutter` clear for the scrollbar where the theme's is
-/// no overlay. `styled` is whether a native theme is installed, so whether
-/// the row took `geometry::list_item`, whose line is recorded where the row
-/// applies it.
+/// no overlay. `styled` is whether the row took `next::geometry::list_item`,
+/// a native theme being installed and stating what it reads, whose line is
+/// recorded where the row applies it.
 fn list_item(
     t: &Theme,
     label: &str,
@@ -806,17 +907,17 @@ fn list_item(
         .instance("right margin", scrollbar_room(styled, gutter));
     // The label is plain text, so it takes the row's own text style: the
     // foreground and text_base ListItem sets (list/list_item.rs:204-205),
-    // which geometry::list_item then refines with list.item_font, colour
-    // included -- a colour no ThemeColor field holds. A selected row is
-    // refined by geometry::list_item_selected after it, over that colour.
+    // which geometry::list_item then refines with list.item_label(NONE),
+    // colour included -- a colour no ThemeColor field holds. A selected row
+    // is refined by geometry::list_item_selected after it, over that colour.
     let selected = matches!(
         state,
         ListRowState::Selected | ListRowState::SelectedRightClicked
     );
     if styled && selected {
-        info.instance("text", "list.selection_text_color, which geometry::list_item_selected sets on the selected row over list.item_font's colour; the size is list.item_font's, from geometry::list_item, over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
+        info.instance("text", "list.item_label(SELECTED).color, which geometry::list_item_selected sets on the selected row where the theme states it (its geometry line says whether it did) over list.item_label(NONE)'s colour; the size is list.item_label(NONE)'s, from geometry::list_item, over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
     } else if styled {
-        info.instance("text", "list.item_font's size and colour, which geometry::list_item refines the row with over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
+        info.instance("text", "list.item_label(NONE)'s size and colour, which geometry::list_item refines the row with over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
     } else {
         info.color(claim(
             "text",
@@ -824,7 +925,7 @@ fn list_item(
             t.foreground,
             "gpui-component/list/list_item.rs:207",
         ))
-        .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, so geometry::list_item has no font to give the row (list/list_item.rs, ListItem::render)")
+        .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, or it states no value gpui can take at a home geometry::list_item reads, so geometry::list_item gives the row no font (list/list_item.rs, ListItem::render)")
     }
 }
 
@@ -844,7 +945,7 @@ pub fn list_row(
             ListRowState::Selected | ListRowState::SelectedRightClicked
         )
     {
-        info.not_themeable("window not active", "the same list pair: a ListItem paints its selected fill, list_active, after the caller's style whatever the window's state (list/list_item.rs, ListItem::render), and a text colour without its fill is no pair, so defaults.selection_inactive_background and selection_inactive_text_color are not drawn here; the Basic table's selected row draws them where the theme gives that selection a fill of its own")
+        info.not_themeable("window not active", "the same list pair: a ListItem paints its selected fill, list_active, after the caller's style whatever the window's state (list/list_item.rs, ListItem::render), and a text colour without its fill is no pair, so colors.selection.unfocused_background and unfocused_foreground are not drawn here; the Basic table's selected row draws them where the theme gives that selection a fill of its own")
     } else {
         info
     }
@@ -853,7 +954,7 @@ pub fn list_row(
 /// The Tree, with the box around it that is its frame. Its geometry line is
 /// recorded where `demo::tree` applies the builder; its rows report
 /// themselves (`tree_row`).
-pub fn tree(native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn tree(native: Option<&NextTheme>) -> WidgetInfo {
     list_fill(WidgetInfo::new("Tree"), native)
         .not_themeable("indent", "none here, and none upstream: Tree::new takes a render_item closure and tree.rs draws no row content of its own (gpui-component/tree.rs, Tree), so a row's indent is whatever the application's closure applies -- this demo's applies none")
         .not_themeable("disclosure icon", "the same: tree.rs contains no icon, so a chevron would be the closure's to draw. The panel used to claim a hardcoded ChevronRight, which is in neither this demo nor upstream")

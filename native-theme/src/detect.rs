@@ -190,8 +190,8 @@ fn kdeglobals_exists() -> bool {
 /// [`detect_is_dark()`] instead.
 ///
 /// For live dark-mode tracking, use `watch::on_theme_change` (feature
-/// `watch`): on each event call [`invalidate_caches()`] and re-read
-/// [`crate::SystemTheme::from_system()`].
+/// `watch`): it calls [`invalidate_caches()`] before each event; on each
+/// event re-read [`crate::SystemTheme::from_system()`].
 ///
 /// # Platform Behavior
 ///

@@ -16,21 +16,25 @@ use gpui_component::{
     label::Label,
     v_flex, window_paddings,
 };
-use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+use native_theme_gpui::{ActiveNativeTheme as _, next};
 use native_theme_showcase_support::info::ListedInfo;
-use native_theme_showcase_support::status::{DrawnFamily, defined_size};
-use native_theme_showcase_support::values;
+use native_theme_showcase_support::next::status::defined_size;
+use native_theme_showcase_support::next::{info as next_info, values as next_values};
+use native_theme_showcase_support::status::DrawnFamily;
 use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
-use crate::elements;
-use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
-use crate::support::{NativeStyled, frame_drawer, with_gap, with_padding};
+use crate::elements::{self, ListedExt as _};
+use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, next_stated};
+use crate::support::{
+    NativeStyled, frame_drawer, ghost_variant, next_geometry, next_metric, refined, with_gap,
+    with_padding,
+};
 use crate::{
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
-    probe,
+    INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
+    INSPECTOR_TOKENS_NOTE, demo, probe,
 };
 
 /// The inspector's two views, in the order its TabBar shows them.
@@ -76,7 +80,7 @@ pub(crate) struct Inspector {
     /// the hint shown before any hover.
     pub(crate) title_drawn: Option<SharedString>,
     /// Where its content is scrolled (`support::gutter_scroll`).
-    scroll: gpui::ScrollHandle,
+    pub(crate) scroll: gpui::ScrollHandle,
     _registry: Subscription,
 }
 
@@ -121,7 +125,7 @@ impl Inspector {
             Some((element, info))
         });
         if let (Some(look), Some((element, info))) = (look, listed) {
-            let (panel, title) = listed_info(&self.ui, look, element, info);
+            let (panel, title) = listed_info(&self.ui, look, element, info, cx);
             self.title_drawn = Some(title);
             return panel;
         }
@@ -146,6 +150,7 @@ impl Inspector {
         let title = SharedString::from(title);
         self.title_drawn = Some(title.clone());
         with_gap(v_flex(), gap)
+            .debug_selector(|| INSPECTOR_INFO.into())
             .child(
                 h_flex()
                     .justify_between()
@@ -155,18 +160,26 @@ impl Inspector {
                             .debug_selector(|| INSPECTOR_TITLE.into())
                             .child(Label::new(title).text_sm().font_semibold()),
                     )
-                    // The Buttons page's Ghost, as the toolbar's buttons are.
+                    // The 0.8.0 flat button, edged in its hovered outline
+                    // where the theme states one. The theme states no
+                    // padding for this small box, so upstream's stays and
+                    // the edge lies around it.
                     .child(probe(
                         INSPECTOR_COPY,
-                        demo::labelled(
-                            &self.ui,
-                            cx,
-                            Button::new("inspector-copy"),
-                            "inspector-copy",
-                            "Copy",
+                        refined(
+                            demo::labelled(
+                                &self.ui,
+                                cx,
+                                Button::new("inspector-copy"),
+                                "inspector-copy",
+                                "Copy",
+                            )
+                            .small(),
+                            next_geometry(cx, next::geometry::ghost_button_rest_own_padding)
+                                .and_then(Result::ok)
+                                .as_ref(),
                         )
-                        .small()
-                        .custom(variants::ghost_button(cx))
+                        .custom(ghost_variant(cx))
                         .on_click(move |_, _, cx| {
                             cx.write_to_clipboard(ClipboardItem::new_string(copied.clone()))
                         }),
@@ -242,29 +255,34 @@ impl Inspector {
     }
 }
 
-/// The Theme tab's Fonts section: the installed theme's `defaults.font` and
-/// `defaults.mono_font` of `app`, each family by the family gpui draws
+/// The Theme tab's Fonts section: the installed theme's `typography.body`
+/// and `typography.monospace` of `app`, each family by the family gpui draws
 /// ([`DrawnFamilies::label`] of the stated family and `Theme::font_family`
 /// or `mono_font_family`, the connector's `font_family` of it, once a native
-/// theme is installed; the placeholder alone before that), each size in the
+/// theme is installed; the stated family alone before that, and
+/// `(family not stated)` where the style states none), each size in the
 /// unit the platform stated, like the Widget Info: these rows report the
 /// theme's own definition, not the pixel value gpui lays out with.
 pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, String)> {
     let (font, mono) = (&app.original_font, &app.original_mono_font);
     let theme = cx.theme();
     let families = DrawnFamilies::installed(app, cx);
-    let label = |stated: &str, asked: &SharedString| {
-        families
-            .as_deref()
-            .map_or_else(|| stated.to_string(), |f| f.label(stated, asked))
+    let label = |style: &native_theme::next::TextStyle, asked: &SharedString| {
+        if !style
+            .stated
+            .contains(native_theme::next::TextStated::FAMILY)
+        {
+            return "(family not stated)".to_string();
+        }
+        families.as_deref().map_or_else(
+            || style.family.to_string(),
+            |f| f.label(&style.family, asked),
+        )
     };
     vec![
-        ("font_family", label(&font.family, &theme.font_family)),
+        ("font_family", label(font, &theme.font_family)),
         ("font_size", defined_size(font)),
-        (
-            "mono_font_family",
-            label(&mono.family, &theme.mono_font_family),
-        ),
+        ("mono_font_family", label(mono, &theme.mono_font_family)),
         ("mono_font_size", defined_size(mono)),
     ]
 }
@@ -603,7 +621,7 @@ pub(crate) fn shown_title(info: &WidgetInfo) -> String {
         .map_or_else(|| info.title(), elements::ShowcaseElement::title)
 }
 
-/// The route line of a leaf `info::leaves` has none for:
+/// The route line of a home `info::leaves` has none for:
 /// `every_listed_leaf_has_a_route` keeps it off screen.
 const NO_ROUTE: &str = "gpui: no route recorded";
 
@@ -611,20 +629,30 @@ const NO_ROUTE: &str = "gpui: no route recorded";
 /// section names, in all three showcases.
 const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 
-/// What Widget Info is drawn in under a native theme, the same in the three
-/// showcases (docs/showcase-elements.toml, "The Widget Info format"): every
-/// text in `sidebar.font`'s family and size, one line of it tall
-/// (`defaults.line_height`), in `sidebar.font.color`, a route in
-/// `defaults.muted_color`; `layout.widget_gap` before each row and
-/// `layout.section_gap` before each section, none where the layout states
-/// none; a swatch framed as `defaults.border` frames a control; the Copy
-/// button padded by `button.border`'s sides and rounded by its radius,
-/// filled with `button.hover_background` and lettered in
-/// `hover_text_color` under the pointer, `active_background` (where stated)
-/// and `active_text_color` while pressed.
-/// With it, what the rows' values are read from: the resolved theme's JSON,
-/// and the layout, icon set and icon theme the showcase installed, which the
-/// JSON does not hold (`values::leaf_value`).
+/// The height of Widget Info's Copy, a `Button` at `Size::Small` with a
+/// child: upstream's `h_6` (gpui-component 0.10.0 `button/button.rs`,
+/// `RenderOnce for Button`, the `Size::Small` arm of a Button that is no
+/// icon button), 1.5 rem (gpui-pre-macros 0.3.12 `src/styles.rs`, the `6`
+/// suffix), the border it is refined with laid out inside it.
+pub(crate) const COPY_HEIGHT: gpui::Rems = gpui::rems(1.5);
+
+/// What Widget Info is drawn in under an installed 0.8.0 theme, the same in
+/// the three showcases (docs/showcase-elements.toml, "The Widget Info
+/// format"), each value read at its home and, where the theme leaves it
+/// unstated, upstream's own for that property alone (spec §10, rule 0): every
+/// text in `sidebar.item_label(NONE)`'s family, size and weight (else the
+/// family and size upstream's `Root` sets, `font_family` and the rem size
+/// `font_size`, root.rs, and gpui's default weight), one line of it tall (its
+/// `line_height`, else its size by `typography.line_height_multiplier`), in
+/// its colour (else upstream's `sidebar_foreground`, sidebar/mod.rs), a route
+/// in `colors.window.foreground_muted` (else `muted_foreground`);
+/// `layout.widget_gap` before each row and `layout.section_gap` before each
+/// section, none where the layout states none; a swatch framed in
+/// `colors.window.border` (else `border`), `layout.border_width` wide and
+/// rounded by `layout.corner_radius`; the Copy button the flat `Button` the
+/// unlisted info's Copy is, [`COPY_HEIGHT`] tall ([`listed_info`]).
+/// With it, what the rows' values are read from: the installed 0.8.0
+/// resolved theme and its serialised form (`next::values::home_value`).
 #[cfg_attr(test, derive(Clone, Debug, PartialEq))]
 pub(crate) struct PanelLook {
     family: SharedString,
@@ -633,78 +661,122 @@ pub(crate) struct PanelLook {
     weight: gpui::FontWeight,
     text: gpui::Hsla,
     pub(crate) muted: gpui::Hsla,
-    row_gap: gpui::Pixels,
-    section_gap: gpui::Pixels,
+    row_gap: Option<gpui::Pixels>,
+    section_gap: Option<gpui::Pixels>,
     frame: (gpui::Hsla, gpui::Pixels, gpui::Pixels),
-    copy_padding: [gpui::Pixels; 4],
-    copy_radius: gpui::Pixels,
-    /// The Copy box's fill and text colour under the pointer.
-    copy_hover: (gpui::Hsla, gpui::Hsla),
-    /// The Copy box's fill, where stated, and text colour while pressed.
-    copy_active: (Option<gpui::Hsla>, gpui::Hsla),
-    resolved: serde_json::Value,
-    layout: native_theme::theme::LayoutTheme,
-    icon_set: native_theme::theme::IconSet,
-    icon_theme: Option<String>,
-    /// What gpui draws each family of `resolved` in, and `Theme::font_family`
+    /// The Copy button's height, [`COPY_HEIGHT`] at upstream's rem,
+    /// `Theme::font_size` (gpui-component 0.10.0 `root.rs`,
+    /// `WindowState::prepare`, `set_rem_size`).
+    copy_height: gpui::Pixels,
+    /// The installed 0.8.0 resolved theme.
+    theme: native_theme::next::ResolvedTheme,
+    /// `theme`'s serialised form ([`theme_json`]).
+    json: serde_json::Value,
+    /// What gpui draws each family of `json` in, and `Theme::font_family`
     /// and `mono_font_family`.
     families: DrawnFamilies,
 }
 
 impl PanelLook {
-    /// The look under the installed native theme, with the layout, icon set
-    /// and icon theme `showcase` installed; `None` before `apply` ran. The
-    /// showcase keeps it from one install to the next
-    /// (`Showcase::panel_look`).
-    pub(crate) fn of(showcase: &Showcase, cx: &gpui::App) -> Option<Self> {
-        let n = cx.native()?;
-        let r = n.resolved;
-        let layout = showcase.layout.clone();
-        let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);
-        let side = |v: Option<f32>| v.map_or(gpui::px(0.), gpui::px);
-        let p = &r.button.border.padding;
-        let resolved = theme_json(r);
+    /// The look under the installed 0.8.0 theme; `None` before
+    /// `native_theme_gpui::next::apply` ran. The showcase keeps it from one
+    /// install to the next (`Showcase::panel_look`).
+    pub(crate) fn of(cx: &gpui::App) -> Option<Self> {
+        use native_theme::next::{TextStated, WidgetState};
+        let r = crate::support::next_resolved(cx)?;
+        let json = theme_json(r);
         let mut named = Vec::new();
-        stated_families(&resolved, &mut named);
+        stated_families(&json, &mut named);
         let theme = cx.theme();
         let asked = named
             .iter()
             .map(|family| native_theme_gpui::font_family(&Arc::from(family.as_str())))
             .chain([theme.font_family.clone(), theme.mono_font_family.clone()]);
         let families = DrawnFamilies::of(asked, cx);
+        let label = r.sidebar.item_label(WidgetState::NONE);
+        let says = |bit: TextStated| label.stated.contains(bit);
+        let size = if says(TextStated::SIZE_PX) {
+            gpui::px(label.size_px)
+        } else {
+            theme.font_size
+        };
+        let line = if says(TextStated::LINE_HEIGHT) {
+            gpui::px(label.line_height)
+        } else {
+            gpui::px(size.as_f32() * r.typography.line_height_multiplier)
+        };
+        let gap = |metric: fn(
+            &native_theme::next::ResolvedTheme,
+        ) -> next::Mapped<Option<gpui::Pixels>>| { metric(r).ok().flatten() };
         Some(Self {
-            family: native_theme_gpui::font_family(&r.sidebar.font.family),
-            size: gpui::px(size),
-            line: gpui::px(size * r.defaults.line_height),
-            weight: gpui::FontWeight(f32::from(r.sidebar.font.weight)),
-            text: stated(r.sidebar.font.color),
-            muted: stated(r.defaults.muted_color),
-            row_gap: side(layout.widget_gap),
-            section_gap: side(layout.section_gap),
+            family: if says(TextStated::FAMILY) {
+                native_theme_gpui::font_family(&label.family)
+            } else {
+                theme.font_family.clone()
+            },
+            size,
+            line,
+            weight: if says(TextStated::WEIGHT) {
+                gpui::FontWeight(f32::from(label.weight))
+            } else {
+                gpui::FontWeight::default()
+            },
+            text: next::text_color_of(&label).unwrap_or(theme.sidebar_foreground),
+            muted: r
+                .colors
+                .window
+                .foreground_muted
+                .map_or(theme.muted_foreground, crate::info::next_stated),
+            row_gap: gap(next::geometry::widget_gap),
+            section_gap: gap(next::geometry::section_gap),
             frame: (
-                stated(r.defaults.border.color),
-                gpui::px(r.defaults.border.line_width),
-                gpui::px(r.defaults.border.corner_radius.max(0.)),
+                r.colors
+                    .window
+                    .border
+                    .map_or(theme.border, crate::info::next_stated),
+                gpui::px(r.layout.border_width),
+                gpui::px(r.layout.corner_radius.max(0.)),
             ),
-            copy_padding: [side(p.top), side(p.right), side(p.bottom), side(p.left)],
-            copy_radius: gpui::px(r.button.border.corner_radius.max(0.)),
-            copy_hover: (
-                stated(r.button.hover_background),
-                stated(r.button.hover_text_color),
-            ),
-            copy_active: (
-                r.button.active_background.map(stated),
-                stated(r.button.active_text_color),
-            ),
-            resolved,
-            layout,
-            icon_set: showcase.current_icon_set,
-            icon_theme: showcase.current_icon_theme.clone(),
+            copy_height: COPY_HEIGHT.to_pixels(theme.font_size),
+            theme: r.clone(),
+            json,
             families,
         })
     }
 
-    /// `text` in the panel's type: `sidebar.font` at its line height.
+    /// The least height the inspector's content keeps below its TabBar,
+    /// where the side panel's content scrolls (`demo::side_panel`): down to
+    /// the end of its info's first row, as [`listed_info`] lays it out under
+    /// `margin`, the content's padding (`demo::side_panel_content_margin`):
+    /// the top margin; the title row, as tall as the Copy button
+    /// ([`COPY_HEIGHT`]), and never shorter than the title's line;
+    /// `layout.section_gap` and the "Theme"
+    /// section's name, one line; then `layout.widget_gap` and the first row's
+    /// two lines, its home and value, and how gpui applies it. A margin,
+    /// padding or gap the theme leaves unstated is none, and adds nothing.
+    /// gpui lays each box out with its edges at whole device pixels of
+    /// `scale`, the window's scale factor, so each part is counted taken up
+    /// to the next device pixel, the most room its box can take: a line box
+    /// of a fractional height (ios-13's 39.27 px at text scale 2) is laid out
+    /// taller than its line.
+    pub(crate) fn body_min_height(&self, margin: Option<gpui::Pixels>, scale: f32) -> gpui::Pixels {
+        let laid = |height: f32| {
+            if scale > 0. {
+                (height * scale).ceil() / scale
+            } else {
+                height
+            }
+        };
+        let added = |parts: &[Option<gpui::Pixels>]| -> f32 {
+            parts.iter().flatten().map(|part| laid(part.as_f32())).sum()
+        };
+        let line = self.line.as_f32();
+        let title_row = laid(self.copy_height.as_f32().max(line));
+        gpui::px(added(&[margin, self.section_gap, self.row_gap]) + title_row + laid(line) * 3.)
+    }
+
+    /// `text` in the panel's type: `sidebar.item_label(NONE)` at its line
+    /// height.
     pub(crate) fn text(&self, text: gpui::Div) -> gpui::Div {
         text.font_family(self.family.clone())
             .text_size(self.size)
@@ -715,13 +787,13 @@ impl PanelLook {
     }
 }
 
-/// The resolved theme `r` as JSON (`values::theme_json`), which the panel's
-/// rows read their values from. Counted in the self-tests
-/// (`THEME_SERIALISATIONS`).
-fn theme_json(r: &native_theme::theme::ResolvedTheme) -> serde_json::Value {
+/// The 0.8.0 resolved theme `r` in its serialised form
+/// (`next::values::theme_json`), which the panel's rows read their values
+/// from beside `r`. Counted in the self-tests (`THEME_SERIALISATIONS`).
+fn theme_json(r: &native_theme::next::ResolvedTheme) -> serde_json::Value {
     #[cfg(test)]
     THEME_SERIALISATIONS.with(|count| count.set(count.get().saturating_add(1)));
-    values::theme_json(r).unwrap_or_default()
+    next_values::theme_json(r).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -733,28 +805,28 @@ thread_local! {
 }
 
 /// The panel's text for `element` of docs/showcase-elements.toml, whose
-/// widget reported `info`, under `look`: a row per leaf the list names, with
-/// its value and how gpui applies it (`info::leaves`), each font's family by
-/// the family gpui draws ([`DrawnFamilies::label`] of the stated family and
-/// the connector's `font_family` of it, as the Theme tab's [`font_rows`]),
-/// and the widget's "Not themeable" notes.
+/// widget reported `info`, under `look`: a row per home the list names, with
+/// its value and how gpui applies it (`info::leaves`), each text style's
+/// family by the family gpui draws ([`DrawnFamilies::label`] of the stated
+/// family and the connector's `font_family` of it, as the Theme tab's
+/// [`font_rows`]), and the widget's "Not themeable" notes.
 pub(crate) fn listed(
     look: &PanelLook,
     element: &elements::ShowcaseElement,
     info: &WidgetInfo,
-) -> ListedInfo {
-    ListedInfo::new(
+) -> ListedInfo<native_theme::next::Color> {
+    next_info::listed_info(
         element,
-        &look.resolved,
-        &look.layout,
-        Some(look.icon_set),
-        look.icon_theme.as_deref(),
+        &look.theme,
+        &look.json,
         |_, font| {
-            look.families
-                .label(&font.family, &native_theme_gpui::font_family(&font.family))
+            look.families.label(
+                &font.family,
+                &native_theme_gpui::font_family(&Arc::from(font.family.as_str())),
+            )
         },
-        |leaf| {
-            leaves::how(&element.id, leaf)
+        |home| {
+            leaves::how(&element.id, home)
                 .unwrap_or(NO_ROUTE)
                 .to_string()
         },
@@ -768,17 +840,20 @@ pub(crate) fn listed(
 /// Widget Info for `element` of docs/showcase-elements.toml, whose widget
 /// reported `info`, in the list's form (the shared crate's `ListedInfo`): the
 /// title row -- its name and state, Copy at the end -- then the "Theme"
-/// section, a row per leaf the list names: a swatch where the value is a
-/// colour, `<leaf> <value>`, and under it how gpui applies the leaf
+/// section, a row per home the list names: a swatch where the value is a
+/// colour, `<home> <value>`, and under it how gpui applies the home
 /// (`info::leaves`); then "Not themeable", where the widget's info says what
 /// the theme states nothing for. The title, the Copy button, the section
 /// name and the first row record where they were laid out. Copy copies the
-/// text the panel shows (`ListedInfo::copy_text`). Also the title.
+/// text the panel shows (`ListedInfo::copy_text`); it is the flat `Button`
+/// the unlisted info's Copy is (`Inspector::widget_tab`), its label in the
+/// panel's text. Also the title.
 fn listed_info(
     ui: &Entity<InfoRegistry>,
     look: &PanelLook,
     element: &elements::ShowcaseElement,
     info: &WidgetInfo,
+    cx: &gpui::App,
 ) -> (gpui::Div, SharedString) {
     let listed = listed(look, element, info);
     let title = SharedString::from(listed.title.clone());
@@ -815,7 +890,7 @@ fn listed_info(
                     .relative()
                     .flex_none()
                     .size(look.line)
-                    .bg(stated(colour))
+                    .bg(next_stated(colour))
                     .border(width)
                     .border_color(frame)
                     .rounded(radius)
@@ -826,8 +901,7 @@ fn listed_info(
                 .relative()
                 .w_full()
                 .items_start()
-                .gap(look.row_gap)
-                .mt(look.row_gap)
+                .when_some(look.row_gap, |row, gap| row.gap(gap).mt(gap))
                 .when_some(swatch, |row, swatch| {
                     row.child(swatch.children(first.then(|| {
                         // Out over the swatch's frame: an absolute child is
@@ -853,40 +927,29 @@ fn listed_info(
         .map(|note| {
             look.text(div())
                 .text_color(look.muted)
-                .mt(look.row_gap)
+                .when_some(look.row_gap, |note, gap| note.mt(gap))
                 .child(note.clone())
                 .into_any_element()
         })
         .collect();
     let copy_text = listed.copy_text();
-    let [top, right, bottom, left] = look.copy_padding;
-    let ((hover_fill, hover_text), (active_fill, active_text)) =
-        (look.copy_hover, look.copy_active);
-    // The label is the box's own text, so the box's hover and pressed text
-    // colours letter it; a child setting its own colour would keep it.
-    let copy = look
-        .text(div())
-        .id("inspector-copy")
-        .relative()
-        .cursor_pointer()
-        .pt(top)
-        .pr(right)
-        .pb(bottom)
-        .pl(left)
-        .rounded(look.copy_radius)
-        .hover(move |style| style.bg(hover_fill).text_color(hover_text))
-        .active(move |style| {
-            let style = style.text_color(active_text);
-            match active_fill {
-                Some(fill) => style.bg(fill),
-                None => style,
-            }
-        })
-        .child("Copy")
-        .child(elements::record(ui, "chrome.info.copy"))
-        .on_click(move |_, _, cx| {
-            cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone()))
-        });
+    // The label in the panel's text, its colour in every state, as the
+    // other showcases letter it at rest; the Button is the unlisted Copy's.
+    let label = look.text(div()).child("Copy");
+    #[cfg(test)]
+    let label = label.child(elements::label_probe(ui, "chrome.info.copy".to_string()));
+    let copy = refined(
+        Button::new("inspector-copy")
+            .small()
+            .accessibility_label("Copy")
+            .child(label),
+        next_geometry(cx, next::geometry::ghost_button_rest_own_padding)
+            .and_then(Result::ok)
+            .as_ref(),
+    )
+    .custom(ghost_variant(cx))
+    .on_click(move |_, _, cx| cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone())))
+    .listed(ui, "chrome.info.copy");
     // Every text its own width, the title row the panel's.
     let panel = v_flex()
         .w_full()
@@ -909,7 +972,7 @@ fn listed_info(
         .child(
             look.text(div().relative())
                 .font_weight(SEMIBOLD)
-                .mt(look.section_gap)
+                .when_some(look.section_gap, |name, gap| name.mt(gap))
                 .child("Theme")
                 .child(elements::record(ui, "chrome.info.section.theme")),
         )
@@ -919,7 +982,7 @@ fn listed_info(
                 .child(
                     look.text(div())
                         .font_weight(SEMIBOLD)
-                        .mt(look.section_gap)
+                        .when_some(look.section_gap, |name, gap| name.mt(gap))
                         .child("Not themeable"),
                 )
                 .children(not_themeable)
@@ -963,18 +1026,26 @@ fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -
 
 impl Render for Inspector {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (gap, container_margin) = self
+        let scale = window.scale_factor();
+        let (gap, margin, body_min) = self
             .showcase
             .upgrade()
             .map(|showcase| {
-                let layout = &showcase.read(cx).layout;
+                let showcase = showcase.read(cx);
+                let margin = demo::side_panel_content_margin(
+                    cx,
+                    next_metric(cx, next::geometry::container_margin),
+                );
                 (
-                    geometry::widget_gap(layout),
-                    geometry::container_margin(layout),
+                    next_metric(cx, next::geometry::widget_gap),
+                    margin,
+                    showcase
+                        .panel_look
+                        .as_ref()
+                        .map(|look| look.body_min_height(margin, scale)),
                 )
             })
             .unwrap_or_default();
-        let margin = demo::side_panel_content_margin(cx, container_margin);
         let tabs = demo::tab_bar(
             &self.ui,
             cx,
@@ -1000,24 +1071,40 @@ impl Render for Inspector {
             .debug_selector(|| INSPECTOR_PANEL.into())
             .child(tabs)
             .child(
-                // The bar is drawn over the right edge of the scroll area, as
-                // on the content panel (`gutter_scroll`).
-                crate::support::gutter_scroll(
-                    "inspector-scroll",
-                    &self.scroll,
-                    div().child(with_padding(v_flex(), margin).child(body)),
-                    {
-                        let this = cx.entity().downgrade();
-                        move |cx: &mut gpui::App| {
-                            this.update(cx, |_, cx| cx.notify()).ok();
-                        }
-                    },
-                    cx,
-                )
-                .flex_1()
-                .min_h_0()
-                // The room below the tabs, its scroll bar's included.
-                .child(elements::record(&self.ui, "chrome.side_panel.inspector")),
+                // The room below the tabs, grown from nothing over the rest
+                // of the inspector, and never shorter than its info down to
+                // the first row (`PanelLook::body_min_height`): that minimum
+                // is all of it that counts in the side panel's height, the
+                // scroll area being laid over the room, out of the flow, so
+                // the info it scrolls never makes the panel taller.
+                div()
+                    .relative()
+                    .w_full()
+                    .flex_grow_1()
+                    .flex_basis(gpui::px(0.))
+                    .min_h(body_min.unwrap_or_default())
+                    .child(
+                        // The bar is drawn over the right edge of the scroll
+                        // area, as on the content panel (`gutter_scroll`).
+                        crate::support::gutter_scroll(
+                            "inspector-scroll",
+                            &self.scroll,
+                            div().child(with_padding(v_flex(), margin).child(body)),
+                            {
+                                let this = cx.entity().downgrade();
+                                move |cx: &mut gpui::App| {
+                                    this.update(cx, |_, cx| cx.notify()).ok();
+                                }
+                            },
+                            cx,
+                        )
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        // The room below the tabs, its scroll bar's included.
+                        .child(elements::record(&self.ui, "chrome.side_panel.inspector")),
+                    ),
             )
     }
 }

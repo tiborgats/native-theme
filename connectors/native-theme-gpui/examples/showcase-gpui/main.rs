@@ -313,6 +313,11 @@ pub(crate) const CHROME_TOOLBAR: &str = "chrome-toolbar";
 /// Separator and the inspector, the body's first panel.
 pub(crate) const CHROME_SIDE_PANEL: &str = "chrome-side-panel";
 
+/// The id of the side panel's scroll area, and the debug selector of the
+/// content it scrolls: the theme settings, the Separator and the inspector.
+pub(crate) const CHROME_SIDE_PANEL_SCROLL: &str = "chrome-side-panel-scroll";
+pub(crate) const CHROME_SIDE_PANEL_CONTENT: &str = "chrome-side-panel-content";
+
 /// The debug selector the status bar's side-panel toggle carries, the
 /// status bar's first item.
 pub(crate) const CHROME_SIDE_PANEL_TOGGLE: &str = "chrome-side-panel-toggle";
@@ -321,9 +326,10 @@ pub(crate) const CHROME_SIDE_PANEL_TOGGLE: &str = "chrome-side-panel-toggle";
 /// panel, one labelled row each.
 pub(crate) const CHROME_THEME_SETTINGS: &str = "chrome-theme-settings";
 
-/// The ids and debug selectors of the theme settings' three labels, in
-/// their order: Theme, Mode, Icon theme.
+/// The ids and debug selectors of the theme settings' four labels, in
+/// their order: Theme, Palette, Mode, Icon theme.
 pub(crate) const CHROME_LABEL_THEME: &str = "chrome-label-theme";
+pub(crate) const CHROME_LABEL_PALETTE: &str = "chrome-label-palette";
 pub(crate) const CHROME_LABEL_MODE: &str = "chrome-label-mode";
 pub(crate) const CHROME_LABEL_ICON_THEME: &str = "chrome-label-icon-theme";
 
@@ -373,6 +379,10 @@ pub(crate) const INSPECTOR_PANEL: &str = "inspector-panel";
 
 /// The debug selector the label with the shown info's title carries.
 pub(crate) const INSPECTOR_TITLE: &str = "inspector-title";
+
+/// The debug selector a shown info not in the list's form carries, its
+/// title row and its sections.
+pub(crate) const INSPECTOR_INFO: &str = "inspector-info";
 
 /// The debug selector the inspector's TabBar carries.
 pub(crate) const INSPECTOR_TABS: &str = "inspector-tabs";
@@ -474,6 +484,10 @@ pub(crate) const INPUTS_FIELD_HEIGHT_ONLY: &str = "inputs-field-height-only";
 /// The id and debug selector of the Inputs page's Textarea, whose own
 /// height `the_textarea_keeps_its_own_height` measures.
 pub(crate) const INPUTS_TEXTAREA: &str = "inputs-textarea";
+/// The debug selector of the Inputs page's input group Copy button, which
+/// `the_copy_boxes_draw_the_flat_hover_outline_around_their_own_padding`
+/// hovers and measures.
+pub(crate) const INPUTS_GROUP_COPY: &str = "inputs-group-copy";
 
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside
@@ -622,6 +636,8 @@ pub(crate) const PROBE_NOTIFICATION: &str = "probe-notification";
 /// The theme settings' colour-mode Select, which
 /// `interactive_controls_respond` drives.
 pub(crate) const PROBE_COLOR_MODE: &str = "probe-color-mode";
+/// The theme settings' palette Select.
+pub(crate) const PROBE_PALETTE: &str = "probe-palette";
 /// The theme settings' icon-theme Select, which
 /// `the_theme_settings_switch_the_icon_theme` drives.
 pub(crate) const PROBE_ICON_THEME: &str = "probe-icon-theme";
@@ -984,11 +1000,16 @@ fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String, outputs: RunO
 }
 
 /// Put the showcase `main` opened into the state the command line asks for:
-/// its colour mode, theme, page, icons and open menu.
+/// its colour mode, theme, palette, page, icons and open menu.
 ///
 /// Each flag takes exactly what its Select offers, through the shared
 /// crate's one validator per flag (`cli`): `--variant` a row of the
-/// colour-mode Select, `--theme` one of the preset switch, `--icon-set` one
+/// colour-mode Select, `--theme` one of the preset switch
+/// (`cli::next_theme_key`: `default` and this platform's presets of the
+/// 0.8.0 model; a community preset of the 0.7.2 model is reported, its
+/// colours being a palette), `--palette` one of the palette Select
+/// (`cli::palette_key`: `none` or a bundled palette, laid over the theme
+/// installed, as `Showcase::choose_palette` lays it), `--icon-set` one
 /// of the icon-theme Select. A value it does not offer is reported on stderr
 /// and ignored (`cli::reported`), so the setting stays what it would have
 /// been without the flag: a rejected `--theme` leaves `--variant` to install
@@ -1016,7 +1037,7 @@ fn apply_cli_args(
     let theme = cli_args
         .theme
         .as_deref()
-        .and_then(|name| reported(cli::theme_key(name)))
+        .and_then(|name| reported(cli::next_theme_key(name)))
         .map(|key| match key {
             ThemeKey::Default => "default".to_string(),
             ThemeKey::Preset(preset) => preset,
@@ -1030,6 +1051,16 @@ fn apply_cli_args(
             s.apply_theme_by_name(&theme, window, cx);
         }
         (None, None) => {}
+    }
+    // `--palette` lays its palette over the theme now installed, as a choice
+    // in the palette Select does, which it then shows.
+    if let Some(palette) = cli_args
+        .palette
+        .as_deref()
+        .and_then(|name| reported(cli::palette_key(name)))
+    {
+        s.choose_palette(palette.unwrap_or(support::NO_PALETTE), window, cx);
+        s.show_palette(window, cx);
     }
 
     if let Some(page) = cli_args

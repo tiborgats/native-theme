@@ -12,7 +12,7 @@
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
 //! | [`into_image_source`] | Consuming variant of [`to_image_source`] (an RGBA icon's buffer is not copied) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
-//! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
+//! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::icons::IconSet`] → [`ImageSource`] in one call |
 //! | [`bundled_svg_to_image_source`] | Convert raw SVG bytes → [`ImageSource`] with optional color/size |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
 //! | [`animated_frames_to_image_sources_for`] | Convert an icon set's animation frames → [`AnimatedImageSources`], coloured as the set is |
@@ -93,11 +93,11 @@ use gpui::{
     Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
+use native_theme::icons::IconSet;
 use native_theme::icons::{
     AnimatedIcon, IconData, IconProvider, IconRole, colorize_monochrome_svg, fill_current_color,
     load_custom_icon_in, load_icon,
 };
-use native_theme::theme::IconSet;
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -850,7 +850,7 @@ pub fn into_image_source(
 #[must_use]
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
+    icon_set: native_theme::icons::IconSet,
     icon_theme: Option<&str>,
     color: Option<Hsla>,
     size: Option<u32>,
@@ -862,7 +862,7 @@ pub fn custom_icon_to_image_source(
 /// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].
 ///
 /// Combines the icon-name mapping and loading steps into a single call for
-/// bundled icon sets. Supports [`native_theme::theme::IconSet::Lucide`] and [`native_theme::theme::IconSet::Material`].
+/// bundled icon sets. Supports [`native_theme::icons::IconSet::Lucide`] and [`native_theme::icons::IconSet::Material`].
 /// Returns `None` for other icon sets (use [`to_image_source`] with
 /// [`native_theme::icons::FreedesktopLoader`] for freedesktop system icons).
 ///
@@ -881,13 +881,13 @@ pub fn custom_icon_to_image_source(
 #[must_use]
 pub fn bundled_icon_to_image_source(
     icon: IconName,
-    icon_set: native_theme::theme::IconSet,
+    icon_set: native_theme::icons::IconSet,
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
     let name = match icon_set {
-        native_theme::theme::IconSet::Lucide => lucide_name_for_gpui_icon(icon)?,
-        native_theme::theme::IconSet::Material => material_name_for_gpui_icon(icon)?,
+        native_theme::icons::IconSet::Lucide => lucide_name_for_gpui_icon(icon)?,
+        native_theme::icons::IconSet::Material => material_name_for_gpui_icon(icon)?,
         _ => return None,
     };
     // G3 (Phase 93-03): per-set loader replaces the demoted bundled_icon_by_name.
@@ -1655,7 +1655,7 @@ mod tests {
     #[cfg(all(feature = "lucide-icons", feature = "material-icons"))]
     #[test]
     fn every_some_resolves_in_its_bundle() {
-        use native_theme::theme::IconSet;
+        use native_theme::icons::IconSet;
         for icon in ALL_ICON_NAMES {
             if let Some(name) = lucide_name_for_gpui_icon(icon.clone()) {
                 assert!(
@@ -2261,12 +2261,12 @@ mod tests {
     struct TestCustomIcon;
 
     impl native_theme::icons::IconProvider for TestCustomIcon {
-        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
+        fn icon_name(&self, _set: native_theme::icons::IconSet) -> Option<&str> {
             None // No system name -- forces bundled SVG path
         }
         fn icon_svg(
             &self,
-            _set: native_theme::theme::IconSet,
+            _set: native_theme::icons::IconSet,
         ) -> Option<std::borrow::Cow<'static, [u8]>> {
             Some(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>"))
         }
@@ -2277,12 +2277,12 @@ mod tests {
     struct EmptyProvider;
 
     impl native_theme::icons::IconProvider for EmptyProvider {
-        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
+        fn icon_name(&self, _set: native_theme::icons::IconSet) -> Option<&str> {
             None
         }
         fn icon_svg(
             &self,
-            _set: native_theme::theme::IconSet,
+            _set: native_theme::icons::IconSet,
         ) -> Option<std::borrow::Cow<'static, [u8]>> {
             None
         }
@@ -2292,7 +2292,7 @@ mod tests {
     fn custom_icon_to_image_source_with_svg_provider_returns_some() {
         let result = custom_icon_to_image_source(
             &TestCustomIcon,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -2304,7 +2304,7 @@ mod tests {
     fn custom_icon_to_image_source_with_empty_provider_returns_none() {
         let result = custom_icon_to_image_source(
             &EmptyProvider,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -2322,7 +2322,7 @@ mod tests {
         };
         let result = custom_icon_to_image_source(
             &TestCustomIcon,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             Some(color),
             None,
@@ -2335,7 +2335,7 @@ mod tests {
         let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestCustomIcon);
         let result = custom_icon_to_image_source(
             &*boxed,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -2350,12 +2350,12 @@ mod tests {
 
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     impl native_theme::icons::IconProvider for FolderProvider {
-        fn icon_name(&self, set: native_theme::theme::IconSet) -> Option<&str> {
-            (set == native_theme::theme::IconSet::Freedesktop).then_some("folder")
+        fn icon_name(&self, set: native_theme::icons::IconSet) -> Option<&str> {
+            (set == native_theme::icons::IconSet::Freedesktop).then_some("folder")
         }
         fn icon_svg(
             &self,
-            _set: native_theme::theme::IconSet,
+            _set: native_theme::icons::IconSet,
         ) -> Option<std::borrow::Cow<'static, [u8]>> {
             None
         }
@@ -2391,7 +2391,7 @@ mod tests {
             let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
             let loaded = custom_icon_to_image_source(
                 &FolderProvider,
-                native_theme::theme::IconSet::Freedesktop,
+                native_theme::icons::IconSet::Freedesktop,
                 None,
                 Some(red),
                 Some(32),
@@ -2438,7 +2438,7 @@ mod tests {
             let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
             let loaded = custom_icon_to_image_source(
                 &FolderProvider,
-                native_theme::theme::IconSet::Freedesktop,
+                native_theme::icons::IconSet::Freedesktop,
                 None,
                 Some(red),
                 Some(16),
@@ -2567,7 +2567,7 @@ mod tests {
             for (size, side) in [(16, 16), (48, 48), (0, 16), (99_999, 48)] {
                 let image = custom_icon_to_image_source(
                     &FolderProvider,
-                    native_theme::theme::IconSet::Freedesktop,
+                    native_theme::icons::IconSet::Freedesktop,
                     None,
                     None,
                     Some(size),
@@ -2618,7 +2618,7 @@ mod tests {
         if crate::icon_fixture::in_child() {
             let image = custom_icon_to_image_source(
                 &FolderProvider,
-                native_theme::theme::IconSet::Freedesktop,
+                native_theme::icons::IconSet::Freedesktop,
                 None,
                 None,
                 Some(99_999),
@@ -2674,7 +2674,7 @@ mod tests {
             };
             let loaded = custom_icon_to_image_source(
                 &FolderProvider,
-                native_theme::theme::IconSet::Freedesktop,
+                native_theme::icons::IconSet::Freedesktop,
                 Some("Fixture"),
                 None,
                 Some(16),
@@ -2714,7 +2714,7 @@ mod tests {
     fn bundled_icon_lucide_returns_some() {
         let result = bundled_icon_to_image_source(
             IconName::Search,
-            native_theme::theme::IconSet::Lucide,
+            native_theme::icons::IconSet::Lucide,
             None,
             None,
         );
@@ -2726,7 +2726,7 @@ mod tests {
     fn bundled_icon_material_returns_some() {
         let result = bundled_icon_to_image_source(
             IconName::Search,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
         );
@@ -2737,7 +2737,7 @@ mod tests {
     fn bundled_icon_freedesktop_returns_none() {
         let result = bundled_icon_to_image_source(
             IconName::Search,
-            native_theme::theme::IconSet::Freedesktop,
+            native_theme::icons::IconSet::Freedesktop,
             None,
             None,
         );
@@ -2758,7 +2758,7 @@ mod tests {
         };
         let result = bundled_icon_to_image_source(
             IconName::Check,
-            native_theme::theme::IconSet::Lucide,
+            native_theme::icons::IconSet::Lucide,
             Some(color),
             None,
         );

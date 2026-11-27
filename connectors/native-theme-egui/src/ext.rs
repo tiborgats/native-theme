@@ -1,5 +1,5 @@
 use crate::atlas::carry_name_keys;
-use crate::plugin::{capped, record_scope};
+use crate::plugin::{PartRings, capped, record_scope};
 use crate::style::egui_preset;
 use crate::{Builder, Role, RoleVariant, Surface, ThemeAtlas};
 
@@ -120,9 +120,10 @@ impl NativeThemeUiExt for egui::Ui {
             atlas.text_size_cap(),
         );
         let radius = style.visuals.widgets.active.corner_radius;
+        let rings = atlas.scheme(theme).part_rings(role, variant);
         self.scope_builder(egui::UiBuilder::new().style(style), |child| {
             // A child `Ui` of this pass: no earlier record holds its id.
-            record_scope(child.ctx(), child.unique_id(), radius, false);
+            record_scope(child.ctx(), child.unique_id(), radius, rings, false);
             add_contents(child)
         })
     }
@@ -137,7 +138,8 @@ impl NativeThemeUiExt for egui::Ui {
             atlas.text_size_cap(),
         );
         let radius = style.visuals.widgets.active.corner_radius;
-        record_scope(self.ctx(), self.unique_id(), radius, true);
+        let rings = atlas.scheme(theme).part_rings(role, variant);
+        record_scope(self.ctx(), self.unique_id(), radius, rings, true);
         self.set_style(style);
     }
 
@@ -145,7 +147,13 @@ impl NativeThemeUiExt for egui::Ui {
         let style = style.into();
         if ThemeAtlas::from_ctx(self.ctx()).is_some() {
             let radius = style.visuals.widgets.active.corner_radius;
-            record_scope(self.ctx(), self.unique_id(), radius, true);
+            record_scope(
+                self.ctx(),
+                self.unique_id(),
+                radius,
+                PartRings::default(),
+                true,
+            );
         }
         self.set_style(style);
     }
@@ -197,7 +205,8 @@ pub fn menu_bar_modifier(ui: &egui::Ui) -> Option<egui::style::StyleModifier> {
     ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.menu_bar_modifier(theme))
 }
 
-use native_theme::theme::{ColorMode, IconSet, ResolvedTheme, Theme};
+use native_theme::icons::IconSet;
+use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext, Result, SystemTheme};
 use std::borrow::Cow;
 

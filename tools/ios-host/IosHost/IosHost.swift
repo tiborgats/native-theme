@@ -1,0 +1,3173 @@
+// The iOS host of the UIKit measurements (the 0.8.0 plan, D4; spike I; the iOS
+// lane's second round).
+//
+// Two modes, chosen by the first launch argument:
+//
+// `run<N>` (tools/ios-host/run.sh, `simctl launch`): one page per appearance
+// (the window's `overrideUserInterfaceStyle`, light and dark), specimen and
+// size. The specimens: a UIButton in each UIButton.Configuration style the SDK
+// offers (iOS 26 adds the four Liquid Glass styles) at each `buttonSize`; at
+// `medium`, the styles with each variant the catalogue names for ios-* (a role,
+// a corner style, an image and its placement, a subtitle, the activity
+// indicator, a menu and its indicator); `UIButton(type:)` of the system types;
+// bar button items in a UIToolbar; a navigation bar's back button in each
+// display mode; UIPasteControl in each display mode; AVRoutePickerView. A page
+// is a grid of cells, a row per state and a column per backdrop. The states:
+// normal; highlighted (`isHighlighted = true`, no touch); disabled; toggle_off
+// (`changesSelectionAsPrimaryAction`, not selected); selected (the same,
+// `isSelected = true`); selected_highlighted (both); focused (a focus update to
+// the system column's specimen is requested, and whether UIKit focused it is
+// recorded). A specimen lists the states it can take. `set=campaign` draws
+// the campaign set instead (campaignSpecimens), `set=lists` the list set
+// (listSpecimens: list rows, a segment, a tab bar item, an outline header,
+// an inset-grouped row, switch rows), which the press mode also presses in
+// place of the buttons. The backdrops: the
+// system background, opaque black and opaque white, all else equal, for a
+// per-pixel solve of the layer's colour and alpha (tools/ios-host/solve.swift);
+// a glass style has a second page over a known pattern, with a column of the
+// pattern alone. UIKit's animations are disabled and each page settles for two
+// seconds. Before the pages, the app writes UIKit's own values to index.toml:
+// every UIColor class colour run.sh found in the SDK's headers, resolved under
+// each appearance, contrast and level; the text styles' fonts and
+// UIFontMetrics' scaling at every content size category; symbol image sizes;
+// the caret; the motion and behaviour values UIKit exposes. Each render of the
+// system column adds the button's configuration as `updated(for:)` resolves it
+// for the state, its title font and its view tree.
+//
+// `press<N>` (launched by the UI test, IosHostUITests/PressTests.swift): the
+// glass styles at each size and, at medium, the other styles, the system
+// type and the bar button items in their toolbar, pressed by a real touch (`XCUIElement.press(forDuration:)`). The app
+// arms one button at a time (accessibilityIdentifier `press-<k>`); once the
+// touch has been down for `pressSettleSeconds` it requests the screenshot, and
+// keeps the capture only if the touch was still down when the screenshot
+// arrived. UIKit's animations stay enabled: the press is one. Each button's
+// layers (their animations, and the presentation transform and opacity of
+// those animated, moved or not opaque) are recorded at rest, over the first
+// second of the touch and over the half second after its release, as
+// [[motion]] tables.
+//
+// `hover<N>` (launched by the UI test on an iPad, run.sh's hover pass): the
+// press mode's machinery with a pointer in place of the touch, on the hover
+// set (hoverSpecimens: the list set's segment, `.sidebar` row and
+// outline-disclosure header, and a titled bar button item in a UIToolbar),
+// each hovered over every solve backdrop. The UI test moves the pointer to
+// the window's corner, then hovers the armed target's centre
+// (`XCUICoordinate.hover()`, iOS 15+), again and again until the app arms the
+// next one; a UIHoverGestureRecognizer on the specimen's view reports the
+// pointer. The pointer does not stay for a simulator screenshot (run
+// 45622616324), so the app reads the target itself: at rest when armed, and
+// at each of `hoverReadTimes` after the recognizer began, the window drawn
+// over the cell (draw/), the label's properties and pixels beside the rest
+// read's, and the pointer effect's views and layers, as one
+// `[[hover_read]]`. A read counts where the pointer was still over the
+// target at a read `hoverHoldSeconds` or later, else it is retaken; a target
+// whose view saw no hover within `hoverWaitSeconds` is recorded as
+// `[[hover_not_seen]]` and is a failure.
+//
+// `focus<N>` (run.sh, `simctl launch` on an iPad): the styles at medium and the
+// system type, normal and focused, as the `run` mode draws them: whether
+// UIKit has a focus system there and focuses a button is recorded.
+//
+// `measure<N>` (run.sh, `simctl launch`): the measurement campaign's passes,
+// tools/ios-host/IosHost/Measure.swift.
+//
+// Each cell is drawn by the app (`drawHierarchy(in:afterScreenUpdates:)` into a
+// UIGraphicsImageRenderer of the screen's scale and the standard range) to
+// draw/, and cropped from the simulator's own screenshot of the page to
+// screen/. The screenshot is taken by run.sh: the app writes
+// sync/ready-<n>-<attempt>, the script writes sync/screen-<n>-<attempt>.png. A
+// screenshot whose page margins are not the plain system background, or whose
+// page code (a row of red and blue squares under the grid, the page's number
+// in binary) is not the page's, was covered by a system banner or is stale: it
+// is taken again (`maxRetakes`). A page is kept once two screenshots agree
+// (`maxSettleShots`). The retakes are listed in sync/retakes. index.toml
+// records the simulator, the build (the DT keys Xcode writes into the bundle's
+// Info.plist), the screen, UIKit's values and each cell.
+//
+// Writes into Documents/<run>/ of its data container. The `run` mode exits (1
+// where a step failed); the `press` mode shows `press-done` for the UI test.
+
+import AVKit
+import SwiftUI
+import UIKit
+
+@main
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+        true
+    }
+}
+
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(
+        _ scene: UIScene, willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+        let window = UIWindow(windowScene: windowScene)
+        // `measure<N>` is tools/ios-host/IosHost/Measure.swift's mode.
+        let mode = CommandLine.arguments.dropFirst().first ?? "run"
+        window.rootViewController = mode.hasPrefix("measure") ? MeasureController() : HostViewController()
+        window.makeKeyAndVisible()
+        self.window = window
+    }
+}
+
+struct Style {
+    let name: String
+    let make: () -> UIButton.Configuration
+}
+
+func configurationStyles() -> [Style] {
+    var styles = [
+        Style(name: "plain", make: { .plain() }),
+        Style(name: "gray", make: { .gray() }),
+        Style(name: "tinted", make: { .tinted() }),
+        Style(name: "filled", make: { .filled() }),
+        Style(name: "borderless", make: { .borderless() }),
+        Style(name: "bordered", make: { .bordered() }),
+        Style(name: "bordered_tinted", make: { .borderedTinted() }),
+        Style(name: "bordered_prominent", make: { .borderedProminent() }),
+    ]
+    #if compiler(>=6.2)
+    if #available(iOS 26.0, *) {
+        styles += [
+            Style(name: "glass", make: { .glass() }),
+            Style(name: "prominent_glass", make: { .prominentGlass() }),
+            Style(name: "clear_glass", make: { .clearGlass() }),
+            Style(name: "prominent_clear_glass", make: { .prominentClearGlass() }),
+        ]
+    }
+    #endif
+    return styles
+}
+
+let glassStyles: Set<String> = ["glass", "prominent_glass", "clear_glass", "prominent_clear_glass"]
+
+typealias SizeChoice = (name: String, size: UIButton.Configuration.Size)
+
+let sizes: [SizeChoice] = [("mini", .mini), ("small", .small), ("medium", .medium), ("large", .large)]
+let medium: SizeChoice = ("medium", .medium)
+// A specimen that has no UIButton.Configuration size.
+let noSize: SizeChoice = ("default", .medium)
+
+let settleSeconds = 2.0
+let pressSettleSeconds = 1.5
+let pressRearmSeconds = 0.5
+// The hover mode's wait for the pointer to reach an armed target's view: the
+// UI test hovers it again and again meanwhile, about 11 s a try (a hover took
+// about 5.5 s in run 45622616324's UI test log, the corner's and the
+// target's), as the hover recognizer began for 0-5 of 24 targets' one try
+// there.
+let hoverWaitSeconds = 60.0
+// The hover mode's reads of a target once the pointer is over it (the hover
+// recognizer's `.began`), in seconds after it: the pointer left within
+// pressSettleSeconds in run 45622616324, and UIKit's pointer effect was gone
+// by 0.52 s there. A read counts where the pointer was still over the target
+// at a read `hoverHoldSeconds` or more after it arrived; else it is retaken.
+let hoverReadTimes = [0.0, 0.05, 0.1, 0.2, 0.3, 0.5]
+let hoverHoldSeconds = 0.1
+// A pixel of a hover read differs from the rest read where a channel differs
+// by more than this many levels (compare.swift's `tolerance`).
+let hoverChangeLevels = 1
+
+// A screenshot whose margins hold more than `overlayPixels` pixels differing
+// from the system background by more than `overlayLevels` in a channel, or
+// whose page code does not read as the page's number, is taken again, up to
+// `maxRetakes` times, `retakeDelaySeconds` apart: a system banner (iOS 26.5's
+// "Ready for Apple Intelligence") can slide over the page.
+let overlayLevels = 32
+let overlayPixels = 50
+let maxRetakes = 5
+let retakeDelaySeconds = 6.0
+
+// A page is kept when two screenshots `settleShotSeconds` apart agree within
+// `settledLevels` in every cell, at most `maxSettleShots` screenshots after the
+// first: Liquid Glass adapts to the luminance behind it, and that transition
+// can outlast `settleSeconds` (iOS 26.5, dark glass over white). The activity
+// indicator turns without end, so its pages keep the first screenshot.
+let settledLevels = 1
+let settleShotSeconds = 1.0
+let maxSettleShots = 10
+
+let margin: CGFloat = 16
+let cellHeight: CGFloat = 92
+let gap: CGFloat = 8
+let codeBits = 12
+let codeSquare: CGFloat = 6
+let patternSquare: CGFloat = 6
+let patternColors: [(name: String, color: UIColor)] = [
+    ("#000000", UIColor(red: 0, green: 0, blue: 0, alpha: 1)),
+    ("#ffffff", UIColor(red: 1, green: 1, blue: 1, alpha: 1)),
+    ("#ff0000", UIColor(red: 1, green: 0, blue: 0, alpha: 1)),
+    ("#0000ff", UIColor(red: 0, green: 0, blue: 1, alpha: 1)),
+]
+
+func samples(_ image: CGImage) -> [UInt8]? {
+    guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+        let context = CGContext(
+            data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+            bytesPerRow: image.width * 4, space: space,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+    else { return nil }
+    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    guard let data = context.makeImage()?.dataProvider?.data as Data? else { return nil }
+    return [UInt8](data)
+}
+
+typealias Appearance = (name: String, style: UIUserInterfaceStyle)
+
+let appearances: [Appearance] = [("light", .light), ("dark", .dark)]
+
+enum ButtonState: String {
+    case normal
+    case highlighted
+    case disabled
+    case toggleOff = "toggle_off"
+    case selected
+    case selectedHighlighted = "selected_highlighted"
+    case focused
+    case pressed
+    case pressedSelected = "pressed_selected"
+    /// The pointer over the specimen (the hover mode).
+    case hovered
+    /// A toggle on and disabled; a highlighted button disabled (the
+    /// campaign set).
+    case disabledSelected = "disabled_selected"
+    case disabledHighlighted = "disabled_highlighted"
+    /// A list row's cell disabled (its switch disabled with it), off and on
+    /// (the list set).
+    case cellDisabled = "cell_disabled"
+    case cellDisabledSelected = "cell_disabled_selected"
+}
+
+let allStates: [ButtonState] = [.normal, .highlighted, .disabled, .toggleOff, .selected, .selectedHighlighted, .focused]
+let untoggledStates: [ButtonState] = [.normal, .highlighted, .disabled, .focused]
+
+enum Fill: String {
+    case system
+    case black
+    case white
+    case pattern
+}
+
+struct Backdrop {
+    let fill: Fill
+    let holdsSpecimen: Bool
+
+    var name: String { holdsSpecimen ? fill.rawValue : "\(fill.rawValue)_alone" }
+}
+
+let solveBackdrops = [Backdrop(fill: .system, holdsSpecimen: true), Backdrop(fill: .black, holdsSpecimen: true),
+                      Backdrop(fill: .white, holdsSpecimen: true)]
+let patternBackdrops = [Backdrop(fill: .pattern, holdsSpecimen: true), Backdrop(fill: .pattern, holdsSpecimen: false)]
+
+/// What a specimen puts in a cell: the view placed there, and the control,
+/// button or bar item its states are set on.
+final class Sample {
+    let view: UIView
+    let control: UIControl?
+    let button: UIButton?
+    let barItem: UIBarButtonItem?
+    /// The size the harness gives a view that has no intrinsic size.
+    let harnessSize: CGSize?
+    /// Whether the view spans the cell's width, inset by `barInset` (a
+    /// harness size then gives the height alone).
+    let spansWidth: Bool
+    /// The list set's press: the view whose touches the press mode's long
+    /// press recognizer reports, the view the UI test presses at its centre
+    /// (while armed, a marker over it carries the identifier: armNext),
+    /// whether UIKit reports the pressed part highlighted (nil where it
+    /// cannot say), and what restores the rest state before each press (a
+    /// release selects a row, a segment or a tab, or turns a switch).
+    let pressView: (@MainActor () -> UIView?)?
+    let pressTarget: (@MainActor () -> UIView?)?
+    let highlighted: (@MainActor () -> Bool?)?
+    let reset: (@MainActor () -> Void)?
+    /// Sets a state on the sample where the specimen sets its own (false
+    /// where it cannot take it).
+    let applyState: (@MainActor (ButtonState) -> Bool)?
+    /// What UIKit reports for the sample's parts, as TOML lines of its
+    /// [[render]] entry.
+    let reads: (@MainActor (UITraitCollection) -> String)?
+    /// What the sample's views need alive (a data source, a hosting
+    /// controller, a model).
+    let keep: [AnyObject]
+
+    init(
+        view: UIView, control: UIControl? = nil, button: UIButton? = nil, barItem: UIBarButtonItem? = nil,
+        harnessSize: CGSize? = nil, spansWidth: Bool = false, pressView: (@MainActor () -> UIView?)? = nil,
+        pressTarget: (@MainActor () -> UIView?)? = nil,
+        highlighted: (@MainActor () -> Bool?)? = nil, reset: (@MainActor () -> Void)? = nil,
+        applyState: (@MainActor (ButtonState) -> Bool)? = nil,
+        reads: (@MainActor (UITraitCollection) -> String)? = nil, keep: [AnyObject] = []
+    ) {
+        self.view = view
+        self.control = control
+        self.button = button
+        self.barItem = barItem
+        self.harnessSize = harnessSize
+        self.spansWidth = spansWidth
+        self.pressView = pressView
+        self.pressTarget = pressTarget
+        self.highlighted = highlighted
+        self.reset = reset
+        self.applyState = applyState
+        self.reads = reads
+        self.keep = keep
+    }
+}
+
+let barInset: CGFloat = 12
+
+struct Specimen {
+    let name: String
+    let kind: String
+    let style: String
+    let variant: [(key: String, value: String)]
+    let sizes: [SizeChoice]
+    let states: [ButtonState]
+    let make: @MainActor (UIButton.Configuration.Size) -> Sample
+
+    /// Whether the specimen moves without end (the activity indicator).
+    var animated: Bool { variant.contains { $0.key == "activity_indicator" } }
+}
+
+@MainActor
+func configured(
+    _ style: Style, variant: [(key: String, value: String)] = [], sizes: [SizeChoice] = [medium],
+    states: [ButtonState] = allStates, configure: @escaping (inout UIButton.Configuration) -> Void = { _ in },
+    adjust: @escaping @MainActor (UIButton) -> Void = { _ in }
+) -> Specimen {
+    let suffix = variant.map { "\($0.key)_\($0.value)" }.joined(separator: "+")
+    return Specimen(
+        name: suffix.isEmpty ? style.name : "\(style.name)+\(suffix)", kind: "configuration", style: style.name,
+        variant: variant, sizes: sizes, states: states,
+        make: { size in
+            var configuration = style.make()
+            configuration.title = "Button"
+            configuration.buttonSize = size
+            configure(&configuration)
+            let button = UIButton(configuration: configuration)
+            adjust(button)
+            return Sample(view: button, control: button, button: button)
+        })
+}
+
+@MainActor
+func typed(_ name: String, _ type: UIButton.ButtonType, title: String?) -> Specimen {
+    Specimen(
+        name: name, kind: "button_type", style: name, variant: [], sizes: [noSize], states: allStates,
+        make: { _ in
+            let button = UIButton(type: type)
+            if let title { button.setTitle(title, for: .normal) }
+            return Sample(view: button, control: button, button: button)
+        })
+}
+
+@MainActor
+func barItem(_ name: String, variant: [(key: String, value: String)] = [], _ make: @escaping @MainActor () -> UIBarButtonItem)
+    -> Specimen
+{
+    Specimen(
+        name: name, kind: "bar_button_item", style: name, variant: variant, sizes: [noSize],
+        states: [.normal, .disabled, .toggleOff, .selected],
+        make: { _ in
+            let item = make()
+            let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 200, height: 44))
+            toolbar.items = [.flexibleSpace(), item, .flexibleSpace()]
+            return Sample(view: toolbar, barItem: item, spansWidth: true)
+        })
+}
+
+@MainActor
+func backButton(_ name: String, mode: UINavigationItem.BackButtonDisplayMode, modeName: String) -> Specimen {
+    Specimen(
+        name: name, kind: "navigation_bar", style: "back", variant: [("back_button_display_mode", modeName)],
+        sizes: [noSize], states: [.normal],
+        make: { _ in
+            let bar = UINavigationBar(frame: CGRect(x: 0, y: 0, width: 200, height: 44))
+            let previous = UINavigationItem(title: "Previous")
+            let top = UINavigationItem(title: "Title")
+            top.backButtonDisplayMode = mode
+            bar.setItems([previous, top], animated: false)
+            return Sample(view: bar, spansWidth: true)
+        })
+}
+
+/// The view a paste control pastes into; UIPasteControl enables itself only
+/// for a target that accepts the pasteboard's content.
+@MainActor
+let pasteTarget: UITextView = {
+    let view = UITextView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+    view.pasteConfiguration = UIPasteConfiguration(forAccepting: NSString.self)
+    view.backgroundColor = .clear
+    view.alpha = 0
+    return view
+}()
+
+@MainActor
+func pasteControl(_ name: String, mode: UIPasteControl.DisplayMode?, modeName: String) -> Specimen {
+    Specimen(
+        name: name, kind: "paste_control", style: "paste_control",
+        variant: mode == nil ? [] : [("display_mode", modeName)], sizes: [noSize],
+        states: [.normal, .highlighted, .disabled, .focused],
+        make: { _ in
+            let configuration = UIPasteControl.Configuration()
+            if let mode { configuration.displayMode = mode }
+            let control = UIPasteControl(configuration: configuration)
+            control.target = pasteTarget
+            return Sample(view: control, control: control)
+        })
+}
+
+@MainActor
+func specimens(quick: Bool) -> [Specimen] {
+    let styles = configurationStyles()
+    var list = styles.map { configured($0, sizes: sizes) }
+    list += [
+        typed("system", .system, title: "Button"),
+        typed("info_light", .infoLight, title: nil),
+        typed("info_dark", .infoDark, title: nil),
+        typed("detail_disclosure", .detailDisclosure, title: nil),
+        typed("contact_add", .contactAdd, title: nil),
+        typed("close", .close, title: nil),
+    ]
+    let roles: [(String, UIButton.Role)] = [("destructive", .destructive), ("cancel", .cancel), ("primary", .primary)]
+    for style in styles {
+        for (name, role) in roles {
+            list.append(configured(style, variant: [("role", name)], adjust: { $0.role = role }))
+        }
+    }
+    let corners: [(String, UIButton.Configuration.CornerStyle)] = [
+        ("fixed", .fixed), ("dynamic", .dynamic), ("small", .small), ("medium", .medium), ("large", .large),
+        ("capsule", .capsule),
+    ]
+    for style in styles where ["filled", "gray", "glass"].contains(style.name) {
+        for (name, corner) in corners {
+            list.append(configured(style, variant: [("corner_style", name)], configure: { $0.cornerStyle = corner }))
+        }
+    }
+    for style in styles {
+        list.append(
+            configured(style, variant: [("image", "star")], configure: { $0.image = UIImage(systemName: "star") }))
+        list.append(
+            configured(
+                style, variant: [("image", "star"), ("title", "none")],
+                configure: {
+                    $0.image = UIImage(systemName: "star")
+                    $0.title = nil
+                }))
+        list.append(configured(style, variant: [("subtitle", "Subtitle")], configure: { $0.subtitle = "Subtitle" }))
+        list.append(
+            configured(style, variant: [("activity_indicator", "shown")], configure: { $0.showsActivityIndicator = true }))
+    }
+    let placements: [(String, NSDirectionalRectEdge)] = [("trailing", .trailing), ("top", .top), ("bottom", .bottom)]
+    for style in styles where style.name == "filled" {
+        for (name, placement) in placements {
+            list.append(
+                configured(
+                    style, variant: [("image", "star"), ("image_placement", name)],
+                    configure: {
+                        $0.image = UIImage(systemName: "star")
+                        $0.imagePlacement = placement
+                    }))
+        }
+    }
+    let menu = UIMenu(children: [UIAction(title: "Item") { _ in }])
+    let indicators: [(String, UIButton.Configuration.Indicator)] = [("popup", .popup), ("none", .none)]
+    for style in styles where ["filled", "gray", "plain", "glass"].contains(style.name) {
+        list.append(
+            configured(
+                style, variant: [("menu", "primary_action")], states: untoggledStates,
+                adjust: {
+                    $0.menu = menu
+                    $0.showsMenuAsPrimaryAction = true
+                }))
+        for (name, indicator) in indicators {
+            list.append(
+                configured(
+                    style, variant: [("menu", "primary_action"), ("indicator", name)], states: untoggledStates,
+                    configure: { $0.indicator = indicator },
+                    adjust: {
+                        $0.menu = menu
+                        $0.showsMenuAsPrimaryAction = true
+                    }))
+        }
+        list.append(
+            configured(style, variant: [("menu", "on_hold")], states: untoggledStates, adjust: { $0.menu = menu }))
+    }
+    list += [
+        barItem("bar_plain") { UIBarButtonItem(primaryAction: UIAction(title: "Button") { _ in }) },
+        barItem("bar_done", variant: [("style", "done")]) {
+            let item = UIBarButtonItem(primaryAction: UIAction(title: "Button") { _ in })
+            item.style = .done
+            return item
+        },
+        barItem("bar_system_done") { UIBarButtonItem(systemItem: .done, primaryAction: UIAction { _ in }) },
+        barItem("bar_system_cancel") { UIBarButtonItem(systemItem: .cancel, primaryAction: UIAction { _ in }) },
+        barItem("bar_system_close") { UIBarButtonItem(systemItem: .close, primaryAction: UIAction { _ in }) },
+        barItem("bar_system_action") { UIBarButtonItem(systemItem: .action, primaryAction: UIAction { _ in }) },
+        barItem("bar_system_add") { UIBarButtonItem(systemItem: .add, primaryAction: UIAction { _ in }) },
+        barItem("bar_image") { UIBarButtonItem(primaryAction: UIAction(image: UIImage(systemName: "star")) { _ in }) },
+    ]
+    #if compiler(>=6.2)
+    if #available(iOS 26.0, *) {
+        list += [
+            barItem("bar_prominent", variant: [("style", "prominent")]) {
+                let item = UIBarButtonItem(primaryAction: UIAction(title: "Button") { _ in })
+                item.style = .prominent
+                return item
+            },
+            barItem("bar_hides_shared_background", variant: [("hides_shared_background", "true")]) {
+                let item = UIBarButtonItem(primaryAction: UIAction(title: "Button") { _ in })
+                item.hidesSharedBackground = true
+                return item
+            },
+        ]
+    }
+    #endif
+    list += [
+        backButton("back_default", mode: .default, modeName: "default"),
+        backButton("back_generic", mode: .generic, modeName: "generic"),
+        backButton("back_minimal", mode: .minimal, modeName: "minimal"),
+        pasteControl("paste_control", mode: nil, modeName: "default"),
+        pasteControl("paste_control+icon_and_label", mode: .iconAndLabel, modeName: "icon_and_label"),
+        pasteControl("paste_control+icon_only", mode: .iconOnly, modeName: "icon_only"),
+        pasteControl("paste_control+label_only", mode: .labelOnly, modeName: "label_only"),
+        Specimen(
+            name: "route_picker", kind: "route_picker", style: "route_picker", variant: [], sizes: [noSize],
+            states: [.normal],
+            make: { _ in
+                let picker = AVRoutePickerView()
+                let intrinsic = picker.intrinsicContentSize
+                let sized = intrinsic.width <= 0 || intrinsic.height <= 0
+                return Sample(view: picker, harnessSize: sized ? CGSize(width: 44, height: 44) : nil)
+            }),
+    ]
+    guard quick else { return list }
+    let quickNames: Set<String> = [
+        "filled", "gray", "glass", "clear_glass", "system", "close", "filled+role_destructive",
+        "filled+menu_primary_action", "filled+subtitle_Subtitle", "filled+activity_indicator_shown",
+        "bar_plain", "bar_hides_shared_background", "back_default", "paste_control", "route_picker",
+    ]
+    return list.filter { quickNames.contains($0.name) }.map { specimen in
+        Specimen(
+            name: specimen.name, kind: specimen.kind, style: specimen.style, variant: specimen.variant,
+            sizes: specimen.sizes.filter { $0.name == "medium" || $0.name == "default" }, states: specimen.states,
+            make: specimen.make)
+    }
+}
+
+/// A button that can take focus whatever the focus system's rules (the focus
+/// pass's `+focusable_subclass` specimens): run 41020880059 found
+/// `canBecomeFocused` false for every button on the iPad, so UIKit drew no
+/// focused state; on this subclass the focus system can focus it, and what it
+/// draws is UIKit's own focus effect.
+final class FocusableButton: UIButton {
+    override var canBecomeFocused: Bool { true }
+}
+
+/// The focus pass's focusable specimens: each configuration style and the
+/// system type as a FocusableButton.
+@MainActor
+func focusableSpecimens(quick: Bool) -> [Specimen] {
+    let names: Set<String> = ["filled", "gray", "glass", "plain"]
+    var list = configurationStyles().filter { !quick || names.contains($0.name) }.map { style in
+        Specimen(
+            name: "\(style.name)+focusable_subclass", kind: "configuration", style: style.name,
+            variant: [("focusable", "subclass")], sizes: [medium], states: [.normal, .focused],
+            make: { size in
+                var configuration = style.make()
+                configuration.title = "Button"
+                configuration.buttonSize = size
+                let button = FocusableButton(configuration: configuration)
+                return Sample(view: button, control: button, button: button)
+            })
+    }
+    list.append(
+        Specimen(
+            name: "system+focusable_subclass", kind: "button_type", style: "system", variant: [("focusable", "subclass")],
+            sizes: [noSize], states: [.normal, .focused],
+            make: { _ in
+                let button = FocusableButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }))
+    return list
+}
+
+/// The campaign set (`set=campaign`, run.sh's IOS_HOST_SET): the variants the
+/// base set draws at medium only, at the other sizes (the corner styles on
+/// filled, gray and glass, `dynamic` on the other glass styles at every size,
+/// an image, an image alone, a subtitle, the pop-up indicator, the primary
+/// role); every style and the system type disabled while selected and while
+/// highlighted; the system type with an image, an image alone and a menu; a
+/// pop-up button (its menu changing the selection) under each of two
+/// selections, at its own width and at fixed widths of 200 and 60 points, in
+/// one cell per row (`set=popup` draws these pop-up buttons alone).
+@MainActor
+func campaignSpecimens() -> [Specimen] {
+    let styles = configurationStyles()
+    let otherSizes = sizes.filter { $0.name != "medium" }
+    let disabledStates: [ButtonState] = [.disabledSelected, .disabledHighlighted]
+    var list: [Specimen] = []
+    for style in styles {
+        list.append(configured(style, variant: [("states", "disabled_combinations")], states: disabledStates))
+    }
+    list.append(
+        Specimen(
+            name: "system+states_disabled_combinations", kind: "button_type", style: "system",
+            variant: [("states", "disabled_combinations")], sizes: [noSize], states: disabledStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }))
+    let corners: [(String, UIButton.Configuration.CornerStyle)] = [
+        ("fixed", .fixed), ("dynamic", .dynamic), ("small", .small), ("medium", .medium), ("large", .large),
+        ("capsule", .capsule),
+    ]
+    for style in styles where ["filled", "gray", "glass"].contains(style.name) {
+        for (name, corner) in corners {
+            list.append(
+                configured(
+                    style, variant: [("corner_style", name)], sizes: otherSizes, configure: { $0.cornerStyle = corner }))
+        }
+    }
+    for style in styles where ["clear_glass", "prominent_glass", "prominent_clear_glass"].contains(style.name) {
+        list.append(
+            configured(style, variant: [("corner_style", "dynamic")], sizes: sizes, configure: { $0.cornerStyle = .dynamic }))
+    }
+    for style in styles {
+        list.append(
+            configured(
+                style, variant: [("image", "star")], sizes: otherSizes,
+                configure: { $0.image = UIImage(systemName: "star") }))
+        list.append(
+            configured(
+                style, variant: [("image", "star"), ("title", "none")], sizes: otherSizes,
+                configure: {
+                    $0.image = UIImage(systemName: "star")
+                    $0.title = nil
+                }))
+        list.append(
+            configured(
+                style, variant: [("subtitle", "Subtitle")], sizes: otherSizes, configure: { $0.subtitle = "Subtitle" }))
+        list.append(configured(style, variant: [("role", "primary")], sizes: otherSizes, adjust: { $0.role = .primary }))
+    }
+    let menu = UIMenu(children: [UIAction(title: "Item") { _ in }])
+    let popups = styles.filter { ["filled", "gray", "plain", "glass"].contains($0.name) }
+    for style in popups {
+        list.append(
+            configured(
+                style, variant: [("menu", "primary_action"), ("indicator", "popup")], sizes: otherSizes,
+                states: untoggledStates, configure: { $0.indicator = .popup },
+                adjust: {
+                    $0.menu = menu
+                    $0.showsMenuAsPrimaryAction = true
+                }))
+    }
+    list += [
+        Specimen(
+            name: "system+image_star", kind: "button_type", style: "system", variant: [("image", "star")],
+            sizes: [noSize], states: allStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                button.setImage(UIImage(systemName: "star"), for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }),
+        Specimen(
+            name: "system+image_star+title_none", kind: "button_type", style: "system",
+            variant: [("image", "star"), ("title", "none")], sizes: [noSize], states: allStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setImage(UIImage(systemName: "star"), for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }),
+        Specimen(
+            name: "system+menu_primary_action", kind: "button_type", style: "system",
+            variant: [("menu", "primary_action")], sizes: [noSize], states: untoggledStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                button.menu = menu
+                button.showsMenuAsPrimaryAction = true
+                return Sample(view: button, control: button, button: button)
+            }),
+    ]
+    let selections: [(String, Int)] = [("first", 0), ("second", 1)]
+    let widths: [(String, CGFloat?)] = [("own", nil), ("wide", 200), ("narrow", 60)]
+    for style in popups {
+        for (selectionName, selected) in selections {
+            for (widthName, width) in widths {
+                list.append(
+                    configured(
+                        style, variant: [("pop_up", "selected_\(selectionName)"), ("width", widthName)],
+                        states: untoggledStates,
+                        adjust: { button in
+                            button.menu = UIMenu(children: [
+                                UIAction(title: "One", state: selected == 0 ? .on : .off) { _ in },
+                                UIAction(title: "Two longer", state: selected == 1 ? .on : .off) { _ in },
+                            ])
+                            button.showsMenuAsPrimaryAction = true
+                            button.changesSelectionAsPrimaryAction = true
+                            if let width { button.widthAnchor.constraint(equalToConstant: width).isActive = true }
+                        }))
+            }
+        }
+    }
+    return list
+}
+
+/// A list whose data source and model live as long as it does.
+final class ListView: UICollectionView {
+    var source: AnyObject?
+}
+
+/// The plain table's rows: each cell's default content configuration.
+final class TableRows: NSObject, UITableViewDataSource {
+    let rows: [String]
+
+    init(rows: [String]) { self.rows = rows }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rows.count }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "row", for: indexPath)
+        var content = cell.defaultContentConfiguration()
+        content.text = rows.indices.contains(indexPath.row) ? rows[indexPath.row] : nil
+        cell.contentConfiguration = content
+        return cell
+    }
+}
+
+/// The UIKit switch row's model: whether its cell is disabled.
+final class RowModel {
+    var cellDisabled = false
+}
+
+/// The SwiftUI switch row's model.
+final class ToggleModel: ObservableObject {
+    @Published var isOn = false
+    @Published var disabled = false
+}
+
+/// SwiftUI's labelled switch on iOS: a `Toggle` in a `Form`, its list's and
+/// row's backgrounds hidden (the solve reads the label over the backdrops).
+struct ToggleForm: View {
+    @ObservedObject var model: ToggleModel
+
+    var body: some View {
+        Form {
+            Toggle("Label", isOn: $model.isOn)
+                .disabled(model.disabled)
+                .listRowBackground(Color.clear)
+        }
+        .scrollContentBackground(.hidden)
+        .scrollDisabled(true)
+    }
+}
+
+/// A one-section list of `items` in the list layout of `appearance`, its
+/// background clear, each cell made by `configure`.
+@MainActor
+func listView(
+    _ appearance: UICollectionLayoutListConfiguration.Appearance, items: [String],
+    headerFirst: Bool = false, configure: @escaping @MainActor (UICollectionViewListCell, String) -> Void
+) -> ListView {
+    var configuration = UICollectionLayoutListConfiguration(appearance: appearance)
+    configuration.backgroundColor = .clear
+    if headerFirst { configuration.headerMode = .firstItemInSection }
+    let list = ListView(
+        frame: CGRect(x: 0, y: 0, width: 300, height: 120),
+        collectionViewLayout: UICollectionViewCompositionalLayout.list(using: configuration))
+    list.isScrollEnabled = false
+    list.backgroundColor = .clear
+    let registration = UICollectionView.CellRegistration<UICollectionViewListCell, String> { cell, _, item in
+        configure(cell, item)
+    }
+    let source = UICollectionViewDiffableDataSource<Int, String>(collectionView: list) { view, indexPath, item in
+        view.dequeueConfiguredReusableCell(using: registration, for: indexPath, item: item)
+    }
+    list.source = source
+    return list
+}
+
+/// The items of `list` as one section: `items` flat, or the first a header
+/// over the rest, expanded.
+@MainActor
+func fill(_ list: ListView, _ items: [String], outline: Bool) {
+    guard let source = list.source as? UICollectionViewDiffableDataSource<Int, String> else { return }
+    var section = NSDiffableDataSourceSectionSnapshot<String>()
+    if outline, let header = items.first {
+        section.append([header])
+        section.append(Array(items.dropFirst()), to: header)
+        section.expand([header])
+    } else {
+        section.append(items)
+    }
+    source.apply(section, to: 0, animatingDifferences: false)
+}
+
+@MainActor
+func deselectAll(_ list: UICollectionView) {
+    for path in list.indexPathsForSelectedItems ?? [] { list.deselectItem(at: path, animated: false) }
+}
+
+@MainActor
+func firstCell(_ list: UICollectionView) -> UICollectionViewCell? {
+    list.cellForItem(at: IndexPath(item: 0, section: 0))
+}
+
+/// The first view of `type` in `root`'s subtree, depth first, that `where`
+/// accepts.
+@MainActor
+func firstView<T: UIView>(_ type: T.Type, in root: UIView, where accepts: (T) -> Bool = { _ in true }) -> T? {
+    if let found = root as? T, accepts(found) { return found }
+    for child in root.subviews {
+        if let found = firstView(type, in: child, where: accepts) { return found }
+    }
+    return nil
+}
+
+/// What UIKit reports for each list or table cell among `cells`, top first:
+/// its configuration state, its background configuration (the one set, else
+/// the cell's default) resolved for that state, its content configuration's
+/// text, and, where `uikitDefaults` is set and the cell is a UIKit list or
+/// table cell, the cell's default content configuration resolved for the
+/// state and with `isDisabled` set (UIKit's own disabled text). A SwiftUI
+/// list's cells (`uikitDefaults` false) and other collection view cells get
+/// no default_* reads: their default configuration is UIKit's, not what
+/// SwiftUI draws.
+@MainActor
+func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection, uikitDefaults: Bool = true) -> String {
+    var text = ""
+    for (index, view) in cells.sorted(by: { $0.frame.minY < $1.frame.minY }).enumerated() {
+        let state: UICellConfigurationState
+        let background: UIBackgroundConfiguration?
+        let content: UIContentConfiguration?
+        let fallback: UIListContentConfiguration?
+        if let cell = view as? UICollectionViewListCell {
+            state = cell.configurationState
+            background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
+            content = cell.contentConfiguration
+            fallback = cell.defaultContentConfiguration()
+        } else if let cell = view as? UITableViewCell {
+            state = cell.configurationState
+            background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
+            content = cell.contentConfiguration
+            fallback = cell.defaultContentConfiguration()
+        } else if let cell = view as? UICollectionViewCell {
+            state = cell.configurationState
+            background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
+            content = cell.contentConfiguration
+            fallback = nil
+        } else {
+            continue
+        }
+        let tint = view.tintColor ?? .tintColor
+        var fields = [
+            "[[render.list_cell]]",
+            "index = \(index)",
+            "class = \(quoted(String(describing: type(of: view))))",
+            "frame_pt = \(rectangle(view.convert(view.bounds, to: root)))",
+            "state_highlighted = \(state.isHighlighted)",
+            "state_selected = \(state.isSelected)",
+            "state_disabled = \(state.isDisabled)",
+            "state_expanded = \(state.isExpanded)",
+            "user_interaction_enabled = \(view.isUserInteractionEnabled)",
+            "layout_margins_pt = \(insets(view.directionalLayoutMargins))",
+        ]
+        if let resolved = background?.updated(for: state) {
+            fields += [
+                "background_color = \(colorValue(resolved.resolvedBackgroundColor(for: tint), traits))",
+                "background_stroke_color = \(colorValue(resolved.resolvedStrokeColor(for: tint), traits))",
+                "background_stroke_width_pt = \(number(resolved.strokeWidth))",
+                "background_stroke_outset_pt = \(number(resolved.strokeOutset))",
+                "background_corner_radius_pt = \(number(resolved.cornerRadius))",
+                "background_insets_pt = \(insets(resolved.backgroundInsets))",
+                "background_visual_effect = \(resolved.visualEffect.map { quoted(String(describing: $0)) } ?? absent)",
+                "background_custom_view = \(resolved.customView.map { quoted(String(describing: type(of: $0))) } ?? absent)",
+            ]
+        }
+        if let list = content as? UIListContentConfiguration {
+            let resolved = list.updated(for: state)
+            fields += [
+                "text = \(resolved.text.map(quoted) ?? absent)",
+                "text_font = \(fontValue(resolved.textProperties.font))",
+                "text_color = \(colorValue(resolved.textProperties.resolvedColor(), traits))",
+                "content_insets_pt = \(insets(resolved.directionalLayoutMargins))",
+            ]
+        }
+        if uikitDefaults, let fallback {
+            var disabled = state
+            disabled.isDisabled = true
+            let disabledContent = fallback.updated(for: disabled)
+            fields += [
+                "default_text_font = \(fontValue(fallback.updated(for: state).textProperties.font))",
+                "default_text_color = \(colorValue(fallback.updated(for: state).textProperties.resolvedColor(), traits))",
+                "default_disabled_text_font = \(fontValue(disabledContent.textProperties.font))",
+                "default_disabled_text_color = \(colorValue(disabledContent.textProperties.resolvedColor(), traits))",
+            ]
+        }
+        text += fields.joined(separator: "\n") + "\n\n"
+    }
+    return text
+}
+
+/// The list set (`set=lists`, run.sh's IOS_HOST_SET; the 0.8.0 M2.FS4
+/// measurements of what UIKit draws where no source gives it). Pressed by a
+/// held touch in the press mode (`pressed`, its rest beside it): a plain
+/// UITableView's first row; the middle segment of a UISegmentedControl of
+/// three (the first selected); a `.sidebar` list's first row; the middle item
+/// of a UITabBar of three (the first selected); a UISlider's thumb at the
+/// value 0.5 (its centre, where the touch lands); a `.sidebar` list's
+/// outline-disclosure header (`headerMode = .firstItemInSection`, the
+/// accessory's `.header` style, expanded); the switch of an `.insetGrouped`
+/// list row (the cell's default content configuration "Label", the switch its
+/// trailing custom-view accessory); the UISwitch of SwiftUI's `Toggle` in a
+/// `Form`. Drawn in the render mode:
+/// each at rest, an `.insetGrouped` list's one row (the card), SwiftUI's
+/// `Toggle("Label")` in a `Form`, and both switch
+/// rows off and on, the switch disabled, and (UIKit) the row's cell disabled
+/// (`isUserInteractionEnabled = false`, its switch disabled) or (SwiftUI) the
+/// Toggle `.disabled(true)`. The lists' backgrounds are clear, and so are the
+/// switch rows' cells (`UIBackgroundConfiguration.clear()`, SwiftUI's
+/// `listRowBackground(Color.clear)`), so the solve reads what UIKit draws
+/// over them.
+@MainActor
+func listSpecimens() -> [Specimen] {
+    let pressStates: [ButtonState] = [.normal, .pressed]
+    let rowHeight = CGSize(width: 0, height: 100)
+    var list: [Specimen] = [
+        Specimen(
+            name: "table_row", kind: "table_view", style: "plain", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let table = UITableView(frame: CGRect(x: 0, y: 0, width: 300, height: 88), style: .plain)
+                let rows = TableRows(rows: ["One", "Two"])
+                table.register(UITableViewCell.self, forCellReuseIdentifier: "row")
+                table.dataSource = rows
+                table.isScrollEnabled = false
+                table.backgroundColor = .clear
+                let first = IndexPath(row: 0, section: 0)
+                return Sample(
+                    view: table, harnessSize: CGSize(width: 0, height: 88), spansWidth: true, pressView: { table },
+                    pressTarget: { table.cellForRow(at: first) },
+                    highlighted: { table.cellForRow(at: first)?.isHighlighted },
+                    reset: {
+                        for path in table.indexPathsForSelectedRows ?? [] { table.deselectRow(at: path, animated: false) }
+                    },
+                    reads: { traits in cellReads(table.visibleCells, in: table, traits: traits) }, keep: [rows])
+            }),
+        Specimen(
+            name: "segmented_control", kind: "segmented_control", style: "default", variant: [], sizes: [noSize],
+            states: pressStates,
+            make: { _ in
+                let control = UISegmentedControl(items: ["One", "Two", "Three"])
+                control.selectedSegmentIndex = 0
+                // No highlighted read: the control's isHighlighted stayed
+                // false while the middle segment was held (run 45230061151,
+                // all four captures), and UIKit has no public read of a
+                // segment's highlight.
+                return Sample(
+                    view: control, pressView: { control }, pressTarget: { control },
+                    reset: { control.selectedSegmentIndex = 0 })
+            }),
+        Specimen(
+            name: "tab_bar", kind: "tab_bar", style: "default", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let bar = UITabBar(frame: CGRect(x: 0, y: 0, width: 300, height: 49))
+                let items = ["One", "Two", "Three"].enumerated().map { index, title in
+                    UITabBarItem(title: title, image: UIImage(systemName: "star"), tag: index)
+                }
+                bar.items = items
+                bar.selectedItem = items.first
+                // A bar item's own accessibilityIdentifier does not reach the
+                // accessibility tree of a UITabBar outside a tab bar
+                // controller (run 45210835145: press-6 never appeared on
+                // iOS 26): the identifier goes on the item's button, the
+                // view whose accessibility label is the item's title, else
+                // the middle of the bar's three controls from the left.
+                let middle: @MainActor () -> UIView? = {
+                    if let labelled = firstView(UIView.self, in: bar, where: { $0.accessibilityLabel == "Two" && $0 !== bar }) {
+                        return labelled
+                    }
+                    var controls: [UIControl] = []
+                    func collect(_ view: UIView) {
+                        if let control = view as? UIControl { controls.append(control) }
+                        view.subviews.forEach(collect)
+                    }
+                    bar.subviews.forEach(collect)
+                    let sorted = controls.sorted { $0.convert($0.bounds, to: bar).minX < $1.convert($1.bounds, to: bar).minX }
+                    return sorted.count == 3 ? sorted[1] : nil
+                }
+                return Sample(
+                    view: bar, spansWidth: true, pressView: { bar }, pressTarget: { middle() },
+                    highlighted: { (middle() as? UIControl)?.isHighlighted },
+                    reset: { bar.selectedItem = items.first })
+            }),
+        Specimen(
+            name: "slider", kind: "slider", style: "default", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let slider = UISlider()
+                slider.value = 0.5
+                return Sample(
+                    view: slider, control: slider, harnessSize: CGSize(width: 0, height: 44), spansWidth: true,
+                    pressView: { slider }, pressTarget: { slider },
+                    highlighted: { slider.isHighlighted || slider.isTracking },
+                    reset: { slider.setValue(0.5, animated: false) },
+                    applyState: { state in
+                        slider.value = 0.5
+                        return state == .normal || state == .pressed
+                    },
+                    reads: { _ in
+                        let track = slider.trackRect(forBounds: slider.bounds)
+                        let thumb = slider.thumbRect(forBounds: slider.bounds, trackRect: track, value: slider.value)
+                        return "slider_track_rect_pt = \(rectangle(track))\nslider_thumb_rect_pt = \(rectangle(thumb))\n"
+                            + "slider_value = \(slider.value)\n"
+                    })
+            }),
+    ]
+    for (name, outline) in [("sidebar_row", false), ("outline_header", true)] {
+        list.append(
+            Specimen(
+                name: name, kind: "list", style: "sidebar", variant: outline ? [("header", "outline_disclosure")] : [],
+                sizes: [noSize], states: pressStates,
+                make: { _ in
+                    let items = outline ? ["Header", "Item"] : ["One", "Two"]
+                    let view = listView(.sidebar, items: items, headerFirst: outline) { cell, item in
+                        var content = cell.defaultContentConfiguration()
+                        content.text = item
+                        cell.contentConfiguration = content
+                        if outline && item == items.first {
+                            cell.accessories = [.outlineDisclosure(options: UICellAccessory.OutlineDisclosureOptions(style: .header))]
+                        }
+                    }
+                    fill(view, items, outline: outline)
+                    return Sample(
+                        view: view, harnessSize: rowHeight, spansWidth: true, pressView: { view },
+                        pressTarget: { firstCell(view) }, highlighted: { firstCell(view)?.isHighlighted },
+                        reset: {
+                            deselectAll(view)
+                            fill(view, items, outline: outline)
+                        },
+                        reads: { traits in cellReads(view.visibleCells, in: view, traits: traits) })
+                }))
+    }
+    list.append(
+        Specimen(
+            name: "card", kind: "list", style: "inset_grouped", variant: [], sizes: [noSize], states: [.normal],
+            make: { _ in
+                let view = listView(.insetGrouped, items: ["Card"]) { cell, item in
+                    var content = cell.defaultContentConfiguration()
+                    content.text = item
+                    cell.contentConfiguration = content
+                }
+                fill(view, ["Card"], outline: false)
+                return Sample(
+                    view: view, harnessSize: rowHeight, spansWidth: true,
+                    reads: { traits in cellReads(view.visibleCells, in: view, traits: traits) })
+            }))
+    list.append(
+        Specimen(
+            name: "switch_row", kind: "list", style: "inset_grouped", variant: [("accessory", "switch")],
+            sizes: [noSize],
+            states: [.normal, .selected, .disabled, .disabledSelected, .cellDisabled, .cellDisabledSelected, .pressed],
+            make: { _ in
+                let toggle = UISwitch()
+                let model = RowModel()
+                let view = listView(.insetGrouped, items: ["Label"]) { cell, item in
+                    var content = cell.defaultContentConfiguration()
+                    content.text = item
+                    cell.contentConfiguration = content
+                    cell.backgroundConfiguration = UIBackgroundConfiguration.clear()
+                    cell.accessories = [
+                        .customView(
+                            configuration: UICellAccessory.CustomViewConfiguration(
+                                customView: toggle, placement: .trailing()))
+                    ]
+                    cell.isUserInteractionEnabled = !model.cellDisabled
+                }
+                fill(view, ["Label"], outline: false)
+                return Sample(
+                    view: view, control: toggle, harnessSize: rowHeight, spansWidth: true, pressView: { toggle },
+                    pressTarget: { toggle }, highlighted: { toggle.isHighlighted },
+                    reset: { toggle.setOn(false, animated: false) },
+                    applyState: { state in
+                        switch state {
+                        case .normal, .pressed: toggle.isOn = false
+                        case .selected: toggle.isOn = true
+                        case .disabled: toggle.isEnabled = false
+                        case .disabledSelected:
+                            toggle.isOn = true
+                            toggle.isEnabled = false
+                        case .cellDisabled, .cellDisabledSelected:
+                            toggle.isOn = state == .cellDisabledSelected
+                            toggle.isEnabled = false
+                            model.cellDisabled = true
+                        default: return false
+                        }
+                        return true
+                    },
+                    reads: { traits in cellReads(view.visibleCells, in: view, traits: traits) }, keep: [model])
+            }))
+    list.append(
+        Specimen(
+            name: "switch_form", kind: "swiftui", style: "form_toggle", variant: [], sizes: [noSize],
+            // Pressed at the UISwitch in its tree through the marker over it
+            // (the identifier set on the UISwitch itself did not reach the
+            // accessibility tree, run 45220318789); the touch is reported by
+            // the hosting view, an ancestor of every view SwiftUI hit-tests.
+            states: [.normal, .selected, .disabled, .disabledSelected, .pressed],
+            make: { _ in
+                let model = ToggleModel()
+                let host = UIHostingController(rootView: ToggleForm(model: model))
+                host.view.backgroundColor = .clear
+                let view: UIView = host.view
+                return Sample(
+                    view: view, harnessSize: rowHeight, spansWidth: true,
+                    pressView: { view },
+                    pressTarget: { firstView(UISwitch.self, in: view) },
+                    highlighted: { firstView(UISwitch.self, in: view)?.isHighlighted },
+                    reset: { model.isOn = false },
+                    applyState: { state in
+                        switch state {
+                        case .normal, .pressed: model.isOn = false
+                        case .selected: model.isOn = true
+                        case .disabled: model.disabled = true
+                        case .disabledSelected:
+                            model.isOn = true
+                            model.disabled = true
+                        default: return false
+                        }
+                        return true
+                    },
+                    reads: { traits in
+                        guard let collection = firstView(UICollectionView.self, in: view) else {
+                            return "list_cells = \(absent)\n"
+                        }
+                        return cellReads(collection.visibleCells, in: view, traits: traits, uikitDefaults: false)
+                    }, keep: [host, model])
+            }))
+    return list
+}
+
+/// The hover set (the hover mode; the 0.8.0 M2.FS4 iPad pointer hover,
+/// U113): the list set's segment, `.sidebar` row and outline-disclosure
+/// header, and a titled bar button item ("Button") in a UIToolbar, as the
+/// base set's `bar_plain`.
+@MainActor
+func hoverSpecimens() -> [Specimen] {
+    let names = ["segmented_control", "sidebar_row", "outline_header"]
+    let toolbar = barItem("bar_plain") { UIBarButtonItem(primaryAction: UIAction(title: "Button") { _ in }) }
+    return listSpecimens().filter { names.contains($0.name) } + [toolbar]
+}
+
+typealias Slot = (state: ButtonState, backdrop: Backdrop)
+
+/// The cells of the states (rows) over the backdrops (columns).
+func grid(_ states: [ButtonState], _ backdrops: [Backdrop]) -> [Slot] {
+    states.flatMap { state in backdrops.map { (state: state, backdrop: $0) } }
+}
+
+/// A page: its cells in `columns` columns, row by row; `rows` rows sharing
+/// the screen's height, or rows of `cellHeight` where it is 0.
+struct Page {
+    let appearance: Appearance
+    let specimen: Specimen
+    let size: SizeChoice
+    let slots: [Slot]
+    let columns: Int
+    let rows: Int
+    let part: String
+
+    var path: String { "\(appearance.name)/\(specimen.name)/\(size.name)" }
+
+    var screenshot: String { "pages/\(path)/\(part).png" }
+}
+
+/// Pages of `rows` x `columns` cells for the slots, in order.
+func roomyPages(
+    _ appearance: Appearance, _ specimen: Specimen, _ size: SizeChoice, _ slots: [Slot], columns: Int, rows: Int
+) -> [Page] {
+    stride(from: 0, to: slots.count, by: columns * rows).map { start in
+        Page(
+            appearance: appearance, specimen: specimen, size: size,
+            slots: Array(slots[start..<min(slots.count, start + columns * rows)]), columns: columns, rows: rows,
+            part: "\(start / (columns * rows))")
+    }
+}
+
+final class Cell {
+    let state: ButtonState
+    let backdrop: Backdrop
+    let view: UIView
+    let sample: Sample?
+    let applied: Bool
+
+    init(state: ButtonState, backdrop: Backdrop, view: UIView, sample: Sample?, applied: Bool) {
+        self.state = state
+        self.backdrop = backdrop
+        self.view = view
+        self.sample = sample
+        self.applied = applied
+    }
+
+    var name: String { "\(backdrop.name)/\(state.rawValue)" }
+}
+
+/// The known pattern behind glass: squares of `patternSquare` points, the
+/// colours of `patternColors` in a 2 x 2 tile, anchored at the cell's corner.
+final class PatternView: UIView {
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        let columns = Int((bounds.width / patternSquare).rounded(.up))
+        let rows = Int((bounds.height / patternSquare).rounded(.up))
+        for row in 0..<rows {
+            for column in 0..<columns {
+                context.setFillColor(patternColors[(column % 2) + 2 * (row % 2)].color.cgColor)
+                context.fill(
+                    CGRect(
+                        x: CGFloat(column) * patternSquare, y: CGFloat(row) * patternSquare, width: patternSquare,
+                        height: patternSquare))
+            }
+        }
+    }
+}
+
+func quoted(_ text: String) -> String {
+    var escaped = ""
+    for scalar in text.unicodeScalars {
+        switch scalar {
+        case "\\": escaped += "\\\\"
+        case "\"": escaped += "\\\""
+        case "\n": escaped += "\\n"
+        case "\t": escaped += "\\t"
+        default:
+            if scalar.value < 0x20 || scalar.value == 0x7f {
+                escaped += String(format: "\\u%04x", scalar.value)
+            } else {
+                escaped.unicodeScalars.append(scalar)
+            }
+        }
+    }
+    return "\"\(escaped)\""
+}
+
+func number(_ value: CGFloat) -> String { String(format: "%.3f", Double(value)) }
+
+func precise(_ value: Double) -> String { String(format: "%.6f", value) }
+
+func rectangle(_ rect: CGRect) -> String {
+    "[\(number(rect.minX)), \(number(rect.minY)), \(number(rect.width)), \(number(rect.height))]"
+}
+
+func pair(_ size: CGSize) -> String { "[\(number(size.width)), \(number(size.height))]" }
+
+func insets(_ insets: NSDirectionalEdgeInsets) -> String {
+    "[\(number(insets.top)), \(number(insets.leading)), \(number(insets.bottom)), \(number(insets.trailing))]"
+}
+
+func edgeInsets(_ insets: UIEdgeInsets) -> String {
+    "[\(number(insets.top)), \(number(insets.left)), \(number(insets.bottom)), \(number(insets.right))]"
+}
+
+let absent = quoted("absent")
+
+let extendedSRGB = CGColorSpace(name: CGColorSpace.extendedSRGB)
+
+/// A colour as extended sRGB components (0...1 inside sRGB), its 8-bit hex
+/// where it is inside sRGB, and the colour space it was stated in.
+func colorValue(_ color: CGColor?) -> String {
+    guard let color else { return absent }
+    let source = (color.colorSpace?.name as String?) ?? "none"
+    guard let space = extendedSRGB,
+        let converted = color.converted(to: space, intent: .defaultIntent, options: nil),
+        let components = converted.components, components.count == 4
+    else { return "{ space = \(quoted(source)), srgb = \(quoted("unconvertible")) }" }
+    let values = components.map { String(format: "%.4f", Double($0)) }.joined(separator: ", ")
+    var hex = ""
+    // A conversion can land a hair outside 0...1 (white as 1.0000001).
+    if components.allSatisfy({ $0 >= -0.0005 && $0 <= 1.0005 }) {
+        hex = ", hex = " + quoted(
+            "#" + components.map { String(format: "%02x", Int((min(max($0, 0), 1) * 255).rounded())) }.joined())
+    }
+    return "{ srgb = [\(values)]\(hex), space = \(quoted(source)) }"
+}
+
+func colorValue(_ color: UIColor?, _ traits: UITraitCollection) -> String {
+    guard let color else { return absent }
+    return colorValue(color.resolvedColor(with: traits).cgColor)
+}
+
+func fontValue(_ font: UIFont?) -> String {
+    guard let font else { return absent }
+    let descriptor = font.fontDescriptor
+    let traits = descriptor.object(forKey: .traits) as? [UIFontDescriptor.TraitKey: Any]
+    func trait(_ key: UIFontDescriptor.TraitKey) -> String {
+        guard let value = traits?[key] as? NSNumber else { return absent }
+        return String(format: "%.4f", value.doubleValue)
+    }
+    let textStyle = (descriptor.object(forKey: .textStyle) as? String).map(quoted) ?? absent
+    return "{ name = \(quoted(font.fontName)), family = \(quoted(font.familyName)), size_pt = \(number(font.pointSize)), "
+        + "weight = \(trait(.weight)), width = \(trait(.width)), slant = \(trait(.slant)), "
+        + "symbolic_traits = \(descriptor.symbolicTraits.rawValue), text_style = \(textStyle), "
+        + "line_height_pt = \(number(font.lineHeight)), ascender_pt = \(number(font.ascender)), "
+        + "descender_pt = \(number(font.descender)), leading_pt = \(number(font.leading)), "
+        + "cap_height_pt = \(number(font.capHeight)), x_height_pt = \(number(font.xHeight)) }"
+}
+
+func cornerStyleName(_ style: UIButton.Configuration.CornerStyle) -> String {
+    switch style {
+    case .fixed: return "fixed"
+    case .dynamic: return "dynamic"
+    case .small: return "small"
+    case .medium: return "medium"
+    case .large: return "large"
+    case .capsule: return "capsule"
+    @unknown default: return "unknown"
+    }
+}
+
+func sizeName(_ size: UIButton.Configuration.Size) -> String {
+    switch size {
+    case .mini: return "mini"
+    case .small: return "small"
+    case .medium: return "medium"
+    case .large: return "large"
+    @unknown default: return "unknown"
+    }
+}
+
+func indicatorName(_ indicator: UIButton.Configuration.Indicator) -> String {
+    switch indicator {
+    case .automatic: return "automatic"
+    case .none: return "none"
+    case .popup: return "popup"
+    @unknown default: return "unknown"
+    }
+}
+
+func titleAlignmentName(_ alignment: UIButton.Configuration.TitleAlignment) -> String {
+    switch alignment {
+    case .automatic: return "automatic"
+    case .leading: return "leading"
+    case .center: return "center"
+    case .trailing: return "trailing"
+    @unknown default: return "unknown"
+    }
+}
+
+func edgeName(_ edge: NSDirectionalRectEdge) -> String {
+    let names: [(NSDirectionalRectEdge, String)] = [
+        (.leading, "leading"), (.trailing, "trailing"), (.top, "top"), (.bottom, "bottom"), (.all, "all"),
+        (NSDirectionalRectEdge(), "none"),
+    ]
+    return names.first { $0.0 == edge }?.1 ?? "raw \(edge.rawValue)"
+}
+
+/// A description with its object addresses removed, so two runs write the same.
+func described(_ value: Any) -> String {
+    quoted(String(describing: value).replacingOccurrences(of: "0x[0-9a-fA-F]+", with: "0x", options: .regularExpression))
+}
+
+let textStyles: [(name: String, style: UIFont.TextStyle)] = [
+    ("large_title", .largeTitle), ("title1", .title1), ("title2", .title2), ("title3", .title3),
+    ("headline", .headline), ("subheadline", .subheadline), ("body", .body), ("callout", .callout),
+    ("footnote", .footnote), ("caption1", .caption1), ("caption2", .caption2),
+]
+
+let categories: [(name: String, category: UIContentSizeCategory)] = [
+    ("extra_small", .extraSmall), ("small", .small), ("medium", .medium), ("large", .large),
+    ("extra_large", .extraLarge), ("extra_extra_large", .extraExtraLarge),
+    ("extra_extra_extra_large", .extraExtraExtraLarge), ("accessibility_medium", .accessibilityMedium),
+    ("accessibility_large", .accessibilityLarge), ("accessibility_extra_large", .accessibilityExtraLarge),
+    ("accessibility_extra_extra_large", .accessibilityExtraExtraLarge),
+    ("accessibility_extra_extra_extra_large", .accessibilityExtraExtraExtraLarge),
+]
+
+let symbolScales: [(name: String, scale: UIImage.SymbolScale)] = [
+    ("default", .default), ("unspecified", .unspecified), ("small", .small), ("medium", .medium), ("large", .large),
+]
+
+let symbolNames = ["star", "circle", "square.and.arrow.up", "chevron.backward"]
+
+/// One read of the hover mode (HostViewController.hoverShot): the window's
+/// pixels over the cell, the read label's box in them (pixels), and the
+/// properties read, as TOML lines.
+struct HoverShot {
+    let phase: String
+    let time: Double?
+    let over: Bool
+    let image: UIImage?
+    let labelBox: CGRect?
+    let lines: [String]
+}
+
+/// The hover mode's pixel reads of `box` (pixels; the whole draw where nil)
+/// in an opaque draw beside its rest draw, as TOML lines named `prefix`_…:
+/// where `ink`, the box's commonest colour (`_background`) and the pixel
+/// farthest from it in the sum of the three channels' differences (`_ink`,
+/// with its position); and the pixels that differ from the rest draw by more
+/// than hoverChangeLevels in a channel: their count, the largest difference
+/// and their bounds.
+func hoverPixels(_ image: CGImage, rest: CGImage?, box: CGRect?, prefix: String, ink: Bool) -> [String] {
+    guard let bytes = samples(image) else { return ["\(prefix)_pixels = \(quoted("the draw does not decode"))"] }
+    let width = image.width
+    let whole = CGRect(x: 0, y: 0, width: image.width, height: image.height)
+    let area = (box ?? whole).intersection(whole)
+    guard !area.isNull, !area.isEmpty else { return ["\(prefix)_pixels = \(quoted("outside the draw"))"] }
+    let xs = Int(area.minX.rounded())..<Int(area.maxX.rounded())
+    let ys = Int(area.minY.rounded())..<Int(area.maxY.rounded())
+    func offset(_ x: Int, _ y: Int, in data: [UInt8]) -> Int? {
+        let at = (y * width + x) * 4
+        return at >= 0 && at + 3 < data.count ? at : nil
+    }
+    func hex(_ data: [UInt8], _ at: Int) -> String {
+        "#" + (at..<at + 4).map { String(format: "%02x", Int(data[$0])) }.joined()
+    }
+    var lines: [String] = []
+    if ink {
+        var counts: [UInt32: Int] = [:]
+        var commonest: (key: UInt32, count: Int, at: Int)?
+        for y in ys {
+            for x in xs {
+                guard let at = offset(x, y, in: bytes) else { continue }
+                let key = (0..<4).reduce(UInt32(0)) { ($0 << 8) | UInt32(bytes[at + $1]) }
+                let count = (counts[key] ?? 0) + 1
+                counts[key] = count
+                if count > (commonest?.count ?? 0) { commonest = (key, count, at) }
+            }
+        }
+        if let background = commonest {
+            var farthest: (distance: Int, at: Int, x: Int, y: Int)?
+            for y in ys {
+                for x in xs {
+                    guard let at = offset(x, y, in: bytes) else { continue }
+                    let distance = (0..<3).reduce(0) { $0 + abs(Int(bytes[at + $1]) - Int(bytes[background.at + $1])) }
+                    if distance > (farthest?.distance ?? -1) { farthest = (distance, at, x, y) }
+                }
+            }
+            lines.append("\(prefix)_background = \(quoted(hex(bytes, background.at)))")
+            lines.append("\(prefix)_background_px_count = \(background.count)")
+            if let farthest {
+                lines.append("\(prefix)_ink = \(quoted(hex(bytes, farthest.at)))")
+                lines.append("\(prefix)_ink_px = [\(farthest.x), \(farthest.y)]")
+                lines.append("\(prefix)_ink_distance_levels = \(farthest.distance)")
+            }
+        }
+    }
+    guard let rest else { return lines }
+    guard rest.width == image.width, rest.height == image.height, let restBytes = samples(rest) else {
+        return lines + ["\(prefix)_changed = \(quoted("the rest draw differs in size or does not decode"))"]
+    }
+    var changed = 0
+    var largest = 0
+    var bounds: (minX: Int, minY: Int, maxX: Int, maxY: Int)?
+    for y in ys {
+        for x in xs {
+            guard let at = offset(x, y, in: bytes), let restAt = offset(x, y, in: restBytes) else { continue }
+            func channel(_ index: Int) -> Int { abs(Int(bytes[at + index]) - Int(restBytes[restAt + index])) }
+            let difference = max(channel(0), channel(1), channel(2))
+            guard difference > hoverChangeLevels else { continue }
+            changed += 1
+            largest = max(largest, difference)
+            if let old = bounds {
+                bounds = (min(old.minX, x), min(old.minY, y), max(old.maxX, x), max(old.maxY, y))
+            } else {
+                bounds = (x, y, x, y)
+            }
+        }
+    }
+    lines.append("\(prefix)_changed_px = \(changed)")
+    lines.append("\(prefix)_largest_change_levels = \(largest)")
+    lines.append(
+        "\(prefix)_changed_bounds_px = "
+            + (bounds.map { "[\($0.minX), \($0.minY), \($0.maxX - $0.minX + 1), \($0.maxY - $0.minY + 1)]" } ?? absent))
+    return lines
+}
+
+final class HostViewController: UIViewController {
+    private let pressMode: Bool
+    /// The hover mode: the press mode with a pointer in place of the touch.
+    private let hoverMode: Bool
+    private let focusMode: Bool
+    private let quick: Bool
+    private let specimenSet: String
+    private let colorNames: [String]
+    private let pages: [Page]
+    private let run: String
+    private let out: URL
+    private var pageIndex = 0
+    private var cells: [Cell] = []
+    private var code: [UIView] = []
+    private var cellsBottom: CGFloat = 0
+    private var sequence = 0
+    private var attempt = 0
+    private var retakes: [String] = []
+    private var reads: [String] = []
+    private var entries: [String] = []
+    private var failures: [String] = []
+    private var started = false
+    private var focusTarget: UIView?
+    private var doneLabel: UILabel?
+    private var finished = false
+    private var screenWritten = false
+    private var overlayRetakes = 0
+    private var settleShots = 0
+    private var previousCrops: [[UInt8]?] = []
+
+    // The press mode's state: the cells left to press on this page, the armed
+    // cell, its identifier's number, and whether its touch is down.
+    private var pressQueue: [Cell] = []
+    private var armed: Cell?
+    private var pressNumber = 0
+    private var armedNumber = 0
+    private var shots = 0
+    private var touchDown = false
+    private var captured = false
+    private var rearm = false
+    private var pressRetakes = 0
+    private var aloneWritten = false
+    private var highlightedAtCapture: Bool?
+    private var trackingAtCapture: Bool?
+    /// The list set's armed press target's marker (armNext).
+    private var pressMarker: UIView?
+    /// The press mode's [[motion]] tables (IP-motion).
+    private var motions: [String] = []
+    /// The hover mode's read of the armed target: the label it reads, its
+    /// rest read (taken when armed), whether a read is under way, and when
+    /// the pointer left (CACurrentMediaTime).
+    private weak var hoverLabelView: UILabel?
+    private var hoverRest: HoverShot?
+    private var hoverReading = false
+    private var hoverLeft: Double?
+
+    init() {
+        let arguments = Array(CommandLine.arguments.dropFirst())
+        let argument = arguments.first ?? "run"
+        let runName = argument.allSatisfy { $0.isLetter || $0.isNumber } ? argument : "run"
+        let hover = runName.hasPrefix("hover")
+        let press = runName.hasPrefix("press") || hover
+        let focus = runName.hasPrefix("focus")
+        let quickRun = arguments.contains("quick")
+        run = runName
+        pressMode = press
+        hoverMode = hover
+        focusMode = focus
+        quick = quickRun
+        let set = arguments.first { $0.hasPrefix("set=") }.map { String($0.dropFirst("set=".count)) } ?? "base"
+        specimenSet = set
+        colorNames = arguments.first { $0.hasPrefix("colors=") }.map {
+            $0.dropFirst("colors=".count).split(separator: ",").map(String.init)
+        } ?? []
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        out = documents.appendingPathComponent(runName, isDirectory: true)
+        var pages: [Page] = []
+        if hover {
+            // As the list set's press pages: the specimen hovered over each
+            // solve backdrop, then at rest over each.
+            for appearance in appearances {
+                for specimen in hoverSpecimens() {
+                    let slots = grid([.hovered], solveBackdrops) + grid([.normal], solveBackdrops)
+                    pages += roomyPages(appearance, specimen, noSize, slots, columns: 1, rows: 6)
+                }
+            }
+            self.pages = pages
+            super.init(nibName: nil, bundle: nil)
+            return
+        }
+        if set == "lists" && !focus {
+            // One column of the screen's width: a list row or a bar is wider
+            // than a third of it. The press pages: the specimen pressed over
+            // each solve backdrop, then at rest over each.
+            for appearance in appearances {
+                for specimen in listSpecimens() {
+                    if press {
+                        guard specimen.states.contains(.pressed) else { continue }
+                        let slots = grid([.pressed], solveBackdrops) + grid([.normal], solveBackdrops)
+                        pages += roomyPages(appearance, specimen, noSize, slots, columns: 1, rows: 6)
+                    } else {
+                        let slots = grid(specimen.states.filter { $0 != .pressed }, solveBackdrops)
+                        pages += roomyPages(appearance, specimen, noSize, slots, columns: 1, rows: 6)
+                    }
+                }
+            }
+            self.pages = pages
+            super.init(nibName: nil, bundle: nil)
+            return
+        }
+        var list =
+            set == "campaign"
+            ? campaignSpecimens()
+            : set == "popup"
+                ? campaignSpecimens().filter { $0.variant.contains { $0.key == "pop_up" } } : specimens(quick: quickRun)
+        if focus { list += focusableSpecimens(quick: quickRun) }
+        for appearance in appearances {
+            for specimen in list {
+                // A glass style's shadow and its press's halo reach far past
+                // the button: the base glass styles and every press get cells
+                // of a third or a half of the screen's height.
+                let glass = specimen.kind == "configuration" && specimen.variant.isEmpty
+                    && glassStyles.contains(specimen.name)
+                if focus {
+                    let focusable = specimen.variant.contains { $0.key == "focusable" }
+                    guard specimen.kind == "configuration" && (specimen.variant.isEmpty || focusable)
+                        || specimen.name == "system" || specimen.name == "system+focusable_subclass",
+                        let size = specimen.sizes.first(where: { $0.name == "medium" || $0.name == "default" })
+                    else { continue }
+                    pages.append(
+                        Page(
+                            appearance: appearance, specimen: specimen, size: size,
+                            slots: grid([.normal, .focused], [solveBackdrops[0]]), columns: 1, rows: 0, part: "focus"))
+                } else if press {
+                    guard specimen.kind == "configuration" && specimen.variant.isEmpty || specimen.name == "system"
+                        || specimen.kind == "bar_button_item"
+                    else { continue }
+                    if specimen.kind == "bar_button_item" {
+                        // A bar item has no touch-down event: a long press
+                        // recognizer of no minimum duration on its toolbar
+                        // reports the touch (armNext).
+                        if quickRun && specimen.name != "bar_plain" { continue }
+                        pages += roomyPages(
+                            appearance, specimen, noSize, grid([.pressed], [solveBackdrops[0]]), columns: 1, rows: 2)
+                        continue
+                    }
+                    if glass {
+                        for size in specimen.sizes {
+                            let slots = grid([.pressed, .pressedSelected], solveBackdrops) + grid([.pressed], patternBackdrops)
+                            pages += roomyPages(appearance, specimen, size, slots, columns: 1, rows: 2)
+                        }
+                    } else if let size = specimen.sizes.first(where: { $0.name == "medium" || $0.name == "default" }) {
+                        if quickRun && specimen.name != "filled" { continue }
+                        pages += roomyPages(
+                            appearance, specimen, size, grid([.pressed, .pressedSelected], [solveBackdrops[0]]),
+                            columns: 1, rows: 2)
+                    }
+                } else {
+                    for size in specimen.sizes {
+                        if glass {
+                            let slots = grid(specimen.states, solveBackdrops) + grid(specimen.states, [patternBackdrops[0]])
+                                + grid([.normal], [patternBackdrops[1]])
+                            pages += roomyPages(appearance, specimen, size, slots, columns: 2, rows: 3)
+                        } else if specimen.variant.contains(where: { $0.key == "pop_up" }) {
+                            // A pop-up button 200 points wide, or growing with a
+                            // longer selection, is wider than a third of the
+                            // screen: one cell per row, the screen's width.
+                            pages += roomyPages(
+                                appearance, specimen, size, grid(specimen.states, solveBackdrops), columns: 1, rows: 6)
+                        } else {
+                            pages.append(
+                                Page(
+                                    appearance: appearance, specimen: specimen, size: size,
+                                    slots: grid(specimen.states, solveBackdrops), columns: solveBackdrops.count, rows: 0,
+                                    part: "solid"))
+                        }
+                    }
+                }
+            }
+        }
+        self.pages = pages
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override var prefersStatusBarHidden: Bool { true }
+
+    override var preferredFocusEnvironments: [any UIFocusEnvironment] {
+        if let focusTarget { return [focusTarget] }
+        return super.preferredFocusEnvironments
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !started else { return }
+        started = true
+        let manager = FileManager.default
+        try? manager.removeItem(at: out)
+        for directory in ["sync", "draw", "screen", "pages"] {
+            do {
+                try manager.createDirectory(
+                    at: out.appendingPathComponent(directory, isDirectory: true), withIntermediateDirectories: true)
+            } catch {
+                failures.append("create \(directory): \(error)")
+            }
+        }
+        if focusMode {
+            UIView.setAnimationsEnabled(false)
+        } else if !pressMode {
+            readMotion()
+            UIView.setAnimationsEnabled(false)
+            UIPasteboard.general.string = "Text"
+            view.addSubview(pasteTarget)
+            readColors()
+            readTextStyles()
+            readSymbols()
+            readCaret()
+            readBehavior()
+        }
+        guard !pages.isEmpty else {
+            failures.append("no pages")
+            finish()
+            return
+        }
+        show(page: 0)
+    }
+
+    // MARK: the pages
+
+    private func show(page index: Int) {
+        guard !finished else { return }
+        pageIndex = index
+        let page = pages[index]
+        for cell in cells { cell.view.removeFromSuperview() }
+        for square in code { square.removeFromSuperview() }
+        cells = []
+        code = []
+        focusTarget = nil
+        overlayRetakes = 0
+        settleShots = 0
+        previousCrops = []
+        view.window?.overrideUserInterfaceStyle = page.appearance.style
+
+        let columns = CGFloat(page.columns)
+        let width = ((view.bounds.width - 2 * margin - (columns - 1) * gap) / columns).rounded(.down)
+        let top = view.safeAreaInsets.top + margin
+        var height = cellHeight
+        if page.rows > 0 {
+            let available = view.bounds.height - view.safeAreaInsets.bottom - margin - 3 * codeSquare - top
+            height = ((available - CGFloat(page.rows - 1) * gap) / CGFloat(page.rows)).rounded(.down)
+        }
+        for (position, slot) in page.slots.enumerated() {
+            let state = slot.state
+            let backdrop = slot.backdrop
+            let column = position % page.columns
+            let row = position / page.columns
+            let frame = CGRect(
+                x: margin + CGFloat(column) * (width + gap), y: top + CGFloat(row) * (height + gap), width: width,
+                height: height)
+            let cellView: UIView
+            switch backdrop.fill {
+            case .system:
+                cellView = UIView(frame: frame)
+                cellView.backgroundColor = .systemBackground
+            case .black:
+                cellView = UIView(frame: frame)
+                cellView.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+            case .white:
+                cellView = UIView(frame: frame)
+                cellView.backgroundColor = UIColor(red: 1, green: 1, blue: 1, alpha: 1)
+            case .pattern:
+                cellView = PatternView(frame: frame)
+            }
+            view.addSubview(cellView)
+            var sample: Sample?
+            var applied = true
+            if backdrop.holdsSpecimen {
+                let made = page.specimen.make(page.size.size)
+                place(made, in: cellView)
+                applied = apply(state, to: made)
+                if state == .focused && backdrop.fill == .system { focusTarget = made.view }
+                sample = made
+            }
+            cells.append(Cell(state: state, backdrop: backdrop, view: cellView, sample: sample, applied: applied))
+        }
+        let rowCount = (page.slots.count + page.columns - 1) / page.columns
+        cellsBottom = top + CGFloat(rowCount) * (height + gap) - gap
+        for bit in 0..<codeBits {
+            let square = UIView(
+                frame: CGRect(
+                    x: margin + CGFloat(bit) * codeSquare, y: cellsBottom + codeSquare, width: codeSquare,
+                    height: codeSquare))
+            square.backgroundColor =
+                (index >> bit) & 1 == 1
+                ? UIColor(red: 1, green: 0, blue: 0, alpha: 1) : UIColor(red: 0, green: 0, blue: 1, alpha: 1)
+            view.addSubview(square)
+            code.append(square)
+        }
+        view.layoutIfNeeded()
+        if focusTarget != nil {
+            setNeedsFocusUpdate()
+            updateFocusIfNeeded()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + settleSeconds) { [weak self] in
+            guard let self, !self.finished else { return }
+            if self.pressMode {
+                self.pressQueue = self.cells.filter { cell in
+                    guard let sample = cell.sample else { return false }
+                    if self.hoverMode { return cell.state == .hovered }
+                    if sample.pressView != nil { return cell.state == .pressed }
+                    return sample.button != nil || sample.barItem != nil
+                }
+                self.aloneWritten = false
+                self.armNext()
+            } else {
+                self.draw()
+            }
+        }
+    }
+
+    private func place(_ sample: Sample, in cellView: UIView) {
+        let view = sample.view
+        view.translatesAutoresizingMaskIntoConstraints = false
+        cellView.addSubview(view)
+        var constraints = [view.centerYAnchor.constraint(equalTo: cellView.centerYAnchor)]
+        if sample.spansWidth {
+            constraints += [
+                view.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: barInset),
+                view.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -barInset),
+            ]
+        } else {
+            constraints.append(view.centerXAnchor.constraint(equalTo: cellView.centerXAnchor))
+        }
+        if let size = sample.harnessSize {
+            if !sample.spansWidth { constraints.append(view.widthAnchor.constraint(equalToConstant: size.width)) }
+            constraints.append(view.heightAnchor.constraint(equalToConstant: size.height))
+        }
+        NSLayoutConstraint.activate(constraints)
+    }
+
+    /// Sets a state on a sample; false where the sample cannot take it.
+    private func apply(_ state: ButtonState, to sample: Sample) -> Bool {
+        if let applyState = sample.applyState { return applyState(state) }
+        if sample.pressView != nil { return state == .normal || state == .pressed || state == .hovered }
+        if let item = sample.barItem {
+            switch state {
+            case .normal, .pressed, .hovered: return true
+            case .disabled: item.isEnabled = false
+            case .toggleOff: item.changesSelectionAsPrimaryAction = true
+            case .selected:
+                item.changesSelectionAsPrimaryAction = true
+                item.isSelected = true
+            default: return false
+            }
+            return true
+        }
+        guard let control = sample.control else { return state == .normal }
+        switch state {
+        case .normal, .focused, .pressed, .hovered: return true
+        case .highlighted: control.isHighlighted = true
+        case .disabled: control.isEnabled = false
+        case .toggleOff:
+            guard let button = sample.button else { return false }
+            button.changesSelectionAsPrimaryAction = true
+        case .selected, .pressedSelected:
+            guard let button = sample.button else { return false }
+            button.changesSelectionAsPrimaryAction = true
+            button.isSelected = true
+        case .selectedHighlighted:
+            guard let button = sample.button else { return false }
+            button.changesSelectionAsPrimaryAction = true
+            button.isSelected = true
+            button.isHighlighted = true
+        case .disabledSelected:
+            guard let button = sample.button else { return false }
+            button.changesSelectionAsPrimaryAction = true
+            button.isSelected = true
+            button.isEnabled = false
+        case .disabledHighlighted:
+            control.isHighlighted = true
+            control.isEnabled = false
+        case .cellDisabled, .cellDisabledSelected: return false
+        }
+        return true
+    }
+
+    private func drawCell(_ cell: Cell, to name: String) -> CGImage? {
+        let scale = view.window?.windowScene?.screen.scale ?? 1
+        let format = UIGraphicsImageRendererFormat(for: cell.view.traitCollection)
+        format.scale = scale
+        format.opaque = true
+        format.preferredRange = .standard
+        let renderer = UIGraphicsImageRenderer(bounds: cell.view.bounds, format: format)
+        var succeeded = false
+        let image = renderer.image { _ in
+            succeeded = cell.view.drawHierarchy(in: cell.view.bounds, afterScreenUpdates: true)
+        }
+        if !succeeded { failures.append("\(name): drawHierarchy returned false") }
+        write(image, to: name)
+        return image.cgImage
+    }
+
+    private func draw() {
+        let page = pages[pageIndex]
+        for cell in cells {
+            _ = drawCell(cell, to: "draw/\(page.path)/\(cell.name).png")
+        }
+        requestScreenshot(sequence: pageIndex, attempt: 0)
+    }
+
+    // MARK: the screenshots
+
+    private func requestScreenshot(sequence: Int, attempt: Int) {
+        self.sequence = sequence
+        self.attempt = attempt
+        let ready = out.appendingPathComponent("sync/ready-\(sequence)-\(attempt)")
+        do {
+            try pages[pageIndex].path.write(to: ready, atomically: true, encoding: .utf8)
+        } catch {
+            failures.append("write \(ready.lastPathComponent): \(error)")
+        }
+        waitForScreenshot(since: Date())
+    }
+
+    private func waitForScreenshot(since start: Date) {
+        guard !finished else { return }
+        let screenshot = out.appendingPathComponent("sync/screen-\(sequence)-\(attempt).png")
+        if FileManager.default.fileExists(atPath: screenshot.path) {
+            if pressMode { pressScreenshot(screenshot) } else { crop(screenshot) }
+        } else if Date().timeIntervalSince(start) > 300 {
+            failures.append("\(pages[pageIndex].path): no screenshot within 300 s")
+            finish()
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.waitForScreenshot(since: start)
+            }
+        }
+    }
+
+    private var pixelScale: CGFloat { view.window?.windowScene?.screen.scale ?? 1 }
+
+    private func pixels(_ cell: Cell) -> CGRect {
+        let scale = pixelScale
+        let frame = cell.view.convert(cell.view.bounds, to: nil)
+        return CGRect(
+            x: (frame.minX * scale).rounded(), y: (frame.minY * scale).rounded(),
+            width: (frame.width * scale).rounded(), height: (frame.height * scale).rounded())
+    }
+
+    /// Why the screenshot is not of this page as drawn (a banner over its
+    /// margins, a stale page code), or nil.
+    private func overlay(_ source: CGImage) -> String? {
+        guard let bytes = samples(source) else { return "the screenshot does not decode" }
+        let scale = pixelScale
+        let width = source.width
+        let height = source.height
+        let background = UIColor.systemBackground.resolvedColor(with: view.traitCollection)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        _ = background.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        let expected = [red, green, blue].map { Int(($0 * 255).rounded()) }
+        func px(_ points: CGFloat) -> Int { Int((points * scale).rounded()) }
+        let top = view.safeAreaInsets.top + 2
+        let regions = [
+            (px(2), px(margin - 2), px(top), px(cellsBottom)),
+            (px(view.bounds.width - margin + 2), px(view.bounds.width - 2), px(top), px(cellsBottom)),
+            (px(2), px(view.bounds.width - 2), px(top), px(top + margin - 4)),
+        ]
+        var differing = 0
+        for (x0, x1, y0, y1) in regions {
+            for y in max(0, y0)..<min(height, y1) {
+                for x in max(0, x0)..<min(width, x1) {
+                    let offset = (y * width + x) * 4
+                    for channel in 0..<3 where abs(Int(bytes[offset + channel]) - expected[channel]) > overlayLevels {
+                        differing += 1
+                        break
+                    }
+                }
+            }
+        }
+        if differing > overlayPixels { return "\(differing) margin pixels differ from the system background" }
+        var read = 0
+        for bit in 0..<codeBits {
+            let x = px(margin + (CGFloat(bit) + 0.5) * codeSquare)
+            let y = px(cellsBottom + 1.5 * codeSquare)
+            guard x < width, y < height else { return "the page code is outside the screenshot" }
+            let offset = (y * width + x) * 4
+            let r = Int(bytes[offset])
+            let b = Int(bytes[offset + 2])
+            if r > 200 && b < 60 {
+                read |= 1 << bit
+            } else if !(b > 200 && r < 60) {
+                return "page code bit \(bit) reads as neither red nor blue"
+            }
+        }
+        if read != pageIndex & ((1 << codeBits) - 1) { return "the page code reads \(read), not \(pageIndex)" }
+        return nil
+    }
+
+    private func loadScreenshot(_ screenshot: URL) -> CGImage? {
+        guard let image = UIImage(contentsOfFile: screenshot.path), let source = image.cgImage else {
+            failures.append("\(pages[pageIndex].path): the screenshot does not load")
+            return nil
+        }
+        let native = view.window?.windowScene?.screen.nativeBounds.size ?? .zero
+        if CGFloat(source.width) != native.width || CGFloat(source.height) != native.height {
+            failures.append("\(pages[pageIndex].path): screenshot \(source.width)x\(source.height), screen \(native)")
+        }
+        return source
+    }
+
+    private func crop(_ screenshot: URL) {
+        let page = pages[pageIndex]
+        guard let source = loadScreenshot(screenshot) else {
+            finish()
+            return
+        }
+        let manager = FileManager.default
+        if let reason = overlay(source) {
+            if overlayRetakes < maxRetakes {
+                overlayRetakes += 1
+                try? manager.removeItem(at: screenshot)
+                retakes.append("\(page.path) attempt \(attempt): \(reason)")
+                DispatchQueue.main.asyncAfter(deadline: .now() + retakeDelaySeconds) { [weak self] in
+                    guard let self else { return }
+                    self.requestScreenshot(sequence: self.pageIndex, attempt: self.attempt + 1)
+                }
+                return
+            }
+            failures.append("\(page.path): \(reason) after \(maxRetakes) retakes")
+        }
+        if !page.specimen.animated {
+            let crops = cells.map { cell in source.cropping(to: pixels(cell)).flatMap { samples($0) } }
+            let settled = previousCrops.count == crops.count && zip(previousCrops, crops).allSatisfy { pair in
+                guard let before = pair.0, let after = pair.1, before.count == after.count else { return false }
+                return zip(before, after).allSatisfy { abs(Int($0.0) - Int($0.1)) <= settledLevels }
+            }
+            if !settled {
+                if settleShots < maxSettleShots {
+                    if !previousCrops.isEmpty { retakes.append("\(page.path) attempt \(attempt): not settled") }
+                    settleShots += 1
+                    previousCrops = crops
+                    try? manager.removeItem(at: screenshot)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + settleShotSeconds) { [weak self] in
+                        guard let self else { return }
+                        self.requestScreenshot(sequence: self.pageIndex, attempt: self.attempt + 1)
+                    }
+                    return
+                }
+                failures.append("\(page.path): not settled after \(maxSettleShots) screenshots")
+            }
+        }
+        let kept = out.appendingPathComponent(page.screenshot)
+        do {
+            try manager.createDirectory(at: kept.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try manager.moveItem(at: screenshot, to: kept)
+        } catch {
+            failures.append("\(page.path): keep the screenshot: \(error)")
+        }
+        for cell in cells {
+            let frame = pixels(cell)
+            let name = "screen/\(page.path)/\(cell.name).png"
+            if let cropped = source.cropping(to: frame) {
+                write(UIImage(cgImage: cropped, scale: pixelScale, orientation: .up), to: name)
+            } else {
+                failures.append("\(name): crop \(frame) outside the screenshot")
+            }
+            entries.append(
+                renderEntry(
+                    page: page, cell: cell, draw: "draw/\(page.path)/\(cell.name).png", screen: name,
+                    screenshot: page.screenshot, frame: frame))
+        }
+        if !screenWritten {
+            screenWritten = true
+            entries.insert(screenEntry(source: source), at: 0)
+        }
+        if pageIndex + 1 < pages.count {
+            show(page: pageIndex + 1)
+        } else {
+            finish()
+        }
+    }
+
+    // MARK: the press mode
+
+    private func armNext() {
+        guard !finished else { return }
+        disarm()
+        armed = nil
+        guard let cell = pressQueue.first, let sample = cell.sample else {
+            if pageIndex + 1 < pages.count {
+                show(page: pageIndex + 1)
+            } else {
+                finish()
+            }
+            return
+        }
+        armed = cell
+        touchDown = false
+        captured = false
+        rearm = false
+        armedNumber = pressNumber
+        if let button = sample.button {
+            // A press releases into the toggle's other selection: a retake
+            // presses the button in its state again.
+            if cell.state == .pressedSelected { button.isSelected = true }
+            if cell.state == .pressed { button.isSelected = false }
+            button.removeTarget(self, action: nil, for: .allEvents)
+            button.addTarget(self, action: #selector(pressBegan(_:)), for: .touchDown)
+            button.addTarget(
+                self, action: #selector(pressEnded(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+            recordMotion(button, phase: "rest", times: [0])
+            button.accessibilityIdentifier = "press-\(armedNumber)"
+        } else if let pressView = sample.pressView {
+            // The list set: the touch on the specimen's own view, reported
+            // as the bar item's is (barPress).
+            sample.reset?()
+            sample.view.layoutIfNeeded()
+            guard let touched = pressView(), let target = sample.pressTarget?() else {
+                let reason = "the specimen has no view to press (pressView or pressTarget nil)"
+                entries.append(
+                    """
+                    [[press_skipped]]
+                    page = \(quoted(pages[pageIndex].path))
+                    cell = \(quoted(cell.name))
+                    reason = \(quoted(reason))
+
+                    """)
+                failures.append("\(pages[pageIndex].path)/\(cell.name): not pressed: \(reason)")
+                if !pressQueue.isEmpty { pressQueue.removeFirst() }
+                armed = nil
+                DispatchQueue.main.async { [weak self] in self?.armNext() }
+                return
+            }
+            for old in touched.gestureRecognizers ?? [] where old.name == "press" {
+                touched.removeGestureRecognizer(old)
+            }
+            touched.addGestureRecognizer(pressRecognizer())
+            recordMotion(touched, phase: "rest", times: [0])
+            // The identifier goes on a marker over the target, not on the
+            // target: a tab bar item's (outside a tab bar controller) and a
+            // SwiftUI Toggle's UISwitch's did not reach the accessibility
+            // tree (run 45230061151 on iOS 26.5, run 45220318789). The
+            // marker takes no touch
+            // (isUserInteractionEnabled false), so the UI test's press at its
+            // centre lands on the target.
+            let marker = UIView(frame: target.convert(target.bounds, to: view))
+            marker.backgroundColor = .clear
+            marker.isUserInteractionEnabled = false
+            marker.isAccessibilityElement = true
+            marker.accessibilityIdentifier = "press-\(armedNumber)"
+            view.addSubview(marker)
+            pressMarker = marker
+        } else if let item = sample.barItem {
+            for old in sample.view.gestureRecognizers ?? [] where old.name == "press" {
+                sample.view.removeGestureRecognizer(old)
+            }
+            sample.view.addGestureRecognizer(pressRecognizer())
+            recordMotion(sample.view, phase: "rest", times: [0])
+            item.accessibilityIdentifier = "press-\(armedNumber)"
+        }
+        pressNumber += 1
+        if hoverMode {
+            let number = armedNumber
+            hoverReading = false
+            hoverLeft = nil
+            hoverLabelView = hoverLabel(sample)
+            hoverRest = hoverShot(cell, phase: "rest", time: nil, over: false)
+            DispatchQueue.main.asyncAfter(deadline: .now() + hoverWaitSeconds) { [weak self] in
+                self?.hoverNotSeen(number)
+            }
+        }
+    }
+
+    /// The recognizer that reports the armed target's touch (a long press of
+    /// no minimum duration) or, in the hover mode, the pointer over it.
+    private func pressRecognizer() -> UIGestureRecognizer {
+        let recognizer: UIGestureRecognizer
+        if hoverMode {
+            recognizer = UIHoverGestureRecognizer(target: self, action: #selector(barPress(_:)))
+        } else {
+            let press = UILongPressGestureRecognizer(target: self, action: #selector(barPress(_:)))
+            press.minimumPressDuration = 0
+            recognizer = press
+        }
+        recognizer.name = "press"
+        recognizer.cancelsTouchesInView = false
+        recognizer.delaysTouchesBegan = false
+        recognizer.delaysTouchesEnded = false
+        recognizer.delegate = self
+        return recognizer
+    }
+
+    /// The hover mode: the target armed as `number` saw no pointer within
+    /// `hoverWaitSeconds`; recorded, a failure, and the next one armed.
+    private func hoverNotSeen(_ number: Int) {
+        guard !finished, let cell = armed, armedNumber == number, !touchDown, !captured, !hoverReading else { return }
+        entries.append(
+            """
+            [[hover_not_seen]]
+            page = \(quoted(pages[pageIndex].path))
+            cell = \(quoted(cell.name))
+            press_number = \(number)
+            wait_seconds = \(hoverWaitSeconds)
+
+            """)
+        failures.append("\(pages[pageIndex].path)/\(cell.name): no hover within \(hoverWaitSeconds) s")
+        if !pressQueue.isEmpty { pressQueue.removeFirst() }
+        pressRetakes = 0
+        scheduleArm()
+    }
+
+    /// The label the hover mode reads: of the specimen's shown labels with
+    /// text, the one nearest the hovered point (the press target's centre,
+    /// where the UI test hovers), or the first where the specimen has no
+    /// press target (the bar item, alone in its toolbar).
+    private func hoverLabel(_ sample: Sample) -> UILabel? {
+        var labels: [UILabel] = []
+        func visit(_ view: UIView) {
+            if let label = view as? UILabel, !label.isHidden, !(label.text ?? "").isEmpty { labels.append(label) }
+            for child in view.subviews { visit(child) }
+        }
+        visit(sample.view)
+        guard let target = sample.pressTarget?() else { return labels.first }
+        let point = target.convert(CGPoint(x: target.bounds.midX, y: target.bounds.midY), to: nil)
+        func distance(_ label: UILabel) -> CGFloat {
+            let frame = label.convert(label.bounds, to: nil)
+            return hypot(
+                max(frame.minX - point.x, 0, point.x - frame.maxX), max(frame.minY - point.y, 0, point.y - frame.maxY))
+        }
+        return labels.min { distance($0) < distance($1) }
+    }
+
+    /// The hover mode: the pointer is over the armed target. Reads it at each
+    /// of hoverReadTimes after now, then counts the target read where the
+    /// pointer was still over it at a read hoverHoldSeconds or later, or
+    /// retakes it.
+    private func beginHoverRead() {
+        guard !hoverReading, let cell = armed else { return }
+        hoverReading = true
+        let number = armedNumber
+        let start = CACurrentMediaTime()
+        var shots: [HoverShot] = []
+        for (index, time) in hoverReadTimes.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + time) { [weak self] in
+                guard let self, !self.finished, self.armedNumber == number else { return }
+                shots.append(
+                    self.hoverShot(
+                        cell, phase: "t\(Int((time * 1000).rounded()))ms", time: CACurrentMediaTime() - start,
+                        over: self.touchDown))
+                guard index == hoverReadTimes.count - 1 else { return }
+                self.endHoverRead(cell, number: number, start: start, shots: shots)
+            }
+        }
+    }
+
+    /// The hover mode's reads done: one [[hover_read]] table with the rest
+    /// read and each hover read as a [[hover_read.sample]], their draws
+    /// written; the next target armed, or this one retaken.
+    private func endHoverRead(_ cell: Cell, number: Int, start: CFTimeInterval, shots: [HoverShot]) {
+        hoverReading = false
+        let page = pages[pageIndex]
+        let held = shots.contains { shot in shot.over && shot.time.map { $0 >= hoverHoldSeconds } == true }
+        var text = """
+            [[hover_read]]
+            page = \(quoted(page.path))
+            cell = \(quoted(cell.name))
+            press_number = \(number)
+            label_text = \(hoverLabelView?.text.map(quoted) ?? absent)
+            pointer_left_after_s = \(hoverLeft.map { precise($0 - start) } ?? absent)
+            hold_seconds = \(precise(hoverHoldSeconds))
+            held = \(held)
+
+            """
+        let rest = hoverRest
+        for shot in [rest].compactMap({ $0 }) + shots {
+            let name = "draw/\(page.path)/\(cell.name)-hover\(number)-\(shot.phase).png"
+            var lines = [
+                "[[hover_read.sample]]",
+                "phase = \(quoted(shot.phase))",
+                "t_s = \(shot.time.map(precise) ?? absent)",
+                "pointer_over = \(shot.over)",
+                "draw = \(quoted(name))",
+            ]
+            lines += shot.lines
+            if let image = shot.image {
+                write(image, to: name)
+                if let cgImage = image.cgImage {
+                    let restImage = shot.phase == "rest" ? nil : rest?.image?.cgImage
+                    if let box = shot.labelBox {
+                        lines += hoverPixels(cgImage, rest: restImage, box: box, prefix: "label", ink: true)
+                    }
+                    lines += hoverPixels(cgImage, rest: restImage, box: nil, prefix: "cell", ink: false)
+                }
+            }
+            text += lines.joined(separator: "\n") + "\n\n"
+        }
+        entries.append(text)
+        if held {
+            if !pressQueue.isEmpty { pressQueue.removeFirst() }
+            pressRetakes = 0
+            scheduleArm()
+        } else {
+            retakePress("the pointer left before \(hoverHoldSeconds) s")
+        }
+    }
+
+    /// One hover read of `cell`: the window drawn over the cell's frame
+    /// (drawHierarchy of the window, without a screen update, so a pointer
+    /// effect drawn outside the specimen's views is in it too), the read
+    /// label's properties and box, the press target's cell state where it
+    /// is a list cell, and every view in the window whose class names a
+    /// pointer effect (Pointer, Platter, Portal), with its layers.
+    private func hoverShot(_ cell: Cell, phase: String, time: Double?, over: Bool) -> HoverShot {
+        let scale = pixelScale
+        var image: UIImage?
+        var lines: [String] = []
+        let window = view.window
+        if let window {
+            let frame = cell.view.convert(cell.view.bounds, to: window)
+            let format = UIGraphicsImageRendererFormat(for: cell.view.traitCollection)
+            format.scale = scale
+            format.opaque = true
+            format.preferredRange = .standard
+            var succeeded = false
+            image = UIGraphicsImageRenderer(size: frame.size, format: format).image { _ in
+                succeeded = window.drawHierarchy(
+                    in: window.bounds.offsetBy(dx: -frame.minX, dy: -frame.minY), afterScreenUpdates: false)
+            }
+            if !succeeded {
+                failures.append("\(pages[pageIndex].path)/\(cell.name) hover \(phase): drawHierarchy returned false")
+            }
+        } else {
+            failures.append("\(pages[pageIndex].path)/\(cell.name) hover \(phase): no window")
+        }
+        var labelBox: CGRect?
+        if let label = hoverLabelView {
+            let traits = label.traitCollection
+            let shown = label.layer.presentation() ?? label.layer
+            let frame = label.convert(label.bounds, to: cell.view)
+            let box = CGRect(
+                x: (frame.minX * scale).rounded(), y: (frame.minY * scale).rounded(),
+                width: (frame.width * scale).rounded(), height: (frame.height * scale).rounded())
+            labelBox = box
+            let filters = (shown.filters ?? []).map { filterName($0) }.joined(separator: ", ")
+            let fields: [String] = [
+                "class = \(quoted(String(describing: type(of: label))))",
+                "text = \(label.text.map(quoted) ?? absent)",
+                "text_color = \(colorValue(label.textColor, traits))",
+                "highlighted = \(label.isHighlighted)",
+                "highlighted_text_color = \(colorValue(label.highlightedTextColor, traits))",
+                "tint = \(colorValue(label.tintColor, traits))",
+                "hidden = \(label.isHidden)",
+                "alpha = \(number(label.alpha))",
+                "layer_opacity = \(number(CGFloat(shown.opacity)))",
+                "compositing_filter = \(filterName(shown.compositingFilter))",
+                "filters = [\(filters)]",
+                "in_window = \(label.window != nil)",
+                "frame_in_cell_pt = \(rectangle(frame))",
+            ]
+            lines.append("label = { \(fields.joined(separator: ", ")) }")
+            lines.append("label_px = \(rectangle(box))")
+        } else {
+            lines.append("label = \(absent)")
+        }
+        if let listCell = cell.sample?.pressTarget?() as? UICollectionViewCell {
+            let traits = listCell.traitCollection
+            lines.append("cell_state = \(quoted(String(describing: listCell.configurationState)))")
+            lines.append(
+                "cell_background = "
+                    + (listCell.backgroundConfiguration.map {
+                        colorValue(
+                            $0.updated(for: listCell.configurationState).resolvedBackgroundColor(
+                                for: listCell.tintColor), traits)
+                    } ?? absent))
+        }
+        var effects: [String] = []
+        var visited = 0
+        func visit(_ shownView: UIView) {
+            guard visited < 4000 else { return }
+            visited += 1
+            let name = String(describing: type(of: shownView))
+            if name.contains("Pointer") || name.contains("Platter") || name.contains("Portal") {
+                effects += pointerLayers(shownView, in: window)
+                return
+            }
+            for child in shownView.subviews { visit(child) }
+        }
+        if let window { visit(window) }
+        lines.append("pointer_layers = [\(effects.joined(separator: ", "))]")
+        return HoverShot(phase: phase, time: time, over: over, image: image, labelBox: labelBox, lines: lines)
+    }
+
+    /// A pointer effect's view's layers, depth first (at most 40): each one's
+    /// view and layer class, its presentation's fill, opacity, transform,
+    /// corners, shadow and filters, and its frame in the window.
+    private func pointerLayers(_ effect: UIView, in window: UIWindow?) -> [String] {
+        var lines: [String] = []
+        let root = String(describing: type(of: effect))
+        func visit(_ layer: CALayer, path: String) {
+            guard lines.count < 40 else { return }
+            let shown = layer.presentation() ?? layer
+            let t = shown.transform
+            let transform = [t.m11, t.m12, t.m21, t.m22, t.m41, t.m42].map { precise(Double($0)) }
+            let owner = layer.delegate as? UIView
+            let effectName = (layer.delegate as? UIVisualEffectView)?.effect.map {
+                quoted(String(describing: type(of: $0)))
+            } ?? absent
+            let filters = (shown.filters ?? []).map { filterName($0) }.joined(separator: ", ")
+            let delegate = layer.delegate.map { quoted(String(describing: type(of: $0))) } ?? absent
+            let viewBackground = owner.map { colorValue($0.backgroundColor, $0.traitCollection) } ?? absent
+            let frame = window.map { rectangle(layer.convert(layer.bounds, to: $0.layer)) } ?? absent
+            let fields: [String] = [
+                "view = \(quoted(root))",
+                "layer = \(quoted(path))",
+                "class = \(quoted(String(describing: type(of: layer))))",
+                "delegate = \(delegate)",
+                "hidden = \(shown.isHidden)",
+                "opacity = \(precise(Double(shown.opacity)))",
+                "background = \(colorValue(shown.backgroundColor))",
+                "view_background = \(viewBackground)",
+                "frame_in_window_pt = \(frame)",
+                "transform = [\(transform.joined(separator: ", "))]",
+                "corner_radius_pt = \(number(shown.cornerRadius))",
+                "shadow_opacity = \(precise(Double(shown.shadowOpacity)))",
+                "shadow_radius_pt = \(number(shown.shadowRadius))",
+                "shadow_offset_pt = \(pair(shown.shadowOffset))",
+                "shadow_color = \(colorValue(shown.shadowColor))",
+                "compositing_filter = \(filterName(shown.compositingFilter))",
+                "filters = [\(filters)]",
+                "effect = \(effectName)",
+            ]
+            lines.append("{ \(fields.joined(separator: ", ")) }")
+            for (index, sublayer) in (layer.sublayers ?? []).enumerated() { visit(sublayer, path: "\(path).\(index)") }
+        }
+        visit(effect.layer, path: "0")
+        return lines
+    }
+
+    /// Records a button's layers at `phase` (rest, press, release): their
+    /// animations and their presentation transforms and opacities, at each of
+    /// `motionTimes` seconds after the call, as one [[motion]] table.
+    private func recordMotion(_ button: UIView, phase: String, times: [Double]) {
+        let page = pages[pageIndex].path
+        let cellName = armed?.name ?? "none"
+        let number = armedNumber
+        let start = CACurrentMediaTime()
+        var samples: [String] = []
+        for (index, time) in times.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + time) { [weak self] in
+                guard let self else { return }
+                let now = CACurrentMediaTime() - start
+                samples.append(
+                    "{ t = \(precise(now)), highlighted = \((button as? UIControl)?.isHighlighted ?? false), "
+                        + "animations = [\(layerAnimations(button.layer, path: "0").joined(separator: ", "))], "
+                        + "layers = [\(layerStates(button.layer, path: "0").joined(separator: ", "))] }")
+                guard index == times.count - 1 else { return }
+                self.motions.append(
+                    """
+                    [[motion]]
+                    page = \(quoted(page))
+                    cell = \(quoted(cellName))
+                    press_number = \(number)
+                    phase = \(quoted(phase))
+                    samples = [\(samples.joined(separator: ", "))]
+
+                    """)
+            }
+        }
+    }
+
+    @objc private func pressBegan(_ sender: UIButton) {
+        guard let cell = armed, sender === cell.sample?.button else { return }
+        touchBegan(sender)
+    }
+
+    @objc private func pressEnded(_ sender: UIButton) {
+        guard let cell = armed, sender === cell.sample?.button else { return }
+        touchEnded(sender)
+    }
+
+    @objc private func barPress(_ recognizer: UIGestureRecognizer) {
+        guard let cell = armed, let sample = cell.sample, let view = recognizer.view,
+            sample.pressView != nil ? view === sample.pressView?() : view === sample.view && sample.barItem != nil
+        else { return }
+        switch recognizer.state {
+        case .began: touchBegan(view)
+        case .ended, .cancelled, .failed: touchEnded(view)
+        default: break
+        }
+    }
+
+    private func touchBegan(_ sender: UIView) {
+        guard !touchDown else { return }
+        recordMotion(sender, phase: "press", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 1.0])
+        touchDown = true
+        if hoverMode {
+            beginHoverRead()
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pressSettleSeconds) { [weak self] in
+            self?.capturePress()
+        }
+    }
+
+    private func touchEnded(_ sender: UIView) {
+        guard touchDown else { return }
+        touchDown = false
+        if hoverMode {
+            if hoverReading && hoverLeft == nil { hoverLeft = CACurrentMediaTime() }
+            return
+        }
+        if captured {
+            recordMotion(sender, phase: "release", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.45])
+            if !pressQueue.isEmpty { pressQueue.removeFirst() }
+            pressRetakes = 0
+            scheduleArm()
+        } else if rearm {
+            scheduleArm()
+        }
+    }
+
+    /// Takes the armed cell's identifier away: off its button or bar item,
+    /// and the list set's marker out of the view.
+    private func disarm() {
+        armed?.sample?.button?.accessibilityIdentifier = nil
+        armed?.sample?.barItem?.accessibilityIdentifier = nil
+        pressMarker?.removeFromSuperview()
+        pressMarker = nil
+    }
+
+    private func scheduleArm() {
+        disarm()
+        DispatchQueue.main.asyncAfter(deadline: .now() + pressRearmSeconds) { [weak self] in self?.armNext() }
+    }
+
+    private func capturePress() {
+        guard !finished, let cell = armed, let sample = cell.sample else { return }
+        guard touchDown else {
+            retakePress("the touch ended before the capture")
+            return
+        }
+        highlightedAtCapture = sample.button?.isHighlighted ?? sample.highlighted?()
+        trackingAtCapture = sample.button?.isTracking
+        _ = drawCell(cell, to: "draw/\(pages[pageIndex].path)/\(cell.name).png")
+        requestScreenshot(sequence: shots, attempt: 0)
+        shots += 1
+    }
+
+    private func retakePress(_ reason: String) {
+        guard let cell = armed else { return }
+        let page = pages[pageIndex]
+        if pressRetakes < maxRetakes {
+            pressRetakes += 1
+            retakes.append("\(page.path)/\(cell.name) press \(armedNumber): \(reason)")
+        } else {
+            failures.append("\(page.path)/\(cell.name): \(reason) after \(maxRetakes) retakes")
+            if !pressQueue.isEmpty { pressQueue.removeFirst() }
+            pressRetakes = 0
+        }
+        // A pointer stays where the UI test left it: the hover mode re-arms
+        // at once, and the UI test hovers the new identifier.
+        if touchDown && !hoverMode {
+            rearm = true
+        } else {
+            scheduleArm()
+        }
+    }
+
+    private func pressScreenshot(_ screenshot: URL) {
+        let page = pages[pageIndex]
+        guard let cell = armed, let sample = cell.sample else { return }
+        let heldThrough = touchDown
+        guard let source = loadScreenshot(screenshot) else {
+            finish()
+            return
+        }
+        let manager = FileManager.default
+        let kept = out.appendingPathComponent("pages/\(sequence).png")
+        do {
+            try manager.moveItem(at: screenshot, to: kept)
+        } catch {
+            failures.append("\(page.path): keep the screenshot: \(error)")
+        }
+        if let reason = overlay(source) {
+            retakePress(reason)
+            return
+        }
+        guard heldThrough else {
+            retakePress("the touch ended before the screenshot arrived")
+            return
+        }
+        let name = "screen/\(page.path)/\(cell.name).png"
+        let frame = pixels(cell)
+        if let cropped = source.cropping(to: frame) {
+            write(UIImage(cgImage: cropped, scale: pixelScale, orientation: .up), to: name)
+        } else {
+            failures.append("\(name): crop \(frame) outside the screenshot")
+        }
+        entries.append(
+            renderEntry(
+                page: page, cell: cell, draw: "draw/\(page.path)/\(cell.name).png", screen: name,
+                screenshot: "pages/\(sequence).png", frame: frame,
+                press: "press_number = \(armedNumber)\n"
+                    + "highlighted_at_capture = \(highlightedAtCapture.map { "\($0)" } ?? absent)\n"
+                    + "tracking_at_capture = \(trackingAtCapture.map { "\($0)" } ?? absent)\n"
+                    + "held_until_screenshot = \(heldThrough)\n"
+                    + ((sample.button?.isSelected ?? sample.barItem?.isSelected).map { "selected_at_screenshot = \($0)\n" }
+                        ?? "")))
+        if !aloneWritten {
+            aloneWritten = true
+            // The pattern alone, and the list set's specimens at rest.
+            for alone in cells where !alone.backdrop.holdsSpecimen || alone.state == .normal {
+                let aloneName = "screen/\(page.path)/\(alone.name).png"
+                let aloneFrame = pixels(alone)
+                if let cropped = source.cropping(to: aloneFrame) {
+                    write(UIImage(cgImage: cropped, scale: pixelScale, orientation: .up), to: aloneName)
+                }
+                entries.append(
+                    renderEntry(
+                        page: page, cell: alone, draw: absent, screen: aloneName,
+                        screenshot: "pages/\(sequence).png", frame: aloneFrame))
+            }
+        }
+        if !screenWritten {
+            screenWritten = true
+            entries.insert(screenEntry(source: source), at: 0)
+        }
+        captured = true
+    }
+
+    // MARK: the index
+
+    private func renderEntry(
+        page: Page, cell: Cell, draw: String, screen: String, screenshot: String, frame: CGRect, press: String = ""
+    ) -> String {
+        let variant = page.specimen.variant.map { "\($0.key) = \(quoted($0.value))" }.joined(separator: ", ")
+        var text = """
+            [[render]]
+            appearance = \(quoted(page.appearance.name))
+            specimen = \(quoted(page.specimen.name))
+            kind = \(quoted(page.specimen.kind))
+            style = \(quoted(page.specimen.style))
+            variant = { \(variant) }
+            size = \(quoted(page.size.name))
+            backdrop = \(quoted(cell.backdrop.name))
+            state = \(quoted(cell.state.rawValue))
+            state_applied = \(cell.applied)
+            draw = \(draw.hasPrefix("\"") ? draw : quoted(draw))
+            screen = \(quoted(screen))
+            page = \(quoted(screenshot))
+            cell_px = \(rectangle(frame))
+            cell_pt = \(rectangle(cell.view.frame))
+
+            """
+        text += press
+        guard let sample = cell.sample else { return text + "\n" }
+        let specimen = sample.view
+        text += """
+            frame_pt = \(rectangle(specimen.frame))
+            intrinsic_size_pt = \(pair(specimen.intrinsicContentSize))
+            harness_size_pt = \(sample.harnessSize.map(pair) ?? absent)
+            user_interface_style = \(specimen.traitCollection.userInterfaceStyle.rawValue)
+            is_focused = \(specimen.isFocused)
+            can_become_focused = \(specimen.canBecomeFocused)
+
+            """
+        if let control = sample.control {
+            text += """
+                is_highlighted = \(control.isHighlighted)
+                is_enabled = \(control.isEnabled)
+                is_selected = \(control.isSelected)
+
+                """
+        }
+        if let item = sample.barItem {
+            text += """
+                item_is_enabled = \(item.isEnabled)
+                item_is_selected = \(item.isSelected)
+                item_style = \(item.style.rawValue)
+
+                """
+        }
+        guard cell.backdrop.fill == .system else { return text + "\n" }
+        let traits = specimen.traitCollection
+        text += "tint = \(colorValue(specimen.tintColor, traits))\n"
+        if let button = sample.button {
+            text += """
+                title_font = \(fontValue(button.titleLabel?.font))
+                title_color = \(colorValue(button.titleLabel?.textColor, traits))
+                button_type = \(button.buttonType.rawValue)
+                role = \(button.role.rawValue)
+
+                """
+            if let configuration = button.configuration {
+                text += configurationTable(configuration.updated(for: button), tint: button.tintColor, traits: traits)
+            }
+        }
+        if let picker = specimen as? AVRoutePickerView {
+            text += """
+                route_tint = \(colorValue(picker.tintColor, traits))
+                route_active_tint = \(colorValue(picker.activeTintColor, traits))
+
+                """
+        }
+        if let reads = sample.reads { text += reads(traits) }
+        if let paste = specimen as? UIPasteControl {
+            let configuration = paste.configuration
+            text += """
+                [render.paste_configuration]
+                display_mode = \(configuration.displayMode.rawValue)
+                corner_style = \(quoted(cornerStyleName(configuration.cornerStyle)))
+                corner_radius_pt = \(number(configuration.cornerRadius))
+                base_foreground_color = \(colorValue(configuration.baseForegroundColor, traits))
+                base_background_color = \(colorValue(configuration.baseBackgroundColor, traits))
+
+                """
+        }
+        text += "\n" + viewTree(specimen).joined()
+        return text
+    }
+
+    private func configurationTable(
+        _ configuration: UIButton.Configuration, tint: UIColor, traits: UITraitCollection
+    ) -> String {
+        let background = configuration.background
+        let resolvedTint = tint.resolvedColor(with: traits)
+        var title = absent
+        if let transformer = configuration.titleTextAttributesTransformer {
+            let attributes = transformer(AttributeContainer())
+            title = "{ font = \(fontValue(attributes[AttributeScopes.UIKitAttributes.FontAttribute.self])), "
+                + "foreground = \(colorValue(attributes[AttributeScopes.UIKitAttributes.ForegroundColorAttribute.self], traits)) }"
+        }
+        var subtitle = absent
+        if let transformer = configuration.subtitleTextAttributesTransformer {
+            let attributes = transformer(AttributeContainer())
+            subtitle = "{ font = \(fontValue(attributes[AttributeScopes.UIKitAttributes.FontAttribute.self])), "
+                + "foreground = \(colorValue(attributes[AttributeScopes.UIKitAttributes.ForegroundColorAttribute.self], traits)) }"
+        }
+        let symbol = configuration.preferredSymbolConfigurationForImage.map { described($0) } ?? absent
+        return """
+            [render.configuration]
+            source = "UIButton.Configuration.updated(for:) of the button in this state"
+            button_size = \(quoted(sizeName(configuration.buttonSize)))
+            corner_style = \(quoted(cornerStyleName(configuration.cornerStyle)))
+            content_insets_pt = \(insets(configuration.contentInsets))
+            image_padding_pt = \(number(configuration.imagePadding))
+            title_padding_pt = \(number(configuration.titlePadding))
+            image_placement = \(quoted(edgeName(configuration.imagePlacement)))
+            title_alignment = \(quoted(titleAlignmentName(configuration.titleAlignment)))
+            indicator = \(quoted(indicatorName(configuration.indicator)))
+            shows_activity_indicator = \(configuration.showsActivityIndicator)
+            automatically_update_for_selection = \(configuration.automaticallyUpdateForSelection)
+            base_foreground_color = \(colorValue(configuration.baseForegroundColor, traits))
+            base_background_color = \(colorValue(configuration.baseBackgroundColor, traits))
+            title_text_attributes = \(title)
+            subtitle_text_attributes = \(subtitle)
+            preferred_symbol_configuration = \(symbol)
+            background_color = \(colorValue(background.backgroundColor, traits))
+            resolved_background_color = \(colorValue(background.resolvedBackgroundColor(for: resolvedTint), traits))
+            stroke_color = \(colorValue(background.strokeColor, traits))
+            resolved_stroke_color = \(colorValue(background.resolvedStrokeColor(for: resolvedTint), traits))
+            stroke_width_pt = \(number(background.strokeWidth))
+            stroke_outset_pt = \(number(background.strokeOutset))
+            background_corner_radius_pt = \(number(background.cornerRadius))
+            background_insets_pt = \(insets(background.backgroundInsets))
+            visual_effect = \(background.visualEffect.map { quoted(String(describing: type(of: $0))) } ?? absent)
+            resolved_against_tint = \(colorValue(resolvedTint.cgColor))
+
+            """
+    }
+
+    private func filterName(_ filter: Any?) -> String {
+        if let name = filter as? String { return quoted(name) }
+        guard let filter else { return absent }
+        return quoted(String(describing: type(of: filter)))
+    }
+
+    /// The specimen's views, depth first, at most 80 of them and 8 deep: what
+    /// UIKit draws the specimen with.
+    private func viewTree(_ root: UIView) -> [String] {
+        var lines: [String] = []
+        var count = 0
+        func visit(_ view: UIView, path: String, depth: Int) {
+            guard count < 80, depth <= 8 else { return }
+            count += 1
+            let layer = view.layer
+            let traits = view.traitCollection
+            var fields = [
+                "[[render.view]]",
+                "path = \(quoted(path))",
+                "class = \(quoted(String(describing: type(of: view))))",
+                "frame_pt = \(rectangle(view.convert(view.bounds, to: root)))",
+                "hidden = \(view.isHidden)",
+                "alpha = \(number(view.alpha))",
+                "clips = \(view.clipsToBounds)",
+                "background = \(colorValue(view.backgroundColor, traits))",
+                "tint = \(colorValue(view.tintColor, traits))",
+                "layer_class = \(quoted(String(describing: type(of: layer))))",
+                "layer_opacity = \(number(CGFloat(layer.opacity)))",
+                "layer_background = \(colorValue(layer.backgroundColor))",
+                "corner_radius_pt = \(number(layer.cornerRadius))",
+                "corner_curve = \(quoted(layer.cornerCurve.rawValue))",
+                "masked_corners = \(layer.maskedCorners.rawValue)",
+                "border_width_pt = \(number(layer.borderWidth))",
+                "border_color = \(colorValue(layer.borderColor))",
+                "shadow_opacity = \(number(CGFloat(layer.shadowOpacity)))",
+                "shadow_radius_pt = \(number(layer.shadowRadius))",
+                "shadow_offset_pt = \(pair(layer.shadowOffset))",
+                "shadow_color = \(colorValue(layer.shadowColor))",
+                "has_mask = \(layer.mask != nil || view.mask != nil)",
+                "compositing_filter = \(filterName(layer.compositingFilter))",
+                "filters = [\((layer.filters ?? []).map { quoted(String(describing: type(of: $0))) }.joined(separator: ", "))]",
+            ]
+            if let toggle = view as? UISwitch {
+                fields += ["is_on = \(toggle.isOn)", "is_enabled = \(toggle.isEnabled)"]
+            }
+            if let label = view as? UILabel {
+                fields += [
+                    "intrinsic_size_pt = \(pair(label.intrinsicContentSize))",
+                    "is_enabled = \(label.isEnabled)",
+                    "text = \(label.text.map(quoted) ?? absent)",
+                    "font = \(fontValue(label.font))",
+                    "text_color = \(colorValue(label.textColor, traits))",
+                ]
+            }
+            if let imageView = view as? UIImageView {
+                fields += [
+                    "image_size_pt = \(imageView.image.map { pair($0.size) } ?? absent)",
+                    "image_is_symbol = \(imageView.image?.isSymbolImage ?? false)",
+                    "image_alignment_insets_pt = \(imageView.image.map { edgeInsets($0.alignmentRectInsets) } ?? absent)",
+                    "image_symbol_configuration = \(imageView.preferredSymbolConfiguration.map { described($0) } ?? absent)",
+                ]
+            }
+            if let effectView = view as? UIVisualEffectView {
+                fields.append(
+                    "effect = \(effectView.effect.map { quoted(String(describing: type(of: $0))) } ?? absent)")
+            }
+            if let spinner = view as? UIActivityIndicatorView {
+                fields += [
+                    "spinner_style = \(spinner.style.rawValue)",
+                    "spinner_color = \(colorValue(spinner.color, traits))",
+                    "spinner_animating = \(spinner.isAnimating)",
+                ]
+            }
+            lines.append(fields.joined(separator: "\n") + "\n\n")
+            for (index, child) in view.subviews.enumerated() {
+                visit(child, path: "\(path).\(index)", depth: depth + 1)
+            }
+        }
+        visit(root, path: "0", depth: 0)
+        return lines
+    }
+
+    private func screenEntry(source: CGImage) -> String {
+        let screen = view.window?.windowScene?.screen
+        let traits = view.traitCollection
+        let colorSpace = (source.colorSpace?.name as String?) ?? "none"
+        let pattern = patternColors.map { quoted($0.name) }.joined(separator: ", ")
+        return """
+            [screen]
+            scale = \(number(screen?.scale ?? 0))
+            bounds_pt = \(rectangle(screen?.bounds ?? .zero))
+            native_bounds_px = \(rectangle(screen?.nativeBounds ?? .zero))
+            safe_area_top_pt = \(number(view.safeAreaInsets.top))
+            safe_area_bottom_pt = \(number(view.safeAreaInsets.bottom))
+            screenshot_color_space = \(quoted(colorSpace))
+            display_gamut = \(traits.displayGamut.rawValue)
+            preferred_content_size_category = \(quoted(traits.preferredContentSizeCategory.rawValue))
+            focus_system = \(UIFocusSystem.focusSystem(for: self) != nil)
+            interface_idiom = \(traits.userInterfaceIdiom.rawValue)
+
+            [layout]
+            margin_pt = \(number(margin))
+            cell_height_pt = \(number(cellHeight))
+            roomy = "the base glass styles' pages: 2 columns x 3 rows sharing the screen's height; every press page: 1 column x 2 rows; each cell's frame is its render's cell_pt"
+            gap_pt = \(number(gap))
+            bar_inset_pt = \(number(barInset))
+            backdrops = { system = "UIColor.systemBackground", black = "#000000", white = "#ffffff", pattern = "squares of pattern.square_pt, pattern.colors in a 2 x 2 tile (column % 2 + 2 * (row % 2)), anchored at the cell's top left", pattern_alone = "the pattern, no specimen" }
+            page_code = "\(codeBits) squares of \(number(codeSquare)) pt under the grid, red #ff0000 for a set bit, blue #0000ff for a clear one, the page's number from bit 0 at the left"
+
+            [pattern]
+            square_pt = \(number(patternSquare))
+            colors = [\(pattern)]
+
+            """
+    }
+
+    private func write(_ image: UIImage, to name: String) {
+        let url = out.appendingPathComponent(name)
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            guard let data = image.pngData() else {
+                failures.append("\(name): no PNG data")
+                return
+            }
+            try data.write(to: url)
+        } catch {
+            failures.append("\(name): \(error)")
+        }
+    }
+
+    // MARK: UIKit's values
+
+    private func readMotion() {
+        var springDuration: TimeInterval = -1
+        UIView.animate(bounce: 0, animations: { springDuration = UIView.inheritedAnimationDuration })
+        let longPress = UILongPressGestureRecognizer()
+        reads.append(
+            """
+            [motion]
+            ca_transaction_animation_duration_s = \(precise(CATransaction.animationDuration()))
+            spring_animation_default_duration_s = \(precise(springDuration))
+            spring_animation_default_source = "UIView.inheritedAnimationDuration inside UIView.animate(springDuration:bounce:...) called with its default duration"
+            navigation_bar_hide_show_duration_s = \(precise(Double(UINavigationController.hideShowBarDuration)))
+            scroll_deceleration_rate_normal = \(precise(Double(UIScrollView.DecelerationRate.normal.rawValue)))
+            scroll_deceleration_rate_fast = \(precise(Double(UIScrollView.DecelerationRate.fast.rawValue)))
+            scroll_view_default_deceleration_rate = \(precise(Double(UIScrollView().decelerationRate.rawValue)))
+            long_press_minimum_duration_s = \(precise(longPress.minimumPressDuration))
+            long_press_allowable_movement_pt = \(precise(Double(longPress.allowableMovement)))
+            maximum_frames_per_second = \(view.window?.windowScene?.screen.maximumFramesPerSecond ?? 0)
+            reduce_motion = \(UIAccessibility.isReduceMotionEnabled)
+            darker_system_colors = \(UIAccessibility.isDarkerSystemColorsEnabled)
+            bold_text = \(UIAccessibility.isBoldTextEnabled)
+            button_shapes = \(UIAccessibility.buttonShapesEnabled)
+            unexposed = [
+              "the key repeat delay and interval: UIKit has no API that reports them",
+              "the double-tap interval: UITapGestureRecognizer has no API that reports it",
+              "the caret blink: UIKit has no API that reports its timing",
+              "UIView.animate(withDuration:) has no default duration: every call states its own",
+              "the pointer effects (hover): XCUITest has no hover on iOS and the screenshot shows no pointer",
+            ]
+
+            """)
+    }
+
+    private func readColors() {
+        let contrasts: [(name: String, contrast: UIAccessibilityContrast)] = [("normal", .normal), ("high", .high)]
+        let levels: [(name: String, level: UIUserInterfaceLevel)] = [("base", .base), ("elevated", .elevated)]
+        if colorNames.isEmpty { failures.append("no colour names: run.sh passes them as colors=<names>") }
+        let colorClass = UIColor.self as AnyObject
+        for name in colorNames {
+            guard colorClass.responds(to: NSSelectorFromString(name)) == true,
+                let color = colorClass.value(forKey: name) as? UIColor
+            else {
+                reads.append("[[color]]\nname = \(quoted(name))\nresponds = false\n\n")
+                continue
+            }
+            for appearance in appearances {
+                for contrast in contrasts {
+                    for level in levels {
+                        let traits = UITraitCollection { traits in
+                            traits.userInterfaceStyle = appearance.style
+                            traits.accessibilityContrast = contrast.contrast
+                            traits.userInterfaceLevel = level.level
+                        }
+                        reads.append(
+                            """
+                            [[color]]
+                            name = \(quoted(name))
+                            responds = true
+                            appearance = \(quoted(appearance.name))
+                            contrast = \(quoted(contrast.name))
+                            level = \(quoted(level.name))
+                            value = \(colorValue(color, traits))
+
+                            """)
+                    }
+                }
+            }
+        }
+    }
+
+    private func readTextStyles() {
+        for (styleName, style) in textStyles {
+            let metrics = UIFontMetrics(forTextStyle: style)
+            let large = UITraitCollection(preferredContentSizeCategory: .large)
+            let baseSize = UIFont.preferredFont(forTextStyle: style, compatibleWith: large).pointSize
+            for (categoryName, category) in categories {
+                for bold in [false, true] {
+                    let traits = UITraitCollection { traits in
+                        traits.preferredContentSizeCategory = category
+                        traits.legibilityWeight = bold ? .bold : .regular
+                    }
+                    let font = UIFont.preferredFont(forTextStyle: style, compatibleWith: traits)
+                    let scaled = metrics.scaledFont(for: UIFont.systemFont(ofSize: baseSize), compatibleWith: traits)
+                    reads.append(
+                        """
+                        [[text_style]]
+                        style = \(quoted(styleName))
+                        text_style = \(quoted(style.rawValue))
+                        category = \(quoted(categoryName))
+                        content_size_category = \(quoted(category.rawValue))
+                        legibility_weight = \(quoted(bold ? "bold" : "regular"))
+                        font = \(fontValue(font))
+                        metrics_scaled_value_100 = \(precise(Double(metrics.scaledValue(for: 100, compatibleWith: traits))))
+                        metrics_scaled_value_large_size = \(precise(Double(metrics.scaledValue(for: baseSize, compatibleWith: traits))))
+                        metrics_scaled_system_font = \(fontValue(scaled))
+                        large_size_pt = \(number(baseSize))
+
+                        """)
+                }
+            }
+        }
+    }
+
+    private func readSymbols() {
+        for symbol in symbolNames {
+            var configurations: [(String, String, UIImage.SymbolConfiguration?)] = [("none", "none", nil)]
+            for (styleName, style) in textStyles {
+                for (scaleName, scale) in symbolScales {
+                    configurations.append((styleName, scaleName, UIImage.SymbolConfiguration(textStyle: style, scale: scale)))
+                }
+            }
+            for (styleName, scaleName, configuration) in configurations {
+                let image = configuration.map { UIImage(systemName: symbol, withConfiguration: $0) }
+                    ?? UIImage(systemName: symbol)
+                guard let image else {
+                    reads.append("[[symbol]]\nname = \(quoted(symbol))\nexists = false\n\n")
+                    continue
+                }
+                reads.append(
+                    """
+                    [[symbol]]
+                    name = \(quoted(symbol))
+                    exists = true
+                    text_style = \(quoted(styleName))
+                    scale = \(quoted(scaleName))
+                    size_pt = \(pair(image.size))
+                    alignment_insets_pt = \(edgeInsets(image.alignmentRectInsets))
+                    baseline_offset_pt = \(image.baselineOffsetFromBottom.map(number) ?? absent)
+                    configuration = \(image.symbolConfiguration.map { described($0) } ?? absent)
+
+                    """)
+            }
+        }
+    }
+
+    private func readCaret() {
+        let frame = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let textView = UITextView(frame: frame)
+        let textField = UITextField(frame: CGRect(x: 0, y: 0, width: 300, height: 44))
+        textView.text = "Text"
+        textField.text = "Text"
+        view.addSubview(textView)
+        view.addSubview(textField)
+        reads.append(
+            """
+            [caret]
+            harness_text_view_frame_pt = \(rectangle(frame))
+            text_view_default_font = \(fontValue(textView.font))
+            text_view_tint_light = \(colorValue(textView.tintColor, UITraitCollection(userInterfaceStyle: .light)))
+            text_view_tint_dark = \(colorValue(textView.tintColor, UITraitCollection(userInterfaceStyle: .dark)))
+
+            """)
+        var fonts: [(String, UIFont)] = textStyles.map { ($0.name, UIFont.preferredFont(forTextStyle: $0.style)) }
+        for size in [12, 17, 22, 28, 34, 48, 64] {
+            fonts.append(("system_\(size)", UIFont.systemFont(ofSize: CGFloat(size))))
+        }
+        for (name, font) in fonts {
+            textView.font = font
+            textField.font = font
+            textView.layoutIfNeeded()
+            textField.layoutIfNeeded()
+            let viewRect = textView.caretRect(for: textView.endOfDocument)
+            let fieldRect = textField.caretRect(for: textField.endOfDocument)
+            reads.append(
+                """
+                [[caret.rect]]
+                font_source = \(quoted(name))
+                font = \(fontValue(font))
+                text_view_caret_rect_pt = \(rectangle(viewRect))
+                text_field_caret_rect_pt = \(rectangle(fieldRect))
+
+                """)
+        }
+        textView.removeFromSuperview()
+        textField.removeFromSuperview()
+    }
+
+    private func readBehavior() {
+        let scrollView = UIScrollView()
+        let tap = UITapGestureRecognizer()
+        reads.append(
+            """
+            [behavior]
+            scroll_view_bounces = \(scrollView.bounces)
+            scroll_view_delays_content_touches = \(scrollView.delaysContentTouches)
+            scroll_view_index_display_mode = \(scrollView.indexDisplayMode.rawValue)
+            tap_number_of_taps_required = \(tap.numberOfTapsRequired)
+            pan_minimum_number_of_touches = \(UIPanGestureRecognizer().minimumNumberOfTouches)
+
+            """)
+    }
+
+    private func environmentEntry() -> String {
+        let environment = ProcessInfo.processInfo.environment
+        let info = Bundle.main.infoDictionary ?? [:]
+        func value(_ key: String) -> String { quoted(environment[key] ?? "absent") }
+        func plist(_ key: String) -> String { quoted((info[key] as? String) ?? "absent") }
+        let styles = configurationStyles().map { quoted($0.name) }.joined(separator: ", ")
+        let names = (specimenSet == "lists" ? listSpecimens() : specimenSet == "campaign" || specimenSet == "popup" ? campaignSpecimens() : specimens(quick: quick)).filter {
+            specimenSet != "popup" || $0.variant.contains { $0.key == "pop_up" }
+        }.map {
+            quoted($0.name)
+        }.joined(separator: ", ")
+        return """
+            [environment]
+            mode = \(quoted(hoverMode ? "hover" : pressMode ? "press" : focusMode ? "focus" : "render"))
+            specimen_set = \(quoted(specimenSet))
+            quick = \(quick)
+            simulator_runtime_version = \(value("SIMULATOR_RUNTIME_VERSION"))
+            simulator_runtime_build = \(value("SIMULATOR_RUNTIME_BUILD_VERSION"))
+            simulator_device_name = \(value("SIMULATOR_DEVICE_NAME"))
+            simulator_model_identifier = \(value("SIMULATOR_MODEL_IDENTIFIER"))
+            system_version = \(quoted(UIDevice.current.systemVersion))
+            operating_system_version = \(quoted(ProcessInfo.processInfo.operatingSystemVersionString))
+            xcode = \(plist("DTXcode"))
+            xcode_build = \(plist("DTXcodeBuild"))
+            sdk = \(plist("DTSDKName"))
+            sdk_build = \(plist("DTSDKBuild"))
+            platform_version = \(plist("DTPlatformVersion"))
+            platform_build = \(plist("DTPlatformBuild"))
+            compiler = \(plist("DTCompiler"))
+            styles = [\(styles)]
+            specimens = [\(names)]
+            sizes = [\(sizes.map { quoted($0.name) }.joined(separator: ", "))]
+            pages = \(pages.count)
+            title = "Button"
+            render_draw = "drawHierarchy(in:afterScreenUpdates: true), UIGraphicsImageRenderer, standard range"
+            render_screen = "xcrun simctl io screenshot, cropped to the cell"
+            settle_seconds = \(settleSeconds)
+            press_settle_seconds = \(pressSettleSeconds)
+            animations = \(quoted(pressMode ? "enabled" : "disabled (UIView.setAnimationsEnabled(false))"))
+
+            """
+    }
+
+    private func finish() {
+        guard !finished else { return }
+        finished = true
+        let index = ([environmentEntry()] + reads + entries + motions).joined(separator: "\n")
+        do {
+            try index.write(to: out.appendingPathComponent("index.toml"), atomically: true, encoding: .utf8)
+        } catch {
+            failures.append("index.toml: \(error)")
+        }
+        let retakeLog = retakes.map { $0 + "\n" }.joined()
+        try? retakeLog.write(to: out.appendingPathComponent("sync/retakes"), atomically: true, encoding: .utf8)
+        let status = failures.isEmpty ? "ok\n" : failures.joined(separator: "\n") + "\n"
+        try? status.write(to: out.appendingPathComponent("sync/done"), atomically: true, encoding: .utf8)
+        guard pressMode else { exit(failures.isEmpty ? 0 : 1) }
+        for cell in cells { cell.view.removeFromSuperview() }
+        let label = UILabel(frame: CGRect(x: margin, y: view.safeAreaInsets.top + margin, width: 200, height: 40))
+        label.text = failures.isEmpty ? "press-done" : "press-failed"
+        label.accessibilityIdentifier = "press-done"
+        view.addSubview(label)
+        doneLabel = label
+    }
+}
+
+/// The press mode's toolbar recognizer runs beside the bar item's own.
+extension HostViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+    ) -> Bool { true }
+}

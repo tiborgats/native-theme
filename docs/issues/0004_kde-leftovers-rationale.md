@@ -469,6 +469,11 @@ painting, lacks a value that can be reproduced, or does not fit the budget (§4)
   rows are drawn without `State_Active`, from the Inactive group, the hovered row
   #ecf5fb / #16232b with the outline's pixel #cce5f7 / #1a3a4b (`views_light.txt`,
   `views_dark.txt`).
+  *0.8.0, first slice (2026-11-22):* built as E5's hover alphas (0.3 for the fill, 0.8 for the
+  outline) on the Inactive group's Highlight (#c2e0f5 / #1b4155). The outline's pixels come out
+  exactly; the fill over the view's background comes out #edf6fc / #16232a, one 8-bit step from
+  the measured values in both schemes, which is not explained (`docs/todo.md`, *KDE: what
+  0.8.0's first slice left of issue #4's list and scroll bar items*).
 - **A selected row under the pointer (L3).** Breeze fills it with
   `Highlight.lighter(110)`, #44bfff (`st:4876`; measured). The reader would compute it
   with `QColor::lighter`, which is Qt's (LGPL): only a clean-room description may be

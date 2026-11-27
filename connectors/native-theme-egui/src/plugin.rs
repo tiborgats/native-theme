@@ -7,49 +7,170 @@ use std::sync::Arc;
 use egui::{Context, CornerRadius, Id, Rect, StrokeKind};
 
 use crate::atlas::FocusRing;
-use crate::convert::{clamp_length, to_color32, u8_from_f32_saturating};
+use crate::convert::{Rgba, clamp_length, to_color32, u8_from_f32_saturating};
 use crate::fonts::WidestGlyph;
+use crate::style::base::Read;
 use crate::style::push_note;
 use crate::{ColorMode, Note, ResolvedTheme, ThemeAtlas};
 
-/// Spec §6.18: the ring from `defaults.focus_ring_color`, `focus_ring_width` and
-/// `focus_ring_offset`. A non-finite width or offset is egui's own value — no ring — with a
-/// `Note::ValueSanitised` per leaf; a stated zero width is no ring and no note, as a zero width
-/// is no band in gpui's `focus_band_on` (`connectors/native-theme-gpui/src/colors.rs`). The
-/// offset is kept signed and unclamped: negative means inside the edge
-/// (`docs/platform-facts.md:1110`).
+/// What the focus ring reads, from either model: its colour, width and offset, each `None`
+/// where the theme states none, and whether it shows for the keyboard only.
+/// [`FocusRingSource::old`] fills it from the 0.7.2 model; `next::build::focus_ring_source`
+/// from the 0.8.0 model's `focus_ring`.
+pub(crate) struct FocusRingSource {
+    pub color: Option<Rgba>,
+    pub width: Read<f32>,
+    pub offset: Read<f32>,
+    pub keyboard_only: bool,
+    /// The second ring inside the first, its colour and width, where the theme states one.
+    pub inner: Option<(Rgba, (f32, &'static str))>,
+    /// The corners of the ring's inner edge, the line the offset places, where the theme
+    /// states the ring's own.
+    pub corners: Option<RingCorners>,
+    /// The corners' home, which a note names where they are not finite.
+    pub corners_path: &'static str,
+}
+
+/// The ring a role's part states of its own (`PartStyle.focus`, spec §2 `FocusIndicator`),
+/// drawn in place of the scheme's ring round a widget in the role's scope.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) enum PartRing {
+    /// The part states no ring of its own: the scheme's ring.
+    #[default]
+    Global,
+    /// The part's own ring; `None` where it states none, or one egui cannot draw.
+    Own(Option<FocusRing>),
+}
+
+/// A role's [`PartRing`] for a focus that followed no key press, its part asked at `FOCUSED`,
+/// and for one that followed a key press, asked at `FOCUS_VISIBLE`.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct PartRings {
+    pub(crate) pointer: PartRing,
+    pub(crate) keyboard: PartRing,
+}
+
+impl PartRings {
+    /// The ring for a focus that followed a key press (`by_key`) or not.
+    pub(crate) const fn get(self, by_key: bool) -> PartRing {
+        if by_key { self.keyboard } else { self.pointer }
+    }
+}
+
+/// What a role's part states of its own ring, as the 0.8.0 model's reads give it: nothing,
+/// none, or a ring's source.
+#[derive(Default)]
+pub(crate) enum PartRingSource {
+    /// The part states no ring of its own.
+    #[default]
+    Global,
+    /// The part states none, or one egui cannot draw (noted where it is read).
+    None,
+    /// The part's own ring.
+    Ring(FocusRingSource),
+}
+
+impl PartRingSource {
+    /// The ring [`build_focus_ring_from`] builds of the source.
+    pub(crate) fn build(&self, notes: &mut Vec<Note>) -> PartRing {
+        match self {
+            Self::Global => PartRing::Global,
+            Self::None => PartRing::Own(None),
+            Self::Ring(src) => PartRing::Own(build_focus_ring_from(src, notes)),
+        }
+    }
+}
+
+/// The corners of a focus ring's inner edge as the theme states them.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum RingCorners {
+    /// Top-left, top-right, bottom-right, bottom-left.
+    Radii([f32; 4]),
+    /// Half the ring's shorter side.
+    Pill,
+}
+
+impl FocusRingSource {
+    /// The 0.7.2 model's `defaults.focus_ring_*`, which state no second ring and no corners.
+    pub(crate) fn old(theme: &ResolvedTheme) -> Self {
+        let d = &theme.defaults;
+        Self {
+            color: Some(d.focus_ring_color),
+            width: Some((d.focus_ring_width, "defaults.focus_ring_width")),
+            offset: Some((d.focus_ring_offset, "defaults.focus_ring_offset")),
+            keyboard_only: d.focus_ring_keyboard_only == Some(true),
+            inner: None,
+            corners: None,
+            corners_path: "focus_ring.corners",
+        }
+    }
+}
+
+/// [`build_focus_ring_from`] of the 0.7.2 model.
+#[cfg(test)]
 pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> Option<FocusRing> {
-    let (color, width, offset) = (
-        theme.defaults.focus_ring_color,
-        theme.defaults.focus_ring_width,
-        theme.defaults.focus_ring_offset,
-    );
+    build_focus_ring_from(&FocusRingSource::old(theme), notes)
+}
+
+/// Spec §6.18: the ring from its colour, width and offset. A non-finite width or offset is
+/// egui's own value — no ring — with a `Note::ValueSanitised` per leaf, and so is one the theme
+/// states none of; a stated zero width is no ring and no note, as a zero width is no band in
+/// gpui's `focus_band_on` (`connectors/native-theme-gpui/src/colors.rs`). The offset is kept
+/// signed and unclamped: negative means inside the edge (`docs/platform-facts.md:1110`).
+pub(crate) fn build_focus_ring_from(
+    src: &FocusRingSource,
+    notes: &mut Vec<Note>,
+) -> Option<FocusRing> {
     let mut finite = true;
-    if !width.is_finite() {
-        push_note(
-            notes,
-            Note::ValueSanitised {
-                path: "defaults.focus_ring_width",
-            },
-        );
-        finite = false;
+    for (v, path) in [src.width, src.offset].into_iter().flatten() {
+        if !v.is_finite() {
+            push_note(notes, Note::ValueSanitised { path });
+            finite = false;
+        }
     }
-    if !offset.is_finite() {
-        push_note(
-            notes,
-            Note::ValueSanitised {
-                path: "defaults.focus_ring_offset",
-            },
-        );
-        finite = false;
-    }
+    let (Some(color), Some((width, _)), Some((offset, _))) = (src.color, src.width, src.offset)
+    else {
+        return None;
+    };
     if !finite || width <= 0.0 {
         return None;
     }
+    let width = clamp_length(width);
+    // the second ring where its width is positive; a non-finite one draws none, reported
+    let inner = src.inner.and_then(|(color, (w, path))| {
+        if !w.is_finite() {
+            push_note(notes, Note::ValueSanitised { path });
+        }
+        (w.is_finite() && w > 0.0).then(|| egui::Stroke::new(clamp_length(w), to_color32(color)))
+    });
+    // the stated corners are the ring's rect's, the line the offset places (spec §2,
+    // `FocusIndicator`): epaint grows an `Outside` stroke's outer corners by its width
+    // (`epaint-0.37.0` `src/tessellator.rs`, `tessellate_rect`), the outer edge concentric;
+    // a pill's radius epaint clamps to half the rect's shorter side (the same function:
+    // "already clamped to half the rect size by `RoundedRect`")
+    let corners = match src.corners {
+        Some(RingCorners::Pill) => Some(CornerRadius::same(u8::MAX)),
+        Some(RingCorners::Radii(radii)) if radii.iter().all(|r| r.is_finite()) => {
+            let [nw, ne, se, sw] = radii.map(u8_from_f32_saturating);
+            Some(CornerRadius { nw, ne, sw, se })
+        }
+        Some(RingCorners::Radii(_)) => {
+            push_note(
+                notes,
+                Note::ValueSanitised {
+                    path: src.corners_path,
+                },
+            );
+            None
+        }
+        None => None,
+    };
     Some(FocusRing {
-        stroke: egui::Stroke::new(clamp_length(width), to_color32(color)),
+        stroke: egui::Stroke::new(width, to_color32(color)),
         offset,
-        keyboard_only: theme.defaults.focus_ring_keyboard_only == Some(true),
+        keyboard_only: src.keyboard_only,
+        inner,
+        corners,
     })
 }
 
@@ -65,10 +186,11 @@ pub(crate) struct FocusEntry {
     pub(crate) viewport: egui::ViewportId,
     /// `Context::cumulative_pass_nr` of the pass the lists belong to.
     pub(crate) pass_nr: u64,
-    /// Each styled `Ui`'s `unique_id` with its style's `widgets.active.corner_radius`: a role's
-    /// cell (`native_scope`, `native_set_style`) or a caller's own style
-    /// (`native_set_style_with_ring`).
-    pub(crate) scopes: Vec<(Id, CornerRadius)>,
+    /// Each styled `Ui`'s `unique_id` with its style's `widgets.active.corner_radius` and the
+    /// rings its role's part states of its own: a role's cell (`native_scope`,
+    /// `native_set_style`) or a caller's own style (`native_set_style_with_ring`, the scheme's
+    /// ring).
+    pub(crate) scopes: Vec<(Id, CornerRadius, PartRings)>,
     /// `register_focus_shape`'s outlines: widget id, rect, radius.
     pub(crate) shapes: Vec<(Id, Rect, CornerRadius)>,
 }
@@ -104,26 +226,32 @@ fn focus_key_of(viewport: egui::ViewportId) -> Id {
     Id::unique(("native-theme-egui/focus", viewport))
 }
 
-/// Record that `ui_id` was styled with a role whose active corner radius is `radius`, for this
-/// pass. With `replace`, a second record for the same `Ui` replaces the first (spec §6.18), at the
-/// cost of a scan of the pass's records; without it the record is pushed, for a `Ui` created in
-/// this pass, whose `unique_id` no earlier record holds (`egui/src/ui.rs:252-260`). The pass
-/// number and the key are read before `data_mut` is entered: no `Context` accessor inside
-/// another (spec §10.3).
-pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, replace: bool) {
+/// Record that `ui_id` was styled with a role whose active corner radius is `radius` and whose
+/// part states `rings` of its own, for this pass. With `replace`, a second record for the same
+/// `Ui` replaces the first (spec §6.18), at the cost of a scan of the pass's records; without it
+/// the record is pushed, for a `Ui` created in this pass, whose `unique_id` no earlier record
+/// holds (`egui/src/ui.rs:252-260`). The pass number and the key are read before `data_mut` is
+/// entered: no `Context` accessor inside another (spec §10.3).
+pub(crate) fn record_scope(
+    ctx: &Context,
+    ui_id: Id,
+    radius: CornerRadius,
+    rings: PartRings,
+    replace: bool,
+) {
     let (pass_nr, viewport) = (ctx.cumulative_pass_nr(), ctx.viewport_id());
     let key = focus_key_of(viewport);
     ctx.data_mut(|data| {
         let entry = data.get_temp_mut_or_insert_with(key, || FocusEntry::of(viewport));
         entry.begin(pass_nr);
         let slot = if replace {
-            entry.scopes.iter_mut().find(|(id, _)| *id == ui_id)
+            entry.scopes.iter_mut().find(|(id, _, _)| *id == ui_id)
         } else {
             None
         };
         match slot {
-            Some(slot) => slot.1 = radius,
-            None => entry.scopes.push((ui_id, radius)),
+            Some(slot) => (slot.1, slot.2) = (radius, rings),
+            None => entry.scopes.push((ui_id, radius, rings)),
         }
     });
 }
@@ -709,29 +837,30 @@ fn grow(radius: CornerRadius, by: f32) -> CornerRadius {
     }
 }
 
-/// The active corner radius of the innermost recorded scope on the widget's layer whose final
-/// rect contains the widget's `interact_rect` (spec §6.18): of the matches, the `Ui` last in the
-/// layer's order (`egui/src/widget_rect.rs:132-134`), since a `Ui` is registered before every
-/// `Ui` it contains (`egui/src/ui.rs:170-183`). The root `Ui`'s entry still holds
-/// `Rect::NOTHING` during `on_end_pass` (`egui/src/ui.rs:171`), so its record never matches.
-fn scope_radius(
+/// The active corner radius and the part's own rings of the innermost recorded scope on the
+/// widget's layer whose final rect contains the widget's `interact_rect` (spec §6.18): of the
+/// matches, the `Ui` last in the layer's order (`egui/src/widget_rect.rs:132-134`), since a `Ui`
+/// is registered before every `Ui` it contains (`egui/src/ui.rs:170-183`). The root `Ui`'s
+/// entry still holds `Rect::NOTHING` during `on_end_pass` (`egui/src/ui.rs:171`), so its record
+/// never matches.
+fn innermost_scope(
     ctx: &Context,
     entry: &FocusEntry,
     widget: &egui::WidgetRect,
-) -> Option<CornerRadius> {
+) -> Option<(CornerRadius, PartRings)> {
     ctx.viewport(|viewport| {
         let widgets = &viewport.this_pass.widgets;
         entry
             .scopes
             .iter()
-            .filter_map(|(ui_id, radius)| {
+            .filter_map(|(ui_id, radius, rings)| {
                 let (layer, order) = widgets.order(*ui_id)?;
                 let rect = widgets.get(*ui_id)?.rect;
                 (layer == widget.layer_id && rect.contains_rect(widget.interact_rect))
-                    .then_some((order, *radius))
+                    .then_some((order, (*radius, *rings)))
             })
             .max_by_key(|(order, _)| *order)
-            .map(|(_, radius)| radius)
+            .map(|(_, scope)| scope)
     })
 }
 
@@ -742,18 +871,17 @@ fn scope_radius(
 /// says keyboard only, only for a focus that followed a key press: the plugin remembers the kind
 /// of the last input across passes (a drag value takes the focus in the pass of the release, not
 /// of the press) and, when the focused widget changes, keeps the answer for that widget.
+///
+/// The ring is the innermost scope's role's part's own where that part states one
+/// ([`PartRing::Own`], none where it states none), else the scheme's; a widget in no scope takes
+/// the base style's look, `button.body`'s (`Role::Button`, `Normal`), and so its ring. Either is
+/// drawn on the same geometry, shown as its own trigger says.
 fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
     let ctx = ui.ctx();
     let Some(atlas) = ThemeAtlas::from_ctx(ctx) else {
         return;
     };
     let theme = ctx.theme();
-    let Some(ring) = atlas.focus_ring(theme) else {
-        return;
-    };
-    if ring.keyboard_only && !by_key {
-        return; // the theme says keyboard only, and this focus did not follow a key (D4)
-    }
     if !ctx.input(|i| i.focused) {
         return; // the window has no OS keyboard focus (`egui/src/input_state/mod.rs:315`)
     }
@@ -771,25 +899,49 @@ fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
         .data(|data| data.get_temp::<FocusEntry>(key))
         .filter(|entry| entry.pass_nr == pass_nr)
         .unwrap_or_default();
+    let scope = innermost_scope(ctx, &entry, &widget);
+    let rings = scope.map_or_else(
+        || {
+            atlas
+                .scheme(theme)
+                .part_rings(crate::Role::Button, crate::RoleVariant::Normal)
+        },
+        |(_, rings)| rings,
+    );
+    let ring = match rings.get(by_key) {
+        PartRing::Own(ring) => ring,
+        PartRing::Global => atlas.focus_ring(theme).copied(),
+    };
+    let Some(ring) = ring else {
+        return;
+    };
+    if ring.keyboard_only && !by_key {
+        return; // the theme says keyboard only, and this focus did not follow a key (D4)
+    }
     let (edge, radius) = match entry.shapes.iter().find(|(shape_id, _, _)| *shape_id == id) {
         Some((_, rect, radius)) => (*rect, *radius),
         None => (
             widget.rect,
-            scope_radius(ctx, &entry, &widget)
-                .unwrap_or(ui.style().visuals.widgets.active.corner_radius),
+            scope.map_or(
+                ui.style().visuals.widgets.active.corner_radius,
+                |(radius, _)| radius,
+            ),
         ),
     };
     let rect = edge.expand(ring.offset);
     if !rect.is_positive() {
         return; // an inset larger than the widget
     }
-    let corners = grow(radius, ring.offset);
+    let corners = ring.corners.unwrap_or_else(|| grow(radius, ring.offset));
     let clip = widget
         .interact_rect
         .expand((ring.offset + ring.stroke.width).max(0.0));
-    ctx.layer_painter(widget.layer_id)
-        .with_clip_rect(clip)
-        .rect_stroke(rect, corners, ring.stroke, StrokeKind::Outside);
+    let painter = ctx.layer_painter(widget.layer_id).with_clip_rect(clip);
+    painter.rect_stroke(rect, corners, ring.stroke, StrokeKind::Outside);
+    // the second ring inside the first, its outer edge the first's inner edge
+    if let Some(inner) = ring.inner {
+        painter.rect_stroke(rect, corners, inner, StrokeKind::Inside);
+    }
 }
 
 #[cfg(test)]

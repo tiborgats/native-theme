@@ -3,12 +3,12 @@
 use gpui::{Context, IntoElement, ParentElement, Styled, prelude::*, px};
 use gpui_component::{h_flex, v_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, DecorationKind, HeadingLevel, LabelKind, TextSize, WeightKind};
-use crate::pages::page_root;
-use crate::support::{MARKDOWN_SAMPLE, with_gap};
+use crate::pages::next_page_root;
+use crate::support::{MARKDOWN_SAMPLE, next_metric, with_gap};
 use crate::{TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY};
 
 /// The Labels above the masked one, as `(id, kind, text)`.
@@ -114,12 +114,13 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        let widget_gap = geometry::widget_gap(&self.layout);
-        // Samples one over another, and side by side, `layout.widget_gap`
-        // apart, as the Basic page's typography lines are.
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
+        // Samples one over another, and side by side, the installed 0.8.0
+        // theme's `layout.widget_gap` apart, as the Basic page's typography
+        // lines are.
         let column = || with_gap(v_flex(), widget_gap);
         let row = || with_gap(h_flex(), widget_gap);
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(ui, cx, "typography-heading-label", "Label"))
             .child(

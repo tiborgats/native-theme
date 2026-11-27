@@ -1,9 +1,9 @@
 //! The showcases' command line: one flag set, one parser, one validator per
 //! flag with one error text, and one exit rule.
 //!
-//! The flags: `--theme`, `--variant`, `--tab`, `--icon-set` (with `default`),
-//! `--screenshot`, `--capture`, `--pointer`, `--press`, `--dump-layout` and
-//! `--open-menu`. The exit rule:
+//! The flags: `--theme`, `--palette`, `--variant`, `--tab`, `--icon-set`
+//! (with `default`), `--screenshot`, `--capture`, `--pointer`, `--press`,
+//! `--dump-layout` and `--open-menu`. The exit rule:
 //!
 //! - a bad `--pointer` exits 1 before the window opens;
 //! - `--screenshot` exits 1 before the window opens where the showcase cannot
@@ -20,6 +20,7 @@
 //! [`CliArgs::parse`], which ignores what it does not know.
 
 use native_theme::icons::IconSetChoice;
+use native_theme::next::{Palette, Preset};
 use native_theme::theme::Theme;
 
 use crate::Kind;
@@ -30,7 +31,7 @@ use crate::Kind;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CliArgs {
     /// `--theme <name>`: `default` or a preset of this platform
-    /// ([`theme_key`]).
+    /// ([`theme_key`]; [`next_theme_key`] in a showcase on the 0.8.0 model).
     pub theme: Option<String>,
     /// `--variant <mode>`: `light`, `dark` or `system` ([`color_mode`]).
     pub variant: Option<String>,
@@ -68,6 +69,9 @@ pub struct CliArgs {
     /// menu) is open from the first frame, so a capture and a layout dump
     /// show it open with its rows ([`open_menu`]).
     pub open_menu: Option<String>,
+    /// `--palette <name>`: `none` or a bundled palette laid over the theme
+    /// ([`palette_key`]).
+    pub palette: Option<String>,
 }
 
 impl CliArgs {
@@ -75,8 +79,8 @@ impl CliArgs {
     /// `std::env::args().skip(1)` gives them: `--flag value` pairs,
     /// `--capture`, `--press` and `--pointer X,Y`. An unknown argument is
     /// ignored. `--variant`, `--tab` and `--open-menu` are lower-cased; a
-    /// theme or icon-theme name keeps its case, since a freedesktop theme's
-    /// is a directory name.
+    /// theme, palette or icon-theme name keeps its case, since a freedesktop
+    /// theme's is a directory name.
     pub fn parse(argv: impl IntoIterator<Item = String>) -> Self {
         let mut cli = Self::default();
         let mut argv = argv.into_iter();
@@ -106,6 +110,7 @@ impl CliArgs {
                 "--screenshot" => &mut cli.screenshot,
                 "--dump-layout" => &mut cli.dump_layout,
                 "--open-menu" => &mut cli.open_menu,
+                "--palette" => &mut cli.palette,
                 _ => continue,
             };
             *slot = argv
@@ -363,6 +368,83 @@ pub fn theme_key(name: &str) -> Result<ThemeKey, String> {
     }
 }
 
+/// The theme `--theme` names in a showcase on the 0.8.0 model: `default`,
+/// the desktop's own, or a key of `Theme::list_presets_for_platform()` the
+/// 0.8.0 model has a preset of (`native_theme::next::Preset`): what
+/// [`theme_key`] takes, less the community presets of the 0.7.2 model,
+/// whose colours are bundled palettes in the 0.8.0 one ([`palette_key`]).
+/// A preset of another platform, a community preset and an unknown name
+/// each get their own text, which lists what is offered; a community
+/// preset's names the bundled palettes whose names start with its key
+/// (`gruvbox`: `gruvbox-light` and `gruvbox-dark`).
+pub fn next_theme_key(name: &str) -> Result<ThemeKey, String> {
+    if name == "default" {
+        return Ok(ThemeKey::Default);
+    }
+    let platform = |key: &str| Preset::from_name(key).is_some();
+    let offered: Vec<&str> = Theme::list_presets_for_platform()
+        .iter()
+        .map(|info| info.key)
+        .filter(|key| platform(key))
+        .collect();
+    if offered.contains(&name) {
+        return Ok(ThemeKey::Preset(name.to_string()));
+    }
+    let names = std::iter::once("default")
+        .chain(offered)
+        .collect::<Vec<&str>>()
+        .join(", ");
+    if platform(name) {
+        Err(format!(
+            "--theme {name}: a preset of another platform; only this platform's presets run \
+             here: {names}"
+        ))
+    } else if Theme::list_presets().iter().any(|info| info.key == name) {
+        let palettes: Vec<String> = Palette::BUNDLED_NAMES
+            .iter()
+            .filter(|palette| palette.starts_with(name))
+            .map(|palette| format!("--palette {palette}"))
+            .collect();
+        let palette = if palettes.is_empty() {
+            "--palette".to_string()
+        } else {
+            palettes.join(" or ")
+        };
+        Err(format!(
+            "--theme {name}: a community preset of the 0.7.2 model, whose colours are a palette \
+             in the 0.8.0 model: lay it over a preset with {palette}; the presets are: {names}"
+        ))
+    } else {
+        Err(format!(
+            "--theme {name}: no such preset; the presets are: {names}"
+        ))
+    }
+}
+
+/// The palette `--palette` names: `none`, the theme's own colours (`None`),
+/// or a bundled palette (`Palette::BUNDLED_NAMES`), by its name; what the
+/// gpui showcase's Palette setting offers.
+pub fn palette_key(name: &str) -> Result<Option<&'static str>, String> {
+    if name == NO_PALETTE {
+        return Ok(None);
+    }
+    Palette::BUNDLED_NAMES
+        .iter()
+        .copied()
+        .find(|palette| *palette == name)
+        .map(Some)
+        .ok_or_else(|| {
+            let names = std::iter::once(NO_PALETTE)
+                .chain(Palette::BUNDLED_NAMES.iter().copied())
+                .collect::<Vec<&str>>()
+                .join(", ");
+            format!("--palette {name}: no such palette; the palettes are: {names}")
+        })
+}
+
+/// The `--palette` value for no palette: the theme's own colours.
+pub const NO_PALETTE: &str = "none";
+
 /// The icon-theme picker's row `--icon-set` names.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IconPick {
@@ -497,8 +579,8 @@ mod tests {
     }
 
     /// Every flag lands in its field; `--variant`, `--tab` and `--open-menu`
-    /// are lower-cased, a theme, icon-set, screenshot or dump name keeps its
-    /// case, and an unknown argument is ignored.
+    /// are lower-cased, a theme, palette, icon-set, screenshot or dump name
+    /// keeps its case, and an unknown argument is ignored.
     #[test]
     fn the_parser_reads_every_flag() {
         let cli = parse(&[
@@ -520,6 +602,8 @@ mod tests {
             "Dump.json",
             "--open-menu",
             "Theme",
+            "--palette",
+            "Nord",
             "--no-such-flag",
         ]);
         assert_eq!(
@@ -536,6 +620,7 @@ mod tests {
                 press: true,
                 dump_layout: Some("Dump.json".into()),
                 open_menu: Some("theme".into()),
+                palette: Some("Nord".into()),
             }
         );
         assert_eq!(parse(&[]), CliArgs::default());
@@ -848,6 +933,97 @@ mod tests {
     fn a_reported_error_is_ignored() {
         assert_eq!(reported(Ok::<_, String>(3)), Some(3));
         assert_eq!(reported::<u8>(Err("--tab x: no such page".into())), None);
+    }
+
+    /// `--theme` on the 0.8.0 model takes `default` and this platform's
+    /// presets the 0.8.0 model has; a preset of another platform, a
+    /// community preset of the 0.7.2 model and an unknown name each get their
+    /// own text, which lists what is offered and names no community preset.
+    #[test]
+    fn the_08_theme_flag_takes_this_platforms_presets_alone() {
+        assert_eq!(next_theme_key("default"), Ok(ThemeKey::Default));
+        let offered: Vec<&str> = Theme::list_presets_for_platform()
+            .iter()
+            .map(|info| info.key)
+            .filter(|key| Preset::from_name(key).is_some())
+            .collect();
+        for key in &offered {
+            assert_eq!(next_theme_key(key), Ok(ThemeKey::Preset(key.to_string())));
+        }
+        let names = std::iter::once("default")
+            .chain(offered.iter().copied())
+            .collect::<Vec<&str>>()
+            .join(", ");
+        let foreign = Preset::ALL
+            .iter()
+            .map(|preset| preset.as_str())
+            .find(|key| !offered.contains(key))
+            .expect("some platform preset is meant for another platform");
+        assert_eq!(
+            next_theme_key(foreign),
+            Err(format!(
+                "--theme {foreign}: a preset of another platform; only this platform's presets \
+                 run here: {names}"
+            ))
+        );
+        let community: Vec<&str> = Theme::list_presets()
+            .iter()
+            .map(|info| info.key)
+            .filter(|key| Preset::from_name(key).is_none())
+            .collect();
+        assert!(
+            community.contains(&"nord") && community.contains(&"gruvbox"),
+            "nord and gruvbox are no longer community presets: {community:?}"
+        );
+        for key in &community {
+            assert!(
+                !names.split(", ").any(|name| name == *key),
+                "{key} is listed as a preset: {names}"
+            );
+        }
+        assert_eq!(
+            next_theme_key("nord"),
+            Err(format!(
+                "--theme nord: a community preset of the 0.7.2 model, whose colours are a \
+                 palette in the 0.8.0 model: lay it over a preset with --palette nord; the \
+                 presets are: {names}"
+            ))
+        );
+        assert_eq!(
+            next_theme_key("gruvbox"),
+            Err(format!(
+                "--theme gruvbox: a community preset of the 0.7.2 model, whose colours are a \
+                 palette in the 0.8.0 model: lay it over a preset with --palette gruvbox-light \
+                 or --palette gruvbox-dark; the presets are: {names}"
+            ))
+        );
+        assert_eq!(
+            next_theme_key("no-such-preset"),
+            Err(format!(
+                "--theme no-such-preset: no such preset; the presets are: {names}"
+            ))
+        );
+    }
+
+    /// `--palette` takes `none` and every bundled palette by its name; an
+    /// unknown name is reported with the list of what it takes.
+    #[test]
+    fn the_palette_flag_takes_none_and_the_bundled_palettes() {
+        assert_eq!(palette_key("none"), Ok(None));
+        assert!(!Palette::BUNDLED_NAMES.is_empty());
+        for name in Palette::BUNDLED_NAMES {
+            assert_eq!(palette_key(name), Ok(Some(*name)));
+        }
+        let names = std::iter::once("none")
+            .chain(Palette::BUNDLED_NAMES.iter().copied())
+            .collect::<Vec<&str>>()
+            .join(", ");
+        assert_eq!(
+            palette_key("Nord"),
+            Err(format!(
+                "--palette Nord: no such palette; the palettes are: {names}"
+            ))
+        );
     }
 
     /// `--screenshot` runs on macOS and Windows; elsewhere it is refused,

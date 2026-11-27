@@ -1,0 +1,825 @@
+[environment]
+mode = "hover"
+specimen_set = "base"
+quick = false
+simulator_runtime_version = "18.6"
+simulator_runtime_build = "22G86"
+simulator_device_name = "ios-host"
+simulator_model_identifier = "iPad8,5"
+system_version = "18.6"
+operating_system_version = "Version 18.6 (Build 22G86)"
+xcode = "1640"
+xcode_build = "16F6"
+sdk = "iphonesimulator18.5"
+sdk_build = "22F76"
+platform_version = "18.5"
+platform_build = "22F76"
+compiler = "com.apple.compilers.llvm.clang.1_0"
+styles = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent"]
+specimens = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent", "system", "info_light", "info_dark", "detail_disclosure", "contact_add", "close", "plain+role_destructive", "plain+role_cancel", "plain+role_primary", "gray+role_destructive", "gray+role_cancel", "gray+role_primary", "tinted+role_destructive", "tinted+role_cancel", "tinted+role_primary", "filled+role_destructive", "filled+role_cancel", "filled+role_primary", "borderless+role_destructive", "borderless+role_cancel", "borderless+role_primary", "bordered+role_destructive", "bordered+role_cancel", "bordered+role_primary", "bordered_tinted+role_destructive", "bordered_tinted+role_cancel", "bordered_tinted+role_primary", "bordered_prominent+role_destructive", "bordered_prominent+role_cancel", "bordered_prominent+role_primary", "gray+corner_style_fixed", "gray+corner_style_dynamic", "gray+corner_style_small", "gray+corner_style_medium", "gray+corner_style_large", "gray+corner_style_capsule", "filled+corner_style_fixed", "filled+corner_style_dynamic", "filled+corner_style_small", "filled+corner_style_medium", "filled+corner_style_large", "filled+corner_style_capsule", "plain+image_star", "plain+image_star+title_none", "plain+subtitle_Subtitle", "plain+activity_indicator_shown", "gray+image_star", "gray+image_star+title_none", "gray+subtitle_Subtitle", "gray+activity_indicator_shown", "tinted+image_star", "tinted+image_star+title_none", "tinted+subtitle_Subtitle", "tinted+activity_indicator_shown", "filled+image_star", "filled+image_star+title_none", "filled+subtitle_Subtitle", "filled+activity_indicator_shown", "borderless+image_star", "borderless+image_star+title_none", "borderless+subtitle_Subtitle", "borderless+activity_indicator_shown", "bordered+image_star", "bordered+image_star+title_none", "bordered+subtitle_Subtitle", "bordered+activity_indicator_shown", "bordered_tinted+image_star", "bordered_tinted+image_star+title_none", "bordered_tinted+subtitle_Subtitle", "bordered_tinted+activity_indicator_shown", "bordered_prominent+image_star", "bordered_prominent+image_star+title_none", "bordered_prominent+subtitle_Subtitle", "bordered_prominent+activity_indicator_shown", "filled+image_star+image_placement_trailing", "filled+image_star+image_placement_top", "filled+image_star+image_placement_bottom", "plain+menu_primary_action", "plain+menu_primary_action+indicator_popup", "plain+menu_primary_action+indicator_none", "plain+menu_on_hold", "gray+menu_primary_action", "gray+menu_primary_action+indicator_popup", "gray+menu_primary_action+indicator_none", "gray+menu_on_hold", "filled+menu_primary_action", "filled+menu_primary_action+indicator_popup", "filled+menu_primary_action+indicator_none", "filled+menu_on_hold", "bar_plain", "bar_done", "bar_system_done", "bar_system_cancel", "bar_system_close", "bar_system_action", "bar_system_add", "bar_image", "back_default", "back_generic", "back_minimal", "paste_control", "paste_control+icon_and_label", "paste_control+icon_only", "paste_control+label_only", "route_picker"]
+sizes = ["mini", "small", "medium", "large"]
+pages = 8
+title = "Button"
+render_draw = "drawHierarchy(in:afterScreenUpdates: true), UIGraphicsImageRenderer, standard range"
+render_screen = "xcrun simctl io screenshot, cropped to the cell"
+settle_seconds = 2.0
+press_settle_seconds = 1.5
+animations = "enabled"
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "system/hovered"
+press_number = 0
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "black/hovered"
+press_number = 1
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 2
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "system/hovered"
+press_number = 3
+wait_seconds = 60.0
+
+[[hover_read]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 4
+label_text = "One"
+pointer_left_after_s = 0.024572
+hold_seconds = 0.100000
+held = false
+[[hover_read.sample]]
+phase = "rest"
+t_s = "absent"
+pointer_over = false
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-rest.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c14150; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+
+[[hover_read.sample]]
+phase = "t0ms"
+t_s = 0.000743
+pointer_over = true
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-t0ms.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c16550; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t50ms"
+t_s = 0.050284
+pointer_over = false
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-t50ms.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c17870; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t100ms"
+t_s = 0.100330
+pointer_over = false
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-t100ms.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c15830; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t200ms"
+t_s = 0.200293
+pointer_over = false
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-t200ms.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c6c1b0; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t300ms"
+t_s = 0.314805
+pointer_over = false
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-t300ms.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c6f1e0; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t500ms"
+t_s = 0.522614
+pointer_over = false
+draw = "draw/light/sidebar_row/default/black/hovered-hover4-t500ms.png"
+label = { class = "UILabel", text = "One", text_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceGenericGrayGamma2_2" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 31.500, 20.500] }
+label_px = [72.000, 132.000, 63.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c6e460; traitCollection = <UITraitCollection: 0x100963010; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Light, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#000000ff"
+label_background_px_count = 2583
+label_ink = "#000000ff"
+label_ink_px = [72, 132]
+label_ink_distance_levels = 0
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 5
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/sidebar_row/default"
+cell = "white/hovered"
+press_number = 6
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "system/hovered"
+press_number = 7
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "black/hovered"
+press_number = 8
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/outline_header/default"
+cell = "white/hovered"
+press_number = 9
+wait_seconds = 60.0
+
+[[hover_read]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 10
+label_text = "Button"
+pointer_left_after_s = 0.242488
+hold_seconds = 0.100000
+held = true
+[[hover_read.sample]]
+phase = "rest"
+t_s = "absent"
+pointer_over = false
+draw = "draw/light/bar_plain/default/system/hovered-hover10-rest.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1289
+label_ink = "#007affff"
+label_ink_px = [945, 196]
+label_ink_distance_levels = 381
+
+[[hover_read.sample]]
+phase = "t0ms"
+t_s = 0.110620
+pointer_over = true
+draw = "draw/light/bar_plain/default/system/hovered-hover10-t0ms.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-19.927, 71.813, 95.853, 46.347], transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.0", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-19.927, 71.813, 95.853, 46.347], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.1", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-19.927, 71.813, 95.853, 46.347], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1145
+label_ink = "#007affff"
+label_ink_px = [945, 196]
+label_ink_distance_levels = 381
+label_changed_px = 1069
+label_largest_change_levels = 98
+label_changed_bounds_px = [943, 195, 99, 27]
+cell_changed_px = 1069
+cell_largest_change_levels = 98
+cell_changed_bounds_px = [943, 195, 99, 27]
+
+[[hover_read.sample]]
+phase = "t50ms"
+t_s = 0.243437
+pointer_over = false
+draw = "draw/light/bar_plain/default/system/hovered-hover10-t50ms.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.0", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.1", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1117
+label_ink = "#007affff"
+label_ink_px = [943, 196]
+label_ink_distance_levels = 381
+label_changed_px = 1421
+label_largest_change_levels = 248
+label_changed_bounds_px = [941, 195, 102, 27]
+cell_changed_px = 1436
+cell_largest_change_levels = 248
+cell_changed_bounds_px = [941, 195, 103, 27]
+
+[[hover_read.sample]]
+phase = "t100ms"
+t_s = 0.327290
+pointer_over = false
+draw = "draw/light/bar_plain/default/system/hovered-hover10-t100ms.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.0", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.1", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1112
+label_ink = "#007affff"
+label_ink_px = [943, 196]
+label_ink_distance_levels = 381
+label_changed_px = 1444
+label_largest_change_levels = 248
+label_changed_bounds_px = [941, 195, 102, 27]
+cell_changed_px = 1459
+cell_largest_change_levels = 248
+cell_changed_bounds_px = [941, 195, 103, 27]
+
+[[hover_read.sample]]
+phase = "t200ms"
+t_s = 0.383242
+pointer_over = false
+draw = "draw/light/bar_plain/default/system/hovered-hover10-t200ms.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.0", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.1", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1112
+label_ink = "#007affff"
+label_ink_px = [943, 196]
+label_ink_distance_levels = 381
+label_changed_px = 1438
+label_largest_change_levels = 248
+label_changed_bounds_px = [941, 195, 102, 27]
+cell_changed_px = 1453
+cell_largest_change_levels = 248
+cell_changed_bounds_px = [941, 195, 103, 27]
+
+[[hover_read.sample]]
+phase = "t300ms"
+t_s = 0.416168
+pointer_over = false
+draw = "draw/light/bar_plain/default/system/hovered-hover10-t300ms.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.0", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.1", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1112
+label_ink = "#007affff"
+label_ink_px = [943, 196]
+label_ink_distance_levels = 381
+label_changed_px = 1438
+label_largest_change_levels = 248
+label_changed_bounds_px = [941, 195, 102, 27]
+cell_changed_px = 1453
+cell_largest_change_levels = 248
+cell_changed_bounds_px = [941, 195, 103, 27]
+
+[[hover_read.sample]]
+phase = "t500ms"
+t_s = 0.515545
+pointer_over = false
+draw = "draw/light/bar_plain/default/system/hovered-hover10-t500ms.png"
+label = { class = "UIButtonLabel", text = "Button", text_color = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0000, 0.4784, 1.0000, 1.0000], hex = "#007affff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [470.500, 94.000, 51.000, 20.500] }
+label_px = [941.000, 188.000, 102.000, 41.000]
+pointer_layers = [{ view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 95.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.053333, 0.000000, 0.000000, 1.053333, 0.000000, -0.013333], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.0", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0.0.1", class = "CAPortalLayer", delegate = "_UIPortalView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [-17.500, 73.000, 91.000, 44.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 311.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 527.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 743.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 959.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }, { view = "_UIPointerInteractionAssistantEffectContainerView", layer = "0", class = "CALayer", delegate = "_UIPointerInteractionAssistantEffectContainerView", hidden = false, opacity = 1.000000, background = "absent", view_background = "absent", frame_in_window_pt = [28.000, 1175.000, 0.000, 0.000], transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000], corner_radius_pt = 0.000, shadow_opacity = 0.000000, shadow_radius_pt = 3.000, shadow_offset_pt = [0.000, -3.000], shadow_color = { srgb = [0.0000, 0.0000, 0.0000, 1.0000], hex = "#000000ff", space = "kCGColorSpaceSRGB" }, compositing_filter = "absent", filters = [], effect = "absent" }]
+label_background = "#f7f8f7ff"
+label_background_px_count = 1117
+label_ink = "#007affff"
+label_ink_px = [943, 196]
+label_ink_distance_levels = 381
+label_changed_px = 1421
+label_largest_change_levels = 248
+label_changed_bounds_px = [941, 195, 102, 27]
+cell_changed_px = 1436
+cell_largest_change_levels = 248
+cell_changed_bounds_px = [941, 195, 103, 27]
+
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "black/hovered"
+press_number = 11
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "light/bar_plain/default"
+cell = "white/hovered"
+press_number = 12
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "system/hovered"
+press_number = 13
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "black/hovered"
+press_number = 14
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/segmented_control/default"
+cell = "white/hovered"
+press_number = 15
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "system/hovered"
+press_number = 16
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "black/hovered"
+press_number = 17
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/sidebar_row/default"
+cell = "white/hovered"
+press_number = 18
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "system/hovered"
+press_number = 19
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "black/hovered"
+press_number = 20
+wait_seconds = 60.0
+
+[[hover_read]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 21
+label_text = "Header"
+pointer_left_after_s = 0.031609
+hold_seconds = 0.100000
+held = false
+[[hover_read.sample]]
+phase = "rest"
+t_s = "absent"
+pointer_over = false
+draw = "draw/dark/outline_header/default/white/hovered-hover21-rest.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c4e970; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+
+[[hover_read.sample]]
+phase = "t0ms"
+t_s = 0.000385
+pointer_over = true
+draw = "draw/dark/outline_header/default/white/hovered-hover21-t0ms.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c7a8e0; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t50ms"
+t_s = 0.051894
+pointer_over = false
+draw = "draw/dark/outline_header/default/white/hovered-hover21-t50ms.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c79110; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t100ms"
+t_s = 0.102930
+pointer_over = false
+draw = "draw/dark/outline_header/default/white/hovered-hover21-t100ms.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c7a8e0; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t200ms"
+t_s = 0.202842
+pointer_over = false
+draw = "draw/dark/outline_header/default/white/hovered-hover21-t200ms.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c79ef0; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t300ms"
+t_s = 0.302728
+pointer_over = false
+draw = "draw/dark/outline_header/default/white/hovered-hover21-t300ms.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c50060; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+[[hover_read.sample]]
+phase = "t500ms"
+t_s = 0.519784
+pointer_over = false
+draw = "draw/dark/outline_header/default/white/hovered-hover21-t500ms.png"
+label = { class = "UILabel", text = "Header", text_color = { srgb = [0.9216, 0.9216, 0.9608, 0.6000], hex = "#ebebf599", space = "kCGColorSpaceSRGB" }, highlighted = false, highlighted_text_color = "absent", tint = { srgb = [0.0392, 0.5176, 1.0000, 1.0000], hex = "#0a84ffff", space = "kCGColorSpaceSRGB" }, hidden = false, alpha = 1.000, layer_opacity = 1.000, compositing_filter = "absent", filters = [], in_window = true, frame_in_cell_pt = [36.000, 66.000, 57.500, 20.500] }
+label_px = [72.000, 132.000, 115.000, 41.000]
+cell_state = "<UICellConfigurationState: 0x600000c7bf30; traitCollection = <UITraitCollection: 0x100b7f9f0; UserInterfaceIdiom = Pad, DisplayScale = 2, DisplayGamut = P3, HorizontalSizeClass = Regular, VerticalSizeClass = Regular, UserInterfaceStyle = Dark, UserInterfaceLayoutDirection = LTR, ForceTouchCapability = Unavailable, PreferredContentSizeCategory = L, AccessibilityContrast = Normal, UserInterfaceLevel = Base, SceneCaptureState = 0, ListEnvironment = 5, ImageDynamicRange = 0>; Expanded>"
+cell_background = { srgb = [0.0000, 0.0000, 0.0000, 0.0000], hex = "#00000000", space = "kCGColorSpaceExtendedGray" }
+pointer_layers = []
+label_background = "#ffffffff"
+label_background_px_count = 3484
+label_ink = "#f3f3f9ff"
+label_ink_px = [149, 139]
+label_ink_distance_levels = 30
+label_changed_px = 0
+label_largest_change_levels = 0
+label_changed_bounds_px = "absent"
+cell_changed_px = 0
+cell_largest_change_levels = 0
+cell_changed_bounds_px = "absent"
+
+
+[[hover_not_seen]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 22
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "system/hovered"
+press_number = 23
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "black/hovered"
+press_number = 24
+wait_seconds = 60.0
+
+[[hover_not_seen]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 25
+wait_seconds = 60.0
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "system/hovered"
+press_number = 0
+phase = "rest"
+samples = [{ t = 0.090538, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "black/hovered"
+press_number = 1
+phase = "rest"
+samples = [{ t = 0.047535, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/segmented_control/default"
+cell = "white/hovered"
+press_number = 2
+phase = "rest"
+samples = [{ t = 0.050349, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "system/hovered"
+press_number = 3
+phase = "rest"
+samples = [{ t = 0.040719, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 4
+phase = "rest"
+samples = [{ t = 0.036891, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 4
+phase = "press"
+samples = [{ t = 0.000252, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }, { t = 0.026012, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.050219, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.100251, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.200209, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.366885, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.522536, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 1.048170, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "black/hovered"
+press_number = 5
+phase = "rest"
+samples = [{ t = 0.020627, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/sidebar_row/default"
+cell = "white/hovered"
+press_number = 6
+phase = "rest"
+samples = [{ t = 0.018790, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "system/hovered"
+press_number = 7
+phase = "rest"
+samples = [{ t = 0.027775, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "black/hovered"
+press_number = 8
+phase = "rest"
+samples = [{ t = 0.019988, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/outline_header/default"
+cell = "white/hovered"
+press_number = 9
+phase = "rest"
+samples = [{ t = 0.027609, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 10
+phase = "rest"
+samples = [{ t = 0.132051, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "system/hovered"
+press_number = 10
+phase = "press"
+samples = [{ t = 0.096142, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.242815, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.243476, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.327262, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.383299, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.008555, 0.000000, 0.000000, 1.008555, 0.000000, -0.002139, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.509670, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.053333, 0.000000, 0.000000, 1.053333, 0.000000, -0.013333, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 0.515444, highlighted = false, animations = [{ layer = "0.1.1.0", key = "_UIPointerContentEffect.sourceViewMatchMove", class = "CAMatchMoveAnimation", duration_s = inf, repeat_count = 0.000000, autoreverses = false, begin_time = 2991.574417, speed = 1.000000, timing_function = "absent" }], layers = [{ layer = "0.1.1.0", class = "CALayer", delegate = "_UIPointerEffectPlatterView", transform = [1.053333, 0.000000, 0.000000, 1.053333, 0.000000, -0.013333, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 91.000, 44.000], position_pt = [484.000, 25.000], animation_keys = ["_UIPointerContentEffect.sourceViewMatchMove"] }] }, { t = 1.043788, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "black/hovered"
+press_number = 11
+phase = "rest"
+samples = [{ t = 0.052234, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "light/bar_plain/default"
+cell = "white/hovered"
+press_number = 12
+phase = "rest"
+samples = [{ t = 0.056350, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "system/hovered"
+press_number = 13
+phase = "rest"
+samples = [{ t = 0.042293, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "black/hovered"
+press_number = 14
+phase = "rest"
+samples = [{ t = 0.023051, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/segmented_control/default"
+cell = "white/hovered"
+press_number = 15
+phase = "rest"
+samples = [{ t = 0.032799, highlighted = false, animations = [], layers = [{ layer = "0.0.0.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [0.500, 16.000], animation_keys = [] }, { layer = "0.2.0", class = "CALayer", delegate = "UIImageView", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 1.000, 32.000], position_pt = [55.500, 16.000], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "system/hovered"
+press_number = 16
+phase = "rest"
+samples = [{ t = 0.040950, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "black/hovered"
+press_number = 17
+phase = "rest"
+samples = [{ t = 0.023910, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/sidebar_row/default"
+cell = "white/hovered"
+press_number = 18
+phase = "rest"
+samples = [{ t = 0.022680, highlighted = false, animations = [], layers = [{ layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "system/hovered"
+press_number = 19
+phase = "rest"
+samples = [{ t = 0.057832, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "black/hovered"
+press_number = 20
+phase = "rest"
+samples = [{ t = 0.022823, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 21
+phase = "rest"
+samples = [{ t = 0.036204, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 21
+phase = "press"
+samples = [{ t = 0.000114, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 7.000], position_pt = [963.500, 113.500], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 7.000, 3.000], position_pt = [293.500, 95.500], animation_keys = [] }] }, { t = 0.032529, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.051520, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.102824, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.202748, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.365810, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 0.519434, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }, { t = 1.032625, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/outline_header/default"
+cell = "white/hovered"
+press_number = 22
+phase = "rest"
+samples = [{ t = 0.021117, highlighted = false, animations = [], layers = [{ layer = "0.1.2.0", class = "CALayer", delegate = "UIImageView", transform = [0.000000, 1.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000], opacity = 1.000000, bounds_pt = [0.000, 0.000, 10.500, 14.000], position_pt = [22.250, 22.000], animation_keys = [] }, { layer = "0.3", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 3.000, 92.000], position_pt = [963.500, 51.000], animation_keys = [] }, { layer = "0.4", class = "CALayer", delegate = "_UIScrollViewScrollIndicator", transform = [1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000], opacity = 0.000000, bounds_pt = [0.000, 0.000, 962.000, 3.000], position_pt = [484.000, 95.500], animation_keys = [] }] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "system/hovered"
+press_number = 23
+phase = "rest"
+samples = [{ t = 0.022226, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "black/hovered"
+press_number = 24
+phase = "rest"
+samples = [{ t = 0.090516, highlighted = false, animations = [], layers = [] }]
+
+[[motion]]
+page = "dark/bar_plain/default"
+cell = "white/hovered"
+press_number = 25
+phase = "rest"
+samples = [{ t = 0.044847, highlighted = false, animations = [], layers = [] }]

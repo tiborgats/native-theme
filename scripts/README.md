@@ -194,6 +194,15 @@ not fuse `1.0f - (s * f)` into one multiply-add, as the reference build does.
 python3 -I scripts/generate_qt_color_vectors.py
 ```
 
+With `--qt-tint` it writes instead `native-theme/tests/vectors/qt_tint.tsv`,
+the table of the clean-room `qt_tint`: `Qt.tint(base, Qt.alpha(tint, factor))`
+run by Qt's QML engine, no Qt code transcribed. That mode has its own pin,
+PySide6 6.12.0 (Qt 6.12.0), and the same output on every run.
+
+```sh
+python3 -I scripts/generate_qt_color_vectors.py --qt-tint
+```
+
 ## generate_assets_release.sh
 
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for
@@ -377,6 +386,42 @@ removes the step's `--quick` record (without `--commit` or `--quick` it exits
 ./scripts/check_release.sh --commit
 ./scripts/check_release.sh --commit --no-cache
 ./scripts/check_release.sh
+```
+
+## check_next.sh
+
+The narrow per-task gate of the 0.8.0 work (`docs/v0.8.0-plan.md`, section 1,
+rule 7), for a task whose diff lies wholly in `native-theme/src/next/`,
+`native-theme/tests/next_*` and `native-theme/tests/{vectors,snapshots}/`: the
+core crate's own steps of `check_release.sh`, with its commands, flags and
+feature lists. It runs `cargo fmt --all` (formatting in place), clippy on
+native-theme's targets without features and with the Linux features
+(`-D warnings`), the strict panic lints on its library with both, the two MSRV
+checks of native-theme from `check_release.sh`'s MSRV section
+(`msrv_checks.sh`, sourced: `cargo check` on the workspace's `rust-version`
+with `RUSTFLAGS=-Dwarnings` and `--locked`, with its default features and
+with all its features, in the build folder of its own that the section uses
+and deletes when the run ends), its tests with both feature sets (`cargo
+nextest run` where installed, then `cargo test --doc`, as `check_release.sh`'s
+`cargo_tests`; a test run that passes no test fails, as there), from the
+plan's M0, step 4 on, clippy on the gpui connector's targets (`-D warnings`,
+the command `check_release.sh` lints it with) and its parity test
+(`next::parity`), both with the features `check_release.sh` tests the
+connector with (`native,watch`), the core crate's two rustdoc runs
+(`-D warnings`), the panic-pattern scan of `native-theme/src` and the README
+versions check. `--target windows` or `--target macos` adds
+`check_release.sh`'s cross-target clippy and strict-panic steps of
+native-theme for that target. It leaves to `check_release.sh --commit` the
+other MSRV checks, the feature combinations and every other crate's steps.
+Each step prints its name, result and wall time; the first failure prints the
+step's output and stops with a non-zero status. An unknown argument exits 2;
+`--help` prints the usage. Scaffolding of the 0.8.0 work: deleted at the 0.8.0
+cut.
+
+```sh
+./scripts/check_next.sh
+./scripts/check_next.sh --target windows
+./scripts/check_next.sh --target macos
 ```
 
 ## step_cache.sh
@@ -960,8 +1005,14 @@ docstring states the whole rule. Prints the counts of every preset, its
 citations by kind, and exits 0 when it reads every preset, 2 on an input it
 cannot read (not UTF-8 or TOML, a facts file with no Chapter 2 rows, or a
 preset citing the facts file in either form where the rule reads no
-citation). `--self-test` runs the rule on a synthetic facts file and
-preset.
+citation). Until the cut it also reads the 0.8.0 builders,
+`native-theme/src/next/presets/*.rs`: each `` // `key`: source `` comment
+is a citation, counted as `platform-facts.md` (by its sections, in
+parentheses or bare), `0.7.2 <file> (uncited)` or another source; every
+`platform-facts.md` in a builder's comments must name existing sections and
+no line, and a builder citation with no source, or a `(uncited)` in another
+form, fails. `--self-test` runs the rules on a synthetic facts file, preset
+and builder.
 `check_release.sh` (every mode) and `ci.yml`'s parity job run it and its
 self-test.
 

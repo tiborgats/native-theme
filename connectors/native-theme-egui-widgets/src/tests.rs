@@ -13,10 +13,11 @@ use std::path::{Path, PathBuf};
 use native_theme_egui::convert::{composite_over, to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
-use native_theme_egui::native_theme::theme::IconSet;
+use native_theme_egui::native_theme::icons::IconSet;
+use native_theme_egui::native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
 use native_theme_egui::{
-    AccessibilityPreferences, ResolvedTheme, ThemeAtlas, focus_ring_color, focus_ring_offset,
-    from_preset,
+    AccessibilityPreferences, NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
+    focus_ring_color, focus_ring_offset, from_preset,
 };
 use native_theme_test_fixtures::sources::{every_section_is_named, rendered_lines};
 
@@ -30,6 +31,8 @@ use crate::segmented_control::SegmentedControl;
 use crate::slider::Slider;
 use crate::spinner::Spinner;
 use crate::switch::Switch;
+
+mod next_drawn;
 
 // ---- harness ----------------------------------------------------------------------------------
 
@@ -287,6 +290,26 @@ fn with_no_atlas_every_widget_is_its_egui_counterpart() {
             "{name}: not egui's pixels"
         );
     }
+}
+
+/// A context with the atlas `next::to_theme` builds of the 0.8.0 `preset` installed, drawn
+/// light.
+fn next_installed(preset: Preset) -> egui::Context {
+    let theme = NextTheme::preset(preset);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let ctx = egui::Context::default();
+    native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
+        .unwrap()
+        .install(&ctx);
+    ctx.set_theme(egui::Theme::Light);
+    ctx.enable_accesskit();
+    ctx
 }
 
 // ---- T2: a hostile theme -----------------------------------------------------------------------
@@ -805,13 +828,23 @@ fn an_expander_with_no_stated_frame_outlines_nothing() {
 /// A widget in an expander's body is drawn in the style the expander was shown in, not in the
 /// expander's header cell (round 4 review, item 17 I1): under catppuccin-mocha, which reaches
 /// egui's own `CollapsingHeader`, and kde-breeze, which the crate lays out, a `Button` in the
-/// open body keeps the base style's button outline, where the header cell's is 0 wide (M9-178).
+/// open body keeps the base style's button outline, where the header cell's is 0 wide (M9-178);
+/// and so under kde-breeze's atlas of the 0.8.0 model, whose expander the crate lays out too.
 #[test]
 fn a_widget_in_the_body_keeps_the_callers_style() {
     let prefs = AccessibilityPreferences::default();
-    for preset in ["catppuccin-mocha", "kde-breeze"] {
-        let t = from_preset(preset, true, &prefs).unwrap().1;
-        let ctx = installed(&t, &prefs);
+    let mut contexts: Vec<(String, egui::Context)> = ["catppuccin-mocha", "kde-breeze"]
+        .into_iter()
+        .map(|preset| {
+            let t = from_preset(preset, true, &prefs).unwrap().1;
+            (preset.to_owned(), installed(&t, &prefs))
+        })
+        .collect();
+    contexts.push((
+        "0.8.0 kde-breeze".to_owned(),
+        next_installed(Preset::KdeBreeze),
+    ));
+    for (preset, ctx) in contexts {
         let mut base = egui::Stroke::NONE;
         let mut button = egui::Rect::NOTHING;
         let mut show = |ui: &mut egui::Ui| {
@@ -2156,21 +2189,36 @@ fn a_disabled_knob_takes_the_rest_outline_faded() {
 
 // ---- T6: no hardcoded values -------------------------------------------------------------------
 
-/// The crate's sources outside its tests, comments and string literals blanked.
-fn painting_sources() -> Vec<(String, String)> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+/// The crate's sources outside its tests (`tests.rs`, `tests/` and `next/parity.rs`), comments
+/// and string literals blanked, each named by its path under `src/`.
+fn painting_sources() -> std::io::Result<Vec<(String, String)>> {
+    let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    // Compared by path components, so the skip holds with either separator.
+    let skipped = [
+        PathBuf::from("tests.rs"),
+        PathBuf::from("tests"),
+        Path::new("next").join("parity.rs"),
+    ];
     let mut out = Vec::new();
-    for entry in std::fs::read_dir(&dir).unwrap() {
-        let path = entry.unwrap().path();
-        let name = path.file_name().unwrap().to_string_lossy().to_string();
-        if name == "tests.rs" {
-            continue;
+    let mut dirs = vec![src.clone()];
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(&dir)? {
+            let path = entry?.path();
+            let relative = path.strip_prefix(&src).map_err(std::io::Error::other)?;
+            if skipped.iter().any(|s| s.as_path() == relative) {
+                continue;
+            }
+            let name = relative.to_string_lossy().to_string();
+            if path.is_dir() {
+                dirs.push(path);
+                continue;
+            }
+            let raw = std::fs::read_to_string(&path)?;
+            let code: Vec<&str> = rendered_lines(&raw).into_iter().map(|(_, l)| l).collect();
+            out.push((name, blank(&code.join("\n"))));
         }
-        let raw = std::fs::read_to_string(&path).unwrap();
-        let code: Vec<&str> = rendered_lines(&raw).into_iter().map(|(_, l)| l).collect();
-        out.push((name, blank(&code.join("\n"))));
     }
-    out
+    Ok(out)
 }
 
 /// `code` with every `//` comment and every string literal replaced by spaces.
@@ -2238,15 +2286,15 @@ fn literals(code: &str) -> Vec<String> {
 
 /// T6: the only numeric literals are §2.3's: `0.5`, the identities `0` `0.0` `1.0`, egui's
 /// spinner constants `240` `8` `128`, egui's slider key step `1.0`, egui's combo-box arrow
-/// proportions `0.7` `0.45`, egui's radio dot divisor `3.0` and egui's collapsing-header
-/// arrow share `0.75`.
+/// proportions `0.7` `0.45`, egui's radio dot divisor `3.0`, egui's collapsing-header
+/// arrow share `0.75` and egui's slider knob divisor `2.5`.
 #[test]
-fn the_crate_hardcodes_no_values() {
+fn the_crate_hardcodes_no_values() -> std::io::Result<()> {
     let allowed = [
-        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0", "0.75",
+        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0", "0.75", "2.5",
     ];
     let mut found = Vec::new();
-    for (file, code) in painting_sources() {
+    for (file, code) in painting_sources()? {
         for literal in literals(&code) {
             if !allowed.contains(&literal.as_str()) {
                 found.push(format!("{file}: {literal}"));
@@ -2255,6 +2303,7 @@ fn the_crate_hardcodes_no_values() {
     }
     assert!(found.is_empty(), "{found:#?}");
     assert_eq!(literals("x2 1.5 f32 a_1 0..8"), vec!["1.5", "0", "8"]);
+    Ok(())
 }
 
 // ---- T7: the Tier P promotions are still justified --------------------------------------------
@@ -3450,71 +3499,443 @@ fn looks(t: &ResolvedTheme) -> Vec<(&'static str, String)> {
     ]
 }
 
+/// Each widget's colour reads of a 0.8.0 theme, as [`looks`] gives the 0.7.2 ones: the look its
+/// `next_of` builds of `r`, as text (the progress bar's outline is its `Bar`'s).
+fn next_looks(
+    r: &native_theme_egui::native_theme::next::ResolvedTheme,
+) -> Vec<(&'static str, String)> {
+    vec![
+        ("Spinner", format!("{:?}", crate::spinner::Look::next_of(r))),
+        ("Switch", format!("{:?}", crate::switch::Look::next_of(r))),
+        ("Slider", format!("{:?}", crate::slider::Look::next_of(r))),
+        ("links", format!("{:?}", crate::links::Look::next_of(r))),
+        (
+            "ProgressBar",
+            format!("{:?}", crate::progress_bar::Bar::next_of(r)),
+        ),
+        (
+            "RadioButton",
+            format!("{:?}", crate::radio_button::Look::next_of(r)),
+        ),
+        (
+            "SegmentedControl",
+            format!("{:?}", crate::segmented_control::Look::next_of(r)),
+        ),
+        (
+            "Expander",
+            format!("{:?}", crate::expander::Look::next_of(r)),
+        ),
+    ]
+}
+
+/// The two colours a home is spliced with, each as 8-bit sRGB channels.
+const SPLICES: [[u8; 3]; 2] = [[0x13, 0x57, 0x9b], [0x24, 0x57, 0x9b]];
+
+/// The 0.8.0 `preset` resolved in `ctx` with the colour at `home` stated as `rgb`: a part's
+/// home (`widget.part(STATES).fill`, `.color` or `.stroke.color`) through a rule for exactly
+/// those states laid over the preset, its stroke 1 px wide; one of the colours no rule holds
+/// set on the resolved theme. `Err` names a home neither way reaches.
+fn next_spliced(
+    preset: Preset,
+    ctx: &ThemeContext,
+    home: &str,
+    [red, green, blue]: [u8; 3],
+) -> Result<native_theme_egui::native_theme::next::ResolvedTheme, String> {
+    use native_theme_egui::native_theme::next::{Color, TextStated, ThemePatch};
+    let hex = format!("#{red:02x}{green:02x}{blue:02x}");
+    if let Some((widget, rest)) = home.split_once('.')
+        && let Some((part, rest)) = rest.split_once('(')
+    {
+        let (states, property) = rest
+            .split_once(").")
+            .ok_or_else(|| format!("{home}: no property after the states"))?;
+        let states: Vec<String> = states
+            .split('|')
+            .filter(|s| *s != "NONE")
+            .map(|s| format!("\"{}\"", s.to_ascii_lowercase()))
+            .collect();
+        let value = match property {
+            "fill" | "color" => format!("{part}.{property} = \"{hex}\""),
+            "stroke.color" => format!("{part}.stroke = {{ width = 1.0, color = \"{hex}\" }}"),
+            _ => return Err(format!("{home}: no splice for its property")),
+        };
+        let patch = format!(
+            "[[widgets.{widget}.rules]]\nstates = [{}]\n{value}\n",
+            states.join(", ")
+        );
+        let patch = ThemePatch::from_toml(&patch).map_err(|e| format!("{home}: {e}"))?;
+        return Ok(NextTheme::preset(preset).with_patch(patch).resolve(ctx));
+    }
+    let mut r = NextTheme::preset(preset).resolve(ctx);
+    let colour = Color::from_srgb8(red, green, blue, u8::MAX);
+    match home {
+        "colors.window.background" => r.colors.window.background = Some(colour),
+        "colors.window.foreground" => r.colors.window.foreground = Some(colour),
+        "colors.disabled_text" => r.colors.disabled_text = colour,
+        "spinner.color" => r.spinner.color = colour,
+        "typography.body.color" => {
+            r.typography.body.color = colour;
+            r.typography.body.stated |= TextStated::COLOR;
+        }
+        _ => return Err(format!("{home}: no splice for it")),
+    }
+    Ok(r)
+}
+
+/// A colour leaf a widget draws in: the 0.7.2 field its `of` reads, and the 0.8.0 homes its
+/// `next_of` reads in its place.
+type Read = (&'static str, &'static [&'static str]);
+
 /// The colour leaves each widget draws in, beyond the atlas's cells, which the connector's
-/// `mapping.toml` rows. `ComboBox` reads no colour of the theme's: its colours are its cell's.
-const WIDGET_READS: &[(&str, &[&str])] = &[
-    ("Spinner", &["spinner.fill_color", "defaults.text_color"]),
+/// `mapping.toml` rows, each 0.7.2 field beside the homes the widget's 0.8.0 reads take it
+/// from: of the field's homes in the table of homes (`native-theme/tests/next_homes.toml`),
+/// those the widget reads (a 0.7.2 colour of two states is read in the state the widget
+/// draws). `ComboBox` reads no colour of the theme's: its colours are its cell's.
+const WIDGET_READS: &[(&str, &[Read])] = &[
+    (
+        "Spinner",
+        &[
+            ("spinner.fill_color", &["spinner.color"]),
+            ("defaults.text_color", &["colors.window.foreground"]),
+        ],
+    ),
     (
         "Switch",
         &[
-            "switch.checked_background",
-            "switch.hover_checked_background",
-            "switch.unchecked_background",
-            "switch.hover_unchecked_background",
-            "switch.disabled_checked_background",
-            "switch.disabled_unchecked_background",
-            "switch.thumb_background",
-            "switch.unchecked_thumb_background",
-            "switch.disabled_thumb_color",
-            "switch.unchecked_track_border_color",
-            "switch.checked_track_border_color",
-            "switch.disabled_unchecked_track_border_color",
-            "switch.disabled_checked_track_border_color",
-            "switch.thumb_border_color",
-            "defaults.font.color",
-            "defaults.disabled_text_color",
-            "defaults.background_color",
+            ("switch.checked_background", &["switch.track(CHECKED).fill"]),
+            (
+                "switch.hover_checked_background",
+                &["switch.track(HOVER|CHECKED).fill"],
+            ),
+            ("switch.unchecked_background", &["switch.track(NONE).fill"]),
+            (
+                "switch.hover_unchecked_background",
+                &["switch.track(HOVER).fill"],
+            ),
+            (
+                "switch.disabled_checked_background",
+                &["switch.track(DISABLED|CHECKED).fill"],
+            ),
+            (
+                "switch.disabled_unchecked_background",
+                &["switch.track(DISABLED).fill"],
+            ),
+            ("switch.thumb_background", &["switch.thumb(CHECKED).fill"]),
+            (
+                "switch.unchecked_thumb_background",
+                &["switch.thumb(NONE).fill"],
+            ),
+            (
+                "switch.disabled_thumb_color",
+                &[
+                    "switch.thumb(DISABLED).fill",
+                    "switch.thumb(DISABLED|CHECKED).fill",
+                ],
+            ),
+            (
+                "switch.unchecked_track_border_color",
+                &["switch.track(NONE).stroke.color"],
+            ),
+            (
+                "switch.checked_track_border_color",
+                &["switch.track(CHECKED).stroke.color"],
+            ),
+            (
+                "switch.disabled_unchecked_track_border_color",
+                &["switch.track(DISABLED).stroke.color"],
+            ),
+            (
+                "switch.disabled_checked_track_border_color",
+                &["switch.track(DISABLED|CHECKED).stroke.color"],
+            ),
+            (
+                "switch.thumb_border_color",
+                &[
+                    "switch.thumb(NONE).stroke.color",
+                    "switch.thumb(CHECKED).stroke.color",
+                ],
+            ),
+            ("defaults.font.color", &["typography.body.color"]),
+            ("defaults.disabled_text_color", &["colors.disabled_text"]),
+            ("defaults.background_color", &["colors.window.background"]),
         ],
     ),
     (
         "Slider",
         &[
-            "slider.track_color",
-            "slider.fill_color",
-            "slider.thumb_color",
-            "slider.thumb_hover_color",
-            "slider.disabled_track_color",
-            "slider.disabled_fill_color",
-            "slider.disabled_thumb_color",
-            "slider.thumb_border_color",
-            "slider.thumb_hover_border_color",
-            "slider.thumb_focus_border_color",
-            "defaults.background_color",
+            ("slider.track_color", &["slider.track(NONE).fill"]),
+            ("slider.fill_color", &["slider.active_track(NONE).fill"]),
+            ("slider.thumb_color", &["slider.thumb(NONE).fill"]),
+            ("slider.thumb_hover_color", &["slider.thumb(HOVER).fill"]),
+            (
+                "slider.disabled_track_color",
+                &["slider.track(DISABLED).fill"],
+            ),
+            (
+                "slider.disabled_fill_color",
+                &["slider.active_track(DISABLED).fill"],
+            ),
+            (
+                "slider.disabled_thumb_color",
+                &["slider.thumb(DISABLED).fill"],
+            ),
+            (
+                "slider.thumb_border_color",
+                &["slider.thumb(NONE).stroke.color"],
+            ),
+            (
+                "slider.thumb_hover_border_color",
+                &["slider.thumb(HOVER).stroke.color"],
+            ),
+            (
+                "slider.thumb_focus_border_color",
+                &["slider.thumb(FOCUSED).stroke.color"],
+            ),
+            ("defaults.background_color", &["colors.window.background"]),
         ],
     ),
     (
         "links",
         &[
-            "link.font.color",
-            "link.background_color",
-            "link.hover_background",
-            "link.hover_text_color",
-            "link.active_text_color",
-            "link.visited_text_color",
-            "link.disabled_text_color",
+            ("link.font.color", &["link.label(NONE).color"]),
+            ("link.background_color", &["link.container(NONE).fill"]),
+            ("link.hover_background", &["link.container(HOVER).fill"]),
+            ("link.hover_text_color", &["link.label(HOVER).color"]),
+            ("link.active_text_color", &["link.label(PRESSED).color"]),
+            ("link.visited_text_color", &["link.label(VISITED).color"]),
+            ("link.disabled_text_color", &["link.label(DISABLED).color"]),
         ],
     ),
-    ("ProgressBar", &["progress_bar.border.color"]),
-    ("RadioButton", &["defaults.background_color"]),
+    (
+        "ProgressBar",
+        &[(
+            "progress_bar.border.color",
+            &["progress_bar.track(NONE).stroke.color"],
+        )],
+    ),
+    (
+        "RadioButton",
+        &[("defaults.background_color", &["colors.window.background"])],
+    ),
     (
         "SegmentedControl",
         &[
-            "defaults.background_color",
-            "segmented_control.hover_background",
+            ("defaults.background_color", &["colors.window.background"]),
+            (
+                "segmented_control.hover_background",
+                &["segmented_control.segment(HOVER).fill"],
+            ),
         ],
     ),
-    ("Expander", &["expander.arrow_color"]),
+    (
+        "Expander",
+        &[
+            ("expander.arrow_color", &["expander.arrow(NONE).color"]),
+            (
+                "expander.border.color",
+                &["expander.container(NONE).stroke.color"],
+            ),
+        ],
+    ),
 ];
+
+/// The reads of [`WIDGET_READS`] no splice in a platform preset reaches, each with the test of
+/// the crate's that proves the widget reads it: a home the widget falls back on where the theme
+/// states its own value of the leaf not, which every platform preset states. The widget, the
+/// 0.7.2 field, the home, and the test, by its name in the crate's sources. The proof stops at
+/// the helper that picks the fallback: the switch's entries' test calls `Look::label_colors`
+/// with the colours given, so `Look::next_of`'s wiring of `typography.body.color` and
+/// `colors.disabled_text` into it is not tested, as no theme can leave `switch.label` unstated
+/// today; a test of that wiring waits for one that can.
+const PROVED_BY_TEST: &[(&str, &str, &str, &str)] = &[
+    (
+        "Switch",
+        "defaults.font.color",
+        "typography.body.color",
+        "an_unstated_switch_label_is_lettered_in_the_body_and_the_disabled_text",
+    ),
+    (
+        "Switch",
+        "defaults.disabled_text_color",
+        "colors.disabled_text",
+        "an_unstated_switch_label_is_lettered_in_the_body_and_the_disabled_text",
+    ),
+];
+
+/// Whether the crate's sources define the test `name`: a `#[test]` before `fn name(`.
+fn defines_test(name: &str) -> std::io::Result<bool> {
+    let mut dirs = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("src")];
+    let defined = format!("#[test]\nfn {name}(");
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(&dir)? {
+            let path = entry?.path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path.extension().is_some_and(|e| e == "rs")
+                && std::fs::read_to_string(&path)?.contains(&defined)
+            {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
+}
+
+/// The rows of the table of homes (`native-theme/tests/next_homes.toml`): each 0.7.2 key with
+/// its `homes`, read line by line, an array over one line or several.
+fn table_of_homes() -> std::io::Result<Vec<(String, Vec<String>)>> {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../native-theme/tests/next_homes.toml");
+    let text = std::fs::read_to_string(path)?;
+    let mut rows = Vec::new();
+    let mut key = None;
+    let mut lines = text.lines();
+    while let Some(line) = lines.next() {
+        if let Some(k) = line.strip_prefix("key = ") {
+            key = Some(k.trim_matches('"').to_owned());
+            continue;
+        }
+        let Some(rest) = line.strip_prefix("homes = [") else {
+            continue;
+        };
+        let mut array = rest.to_owned();
+        let homes = loop {
+            if let Some(homes) = quoted_to_bracket(&array) {
+                break homes;
+            }
+            match lines.next() {
+                Some(more) => array.push_str(more),
+                None => break Vec::new(),
+            }
+        };
+        if let Some(key) = key.take() {
+            rows.push((key, homes));
+        }
+    }
+    Ok(rows)
+}
+
+/// The strings quoted in `s` before its first `]` outside a string; `None` where it has none.
+fn quoted_to_bracket(s: &str) -> Option<Vec<String>> {
+    let mut quoted = Vec::new();
+    let mut open: Option<String> = None;
+    for c in s.chars() {
+        match open.take() {
+            Some(text) if c == '"' => quoted.push(text),
+            Some(mut text) => {
+                text.push(c);
+                open = Some(text);
+            }
+            None if c == '"' => open = Some(String::new()),
+            None if c == ']' => return Some(quoted),
+            None => {}
+        }
+    }
+    None
+}
+
+/// Every 0.8.0 home `WIDGET_READS` lists beside a 0.7.2 field is one of that field's homes in
+/// the table of homes, every field lists one at least, and the widget reads each: spliced with
+/// two colours ([`next_spliced`]) in some platform preset, light or dark, the widget's 0.8.0
+/// look ([`next_looks`]) differs between the two, or, where no splice does, a test the crate's
+/// sources define proves it ([`PROVED_BY_TEST`]), an entry no splice needs failing.
+#[test]
+fn every_listed_home_is_its_fields_home_in_the_table() -> std::io::Result<()> {
+    let table = table_of_homes()?;
+    assert!(table.len() > 500, "only {} rows read", table.len());
+    let schemes = [ThemeContext::light(), ThemeContext::dark()];
+    fn look_of(
+        widget: &str,
+        r: &native_theme_egui::native_theme::next::ResolvedTheme,
+    ) -> Option<String> {
+        next_looks(r)
+            .into_iter()
+            .find(|(w, _)| *w == widget)
+            .map(|(_, look)| look)
+    }
+    let mut failures = Vec::new();
+    for (widget, reads) in WIDGET_READS {
+        for (field, homes) in *reads {
+            let Some((_, table_homes)) = table.iter().find(|(key, _)| key == field) else {
+                failures.push(format!("{widget}: {field} has no row in the table"));
+                continue;
+            };
+            if homes.is_empty() {
+                failures.push(format!("{widget}: {field} lists no home"));
+            }
+            for home in *homes {
+                if !table_homes.iter().any(|h| h == home) {
+                    failures.push(format!(
+                        "{widget}: {field}: {home} is not one of its homes {table_homes:?}"
+                    ));
+                }
+                let mut read = Ok(false);
+                'bases: for preset in Preset::ALL {
+                    for ctx in &schemes {
+                        let [a, b] = SPLICES.map(|rgb| next_spliced(*preset, ctx, home, rgb));
+                        match (a, b) {
+                            (Ok(a), Ok(b)) => {
+                                let looks = (look_of(widget, &a), look_of(widget, &b));
+                                if looks.0.is_none() {
+                                    read = Err(format!("{widget} has no 0.8.0 look"));
+                                    break 'bases;
+                                }
+                                if looks.0 != looks.1 {
+                                    read = Ok(true);
+                                    break 'bases;
+                                }
+                            }
+                            (Err(e), _) | (_, Err(e)) => {
+                                read = Err(e);
+                                break 'bases;
+                            }
+                        }
+                    }
+                }
+                let proof = PROVED_BY_TEST
+                    .iter()
+                    .find(|(w, f, h, _)| (*w, *f, *h) == (*widget, *field, *home))
+                    .map(|(_, _, _, test)| *test);
+                match (read, proof) {
+                    (Ok(true), None) => {}
+                    (Ok(true), Some(test)) => failures.push(format!(
+                        "{widget}: {field}: {home} spliced moves its 0.8.0 look, but is listed as \
+                         proved by {test}: remove the entry"
+                    )),
+                    (Ok(false), Some(test)) if defines_test(test)? => {}
+                    (Ok(false), Some(test)) => failures.push(format!(
+                        "{widget}: {field}: {home} is listed as proved by {test}, which the \
+                         crate's sources do not define"
+                    )),
+                    (Ok(false), None) => failures.push(format!(
+                        "{widget}: {field}: {home} spliced moves its 0.8.0 look in no preset"
+                    )),
+                    (Err(e), _) => failures.push(format!("{widget}: {field}: {e}")),
+                }
+            }
+        }
+    }
+    for (widget, field, home, test) in PROVED_BY_TEST {
+        let listed = WIDGET_READS.iter().any(|(w, reads)| {
+            w == widget
+                && reads
+                    .iter()
+                    .any(|(f, homes)| f == field && homes.contains(home))
+        });
+        if !listed {
+            failures.push(format!(
+                "{widget}: {field}: {home}, proved by {test}, is no read of WIDGET_READS"
+            ));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} listed home(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
 
 /// Every widget's `Look` is spliced: the crate's sources define as many `pub(crate) struct Look`
 /// as `looks` reads, and `WIDGET_READS` has a row for each widget `looks` names. It counts the
@@ -3636,9 +4057,9 @@ fn each_widget_draws_in_the_colour_leaves_it_lists() {
                         if *before == after {
                             continue;
                         }
-                        let listed = WIDGET_READS
-                            .iter()
-                            .any(|(w, leaves)| w == widget && leaves.contains(&leaf.as_str()));
+                        let listed = WIDGET_READS.iter().any(|(w, reads)| {
+                            w == widget && reads.iter().any(|(field, _)| *field == leaf)
+                        });
                         if !listed && moved.insert((widget, leaf.clone())) {
                             failures.push(format!(
                                 "{widget} draws in {leaf} (on {} {}), which WIDGET_READS does \
@@ -3654,8 +4075,8 @@ fn each_widget_draws_in_the_colour_leaves_it_lists() {
         }
     }
     assert!(bases > 20, "only {bases} preset/mode combinations read");
-    for (widget, leaves) in WIDGET_READS {
-        for leaf in *leaves {
+    for (widget, reads) in WIDGET_READS {
+        for (leaf, _) in *reads {
             if !moved.contains(&(*widget, (*leaf).to_owned())) {
                 failures.push(format!(
                     "{widget} lists {leaf}, which moves its Look in no combination"

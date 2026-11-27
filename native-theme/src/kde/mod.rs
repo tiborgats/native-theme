@@ -300,7 +300,7 @@ pub(crate) fn kdeglobals_reduce_motion() -> bool {
 /// key, states nothing, and the preset's 500 / 500 applies, which is Qt's at
 /// the unset rate's default of 1000. Qt's caret never stops blinking: no
 /// time-out is written.
-fn caret_blink(ini: &configparser::ini::Ini, input: &mut crate::model::InputTheme) {
+pub(crate) fn caret_blink(ini: &configparser::ini::Ini, input: &mut crate::model::InputTheme) {
     let Some(rate) = ini
         .get("KDE", "CursorBlinkRate")
         .and_then(|value| value.trim().parse::<i32>().ok())
@@ -320,7 +320,7 @@ fn caret_blink(ini: &configparser::ini::Ini, input: &mut crate::model::InputThem
 
 /// The icon theme `ini` names: `[Icons] Theme`, `None` where it is absent or
 /// empty.
-fn icon_theme(ini: &configparser::ini::Ini) -> Option<String> {
+pub(crate) fn icon_theme(ini: &configparser::ini::Ini) -> Option<String> {
     ini.get("Icons", "Theme").filter(|s| !s.is_empty())
 }
 
@@ -442,7 +442,7 @@ fn read_kconfig_files(files: &[std::path::PathBuf]) -> Option<configparser::ini:
 /// stays current) and an entry with an empty key (`:168-171`). They are the
 /// only lines configparser rejects, so one stray line no longer loses the
 /// whole file.
-fn read_kconfig(ini: &mut configparser::ini::Ini, content: &str) {
+pub(crate) fn read_kconfig(ini: &mut configparser::ini::Ini, content: &str) {
     let valid: String = content
         .lines()
         .filter(|line| {

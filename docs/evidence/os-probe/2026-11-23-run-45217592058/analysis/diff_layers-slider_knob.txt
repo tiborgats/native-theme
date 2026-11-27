@@ -1,0 +1,36 @@
+== aqua: normal -> clicked-slider_knob, the slider's view grown by 6 pt
+region [14, 244, 172, 28]: 424 pixels differ, bounds (x0, y0, x1, y1) (20, 255, 90, 260)
+== aqua: the knob's part
+region [90, 250, 20, 16]: 4 pixels differ, bounds (x0, y0, x1, y1) (90, 255, 90, 260)
+255 92c2f6ff>92bdedff
+256 d0e5fbff>d0e3f7ff
+257 edf5fdff>edf4fcff
+258 edf5fdff>edf4fcff
+259 d0e5fbff>d0e2f7ff
+260 92c1f5ff>92bdecff
+== aqua: the track's filled part, column x 50
+region [50, 250, 1, 16]: 6 pixels differ, bounds (x0, y0, x1, y1) (50, 255, 50, 260)
+255 0077f9ff>006be1ff
+256 0077f9ff>006be1ff
+257 0077f9ff>006be1ff
+258 0077f9ff>006be1ff
+259 0077f9ff>006be1ff
+260 0077f9ff>006be1ff
+== darkAqua: normal -> clicked-slider_knob, the slider's view grown by 6 pt
+region [14, 244, 172, 28]: 540 pixels differ, bounds (x0, y0, x1, y1) (20, 255, 109, 260)
+== darkAqua: the knob's part
+region [90, 250, 20, 16]: 120 pixels differ, bounds (x0, y0, x1, y1) (90, 255, 109, 260)
+255 9fccfbda>92c5fcff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeefffe ffffffd9>deeefffe ffffffd9>e3f1fff8 ffffffd9>f9fcffe2 ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd f9f9f98b>fafafa92
+256 e9f3fed9>cce4feff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>e3f1fff8 ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd fefefec7>fefefecc
+257 fbfeffd9>dbecffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deedffff ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd6>ffffffda
+258 fbfeffd9>dbecffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deedffff ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd6>ffffffda
+259 e9f3fed9>cce4feff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>e3f1fff8 ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd fefefec7>fefefecc
+260 9fcbfadb>92c4fbff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeeffff ffffffd9>deeefffe ffffffd9>deeefffe ffffffd9>e3f1fff8 ffffffd9>f9fcffe2 ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd ffffffd9>ffffffdd f8f8f88c>f8f8f893
+== darkAqua: the track's filled part, column x 50
+region [50, 250, 1, 16]: 6 pixels differ, bounds (x0, y0, x1, y1) (50, 255, 50, 260)
+255 077effff>1f8bffff
+256 067dffff>1e8affff
+257 067dffff>1e8affff
+258 067dffff>1e8affff
+259 067dffff>1e8affff
+260 077effff>1f8bffff

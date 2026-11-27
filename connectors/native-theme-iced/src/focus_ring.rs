@@ -11,6 +11,7 @@
 //! what an overlay took; a field under an open dialog can so remember a key
 //! where a click came last, and show the ring once.
 
+use iced_core::border::Radius;
 use iced_core::layout::{self, Layout};
 use iced_core::renderer::Quad;
 use iced_core::widget::operation::Focusable;
@@ -23,10 +24,13 @@ use native_theme::theme::ResolvedTheme;
 
 use crate::palette::to_color;
 
-/// What [`crate::focus_ring()`] draws, read from the theme's
-/// `defaults.focus_ring_*` ([`ring_look`]).
+/// The focus ring a focused field is drawn with, as the theme states it:
+/// what [`crate::focus_ring()`] draws, read from the theme's
+/// `defaults.focus_ring_*` (`focus_ring::ring_look`), and what
+/// [`crate::next::focus_ring_with`] draws, read from the 0.8.0 model's
+/// `focus_ring` ([`crate::next::ring_look`]).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct RingLook {
+pub struct RingLook {
     /// `defaults.focus_ring_color`.
     pub(crate) color: Color,
     /// `defaults.focus_ring_width`: positive and finite.
@@ -39,6 +43,15 @@ pub(crate) struct RingLook {
     /// `defaults.focus_ring_keyboard_only` is `Some(true)`: the ring shows
     /// only for a focus that followed a key.
     pub(crate) keyboard_only: bool,
+    /// The 0.8.0 model's `focus_ring.inner_stroke`: a second ring, its
+    /// colour and its positive, finite width, inside the first; `None`
+    /// where the theme states none (0.7.2 states none).
+    pub(crate) inner: Option<(Color, f32)>,
+    /// The 0.8.0 model's `focus_ring.corners`: the corners of the ring's
+    /// inner edge, the line `offset` places (spec §2, `FocusIndicator`), as
+    /// stated, in place of the field's grown; `None` where the theme states
+    /// none (0.7.2 states none).
+    pub(crate) corners: Option<Radius>,
 }
 
 /// [`crate::focus_ring()`]'s look: `None` where the theme states no ring
@@ -48,10 +61,33 @@ pub(crate) struct RingLook {
 /// `styles::text_editor` already draw as the focused field's border.
 pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLook> {
     let d = &resolved.defaults;
-    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
-    let drawn = width.is_finite() && offset.is_finite() && width > 0.0 && offset != -width;
+    if d.focus_ring_offset == -d.focus_ring_width {
+        return None;
+    }
+    ring_look_from(
+        to_color(d.focus_ring_color),
+        d.focus_ring_width,
+        d.focus_ring_offset,
+        radius,
+        d.focus_ring_keyboard_only == Some(true),
+    )
+}
+
+/// The look of a ring `width` wide in `color`, `offset` out from the
+/// field's edge, round a field of corner `radius`; `None` where the width
+/// is not positive, or the width or the offset not finite. A ring inset at
+/// the edge (`offset` minus `width`) is the band over the field's
+/// outermost `width` ([`RingLook::quad`]; spec §2, `FocusIndicator`).
+pub(crate) fn ring_look_from(
+    color: Color,
+    width: f32,
+    offset: f32,
+    radius: f32,
+    keyboard_only: bool,
+) -> Option<RingLook> {
+    let drawn = width.is_finite() && offset.is_finite() && width > 0.0;
     drawn.then(|| RingLook {
-        color: to_color(d.focus_ring_color),
+        color,
         width,
         offset,
         radius: if radius.is_finite() {
@@ -59,37 +95,102 @@ pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLoo
         } else {
             0.0
         },
-        keyboard_only: d.focus_ring_keyboard_only == Some(true),
+        keyboard_only,
+        inner: None,
+        corners: None,
     })
 }
 
 impl RingLook {
+    /// This ring with a second ring inside it, `width` wide in `color`
+    /// (`None`, and so no second ring, for a width that is not positive and
+    /// finite), and the corners of its inner edge `corners` where `Some`.
+    pub(crate) fn with(self, inner: Option<(Color, f32)>, corners: Option<Radius>) -> Self {
+        Self {
+            inner: inner.filter(|(_, width)| width.is_finite() && *width > 0.0),
+            corners,
+            ..self
+        }
+    }
+
     /// The quad that draws the ring round a field whose bounds are `field`,
     /// and its fill: iced draws a quad's border inside its bounds
     /// (iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`), so the bounds
     /// are the field's grown by `offset + width`, the ring's outer edge, the
-    /// border `width` wide and the radius the field's grown as much, the
-    /// curve concentric with the field's, as the egui connector strokes the
-    /// ring outside the field's grown by `offset` (its `plugin.rs`,
-    /// `paint_focus_ring`). `None` where an inset ring leaves no room.
+    /// border `width` wide. The corners of the ring's inner edge, the line
+    /// `offset` places, are the field's radius plus `offset`, floored at 0,
+    /// or those the theme states ([`corners`](Self::corners)); the quad's
+    /// radius is each grown by `width`, the outer edge concentric with the
+    /// inner (spec §2, `FocusIndicator`: the geometry of a `Ring`). `None`
+    /// where an inset ring leaves no room.
     pub(crate) fn quad(&self, field: Rectangle) -> Option<(Quad, Background)> {
         let out = self.offset + self.width;
-        let bounds = field.expand(Padding::new(out));
-        (bounds.width > 0.0 && bounds.height > 0.0).then(|| {
-            (
-                Quad {
-                    bounds,
-                    border: Border {
-                        color: self.color,
-                        width: self.width,
-                        radius: (self.radius + out).max(0.0).into(),
-                    },
-                    ..Quad::default()
-                },
-                Background::Color(Color::TRANSPARENT),
-            )
-        })
+        let grow = |corner: f32| corner.max(0.0) + self.width;
+        let radius = self.corners.map_or_else(
+            || Radius::from(grow(self.radius + self.offset)),
+            |r| Radius {
+                top_left: grow(r.top_left),
+                top_right: grow(r.top_right),
+                bottom_right: grow(r.bottom_right),
+                bottom_left: grow(r.bottom_left),
+            },
+        );
+        ring_quad(
+            field.expand(Padding::new(out)),
+            self.color,
+            self.width,
+            radius,
+        )
     }
+
+    /// The quad that draws the second ring ([`inner`](Self::inner)) round a
+    /// field whose bounds are `field`: its outer edge the first ring's inner
+    /// edge, the field's bounds grown by `offset`, and its radius the first
+    /// ring's less the first ring's width, the curve concentric. `None`
+    /// where the theme states no second ring, or an inset ring leaves no
+    /// room.
+    pub(crate) fn inner_quad(&self, field: Rectangle) -> Option<(Quad, Background)> {
+        let (color, width) = self.inner?;
+        let (outer, _) = self.quad(field)?;
+        let r = outer.border.radius;
+        let less = |corner: f32| (corner - self.width).max(0.0);
+        ring_quad(
+            field.expand(Padding::new(self.offset)),
+            color,
+            width,
+            Radius {
+                top_left: less(r.top_left),
+                top_right: less(r.top_right),
+                bottom_right: less(r.bottom_right),
+                bottom_left: less(r.bottom_left),
+            },
+        )
+    }
+}
+
+/// A ring of `bounds`, `width` wide in `color` with corners `radius`, as
+/// iced draws a quad's border inside its bounds over a transparent fill;
+/// `None` where the bounds are empty.
+fn ring_quad(
+    bounds: Rectangle,
+    color: Color,
+    width: f32,
+    radius: Radius,
+) -> Option<(Quad, Background)> {
+    (bounds.width > 0.0 && bounds.height > 0.0).then(|| {
+        (
+            Quad {
+                bounds,
+                border: Border {
+                    color,
+                    width,
+                    radius,
+                },
+                ..Quad::default()
+            },
+            Background::Color(Color::TRANSPARENT),
+        )
+    })
 }
 
 /// What the wrapper keeps between frames: whether a widget [`Probe`] went
@@ -133,10 +234,17 @@ impl Default for Focus {
 }
 
 impl Focus {
-    /// Whether the ring is drawn; where `keyboard_only`, only for a focus
-    /// that followed a key.
-    fn ringed(self, keyboard_only: bool) -> bool {
-        self.field && self.window && (!keyboard_only || self.by_key)
+    /// The ring drawn: none where the field lacks the focus or the window
+    /// the OS's; `key` for a focus that followed a key; else `look`, none
+    /// where it shows for keyboard focus only.
+    fn shown(self, look: Option<RingLook>, key: Option<RingLook>) -> Option<RingLook> {
+        if !(self.field && self.window) {
+            None
+        } else if self.by_key {
+            key
+        } else {
+            look.filter(|look| !look.keyboard_only)
+        }
     }
 }
 
@@ -239,6 +347,9 @@ pub(crate) struct FocusRing<'a, Message, Renderer> {
     /// `None` where the theme draws no ring ([`ring_look`]): the wrapper is
     /// there all the same, so the tree keeps its shape across themes.
     look: Option<RingLook>,
+    /// The ring for a focus that followed a key: `look`, or where the theme
+    /// states another for it, that one ([`FocusRing::keyed`]).
+    key: Option<RingLook>,
 }
 
 impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
@@ -246,13 +357,29 @@ impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
         content: Element<'a, Message, Theme, Renderer>,
         look: Option<RingLook>,
     ) -> Self {
-        Self { content, look }
+        Self::keyed(content, look, look)
     }
 
-    /// Whether the theme says the ring shows only for a focus that followed
-    /// a key ([`RingLook::keyboard_only`]).
-    fn keyboard_only(&self) -> bool {
-        self.look.is_some_and(|look| look.keyboard_only)
+    /// The wrapper of `content` that draws `look` for a focus that followed
+    /// no key, none where `look` shows for keyboard focus only, and `key`
+    /// for one that followed a key.
+    pub(crate) fn keyed(
+        content: Element<'a, Message, Theme, Renderer>,
+        look: Option<RingLook>,
+        key: Option<RingLook>,
+    ) -> Self {
+        Self { content, look, key }
+    }
+
+    /// The ring the wrapper's state in `tree` says is drawn
+    /// ([`Focus::shown`]).
+    fn shown(&self, tree: &Tree) -> Option<RingLook> {
+        match &tree.state {
+            tree::State::Some(state) => state
+                .downcast_ref::<Focus>()
+                .and_then(|f| f.shown(self.look, self.key)),
+            tree::State::None => None,
+        }
     }
 
     /// Asks the content in `tree` laid out as `layout` whether it holds the
@@ -286,18 +413,6 @@ fn focus_mut(tree: &mut Tree) -> Option<&mut Focus> {
     match &mut tree.state {
         tree::State::Some(state) => state.downcast_mut::<Focus>(),
         tree::State::None => None,
-    }
-}
-
-/// Whether the wrapper's state in `tree` says the ring is drawn: its content
-/// focused, in a window that holds the focus, and where `keyboard_only`, by
-/// a focus that followed a key.
-fn ringed(tree: &Tree, keyboard_only: bool) -> bool {
-    match &tree.state {
-        tree::State::Some(state) => state
-            .downcast_ref::<Focus>()
-            .is_some_and(|f| f.ringed(keyboard_only)),
-        tree::State::None => false,
     }
 }
 
@@ -368,10 +483,14 @@ where
         self.content
             .as_widget()
             .draw(child, renderer, theme, style, layout, cursor, viewport);
-        if ringed(tree, self.keyboard_only())
-            && let Some((quad, background)) = self.look.and_then(|look| look.quad(layout.bounds()))
-        {
-            renderer.fill_quad(quad, background);
+        if let Some(look) = self.shown(tree) {
+            let field = layout.bounds();
+            for (quad, background) in [look.quad(field), look.inner_quad(field)]
+                .into_iter()
+                .flatten()
+            {
+                renderer.fill_quad(quad, background);
+            }
         }
     }
 
@@ -415,8 +534,7 @@ where
         if !may_move_focus(event) {
             return;
         }
-        let keyboard_only = self.keyboard_only();
-        let was = ringed(tree, keyboard_only);
+        let was = self.shown(tree);
         if let Event::Window(window_event) = event
             && let Some(focus) = focus_mut(tree)
         {
@@ -427,7 +545,7 @@ where
             }
         }
         self.learn(tree, layout, renderer);
-        if ringed(tree, keyboard_only) != was {
+        if self.shown(tree) != was {
             shell.request_redraw();
         }
     }
@@ -819,6 +937,86 @@ mod tests {
             &Rectangle::new(iced_core::Point::ORIGIN, Size::new(500.0, 100.0)),
         );
         recorder.0.len()
+    }
+
+    /// The border colours of the quads `element` in `tree`, laid out as
+    /// `node`, draws.
+    fn ring_colors(
+        element: &Element<'_, (), Theme, Recorder>,
+        tree: &Tree,
+        node: &layout::Node,
+    ) -> Vec<Color> {
+        let mut recorder = Recorder::default();
+        element.as_widget().draw(
+            tree,
+            &mut recorder,
+            &Theme::Light,
+            &renderer::Style {
+                text_color: Color::BLACK,
+            },
+            Layout::new(node),
+            mouse::Cursor::Unavailable,
+            &Rectangle::new(iced_core::Point::ORIGIN, Size::new(500.0, 100.0)),
+        );
+        recorder
+            .0
+            .iter()
+            .map(|(quad, _)| quad.border.color)
+            .collect()
+    }
+
+    /// FR4: a wrapper given one ring for a focus that followed a key and
+    /// another for a focus that followed none ([`FocusRing::keyed`], a
+    /// part's own ring read at `FOCUS_VISIBLE` and at `FOCUSED`) draws the
+    /// other after a left press, none where it shows for keyboard focus
+    /// only, and the key's after a Tab, which a pointer move keeps.
+    #[test]
+    fn a_keyed_wrapper_draws_the_ring_of_the_focus_it_has() {
+        use iced_core::widget::operation::focusable;
+        let other = Color::from_rgb(0.1, 0.2, 0.9);
+        let keyed = Color::from_rgb(0.9, 0.8, 0.1);
+        let look = |color, keyboard_only| ring_look_from(color, 2.0, 1.0, 4.0, keyboard_only);
+        for keyboard_only in [false, true] {
+            let mut element: Element<'_, (), Theme, Recorder> = FocusRing::keyed(
+                Element::new(Clicked),
+                look(other, keyboard_only),
+                look(keyed, false),
+            )
+            .into();
+            let mut tree = Tree::new(&element);
+            let node = laid(&mut element, &mut tree);
+            let press = Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left));
+            send(&mut element, &mut tree, &node, press);
+            let clicked = if keyboard_only { vec![] } else { vec![other] };
+            assert_eq!(
+                ring_colors(&element, &tree, &node),
+                clicked,
+                "focused by a click, keyboard only {keyboard_only}"
+            );
+            operate_chained(&mut element, &mut tree, &node, focusable::unfocus());
+            assert!(ring_colors(&element, &tree, &node).is_empty(), "unfocused");
+            send(
+                &mut element,
+                &mut tree,
+                &node,
+                key(keyboard::Key::Named(keyboard::key::Named::Tab)),
+            );
+            operate_chained(&mut element, &mut tree, &node, focusable::focus_next());
+            assert_eq!(
+                ring_colors(&element, &tree, &node),
+                vec![keyed],
+                "focused after Tab, keyboard only {keyboard_only}"
+            );
+            let moved = Event::Mouse(mouse::Event::CursorMoved {
+                position: iced_core::Point::new(5.0, 5.0),
+            });
+            send(&mut element, &mut tree, &node, moved);
+            assert_eq!(
+                ring_colors(&element, &tree, &node),
+                vec![keyed],
+                "a pointer move took the key's ring"
+            );
+        }
     }
 
     /// The ring follows the focus as `update` moves it: under macos-tahoe a

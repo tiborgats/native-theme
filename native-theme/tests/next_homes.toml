@@ -1,0 +1,3229 @@
+# The table of homes of the 0.8.0 work (docs/v0.8.0-plan.md, section 1, rule 2): for each field of 0.7.2's
+# resolved theme, where its value lives in the 0.8.0 model. src/next/parity.rs checks the rows against 0.7.2's serialisation and the
+# spec's vocabulary; the same rows place a preset's constants and port a consumer's reads. Scaffolding of the
+# 0.8.0 work: deleted at the 0.8.0 cut.
+#
+# One row per 0.7.2 field, every row of the same form, an array of tables `[[row]]` with these keys:
+#
+#   key                  required. The old field as `serde_json` serialises 0.7.2's `ResolvedTheme`: the dotted
+#                        path of its leaf (`button.font.size`); an enum value such as a font's `defined_size` is
+#                        one leaf. A row with `hand = true` names a field that does not serialise: the `Resolved`
+#                        wrapper's (`Resolved.mode`) and 0.7.2's `Theme.layout` and `SystemTheme.accessibility`.
+#   homes                required, one or more. Where the value lives in the 0.8.0 model; each home is compared.
+#   homes_by_preset      optional. `{ "<preset>" = [homes] }`: the homes for that preset in place of `homes`, where
+#                        the field means something else there.
+#   if_null              optional. An old key: where `key` is null, the homes hold that key's value (0.7.2's
+#                        fallback, e.g. `radio_indicator_width` unset means `indicator_width`). Where that key is
+#                        null too, its own row's `if_null` is followed; where the chain ends in a null key, the
+#                        row is compared as a null key.
+#   only_if_null         optional. An old key: the row is compared only where that key is null.
+#   home_fallback        optional, with one home. Where the `Option` slot of that home is `None` (a `Typography`
+#                        slot the platform does not define), this home is compared instead.
+#   null_reference       optional. States joined by `|` (`CHECKED`): where `key` is null, a home whose state holds
+#                        these states and more is compared with the same property at these states, not at `NONE`
+#                        (a `HOVER|CHECKED` home whose reference is `CHECKED`); see the paragraph below the homes.
+#   context              optional. `{ window_active = false }`: the homes of the row are read from the theme resolved
+#                        with these `ThemeContext` values in place of the defaults (spec §3, `window_active`); `key`
+#                        is read from 0.7.2's one resolved theme.
+#   unstated_if_unset    optional, default false. 0.7.2's resolver gives this field a value of its own where the
+#                        theme states none (`validate_border`: transparent, 0, `false`; a hover fill taken from the
+#                        container). Where the unresolved 0.7.2 theme that was resolved (the preset's scheme; in
+#                        reader parity the preset merged with the reader's output) leaves the field `None`, the row
+#                        is compared as if `key` were null; where it states a value, as any other row. The field's
+#                        path there is the key's, a border's leaf by its serde name (`corner_radius_px`,
+#                        `line_width_px`), another leaf by its name or by its serde name with a unit suffix
+#                        (`thumb_diameter_px`, `show_delay_ms`).
+#   null_means           optional. `"none"`: where `key` is null, the theme states that the home has no outline: the
+#                        home's `stroke` is `Stroke::None` with the `STROKE` bit set (0.7.2: "`None` draws no
+#                        outline"), whatever the reference state holds.
+#   hand                optional, default false. The row is written by hand: its key is not in the serialisation.
+#   difference_presets   optional, with the three keys below. The presets on which the row is a listed difference
+#   difference_reason      (plan, rule 2): what differs and why,
+#   difference_citation    and the source of the corrected value,
+#   difference_values      and `{ "<preset>" = <value> }` for each of those presets: the value 0.8.0 has at every
+#                          home of the row on that preset, which the test compares in place of the old value. The
+#                          string "unstated" is a part property's `stated` bit clear or an `Option` slot's `None`
+#                          (a `min_size[1]` of `None`); any other value is the home's value in the old field's
+#                          serialised form (a number, a bool, a colour as its hex string). Where the two schemes
+#                          differ, the value is `{ light = <value>, dark = <value> }`, each scheme's.
+#   note                 optional. How a value converts where the home's type is not the old field's.
+#
+# A home is one of:
+#
+#   <global>                         a field of the resolved theme outside the widgets, by its path in spec §§4-5:
+#                                    `colors.view.background`, `typography.body.size_px`, `icons.sizes.toolbar`,
+#                                    `layout.border_width`, `timings.tooltip_show_ms`, `focus_ring.stroke.color`,
+#                                    `context.scheme` (the resolved theme's context: the level actually used).
+#   snapshot.context.<field>         a field of the reader's context, `SystemSnapshot::context` (spec §8), which
+#                                    holds what the system states and can differ from the resolved theme's
+#                                    `context` (spec §3): `snapshot.context.motion`.
+#   <widget>.<metric>                a direct metric of a widget (spec §5's table): `button.icon_text_gap`.
+#   <widget>.<part>.<property>       a part of a static widget: `tooltip.panel.fill`.
+#   <widget>.<part>(<query>).<property>
+#                                    a part of a ruled widget as its query returns it. <query> is the state, `NONE`
+#                                    for the rest state or `WidgetState` bits joined by `|` (`HOVER|CHECKED`),
+#                                    then optionally `; ` and axis values joined by `, `: `variant=Primary`,
+#                                    `shape=Pill`, `alternate=true`, `orientation=Vertical`, `size=Small`,
+#                                    `surface=View`, `position=First`.
+#   window.<getter>(normal).<property>
+#                                    `WindowChrome`'s `frame`, `title_bar` or `title` (spec §4) at
+#                                    `WindowState::default()`: `window.title_bar(normal).fill`.
+#
+# A part's property is a field of `PartStyle` (`fill`, `stroke.color`, `stroke.width`, `corners`, `shadows`,
+# `opacity`, `padding.top` .. `padding.left`, `margin.top` .. `margin.left`, `min_size[0]` (width), `min_size[1]`
+# (height), `max_size[0]`, `max_size[1]`, `focus`, `ripple`, `transition`, `cursor`, `transform`), of `TextStyle`
+# (`family`, `color`, `size_px`, `defined_size`, `weight`, `style`, `width`, `line_height`, `letter_spacing`,
+# `optical_size`, `decoration`, `blend_mode`) or of `IconStyle` (`size`, `color`, `opacity`, `weight`,
+# `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. `stroke.color` and `stroke.width` are the two
+# fields of the home's `Stroke::Uniform`; both share the one `STROKE` bit. A per-side stroke is read as
+# `Stroke::prevailing` gives it: 0.7.2 had no edge colour, so the edge is not compared. `<widget>.<part>` may be
+# `text_area.<part>`: `input.*` serves `input` and `text_area` as `checkbox.*` serves `checkbox` and `radio`. A 0.7.2
+# `None` at a part's property is the
+# property's `stated` bit clear; for a state, no rule, so the query returns what it returns without that state
+# (spec §5, notes to the table): the test compares the property at the home's state, value and `stated` bit,
+# with the same property at the reference state, `NONE` unless `null_reference` names another. A value the
+# unresolved 0.7.2 theme states (its preset, or in reader parity the preset merged with the reader's output) at a
+# part's property under a state other than `NONE` and the row's `null_reference` is a rule for that state, even
+# where it equals the rest value: the property's `from_state` bit is set there (spec §2); a value only 0.7.2's
+# resolver fills in is compared by its value alone. `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
+
+# --- defaults ---
+
+[[row]]
+key = "defaults.font.family"
+homes = [
+    "typography.body.family",
+    "switch.label(NONE).family",
+]
+homes_by_preset = { "ios-13" = ["typography.body.family"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
+
+[[row]]
+key = "defaults.font.size"
+homes = [
+    "typography.body.size_px",
+    "switch.label(NONE).size_px",
+]
+homes_by_preset = { "ios-13" = ["typography.body.size_px"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
+
+[[row]]
+key = "defaults.font.defined_size"
+homes = [
+    "typography.body.defined_size",
+    "switch.label(NONE).defined_size",
+]
+homes_by_preset = { "ios-13" = ["typography.body.defined_size"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
+
+[[row]]
+key = "defaults.font.weight"
+homes = [
+    "typography.body.weight",
+    "switch.label(NONE).weight",
+]
+homes_by_preset = { "ios-13" = ["typography.body.weight"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
+
+[[row]]
+key = "defaults.font.style"
+homes = [
+    "typography.body.style",
+    "switch.label(NONE).style",
+]
+homes_by_preset = { "ios-13" = ["typography.body.style"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
+
+[[row]]
+key = "defaults.font.color"
+homes = [
+    "typography.body.color",
+    "switch.label(NONE).color",
+    "switch.label(CHECKED).color",
+]
+homes_by_preset = { "adwaita" = ["typography.body.color"], "ios-13" = ["typography.body.color"] }
+note = "the switch's label too, which 0.7.2's showcases drew in defaults.font.color; adwaita states its own, AdwSwitchRow's title in the row's text colour (switch_label, src/next/presets/adwaita.rs), and ios-13 none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
+
+[[row]]
+key = "defaults.line_height"
+homes = ["typography.line_height_multiplier"]
+
+[[row]]
+key = "defaults.font_whole_pixels"
+homes = ["typography.font_whole_pixels"]
+
+[[row]]
+key = "defaults.mono_font.family"
+homes = ["typography.monospace.family"]
+
+[[row]]
+key = "defaults.mono_font.size"
+homes = ["typography.monospace.size_px"]
+
+[[row]]
+key = "defaults.mono_font.defined_size"
+homes = ["typography.monospace.defined_size"]
+
+[[row]]
+key = "defaults.mono_font.weight"
+homes = ["typography.monospace.weight"]
+
+[[row]]
+key = "defaults.mono_font.style"
+homes = ["typography.monospace.style"]
+
+[[row]]
+key = "defaults.mono_font.color"
+homes = ["typography.monospace.color"]
+
+[[row]]
+key = "defaults.background_color"
+homes = ["colors.window.background"]
+
+[[row]]
+key = "defaults.text_color"
+homes = ["colors.window.foreground"]
+
+[[row]]
+key = "defaults.accent_color"
+homes = ["colors.accent.fill"]
+
+[[row]]
+key = "defaults.accent_text_color"
+homes = ["colors.accent.foreground"]
+
+[[row]]
+key = "defaults.surface_color"
+homes = ["colors.view.background"]
+
+[[row]]
+key = "defaults.muted_color"
+homes = ["colors.window.foreground_muted"]
+
+[[row]]
+key = "defaults.shadow_color"
+homes = ["colors.shadow"]
+
+[[row]]
+key = "defaults.link_color"
+homes = ["colors.link"]
+
+[[row]]
+key = "defaults.selection_background"
+homes = ["colors.selection.background"]
+
+[[row]]
+key = "defaults.selection_text_color"
+homes = ["colors.selection.foreground"]
+
+[[row]]
+key = "defaults.selection_inactive_background"
+homes = ["colors.selection.unfocused_background"]
+
+[[row]]
+key = "defaults.selection_inactive_text_color"
+homes = ["colors.selection.unfocused_foreground"]
+
+[[row]]
+key = "defaults.text_selection_background"
+homes = ["colors.text_selection.background"]
+
+[[row]]
+key = "defaults.text_selection_color"
+homes = ["colors.text_selection.foreground"]
+
+[[row]]
+key = "defaults.disabled_text_color"
+homes = [
+    "colors.disabled_text",
+    "switch.label(DISABLED).color",
+    "switch.label(DISABLED|CHECKED).color",
+]
+homes_by_preset = { "adwaita" = ["colors.disabled_text"], "ios-13" = ["colors.disabled_text"], "kde-breeze" = ["colors.disabled_text"], "macos-monterey" = ["colors.disabled_text"], "macos-tahoe" = ["colors.disabled_text"], "material-3" = ["colors.disabled_text"], "windows-11" = ["colors.disabled_text"] }
+note = "the disabled switch's label too, which 0.7.2's showcases drew in defaults.disabled_text_color; every preset states its own (switch_label in src/next/presets/: adwaita the row's text at the disabled opacity, kde-breeze Breeze's disabled text at 0.6, material-3 Android's label at 0.6, windows-11 ToggleSwitchContentForegroundDisabled, which differs from it under the high-contrast reader; the macOS label states no disabled colour, unmeasured, and ios-13 no label), so there the disabled text alone"
+
+[[row]]
+key = "defaults.danger_color"
+homes = ["colors.error.fill"]
+
+[[row]]
+key = "defaults.danger_text_color"
+homes = ["colors.error.foreground"]
+
+[[row]]
+key = "defaults.warning_color"
+homes = ["colors.warning.fill"]
+
+[[row]]
+key = "defaults.warning_text_color"
+homes = ["colors.warning.foreground"]
+
+[[row]]
+key = "defaults.success_color"
+homes = ["colors.success.fill"]
+
+[[row]]
+key = "defaults.success_text_color"
+homes = ["colors.success.foreground"]
+
+[[row]]
+key = "defaults.info_color"
+homes = ["colors.info.fill"]
+
+[[row]]
+key = "defaults.info_text_color"
+homes = ["colors.info.foreground"]
+
+[[row]]
+key = "defaults.border.color"
+homes = ["colors.window.border"]
+
+[[row]]
+key = "defaults.border.corner_radius"
+homes = ["layout.corner_radius"]
+
+[[row]]
+key = "defaults.border.corner_radius_lg"
+homes = ["layout.corner_radius_lg"]
+
+[[row]]
+key = "defaults.border.line_width"
+homes = ["layout.border_width"]
+
+[[row]]
+key = "defaults.border.opacity"
+homes = ["layout.border_opacity"]
+
+[[row]]
+key = "defaults.border.shadow_enabled"
+homes = ["layout.shadow_enabled"]
+
+[[row]]
+key = "defaults.disabled_opacity"
+homes = ["colors.disabled_opacity"]
+
+[[row]]
+key = "defaults.focus_ring_color"
+homes = [
+    "colors.focus_ring",
+    "focus_ring.stroke.color",
+]
+
+[[row]]
+key = "defaults.focus_ring_width"
+homes = ["focus_ring.stroke.width"]
+
+[[row]]
+key = "defaults.focus_ring_offset"
+homes = ["focus_ring.offset"]
+
+[[row]]
+key = "defaults.focus_ring_keyboard_only"
+homes = ["focus_ring.trigger"]
+note = "Some(true): Some(FocusTrigger::KeyboardOnly); Some(false): Some(FocusTrigger::Always); None: None"
+
+[[row]]
+key = "defaults.icon_sizes.toolbar"
+homes = ["icons.sizes.toolbar"]
+
+[[row]]
+key = "defaults.icon_sizes.small"
+homes = ["icons.sizes.small"]
+
+[[row]]
+key = "defaults.icon_sizes.large"
+homes = ["icons.sizes.large"]
+
+[[row]]
+key = "defaults.icon_sizes.dialog"
+homes = ["icons.sizes.dialog"]
+
+[[row]]
+key = "defaults.icon_sizes.panel"
+homes = ["icons.sizes.panel"]
+
+# --- text_scale ---
+
+[[row]]
+key = "text_scale.caption.size"
+homes = ["typography.caption.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.caption.weight"
+homes = ["typography.caption.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.caption.line_height"
+homes = ["typography.caption.line_height"]
+home_fallback = "typography.body.line_height"
+
+[[row]]
+key = "text_scale.section_heading.size"
+homes = ["typography.headline.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.section_heading.weight"
+homes = ["typography.headline.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.section_heading.line_height"
+homes = ["typography.headline.line_height"]
+home_fallback = "typography.body.line_height"
+
+[[row]]
+key = "text_scale.dialog_title.size"
+homes = ["typography.title1.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.dialog_title.weight"
+homes = ["typography.title1.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.dialog_title.line_height"
+homes = ["typography.title1.line_height"]
+home_fallback = "typography.body.line_height"
+
+[[row]]
+key = "text_scale.display.size"
+homes = ["typography.display.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.display.weight"
+homes = ["typography.display.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.display.line_height"
+homes = ["typography.display.line_height"]
+home_fallback = "typography.body.line_height"
+
+# --- Resolved ---
+
+[[row]]
+key = "Resolved.mode"
+homes = ["context.scheme"]
+hand = true
+note = "ColorMode::Light: Scheme::Light; ColorMode::Dark: Scheme::Dark"
+
+[[row]]
+key = "Resolved.icon_set"
+homes = ["icons.set"]
+hand = true
+
+[[row]]
+key = "Resolved.icon_theme"
+homes = ["icons.theme"]
+hand = true
+
+[[row]]
+key = "Resolved.icon_theme_explicit"
+homes = ["icons.theme_explicit"]
+hand = true
+
+# --- layout ---
+
+[[row]]
+key = "layout.widget_gap"
+homes = ["layout.widget_gap"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+[[row]]
+key = "layout.container_margin"
+homes = ["layout.container_margin"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+[[row]]
+key = "layout.window_margin"
+homes = ["layout.window_margin"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+[[row]]
+key = "layout.section_gap"
+homes = ["layout.section_gap"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+# --- accessibility ---
+
+[[row]]
+key = "accessibility.text_scaling_factor"
+homes = ["snapshot.context.text_scale"]
+hand = true
+note = "0.7.2's SystemTheme.accessibility; the builder applies text_scale, so sizes are compared at 1.0"
+
+[[row]]
+key = "accessibility.reduce_motion"
+homes = ["snapshot.context.motion"]
+hand = true
+note = "true if and only if motion != MotionPreference::Full; KDE's AnimationDurationFactor of 0 is MotionPreference::None"
+
+[[row]]
+key = "accessibility.high_contrast"
+homes = ["snapshot.context.contrast"]
+hand = true
+note = "true if and only if contrast != Contrast::Normal"
+
+[[row]]
+key = "accessibility.reduce_transparency"
+homes = ["snapshot.context.reduced_transparency"]
+hand = true
+
+# --- button ---
+
+[[row]]
+key = "button.background_color"
+homes = ["button.body(NONE).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states $button_color laid over the window, opaque (#e6e6e7 / #38383c), and its hovered, pressed and checked fills as uncited solids; 0.8.0 states the push button's six fills in one form, libadwaita's own table: the window text at its alpha, translucent over what lies behind as libadwaita's background-color is"
+difference_citation = "adwaita: _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)), :28-29 (%button_basic_raised's background-color) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill; docs/platform-facts.md §2.3 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
+
+[[row]]
+key = "button.primary_background"
+homes = ["button.body(NONE; variant=Primary).fill"]
+
+[[row]]
+key = "button.primary_text_color"
+homes = ["button.label(NONE; variant=Primary).color"]
+
+[[row]]
+key = "button.min_width"
+homes = ["button.body(NONE).min_size[0]"]
+
+[[row]]
+key = "button.min_height"
+homes = ["button.body(NONE).min_size[1]"]
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2's 32 is the height at the default font, not a minimum (issue #4 Z1): on kde-breeze min_size[1] is None, unstated"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z1, button.min_height)"
+difference_values = { "kde-breeze" = "unstated" }
+
+[[row]]
+key = "button.icon_text_gap"
+homes = ["button.icon_text_gap"]
+
+[[row]]
+key = "button.disabled_opacity"
+homes = ["button.disabled_opacity"]
+
+[[row]]
+key = "button.hover_background"
+homes = ["button.body(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2's #e0e0e5 / #444446 is uncited (macos-tahoe's 'no macOS 26 source'); 0.8.0 states the rest fill for HOVER: hover draws nothing on a push button (spec §2, from_state); adwaita: 0.7.2's uncited #d5d5d5 / #464649; 0.8.0 states libadwaita's own table, $button_hover_color, the window text at 15 %, translucent"
+difference_citation = "docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis); every hovered push button differs from its normal capture in 0 pixels (os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, button-pass/probe.toml `…hovered.regular-*.diff_from_normal`); adwaita: _buttons.scss:2 ($button_hover_color: color-mix(in srgb, currentColor 15%, transparent)), :35-36 (&:hover) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill [hover]"
+difference_values = { "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
+
+[[row]]
+key = "button.hover_text_color"
+homes = ["button.label(HOVER).color"]
+
+[[row]]
+key = "button.active_text_color"
+homes = ["button.label(PRESSED).color"]
+difference_presets = ["macos-monterey"]
+difference_reason = "0.7.2 keeps the rest label (#000000d8); 0.8.0 states macOS 15's measured pressed label in the light scheme, the rest label in the dark one, where no pressed fact is stated"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.label.text.fill` scheme:light states [pressed] #242424ff (os-probe run 41006842699, macOS 15, layers-key-push.toml `key.push.aqua.pressed.regular-plain.label`)"
+difference_values = { "macos-monterey" = { light = "#242424", dark = "#ffffffd8" } }
+
+[[row]]
+key = "button.disabled_text_color"
+homes = ["button.label(DISABLED).color"]
+
+[[row]]
+key = "button.active_background"
+homes = ["button.body(PRESSED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2's macos-monterey #d6d6db / #4e4e50 is a soft option (uncited), and macos-tahoe leaves it unset (the rest fill); 0.8.0 states the measured pressed fill; adwaita: 0.7.2's uncited #c8c8c8 / #2e2e32; 0.8.0 states libadwaita's own table, $button_active_color, the window text at 30 %, translucent"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.fill` states [pressed], macos-monterey #f0f0f0ff / #ffffff5c (os-probe run 41006842699, macOS 15), macos-tahoe #0000002a / #ffffff2a (the same run, macOS 26, layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.fill`); adwaita: _buttons.scss:3 ($button_active_color: color-mix(in srgb, currentColor 30%, transparent)), :39-41 (&.keyboard-activating, &:active) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill [pressed]"
+difference_values = { "macos-monterey" = { light = "#f0f0f0", dark = "#ffffff5c" }, "macos-tahoe" = { light = "#0000002a", dark = "#ffffff2a" }, "adwaita" = { light = "#0000063d", dark = "#ffffff4d" } }
+
+[[row]]
+key = "button.disabled_background"
+homes = ["button.body(DISABLED).fill"]
+
+[[row]]
+key = "button.checked_background"
+homes = ["button.body(CHECKED).fill"]
+difference_presets = ["macos-tahoe", "ios-13", "adwaita"]
+difference_reason = "0.7.2 leaves it unset (a checked button drawn at rest); 0.8.0 states the measured checked toggle (spec §10, rule 0a: which state looks like which is the theme's to state): on macos-tahoe the default accent mixed with #000000 (light) or #ffffff (dark) by 0.025 in sRGB, on ios-13 UIKit's selected toggle under the default tint; adwaita: 0.7.2's uncited #c8c8c8 / #2e2e32, its pressed solid; 0.8.0 states libadwaita's own table, $button_checked_color, the window text at 30 %, translucent"
+difference_citation = "docs/facts/macos/button.toml and docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, the button.body.fill facts for `checked` on `toggle` (os-probe run 41006842699, os-probe-macos-26/tiebreak-derivations.toml, derivation.checked_fill_*; ios-host run 41020880059, ios-host-macos-15/analysis.toml, cells.*.gray.*.selected.fill); docs/platform-facts.md §2.3 (checked_background); adwaita: _buttons.scss:4 ($button_checked_color: color-mix(in srgb, currentColor 30%, transparent)), :44-45 (&:checked) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill [checked]"
+difference_values = { "macos-tahoe" = { light = "#0077f9", dark = "#067dff" }, "ios-13" = { light = "#007aff2e", dark = "#0a84ff40" }, "adwaita" = { light = "#0000063d", dark = "#ffffff4d" } }
+
+[[row]]
+key = "button.checked_text_color"
+homes = ["button.label(CHECKED).color"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (a checked button's label at rest); 0.8.0 states the measured checked toggle's label (spec §10, rule 0a): #ffffff on macos-tahoe, UIKit's default tint on ios-13"
+difference_citation = "docs/facts/macos/button.toml and docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, the button.label.text.fill facts for `checked` on `toggle` (os-probe run 41006842699, os-probe-macos-26/layers-key-push.toml, key.push.*.normal.*-toggle_on.label; ios-host run 41020880059, ios-host-macos-15/analysis.toml, cells.*.gray.*.selected.label_fill); docs/platform-facts.md §2.3 (checked_text_color)"
+difference_values = { "macos-tahoe" = "#ffffff", "ios-13" = { light = "#007aff", dark = "#0a84ff" } }
+
+[[row]]
+key = "button.hover_border_color"
+homes = [
+    "button.body(HOVER).stroke.color",
+    "button.body(PRESSED).stroke.color",
+]
+note = "a pressed button keeps the hover border (0.7.2's field doc)"
+difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "material-3", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it (the three sides of ControlElevationBorderBrush, ControlStrokeColorDefault, not 0.7.2's default border), and for PRESSED WinUI's flat ControlStrokeColorDefault; macos-monterey the rest outline for HOVER, where hover draws nothing, and the rest outline pressed, which no rule changes; macos-tahoe no stroke for HOVER and PRESSED, as at rest; material-3 no stroke for HOVER and PRESSED, the filled tonal button having no outline (0.7.2: the default outline colour at width 0); ios-13 WebKit's rest border, 1px of systemBackground, for HOVER and PRESSED, which no :hover or :active rule and no adjustButtonLikeControlStyle change"
+difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); macOS: docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis; os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, `…hovered.regular-*.diff_from_normal` 0 pixels); docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd) `button.body.stroke` absent on macos-tahoe (layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26); material-3: _md-comp-filled-tonal-button.scss (v0_192, material-web cbd34a8) has no outline token in any state, its tokens :37-99; ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba), no :hover rule, `button:active` sets only `color` (html.css:901-906), adjustButtonLikeControlStyle changes an active button's text and background alone (RenderThemeIOS.mm:862-870)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#ffffff12" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "material-3" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
+
+[[row]]
+key = "button.focus_border_color"
+homes = ["button.body(FOCUS_VISIBLE).stroke.color"]
+
+[[row]]
+key = "button.default_button_background"
+homes = ["button.body(DEFAULT).fill"]
+
+[[row]]
+key = "button.default_button_text_color"
+homes = ["button.label(DEFAULT).color"]
+
+[[row]]
+key = "button.default_button_border_color"
+homes = ["button.body(DEFAULT).stroke.color"]
+
+[[row]]
+key = "button.font.family"
+homes = ["button.label(NONE).family"]
+
+[[row]]
+key = "button.font.size"
+homes = ["button.label(NONE).size_px"]
+
+[[row]]
+key = "button.font.defined_size"
+homes = ["button.label(NONE).defined_size"]
+
+[[row]]
+key = "button.font.weight"
+homes = ["button.label(NONE).weight"]
+
+[[row]]
+key = "button.font.style"
+homes = ["button.label(NONE).style"]
+
+[[row]]
+key = "button.font.color"
+homes = ["button.label(NONE).color"]
+
+[[row]]
+key = "button.border.color"
+homes = ["button.body(NONE).stroke.color"]
+difference_presets = ["macos-tahoe", "ios-13", "windows-11"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the push button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (#c6c6c8 / #38383a, the separator); 0.8.0 states the border WebKit draws round an iOS button, systemBackground; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000, a dark rim in dark); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrokeColorSecondary or ControlStrongStrokeColorDefault not stated)"
+difference_citation = "macos-tahoe: docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent); ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba); windows-11: ButtonBorderBrush, ComboBoxBorderBrush = ControlElevationBorderBrush (Button_themeresources.xaml:136, :38; ComboBox_themeresources.xaml:264, :54), TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), gradients whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:382-390, :186-191, :243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4; docs/todo_v0.7.1_model-completeness-spike-w-coverage.md on v0.8.0-rc1, appendix)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
+
+[[row]]
+key = "button.border.corner_radius"
+homes = ["button.body(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "button.border.line_width"
+homes = ["button.body(NONE).stroke.width"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the push button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border width (0.5); 0.8.0 states the border WebKit draws round an iOS button, 1px"
+difference_citation = "macos-tahoe: docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent); ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = 1.0 }
+
+[[row]]
+key = "button.border.shadow_enabled"
+homes = ["button.body(NONE).shadows"]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "button.border.padding.top"
+homes = ["button.body(NONE).padding.top"]
+
+[[row]]
+key = "button.border.padding.right"
+homes = ["button.body(NONE).padding.right"]
+
+[[row]]
+key = "button.border.padding.bottom"
+homes = ["button.body(NONE).padding.bottom"]
+
+[[row]]
+key = "button.border.padding.left"
+homes = ["button.body(NONE).padding.left"]
+
+# --- checkbox ---
+
+[[row]]
+key = "checkbox.background_color"
+homes = [
+    "checkbox.indicator(NONE).fill",
+    "radio.indicator(NONE).fill",
+]
+only_if_null = "checkbox.unchecked_background"
+
+[[row]]
+key = "checkbox.checked_background"
+homes = [
+    "checkbox.indicator(CHECKED).fill",
+    "radio.indicator(CHECKED).fill",
+]
+difference_presets = ["material-3"]
+difference_reason = "0.7.2 fills a checked radio button with the accent, as its check box (the field serves both); 0.8.0 states no fill for material-3's checked radio: material-web draws a ring and a dot, and nothing fills the space between them in any state"
+difference_citation = "material-3: radio/internal/radio.ts:108-120 (the ring :113-118, the dot :119), radio/internal/_radio.scss:109-113, :126-127 at material-web cbd34a8"
+
+[row.difference_values.material-3]
+"checkbox.indicator(CHECKED).fill" = { light = "#6750a4", dark = "#d0bcff" }
+"radio.indicator(CHECKED).fill" = "#00000000"
+
+[[row]]
+key = "checkbox.indicator_color"
+homes = [
+    "checkbox.checkmark(CHECKED).color",
+    "radio.dot(CHECKED).fill",
+]
+difference_presets = ["material-3"]
+difference_reason = "0.7.2 draws a checked radio button's dot in the accent's text colour, as its check mark (the field serves both); 0.8.0 states material-3's dot in primary, selected-icon-color, the check mark keeping on-primary"
+difference_citation = "material-3: radio/internal/_radio.scss:126-127, tokens/versions/v0_192/_md-comp-radio-button.scss:45 at material-web cbd34a8"
+
+[row.difference_values.material-3]
+"checkbox.checkmark(CHECKED).color" = { light = "#ffffff", dark = "#381e72" }
+"radio.dot(CHECKED).fill" = { light = "#6750a4", dark = "#d0bcff" }
+
+[[row]]
+key = "checkbox.indicator_width"
+homes = [
+    "checkbox.indicator(NONE).min_size[0]",
+    "checkbox.indicator(NONE).max_size[0]",
+    "checkbox.indicator(NONE).min_size[1]",
+    "checkbox.indicator(NONE).max_size[1]",
+]
+
+[[row]]
+key = "checkbox.radio_indicator_width"
+homes = [
+    "radio.indicator(NONE).min_size[0]",
+    "radio.indicator(NONE).max_size[0]",
+    "radio.indicator(NONE).min_size[1]",
+    "radio.indicator(NONE).max_size[1]",
+]
+if_null = "checkbox.indicator_width"
+
+[[row]]
+key = "checkbox.radio_dot_diameter"
+homes = [
+    "radio.dot(NONE).min_size[0]",
+    "radio.dot(NONE).max_size[0]",
+    "radio.dot(NONE).min_size[1]",
+    "radio.dot(NONE).max_size[1]",
+]
+
+[[row]]
+key = "checkbox.check_mark_stroke_width"
+homes = ["checkbox.checkmark(NONE).stroke_width"]
+
+[[row]]
+key = "checkbox.label_gap"
+homes = [
+    "checkbox.label_gap",
+    "radio.label_gap",
+]
+
+[[row]]
+key = "checkbox.disabled_opacity"
+homes = [
+    "checkbox.disabled_opacity",
+    "radio.disabled_opacity",
+]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 dims a disabled check box and radio button to defaults.disabled_opacity 0.3 (uncited); 0.8.0 states 1.0: WebKit's iOS style sheet resets a disabled check box's and radio's opacity, and draws their disabled colours (tertiaryLabel, opaqueTertiaryFill) at full opacity"
+difference_citation = "ios-13: html.css:1031-1034, :1040-1047 (`opacity: initial`), :962-963 at WebKit 31adf9d"
+difference_values = { "ios-13" = 1.0 }
+
+[[row]]
+key = "checkbox.disabled_text_color"
+homes = [
+    "checkbox.label(DISABLED).color",
+    "radio.label(DISABLED).color",
+]
+difference_presets = ["material-3"]
+difference_reason = "0.7.2 inherits defaults.disabled_text_color, on-surface at 0.38, which no source states for this label (no M3 token for a check box's or a radio button's label); 0.8.0 states Android's: the label's own colour at material_emphasis_medium 0.6 when disabled"
+difference_citation = "the switch, the check box and the radio inherit android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly (AOSP core/res/res/values/styles.xml:386 at android-15.0.0_r1), which a Material 3 theme sets to m3_primary_text_disable_only / m3_dark_primary_text_disable_only (themes_base.xml:251, :581): on-background, alpha material_emphasis_medium 0.6 under state_enabled=false (m3_primary_text_disable_only.xml:19; dimens.xml:21); checkbox/res/values/styles.xml:26-28, radiobutton/res/values/styles.xml:19-33, materialswitch/res/values/styles.xml:17-29 set no text colour (material-components-android 66c334b); docs/platform-facts.md §2.5"
+difference_values = { "material-3" = { light = "#1d1b2099", dark = "#e6e0e999" } }
+
+[[row]]
+key = "checkbox.hover_background"
+homes = [
+    "checkbox.indicator(HOVER).fill",
+    "radio.indicator(HOVER).fill",
+]
+difference_presets = ["kde-breeze", "windows-11", "macos-monterey", "macos-tahoe", "ios-13", "adwaita"]
+difference_reason = "kde-breeze: 0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for the check box's HOVER, where Breeze keeps it (spec §2, from_state); the radio button's HOVER keeps the rest fill unstated; windows-11: 0.7.2's uncited #0000000a / #ffffff0f was a layer over the rest fill; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), ControlAltFillColorTertiary for the check box and the radio button; macos-monterey: 0.7.2's uncited #e0e0e5 / #444446; 0.8.0 states the check box's and the radio button's rest fill for HOVER, as AppKit draws a hovered check box and radio button as at rest; macos-tahoe: 0.7.2 leaves it unset, 0.8.0 states the check box's rest fill for HOVER; ios-13: 0.7.2's uncited #d1d1d6 / #3a3a3c; 0.8.0 states no HOVER fill for the box or the circle, as WebKit's fill reads no hover state (spec §10, rule 0: the toolkit's own); adwaita: 0.7.2's uncited button_hover #d5d5d5 / #464649; 0.8.0 states the rest fill for HOVER for the check box and the radio button, as libadwaita changes only the outline of an unchecked check or radio under the pointer (spec §2, from_state)"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (hover_background): no hover fill, the box keeps palette.button() (breezehelper.cpp:862 at breeze f0b1d75); windows-11: CheckBoxCheckBackgroundFillUncheckedPointerOver and RadioButtonOuterEllipseFillPointerOver = ControlAltFillColorTertiaryBrush (CheckBox_themeresources.xaml:230, :54; RadioButton_themeresources.xaml:139, :23), ControlAltFillColorTertiary #0F000000 / #0BFFFFFF (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.checkbox_off` and `*.hovered.checkbox_on` differ from the normal capture in 0 pixels, and os-probe run 45345116763 (docs/evidence/os-probe/2026-11-24-run-45345116763/ on m2-fs4c), `*.hovered.radio_off` and `*.hovered.radio_on` alike; ios-13: RenderThemeIOS::checkboxRadioBackgroundColor reads the Enabled, Pressed, Checked and Indeterminate states only (RenderThemeIOS.mm:1370-1395 at WebKit 31adf9d); adwaita: check, radio { &:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0 2px $trough_hover_color; } } } sets no background (_checks.scss:20-40 at libadwaita 1.10.0)"
+difference_values = { "adwaita" = { light = "#ffffff", dark = "#303034" }, "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#0000000f", dark = "#ffffff0b" }, "macos-monterey" = { "checkbox.indicator(HOVER).fill" = { light = "#ffffff", dark = "#ffffff37" }, "radio.indicator(HOVER).fill" = { light = "#ffffff", dark = "#ffffff37" } }, "macos-tahoe" = { "checkbox.indicator(HOVER).fill" = { light = "#00000019", dark = "#ffffff19" }, "radio.indicator(HOVER).fill" = { light = "#00000019", dark = "#ffffff19" } }, "ios-13" = { "checkbox.indicator(HOVER).fill" = "unstated", "radio.indicator(HOVER).fill" = "unstated" } }
+
+[[row]]
+key = "checkbox.hover_border_color"
+homes = [
+    "checkbox.indicator(HOVER).stroke.color",
+    "radio.indicator(HOVER).stroke.color",
+    "checkbox.indicator(HOVER|CHECKED).stroke.color",
+    "radio.indicator(HOVER|CHECKED).stroke.color",
+]
+null_reference = "CHECKED"
+difference_presets = ["adwaita", "windows-11", "material-3", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (no rule: the rest outline unchecked, the checked one checked); 0.8.0 states an unchecked indicator's outline for HOVER: on macos-monterey and macos-tahoe the rest outline, as AppKit draws a hovered check box as at rest, and on ios-13 the rest outline, WebKit's checkboxRadioBorderColor, which reads no hover (a checked indicator keeps its checked outline, on ios-13 none); on adwaita $trough_hover_color, which libadwaita draws on a hovered unchecked check and radio (a checked one none, `box-shadow: none`), on windows-11 the check box's rest outline, which WinUI keeps (spec §2, from_state), a checked box and radio button hovered AccentFillColorSecondary, the accent's fill at 0.9 (the values: the preset's own accent fills #0067c0 / #4cc2ff, which a reader case's accent replaces); on material-3 a check box's unchecked outline is on-surface for HOVER (unselected-hover-outline-color), the radio button stating none (its tokens not read), a checked indicator its checked outline"
+difference_citation = "adwaita: _checks.scss:20-35 (check, radio: `&:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0 2px $trough_hover_color } }`), _colors.scss:281, :33, :96, _checks.scss:52-56 (`&:checked, &:indeterminate { box-shadow: none }`) at libadwaita 1.10.0; windows-11: CheckBoxCheckBackgroundStrokeUncheckedPointerOver = ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest :217, :41 at microsoft-ui-xaml 8463f45), CheckBoxCheckBackgroundStrokeCheckedPointerOver = AccentFillColorSecondaryBrush (:222, :46), SystemAccentColorDark1 / SystemAccentColorLight2 at Opacity 0.9 (Common_themeresources_any.xaml:330, :126), RadioButtonOuterEllipseCheckedStrokePointerOver = AccentFillColorSecondaryBrush (RadioButton_themeresources.xaml:143, :27); material-3: _md-comp-checkbox.scss:111-112 (unselected-hover-outline-color on-surface; rest unselected-outline-color on-surface-variant, :118-119), v0_192 at material-web cbd34a8; macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.checkbox_off` and `*.hovered.checkbox_on` differ from the normal capture in 0 pixels; ios-13: checkboxRadioBorderColor, read for Enabled and Pressed only, strokes only the empty box (RenderThemeIOS.mm:1357-1368, :1483-1491, :1502 at WebKit 31adf9d)"
+
+[row.difference_values.adwaita]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#00000629", dark = "#ffffff33" }
+"radio.indicator(HOVER).stroke.color" = { light = "#00000629", dark = "#ffffff33" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = "none"
+"radio.indicator(HOVER|CHECKED).stroke.color" = "none"
+
+[row.difference_values.windows-11]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#00000072", dark = "#ffffff8b" }
+"radio.indicator(HOVER).stroke.color" = { light = "#00000072", dark = "#ffffff8b" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#0067c0e6", dark = "#4cc2ffe6" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#0067c0e6", dark = "#4cc2ffe6" }
+
+[row.difference_values.material-3]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#1d1b20", dark = "#e6e0e9" }
+"radio.indicator(HOVER).stroke.color" = { light = "#49454f", dark = "#cac4d0" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#6750a4", dark = "#d0bcff" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#6750a4", dark = "#d0bcff" }
+
+[row.difference_values.macos-monterey]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#d6d6d6", dark = "#00000000" }
+"radio.indicator(HOVER).stroke.color" = { light = "#d6d6d6", dark = "#00000000" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+
+[row.difference_values.macos-tahoe]
+"checkbox.indicator(HOVER).stroke.color" = "#00000000"
+"radio.indicator(HOVER).stroke.color" = "#00000000"
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+
+[row.difference_values.ios-13]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#3c3c4399", dark = "#ebebf599" }
+"radio.indicator(HOVER).stroke.color" = { light = "#3c3c4399", dark = "#ebebf599" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = "none"
+"radio.indicator(HOVER|CHECKED).stroke.color" = "none"
+
+[[row]]
+key = "checkbox.disabled_background"
+homes = [
+    "checkbox.indicator(DISABLED).fill",
+    "radio.indicator(DISABLED).fill",
+    "checkbox.indicator(DISABLED|CHECKED).fill",
+    "radio.indicator(DISABLED|CHECKED).fill",
+]
+null_reference = "CHECKED"
+difference_presets = ["kde-breeze", "windows-11", "material-3", "ios-13", "macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2 has one disabled fill for a checked and an unchecked indicator; 0.8.0 states the checked one as each source draws it: kde-breeze the Disabled Button under the Disabled Highlight at 0.3 (a box that is not CheckOff keeps the highlight overlay), windows-11 AccentFillColorDisabled, ios-13 WebKit's opaqueTertiaryFill (and its unchecked one WebKit's -webkit-control-background, systemBackground, where 0.7.2's value is uncited); material-3's radio button no fill, disabled or checked (material-web draws a ring and a dot only); macos-monterey and macos-tahoe: 0.7.2 states none (the rest fills); 0.8.0 states the measured disabled box and circle, on macos-monterey one fill checked or not (not the accent), on macos-tahoe the unchecked fill and, checked, the default accent's disabled fill; adwaita: 0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the unchecked check's and radio's rest fill for DISABLED, as libadwaita fades a disabled check and changes no colour (spec §2, from_state), a checked one keeping its checked fill"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_background), breezehelper.cpp:862, :865-869, :1012-1019 at breeze f0b1d75, kcolorscheme.cpp:317-320 at kcolorscheme 27066d4; windows-11: CheckBoxCheckBackgroundFillCheckedDisabled, RadioButtonOuterEllipseCheckedFillDisabled = AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :60; RadioButton_themeresources.xaml:149, :33), AccentFillColorDisabled #37000000 / #28FFFFFF (Common_themeresources_any.xaml:242, :38 at microsoft-ui-xaml 8463f45); material-3: radio/internal/radio.ts:108-120 at material-web cbd34a8; ios-13: RenderThemeIOS.mm:1027, :1372, :1387-1388, :1502, :1561-1563 at WebKit 31adf9d, ios-18 expected.txt:7, :9, :90-93; macos-monterey, macos-tahoe: os-probe run 45345116763 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-24-run-45345116763/ on m2-fs4c), `*.normal.checkbox_disabled_{off,on}`, `*.normal.radio_disabled_{off,on}` `fill`; adwaita: check, radio { &:disabled { filter: Opacity(var(--disabled-opacity)); } } (_checks.scss:20, :62-64 at libadwaita 1.10.0)"
+
+[row.difference_values.kde-breeze]
+"checkbox.indicator(DISABLED).fill" = { light = "#f0f0f0", dark = "#272a2e" }
+"radio.indicator(DISABLED).fill" = { light = "#f0f0f0", dark = "#272a2e" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#ecededff", dark = "#25272bff" }
+"radio.indicator(DISABLED|CHECKED).fill" = { light = "#ecededff", dark = "#25272bff" }
+
+[row.difference_values.windows-11]
+"checkbox.indicator(DISABLED).fill" = { light = "#f9f9f900", dark = "#33333300" }
+"radio.indicator(DISABLED).fill" = { light = "#f9f9f900", dark = "#33333300" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#00000037", dark = "#ffffff28" }
+"radio.indicator(DISABLED|CHECKED).fill" = { light = "#00000037", dark = "#ffffff28" }
+
+[row.difference_values.material-3]
+"checkbox.indicator(DISABLED).fill" = { light = "#1d1b2061", dark = "#e6e0e961" }
+"radio.indicator(DISABLED).fill" = "#00000000"
+"checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#1d1b2061", dark = "#e6e0e961" }
+"radio.indicator(DISABLED|CHECKED).fill" = "#00000000"
+
+[row.difference_values.ios-13]
+"checkbox.indicator(DISABLED).fill" = { light = "#ffffffff", dark = "#000000ff" }
+"radio.indicator(DISABLED).fill" = { light = "#ffffffff", dark = "#000000ff" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#eeeeefff", dark = "#1c1c1eff" }
+"radio.indicator(DISABLED|CHECKED).fill" = { light = "#eeeeefff", dark = "#1c1c1eff" }
+
+[row.difference_values.macos-monterey]
+"checkbox.indicator(DISABLED).fill" = { light = "#ffffff80", dark = "#ffffff15" }
+"radio.indicator(DISABLED).fill" = { light = "#ffffff80", dark = "#ffffff15" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#ffffff80", dark = "#ffffff15" }
+"radio.indicator(DISABLED|CHECKED).fill" = { light = "#ffffff80", dark = "#ffffff15" }
+
+[row.difference_values.macos-tahoe]
+"checkbox.indicator(DISABLED).fill" = { light = "#0000000d", dark = "#ffffff0d" }
+"radio.indicator(DISABLED).fill" = { light = "#0000000d", dark = "#ffffff0d" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#0076f470", dark = "#0982ff70" }
+"radio.indicator(DISABLED|CHECKED).fill" = { light = "#0076f470", dark = "#0982ff70" }
+
+[row.difference_values.adwaita]
+"checkbox.indicator(DISABLED).fill" = { light = "#ffffff", dark = "#303034" }
+"radio.indicator(DISABLED).fill" = { light = "#ffffff", dark = "#303034" }
+"checkbox.indicator(DISABLED|CHECKED).fill" = "#3584e4"
+"radio.indicator(DISABLED|CHECKED).fill" = "#3584e4"
+
+[[row]]
+key = "checkbox.unchecked_background"
+homes = [
+    "checkbox.indicator(NONE).fill",
+    "radio.indicator(NONE).fill",
+]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 states an uncited fill (#ffffff / #1c1c1e); 0.8.0 states the background WebKit fills an enabled empty iOS check box and radio with, -webkit-control-background, systemBackground"
+difference_citation = "ios-13: checkboxRadioBackgroundColor (RenderThemeIOS.mm:1391, :1395; CSSValueWebkitControlBackground = systemBackgroundColor, :1027 at WebKit 31adf9d); systemBackground #ffffff / #000000 (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:7, :9 at WebKit de320ba)"
+difference_values = { "ios-13" = { light = "#ffffff", dark = "#000000" } }
+
+[[row]]
+key = "checkbox.unchecked_border_color"
+homes = [
+    "checkbox.indicator(NONE).stroke.color",
+    "radio.indicator(NONE).stroke.color",
+]
+if_null = "checkbox.border.color"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 states the default border colour (the separator, uncited); 0.8.0 states the outline WebKit strokes round an empty iOS check box and radio, checkboxRadioBorderColor, secondaryLabel"
+difference_citation = "ios-13: RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" } }
+
+[[row]]
+key = "checkbox.font.family"
+homes = [
+    "checkbox.label(NONE).family",
+    "radio.label(NONE).family",
+]
+
+[[row]]
+key = "checkbox.font.size"
+homes = [
+    "checkbox.label(NONE).size_px",
+    "radio.label(NONE).size_px",
+]
+
+[[row]]
+key = "checkbox.font.defined_size"
+homes = [
+    "checkbox.label(NONE).defined_size",
+    "radio.label(NONE).defined_size",
+]
+
+[[row]]
+key = "checkbox.font.weight"
+homes = [
+    "checkbox.label(NONE).weight",
+    "radio.label(NONE).weight",
+]
+
+[[row]]
+key = "checkbox.font.style"
+homes = [
+    "checkbox.label(NONE).style",
+    "radio.label(NONE).style",
+]
+
+[[row]]
+key = "checkbox.font.color"
+homes = [
+    "checkbox.label(NONE).color",
+    "radio.label(NONE).color",
+]
+
+[[row]]
+key = "checkbox.border.color"
+homes = [
+    "checkbox.indicator(CHECKED).stroke.color",
+    "radio.indicator(CHECKED).stroke.color",
+]
+difference_presets = ["adwaita", "windows-11", "ios-13"]
+difference_reason = "0.7.2's adwaita, windows-11 and ios-13 outline a checked indicator in the default border colour (adwaita and windows-11 by inheritance, ios-13 uncited); 0.8.0 states none on adwaita and ios-13: libadwaita draws a checked or mixed check and radio with `box-shadow: none`, its only outline, and WebKit fills a checked iOS check box and radio with no stroke; on windows-11 WinUI outlines a checked box and radio button in AccentFillColorDefault, the accent's fill (the values: the preset's own accent fills, which a reader case's accent replaces)"
+difference_citation = "adwaita: _checks.scss:27, :52-56 at libadwaita 1.10.0; windows-11: CheckBoxCheckBackgroundStrokeChecked, RadioButtonOuterEllipseCheckedStroke = AccentFillColorDefaultBrush (CheckBox_themeresources.xaml:221, :45; RadioButton_themeresources.xaml:142, :26 at microsoft-ui-xaml 8463f45); ios-13: RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d"
+difference_values = { "adwaita" = "none", "windows-11" = { light = "#0067c0", dark = "#4cc2ff" }, "ios-13" = "none" }
+
+[[row]]
+key = "checkbox.border.corner_radius"
+homes = ["checkbox.indicator(NONE).corners"]
+note = "Corners::uniform(radius); not a radio home (a radio is round)"
+
+[[row]]
+key = "checkbox.border.line_width"
+homes = [
+    "checkbox.indicator(NONE).stroke.width",
+    "radio.indicator(NONE).stroke.width",
+]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 states the default border width (0.5, uncited); 0.8.0 states the outline as it shows round an empty iOS check box and radio: stroked checkboxRadioBorderWidth × 2 = 3 on the edge and clipped to it, so 1.5 inside"
+difference_citation = "ios-13: RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d"
+difference_values = { "ios-13" = 1.5 }
+
+[[row]]
+key = "checkbox.border.shadow_enabled"
+homes = [
+    "checkbox.indicator(NONE).shadows",
+    "radio.indicator(NONE).shadows",
+]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "checkbox.border.padding.top"
+homes = [
+    "checkbox.indicator(NONE).padding.top",
+    "radio.indicator(NONE).padding.top",
+]
+
+[[row]]
+key = "checkbox.border.padding.right"
+homes = [
+    "checkbox.indicator(NONE).padding.right",
+    "radio.indicator(NONE).padding.right",
+]
+
+[[row]]
+key = "checkbox.border.padding.bottom"
+homes = [
+    "checkbox.indicator(NONE).padding.bottom",
+    "radio.indicator(NONE).padding.bottom",
+]
+
+[[row]]
+key = "checkbox.border.padding.left"
+homes = [
+    "checkbox.indicator(NONE).padding.left",
+    "radio.indicator(NONE).padding.left",
+]
+
+# --- list ---
+
+[[row]]
+key = "list.background_color"
+homes = ["list.container(NONE).fill"]
+
+[[row]]
+key = "list.alternate_row_background"
+homes = ["list.row(NONE; alternate=true).fill"]
+
+[[row]]
+key = "list.selection_background"
+homes = ["list.highlight(SELECTED).fill"]
+
+[[row]]
+key = "list.selection_text_color"
+homes = ["list.item_label(SELECTED).color"]
+
+[[row]]
+key = "list.header_background"
+homes = ["list.header(NONE).fill"]
+
+[[row]]
+key = "list.grid_color"
+homes = ["list.grid_color"]
+
+[[row]]
+key = "list.row_height"
+homes = ["list.row(NONE).min_size[1]"]
+
+[[row]]
+key = "list.header_height"
+homes = ["list.header(NONE).min_size[1]"]
+
+[[row]]
+key = "list.header_hover_background"
+homes = ["list.header(HOVER).fill"]
+
+[[row]]
+key = "list.header_active_background"
+homes = ["list.header(PRESSED).fill"]
+
+[[row]]
+key = "list.header_separator_color"
+homes = ["list.header_separator(NONE).fill"]
+note = "unset: FILL unstated, and a connector draws list.grid_color"
+
+[[row]]
+key = "list.hover_background"
+homes = ["list.highlight(HOVER).fill"]
+unstated_if_unset = true
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (no tint); 0.8.0 states no highlight (transparent) for HOVER, as AppKit draws a hovered table row as at rest (spec §10, rule 0 would otherwise give the toolkit's own)"
+difference_citation = "os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.table_row` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = "#00000000", "macos-tahoe" = "#00000000" }
+
+[[row]]
+key = "list.hover_text_color"
+homes = ["list.item_label(HOVER).color"]
+
+[[row]]
+key = "list.hover_border_color"
+homes = ["list.highlight(HOVER).stroke.color"]
+
+[[row]]
+key = "list.disabled_text_color"
+homes = ["list.item_label(DISABLED).color"]
+
+[[row]]
+key = "list.item_font.family"
+homes = ["list.item_label(NONE).family"]
+
+[[row]]
+key = "list.item_font.size"
+homes = ["list.item_label(NONE).size_px"]
+
+[[row]]
+key = "list.item_font.defined_size"
+homes = ["list.item_label(NONE).defined_size"]
+
+[[row]]
+key = "list.item_font.weight"
+homes = ["list.item_label(NONE).weight"]
+
+[[row]]
+key = "list.item_font.style"
+homes = ["list.item_label(NONE).style"]
+
+[[row]]
+key = "list.item_font.color"
+homes = ["list.item_label(NONE).color"]
+
+[[row]]
+key = "list.header_font.family"
+homes = ["list.header_label(NONE).family"]
+
+[[row]]
+key = "list.header_font.size"
+homes = ["list.header_label(NONE).size_px"]
+
+[[row]]
+key = "list.header_font.defined_size"
+homes = ["list.header_label(NONE).defined_size"]
+
+[[row]]
+key = "list.header_font.weight"
+homes = ["list.header_label(NONE).weight"]
+
+[[row]]
+key = "list.header_font.style"
+homes = ["list.header_label(NONE).style"]
+
+[[row]]
+key = "list.header_font.color"
+homes = ["list.header_label(NONE).color"]
+
+[[row]]
+key = "list.border.color"
+homes = ["list.container(NONE).stroke.color"]
+
+[[row]]
+key = "list.border.corner_radius"
+homes = ["list.container(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "list.border.line_width"
+homes = ["list.container(NONE).stroke.width"]
+
+[[row]]
+key = "list.border.shadow_enabled"
+homes = ["list.container(NONE).shadows"]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "list.border.padding.top"
+homes = ["list.row(NONE).padding.top"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.top"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+[[row]]
+key = "list.border.padding.right"
+homes = ["list.row(NONE).padding.right"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.right"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+[[row]]
+key = "list.border.padding.bottom"
+homes = ["list.row(NONE).padding.bottom"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.bottom"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+[[row]]
+key = "list.border.padding.left"
+homes = ["list.row(NONE).padding.left"]
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.left"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+# --- scrollbar ---
+
+[[row]]
+key = "scrollbar.track_color"
+homes = ["scrollbar.track(NONE).fill"]
+
+[[row]]
+key = "scrollbar.thumb_color"
+homes = ["scrollbar.thumb(NONE).fill"]
+homes_by_preset = { "kde-breeze" = ["scrollbar.thumb(UNFOCUSED_VIEW).fill"] }
+note = "kde-breeze: 0.7.2's value is the plain handle, the one in a view without the focus (spec §5, S3)"
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 takes defaults.muted_color where unstated (both presets state none); the overlay style of both presets draws no knob until the view scrolls, and the knob shown but not hovered is not measured, so no source states the rest fill and 0.8.0 states none (spec §1, Crate-Wide Invariants: a preset writes a value only where a source states it); the toolkit's own knob stays (spec §10, rule 0); the hovered and held knob stays measured"
+difference_citation = "docs/v0.8.0-spec.md §1 (Crate-Wide Invariants, stated and unstated values); os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c) measures `*.hovered.scroller_knob_overlay` and `*.pressed.scroller_knob_overlay` only"
+difference_values = { "macos-monterey" = "unstated", "macos-tahoe" = "unstated" }
+
+[[row]]
+key = "scrollbar.thumb_hover_color"
+homes = ["scrollbar.thumb(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macos-monterey #60606080 / #a0a0a080 is platform-facts.md §2.8's macOS 14 (Sonoma) value in light, uncited in dark, and macos-tahoe states none (secondaryLabelColor); 0.8.0 states the measured hovered overlay knob (both presets' style), drawn alike held; the legacy knob's where the system's style is legacy"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.hovered.scroller_knob_overlay`, `*.hovered.scroller_knob_legacy` `fill`"
+difference_values = { "macos-monterey" = { light = "#6a6a6adf", dark = "#f8f8f893" }, "macos-tahoe" = { light = "#00000085", dark = "#ffffff91" } }
+
+[[row]]
+key = "scrollbar.groove_width"
+homes = [
+    "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+    "scrollbar.track(NONE; orientation=Vertical).max_size[0]",
+    "scrollbar.track(NONE; orientation=Horizontal).min_size[1]",
+    "scrollbar.track(NONE; orientation=Horizontal).max_size[1]",
+]
+
+[[row]]
+key = "scrollbar.min_thumb_length"
+homes = ["scrollbar.min_thumb_length"]
+
+[[row]]
+key = "scrollbar.thumb_width"
+homes = [
+    "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]",
+    "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]",
+    "scrollbar.thumb(NONE; orientation=Horizontal).min_size[1]",
+    "scrollbar.thumb(NONE; orientation=Horizontal).max_size[1]",
+]
+
+[[row]]
+key = "scrollbar.overlay_mode"
+homes = ["scrollbar.overlay_mode"]
+
+[[row]]
+key = "scrollbar.thumb_active_color"
+homes = ["scrollbar.thumb(PRESSED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macos-monterey #50505090 / #b0b0b090 is uncited, and macos-tahoe states none (the rest handle); 0.8.0 states the measured held overlay knob (both presets' style), drawn as hovered; the legacy knob's where the system's style is legacy"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.pressed.scroller_knob_overlay`, `*.pressed.scroller_knob_legacy` `fill`, the press tracked (`probe.toml` `wait_steps`)"
+difference_values = { "macos-monterey" = { light = "#6a6a6adf", dark = "#f8f8f893" }, "macos-tahoe" = { light = "#00000085", dark = "#ffffff91" } }
+
+# --- tooltip ---
+
+[[row]]
+key = "tooltip.background_color"
+homes = ["tooltip.panel.fill"]
+
+[[row]]
+key = "tooltip.max_width"
+homes = ["tooltip.panel.max_size[0]"]
+
+[[row]]
+key = "tooltip.show_delay"
+homes = ["timings.tooltip_show_ms"]
+
+[[row]]
+key = "tooltip.font.family"
+homes = ["tooltip.text.family"]
+
+[[row]]
+key = "tooltip.font.size"
+homes = ["tooltip.text.size_px"]
+
+[[row]]
+key = "tooltip.font.defined_size"
+homes = ["tooltip.text.defined_size"]
+
+[[row]]
+key = "tooltip.font.weight"
+homes = ["tooltip.text.weight"]
+
+[[row]]
+key = "tooltip.font.style"
+homes = ["tooltip.text.style"]
+
+[[row]]
+key = "tooltip.font.color"
+homes = ["tooltip.text.color"]
+
+[[row]]
+key = "tooltip.border.color"
+homes = ["tooltip.panel.stroke.color"]
+
+[[row]]
+key = "tooltip.border.corner_radius"
+homes = ["tooltip.panel.corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "tooltip.border.line_width"
+homes = ["tooltip.panel.stroke.width"]
+
+[[row]]
+key = "tooltip.border.shadow_enabled"
+homes = ["tooltip.panel.shadows"]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "tooltip.border.padding.top"
+homes = ["tooltip.panel.padding.top"]
+
+[[row]]
+key = "tooltip.border.padding.right"
+homes = ["tooltip.panel.padding.right"]
+
+[[row]]
+key = "tooltip.border.padding.bottom"
+homes = ["tooltip.panel.padding.bottom"]
+
+[[row]]
+key = "tooltip.border.padding.left"
+homes = ["tooltip.panel.padding.left"]
+
+# --- window ---
+
+[[row]]
+key = "window.background_color"
+homes = ["window.frame(normal).fill"]
+
+[[row]]
+key = "window.title_bar_background"
+homes = ["window.title_bar(normal).fill"]
+
+[[row]]
+key = "window.inactive_title_bar_background"
+homes = ["window.title_bar(normal).fill"]
+context = { window_active = false }
+note = "plan Appendix A, spec §3 window_active; 0.7.2 R-W: unset = title_bar_background, so never null"
+
+[[row]]
+key = "window.inactive_title_bar_text_color"
+homes = ["window.title(normal).color"]
+context = { window_active = false }
+note = "0.7.2 R-W: unset = title_bar_font.color, never null"
+
+[[row]]
+key = "window.title_bar_font.family"
+homes = ["window.title(normal).family"]
+
+[[row]]
+key = "window.title_bar_font.size"
+homes = ["window.title(normal).size_px"]
+
+[[row]]
+key = "window.title_bar_font.defined_size"
+homes = ["window.title(normal).defined_size"]
+
+[[row]]
+key = "window.title_bar_font.weight"
+homes = ["window.title(normal).weight"]
+
+[[row]]
+key = "window.title_bar_font.style"
+homes = ["window.title(normal).style"]
+
+[[row]]
+key = "window.title_bar_font.color"
+homes = ["window.title(normal).color"]
+
+[[row]]
+key = "window.border.color"
+homes = ["window.frame(normal).stroke.color"]
+
+[[row]]
+key = "window.border.corner_radius"
+homes = ["window.frame(normal).corners"]
+note = "Corners::uniform(radius); border_kind full_lg (defaults.border.corner_radius_lg)"
+
+[[row]]
+key = "window.border.line_width"
+homes = ["window.frame(normal).stroke.width"]
+
+[[row]]
+key = "window.border.shadow_enabled"
+homes = ["window.frame(normal).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "window.border.padding.top"
+homes = ["window.frame(normal).padding.top"]
+note = "no preset states it: unstated"
+
+[[row]]
+key = "window.border.padding.right"
+homes = ["window.frame(normal).padding.right"]
+note = "no preset states it: unstated"
+
+[[row]]
+key = "window.border.padding.bottom"
+homes = ["window.frame(normal).padding.bottom"]
+note = "no preset states it: unstated"
+
+[[row]]
+key = "window.border.padding.left"
+homes = ["window.frame(normal).padding.left"]
+note = "no preset states it: unstated"
+
+# --- input ---
+
+[[row]]
+key = "input.background_color"
+homes = [
+    "input.field(NONE).fill",
+    "text_area.field(NONE).fill",
+]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states $button_color laid over the window, opaque (#e6e6e7 / #38383c); 0.8.0 states it in libadwaita's own form, as the push button's: the window text at 10 %, translucent over what lies behind as libadwaita's background-color is"
+difference_citation = "adwaita: _entries.scss:9 (the entry's background-color: $button_color), _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)) at libadwaita 1.10.0; docs/platform-facts.md §2.4 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
+
+[[row]]
+key = "input.placeholder_color"
+homes = [
+    "input.placeholder(NONE).color",
+    "text_area.placeholder(NONE).color",
+]
+
+[[row]]
+key = "input.caret_color"
+homes = ["colors.caret"]
+note = "spec §4: the caret colour is stated in ColorRoles only; 0.7.2 safety net: unset = defaults.text_color"
+
+[[row]]
+key = "input.caret_blink_on"
+homes = ["caret.blink_on_ms"]
+
+[[row]]
+key = "input.caret_blink_off"
+homes = ["caret.blink_off_ms"]
+
+[[row]]
+key = "input.caret_blink_timeout"
+homes = ["caret.blink_timeout_ms"]
+
+[[row]]
+key = "input.selection_background"
+homes = ["colors.text_selection.background"]
+note = "plan Appendix A; same home as defaults.text_selection_background: no preset or reader states input.selection_* apart (grep)"
+
+[[row]]
+key = "input.selection_text_color"
+homes = ["colors.text_selection.foreground"]
+note = "as input.selection_background"
+
+[[row]]
+key = "input.min_height"
+homes = ["input.field(NONE).min_size[1]"]
+
+[[row]]
+key = "input.disabled_opacity"
+homes = [
+    "input.disabled_opacity",
+    "text_area.disabled_opacity",
+]
+
+[[row]]
+key = "input.disabled_text_color"
+homes = [
+    "input.text(DISABLED).color",
+    "text_area.text(DISABLED).color",
+]
+
+[[row]]
+key = "input.hover_border_color"
+homes = [
+    "input.field(HOVER).stroke.color",
+    "text_area.field(HOVER).stroke.color",
+]
+difference_presets = ["adwaita", "macos-monterey", "macos-tahoe", "windows-11"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's entry has no :hover rule, a hovered macOS text field draws as at rest, and WinUI's TextControlBorderBrushPointerOver is the rest brush, whose three sides 0.8.0 states (ControlStrokeColorDefault, not 0.7.2's default border)"
+difference_citation = "adwaita: _entries.scss:1-60 at libadwaita 1.10.0 (no :hover or :active rule); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.text_field` differs from the normal capture in 0 pixels; windows-11: TextControlBorderBrushPointerOver = TextControlElevationBorderBrush, the rest brush (TextBox_themeresources.xaml:135, :28 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4), its three sides ControlStrokeColorDefault (Common_themeresources_any.xaml:243, :39)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = { light = "#00000019", dark = "#ffffff19" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
+
+[[row]]
+key = "input.focus_border_color"
+homes = [
+    "input.field(FOCUSED).stroke.color",
+    "text_area.field(FOCUSED).stroke.color",
+]
+
+[[row]]
+key = "input.disabled_background"
+homes = [
+    "input.field(DISABLED).fill",
+    "text_area.field(DISABLED).fill",
+]
+
+[[row]]
+key = "input.font.family"
+homes = [
+    "input.text(NONE).family",
+    "text_area.text(NONE).family",
+]
+
+[[row]]
+key = "input.font.size"
+homes = [
+    "input.text(NONE).size_px",
+    "text_area.text(NONE).size_px",
+]
+
+[[row]]
+key = "input.font.defined_size"
+homes = [
+    "input.text(NONE).defined_size",
+    "text_area.text(NONE).defined_size",
+]
+
+[[row]]
+key = "input.font.weight"
+homes = [
+    "input.text(NONE).weight",
+    "text_area.text(NONE).weight",
+]
+
+[[row]]
+key = "input.font.style"
+homes = [
+    "input.text(NONE).style",
+    "text_area.text(NONE).style",
+]
+
+[[row]]
+key = "input.font.color"
+homes = [
+    "input.text(NONE).color",
+    "text_area.text(NONE).color",
+]
+
+[[row]]
+key = "input.border.color"
+homes = ["input.field(NONE).stroke.color"]
+difference_presets = ["ios-13", "windows-11"]
+difference_reason = "0.7.2's ios-13 outlines the text field in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000, a dark rim in dark); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrokeColorSecondary or ControlStrongStrokeColorDefault not stated)"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba); windows-11: ButtonBorderBrush, ComboBoxBorderBrush = ControlElevationBorderBrush (Button_themeresources.xaml:136, :38; ComboBox_themeresources.xaml:264, :54), TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), gradients whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:382-390, :186-191, :243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4; docs/todo_v0.7.1_model-completeness-spike-w-coverage.md on v0.8.0-rc1, appendix)"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
+
+[[row]]
+key = "input.border.corner_radius"
+homes = ["input.field(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "input.border.line_width"
+homes = ["input.field(NONE).stroke.width"]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines the text field in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
+difference_values = { "ios-13" = 1.0 }
+
+[[row]]
+key = "input.border.shadow_enabled"
+homes = ["input.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "input.border.padding.top"
+homes = ["input.field(NONE).padding.top"]
+
+[[row]]
+key = "input.border.padding.right"
+homes = ["input.field(NONE).padding.right"]
+
+[[row]]
+key = "input.border.padding.bottom"
+homes = ["input.field(NONE).padding.bottom"]
+
+[[row]]
+key = "input.border.padding.left"
+homes = ["input.field(NONE).padding.left"]
+
+# --- text_area ---
+
+[[row]]
+key = "text_area.border.color"
+homes = ["text_area.field(NONE).stroke.color"]
+note = "0.7.2 R-W: unset = input.border's"
+difference_presets = ["ios-13", "windows-11"]
+difference_reason = "0.7.2's ios-13 outlines the text area in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrongStrokeColorDefault not stated)"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba); windows-11: TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), a gradient whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4)"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
+
+[[row]]
+key = "text_area.border.corner_radius"
+homes = ["text_area.field(NONE).corners"]
+note = "Corners::uniform(radius); 0.7.2 R-W: unset = input.border's"
+
+[[row]]
+key = "text_area.border.line_width"
+homes = ["text_area.field(NONE).stroke.width"]
+note = "0.7.2 R-W: unset = input.border's"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines the text area in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
+difference_values = { "ios-13" = 1.0 }
+
+[[row]]
+key = "text_area.border.shadow_enabled"
+homes = ["text_area.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None; 0.7.2 R-W: unset = input.border's"
+
+[[row]]
+key = "text_area.border.padding.top"
+homes = ["text_area.field(NONE).padding.top"]
+note = "the multi-line field's own; None where unstated"
+
+[[row]]
+key = "text_area.border.padding.right"
+homes = ["text_area.field(NONE).padding.right"]
+note = "the multi-line field's own; None where unstated"
+
+[[row]]
+key = "text_area.border.padding.bottom"
+homes = ["text_area.field(NONE).padding.bottom"]
+note = "the multi-line field's own; None where unstated"
+
+[[row]]
+key = "text_area.border.padding.left"
+homes = ["text_area.field(NONE).padding.left"]
+note = "the multi-line field's own; None where unstated"
+
+# --- link ---
+
+[[row]]
+key = "link.visited_text_color"
+homes = ["link.label(VISITED).color"]
+note = "R-U: unset = defaults.link_color; colors.link_visited (Option) not a home: 0.7.2 has no global visited colour"
+
+[[row]]
+key = "link.underline_enabled"
+homes = ["link.label(NONE).decoration"]
+note = "true: DecorationKind::Underline; false: DecorationKind::None, stated (spec §5: underline policy via label(state).decoration)"
+
+[[row]]
+key = "link.background_color"
+homes = ["link.container(NONE).fill"]
+
+[[row]]
+key = "link.hover_background"
+homes = ["link.container(HOVER).fill"]
+
+[[row]]
+key = "link.hover_text_color"
+homes = ["link.label(HOVER).color"]
+note = "0.7.2 R-W: unset = link.font.color"
+
+[[row]]
+key = "link.active_text_color"
+homes = ["link.label(PRESSED).color"]
+note = "0.7.2 R-W: unset = link.font.color"
+
+[[row]]
+key = "link.disabled_text_color"
+homes = ["link.label(DISABLED).color"]
+
+[[row]]
+key = "link.font.family"
+homes = ["link.label(NONE).family"]
+
+[[row]]
+key = "link.font.size"
+homes = ["link.label(NONE).size_px"]
+
+[[row]]
+key = "link.font.defined_size"
+homes = ["link.label(NONE).defined_size"]
+
+[[row]]
+key = "link.font.weight"
+homes = ["link.label(NONE).weight"]
+
+[[row]]
+key = "link.font.style"
+homes = ["link.label(NONE).style"]
+
+[[row]]
+key = "link.font.color"
+homes = ["link.label(NONE).color"]
+note = "inherits defaults.link_color, not defaults.font.color (connectors/native-theme-gpui/src/contract.rs, link row)"
+
+# --- slider ---
+
+[[row]]
+key = "slider.fill_color"
+homes = ["slider.active_track(NONE).fill"]
+
+[[row]]
+key = "slider.track_color"
+homes = ["slider.track(NONE).fill"]
+
+[[row]]
+key = "slider.thumb_color"
+homes = ["slider.thumb(NONE).fill"]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2 leaves it unset, so defaults.surface_color, #f2f2f7 / #1c1c1e; 0.8.0 states UISlider's thumb as measured, white in both schemes"
+difference_citation = "ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), `measure_lists.toml` `press1.\"<a>\".slider.normal` `fill` #ffffffff"
+difference_values = { "ios-13" = "#ffffff" }
+
+[[row]]
+key = "slider.track_height"
+homes = [
+    "slider.track(NONE; orientation=Horizontal).min_size[1]",
+    "slider.track(NONE; orientation=Horizontal).max_size[1]",
+    "slider.track(NONE; orientation=Vertical).min_size[0]",
+    "slider.track(NONE; orientation=Vertical).max_size[0]",
+]
+note = "exact across the axis, as scrollbar.groove_width (M0); active_track's thickness has no 0.7.2 key of its own and is not a home"
+
+[[row]]
+key = "slider.thumb_diameter"
+homes = [
+    "slider.thumb(NONE).min_size[0]",
+    "slider.thumb(NONE).max_size[0]",
+    "slider.thumb(NONE).min_size[1]",
+    "slider.thumb(NONE).max_size[1]",
+]
+
+[[row]]
+key = "slider.tick_mark_length"
+homes = ["slider.tick_length"]
+
+[[row]]
+key = "slider.disabled_opacity"
+homes = ["slider.disabled_opacity"]
+
+[[row]]
+key = "slider.thumb_hover_color"
+homes = ["slider.thumb(HOVER).fill"]
+difference_presets = ["kde-breeze", "windows-11", "adwaita", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset on kde-breeze and windows-11 (the rest fill by inheritance, no rule); 0.8.0 states the thumb's rest fill for HOVER, where the platform keeps it (spec §2, from_state); adwaita: 0.7.2's adwaita states an uncited hover colour (#ebebeb / #3a3a3e); 0.8.0 states libadwaita's $slider_hover_color, white, in both schemes; macos-monterey: 0.7.2's uncited #e0e0e0 (light); macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the knob's rest fill for HOVER, as AppKit draws a hovered knob as at rest"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.9 (thumb_hover_color), the handle's fill is QPalette::Button in every state (breezestyle.cpp:8122 at breeze f0b1d75); windows-11: SliderOuterThumbBackground has no PointerOver variant (Slider_themeresources.xaml:123, Border :198 at microsoft-ui-xaml 8463f45); adwaita: _scale.scss:62-76 (`&:hover, &:active`), _colors.scss:289 at libadwaita 1.10.0; os-probe run 45198750893, macOS 15, and run 45217592058, macOS 26 (docs/evidence/os-probe/ on m2-fs4c), `*.hovered.slider_knob` differs from the normal capture in 0 pixels"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#ffffff", dark = "#454545" }, "adwaita" = "#ffffff", "macos-monterey" = { light = "#ffffff", dark = "#ffffff80" }, "macos-tahoe" = { light = "#ffffff", dark = "#ffffffd9" } }
+
+[[row]]
+key = "slider.disabled_fill_color"
+homes = ["slider.active_track(DISABLED).fill"]
+
+[[row]]
+key = "slider.disabled_track_color"
+homes = ["slider.track(DISABLED).fill"]
+
+[[row]]
+key = "slider.disabled_thumb_color"
+homes = ["slider.thumb(DISABLED).fill"]
+
+[[row]]
+key = "slider.thumb_border_color"
+homes = ["slider.thumb(NONE).stroke.color"]
+
+[[row]]
+key = "slider.thumb_border_line_width"
+homes = ["slider.thumb(NONE).stroke.width"]
+note = "0 draws no outline in any state (0.7.2 doc)"
+
+[[row]]
+key = "slider.thumb_hover_border_color"
+homes = [
+    "slider.thumb(HOVER).stroke.color",
+    "slider.thumb(PRESSED).stroke.color",
+    "slider.thumb(HOVER|FOCUSED).stroke.color",
+]
+note = "0.7.2 doc: pointer on it and while dragged (PRESSED, as scrollbar.thumb_active_color), over the focus outline (HOVER wins over FOCUSED); None = thumb_border_color = the NONE reference"
+
+[[row]]
+key = "slider.thumb_focus_border_color"
+homes = ["slider.thumb(FOCUSED).stroke.color"]
+
+# --- progress_bar ---
+
+[[row]]
+key = "progress_bar.fill_color"
+homes = ["progress_bar.fill(NONE).fill"]
+
+[[row]]
+key = "progress_bar.track_color"
+homes = ["progress_bar.track(NONE).fill"]
+
+[[row]]
+key = "progress_bar.track_height"
+homes = [
+    "progress_bar.track(NONE).min_size[1]",
+    "progress_bar.track(NONE).max_size[1]",
+]
+note = "exact; 0.7.2 bars are horizontal (no orientation axis value needed: Horizontal is the default); the fill part not a home"
+
+[[row]]
+key = "progress_bar.min_width"
+homes = ["progress_bar.track(NONE).min_size[0]"]
+
+[[row]]
+key = "progress_bar.border.color"
+homes = ["progress_bar.track(NONE).stroke.color"]
+
+[[row]]
+key = "progress_bar.border.corner_radius"
+homes = ["progress_bar.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "progress_bar.border.line_width"
+homes = ["progress_bar.track(NONE).stroke.width"]
+
+[[row]]
+key = "progress_bar.border.shadow_enabled"
+homes = ["progress_bar.track(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "progress_bar.border.padding.top"
+homes = ["progress_bar.track(NONE).padding.top"]
+
+[[row]]
+key = "progress_bar.border.padding.right"
+homes = ["progress_bar.track(NONE).padding.right"]
+
+[[row]]
+key = "progress_bar.border.padding.bottom"
+homes = ["progress_bar.track(NONE).padding.bottom"]
+
+[[row]]
+key = "progress_bar.border.padding.left"
+homes = ["progress_bar.track(NONE).padding.left"]
+
+# --- splitter ---
+
+[[row]]
+key = "splitter.divider_width"
+homes = ["splitter.divider_width"]
+
+[[row]]
+key = "splitter.divider_color"
+homes = ["splitter.handle(NONE).fill"]
+difference_presets = ["kde-breeze", "adwaita"]
+difference_reason = "kde-breeze: 0.7.2 takes the default border colour (#bcc0bf / #4d545b); 0.8.0 states Breeze's separatorColor(), which drawSplitterControl fills in every state; adwaita: 0.7.2 takes the default border colour, opaque (#dcdcde in light); 0.8.0 states the paned separator's translucent $border_color line, currentColor at 15 %"
+difference_citation = "kde-breeze: breezestyle.cpp:7581-7587, breezehelper.cpp:329-332 at breeze f0b1d75, docs/platform-facts.md §2.17 (hover_color); adwaita: _paned.scss:1-36 (`box-shadow: inset 1px 0 $border_color`, no :hover or :active rule), _colors.scss:263, :257, :33, :96, :318 at libadwaita 1.10.0, docs/platform-facts.md §2.17 (hover_color)"
+difference_values = { "kde-breeze" = { light = "#c6c8c9", dark = "#4c4e51" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
+
+[[row]]
+key = "splitter.hover_color"
+homes = ["splitter.handle(HOVER).fill"]
+note = "0.7.2 R-W: unset = divider_color, never null"
+difference_presets = ["kde-breeze", "adwaita"]
+difference_reason = "kde-breeze: 0.7.2 takes the default border colour (#bcc0bf / #4d545b); 0.8.0 states Breeze's separatorColor(), which drawSplitterControl fills in every state; adwaita: 0.7.2's adwaita states an opaque hover colour (#d5d5d5 light, uncited); 0.8.0 states the separator's line as at rest, as libadwaita has no :hover rule for it"
+difference_citation = "kde-breeze: breezestyle.cpp:7581-7587, breezehelper.cpp:329-332 at breeze f0b1d75, docs/platform-facts.md §2.17 (hover_color); adwaita: _paned.scss:1-36 (`box-shadow: inset 1px 0 $border_color`, no :hover or :active rule), _colors.scss:263, :257, :33, :96, :318 at libadwaita 1.10.0, docs/platform-facts.md §2.17 (hover_color)"
+difference_values = { "kde-breeze" = { light = "#c6c8c9", dark = "#4c4e51" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
+
+# --- separator ---
+
+[[row]]
+key = "separator.line_color"
+homes = ["separator.color"]
+
+[[row]]
+key = "separator.line_width"
+homes = ["separator.thickness"]
+
+# --- spinner ---
+
+[[row]]
+key = "spinner.fill_color"
+homes = ["spinner.color"]
+note = "0.7.2 safety net: unset = defaults.accent_color"
+
+[[row]]
+key = "spinner.diameter"
+homes = ["spinner.diameter"]
+
+[[row]]
+key = "spinner.min_diameter"
+homes = ["spinner.min_diameter"]
+
+[[row]]
+key = "spinner.stroke_width"
+homes = ["spinner.stroke_width"]
+
+# --- menu ---
+
+[[row]]
+key = "menu.background_color"
+homes = ["menu.panel(NONE).fill"]
+
+[[row]]
+key = "menu.separator_color"
+homes = ["menu.separator(NONE).fill"]
+note = "spec §5: a separator part's colour is its fill"
+
+[[row]]
+key = "menu.row_height"
+homes = ["menu.item(NONE).max_size[1]"]
+note = "exact: a preset with an exact row height states it as both min_size[1] and max_size[1] (spec §5's menu row); min_size[1] is menu.min_row_height's home, so it is not compared here"
+
+[[row]]
+key = "menu.min_row_height"
+homes = ["menu.item(NONE).min_size[1]"]
+only_if_null = "menu.row_height"
+note = "not applied where row_height is stated (0.7.2 doc)"
+
+[[row]]
+key = "menu.icon_text_gap"
+homes = ["menu.icon_text_gap"]
+
+[[row]]
+key = "menu.icon_size"
+homes = ["menu.icon(NONE).size"]
+
+[[row]]
+key = "menu.hover_background"
+homes = ["menu.item(HOVER).fill"]
+
+[[row]]
+key = "menu.hover_text_color"
+homes = ["menu.item_label(HOVER).color"]
+
+[[row]]
+key = "menu.disabled_text_color"
+homes = ["menu.item_label(DISABLED).color"]
+
+[[row]]
+key = "menu.hover_border_color"
+homes = ["menu.item(HOVER).stroke.color"]
+note = "width = layout.border_width, corners = menu.border.corner_radius (no key of its own); the pressed item's outline (none where active_background is stated) is a state combination without a 0.7.2 field (spec §3)"
+
+[[row]]
+key = "menu.bar_hover_background"
+homes = ["menu_bar.item(HOVER).fill"]
+
+[[row]]
+key = "menu.bar_open_background"
+homes = ["menu_bar.item(OPEN).fill"]
+if_null = "menu.bar_hover_background"
+note = "0.7.2 doc: None = bar_hover_background; both null: compared as a null key (header, if_null)"
+
+[[row]]
+key = "menu.bar_hover_text_color"
+homes = [
+    "menu_bar.item_label(HOVER).color",
+    "menu_bar.item_label(OPEN).color",
+]
+note = "0.7.2 doc: \"under the pointer or open\""
+
+[[row]]
+key = "menu.bar_padding_horizontal"
+homes = [
+    "menu_bar.item(NONE).padding.left",
+    "menu_bar.item(NONE).padding.right",
+]
+
+[[row]]
+key = "menu.bar_padding_vertical"
+homes = [
+    "menu_bar.item(NONE).padding.top",
+    "menu_bar.item(NONE).padding.bottom",
+]
+
+[[row]]
+key = "menu.active_background"
+homes = ["menu.item(PRESSED).fill"]
+note = "0.7.2 doc: None = a pressed item keeps the hover look (spec §3, state combinations)"
+
+[[row]]
+key = "menu.active_text_color"
+homes = ["menu.item_label(PRESSED).color"]
+note = "0.7.2 doc: None = hover_text_color"
+
+[[row]]
+key = "menu.panel_padding_horizontal"
+homes = [
+    "menu.panel(NONE).padding.left",
+    "menu.panel(NONE).padding.right",
+]
+
+[[row]]
+key = "menu.panel_padding_vertical"
+homes = [
+    "menu.panel(NONE).padding.top",
+    "menu.panel(NONE).padding.bottom",
+]
+
+[[row]]
+key = "menu.font.family"
+homes = ["menu.item_label(NONE).family"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.size"
+homes = ["menu.item_label(NONE).size_px"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.defined_size"
+homes = ["menu.item_label(NONE).defined_size"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.weight"
+homes = ["menu.item_label(NONE).weight"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.style"
+homes = ["menu.item_label(NONE).style"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.color"
+homes = ["menu.item_label(NONE).color"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.border.color"
+homes = ["menu.item(NONE).stroke.color"]
+unstated_if_unset = true
+
+[[row]]
+key = "menu.border.corner_radius"
+homes = ["menu.item(NONE).corners"]
+homes_by_preset = { "material-3" = ["menu.panel(NONE).corners"] }
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "menu.border.line_width"
+homes = ["menu.item(NONE).stroke.width"]
+unstated_if_unset = true
+
+[[row]]
+key = "menu.border.shadow_enabled"
+homes = ["menu.panel(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "menu.border.padding.top"
+homes = ["menu.item(NONE).padding.top"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+[[row]]
+key = "menu.border.padding.right"
+homes = ["menu.item(NONE).padding.right"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+[[row]]
+key = "menu.border.padding.bottom"
+homes = ["menu.item(NONE).padding.bottom"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+[[row]]
+key = "menu.border.padding.left"
+homes = ["menu.item(NONE).padding.left"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+# --- tab ---
+
+[[row]]
+key = "tab.background_color"
+homes = ["tab.tab(NONE).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS tab is the window's background (uncited); 0.8.0 states NSTabView's measured unselected tab, black / white at a low alpha"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab` `fill`"
+difference_values = { "macos-monterey" = { light = "#0000000d", dark = "#ffffff0d" }, "macos-tahoe" = { light = "#00000013", dark = "#ffffff13" } }
+
+[[row]]
+key = "tab.active_background"
+homes = ["tab.tab(SELECTED).fill"]
+difference_presets = ["macos-tahoe", "macos-monterey"]
+difference_reason = "0.7.2's macOS selected tab is the window's background (uncited); 0.8.0 states NSTabView's measured selected tab, on macOS 26 drawn on the accent, on macOS 15 white over the light window and white at alpha 73/255 over the dark one"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab_One` `fill`"
+difference_values = { "macos-tahoe" = { light = "#0077f9", dark = "#077dff" }, "macos-monterey" = { light = "#ffffff", dark = "#ffffff49" } }
+
+[[row]]
+key = "tab.active_text_color"
+homes = ["tab.label(SELECTED).color"]
+difference_presets = ["macos-tahoe", "macos-monterey"]
+difference_reason = "0.7.2's macOS selected tab is lettered in the body text (uncited); 0.8.0 states NSTabView's measured selected tab's label, on macOS 26 white on the accent, on macOS 15 #262626 over the opaque white tab and white at alpha 217/255 over the dark one"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab_One` `label`"
+difference_values = { "macos-tahoe" = "#ffffff", "macos-monterey" = { light = "#262626", dark = "#ffffffd9" } }
+
+[[row]]
+key = "tab.bar_background"
+homes = ["tab.bar(NONE).fill"]
+
+[[row]]
+key = "tab.min_width"
+homes = ["tab.tab(NONE).min_size[0]"]
+
+[[row]]
+key = "tab.min_height"
+homes = ["tab.tab(NONE).min_size[1]"]
+
+[[row]]
+key = "tab.item_gap"
+homes = ["tab.item_gap"]
+
+[[row]]
+key = "tab.active_indicator_color"
+homes = ["tab.indicator(SELECTED).fill"]
+
+[[row]]
+key = "tab.active_indicator_width"
+homes = [
+    "tab.indicator(SELECTED).min_size[1]",
+    "tab.indicator(SELECTED).max_size[1]",
+]
+note = "exact thickness: TabIndicatorSide is Top or Bottom only"
+
+[[row]]
+key = "tab.active_indicator_side"
+homes = ["tab.indicator_side"]
+
+[[row]]
+key = "tab.active_outward_corner_radius"
+homes = ["tab.active_outward_corner_radius"]
+
+[[row]]
+key = "tab.hover_text_color"
+homes = ["tab.label(HOVER).color"]
+note = "0.7.2 R-W: unset = tab.font.color, never null"
+
+[[row]]
+key = "tab.hover_background"
+homes = ["tab.tab(HOVER).fill"]
+difference_presets = ["adwaita", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's #e8e8e8 / #3a3a3e is its uncited menu hover; 0.8.0 states libadwaita's notebook tab hover, $hover_color, the window text at 7 %, a layer (the same fill a pressed tab takes); macos-monterey: 0.7.2's uncited #e8e8ed / #3a3a3c; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the tab's measured rest fill for HOVER, as AppKit draws a hovered tab as at rest"
+difference_citation = "_notebook.scss:127-129 (`&:hover, &:active { background-color: $hover_color }`), _colors.scss:268, :33, :96 at libadwaita 1.10.0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.tab` differs from the normal capture in 0 pixels; the rest fill: os-probe run 45252258079 (Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab` `fill`"
+difference_values = { "adwaita" = { light = "#0000060e", dark = "#ffffff12" }, "macos-monterey" = { light = "#0000000d", dark = "#ffffff0d" }, "macos-tahoe" = { light = "#00000013", dark = "#ffffff13" } }
+
+[[row]]
+key = "tab.font.family"
+homes = ["tab.label(NONE).family"]
+
+[[row]]
+key = "tab.font.size"
+homes = ["tab.label(NONE).size_px"]
+
+[[row]]
+key = "tab.font.defined_size"
+homes = ["tab.label(NONE).defined_size"]
+
+[[row]]
+key = "tab.font.weight"
+homes = ["tab.label(NONE).weight"]
+
+[[row]]
+key = "tab.font.style"
+homes = ["tab.label(NONE).style"]
+
+[[row]]
+key = "tab.font.color"
+homes = ["tab.label(NONE).color"]
+
+[[row]]
+key = "tab.border.color"
+homes = ["tab.tab(SELECTED).stroke.color"]
+unstated_if_unset = true
+
+[[row]]
+key = "tab.border.corner_radius"
+homes = ["tab.tab(SELECTED).corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius): one radius as 0.7.2 holds it; that only the top corners take it (platform-facts §2.11) is not in the 0.7.2 model"
+
+[[row]]
+key = "tab.border.line_width"
+homes = ["tab.tab(SELECTED).stroke.width"]
+unstated_if_unset = true
+
+[[row]]
+key = "tab.border.shadow_enabled"
+homes = ["tab.tab(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "tab.border.padding.top"
+homes = ["tab.tab(NONE).padding.top"]
+
+[[row]]
+key = "tab.border.padding.right"
+homes = ["tab.tab(NONE).padding.right"]
+
+[[row]]
+key = "tab.border.padding.bottom"
+homes = ["tab.tab(NONE).padding.bottom"]
+
+[[row]]
+key = "tab.border.padding.left"
+homes = ["tab.tab(NONE).padding.left"]
+
+# --- sidebar ---
+
+[[row]]
+key = "sidebar.background_color"
+homes = ["sidebar.container(NONE).fill"]
+
+[[row]]
+key = "sidebar.selection_background"
+homes = ["sidebar.item(SELECTED).fill"]
+
+[[row]]
+key = "sidebar.selection_text_color"
+homes = ["sidebar.item_label(SELECTED).color"]
+
+[[row]]
+key = "sidebar.hover_background"
+homes = ["sidebar.item(HOVER).fill"]
+unstated_if_unset = true
+note = "0.7.2 R-W: unset = sidebar.background_color, never null; as list.hover_background (M0 row list.row(HOVER).fill)"
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (no tint); 0.8.0 states no fill (transparent) for HOVER, as AppKit draws a hovered source-list row as at rest"
+difference_citation = "os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.source_list_row` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = "#00000000", "macos-tahoe" = "#00000000" }
+
+[[row]]
+key = "sidebar.font.family"
+homes = ["sidebar.item_label(NONE).family"]
+
+[[row]]
+key = "sidebar.font.size"
+homes = ["sidebar.item_label(NONE).size_px"]
+
+[[row]]
+key = "sidebar.font.defined_size"
+homes = ["sidebar.item_label(NONE).defined_size"]
+
+[[row]]
+key = "sidebar.font.weight"
+homes = ["sidebar.item_label(NONE).weight"]
+
+[[row]]
+key = "sidebar.font.style"
+homes = ["sidebar.item_label(NONE).style"]
+
+[[row]]
+key = "sidebar.font.color"
+homes = ["sidebar.item_label(NONE).color"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's labelColor (#000000d8 / #ffffffd8) is the system colour, not what the sidebar draws; 0.8.0 states the source-list row's measured rest label over the material's Reduce Transparency rendering, the sidebar's fill"
+difference_citation = "os-probe run 45231684209 (macOS 15, macOS 26, Reduce Transparency on; docs/evidence/os-probe/2026-11-23-run-45231684209/), `*.normal.source_list_row` `label`, `ink`, over `fill` #f6f6f6 / #383838"
+difference_values = { "macos-monterey" = { light = "#494949", dark = "#ebebeb" }, "macos-tahoe" = { light = "#000000", dark = "#ffffff" } }
+
+[[row]]
+key = "sidebar.border.color"
+homes = ["sidebar.container(NONE).stroke.color"]
+note = "uniform, as 0.7.2 (border_kind partial: inherits defaults.border.color)"
+
+[[row]]
+key = "sidebar.border.corner_radius"
+homes = ["sidebar.container(NONE).corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "sidebar.border.line_width"
+homes = ["sidebar.container(NONE).stroke.width"]
+note = "uniform, as 0.7.2 (inherits defaults.border.line_width)"
+
+[[row]]
+key = "sidebar.border.shadow_enabled"
+homes = ["sidebar.container(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "sidebar.border.padding.top"
+homes = ["sidebar.container(NONE).padding.top"]
+
+[[row]]
+key = "sidebar.border.padding.right"
+homes = ["sidebar.container(NONE).padding.right"]
+
+[[row]]
+key = "sidebar.border.padding.bottom"
+homes = ["sidebar.container(NONE).padding.bottom"]
+
+[[row]]
+key = "sidebar.border.padding.left"
+homes = ["sidebar.container(NONE).padding.left"]
+
+# --- toolbar ---
+
+[[row]]
+key = "toolbar.background_color"
+homes = [
+    "toolbar.bar(NONE).fill",
+    "menu_bar.bar(NONE).fill",
+]
+note = "0.7.2 doc: also a menu bar's fill (menu and toolbar docs)"
+
+[[row]]
+key = "toolbar.bar_height"
+homes = ["toolbar.bar(NONE).min_size[1]"]
+note = "spec §5: bar min height via bar.min_size[1]"
+
+[[row]]
+key = "toolbar.item_gap"
+homes = ["toolbar.item_gap"]
+
+[[row]]
+key = "toolbar.icon_size"
+homes = ["toolbar.button_icon(NONE).size"]
+
+[[row]]
+key = "toolbar.button_hover_background"
+homes = ["toolbar.button(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no button fill; 0.8.0 states the real toolbar's measured hovered button, opaque over the opaque title bar"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.hovered.toolbar_button` `fill`"
+difference_values = { "macos-monterey" = { light = "#dfdfdf", dark = "#414141" }, "macos-tahoe" = { light = "#f2f2f2", dark = "#393939" } }
+
+[[row]]
+key = "toolbar.button_hover_border_color"
+homes = [
+    "toolbar.button(HOVER).stroke.color",
+    "toolbar.button(PRESSED).stroke.color",
+    "toolbar.button(HOVER|CHECKED).stroke.color",
+]
+null_reference = "CHECKED"
+note = "0.7.2 doc: under the pointer and while pressed; over a checked button too (button_checked_border_color doc); as button.hover_border_color and checkbox.hover_border_color (M0)"
+
+[[row]]
+key = "toolbar.button_active_background"
+homes = ["toolbar.button(PRESSED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no button fill; 0.8.0 states the real toolbar's measured pressed button, opaque over the opaque title bar"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.pressed.toolbar_button` `fill`"
+difference_values = { "macos-monterey" = { light = "#d2d2d2", dark = "#4e4e4e" }, "macos-tahoe" = { light = "#e6e6e6", dark = "#484848" } }
+
+[[row]]
+key = "toolbar.button_checked_background"
+homes = ["toolbar.button(CHECKED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no checked button fill; 0.8.0 states the real toolbar's measured toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle, opaque over the opaque title bar: macos-monterey a grey of its own, macos-tahoe the accent"
+difference_citation = "os-probe run 45634379188 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-25-run-45634379188/), toolbar states sheet, `*.normal.toolbar_toggle_on` `fill`"
+difference_values = { "macos-monterey" = { light = "#dfdfdf", dark = "#414141" }, "macos-tahoe" = "#007aff" }
+
+[[row]]
+key = "toolbar.button_checked_border_color"
+homes = ["toolbar.button(CHECKED).stroke.color"]
+note = "drawn at button.border.line_width (0.7.2 doc): the CHECKED stroke's width is button's, no key of its own"
+difference_presets = ["macos-monterey", "macos-tahoe", "windows-11"]
+difference_reason = "0.7.2's macOS toolbar states no checked button outline; 0.8.0 states it as none, as the real toolbar's toolbar-bezel button as an on NSButtonTypePushOnPushOff toggle draws none at rest, hovered or pressed (its edge pixel is the fill); 0.7.2's windows-11 states none; 0.8.0 states the three sides of WinUI's AccentControlElevationBorderBrush, ControlStrokeColorOnAccentDefault, 1px, one colour (the fourth side's ControlStrokeColorOnAccentSecondary not stated)"
+difference_citation = "os-probe run 45634379188 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-25-run-45634379188/), `toolbar_bezel_fitted-toolbar_states_sheet.toml` `*.toolbar_toggle_on` `edge_*`; windows-11: AppBarToggleButtonBorderBrushChecked = AccentControlElevationBorderBrush (AppBarToggleButton_themeresources.xaml:160, :30), its three sides ControlStrokeColorOnAccentDefault #14FFFFFF in both schemes (Common_themeresources_any.xaml:397-405, :198-206, :245, :41 at microsoft-ui-xaml 8463f45), AppBarToggleButtonBorderThemeThickness 1 (AppBarToggleButton_themeresources.xaml:200; docs/facts/windows/button.toml on v0.8.0-rc1, row W1-100)"
+difference_values = { "macos-monterey" = "none", "macos-tahoe" = "none", "windows-11" = "#ffffff14" }
+
+[[row]]
+key = "toolbar.font.family"
+homes = ["toolbar.button_label(NONE).family"]
+
+[[row]]
+key = "toolbar.font.size"
+homes = ["toolbar.button_label(NONE).size_px"]
+
+[[row]]
+key = "toolbar.font.defined_size"
+homes = ["toolbar.button_label(NONE).defined_size"]
+
+[[row]]
+key = "toolbar.font.weight"
+homes = ["toolbar.button_label(NONE).weight"]
+
+[[row]]
+key = "toolbar.font.style"
+homes = ["toolbar.button_label(NONE).style"]
+
+[[row]]
+key = "toolbar.font.color"
+homes = ["toolbar.button_label(NONE).color"]
+difference_presets = ["ios-13", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's black / white is the body text (uncited); a plain bar button item is drawn in the tint, the accent (UIKit's tintColor), which 0.8.0 states for the toolbar's button label; macos-monterey, macos-tahoe: 0.8.0 states the real toolbar's measured label, opaque over the opaque title bar"
+difference_citation = "docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, rows B-1, TB-4 (iOS host runs 41020880059 and 42276668803, `forms.<scheme>.bar_plain.normal.label_fill`, #007aff / #0a84ff with no tint set); os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.toolbar_button` `label`"
+difference_values = { "ios-13" = { light = "#007aff", dark = "#0a84ff" }, "macos-monterey" = { light = "#606060", dark = "#b4b4b4" }, "macos-tahoe" = { light = "#4d4d4d", dark = "#e9e9e9" } }
+
+[[row]]
+key = "toolbar.border.color"
+homes = ["toolbar.bar(NONE).stroke.color"]
+
+[[row]]
+key = "toolbar.border.corner_radius"
+homes = ["toolbar.bar(NONE).corners"]
+note = "Corners::uniform(radius)"
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2 takes defaults.border.corner_radius, 5, uncited; Breeze draws no frame round the tool bar, so 0.8.0 states no corners"
+difference_citation = "platform-facts.md (§2.13), toolbar `border.corner_radius` (none): CE_ToolBar is emptyControl (breezestyle.cpp:1466-1467 at breeze f0b1d75)"
+difference_values = { "kde-breeze" = "unstated" }
+
+[[row]]
+key = "toolbar.border.line_width"
+homes = ["toolbar.bar(NONE).stroke.width"]
+
+[[row]]
+key = "toolbar.border.shadow_enabled"
+homes = ["toolbar.bar(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "toolbar.border.padding.top"
+homes = ["toolbar.bar(NONE).padding.top"]
+
+[[row]]
+key = "toolbar.border.padding.right"
+homes = ["toolbar.bar(NONE).padding.right"]
+
+[[row]]
+key = "toolbar.border.padding.bottom"
+homes = ["toolbar.bar(NONE).padding.bottom"]
+
+[[row]]
+key = "toolbar.border.padding.left"
+homes = ["toolbar.bar(NONE).padding.left"]
+
+# --- status_bar ---
+
+[[row]]
+key = "status_bar.background_color"
+homes = ["status_bar.bar.fill"]
+
+[[row]]
+key = "status_bar.font.family"
+homes = ["status_bar.label.family"]
+
+[[row]]
+key = "status_bar.font.size"
+homes = ["status_bar.label.size_px"]
+
+[[row]]
+key = "status_bar.font.defined_size"
+homes = ["status_bar.label.defined_size"]
+
+[[row]]
+key = "status_bar.font.weight"
+homes = ["status_bar.label.weight"]
+
+[[row]]
+key = "status_bar.font.style"
+homes = ["status_bar.label.style"]
+
+[[row]]
+key = "status_bar.font.color"
+homes = ["status_bar.label.color"]
+
+[[row]]
+key = "status_bar.border.color"
+homes = ["status_bar.bar.stroke.color"]
+note = "uniform, as 0.7.2 (partial: inherits defaults.border.color)"
+
+[[row]]
+key = "status_bar.border.corner_radius"
+homes = ["status_bar.bar.corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "status_bar.border.line_width"
+homes = ["status_bar.bar.stroke.width"]
+note = "uniform, as 0.7.2"
+
+[[row]]
+key = "status_bar.border.shadow_enabled"
+homes = ["status_bar.bar.shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "status_bar.border.padding.top"
+homes = ["status_bar.bar.padding.top"]
+
+[[row]]
+key = "status_bar.border.padding.right"
+homes = ["status_bar.bar.padding.right"]
+
+[[row]]
+key = "status_bar.border.padding.bottom"
+homes = ["status_bar.bar.padding.bottom"]
+
+[[row]]
+key = "status_bar.border.padding.left"
+homes = ["status_bar.bar.padding.left"]
+
+# --- popover ---
+
+[[row]]
+key = "popover.background_color"
+homes = ["popover.panel.fill"]
+note = "0.7.2 safety net: unset = defaults.background_color; as tooltip.background_color (M0): not colors.popover.background"
+
+[[row]]
+key = "popover.font.family"
+homes = ["popover.text.family"]
+
+[[row]]
+key = "popover.font.size"
+homes = ["popover.text.size_px"]
+
+[[row]]
+key = "popover.font.defined_size"
+homes = ["popover.text.defined_size"]
+
+[[row]]
+key = "popover.font.weight"
+homes = ["popover.text.weight"]
+
+[[row]]
+key = "popover.font.style"
+homes = ["popover.text.style"]
+
+[[row]]
+key = "popover.font.color"
+homes = ["popover.text.color"]
+
+[[row]]
+key = "popover.border.color"
+homes = ["popover.panel.stroke.color"]
+
+[[row]]
+key = "popover.border.corner_radius"
+homes = ["popover.panel.corners"]
+note = "Corners::uniform(radius); full_lg"
+difference_presets = ["kde-breeze", "ios-13"]
+difference_reason = "0.7.2's 8 (defaults.border.corner_radius_lg) is uncited; qqc2-desktop-style's Popup and Menu round their background by Kirigami.Units.cornerRadius, 5, and Breeze rounds a QMenu's frame by Frame_FrameRadius, 5; ios-13: 0.7.2's 13 on a circular curve; 0.8.0 states the 13 on the continuous curve the popover's content view in _UIPopoverView reads"
+difference_citation = "Popup.qml:46-47 and Menu.qml:128-129 at qqc2-desktop-style v6.31.0; Units.cornerRadius 5: docs/platform-facts.md §2.26 (border.corner_radius, units.cpp:46 at Kirigami 8319acc7); breezestyle.cpp:4695, :4721, breezehelper.cpp:568, :587, breezemetrics.h:42 at breeze f0b1d75; ios-13: ios-host run 42269041636 (iOS 18.6), `measure1/index.toml` scene `popover`, root `container`, view `0.1.1.1` `corner_radius_pt` 13, `corner_curve` continuous"
+difference_values = { "kde-breeze" = 5.0, "ios-13" = "continuous 13" }
+
+[[row]]
+key = "popover.border.line_width"
+homes = ["popover.panel.stroke.width"]
+
+[[row]]
+key = "popover.border.shadow_enabled"
+homes = ["popover.panel.shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "popover.border.padding.top"
+homes = ["popover.panel.padding.top"]
+
+[[row]]
+key = "popover.border.padding.right"
+homes = ["popover.panel.padding.right"]
+
+[[row]]
+key = "popover.border.padding.bottom"
+homes = ["popover.panel.padding.bottom"]
+
+[[row]]
+key = "popover.border.padding.left"
+homes = ["popover.panel.padding.left"]
+
+# --- switch ---
+
+[[row]]
+key = "switch.checked_background"
+homes = ["switch.track(CHECKED).fill"]
+
+[[row]]
+key = "switch.unchecked_background"
+homes = ["switch.track(NONE).fill"]
+
+[[row]]
+key = "switch.thumb_background"
+homes = [
+    "switch.thumb(CHECKED).fill",
+    "switch.thumb(NONE).fill",
+]
+homes_by_preset = { "adwaita" = ["switch.thumb(CHECKED).fill"], "material-3" = ["switch.thumb(CHECKED).fill"], "windows-11" = ["switch.thumb(CHECKED).fill"] }
+note = "the on thumb, and the off thumb where unchecked_thumb_background is null (0.7.2's iced styles: SwitchSource::of draws the off thumb in thumb_background there); adwaita (its dark scheme), material-3 and windows-11 state unchecked_thumb_background, so there the on thumb alone"
+
+[[row]]
+key = "switch.unchecked_thumb_background"
+homes = ["switch.thumb(NONE).fill"]
+if_null = "switch.thumb_background"
+note = "0.7.2 doc: None = thumb_background"
+
+[[row]]
+key = "switch.track_width"
+homes = [
+    "switch.track(NONE).min_size[0]",
+    "switch.track(NONE).max_size[0]",
+]
+
+[[row]]
+key = "switch.track_height"
+homes = [
+    "switch.track(NONE).min_size[1]",
+    "switch.track(NONE).max_size[1]",
+]
+
+[[row]]
+key = "switch.thumb_diameter"
+homes = [
+    "switch.thumb(CHECKED).min_size[0]",
+    "switch.thumb(CHECKED).max_size[0]",
+    "switch.thumb(CHECKED).min_size[1]",
+    "switch.thumb(CHECKED).max_size[1]",
+]
+note = "the on thumb, as thumb_background"
+
+[[row]]
+key = "switch.unchecked_thumb_diameter"
+homes = [
+    "switch.thumb(NONE).min_size[0]",
+    "switch.thumb(NONE).max_size[0]",
+    "switch.thumb(NONE).min_size[1]",
+    "switch.thumb(NONE).max_size[1]",
+]
+if_null = "switch.thumb_diameter"
+note = "0.7.2 doc: None = thumb_diameter"
+
+[[row]]
+key = "switch.track_radius"
+homes = ["switch.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "switch.disabled_opacity"
+homes = ["switch.disabled_opacity"]
+
+[[row]]
+key = "switch.hover_checked_background"
+homes = ["switch.track(HOVER|CHECKED).fill"]
+null_reference = "CHECKED"
+difference_presets = ["windows-11", "adwaita"]
+difference_reason = "0.7.2 states the window colour at alpha 0.1 (#f3f3f319 / #20202019), a layer over the on track; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), AccentFillColorSecondary: the accent's fill at 0.9 opacity, so it follows the accent the system or a palette gives (the values: the preset's own accent fills #0067c0 / #4cc2ff, which a reader case's accent replaces), and high contrast's ButtonFace; adwaita: 0.7.2's uncited #2e78cc; 0.8.0 states libadwaita's checked switch hovered, the accent under currentColor, the accent's text, at 10 %, the layer laid over the fill as the whole hovered fill (the values: the preset's accent #3584e4 under white at 10 %, which a reader case's accent replaces)"
+difference_citation = "ToggleSwitchFillOnPointerOver = AccentFillColorSecondaryBrush (ToggleSwitch_themeresources.xaml:144, :24; high contrast SystemColorButtonFaceColorBrush, :88), SystemAccentColorDark1 / SystemAccentColorLight2 at Opacity 0.9 (Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45); docs/platform-facts.md §2.21; adwaita: `switch:checked { color: var(--accent-fg-color); background-color: var(--accent-bg-color); &:hover { background-image: image(color-mix(in srgb, currentColor 10%, transparent)); } }` (_switch.scss:41-45 at libadwaita 1.10.0)"
+difference_values = { "windows-11" = { light = "#0067c0e6", dark = "#4cc2ffe6" }, "adwaita" = "#4990e7" }
+
+[[row]]
+key = "switch.hover_unchecked_background"
+homes = ["switch.track(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "macos-monterey: 0.7.2's uncited #c8c8cd / #4a4a4c; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the off track's rest fill for HOVER, as AppKit draws a hovered switch as at rest"
+difference_citation = "os-probe run 45208260830, macOS 15, and run 45217592058, macOS 26 (docs/evidence/os-probe/ on m2-fs4c), `*.hovered.switch_off` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = { light = "#0000001a", dark = "#ffffff1a" }, "macos-tahoe" = { light = "#00000019", dark = "#ffffff19" } }
+
+[[row]]
+key = "switch.disabled_checked_background"
+homes = ["switch.track(DISABLED|CHECKED).fill"]
+null_reference = "CHECKED"
+note = "0.7.2 doc: None = the enabled colour"
+
+[[row]]
+key = "switch.disabled_unchecked_background"
+homes = ["switch.track(DISABLED).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 leaves it unset (the rest track by inheritance, no rule); 0.8.0 states adwaita's off track at rest for DISABLED, as libadwaita fades a disabled switch and changes no colour (spec §2, from_state)"
+difference_citation = "adwaita: switch { &:disabled { filter: Opacity(var(--disabled-opacity)); } } (_switch.scss:20-22 at libadwaita 1.10.0)"
+difference_values = { "adwaita" = { light = "#d5d5d5", dark = "#4a4a4e" } }
+
+[[row]]
+key = "switch.disabled_thumb_color"
+homes = [
+    "switch.thumb(DISABLED).fill",
+    "switch.thumb(DISABLED|CHECKED).fill",
+]
+null_reference = "CHECKED"
+note = "both states; null_reference applies only to the DISABLED|CHECKED home (M0's checkbox.disabled_background has none: E.4)"
+
+[[row]]
+key = "switch.unchecked_track_border_color"
+homes = ["switch.track(NONE).stroke.color"]
+null_means = "none"
+
+[[row]]
+key = "switch.checked_track_border_color"
+homes = ["switch.track(CHECKED).stroke.color"]
+null_means = "none"
+
+[[row]]
+key = "switch.disabled_unchecked_track_border_color"
+homes = ["switch.track(DISABLED).stroke.color"]
+note = "0.7.2 doc: None = the enabled one = the NONE reference"
+
+[[row]]
+key = "switch.disabled_checked_track_border_color"
+homes = ["switch.track(DISABLED|CHECKED).stroke.color"]
+null_reference = "CHECKED"
+
+[[row]]
+key = "switch.track_border_line_width"
+homes = ["switch.track(NONE).stroke.width"]
+null_means = "none"
+
+[[row]]
+key = "switch.thumb_border_color"
+homes = [
+    "switch.thumb(NONE).stroke.color",
+    "switch.thumb(CHECKED).stroke.color",
+]
+null_means = "none"
+
+[[row]]
+key = "switch.thumb_border_line_width"
+homes = ["switch.thumb(NONE).stroke.width"]
+null_means = "none"
+
+# --- dialog ---
+
+[[row]]
+key = "dialog.background_color"
+homes = ["dialog.panel.fill"]
+note = "0.7.2 safety net: unset = defaults.background_color"
+
+[[row]]
+key = "dialog.min_width"
+homes = ["dialog.panel.min_size[0]"]
+note = "spec §5 (Z2): no source"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
+
+[[row]]
+key = "dialog.max_width"
+homes = ["dialog.panel.max_size[0]"]
+note = "Z2, as min_width"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
+
+[[row]]
+key = "dialog.min_height"
+homes = ["dialog.panel.min_size[1]"]
+note = "Z2"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
+
+[[row]]
+key = "dialog.max_height"
+homes = ["dialog.panel.max_size[1]"]
+note = "Z2"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
+
+[[row]]
+key = "dialog.button_gap"
+homes = ["dialog.button_gap"]
+
+[[row]]
+key = "dialog.icon_size"
+homes = ["dialog.icon.size"]
+note = "spec §5 (Z3): IconStated::SIZE clear where unstated; every preset states a value today, so unstated ones are listed differences of M2"
+
+[[row]]
+key = "dialog.button_order"
+homes = ["dialog.button_order"]
+
+[[row]]
+key = "dialog.entrance"
+homes = ["dialog.entrance"]
+
+[[row]]
+key = "dialog.title_font.family"
+homes = ["dialog.title.family"]
+
+[[row]]
+key = "dialog.title_font.size"
+homes = ["dialog.title.size_px"]
+
+[[row]]
+key = "dialog.title_font.defined_size"
+homes = ["dialog.title.defined_size"]
+
+[[row]]
+key = "dialog.title_font.weight"
+homes = ["dialog.title.weight"]
+
+[[row]]
+key = "dialog.title_font.style"
+homes = ["dialog.title.style"]
+
+[[row]]
+key = "dialog.title_font.color"
+homes = ["dialog.title.color"]
+
+[[row]]
+key = "dialog.body_font.family"
+homes = ["dialog.body.family"]
+
+[[row]]
+key = "dialog.body_font.size"
+homes = ["dialog.body.size_px"]
+
+[[row]]
+key = "dialog.body_font.defined_size"
+homes = ["dialog.body.defined_size"]
+
+[[row]]
+key = "dialog.body_font.weight"
+homes = ["dialog.body.weight"]
+
+[[row]]
+key = "dialog.body_font.style"
+homes = ["dialog.body.style"]
+
+[[row]]
+key = "dialog.body_font.color"
+homes = ["dialog.body.color"]
+
+[[row]]
+key = "dialog.border.color"
+homes = ["dialog.panel.stroke.color"]
+
+[[row]]
+key = "dialog.border.corner_radius"
+homes = ["dialog.panel.corners"]
+note = "Corners::uniform(radius); full_lg"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's 13 on a circular curve; 0.8.0 states the 13 on the continuous curve the alert's group view (UIAlertController .alert) reads"
+difference_citation = "ios-host run 42269041636 (iOS 18.6), `measure1/index.toml` scene `alert`, root `container`, views `0.3.0.0.0` and `0.3.0.0.1` `corner_radius_pt` 13, `corner_curve` continuous"
+difference_values = { "ios-13" = "continuous 13" }
+
+[[row]]
+key = "dialog.border.line_width"
+homes = ["dialog.panel.stroke.width"]
+
+[[row]]
+key = "dialog.border.shadow_enabled"
+homes = ["dialog.panel.shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "dialog.border.padding.top"
+homes = ["dialog.panel.padding.top"]
+
+[[row]]
+key = "dialog.border.padding.right"
+homes = ["dialog.panel.padding.right"]
+
+[[row]]
+key = "dialog.border.padding.bottom"
+homes = ["dialog.panel.padding.bottom"]
+
+[[row]]
+key = "dialog.border.padding.left"
+homes = ["dialog.panel.padding.left"]
+
+# --- combo_box ---
+
+[[row]]
+key = "combo_box.background_color"
+homes = ["combo_box.field(NONE).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states the trigger button's $button_color laid over the window, opaque (#e6e6e7 / #38383c); 0.8.0 states the push button's table, libadwaita's own form: the window text at 10 %, translucent over what lies behind as libadwaita's background-color is"
+difference_citation = "adwaita: _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)), :28-29 (%button_basic_raised's background-color) at libadwaita 1.10.0, _dropdowns.scss:1-12 adds no fill; docs/platform-facts.md §2.24 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
+
+[[row]]
+key = "combo_box.min_height"
+homes = ["combo_box.field(NONE).min_size[1]"]
+
+[[row]]
+key = "combo_box.min_width"
+homes = ["combo_box.field(NONE).min_size[0]"]
+
+[[row]]
+key = "combo_box.arrow_icon_size"
+homes = ["combo_box.chevron(NONE).size"]
+
+[[row]]
+key = "combo_box.arrow_area_width"
+homes = ["combo_box.arrow_area_width"]
+
+[[row]]
+key = "combo_box.disabled_opacity"
+homes = ["combo_box.disabled_opacity"]
+
+[[row]]
+key = "combo_box.disabled_text_color"
+homes = ["combo_box.label(DISABLED).color"]
+
+[[row]]
+key = "combo_box.hover_background"
+homes = ["combo_box.field(HOVER).fill"]
+difference_presets = ["kde-breeze", "material-3", "macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2 leaves it unset on kde-breeze, material-3 and macos-tahoe (the rest fill by inheritance, no rule) and states an uncited hover fill on macos-monterey (#e0e0e5 / #444446); 0.8.0 states the rest fill for HOVER, where Breeze keeps it, where Material's outlined select keeps it, and where a hovered macOS pop-up button draws as at rest (spec §2, from_state); adwaita: 0.7.2's uncited #d5d5d5 / #464649; 0.8.0 states the push button's table, the trigger being a raised button: $button_hover_color, the window text at 15 %, translucent"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.24 (hover_background): a non-editable combo box is a button frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75); material-3: the outlined select passes the outlined field no container colour or state layer (select/internal/_outlined-select.scss:42-48), whose :hover changes only its outline (field/internal/_outlined-field.scss:247-257, material-web cbd34a8); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels; adwaita: _buttons.scss:2 ($button_hover_color: color-mix(in srgb, currentColor 15%, transparent)), :35-37 (&:hover) at libadwaita 1.10.0, _dropdowns.scss:1-12 adds no fill; docs/platform-facts.md §2.24 (hover_background)"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "material-3" = { light = "#fef7ff", dark = "#141218" }, "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
+
+[[row]]
+key = "combo_box.hover_border_color"
+homes = ["combo_box.field(HOVER).stroke.color"]
+difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's trigger is a raised button whose :hover sets only its background, WinUI's hovered combo box keeps the rest border brush (its three sides, ControlStrokeColorDefault, not 0.7.2's default border), a hovered macOS pop-up button draws as at rest (macos-tahoe's has no outline), and WebKit's iOS select has no :hover rule"
+difference_citation = "adwaita: _buttons.scss:35-42, _dropdowns.scss:1-12 at libadwaita 1.10.0; windows-11: ComboBoxBorderBrushPointerOver = ControlElevationBorderBrush, the rest brush (ComboBox_themeresources.xaml:265, :55; rest :264, :54; PointerOver :416-417 at microsoft-ui-xaml 8463f45); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d, no :hover rule for select, adjustButtonLikeControlStyle reads only `active()` (RenderThemeIOS.mm:862-870)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
+
+[[row]]
+key = "combo_box.disabled_background"
+homes = ["combo_box.field(DISABLED).fill"]
+
+[[row]]
+key = "combo_box.open_background"
+homes = [
+    "combo_box.field(OPEN).fill",
+    "combo_box.field(OPEN|HOVER).fill",
+]
+null_reference = "HOVER"
+note = "0.7.2 doc: open \"whatever the pointer does\" (OPEN wins over HOVER); None = the pointer's state; null_reference applies to the OPEN|HOVER home"
+
+[[row]]
+key = "combo_box.open_border_color"
+homes = [
+    "combo_box.field(OPEN).stroke.color",
+    "combo_box.field(OPEN|HOVER).stroke.color",
+]
+null_reference = "HOVER"
+note = "as open_background; width = border.line_width"
+
+[[row]]
+key = "combo_box.font.family"
+homes = ["combo_box.label(NONE).family"]
+
+[[row]]
+key = "combo_box.font.size"
+homes = ["combo_box.label(NONE).size_px"]
+
+[[row]]
+key = "combo_box.font.defined_size"
+homes = ["combo_box.label(NONE).defined_size"]
+
+[[row]]
+key = "combo_box.font.weight"
+homes = ["combo_box.label(NONE).weight"]
+
+[[row]]
+key = "combo_box.font.style"
+homes = ["combo_box.label(NONE).style"]
+
+[[row]]
+key = "combo_box.font.color"
+homes = ["combo_box.label(NONE).color"]
+
+[[row]]
+key = "combo_box.border.color"
+homes = ["combo_box.field(NONE).stroke.color"]
+difference_presets = ["macos-tahoe", "ios-13", "windows-11"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the pop-up button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (the separator, uncited); 0.8.0 states the border WebKit draws round an iOS select, systemBackground; windows-11: 0.7.2 takes the default border, CardStrokeColorDefault (#0F000000 / #19000000, a dark rim in dark); 0.8.0 states the three sides of WinUI's elevation border, ControlStrokeColorDefault (the same #0F000000 in light), one colour (the fourth side's ControlStrokeColorSecondary or ControlStrongStrokeColorDefault not stated)"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill #00000013 / #ffffff13; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d; -webkit-control-background is systemBackground (RenderThemeIOS.mm:1027); windows-11: ButtonBorderBrush, ComboBoxBorderBrush = ControlElevationBorderBrush (Button_themeresources.xaml:136, :38; ComboBox_themeresources.xaml:264, :54), TextControlBorderBrush = TextControlElevationBorderBrush (TextBox_themeresources.xaml:134, :27), gradients whose three sides are ControlStrokeColorDefault #0F000000 / #12FFFFFF (Common_themeresources_any.xaml:382-390, :186-191, :243, :39 at microsoft-ui-xaml 8463f45; docs/platform-facts.md §2.4; docs/todo_v0.7.1_model-completeness-spike-w-coverage.md on v0.8.0-rc1, appendix)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" }, "windows-11" = { light = "#0000000f", dark = "#ffffff12" } }
+
+[[row]]
+key = "combo_box.border.corner_radius"
+homes = ["combo_box.field(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "combo_box.border.line_width"
+homes = ["combo_box.field(NONE).stroke.width"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the pop-up button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border width (0.5, uncited); 0.8.0 states the border WebKit draws round an iOS select, 1px"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill #00000013 / #ffffff13; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d; -webkit-control-background is systemBackground (RenderThemeIOS.mm:1027)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = 1.0 }
+
+[[row]]
+key = "combo_box.border.shadow_enabled"
+homes = ["combo_box.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "combo_box.border.padding.top"
+homes = ["combo_box.field(NONE).padding.top"]
+
+[[row]]
+key = "combo_box.border.padding.right"
+homes = ["combo_box.field(NONE).padding.right"]
+
+[[row]]
+key = "combo_box.border.padding.bottom"
+homes = ["combo_box.field(NONE).padding.bottom"]
+
+[[row]]
+key = "combo_box.border.padding.left"
+homes = ["combo_box.field(NONE).padding.left"]
+
+# --- segmented_control ---
+
+[[row]]
+key = "segmented_control.background_color"
+homes = ["segmented_control.track(NONE).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states AdwToggleGroup's $button_color laid over the window, opaque (#e6e6e7 / #38383c); 0.8.0 states it in libadwaita's own form, as the push button's: the window text at 10 %, translucent over what lies behind as libadwaita's background is"
+difference_citation = "adwaita: _toggle-group.scss:12 (background: $button_color), _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
+
+[[row]]
+key = "segmented_control.active_background"
+homes = ["segmented_control.segment(SELECTED).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "adwaita dark: 0.7.2 states AdwToggleGroup's checked toggle, white at 20 %, laid over the group's opaque #38383c (#606063); 0.8.0 states the track in libadwaita's own form, translucent, so it states the checked toggle in that form too, white at 20 %, a layer over the track, which a palette's track then lies under as libadwaita's does; light keeps #ffffff"
+difference_citation = "adwaita: _toggle-group.scss:79-80 (a checked toggle's background: --active-toggle-bg-color), _colors.scss:238 (#ffffff, light), :245-247 (rgb(255 255 255 / 20%), dark) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (active_background)"
+difference_values = { "adwaita" = { light = "#ffffff", dark = "#ffffff33" } }
+
+[[row]]
+key = "segmented_control.active_text_color"
+homes = ["segmented_control.label(SELECTED).color"]
+
+[[row]]
+key = "segmented_control.segment_height"
+homes = ["segmented_control.segment(NONE).min_size[1]"]
+note = "a height, min alone as list.row_height (M0)"
+
+[[row]]
+key = "segmented_control.separator_width"
+homes = ["segmented_control.separator_width"]
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2's uncited 1; 0.8.0 states none, 0: the tab bar, KDE's segmented control in docs/platform-facts.md §2.25, fills an unselected tab with no pen and widens it by TabBar_TabOverlap into the next, an overlap of the fills, not a line"
+difference_citation = "renderTabBarTab: `painter->setPen(Qt::NoPen)` for an unselected tab, the frame pen for the selected one alone (breezehelper.cpp:1456-1506), TabBar_TabOverlap = 1 (breezemetrics.h:135) widening an unselected tab (breezestyle.cpp:7238, :7259-7260 at breeze f0b1d75); docs/platform-facts.md §2.25 (separator_width)"
+difference_values = { "kde-breeze" = 0.0 }
+
+[[row]]
+key = "segmented_control.disabled_opacity"
+homes = ["segmented_control.disabled_opacity"]
+
+[[row]]
+key = "segmented_control.hover_background"
+homes = ["segmented_control.segment(HOVER).fill"]
+difference_presets = ["macos-monterey", "adwaita"]
+difference_reason = "0.7.2's uncited #e0e0e5 / #444446; 0.8.0 states no hover fill of a segment's own, as AppKit draws a hovered segment as at rest (the segment states no rest fill); adwaita: 0.7.2's uncited #d5d5d5 / #464649; 0.8.0 states AdwToggleGroup's own hover, $hover_color, the window text at 7 %, a layer over the group's fill"
+difference_citation = "macos-monterey: os-probe run 45198750893 (macOS 15; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.segment` differs from the normal capture in 0 pixels; adwaita: _toggle-group.scss:65-67 (toggle:hover { background-color: $hover_color }), _colors.scss:268 ($hover_color: color-mix(in srgb, currentColor 7%, transparent)) at libadwaita 1.10.0; docs/platform-facts.md §2.25 (hover_background)"
+difference_values = { "macos-monterey" = "unstated", "adwaita" = { light = "#0000060e", dark = "#ffffff12" } }
+
+[[row]]
+key = "segmented_control.font.family"
+homes = ["segmented_control.label(NONE).family"]
+
+[[row]]
+key = "segmented_control.font.size"
+homes = ["segmented_control.label(NONE).size_px"]
+
+[[row]]
+key = "segmented_control.font.defined_size"
+homes = ["segmented_control.label(NONE).defined_size"]
+
+[[row]]
+key = "segmented_control.font.weight"
+homes = ["segmented_control.label(NONE).weight"]
+
+[[row]]
+key = "segmented_control.font.style"
+homes = ["segmented_control.label(NONE).style"]
+
+[[row]]
+key = "segmented_control.font.color"
+homes = ["segmented_control.label(NONE).color"]
+
+[[row]]
+key = "segmented_control.border.color"
+homes = ["segmented_control.track(NONE).stroke.color"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the segmented control's outline as none, as macOS 26 draws it"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.segment` `edge_top`, `edge_bottom`: the measured part spans the control's whole height, and its top and bottom edge pixels are the fill #00000013 / #ffffff13 (the control's two ends were not read)"
+difference_values = { "macos-tahoe" = "none" }
+
+[[row]]
+key = "segmented_control.border.corner_radius"
+homes = ["segmented_control.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "segmented_control.border.line_width"
+homes = ["segmented_control.track(NONE).stroke.width"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the segmented control's outline as none, as macOS 26 draws it"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.segment` `edge_top`, `edge_bottom`: the measured part spans the control's whole height, and its top and bottom edge pixels are the fill #00000013 / #ffffff13 (the control's two ends were not read)"
+difference_values = { "macos-tahoe" = "none" }
+
+[[row]]
+key = "segmented_control.border.shadow_enabled"
+homes = ["segmented_control.track(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "segmented_control.border.padding.top"
+homes = ["segmented_control.segment(NONE).padding.top"]
+
+[[row]]
+key = "segmented_control.border.padding.right"
+homes = ["segmented_control.segment(NONE).padding.right"]
+
+[[row]]
+key = "segmented_control.border.padding.bottom"
+homes = ["segmented_control.segment(NONE).padding.bottom"]
+
+[[row]]
+key = "segmented_control.border.padding.left"
+homes = ["segmented_control.segment(NONE).padding.left"]
+
+# --- card ---
+
+[[row]]
+key = "card.background_color"
+homes = ["card.container(NONE).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS card is the surface colour (uncited); 0.8.0 states NSBox's measured fill, black / white at a low alpha"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.box` `fill`"
+difference_values = { "macos-monterey" = { light = "#00000008", dark = "#ffffff08" }, "macos-tahoe" = { light = "#00000008", dark = "#ffffff08" } }
+
+[[row]]
+key = "card.border.color"
+homes = ["card.container(NONE).stroke.color"]
+unstated_if_unset = true
+difference_presets = ["adwaita", "material-3", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it; material-3.toml states none either; 0.8.0 states the filled card's outline as none; 0.7.2 states no box outline; 0.8.0 states NSBox's measured one: on macos-monterey black / white at a low alpha, on macos-tahoe none; ios-13: 0.7.2 states no card outline; 0.8.0 states none, as an .insetGrouped section's cell draws none"
+difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0); material-3: docs/platform-facts.md §2.26, border.color none for the filled and the elevated card, border.line_width 0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.normal.box` `edge_*`; ios-13: ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), the card render's `border_width_pt` 0 on every layer, `changed_parts.toml` `run1.\"<a>\".card.normal.edges`"
+difference_values = { "adwaita" = "none", "material-3" = "none", "macos-monterey" = { light = "#00000013", dark = "#ffffff26" }, "macos-tahoe" = "none", "ios-13" = "none" }
+
+[[row]]
+key = "card.border.corner_radius"
+homes = ["card.container(NONE).corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+difference_presets = ["macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 states no box corners; 0.8.0 states NSBox's measured ones: 5 on macos-monterey (the edge fit 4.75-5.0), 12 on macos-tahoe (12.0-12.25); ios-13: 0.7.2 states no card corners; 0.8.0 states the .insetGrouped cell's corners of 10 on the continuous curve it reads"
+difference_citation = "os-probe runs 45198750893, 45208260830 (macOS 15) and 45217592058 (macOS 26), docs/evidence/os-probe/ on m2-fs4c, `*.normal.box` `corner_edge_*`; ios-13: ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), `run1/index.toml` the card render, view `0.1` `corner_radius_pt` 10, `corner_curve` continuous, `masked_corners` 15"
+difference_values = { "macos-monterey" = 5.0, "macos-tahoe" = 12.0, "ios-13" = "continuous 10" }
+
+[[row]]
+key = "card.border.line_width"
+homes = ["card.container(NONE).stroke.width"]
+unstated_if_unset = true
+difference_presets = ["adwaita", "material-3", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it; material-3.toml states none either; 0.8.0 states the filled card's outline as none; 0.7.2 states no box outline; 0.8.0 states NSBox's measured one: 1 px on macos-monterey, none on macos-tahoe; ios-13: 0.7.2 states no card outline; 0.8.0 states none, as an .insetGrouped section's cell draws none"
+difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0); material-3: docs/platform-facts.md §2.26, border.color none for the filled and the elevated card, border.line_width 0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.normal.box` `edge_*`; ios-13: ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), the card render's `border_width_pt` 0 on every layer"
+difference_values = { "adwaita" = "none", "material-3" = "none", "macos-monterey" = 1.0, "macos-tahoe" = "none", "ios-13" = "none" }
+
+[[row]]
+key = "card.border.shadow_enabled"
+homes = ["card.container(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "card.border.padding.top"
+homes = ["card.container(NONE).padding.top"]
+
+[[row]]
+key = "card.border.padding.right"
+homes = ["card.container(NONE).padding.right"]
+
+[[row]]
+key = "card.border.padding.bottom"
+homes = ["card.container(NONE).padding.bottom"]
+
+[[row]]
+key = "card.border.padding.left"
+homes = ["card.container(NONE).padding.left"]
+
+# --- expander ---
+
+[[row]]
+key = "expander.header_height"
+homes = ["expander.header(NONE).min_size[1]"]
+note = "a height, min alone as list.row_height (M0)"
+
+[[row]]
+key = "expander.arrow_icon_size"
+homes = ["expander.arrow(NONE).size"]
+
+[[row]]
+key = "expander.hover_background"
+homes = ["expander.header(HOVER).fill"]
+difference_presets = ["kde-breeze", "windows-11", "material-3", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (no rule); 0.8.0 states the header's look under the pointer: on kde-breeze no fill (transparent), on windows-11 the header's rest fill CardBackgroundFillColorDefault, which 0.8.0 states at rest too; on material-3, where 0.7.2 states #1c1b1f14 / #e6e1e514 (uncited, not v0_192's on-surface), on-surface at the hover opacity 0.08, a full-width row's hover layer, Material 3 having no expander; macos-monterey: 0.7.2's uncited #e0e0e5 / #444446; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states no fill (transparent) at rest and for HOVER and PRESSED, as SwiftUI's DisclosureGroup draws none behind its title"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.27 (hover_background), KCollapsibleGroupBox paints the arrow and the title only (kcollapsiblegroupbox.cpp:153-182 at kwidgetsaddons v6.30.0); windows-11: ExpanderHeaderBackground = CardBackgroundFillColorDefault, which no PointerOver or Pressed state sets (Expander.xaml:111; Expander_themeresources.xaml:29, :5, :122-165 at microsoft-ui-xaml 8463f45); material-3: docs/platform-facts.md §2.27 (no expander); list-item-hover-state-layer-color on-surface at hover-state-layer-opacity 0.08 (_md-comp-list.scss:85-88, v0_192 at material-web cbd34a8); os-probe run 45214606115 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45214606115/ on m2-fs4d), `switch-label-macos-{15,26}/measure.toml` `*.normal.disclosure` `label_ink`, `*.hovered_disclosure_*` and `*.pressed_disclosure_*` `label_changed_from_rest_px` 0"
+difference_values = { "kde-breeze" = "#00000000", "windows-11" = { light = "#ffffffb3", dark = "#ffffff0d" }, "material-3" = { light = "#1d1b2014", dark = "#e6e0e914" }, "macos-monterey" = "#00000000", "macos-tahoe" = "#00000000" }
+
+[[row]]
+key = "expander.arrow_color"
+homes = ["expander.arrow(NONE).color"]
+
+[[row]]
+key = "expander.arrow_side"
+homes = ["expander.arrow_side"]
+
+[[row]]
+key = "expander.arrow_gap"
+homes = ["expander.arrow_gap"]
+
+[[row]]
+key = "expander.content_indent"
+homes = ["expander.content_indent"]
+
+[[row]]
+key = "expander.frame_enabled"
+homes = ["expander.frame_enabled"]
+
+[[row]]
+key = "expander.font.family"
+homes = ["expander.header_label(NONE).family"]
+
+[[row]]
+key = "expander.font.size"
+homes = ["expander.header_label(NONE).size_px"]
+
+[[row]]
+key = "expander.font.defined_size"
+homes = ["expander.header_label(NONE).defined_size"]
+
+[[row]]
+key = "expander.font.weight"
+homes = ["expander.header_label(NONE).weight"]
+
+[[row]]
+key = "expander.font.style"
+homes = ["expander.header_label(NONE).style"]
+
+[[row]]
+key = "expander.font.color"
+homes = ["expander.header_label(NONE).color"]
+
+[[row]]
+key = "expander.border.color"
+homes = ["expander.container(NONE).stroke.color"]
+note = "drawn where frame_enabled (0.7.2 doc)"
+
+[[row]]
+key = "expander.border.corner_radius"
+homes = ["expander.container(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "expander.border.line_width"
+homes = ["expander.container(NONE).stroke.width"]
+
+[[row]]
+key = "expander.border.shadow_enabled"
+homes = ["expander.container(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "expander.border.padding.top"
+homes = ["expander.header(NONE).padding.top"]
+
+[[row]]
+key = "expander.border.padding.right"
+homes = ["expander.header(NONE).padding.right"]
+
+[[row]]
+key = "expander.border.padding.bottom"
+homes = ["expander.header(NONE).padding.bottom"]
+
+[[row]]
+key = "expander.border.padding.left"
+homes = ["expander.header(NONE).padding.left"]

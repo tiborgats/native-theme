@@ -6,25 +6,27 @@
 //! its own toolkit, in the panel's typography.
 
 use native_theme::color::Rgba;
-use native_theme::theme::{IconSet, LayoutTheme, ResolvedFontSpec};
+use native_theme::icons::IconSet;
+use native_theme::theme::{LayoutTheme, ResolvedFontSpec};
 
 use crate::elements::ShowcaseElement;
 use crate::values::leaf_value;
 
-/// One row of the "Theme" section.
+/// One row of the "Theme" section. `C` is the model's colour type: `Rgba`
+/// here, `native_theme::next::Color` in [`crate::next::info`].
 #[derive(Clone, Debug, PartialEq)]
-pub struct InfoRow {
+pub struct InfoRow<C = Rgba> {
     /// The leaf as the list writes it.
     pub leaf: String,
     /// Its value ([`crate::values::leaf_value`]).
     pub value: String,
     /// The value's colour, for the row's swatch, where it is one.
-    pub colour: Option<Rgba>,
+    pub colour: Option<C>,
     /// How this toolkit applies the leaf: the muted line under the row.
     pub how: String,
 }
 
-impl InfoRow {
+impl<C> InfoRow<C> {
     /// The row's two lines as the panel shows them and Copy copies them:
     /// `<leaf> <value>`, then its route indented two spaces.
     #[must_use]
@@ -36,13 +38,14 @@ impl InfoRow {
     }
 }
 
-/// A listed element's Widget Info.
+/// A listed element's Widget Info, its colours of type `C` as
+/// [`InfoRow`]'s.
 #[derive(Clone, Debug, PartialEq)]
-pub struct ListedInfo {
+pub struct ListedInfo<C = Rgba> {
     /// The element's name and the state shown ([`ShowcaseElement::title`]).
     pub title: String,
     /// A row per leaf of the element, in the list's order.
-    pub rows: Vec<InfoRow>,
+    pub rows: Vec<InfoRow<C>>,
     /// The "Not themeable" lines, none where the section is not shown.
     pub not_themeable: Vec<String>,
 }
@@ -84,7 +87,9 @@ impl ListedInfo {
             not_themeable,
         }
     }
+}
 
+impl<C> ListedInfo<C> {
     /// The text Copy copies, the panel's text: the title, a blank line,
     /// `Theme`, then per row `<leaf> <value>` and under it the route indented
     /// two spaces; then, where there are any, a blank line, `Not themeable`
@@ -125,6 +130,7 @@ mod tests {
             name: "Button".into(),
             parent: "window".into(),
             leaves: leaves.iter().map(|leaf| (*leaf).to_string()).collect(),
+            homes: Vec::new(),
             states: states.iter().map(|state| (*state).to_string()).collect(),
             part: false,
             when: None,

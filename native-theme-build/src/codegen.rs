@@ -38,7 +38,7 @@ pub(crate) fn theme_name_to_icon_set(name: &str) -> Option<&'static str> {
 
 /// Returns the fully-qualified icon set path with crate prefix.
 pub(crate) fn theme_name_to_qualified_icon_set(name: &str, crate_path: &str) -> Option<String> {
-    theme_name_to_icon_set(name).map(|variant| format!("{crate_path}::theme::{variant}"))
+    theme_name_to_icon_set(name).map(|variant| format!("{crate_path}::icons::{variant}"))
 }
 
 /// Maps a lowercase TOML DE key to its `LinuxDesktop::Variant` path (without crate prefix).
@@ -266,7 +266,7 @@ fn generate_icon_name(
 
     let _ = writeln!(
         out,
-        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> ::std::option::Option<&str> {{"
+        "    fn icon_name(&self, set: {crate_path}::icons::IconSet) -> ::std::option::Option<&str> {{"
     );
     if needs_de {
         // Issue 21: say in the generated code where the desktop comes from
@@ -298,7 +298,7 @@ fn generate_icon_svg(
 ) {
     let _ = writeln!(
         out,
-        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> ::std::option::Option<std::borrow::Cow<'static, [u8]>> {{"
+        "    fn icon_svg(&self, set: {crate_path}::icons::IconSet) -> ::std::option::Option<std::borrow::Cow<'static, [u8]>> {{"
     );
     let _ = writeln!(out, "        match (self, set) {{");
 
@@ -477,11 +477,11 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn theme_name_qualified_includes_crate_path() {
         assert_eq!(
             theme_name_to_qualified_icon_set("material", "native_theme"),
-            Some("native_theme::theme::IconSet::Material".to_string())
+            Some("native_theme::icons::IconSet::Material".to_string())
         );
         assert_eq!(
             theme_name_to_qualified_icon_set("material", "my_crate"),
-            Some("my_crate::theme::IconSet::Material".to_string())
+            Some("my_crate::icons::IconSet::Material".to_string())
         );
     }
 
@@ -574,13 +574,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         // material bundled theme should have icon_name arms
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
+                "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(\"play_pause\")"
             ),
             "missing material play-pause icon_name arm. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
+                "(Self::SkipForward, native_theme::icons::IconSet::Material) => Some(\"skip_next\")"
             ),
             "missing material skip-forward icon_name arm"
         );
@@ -593,13 +593,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         // sf-symbols system theme should also have icon_name arms
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
+                "(Self::PlayPause, native_theme::icons::IconSet::SfSymbols) => Some(\"play.fill\")"
             ),
             "missing sf-symbols play-pause icon_name arm. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+                "(Self::SkipForward, native_theme::icons::IconSet::SfSymbols) => Some(\"forward.fill\")"
             ),
             "missing sf-symbols skip-forward icon_name arm"
         );
@@ -838,7 +838,7 @@ play-pause = { default = "play" }
         // DeAware with only a default key (no DE overrides) should optimize to a simple arm
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Freedesktop) => Some(\"play\"),"
+                "(Self::PlayPause, native_theme::icons::IconSet::Freedesktop) => Some(\"play\"),"
             ),
             "DE-aware with only default should produce simple arm. output:\n{output}"
         );
@@ -856,7 +856,7 @@ play-pause = { default = "play" }
         // The material theme has Simple("play_pause") -- should still produce a simple arm
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\"),"
+                "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(\"play_pause\"),"
             ),
             "Simple mapping values should produce simple arms (no regression). output:\n{output}"
         );
@@ -971,7 +971,7 @@ system-themes = ["sf-symbols"]
             "should use custom crate path in impl. output:\n{output}"
         );
         assert!(
-            output.contains("my_crate::theme::IconSet"),
+            output.contains("my_crate::icons::IconSet"),
             "should use custom crate path for IconSet. output:\n{output}"
         );
         assert!(
@@ -1083,13 +1083,13 @@ system-themes = ["sf-symbols"]
         // Verify specific bundled theme match arms exist in icon_svg
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
+                "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
             ),
             "should have icon_svg arm for PlayPause/Material. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
+                "(Self::SkipForward, native_theme::icons::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
             ),
             "should have icon_svg arm for SkipForward/Material. output:\n{output}"
         );
@@ -1215,7 +1215,7 @@ play-pause = { kde = "play", gnome = "play", default = "play" }
         );
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Freedesktop) => Some(\"play\"),"
+                "(Self::PlayPause, native_theme::icons::IconSet::Freedesktop) => Some(\"play\"),"
             ),
             "should produce simple arm. output:\n{output}"
         );

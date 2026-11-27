@@ -1,16 +1,23 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
+use gpui::Hsla;
 use gpui_component::{Colorize as _, Size, theme::Theme};
-use native_theme::theme::ResolvedButtonTheme;
-use native_theme_gpui::ResolvedTheme;
+use native_theme::next::{
+    ButtonQuery, PartStated, PartStyle, ResolvedTheme as NextTheme, WidgetState,
+};
+use native_theme_gpui::next::geometry::button_disabled;
+use native_theme_gpui::next::{
+    self, Unmapped, fill_of, padding_of, state_fill_of, state_text_color_of, text_color_of,
+};
 
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, edge_claim, percent_text, px_text, stated, stated_claim,
+    claim, edge_claim, percent_text, px_text, radius_of, state_stroke_color_of, stated_claim,
+    stroke_color_of, stroke_width_of,
 };
 use crate::demo::{ButtonKind, ButtonState};
-use crate::support::ChromeIcon;
+use crate::support::{ChromeIcon, drawn_fill, drawn_state_fill};
 
 /// What a Button of `kind` paints at rest: its fill, where it has one, and
 /// its label.
@@ -126,7 +133,7 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "native-theme-gpui/variants.rs:134",
+                "native-theme-gpui/variants.rs:142",
             ),
         ],
         ButtonKind::Link => vec![claim(
@@ -287,13 +294,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_hover",
                 t.button_hover,
-                "native-theme-gpui/variants.rs:135",
+                "native-theme-gpui/variants.rs:143",
             ),
             claim(
                 "active",
                 "button_active",
                 t.button_active,
-                "native-theme-gpui/variants.rs:136",
+                "native-theme-gpui/variants.rs:144",
             ),
         ],
         ButtonKind::Link => vec![
@@ -357,29 +364,33 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
 
 /// The edge of a Button of `kind`: upstream's, which only Default and an
 /// outlined Button have (button/button.rs:724-729), or, refined from
-/// `native`, `button.border` at rest and upstream's colour under the pointer
-/// at `button.border`'s width, which replaces upstream's: none at 0.
-fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Vec<ColorClaim> {
-    if native.is_some_and(|b| b.border.line_width <= 0.0) {
+/// `native`, the resting body's stroke at rest and upstream's colour under
+/// the pointer at that stroke's width, which replaces upstream's: none at 0.
+fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorClaim> {
+    if kind == ButtonKind::Ghost && ghost_outline(native).is_some() {
         return Vec::new();
     }
-    let rest = native.and_then(|b| {
+    let width = native.and_then(|r| stroke_width_of(&r.button.body(WidgetState::NONE)));
+    if width.is_some_and(|width| width <= 0.0) {
+        return Vec::new();
+    }
+    let rest = native.and_then(|r| {
         edge_claim(
             "border at rest",
-            "border",
-            Some(b.border.color),
-            Some(b.border.line_width),
-            "native-theme-gpui/geometry.rs:230",
+            "button.body(NONE).stroke.color",
+            stroke_color_of(&r.button.body(WidgetState::NONE)),
+            width,
+            "native-theme-gpui/next/builders.rs:50",
         )
     });
     let hovered = match (kind, native.is_some()) {
-        (ButtonKind::Bordered, _) => native.and_then(|b| {
+        (ButtonKind::Bordered, _) => native.and_then(|r| {
             edge_claim(
                 "border, hovered or pressed",
-                "hover_border_color",
-                b.hover_border_color,
-                Some(b.border.line_width),
-                "native-theme-gpui/variants.rs:144",
+                "button.body(HOVER).stroke.color",
+                state_stroke_color_of(&r.button.body(WidgetState::HOVER)),
+                width,
+                "native-theme-gpui/next/builders.rs:865",
             )
         }),
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
@@ -411,13 +422,98 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Ve
     rest.into_iter().chain(hovered).collect()
 }
 
+/// `info`, [`button`]'s for a Default Button at rest under `native`, made the
+/// toggle that is on (`demo::toggle_button`): a selected Button, refined by
+/// `next::geometry::button_checked` where it applies. Its edge claims and
+/// line are replaced by the edge it draws, where `geometry::button` gives
+/// one: `button.body(CHECKED).stroke.color` where a rule states it, which
+/// `button_checked` sets at `geometry::button`'s width, else the border at
+/// rest. A selected Button takes no hover or press style (gpui-component
+/// 0.10.0 button/button.rs:733, :758), so no hovered or pressed edge is
+/// claimed.
+pub(crate) fn checked_toggle(mut info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
+    let Some(r) = native else {
+        return info;
+    };
+    let width = stroke_width_of(&r.button.body(WidgetState::NONE));
+    if !width.is_some_and(|width| width > 0.0) {
+        info.colors
+            .retain(|c| c.role != "border, hovered or pressed");
+        return info;
+    }
+    info.colors.retain(|c| !c.role.starts_with("border"));
+    info.not_themeable.retain(|note| note.what != "edge");
+    let applied = next::geometry::button_checked(r).is_ok();
+    let pen = applied && state_stroke_color_of(&r.button.body(WidgetState::CHECKED)).is_some();
+    if pen {
+        info.colors(edge_claim(
+                "checked edge",
+                "button.body(CHECKED).stroke.color",
+                state_stroke_color_of(&r.button.body(WidgetState::CHECKED)),
+                width,
+                "native-theme-gpui/next/builders.rs:128",
+            ))
+            .not_themeable(
+                "edge",
+                "button.body(CHECKED).stroke.color, which next::geometry::button_checked sets on geometry::button's border at its width; it stays under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, :758)",
+            )
+    } else {
+        info.colors(edge_claim(
+                "border at rest",
+                "button.body(NONE).stroke.color",
+                stroke_color_of(&r.button.body(WidgetState::NONE)),
+                width,
+                "native-theme-gpui/next/builders.rs:50",
+            ))
+            .not_themeable(
+                "edge",
+                "button.body(NONE).stroke.color, geometry::button's border at rest, which upstream replays over its selected style: no rule states button.body(CHECKED).stroke.color, or next::geometry::button_checked is not applied; it stays under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, :758)",
+            )
+    }
+}
+
+/// The outline of a Ghost Button built with
+/// `native_theme_gpui::next::variants::ghost_button` under `native` and
+/// refined by `next::geometry::ghost_button_rest` (or, keeping its own
+/// padding, `ghost_button_rest_own_padding`), as its colour and width:
+/// `button.body(HOVER; variant=Flat).stroke.color` where a rule states it
+/// for the state, the variant's colour, at the refinement's width, the
+/// hovered flat body's stroke width; `None` where no rule states it, or the
+/// width is 0.
+pub(crate) fn ghost_outline(native: Option<&NextTheme>) -> Option<(Hsla, f32)> {
+    let hovered = native?
+        .button
+        .body(ButtonQuery::flat().state(WidgetState::HOVER));
+    let width = stroke_width_of(&hovered).filter(|&width| width > 0.0)?;
+    Some((state_stroke_color_of(&hovered)?, width))
+}
+
+/// `info` with the line of the [`ghost_outline`] `native` states: upstream
+/// paints the variant's colour as the border under the pointer and while
+/// pressed (button/button.rs, ButtonVariant::border_color, Custom arm), and
+/// the refinement makes it transparent at rest. A line, not a claim: the
+/// claim gates read no query with axis values.
+fn ghost_outline_line(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
+    match ghost_outline(native) {
+        Some((colour, width)) => info.config(
+            "outline",
+            format!(
+                "button.body(HOVER; variant=Flat).stroke.color {}, {}px wide, under the pointer and while pressed: next::variants::ghost_button's colour, which upstream paints as the border (button/button.rs, ButtonVariant::border_color, Custom arm), at next::geometry::ghost_button_rest's width; none at rest, where that refinement makes the border transparent",
+                super::as_rgba(colour),
+                px_text(width)
+            ),
+        ),
+        None => info,
+    }
+}
+
 /// `info` with what a Button of `kind` paints at rest, its [`edge`], and
 /// what it paints under the pointer.
 fn colours(
     info: WidgetInfo,
     t: &Theme,
     kind: ButtonKind,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = at_rest(t, kind).into_iter().fold(info, WidgetInfo::color);
     let info = info.colors(edge(t, kind, native));
@@ -517,9 +613,10 @@ pub(crate) fn size_name(size: Size) -> &'static str {
 ///
 /// `size` is `Some` only in the row that shows upstream's size scale, which
 /// is built without `geometry::button`; every other Button is built at the
-/// default size and refined by it from `native`, the `button.*`, where a
-/// native theme is installed. Its geometry line is recorded by `native_info`
-/// where `demo::button` applies the builder.
+/// default size and refined by it from `native`, the installed 0.8.0 theme,
+/// where the builder applies (it states every value `geometry::button`
+/// reads). Its geometry line is recorded by `next_native_info` where
+/// `demo::button` applies the builder.
 pub fn button(
     t: &Theme,
     kind: ButtonKind,
@@ -527,9 +624,13 @@ pub fn button(
     icon: bool,
     default_spinner: bool,
     size: Option<Size>,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let styled = native.is_some();
+    // The theme whose disabled pair `geometry::button_disabled` gives: one
+    // that states every value the builder reads; under any other the
+    // Button keeps upstream's disabled style (spec §10, rule 0).
+    let disabled_pair = native.filter(|r| button_disabled(r).is_ok());
     let name = kind.name();
     let variant = match (size, state) {
         (Some(size), _) => format!("{name}, {}", size_name(size)),
@@ -544,7 +645,7 @@ pub fn button(
         ButtonState::Loading => loading(t, kind).into_iter().fold(info, WidgetInfo::color),
         // geometry::button_disabled's line is recorded where demo::button
         // applies it, over the fill and label upstream paints first.
-        ButtonState::Disabled if styled => info,
+        ButtonState::Disabled if disabled_pair.is_some() => info,
         ButtonState::Disabled => {
             let info = match kind {
                 ButtonKind::Primary | ButtonKind::Danger => info.not_themeable("fill", "the variant's own token at 0.15, a literal -- not 0.5, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
@@ -565,8 +666,9 @@ pub fn button(
     };
     let info = if styled {
         info.not_themeable("edge", match (state, native) {
-                (_, Some(b)) if b.border.line_width <= 0.0 => "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)".to_string(),
-                (ButtonState::Idle, _) => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
+                (_, native) if kind == ButtonKind::Ghost && ghost_outline(native).is_some() => "none at rest: next::geometry::ghost_button_rest, refined after geometry::button, replaces its border with a transparent one of the hovered flat body's stroke width, which upstream replays over the selected and disabled styles; under the pointer and pressed the variant's colour, button.body(HOVER; variant=Flat).stroke.color (button/button.rs, ButtonVariant::border_color, Custom arm; RenderOnce for Button)".to_string(),
+                (_, Some(r)) if stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|width| width <= 0.0) => "none in any state: button.body(NONE).stroke.width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)".to_string(),
+                (ButtonState::Idle, _) => format!("button.body(NONE).stroke.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
                     ButtonKind::Default | ButtonKind::DefaultOutline => "input",
                     ButtonKind::Primary | ButtonKind::PrimaryOutline => "primary",
                     ButtonKind::Secondary => "border",
@@ -575,10 +677,10 @@ pub fn button(
                     ButtonKind::Warning => "button_warning",
                     ButtonKind::Info => "button_info",
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
-                    ButtonKind::Bordered => "button.hover_border_color, the colour variants::bordered_button gives its custom variant (native-theme-gpui/variants.rs, bordered_button)",
+                    ButtonKind::Bordered => "button.body(HOVER).stroke.color, the colour variants::bordered_button gives its custom variant (native-theme-gpui/next/builders.rs, hover_border)",
                 }),
-                (ButtonState::Disabled, _) => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
-                (ButtonState::Loading, _) => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: line 861, the opacity(0.8))".to_string(),
+                (ButtonState::Disabled, _) => "button.body(NONE).stroke.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
+                (ButtonState::Loading, _) => "button.body(NONE).stroke.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: line 861, the opacity(0.8))".to_string(),
             })
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -589,13 +691,13 @@ pub fn button(
         _ => info.not_themeable("shadow", "none on a standard variant: Theme::shadow, which the connector sets from border.shadow_enabled, reaches only a ButtonCustomVariant built with .shadow(true) (button/button.rs, ButtonVariant::shadow)"),
     };
     let info = if styled {
-        styled_label_notes(info)
+        next_styled_label_notes(info)
     } else {
         info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (gpui-component/root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
     };
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
-        ButtonKind::Ghost => ghost_variant(info),
+        ButtonKind::Ghost => ghost_outline_line(ghost_variant(info), native),
         ButtonKind::Bordered => info.instance("variant", "native_theme_gpui::variants::bordered_button: a custom variant with the Default Button's text, hover and press colours (button_foreground, button_hover, button_active) and button.hover_border_color as its border, which upstream's Default variant draws in input (button/button.rs, ButtonVariant::border_color). A custom variant fills itself at rest with its border colour mixed toward transparent (button/button.rs, ButtonVariant::bg_color), so the showcase gives the Button ThemeColor button, the Default Button's rest fill. Built only where the theme states a hover border; elsewhere the Button is the Default variant"),
         ButtonKind::Link => info
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)")
@@ -613,19 +715,22 @@ pub fn button(
         | ButtonKind::Warning
         | ButtonKind::Info => info,
     };
-    let info = match (state, native) {
+    let info = match (state, disabled_pair.and_then(|r| r.button.disabled_opacity)) {
         (ButtonState::Idle, _) => info,
-        (ButtonState::Disabled, Some(b)) => info
-            .instance("fill and text", "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color, through geometry::button_disabled: upstream paints its own literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- and then replays the caller's refinement over them (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)")
-            .config("opacity", if b.disabled_opacity < 1. {
-                format!("button.disabled_opacity {}: geometry::button_disabled fades the whole Button by it, over the stated pair", percent_text(b.disabled_opacity))
+        (ButtonState::Disabled, Some(opacity)) => info
+            .instance("fill and text", "button.body(DISABLED).fill and button.label(DISABLED).color, through geometry::button_disabled: upstream paints its own literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- and then replays the caller's refinement over them (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)")
+            .config("opacity", if opacity < 1. {
+                format!("button.disabled_opacity {}: geometry::button_disabled fades the whole Button by it, over the stated pair", percent_text(opacity))
             } else {
-                format!("button.disabled_opacity {}: no fade, the stated pair painted as it is", percent_text(b.disabled_opacity))
+                format!("button.disabled_opacity {}: no fade, the stated pair painted as it is", percent_text(opacity))
             })
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
-        (ButtonState::Disabled, None) => info
-            .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
-            .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
+        (ButtonState::Disabled, None) => match native.and_then(|r| button_disabled(r).err()) {
+            Some(unstated) => info.config("fill and text", format!("gpui-component's own: the theme states no value gpui can take at {}, which geometry::button_disabled needs", unstated.home())),
+            None => info,
+        }
+            .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.label(DISABLED).color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
+            .not_themeable("opacity", "button.disabled_opacity is modelled; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
         (ButtonState::Loading, _) if icon && default_spinner => info
             .not_themeable("spinner", "in place of the button's icon (button/button_icon.rs, ButtonIcon). The Button is given no loading icon, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons): that theme's loading icon by the connector's table, not gpui-component's glyph. It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
@@ -639,6 +744,18 @@ pub fn button(
         (ButtonState::Loading, _) => info
             .not_themeable("spinner", "where an icon would sit: a loading Button without an icon shows a Spinner there, turning the Button's loading icon, or the Spinner's own default, gpui-component's Loader, drawn as the application's icon resolver answers it (the `spinner icon` line says what is turned here), where it is given none (button/button.rs:777-786, loading_icon; gpui-component/spinner.rs, Spinner::new). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
+    };
+    let info = match native {
+        Some(r) => super::own_ring_not_drawn(
+            info,
+            &r.button.body(native_theme::next::WidgetState::FOCUSED),
+            "button.body(FOCUSED).focus",
+        ),
+        None => info,
+    };
+    let info = match (kind, state, size, native) {
+        (ButtonKind::Ghost, ButtonState::Idle, None, Some(r)) => flat_focus_stroke(info, t, r),
+        _ => info,
     };
     let info = if icon && state == ButtonState::Idle {
         info.not_themeable("icon position", "leading, always: Button adds its icon before the label and has no setting for the other side (button/button.rs, Button::render)")
@@ -656,216 +773,434 @@ pub fn button(
 }
 
 /// A dialog's default Button built through
-/// `native_theme_gpui::variants::default_button` under a theme that gives it
-/// a look of its own, `b` (`demo::dialog_default_button`): at rest
-/// `geometry::default_button_rest`'s fill and frame, under the pointer the
-/// variant's hover fill and its colour as the frame, pressed the plain
+/// `native_theme_gpui::next::variants::default_button` under a theme that
+/// gives it a look of its own, `r` (`demo::dialog_default_button`): at rest
+/// `next::geometry::default_button_rest`'s fill and frame, under the pointer
+/// the variant's hover fill and its colour as the frame, pressed the plain
 /// button's `button_active` in that frame, and one label in every state.
-pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
-    let width = Some(b.border.line_width);
+pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
+    let width = stroke_width_of(&r.button.body(WidgetState::NONE));
     let info = WidgetInfo::new("Button").variant("Dialog default");
-    let info = info.colors(stated_claim(
-        "bg",
-        "default_button_background",
-        b.default_button_background,
-        "native-theme-gpui/geometry.rs:1491",
-    ));
-    let info = match stated_claim(
-        "text",
-        "default_button_text_color",
-        b.default_button_text_color,
-        "native-theme-gpui/variants.rs:258",
-    ) {
-        Some(text) => info.color(text),
-        None => info.color(claim(
+    let info = info
+        .colors(stated_claim(
+            "bg",
+            "button.body(DEFAULT).fill",
+            state_fill_of(
+                &r.button.body(WidgetState::DEFAULT),
+                "button.body(DEFAULT).fill",
+            ),
+            "native-theme-gpui/next/builders.rs:140",
+        ))
+        .colors(stated_claim(
             "text",
-            "color",
-            stated(b.font.color),
-            "native-theme-gpui/variants.rs:258",
-        )),
-    };
+            "button.label(DEFAULT).color",
+            text_color_of(&r.button.label(WidgetState::DEFAULT)),
+            "native-theme-gpui/next/builders.rs:898",
+        ));
     let rest = edge_claim(
         "border at rest",
-        "default_button_border_color",
-        b.default_button_border_color,
+        "button.body(DEFAULT).stroke.color",
+        state_stroke_color_of(&r.button.body(WidgetState::DEFAULT)),
         width,
-        "native-theme-gpui/geometry.rs:1492",
+        "native-theme-gpui/next/builders.rs:141",
     )
     .or_else(|| {
         edge_claim(
             "border at rest",
-            "border",
-            Some(b.border.color),
+            "button.body(NONE).stroke.color",
+            stroke_color_of(&r.button.body(WidgetState::NONE)),
             width,
-            "native-theme-gpui/geometry.rs:1492",
+            "native-theme-gpui/next/builders.rs:142",
         )
     });
     let hovered = edge_claim(
         "border, hovered or pressed",
-        "hover_border_color",
-        b.hover_border_color,
+        "button.body(HOVER).stroke.color",
+        state_stroke_color_of(&r.button.body(WidgetState::HOVER)),
         width,
-        "native-theme-gpui/variants.rs:259",
+        "native-theme-gpui/next/builders.rs:874",
     )
     .or_else(|| {
         edge_claim(
             "border, hovered or pressed",
-            "default_button_border_color",
-            b.default_button_border_color,
+            "button.body(DEFAULT).stroke.color",
+            stroke_color_of(&r.button.body(WidgetState::DEFAULT)),
             width,
-            "native-theme-gpui/variants.rs:255",
-        )
-    })
-    .or_else(|| {
-        edge_claim(
-            "border, hovered or pressed",
-            "border",
-            Some(b.border.color),
-            width,
-            "native-theme-gpui/variants.rs:255",
+            "native-theme-gpui/next/builders.rs:876",
         )
     });
     let info = info.colors(rest).colors(hovered);
     let info = info
         .colors(stated_claim(
             "hover",
-            "default_button_background",
-            b.default_button_background,
-            "native-theme-gpui/variants.rs:254",
+            "button.body(DEFAULT).fill",
+            state_fill_of(
+                &r.button.body(WidgetState::DEFAULT),
+                "button.body(DEFAULT).fill",
+            ),
+            "native-theme-gpui/next/builders.rs:891",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "native-theme-gpui/variants.rs:329",
+            "native-theme-gpui/variants.rs:353",
         ));
-    let edge_note = if b.border.line_width <= 0.0 {
-        "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)"
+    let edge_note = if width.is_some_and(|width| width <= 0.0) {
+        "none in any state: button.body(NONE).stroke.width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)"
     } else {
-        "button.default_button_border_color at rest (button.border.color where unstated), from geometry::default_button_rest after geometry::button, which gives the border its width; hovered and pressed the variant's colour, button.hover_border_color where stated, else that frame -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)"
+        "button.body(DEFAULT).stroke.color at rest where a rule states it for DEFAULT (button.body(NONE).stroke.color where not), from geometry::default_button_rest after geometry::button, which gives the border button.body(NONE).stroke.width; hovered and pressed the variant's colour, button.body(HOVER).stroke.color where a rule states it for HOVER, else the default body's stroke -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)"
     };
-    styled_label_notes(info)
+    next_styled_label_notes(info)
         .not_themeable("edge", edge_note)
-        .not_themeable("shadow", "none: variants::default_button builds its custom variant with .shadow(false) (native-theme-gpui/variants.rs, default_button; button/button.rs, ButtonVariant::shadow)")
-        .instance("variant", "native_theme_gpui::variants::default_button: a custom variant with the default button's hover fill, label and hovered and pressed frame and the plain button's pressed fill (button_active); its rest fill and frame are geometry::default_button_rest's, refined after geometry::button")
+        .not_themeable("shadow", "none: next::variants::default_button builds its custom variant with .shadow(false) (native-theme-gpui/variants.rs, default_button_from; button/button.rs, ButtonVariant::shadow)")
+        .instance("variant", "native_theme_gpui::next::variants::default_button: a custom variant with the default button's hover fill (button.body(DEFAULT).fill), label (button.label(DEFAULT).color) and hovered and pressed frame and the plain button's pressed fill (button_active); its rest fill and frame are next::geometry::default_button_rest's, refined after next::geometry::button")
 }
 
-/// `info` with the label's two config lines of a Button that
-/// `geometry::button` styles: the weight it carries and the size
-/// `geometry::button_label` gives the label.
-fn styled_label_notes(info: WidgetInfo) -> WidgetInfo {
-    info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
-        .config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+/// `info` with the label's two config lines of a Button the installed 0.8.0
+/// theme styles through `next::geometry::button`: the weight it carries,
+/// and the size `next::geometry::button_label` gives the label
+/// (`demo::labelled`, which every labelled Button goes through).
+fn next_styled_label_notes(info: WidgetInfo) -> WidgetInfo {
+    next_label_size_note(info.config("font-weight", "geometry::button carries button.label(NONE).weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"))
+}
+
+/// `info` with the label size line of a Button labelled through
+/// `demo::labelled`, which reads `next::geometry::button_label`.
+fn next_label_size_note(info: WidgetInfo) -> WidgetInfo {
+    info.config("label size", "button.label(NONE).size_px through next::geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+}
+
+/// `info` with the flat button's keyboard focus stroke,
+/// `button.body(FOCUS_VISIBLE; variant=Flat).stroke.color`, where a rule of
+/// `r`, the installed 0.8.0 theme, states it for the state, on a Ghost
+/// Button `geometry::button` edges at `button.body(NONE).stroke.width`: not
+/// mapped where gpui-component's own focus treatment draws another colour or
+/// on another trigger. Upstream styles a focused Button after the caller's
+/// style and gives no hook for it (button/button.rs:936-938): on any focus,
+/// its border in `ring`, with the band round it where the band is on, and
+/// with no border width and the band off a 1 px line inside the edge in the
+/// variant's text colour at 60 % (styled.rs:250-298, focus_style;
+/// button/button.rs:23, FOCUS_LINE_OPACITY; :653-659). The trigger differs where a focus that did not
+/// follow a key, `button.body(FOCUSED; variant=Flat)`, gives another stroke
+/// colour or none (spec §2, `from_state`). `info` as it is where no rule
+/// states the stroke for the state, or where both agree with what upstream
+/// draws.
+pub(crate) fn flat_focus_stroke(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
+    let home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color";
+    let keyed = r
+        .button
+        .body(ButtonQuery::flat().state(WidgetState::FOCUS_VISIBLE));
+    if !keyed.from_state.contains(PartStated::STROKE) {
+        return info;
+    }
+    let stated = state_stroke_color_of(&keyed);
+    let pointer = state_stroke_color_of(
+        &r.button
+            .body(ButtonQuery::flat().state(WidgetState::FOCUSED)),
+    );
+    let bordered = stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|w| w > 0.0);
+    let (drawn, line) = if bordered || t.focus_ring {
+        (
+            t.ring,
+            format!(
+                "its border in ThemeColor ring, {}{}",
+                super::as_rgba(t.ring),
+                if t.focus_ring {
+                    ", with the band round it"
+                } else {
+                    ""
+                }
+            ),
+        )
+    } else {
+        let inside = t.secondary_foreground.opacity(0.6);
+        (
+            inside,
+            format!(
+                "with no border width a 1 px line inside its edge in the variant's text colour, secondary_foreground, at 60 %, {} (button/button.rs:23, FOCUS_LINE_OPACITY; :653-659)",
+                super::as_rgba(inside)
+            ),
+        )
+    };
+    let mut why = Vec::new();
+    match stated {
+        Some(colour) if colour == drawn => {}
+        Some(colour) => why.push(format!(
+            "the stated colour, {}, is drawn nowhere",
+            super::as_rgba(colour)
+        )),
+        None => why.push(
+            "the rule states it in a form gpui cannot draw (not one stroke of one colour, nor none)"
+                .to_string(),
+        ),
+    }
+    if pointer != stated {
+        why.push(match pointer {
+            Some(colour) => format!(
+                "a focus that did not follow a key, whose stroke button.body(FOCUSED; variant=Flat).stroke.color is {}, is drawn as one that did",
+                super::as_rgba(colour)
+            ),
+            None => "a focus that did not follow a key, for which no rule states button.body(FOCUSED; variant=Flat).stroke.color, is drawn as one that did".to_string(),
+        });
+    }
+    if why.is_empty() {
+        return info;
+    }
+    info.config(
+        "focus stroke",
+        format!(
+            "not mapped: a rule states {home}, and gpui-component styles a focused Button after the caller's style, with no hook for it (button/button.rs:936-938), on any focus: {line} (styled.rs:250-298, focus_style). So {}",
+            why.join("; and ")
+        ),
+    )
+}
+
+/// `info` with the hovered label of a Button built on a custom variant over
+/// `native_theme_gpui::variants::ghost_button`, whose label is `hovered`'s
+/// home where a rule states it: the variant's one foreground in every state,
+/// where gpui-component's own ghost letters `accent_foreground` under the
+/// pointer.
+fn one_label(info: WidgetInfo, hovered: &str) -> WidgetInfo {
+    info.not_themeable(
+        "hover text",
+        format!("secondary_foreground, as at rest: a custom variant letters every state in its one foreground (button/button.rs, ButtonVariant::text_color, Custom arm), so neither a hovered label a rule states, {hovered}, nor, where none does, gpui-component's own ghost's, accent_foreground under the pointer (button/button.rs, ButtonVariant::hovered, Ghost arm), can be drawn"),
+    )
 }
 
 /// The variant line of a Ghost Button built with
-/// `native_theme_gpui::variants::ghost_button`.
+/// `native_theme_gpui::next::variants::ghost_button`, and its one label.
 fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
+    one_label(info, "button.label(HOVER; variant=Flat).color").instance("variant", "native_theme_gpui::next::variants::ghost_button: native_theme_gpui::variants::ghost_button, flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background, and the flat button's hovered outline, button.body(HOVER; variant=Flat).stroke.color, as its colour where a rule states it for the state; with none, or where no 0.8.0 theme is installed or it states that outline in a form gpui cannot take, variants::ghost_button as it is (support::ghost_variant). Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
 }
 
-/// `info` with what the page's Ghost Button paints, unrefined, and its
-/// variant line: the status bar's side-panel toggle is that Ghost too, and
-/// takes it from here so the two cannot drift apart.
-pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
-    ghost_variant(colours(info, t, ButtonKind::Ghost, None))
+/// `info` with what the page's Ghost Button paints, unrefined but for
+/// `next::geometry::ghost_button_rest`, under the installed 0.8.0 theme
+/// `native`, and its variant line: the status bar's side-panel toggle is
+/// that Ghost too, and takes it from here so the two cannot drift apart.
+pub(super) fn native_ghost(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
+    ghost_outline_line(
+        ghost_variant(colours(info, t, ButtonKind::Ghost, None)),
+        native,
+    )
 }
 
 /// The variant line of a tool Button built with
-/// `native_theme_gpui::variants::toolbar_button`.
+/// `native_theme_gpui::variants::toolbar_button`, and its one label.
 fn toolbar_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where the theme states them, toolbar.button_hover_background, button_active_background and the outline button_hover_border_color, ghost_button's colour for each fill it leaves unstated, and no edge where it states no outline. It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar)")
+    one_label(info, "toolbar.button_label(HOVER).color").instance("variant", "native_theme_gpui::next::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where a rule of the theme states them for the state, toolbar.button(HOVER).fill, toolbar.button(PRESSED).fill and the outline toolbar.button(HOVER).stroke.color; for each fill it leaves unstated gpui-component's own toolbar button's, the ghost one a Toolbar makes of a Button it takes by child (accent, at half alpha in dark mode, under the pointer, button_active pressed; button/button.rs, Button::prepare_for_toolbar and ButtonVariant::hovered / active, Ghost arms), not the flat button's; and no edge where it states no outline (support::toolbar_variant). It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem), whose hover would recolour the label too")
+}
+
+/// What a tool Button built from the theme's toolbar states
+/// ([`ToolVariant::Toolbar`]) is filled with under the pointer where no rule
+/// states `toolbar.button(HOVER).fill`: gpui-component's own toolbar
+/// button's, the ghost's accent, at half alpha in dark mode
+/// (`next::variants::toolbar_button`).
+fn own_toolbar_hover(t: &Theme) -> ColorClaim {
+    if t.is_dark() {
+        claim(
+            "hover bg",
+            "accent",
+            t.accent.opacity(0.5),
+            "native-theme-gpui/next/variants.rs:68",
+        )
+    } else {
+        claim(
+            "hover bg",
+            "accent",
+            t.accent,
+            "native-theme-gpui/next/variants.rs:66",
+        )
+    }
+}
+
+/// What a tool Button built from the theme's toolbar states
+/// ([`ToolVariant::Toolbar`]) is filled with while pressed where no rule
+/// states `toolbar.button(PRESSED).fill`: gpui-component's own toolbar
+/// button's, the ghost's `button_active` (`next::variants::toolbar_button`).
+fn own_toolbar_active(t: &Theme) -> ColorClaim {
+    claim(
+        "active bg",
+        "button_active",
+        t.button_active,
+        "native-theme-gpui/next/variants.rs:75",
+    )
 }
 
 /// `info` with what a tool Button built with
-/// `native_theme_gpui::variants::toolbar_button` paints, and its variant
-/// line: the hover and pressed fills `toolbar.button_hover_background` and
-/// `toolbar.button_active_background` where `native` states them, else the
-/// Ghost's tokens, and the outline under the pointer and while pressed,
-/// `toolbar.button_hover_border_color`, at `button.border.line_width`, the
-/// width `geometry::toolbar_button_rest` gives the border. The window's
-/// toolbar buttons, the Buttons page's toolbar items and the Basic page's
-/// icon buttons take it from here so they cannot drift apart.
+/// `native_theme_gpui::next::variants::toolbar_button` paints, and its
+/// variant line: the hover and pressed fills `toolbar.button(HOVER).fill`
+/// and `toolbar.button(PRESSED).fill` where a rule of `native` states them
+/// for the state, else gpui-component's own toolbar button's
+/// ([`own_toolbar_hover`], [`own_toolbar_active`]), and the outline under
+/// the pointer and while pressed, `toolbar.button(HOVER).stroke.color`, at
+/// the width `next::geometry::toolbar_button_rest` gives the border
+/// ([`rest_border`]). Each state's colour is the theme's or gpui-component's
+/// own only where the variant is built from it (`from`); where it fell back
+/// on `variants::ghost_button`, the flat button's tokens.
+/// The window's toolbar buttons, the Buttons page's toolbar items and the
+/// Basic page's icon buttons take it from here so they cannot drift apart.
 pub(super) fn native_toolbar(
     info: WidgetInfo,
     t: &Theme,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
+    from: ToolVariant,
 ) -> WidgetInfo {
+    let states = from.states(native);
     let info = info.color(claim(
         "text",
         "secondary_foreground",
         t.secondary_foreground,
         "native-theme-gpui/variants.rs:62",
     ));
-    let info = match stated_claim(
-        "hover bg",
-        "button_hover_background",
-        native.and_then(|r| r.toolbar.button_hover_background),
-        "native-theme-gpui/variants.rs:163",
-    ) {
-        Some(hover) => info.color(hover),
-        None => info.color(claim(
+    let hover = states
+        .map(|r| {
+            stated_claim(
+                "hover bg",
+                "toolbar.button(HOVER).fill",
+                state_fill_of(
+                    &r.toolbar.button(WidgetState::HOVER),
+                    "toolbar.button(HOVER).fill",
+                ),
+                "native-theme-gpui/next/builders.rs:741",
+            )
+        })
+        .unwrap_or_default();
+    let info = info.colors(hover.or_own(if from == ToolVariant::Toolbar {
+        own_toolbar_hover(t)
+    } else {
+        claim(
             "hover bg",
             "secondary_hover",
             t.secondary_hover,
             "native-theme-gpui/variants.rs:63",
-        )),
-    };
-    let info = match stated_claim(
-        "active bg",
-        "button_active_background",
-        native.and_then(|r| r.toolbar.button_active_background),
-        "native-theme-gpui/variants.rs:165",
-    ) {
-        Some(active) => info.color(active),
-        None => info.color(claim(
+        )
+    }));
+    let active = states
+        .map(|r| {
+            stated_claim(
+                "active bg",
+                "toolbar.button(PRESSED).fill",
+                state_fill_of(
+                    &r.toolbar.button(WidgetState::PRESSED),
+                    "toolbar.button(PRESSED).fill",
+                ),
+                "native-theme-gpui/next/builders.rs:745",
+            )
+        })
+        .unwrap_or_default();
+    let info = info.colors(active.or_own(if from == ToolVariant::Toolbar {
+        own_toolbar_active(t)
+    } else {
+        claim(
             "active bg",
             "secondary_active",
             t.secondary_active,
             "native-theme-gpui/variants.rs:64",
-        )),
-    };
-    let edge = native.and_then(|r| {
-        edge_claim(
-            "border, hovered or pressed",
-            "button_hover_border_color",
-            r.toolbar.button_hover_border_color,
-            Some(r.button.border.line_width),
-            "native-theme-gpui/variants.rs:164",
         )
-    });
-    toolbar_variant(info.colors(edge))
+    }));
+    let edge = edge_claim(
+        "border, hovered or pressed",
+        "toolbar.button(HOVER).stroke.color",
+        states.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER))),
+        rest_border(native),
+        "native-theme-gpui/next/builders.rs:742",
+    );
+    from.line(info.colors(edge))
 }
 
-/// The width of the transparent border `geometry::toolbar_button_rest` gives
-/// a tool Button under `native`, `button.border.line_width`, where it states
-/// the toolbar's outline; `None` where it gives none.
-pub(super) fn rest_border(native: Option<&ResolvedTheme>) -> Option<f32> {
+/// The width of the transparent border `next::geometry::toolbar_button_rest`
+/// gives a tool Button under `native`, `button.body(NONE).stroke.width`,
+/// where a rule states the toolbar's outline,
+/// `toolbar.button(HOVER).stroke.color`, and the builder applies; `None`
+/// where it gives none.
+pub(super) fn rest_border(native: Option<&NextTheme>) -> Option<f32> {
     native
-        .filter(|r| r.toolbar.button_hover_border_color.is_some())
-        .map(|r| r.button.border.line_width)
+        .filter(|r| next::geometry::toolbar_button_rest(r).is_ok())
+        .filter(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER)).is_some())
+        .and_then(|r| stroke_width_of(&r.button.body(WidgetState::NONE)))
+}
+
+/// The fill and corner radius `next::geometry::toolbar_button_rest` lays
+/// over a tool Button at rest under `native`, `toolbar.button(NONE)`'s, each
+/// where stated; each `None` where unstated, or where that refinement cannot
+/// be built and is not applied. Upstream replays the refinement over the
+/// selected and disabled styles (button/button.rs, RenderOnce for Button).
+pub(super) fn rest_capsule(native: Option<&NextTheme>) -> (Option<Hsla>, Option<f32>) {
+    let Some(r) = native.filter(|r| next::geometry::toolbar_button_rest(r).is_ok()) else {
+        return (None, None);
+    };
+    let rest = r.toolbar.button(WidgetState::NONE);
+    (drawn_fill(&rest), radius_of(&rest))
+}
+
+/// What a tool Button's variant is built from, `support::toolbar_variant`'s
+/// outcome, which its colour claims follow.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ToolVariant {
+    /// `next::variants::toolbar_button`: the installed theme's toolbar
+    /// states over `variants::ghost_button`, gpui-component's own toolbar
+    /// button's fill for each state they leave unstated.
+    Toolbar,
+    /// `variants::ghost_button` alone, with no state of the theme's over it:
+    /// no 0.8.0 theme is installed (`None`), or it states the home it holds
+    /// in a form gpui cannot take, which `next::variants::toolbar_button`
+    /// needs.
+    Ghost(Option<Unmapped>),
+}
+
+impl ToolVariant {
+    /// The theme whose toolbar states the variant draws: `native` where the
+    /// variant is built from it, else none.
+    fn states(self, native: Option<&NextTheme>) -> Option<&NextTheme> {
+        match self {
+            Self::Toolbar => native,
+            Self::Ghost(_) => None,
+        }
+    }
+
+    /// `info` with the variant's line: `toolbar_button`'s, or, where it fell
+    /// back, which home it lacked (`WidgetInfo::next_variant_unmapped`).
+    fn line(self, info: WidgetInfo) -> WidgetInfo {
+        match self {
+            Self::Ghost(Some(unstated)) => info.next_variant_unmapped("toolbar_button", unstated),
+            Self::Toolbar | Self::Ghost(None) => toolbar_variant(info),
+        }
+    }
 }
 
 /// The "fill" note of a tool Button built with
-/// `native_theme_gpui::variants::toolbar_button`: what it fills with at rest,
-/// under the pointer and while pressed under `native`, each state the
-/// toolbar field where `native` states it, else the Ghost's token, as
-/// [`native_toolbar`] claims them.
-pub(super) fn toolbar_fill(native: Option<&ResolvedTheme>) -> String {
-    let toolbar = native.map(|r| &r.toolbar);
-    let hover = if toolbar.is_some_and(|t| t.button_hover_background.is_some()) {
-        "toolbar.button_hover_background"
-    } else {
-        "ghost_button's secondary_hover"
+/// `native_theme_gpui::next::variants::toolbar_button`: what it fills with
+/// at rest, `toolbar.button(NONE).fill` where stated ([`rest_capsule`]),
+/// under the pointer and while pressed under `native`, each state
+/// the toolbar's home where a rule of `native` states it and the variant is
+/// built from it (`from`), else, where the variant is built from the
+/// theme, gpui-component's own toolbar button's token, and where it fell
+/// back, the flat button's, as [`native_toolbar`] claims them.
+pub(super) fn toolbar_fill(native: Option<&NextTheme>, from: ToolVariant) -> String {
+    let states = from.states(native);
+    let ruled =
+        |state| states.is_some_and(|r| drawn_state_fill(&r.toolbar.button(state)).is_some());
+    let own = from == ToolVariant::Toolbar;
+    let hover = match (ruled(WidgetState::HOVER), own) {
+        (true, _) => "toolbar.button(HOVER).fill",
+        (false, true) => {
+            "gpui-component's own toolbar button's, the ghost's accent (at half alpha in dark mode)"
+        }
+        (false, false) => "ghost_button's secondary_hover",
     };
-    let pressed = if toolbar.is_some_and(|t| t.button_active_background.is_some()) {
-        "toolbar.button_active_background"
-    } else {
-        "ghost_button's secondary_active"
+    let pressed = match (ruled(WidgetState::PRESSED), own) {
+        (true, _) => "toolbar.button(PRESSED).fill",
+        (false, true) => "gpui-component's own toolbar button's, the ghost's button_active",
+        (false, false) => "ghost_button's secondary_active",
     };
-    if toolbar.is_some_and(|t| t.button_hover_border_color.is_some()) {
+    if rest_capsule(native).0.is_some() {
         format!(
-            "none at rest: geometry::toolbar_button_rest's transparent fill replaces the variant's own, its colour toolbar.button_hover_border_color mixed toward transparent (button/button.rs, ButtonVariant::bg_color); under the pointer {hover}, and pressed {pressed}"
+            "toolbar.button(NONE).fill at rest: next::geometry::toolbar_button_rest's fill, in place of the variant's own, its colour mixed toward transparent (button/button.rs, ButtonVariant::bg_color); under the pointer {hover}, and pressed {pressed}"
+        )
+    } else if rest_border(native).is_some() {
+        format!(
+            "none at rest: next::geometry::toolbar_button_rest's transparent fill replaces the variant's own, its colour toolbar.button(HOVER).stroke.color mixed toward transparent (button/button.rs, ButtonVariant::bg_color); under the pointer {hover}, and pressed {pressed}"
         )
     } else {
         format!(
@@ -899,49 +1234,245 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
-/// `info` with what a checked tool Button paints, in place of what
-/// [`native_toolbar`] claims for an unchecked one:
-/// `geometry::toolbar_button_checked`'s fill and text where `native` states
-/// the toolbar's checked fill; else, as [`native_ghost_selected`] says, the
-/// variant's active colour as the selected fill, which that builder sets
-/// too, under the variant's one foreground; and its pen,
-/// `toolbar.button_checked_border_color`, where `native` states it. Upstream
-/// draws no hover or press style on a selected Button, so it claims no hover
-/// or pressed fill, and the edge stays the rest one under the pointer.
-fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
-    let checked_fill = stated_claim(
-        "checked fill",
-        "button_checked_background",
-        native.and_then(|r| r.toolbar.button_checked_background),
-        "native-theme-gpui/geometry.rs:1468",
-    );
-    let info = match (checked_fill, native) {
-        (Some(fill), Some(r)) => {
-            let text = match stated_claim(
-                "checked text",
-                "checked_text_color",
-                r.button.checked_text_color,
-                "native-theme-gpui/geometry.rs:1463",
-            ) {
-                Some(text) => text,
-                None => claim(
-                    "checked text",
-                    "active_text_color",
-                    stated(r.button.active_text_color),
-                    "native-theme-gpui/geometry.rs:1463",
-                ),
-            };
-            info.color(fill).color(text)
+/// What the status bar's side-panel toggle is drawn with while it is on,
+/// `demo::checked_toggle`'s outcome, which its colour claims follow.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum GhostChecked {
+    /// `demo::ghost_checked_variant`: `next::variants::ghost_button` with
+    /// `fill`, `button.body(CHECKED; variant=Flat).fill`, as its active
+    /// colour and `text`, `button.label(CHECKED; variant=Flat).color`, as
+    /// its foreground, each `None` where no rule states it for the state.
+    Checked {
+        fill: Option<Hsla>,
+        text: Option<Hsla>,
+    },
+    /// gpui-component's own selected ghost, `ButtonKind::Ghost`: no 0.8.0
+    /// theme is installed (`None`), or it states a home the checked variant
+    /// needs in a form gpui cannot take.
+    Ghost(Option<Unmapped>),
+}
+
+/// `info` with what the status bar's side-panel toggle paints while it is
+/// on, a selected Button drawn as `drawn` says (`demo::panel_toggle`): with
+/// the checked variant, its fill and text
+/// `button.body(CHECKED; variant=Flat).fill` and
+/// `button.label(CHECKED; variant=Flat).color` where a rule states each for
+/// the state, each named in a note, else claimed as
+/// [`native_ghost_selected`] claims it, gpui-component's own selected
+/// ghost's (spec §10, rule 0a); without it, both claimed so, and the home
+/// it lacked named.
+pub(super) fn native_ghost_checked(info: WidgetInfo, t: &Theme, drawn: GhostChecked) -> WidgetInfo {
+    let (fill, text) = match drawn {
+        GhostChecked::Checked { fill, text } => (fill, text),
+        GhostChecked::Ghost(None) => return native_ghost_selected(info, t),
+        GhostChecked::Ghost(Some(unmapped)) => {
+            return native_ghost_selected(info, t).instance(
+                "checked colours",
+                format!("{unmapped}: gpui-component's own selected ghost is drawn"),
+            );
         }
-        _ => {
-            let info = match stated_claim(
-                "selected bg",
-                "button_active_background",
-                native.and_then(|r| r.toolbar.button_active_background),
-                "native-theme-gpui/variants.rs:165",
-            ) {
-                Some(active) => info.color(active),
-                None => info.color(claim(
+    };
+    // The claim gate reads no home with an axis value, so a stated checked
+    // colour is named in a note, which the Widget Info rows' homes repeat.
+    let info = match fill {
+        Some(fill) => info.instance(
+            "selected bg",
+            format!(
+                "button.body(CHECKED; variant=Flat).fill {}, the checked variant's active colour (demo::ghost_checked_variant)",
+                super::as_rgba(fill)
+            ),
+        ),
+        None => info.color(claim(
+            "selected bg",
+            "secondary_active",
+            t.secondary_active,
+            "native-theme-gpui/variants.rs:64",
+        )),
+    };
+    let info = match text {
+        Some(text) => info.instance(
+            "text",
+            format!(
+                "button.label(CHECKED; variant=Flat).color {}, the checked variant's foreground (demo::ghost_checked_variant)",
+                super::as_rgba(text)
+            ),
+        ),
+        None => info.color(claim(
+            "text",
+            "secondary_foreground",
+            t.secondary_foreground,
+            "native-theme-gpui/variants.rs:62",
+        )),
+    };
+    ghost_variant(info)
+}
+
+/// Where a checked tool Button's fill comes from, as [`toolbar_checked`]
+/// claims it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum CheckedFill {
+    /// `toolbar.button(CHECKED).fill`, under the checked text.
+    Checked,
+    /// `toolbar.button(PRESSED).fill`, under the variant's text.
+    Pressed,
+    /// gpui-component's own selected ghost's fill, `secondary_active`, which
+    /// `next::geometry::toolbar_button_checked` sets where no rule states the
+    /// checked fill, under the variant's text.
+    Own,
+    /// `next::geometry::toolbar_button_rest`'s fill, `toolbar.button(NONE).fill`
+    /// where stated, else its transparent one, which gpui-component replays
+    /// over the selected style (button/button.rs, RenderOnce for Button) and
+    /// no checked fill replaces.
+    Rest,
+    /// The custom variant's selected fill, its pressed one, under its text:
+    /// gpui-component's own toolbar button's `button_active` where the
+    /// variant is built from the theme's toolbar states, else the flat
+    /// button's `secondary_active`.
+    Variant,
+}
+
+/// The fill [`toolbar_checked`] claims for a checked tool Button from the
+/// parts it reads -- `checked`, `toolbar.button(CHECKED)`; `pressed`,
+/// `toolbar.button(PRESSED)` --
+/// `applied` being whether `next::geometry::toolbar_button_checked` applies,
+/// `cleared` whether `next::geometry::toolbar_button_rest` gives the Button
+/// a fill, its transparent one ([`rest_border`]) or `toolbar.button(NONE).fill`
+/// ([`rest_capsule`]), `states` whether the variant is
+/// built from the theme's toolbar states ([`ToolVariant::Toolbar`]): where
+/// the builder applies, the checked fill where its rules state it, else
+/// gpui-component's own selected ghost's (`next::builders::toolbar_button_checked`);
+/// else, where the rest refinement gives the fill, its fill; else the
+/// variant's selected fill, its pressed one (button/button.rs,
+/// ButtonVariant::selected): the toolbar's pressed fill where the variant
+/// is built from the toolbar's states and a rule states it, else the
+/// variant's own.
+pub(crate) fn checked_fill(
+    checked: &PartStyle,
+    pressed: &PartStyle,
+    applied: bool,
+    cleared: bool,
+    states: bool,
+) -> CheckedFill {
+    let stated = |part: &PartStyle| drawn_state_fill(part).is_some();
+    if applied && stated(checked) {
+        CheckedFill::Checked
+    } else if applied {
+        CheckedFill::Own
+    } else if cleared {
+        CheckedFill::Rest
+    } else if states && stated(pressed) {
+        CheckedFill::Pressed
+    } else {
+        CheckedFill::Variant
+    }
+}
+
+/// The fill and text a checked tool Button claims under `native`, as
+/// [`toolbar_checked`] says, `applied` being whether
+/// `next::geometry::toolbar_button_checked` applies under it, `from` what
+/// the variant is built from.
+fn toolbar_checked_colors(
+    info: WidgetInfo,
+    t: &Theme,
+    native: Option<&NextTheme>,
+    applied: bool,
+    from: ToolVariant,
+) -> WidgetInfo {
+    let source = native.map_or(CheckedFill::Variant, |r| {
+        checked_fill(
+            &r.toolbar.button(WidgetState::CHECKED),
+            &r.toolbar.button(WidgetState::PRESSED),
+            applied,
+            rest_border(native).is_some() || rest_capsule(native).0.is_some(),
+            from == ToolVariant::Toolbar,
+        )
+    });
+    match (source, native) {
+        (CheckedFill::Checked, Some(r)) => {
+            let fill = stated_claim(
+                "checked fill",
+                "toolbar.button(CHECKED).fill",
+                state_fill_of(
+                    &r.toolbar.button(WidgetState::CHECKED),
+                    "toolbar.button(CHECKED).fill",
+                ),
+                "native-theme-gpui/next/builders.rs:720",
+            );
+            // The toolbar's checked label, else the push button's, else none
+            // set, so the variant's one foreground letters it.
+            let text = stated_claim(
+                "checked text",
+                "toolbar.button_label(CHECKED).color",
+                state_text_color_of(&r.toolbar.button_label(WidgetState::CHECKED)),
+                "native-theme-gpui/next/builders.rs:710",
+            )
+            .or_else(|| {
+                stated_claim(
+                    "checked text",
+                    "button.label(CHECKED).color",
+                    state_text_color_of(&r.button.label(WidgetState::CHECKED)),
+                    "native-theme-gpui/next/builders.rs:715",
+                )
+            })
+            .or_else(|| {
+                Some(claim(
+                    "checked text",
+                    "secondary_foreground",
+                    t.secondary_foreground,
+                    "native-theme-gpui/variants.rs:62",
+                ))
+            });
+            info.colors(fill).colors(text)
+        }
+        (source, native) => {
+            let active = match (source, native) {
+                (CheckedFill::Pressed, Some(r)) => stated_claim(
+                    "selected bg",
+                    "toolbar.button(PRESSED).fill",
+                    // `checked_fill` gives `Pressed` only where the fill
+                    // is drawn, so it is no `Unmapped` here.
+                    state_fill_of(
+                        &r.toolbar.button(WidgetState::PRESSED),
+                        "toolbar.button(PRESSED).fill",
+                    )
+                    .ok()
+                    .flatten(),
+                    "native-theme-gpui/next/builders.rs:745",
+                ),
+                // `checked_fill` gives `Rest` only where `toolbar_button_rest`
+                // applies, which lays this fill over the selected style.
+                (CheckedFill::Rest, Some(r)) => stated_claim(
+                    "selected bg",
+                    "toolbar.button(NONE).fill",
+                    fill_of(
+                        &r.toolbar.button(WidgetState::NONE),
+                        "toolbar.button(NONE).fill",
+                    )
+                    .ok()
+                    .flatten(),
+                    "native-theme-gpui/next/builders.rs:982",
+                ),
+                (CheckedFill::Own, Some(_)) => Some(claim(
+                    "selected bg",
+                    "secondary_active",
+                    t.secondary_active,
+                    "native-theme-gpui/next/mod.rs:748",
+                )),
+                _ => None,
+            };
+            let info = match (active, source) {
+                (Some(active), _) => info.color(active),
+                (None, CheckedFill::Rest) => info.not_themeable(
+                    "selected bg",
+                    "none: next::geometry::toolbar_button_rest's transparent fill, which gpui-component replays over the selected style (button/button.rs, RenderOnce for Button) and next::geometry::toolbar_button_checked replaces only where it applies",
+                ),
+                (None, _) if from == ToolVariant::Toolbar => info.color(claim(
+                    "selected bg",
+                    "button_active",
+                    t.button_active,
+                    "native-theme-gpui/next/variants.rs:75",
+                )),
+                (None, _) => info.color(claim(
                     "selected bg",
                     "secondary_active",
                     t.secondary_active,
@@ -955,19 +1486,37 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 "native-theme-gpui/variants.rs:62",
             ))
         }
-    };
+    }
+}
+
+/// `info` with what a checked tool Button paints, in place of what
+/// [`native_toolbar`] claims for an unchecked one:
+/// `next::geometry::toolbar_button_checked`'s fill and text where a rule of
+/// `native` states the toolbar's checked fill, `toolbar.button(CHECKED).fill`;
+/// else the selected fill that builder sets, `toolbar.button(PRESSED).fill`,
+/// else `button.body(PRESSED).fill`, or, as [`native_ghost_selected`] says,
+/// the variant's active colour, under the variant's one foreground; and its
+/// pen, `toolbar.button(CHECKED).stroke.color`, where a rule states it, at
+/// [`rest_border`]'s width. Where the builder lacks a home it reads, it is
+/// not applied, and the variant's selected style stands. Upstream draws no
+/// hover or press style on a selected Button, so it claims no hover or
+/// pressed fill, and the edge stays the rest one under the pointer.
+fn toolbar_checked(
+    info: WidgetInfo,
+    t: &Theme,
+    native: Option<&NextTheme>,
+    from: ToolVariant,
+) -> WidgetInfo {
+    let applied = native.filter(|r| next::geometry::toolbar_button_checked(r).is_ok());
+    let info = toolbar_checked_colors(info, t, native, applied.is_some(), from);
     // The pen's width is toolbar_button_rest's, which sets one only where the
     // toolbar's hover outline is stated.
     let info = info.colors(edge_claim(
         "checked edge",
-        "button_checked_border_color",
-        native.and_then(|r| r.toolbar.button_checked_border_color),
-        native.and_then(|r| {
-            r.toolbar
-                .button_hover_border_color
-                .map(|_| r.button.border.line_width)
-        }),
-        "native-theme-gpui/geometry.rs:1520",
+        "toolbar.button(CHECKED).stroke.color",
+        applied.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED))),
+        rest_border(native),
+        "native-theme-gpui/next/builders.rs:724",
     ));
     info.not_themeable(
         "hover outline while checked",
@@ -996,22 +1545,156 @@ impl ToolSize {
 }
 
 /// `info` given a tool button's size and corners, a Ghost at `size` refined
-/// by `demo::tool_box_of` where `native` is installed: rounded by
-/// `button.border.corner_radius` and padded by the `button.border.padding`
-/// sides it states, with no fixed height where a top or bottom side is
-/// stated, upstream's height and side padding standing only for what it
-/// leaves unstated; with no native theme, upstream's whole. `icon_child` is
-/// whether the icon is the Button's child, which has upstream lay it out as
-/// a labelled Button. `outline` is the width of the transparent border
-/// `geometry::toolbar_button_rest` gives the Button, which it takes off each
-/// stated side, where the theme states the toolbar's outline
-/// ([`rest_border`]).
+/// by `demo::tool_box_of` where the 0.8.0 theme `native` is installed:
+/// rounded by `button.body(NONE).corners` where stated, and padded by the
+/// `button.body(NONE)` padding sides it states, with no fixed height where a
+/// top or bottom side is stated, upstream's height, side padding and radius
+/// standing only for what it leaves unstated; with no native theme,
+/// upstream's whole. `icon_child` is whether the icon is the Button's child,
+/// which has upstream lay it out as a labelled Button. `outline` is the
+/// border a refinement after the box gives the Button, which it takes off
+/// each stated side ([`Edge`]).
 pub(crate) fn tool_button_size(
     info: WidgetInfo,
     size: ToolSize,
     icon_child: bool,
-    native: Option<&ResolvedButtonTheme>,
-    outline: Option<f32>,
+    native: Option<&NextTheme>,
+    outline: Option<Edge>,
+) -> WidgetInfo {
+    tool_box_size(info, size, icon_child, native.map(ToolBox::of), outline)
+}
+
+/// A border a refinement applied after a tool button's box lays out, which
+/// it takes off each stated padding side, floored at 0.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Edge {
+    /// Its width.
+    pub width: f32,
+    /// The home the width is read at.
+    pub home: &'static str,
+    /// The border, named with the refinement that gives it.
+    pub border: &'static str,
+}
+
+impl Edge {
+    /// `next::geometry::toolbar_button_rest`'s transparent border, `width`
+    /// wide, where the theme states the toolbar's outline ([`rest_border`]).
+    pub(crate) fn toolbar_rest(width: f32) -> Self {
+        Self {
+            width,
+            home: "button.body(NONE).stroke.width",
+            border: "the transparent border next::geometry::toolbar_button_rest gives the Button",
+        }
+    }
+
+    /// `next::geometry::ghost_button_checked`'s border on a selected flat
+    /// Button, in the checked flat body's pen where a rule states it for
+    /// `CHECKED` and the refinement can be built under `native`.
+    pub(crate) fn ghost_checked(native: Option<&NextTheme>) -> Option<Self> {
+        Self::flat(
+            native,
+            next::geometry::ghost_button_checked,
+            WidgetState::CHECKED,
+            "button.body(CHECKED; variant=Flat).stroke.width",
+            "the border in the checked flat pen next::geometry::ghost_button_checked gives the selected Button",
+        )
+    }
+
+    /// `next::geometry::ghost_button_rest`'s transparent border on a flat
+    /// Button at rest, of the hovered flat body's stroke width, where a rule
+    /// states that stroke for `HOVER` and the refinement can be built under
+    /// `native`.
+    pub(crate) fn ghost_rest(native: Option<&NextTheme>) -> Option<Self> {
+        Self::flat(
+            native,
+            next::geometry::ghost_button_rest,
+            WidgetState::HOVER,
+            "button.body(HOVER; variant=Flat).stroke.width",
+            "the transparent border next::geometry::ghost_button_rest gives the Button",
+        )
+    }
+
+    /// The border `refinement` gives a flat Button under `native`, where it
+    /// can be built and a rule states `button.body(state; variant=Flat)`'s
+    /// stroke for `state`: that stroke's width, read at `home`.
+    fn flat(
+        native: Option<&NextTheme>,
+        refinement: fn(&NextTheme) -> next::Mapped<gpui::StyleRefinement>,
+        state: WidgetState,
+        home: &'static str,
+        border: &'static str,
+    ) -> Option<Self> {
+        let r = native.filter(|r| refinement(r).is_ok())?;
+        let body = r.button.body(ButtonQuery::flat().state(state));
+        state_stroke_color_of(&body)?;
+        Some(Self {
+            width: stroke_width_of(&body)?,
+            home,
+            border,
+        })
+    }
+}
+
+/// [`tool_button_size`] of a toolbar Button, refined by
+/// `next::geometry::toolbar_button_rest` after its box: its outline
+/// [`rest_border`], and its corners `toolbar.button(NONE).corners` where
+/// stated ([`ToolBox::of_toolbar`]).
+pub(crate) fn toolbar_button_size(
+    info: WidgetInfo,
+    size: ToolSize,
+    icon_child: bool,
+    native: Option<&NextTheme>,
+) -> WidgetInfo {
+    tool_box_size(
+        info,
+        size,
+        icon_child,
+        native.map(ToolBox::of_toolbar),
+        rest_border(native).map(Edge::toolbar_rest),
+    )
+}
+
+/// What a 0.8.0 theme states of the box `demo::tool_box_of` gives a tool
+/// button: `button.body(NONE)`'s padding sides (top, right, bottom, left)
+/// and its corner radius, and for a toolbar Button its own corner radius,
+/// `toolbar.button(NONE).corners`, which `next::geometry::toolbar_button_rest`
+/// sets after the box ([`rest_capsule`]), each `None` where unstated or in a
+/// form gpui cannot draw.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolBox {
+    pub sides: [Option<f32>; 4],
+    pub radius: Option<f32>,
+    pub capsule: Option<f32>,
+}
+
+impl ToolBox {
+    /// The box `r` states, of a Button no toolbar refinement reaches.
+    pub(crate) fn of(r: &NextTheme) -> Self {
+        let body = r.button.body(WidgetState::NONE);
+        Self {
+            sides: padding_of(&body),
+            radius: radius_of(&body),
+            capsule: None,
+        }
+    }
+
+    /// The box `r` states, of a toolbar Button.
+    pub(crate) fn of_toolbar(r: &NextTheme) -> Self {
+        Self {
+            capsule: rest_capsule(Some(r)).1,
+            ..Self::of(r)
+        }
+    }
+}
+
+/// [`tool_button_size`] of the box the theme states, `stated`, `None` where
+/// no native theme is installed.
+pub(crate) fn tool_box_size(
+    info: WidgetInfo,
+    size: ToolSize,
+    icon_child: bool,
+    stated: Option<ToolBox>,
+    outline: Option<Edge>,
 ) -> WidgetInfo {
     let (height, across, at) = size.upstream();
     let labelled = if icon_child {
@@ -1025,40 +1708,50 @@ pub(crate) fn tool_button_size(
             "{what} -- rems, so the platform's font{labelled} (button/button.rs, RenderOnce for Button)"
         )
     };
-    let Some(b) = native else {
+    let Some(ToolBox {
+        sides: [top, right, bottom, left],
+        radius,
+        capsule,
+    }) = stated
+    else {
         return info.not_themeable(
             "size",
             upstream_size(format!("{height} with {across} at {at}")),
         );
     };
-    let p = &b.border.padding;
     let stated: Vec<String> = [
-        ("top", p.top),
-        ("right", p.right),
-        ("bottom", p.bottom),
-        ("left", p.left),
+        ("top", top),
+        ("right", right),
+        ("bottom", bottom),
+        ("left", left),
     ]
     .into_iter()
     .filter_map(|(side, v)| v.map(|v| format!("{side} {}px", px_text(v))))
     .collect();
-    let vertical = p.top.is_some() || p.bottom.is_some();
-    let radius = format!(
-        "button.border.corner_radius, {}px",
-        px_text(b.border.corner_radius.max(0.))
-    );
+    let vertical = top.is_some() || bottom.is_some();
+    let radius = match (capsule, radius) {
+        (Some(capsule), _) => format!(
+            "toolbar.button(NONE).corners, {}px, which next::geometry::toolbar_button_rest sets over the box's radius",
+            px_text(capsule.max(0.))
+        ),
+        (None, Some(radius)) => {
+            format!("button.body(NONE).corners, {}px", px_text(radius.max(0.)))
+        }
+        (None, None) => "the Theme's radius upstream rounds a Button by (button/button.rs, RenderOnce for Button), where button.body(NONE).corners states none gpui can draw".to_string(),
+    };
     let sets = "which the showcase sets on the Button (demo::tool_box_of)";
     let text = match (stated.is_empty(), vertical) {
         (true, _) => {
-            format!("{radius}, {sets}; the theme states no button.border.padding side")
+            format!("{radius}, {sets}; the theme states no button.body(NONE).padding side")
         }
         (false, false) => format!(
-            "{radius}, and button.border.padding: {}, {sets}",
+            "{radius}, and button.body(NONE).padding: {}, {sets}",
             stated.join(", ")
         ),
         (false, true) => format!(
-            "{radius}, and button.border.padding: {}, {sets}, with no fixed height: the content's, padded by the stated top and bottom (h_auto){}",
+            "{radius}, and button.body(NONE).padding: {}, {sets}, with no fixed height: the content's, padded by the stated top and bottom (h_auto){}",
             stated.join(", "),
-            if p.top.is_none() || p.bottom.is_none() {
+            if top.is_none() || bottom.is_none() {
                 ", an unstated one none, as upstream pads a Button only across"
             } else {
                 ""
@@ -1066,37 +1759,39 @@ pub(crate) fn tool_button_size(
         ),
     };
     let text = match outline {
-        Some(w) => {
+        Some(Edge {
+            width: w,
+            home,
+            border,
+        }) => {
             let grows: Vec<&str> = [
-                ("top", p.top, vertical),
-                ("right", p.right, true),
-                ("bottom", p.bottom, vertical),
-                ("left", p.left, true),
+                ("top", top, vertical),
+                ("right", right, true),
+                ("bottom", bottom, vertical),
+                ("left", left, true),
             ]
             .into_iter()
             .filter(|&(_, v, laid)| laid && w > 0. && v.is_none_or(|v| v < w))
             .map(|(side, _, _)| side)
             .collect();
-            let width = format!("button.border.line_width, {}px", px_text(w));
+            let width = format!("{home}, {}px", px_text(w));
             let tail = if grows.is_empty() {
                 "so the outer box is unchanged".to_string()
             } else {
                 format!("which makes the box larger on the {}", grows.join(", "))
             };
             if stated.is_empty() {
-                format!(
-                    "{text}; geometry::toolbar_button_rest gives the Button a transparent border {width} wide, {tail}"
-                )
+                format!("{text}; {border}, {width} wide, {tail}")
             } else {
                 format!(
-                    "{text}; each stated side less {width}, floored at 0, the width of the transparent border geometry::toolbar_button_rest gives the Button, {tail}"
+                    "{text}; each stated side less {width}, floored at 0, the width of {border}, {tail}"
                 )
             }
         }
         None => text,
     };
     let info = info.config("radius and padding", text);
-    let unstated_across = match (p.left.is_none(), p.right.is_none()) {
+    let unstated_across = match (left.is_none(), right.is_none()) {
         (true, true) => Some(across.to_string()),
         (true, false) => Some(format!("{across} on the left")),
         (false, true) => Some(format!("{across} on the right")),
@@ -1112,7 +1807,7 @@ pub(crate) fn tool_button_size(
         Some(what) => info.not_themeable(
             "size",
             upstream_size(format!(
-                "{what} at {at}, upstream's for what button.border.padding leaves unstated"
+                "{what} at {at}, upstream's for what button.body(NONE).padding leaves unstated"
             )),
         ),
         None => info,
@@ -1147,16 +1842,16 @@ pub fn dropdown_button(t: &Theme, kind: ButtonKind) -> WidgetInfo {
 }
 
 /// The notes every Toggle and ToggleGroup the showcase builds shares: all
-/// are at the default Size, and take `geometry::toggle` where `styled`.
-pub(super) fn toggle_notes(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
-    let info = info
-        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
-        .not_themeable("size", "min_w_8 / h_8 at the default Size, upstream's own: the model states no flat-button frame (button/toggle.rs, Toggle::render)");
-    if styled {
-        info.config("text", "button.font's size and weight through geometry::toggle, which lands after the text_sm a Medium Toggle sets on itself (button/toggle.rs, Toggle::render)")
-    } else {
-        info
-    }
+/// are at the default Size.
+pub(super) fn toggle_notes(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .not_themeable("size", "min_w_8 / h_8 at the default Size, upstream's own: the model states no flat-button frame (button/toggle.rs, Toggle::render)")
+}
+
+/// `info` of a Toggle or ToggleGroup whose Toggles take `geometry::toggle`
+/// under the installed 0.8.0 theme, with the line saying what it sets.
+pub fn styled_toggle(info: WidgetInfo) -> WidgetInfo {
+    info.config("text", "button.label(NONE)'s size and weight through geometry::toggle, which lands after the text_sm a Medium Toggle sets on itself (button/toggle.rs, Toggle::render)")
 }
 
 /// The hovered colours of an unchecked Toggle, of either variant.
@@ -1190,7 +1885,7 @@ pub(super) fn toggle_checked(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         t.accent_foreground,
         "gpui-component/button/toggle.rs:165",
     ))
-    .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: geometry::toggle carries the Toggle's text alone")
+    .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.segment(SELECTED).fill and segmented_control.label(SELECTED).color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: geometry::toggle carries the Toggle's text alone")
 }
 
 /// The unchecked fill of a Ghost Toggle.
@@ -1200,9 +1895,9 @@ fn ghost_toggle_fill(info: WidgetInfo) -> WidgetInfo {
 
 /// A `Toggle`, `checked` or not, showing its icon where `drawn`, and its
 /// icon's name as its label where the chosen icon theme has none; `icon`
-/// says which. `styled` where a native theme is installed, so the Toggle
-/// takes `geometry::toggle`.
-pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool, styled: bool) -> WidgetInfo {
+/// says which. Where the Toggle takes `geometry::toggle`, the caller adds
+/// [`styled_toggle`]'s line.
+pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Toggle").variant(match (drawn, checked) {
         (true, true) => "Ghost, checked",
         (true, false) => "Ghost",
@@ -1214,19 +1909,17 @@ pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool, styled: bool)
     } else {
         ghost_toggle_fill(toggle_hover(info, t))
     };
-    toggle_notes(info, t, styled)
-        .instance("icon", icon)
-        .instance(
-            "click",
-            "checks or unchecks it; the showcase keeps the state",
-        )
+    toggle_notes(info, t).instance("icon", icon).instance(
+        "click",
+        "checks or unchecks it; the showcase keeps the state",
+    )
 }
 
 /// A `ToggleGroup` of unchecked Toggles, which report through the group.
-/// `styled` where a native theme is installed, so each Toggle takes
-/// `geometry::toggle`.
-pub fn toggle_group(t: &Theme, styled: bool) -> WidgetInfo {
-    toggle_notes(ghost_toggle_fill(toggle_hover(WidgetInfo::new("ToggleGroup").variant("Ghost"), t)), t, styled)
+/// Where its Toggles take `geometry::toggle`, the caller adds
+/// [`styled_toggle`]'s line.
+pub fn toggle_group(t: &Theme) -> WidgetInfo {
+    toggle_notes(ghost_toggle_fill(toggle_hover(WidgetInfo::new("ToggleGroup").variant("Ghost"), t)), t)
         .not_themeable("gap", "gap_2 between the toggles -- a rem, so the platform's font; only a segmented group drops it (button/toggle.rs, ToggleGroup::segmented)")
         .instance("toggles", "Left, Center and Right, none checked. ToggleGroup::child takes a Toggle, not an element a target could wrap, so they report through the group (button/toggle.rs, ToggleGroup::child)")
 }
@@ -1251,12 +1944,12 @@ pub fn clipboard(t: &Theme, value: &'static str, label: Option<&'static str>) ->
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component's own
-/// at its default Small Size, refined by `geometry::toolbar`, whose line
-/// `demo::component_toolbar` records; `item_gap` is the `toolbar.item_gap`
-/// the theme states, and `native` the theme the builder refined it from,
-/// where a native theme is installed. Its Buttons report themselves
-/// (`toolbar_item`).
-pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// at its default Small Size, refined by `next::geometry::toolbar`, whose
+/// line `demo::component_toolbar` records; `item_gap` is the
+/// `toolbar.item_gap` the theme states, and `native` the installed 0.8.0
+/// theme the builder refined it from, where it applies. Its Buttons report
+/// themselves (`toolbar_item`).
+pub fn toolbar(item_gap: Option<f32>, native: Option<&NextTheme>) -> WidgetInfo {
     let group_gap = match item_gap {
         Some(g) => format!("{}px, toolbar.item_gap", px_text(g)),
         None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base/toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
@@ -1265,7 +1958,7 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
         .variant("Small, two ToolbarGroups")
         .not_themeable(
             "size",
-            "min_h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar sets the height to the content's and the minimum to toolbar.bar_height where stated, else to auto, and replaces each other one the theme states: the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
+            "min_h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so next::geometry::toolbar sets the height to the content's and the minimum to toolbar.bar(NONE).min_size[1] where stated, else to auto, and replaces each other one the theme states: the gap by toolbar.item_gap; the padding by toolbar.bar(NONE)'s stated sides; the text by toolbar.button_label(NONE)'s size and weight",
         )
         .not_themeable(
             "items",
@@ -1274,26 +1967,27 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
     let info = match native {
         Some(_) => info.config(
             "fill",
-            "toolbar.background_color, through geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
+            "toolbar.bar(NONE).fill, through next::geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
         ),
         None => info.not_themeable(
             "fill",
             "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
         ),
     };
-    let info = match native {
-        Some(r) if r.toolbar.border.line_width > 0.0 => info.config(
+    let edge = native.and_then(|r| stroke_width_of(&r.toolbar.bar(WidgetState::NONE)));
+    let info = match (native, edge) {
+        (Some(_), Some(width)) if width > 0.0 => info.config(
             "edge",
             format!(
-                "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, {}px, inside the bar, through geometry::toolbar: upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
-                px_text(r.toolbar.border.line_width)
+                "the bar's bottom rule, toolbar.bar(NONE).stroke.color at toolbar.bar(NONE).stroke.width, {}px, inside the bar, through next::geometry::toolbar: upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+                px_text(width)
             ),
         ),
-        Some(_) => info.config(
+        (Some(_), _) => info.config(
             "edge",
-            "none: toolbar.border.line_width is 0, so geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+            "none: toolbar.bar(NONE).stroke.width is 0, so next::geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
         ),
-        None => info.not_themeable(
+        (None, _) => info.not_themeable(
             "edge",
             "none of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
         ),
@@ -1307,21 +2001,23 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
 
 /// One of the Basic page's icon buttons (`demo::icon_button`), showing its
 /// icon where `drawn`, else its name: the toolbar button the window's
-/// toolbar buttons are, given `native`'s `button.border` radius and stated
-/// padding sides by the showcase (`demo::tool_box_of`) where a native theme
-/// is installed, as [`tool_button_size`] says -- not `geometry::button`, so
-/// it has no edge at rest; where `native` states the toolbar's outline,
-/// `geometry::toolbar_button_rest` gives it a transparent one, coloured
-/// under the pointer and while pressed. `checked` is `Some(on)` for the
-/// edit-mode switch (`Showcase::basic_edit`), `None` for a button that
-/// switches nothing; while on, the Button is selected and refined by
-/// `geometry::toolbar_button_checked`, and claims only what that paints
-/// ([`toolbar_checked`]).
+/// toolbar buttons are, given the 0.8.0 theme `native`'s `button.body(NONE)`
+/// radius and stated padding sides by the showcase (`demo::tool_box_of`)
+/// where one is installed, as [`tool_button_size`] says -- not
+/// `geometry::button`, so it has no edge at rest; where `native` states the
+/// toolbar's outline, `next::geometry::toolbar_button_rest` gives it a
+/// transparent one, coloured under the pointer and while pressed. `checked`
+/// is `Some(on)` for the edit-mode switch (`Showcase::basic_edit`), `None`
+/// for a button that switches nothing; while on, the Button is selected and
+/// refined by `next::geometry::toolbar_button_checked`, and claims only what
+/// that paints ([`toolbar_checked`]). `from` is what its variant is built
+/// from (`support::toolbar_variant`).
 pub fn icon_button(
     t: &Theme,
     drawn: bool,
     checked: Option<bool>,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
+    from: ToolVariant,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Button").variant(match (checked, drawn) {
         (None | Some(false), true) => "Toolbar, icon",
@@ -1331,22 +2027,24 @@ pub fn icon_button(
     });
     let switch = "an edit-mode switch, on at start; a click switches it (Showcase::basic_edit)";
     let info = match checked {
-        Some(true) => toolbar_variant(toolbar_checked(info, t, native).instance("state", switch)),
-        Some(false) => native_toolbar(info.instance("state", switch), t, native),
-        None => native_toolbar(info, t, native),
+        Some(true) => from.line(toolbar_checked(info, t, native, from).instance("state", switch)),
+        Some(false) => native_toolbar(info.instance("state", switch), t, native, from),
+        None => native_toolbar(info, t, native, from),
     };
-    let outlined = native.is_some_and(|r| r.toolbar.button_hover_border_color.is_some());
-    let pen = native.is_some_and(|r| r.toolbar.button_checked_border_color.is_some());
+    let outlined = rest_border(native).is_some();
+    let pen = native
+        .filter(|r| next::geometry::toolbar_button_checked(r).is_ok())
+        .is_some_and(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED)).is_some());
     let info = match (outlined, checked) {
         (true, Some(true)) if pen => info.config(
             "edge",
-            "the checked pen, toolbar.button_checked_border_color, which geometry::toolbar_button_checked sets on geometry::toolbar_button_rest's border, button.border.line_width wide, and which stays under the pointer and while pressed (the hover outline while checked)",
+            "the checked pen, toolbar.button(CHECKED).stroke.color, which next::geometry::toolbar_button_checked sets on next::geometry::toolbar_button_rest's border, button.body(NONE).stroke.width wide, and which stays under the pointer and while pressed (the hover outline while checked)",
         ),
         _ => info.not_themeable(
             "edge",
             match (outlined, checked) {
-                (true, Some(true)) => "none: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and stays so while checked (the hover outline while checked)",
-                (true, _) => "none at rest: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)",
+                (true, Some(true)) => "none: next::geometry::toolbar_button_rest's border is transparent, button.body(NONE).stroke.width wide, and stays so while checked (the hover outline while checked)",
+                (true, _) => "none at rest: next::geometry::toolbar_button_rest's border is transparent, button.body(NONE).stroke.width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)",
                 (false, _) => "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
             },
         ),
@@ -1355,24 +2053,20 @@ pub fn icon_button(
         Some(_) => info,
         None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
     };
-    tool_button_size(
-        info,
-        ToolSize::Medium,
-        drawn,
-        native.map(|r| &r.button),
-        rest_border(native),
-    )
+    toolbar_button_size(info, ToolSize::Medium, drawn, native)
 }
 
 /// One of the component `Toolbar`'s flat Buttons, showing `icon` of the
 /// icon theme named `set`, coloured as [`native_toolbar`] says and sized as
-/// [`tool_button_size`] says under `native`'s `button`; it runs nothing. Its
-/// icon-size line is recorded where `demo::toolbar_item` applies the builder.
+/// [`tool_button_size`] says under the 0.8.0 theme `native`, its variant
+/// built from `from`; it runs nothing. Its icon-size line is recorded where
+/// `demo::toolbar_item` applies the builder.
 pub fn toolbar_item(
     t: &Theme,
     icon: &ChromeIcon,
     set: &str,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
+    from: ToolVariant,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1380,25 +2074,20 @@ pub fn toolbar_item(
     } else {
         "Toolbar, labelled"
     });
-    let info = native_toolbar(info, t, native).not_themeable("fill", toolbar_fill(native));
+    let info =
+        native_toolbar(info, t, native, from).not_themeable("fill", toolbar_fill(native, from));
     let info = if drawn {
         info.not_themeable("icon", super::chrome::child_icon_line(icon))
     } else {
         info
     };
-    tool_button_size(
-        info,
-        ToolSize::Medium,
-        drawn,
-        native.map(|r| &r.button),
-        rest_border(native),
-    )
-    .instance(
-        "icon",
-        chrome_icon_note(icon, set, "the button shows its name as its label instead"),
-    )
-    .instance(
-        "action",
-        "none: the section shows the Toolbar, so its Buttons run nothing",
-    )
+    toolbar_button_size(info, ToolSize::Medium, drawn, native)
+        .instance(
+            "icon",
+            chrome_icon_note(icon, set, "the button shows its name as its label instead"),
+        )
+        .instance(
+            "action",
+            "none: the section shows the Toolbar, so its Buttons run nothing",
+        )
 }
