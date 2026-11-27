@@ -13207,14 +13207,7 @@ fn the_switch_label_routes_name_the_switch_that_draws_them() -> Result<(), Strin
     const CLAIMS: [(&str, Option<&str>); 4] = [
         ("switch.label(NONE)", None),
         ("switch.label(NONE).color", None),
-        (
-            "switch.label(CHECKED).color",
-            Some(
-                "egui: not read by native-theme-egui-widgets Switch \
-                 (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as \
-                 the off one",
-            ),
-        ),
+        ("switch.label(CHECKED).color", None),
         ("switch.label(DISABLED|CHECKED).color", None),
     ];
     let manifest = Manifest::parse(MANIFEST)?;

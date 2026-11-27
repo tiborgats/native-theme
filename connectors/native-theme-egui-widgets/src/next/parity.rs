@@ -225,6 +225,41 @@ const DIFFERENCES: &[Difference] = &[
                  switch::Look.text's entry gives it; in dark both are white",
     },
     Difference {
+        leaf: "switch::Look.checked_text",
+        presets: &["adwaita"],
+        reason: "0.7.2 has no switch label and lettered an on one as an off one; the 0.8.0 \
+                 adwaita states the on label (switch.label(CHECKED)) as the off one, as \
+                 switch::Look.text's entry gives it",
+    },
+    Difference {
+        leaf: "switch::Look.checked_hover_text",
+        presets: &["adwaita", "ios-13"],
+        reason: "0.7.2 has no switch label and lettered an on one as an off one; the 0.8.0 \
+                 presets state the hovered on label (switch.label(HOVER|CHECKED)) as the \
+                 hovered off one, as switch::Look.hover_text's entries give it",
+    },
+    Difference {
+        leaf: "switch::Look.checked_pressed_text",
+        presets: &["adwaita"],
+        reason: "0.7.2 has no switch label and lettered an on one as an off one; the 0.8.0 \
+                 adwaita states the pressed on label (switch.label(PRESSED|CHECKED)) as the \
+                 pressed off one, as switch::Look.pressed_text's entry gives it",
+    },
+    Difference {
+        leaf: "switch::Look.checked_disabled_text",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        reason: "0.7.2 has no switch label and lettered an on one as an off one; the 0.8.0 \
+                 presets state the disabled on label (switch.label(DISABLED|CHECKED)) as the \
+                 disabled off one, as switch::Look.disabled_text's entries give it",
+    },
+    Difference {
         leaf: "switch::Geometry.label_gap",
         presets: &["kde-breeze", "adwaita", "windows-11"],
         reason: "0.7.2 has no switch label gap, so the label lies at the scope's own \
@@ -433,6 +468,10 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             hover_text,
             pressed_text,
             disabled_text,
+            checked_text,
+            checked_hover_text,
+            checked_pressed_text,
+            checked_disabled_text,
             background,
         ]
     );

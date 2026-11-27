@@ -2165,17 +2165,17 @@ pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
     ),
     (
         "switch.label(CHECKED).color",
-        "egui: not read by native-theme-egui-widgets Switch \
-         (docs/archive/todo_egui-widgets-spec.md §4.1), which letters the on label as the off \
-         one, in switch.label(NONE).color where stated, else the body text's, \
+        "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
+         paints it: the on label's colour where a rule for CHECKED states it, else the off \
+         label's, switch.label(NONE).color where stated, else the body text's, \
          typography.body.color (native-theme-egui-widgets switch.rs, Look::next_of)",
     ),
     (
         "switch.label(DISABLED|CHECKED).color",
         "egui: native-theme-egui-widgets Switch (docs/archive/todo_egui-widgets-spec.md §4.1) \
-         paints it as switch.label(DISABLED).color, a disabled switch's label, where a rule \
-         states it for DISABLED; else colors.disabled_text (native-theme-egui-widgets switch.rs, \
-         Look::next_of)",
+         paints it, a disabled on switch's label, where the theme states it for DISABLED \
+         (switch.label(DISABLED), or switch.label(DISABLED|CHECKED) asking DISABLED); else \
+         colors.disabled_text (native-theme-egui-widgets switch.rs, Look::next_of)",
     ),
 ];
 

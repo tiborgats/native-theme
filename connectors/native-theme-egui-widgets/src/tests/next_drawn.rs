@@ -2116,6 +2116,72 @@ fn a_hovered_and_a_pressed_switch_label_take_their_state_colours() -> TestResult
     Ok(())
 }
 
+/// An on switch letters the label in `switch.label(CHECKED)`'s colour where a rule for `CHECKED`
+/// states one, hovered in `switch.label(HOVER|CHECKED)`'s where a rule for `HOVER` with
+/// `CHECKED` states one (the query at `HOVER|CHECKED` asking `HOVER`, spec §2, `from_state`),
+/// and disabled in `switch.label(DISABLED|CHECKED)`'s alike, here colours kde-breeze does not
+/// state; an off switch keeps its own label.
+#[test]
+fn an_on_switch_label_takes_its_checked_colours() -> TestResult {
+    use crate::switch::Look;
+    let (green, red, blue) = (
+        egui::Color32::from_rgb(0, 255, 0),
+        egui::Color32::from_rgb(255, 0, 0),
+        egui::Color32::from_rgb(0, 0, 255),
+    );
+    let stock = Look::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no look")?;
+    for stated in [
+        stock.text,
+        stock.checked_text,
+        stock.checked_hover_text,
+        stock.checked_disabled_text,
+    ] {
+        assert!(
+            stated.is_none_or(|c| c != green && c != red && c != blue),
+            "kde-breeze states the patched colours: the test proves nothing"
+        );
+    }
+    let patch = "[[widgets.switch.rules]]\nstates = [\"checked\"]\nlabel.color = \"#00ff00\"\n\n\
+                 [[widgets.switch.rules]]\nstates = [\"hover\", \"checked\"]\nlabel.color = \"#ff0000\"\n\n\
+                 [[widgets.switch.rules]]\nstates = [\"disabled\", \"checked\"]\nlabel.color = \"#0000ff\"\n";
+    let look = Look::next_of(&patched(Preset::KdeBreeze, patch)?).ok_or("no look")?;
+    assert_eq!(
+        (
+            look.checked_text,
+            look.checked_hover_text,
+            look.checked_disabled_text
+        ),
+        (Some(green), Some(red), Some(blue))
+    );
+    assert_eq!(
+        (look.text, look.hover_text, look.disabled_text),
+        (stock.text, stock.hover_text, stock.disabled_text),
+        "the off switch's labels"
+    );
+    let ctx = patched_installed(Preset::KdeBreeze, patch)?;
+    let (_, shapes) = drawn_switch(&ctx);
+    let (_, off) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert!(off != green && off != red, "{off:?}");
+    let add = |ui: &mut egui::Ui| ui.add(Switch::new(&mut true).label("Wi-Fi"));
+    let _ = response(&ctx, at(1.0), add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert_eq!(drawn_text(&flat(&out.shapes)).map(|(_, c)| c), Some(green));
+    let centre = Parts::of(&r)
+        .unwrap_or_default()
+        .get("track")
+        .ok_or("no track")?
+        .center();
+    let hover = egui::RawInput {
+        events: vec![egui::Event::PointerMoved(centre)],
+        ..at(1.0)
+    };
+    let _ = response(&ctx, hover, add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert!(r.hovered(), "the switch is not hovered");
+    assert_eq!(drawn_text(&flat(&out.shapes)).map(|(_, c)| c), Some(red));
+    Ok(())
+}
+
 /// A hovered switch whose label no rule states for `HOVER` letters it in egui's own hovered
 /// label colour, its scope's `widgets.hovered.fg_stroke` (spec §10, rule 0), as egui's
 /// `Checkbox` letters an uncoloured label, not in its rest colour; here on ios-13, which states
