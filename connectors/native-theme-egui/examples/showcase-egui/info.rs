@@ -793,15 +793,49 @@ pub(crate) const FLAT_PUSH_EDGE: &str = "not drawn: next::flat_button lays the f
      where stated (chrome::toggle_checked_pens)";
 
 /// The route of the Pages menu button's caret's colour: the caret is loaded tinted before the
-/// flat button's states are laid over the scope.
-pub(crate) const MENU_ICON_COLOUR: &str = "not drawn: the caret loads in the text colour of the Ui it is \
-     laid out in, visuals.text_color(), and no icon or label colour of the flat button's is read \
-     for it (demo::role_image; chrome::page_tabs)";
+/// flat button's states are laid over the scope, in the flat button's icon colour at rest where
+/// stated.
+pub(crate) const MENU_ICON_COLOUR: &str = "egui: the colour the caret loads in, \
+     button.icon(NONE; variant=Flat).color where stated, in every state, as egui changes an image \
+     in no state; else the text colour of the Ui it is laid out in, visuals.text_color() \
+     (chrome::toggle_icon_colour, demo::loaded_in, demo::role_image; chrome::page_tabs)";
+/// The route of the flat button's label colour at rest on the Pages menu button's caret.
+pub(crate) const MENU_ICON_LABEL: &str = "not drawn: the caret loads in the flat button's icon \
+     colour at rest where stated (chrome::toggle_icon_colour), else in the text colour of the Ui \
+     it is laid out in, visuals.text_color(), never in the flat button's label (demo::role_image; \
+     chrome::page_tabs)";
 /// The route of the side-panel toggle's label colours on its icon, which loads in an icon
 /// colour or the bar's text, not in the toggle's label.
 pub(crate) const TOGGLE_ICON_LABEL: &str = "not drawn: the toggle's icon loads in the flat button's icon \
      colour of the toggle's state where stated (chrome::toggle_icon_colour), else in the status \
      bar's text, never in the toggle's label (chrome::status_bar)";
+
+/// The route of the open side-panel toggle's checked fill, the flat button's.
+pub(crate) const TOGGLE_OPEN_FILL: &str = "egui: per call, Button::fill, the toggle's fill while \
+     the side panel is open, in the state of its previous response: where a rule states \
+     button.body(CHECKED; variant=Flat).fill for CHECKED, at rest this, under the pointer \
+     button.body(HOVER|CHECKED; variant=Flat).fill and pressed button.body(PRESSED|CHECKED; \
+     variant=Flat).fill, each also where a rule for that state with CHECKED states it (the query \
+     asking CHECKED); else egui's own selected button's in that state, visuals.selection.bg_fill \
+     (chrome::ghost_button, chrome::toggle_checked_in)";
+/// The route of the open side-panel toggle's checked label, the flat button's.
+pub(crate) const TOGGLE_OPEN_LABEL: &str = "egui: per call, the toggle's label colour while the \
+     side panel is open, in the state of its previous response: where a rule states \
+     button.label(CHECKED; variant=Flat).color for CHECKED, at rest this, under the pointer \
+     button.label(HOVER|CHECKED; variant=Flat).color and pressed button.label(PRESSED|CHECKED; \
+     variant=Flat).color, each also where a rule for that state with CHECKED states it (the query \
+     asking CHECKED); else egui's own selected button's in that state, visuals.selection.stroke; \
+     an icon shown in the label's place keeps the colour it loads in (chrome::ghost_button, \
+     chrome::toggle_checked_in)";
+/// The route of the push button's checked fill on the side-panel toggle, which draws the flat
+/// button's in its place.
+pub(crate) const TOGGLE_PUSH_CHECKED_FILL: &str = "not drawn: chrome::toggle_checked_in fills the \
+     open toggle with the flat button's button.body(CHECKED; variant=Flat).fill in its place, not \
+     the push button's (chrome::ghost_button)";
+/// As [`TOGGLE_PUSH_CHECKED_FILL`], of the checked label.
+pub(crate) const TOGGLE_PUSH_CHECKED_LABEL: &str = "not drawn: chrome::toggle_checked_in letters \
+     the open toggle in the flat button's button.label(CHECKED; variant=Flat).color in its place, \
+     not the push button's (chrome::ghost_button)";
 
 /// The route of Widget Info's Copy box's corners, which `info::widget_tab` takes from the push
 /// button.
@@ -933,9 +967,28 @@ pub(crate) const TOOL_REST_EDGE: &str = "not drawn: egui's toolbar scope reads n
 /// The homes of a toolbar button the toolbar scope or the showcase applies from the installed
 /// 0.8.0 theme, which no `mapping.toml` row holds, each with its route: the rest capsule, the
 /// hovered and pressed outline widths and labels, the edit switch's checked looks
-/// (`pages::basic::edit_look_at`) and the icon's colour (`demo::tool_icon_color`). Only the
-/// tool buttons and their icons ([`TOOL_BUTTONS`]) take them.
-pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
+/// (`pages::basic::edit_look_at`) and the icon's colour (`demo::tool_icon_color`); and the push
+/// button's padding sides and the flat button's, which a tool button takes per call
+/// (`demo::next_tool_button`) rather than as `mapping.toml`'s rows route them. Only the tool
+/// buttons and their icons ([`TOOL_BUTTONS`]) take them.
+pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 27] = [
+    ("button.body(NONE).padding.top", TOOL_PAD_TOP),
+    ("button.body(NONE).padding.right", TOOL_PAD_RIGHT),
+    ("button.body(NONE).padding.bottom", TOOL_PAD_BOTTOM),
+    ("button.body(NONE).padding.left", TOOL_PAD_LEFT),
+    ("button.body(NONE; variant=Flat).padding.top", TOOL_PAD_FLAT),
+    (
+        "button.body(NONE; variant=Flat).padding.right",
+        TOOL_PAD_FLAT,
+    ),
+    (
+        "button.body(NONE; variant=Flat).padding.bottom",
+        TOOL_PAD_FLAT,
+    ),
+    (
+        "button.body(NONE; variant=Flat).padding.left",
+        TOOL_PAD_FLAT,
+    ),
     ("toolbar.button(NONE).stroke.color", TOOL_REST_EDGE),
     ("toolbar.button(NONE).stroke.width", TOOL_REST_EDGE),
     ("toolbar.button(HOVER).stroke.width", TOOL_HOVER_WIDTH),
@@ -968,6 +1021,30 @@ pub(crate) const TOOL_BUTTON_ROUTES: [(&str, &str); 19] = [
         EDIT_ICON_PRESSED_CHECKED,
     ),
 ];
+
+/// The route of a tool button's top padding: egui pads a button by one pair
+/// (`Spacing::button_padding`), so the top side pads above and below.
+pub(crate) const TOOL_PAD_TOP: &str = "egui: per call, spacing.button_padding.y, above and below \
+     the icon, button.body(NONE).padding.top where stated, egui padding a button by one pair; \
+     else the scope's own (demo::next_tool_button, demo::tool_padding)";
+/// As [`TOOL_PAD_TOP`], of the left side, which pads left and right.
+pub(crate) const TOOL_PAD_LEFT: &str = "egui: per call, spacing.button_padding.x, left and right \
+     of the icon, button.body(NONE).padding.left where stated, egui padding a button by one \
+     pair; else the scope's own (demo::next_tool_button, demo::tool_padding)";
+/// The route of a tool button's bottom padding, which the top side's stands for.
+pub(crate) const TOOL_PAD_BOTTOM: &str = "not drawn where button.body(NONE).padding.top is \
+     stated: demo::next_tool_button pads below the icon by it, egui padding a button by one pair \
+     (Spacing::button_padding); where it is not, by the scope's own spacing.button_padding.y \
+     (demo::tool_padding)";
+/// The route of a tool button's right padding, which the left side's stands for.
+pub(crate) const TOOL_PAD_RIGHT: &str = "not drawn where button.body(NONE).padding.left is \
+     stated: demo::next_tool_button pads right of the icon by it, egui padding a button by one \
+     pair (Spacing::button_padding); where it is not, by the scope's own \
+     spacing.button_padding.x (demo::tool_padding)";
+/// The route of the flat button's padding on a tool button, which the push button's pads.
+pub(crate) const TOOL_PAD_FLAT: &str = "not drawn: demo::next_tool_button pads a tool button by \
+     the push button's button.body(NONE).padding, its top and left sides, in its place, not the \
+     flat variant's (demo::tool_padding)";
 
 /// The route of a tool button's fill at rest, the toolbar scope's rest capsule.
 pub(crate) const TOOL_REST_FILL: &str = "egui: the toolbar scope's resting fill, \
@@ -1585,25 +1662,22 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.body(CHECKED).fill",
-        "egui: per call, Button::fill, the toggle's fill while the side panel is open, in the \
-         state of its previous response: where a rule states button.body(CHECKED; \
-         variant=Flat).fill for CHECKED, at rest this, under the pointer \
-         button.body(HOVER|CHECKED; variant=Flat).fill and pressed button.body(PRESSED|CHECKED; \
-         variant=Flat).fill, each also where a rule for that state with CHECKED states it (the \
-         query asking CHECKED); else egui's own selected button's in that state, \
-         visuals.selection.bg_fill (chrome::ghost_button, chrome::toggle_checked_in)",
+        TOGGLE_PUSH_CHECKED_FILL,
     ),
     (
         "chrome.status_bar.toggle",
         "button.label(CHECKED).color",
-        "egui: per call, the toggle's label colour while the side panel is open, in the state of \
-         its previous response: where a rule states button.label(CHECKED; variant=Flat).color \
-         for CHECKED, at rest this, under the pointer button.label(HOVER|CHECKED; \
-         variant=Flat).color and pressed button.label(PRESSED|CHECKED; variant=Flat).color, each \
-         also where a rule for that state with CHECKED states it (the query asking CHECKED); \
-         else egui's own selected button's in that state, visuals.selection.stroke; an icon \
-         shown in the label's place keeps the colour it loads in (chrome::ghost_button, \
-         chrome::toggle_checked_in)",
+        TOGGLE_PUSH_CHECKED_LABEL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(CHECKED; variant=Flat).fill",
+        TOGGLE_OPEN_FILL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.label(CHECKED; variant=Flat).color",
+        TOGGLE_OPEN_LABEL,
     ),
     (
         "basic.buttons.toggle_on",
@@ -1853,7 +1927,7 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu.icon",
         "button.label(NONE; variant=Flat).color",
-        MENU_ICON_COLOUR,
+        MENU_ICON_LABEL,
     ),
     (
         "chrome.page_tabs.menu.icon",

@@ -54,6 +54,12 @@ moves = [
   { row = "styles::button_toggle.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
+[homes."button.body(CHECKED; variant=Flat).fill"]
+named = "UNREAD_HOMES"
+entry = "button.body(CHECKED; variant=Flat).fill"
+kind = "no widget"
+why = "no `next::styles` function draws a flat button; the iced showcase's own `ghost_button` draws its label at rest, its hovered and pressed fill, label and outline and a checked one's fill, label and outline and its `icon_colour` loads an icon in the colour the theme states for it, each outside the connector; iced's button takes no keyboard focus"
+
 [homes."button.body(CHECKED; variant=Flat).stroke.color"]
 named = "UNREAD_HOMES"
 entry = "button.body(CHECKED; variant=Flat).stroke.color"

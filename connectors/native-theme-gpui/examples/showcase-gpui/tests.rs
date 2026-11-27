@@ -25194,6 +25194,55 @@ fn the_toggles_icon_takes_the_stated_flat_icon_colour(cx: &mut TestAppContext) {
     );
 }
 
+/// The Pages menu's icon is tinted in `button.icon(NONE; variant=Flat).color`
+/// where the theme states it (spec §10, rule 0), as the closed side-panel
+/// toggle's is, and the page row's info names it: kde-breeze light states
+/// none, and the row's info has no "icon colour" line; patched to state one,
+/// it names that colour.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_pages_menu_icon_takes_the_stated_flat_icon_colour(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch, WidgetState,
+    };
+    let line = |info: &Option<crate::info::WidgetInfo>| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "icon colour")
+                .map(|n| n.text.clone())
+        })
+    };
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, Page::Charts.tab());
+    assert_eq!(
+        line(&info),
+        None,
+        "kde-breeze states no flat icon colour at rest: {info:?}"
+    );
+    let colour = Color::rgb(0.0, 1.0, 0.0);
+    install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Flat)
+                    .states(WidgetState::NONE)
+                    .icon(IconPatch::new().color(colour)),
+            ),
+        )
+    });
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    let menu = line(&settle_on(&mut cx, &showcase, Page::Charts.tab()));
+    assert!(
+        menu.as_deref()
+            .is_some_and(|l| l.starts_with("button.icon(NONE; variant=Flat).color #00ff00, ")),
+        "the page row's info does not name the stated rest icon colour of its menu: {menu:?}"
+    );
+}
+
 /// The closed side-panel toggle's size note takes the transparent border
 /// `next::geometry::ghost_button_rest` gives it, the hovered flat body's
 /// stroke width, off its stated padding, as the open one's takes the checked

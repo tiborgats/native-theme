@@ -9941,6 +9941,7 @@ fn ghost_home(home: &str) -> Option<&'static str> {
 fn flat_state_home(home: &str) -> Option<&'static str> {
     Some(match home {
         "button.label(NONE; variant=Flat).color" => "button.label(NONE).color",
+        "button.body(CHECKED; variant=Flat).fill" => "button.body(CHECKED).fill",
         "button.label(CHECKED; variant=Flat).color" => "button.label(CHECKED).color",
         "button.body(NONE; variant=Flat).corners" => "button.body(NONE).corners",
         "button.body(HOVER; variant=Flat).fill" => "button.body(HOVER).fill",
@@ -9955,17 +9956,14 @@ fn flat_state_home(home: &str) -> Option<&'static str> {
 
 /// The flat variant's home that [`ghost_button`] or [`ghost_padding`] reads
 /// on a flat button in place of the push button's listed home `home`, which
-/// neither reads: its label at rest, its hovered and pressed fill, label and
-/// outline, its corners and its padding. `None` for any other home, the
-/// checked fill and label among them, which the side-panel toggle lists at
-/// the push button's homes alone and whose routes name the flat homes they
-/// are drawn in.
+/// neither reads: its label at rest, its hovered, pressed and checked fill
+/// and label, its hovered and pressed outline, its corners and its padding.
+/// `None` for any other home.
 fn flat_in_place_of(home: &str) -> Option<String> {
     if let Some(side) = home.strip_prefix("button.body(NONE).padding.") {
         return Some(format!("button.body(NONE;variant=Flat).padding.{side}"));
     }
     match home {
-        "button.body(CHECKED).fill" | "button.label(CHECKED).color" => None,
         "button.body(NONE).corners" => Some("button.body(NONE;variant=Flat).corners".to_owned()),
         _ => ghost_home(home).map(str::to_owned),
     }
@@ -10413,6 +10411,15 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         return Some(flat_route(r, home, selected, (icon, os_icon)));
     }
     if let Some(side) = home.strip_prefix("button.body(NONE).padding.") {
+        return tool.then(|| {
+            format!(
+                "not drawn: ghost_padding pads a tool button by the flat variant's \
+                 button.body(NONE;variant=Flat).padding.{side} in its place, not the push \
+                 button's"
+            )
+        });
+    }
+    if let Some(side) = home.strip_prefix("button.body(NONE; variant=Flat).padding.") {
         let border = if id == DISABLED_TOOL {
             "the outline at rest is drawn over it"
         } else {

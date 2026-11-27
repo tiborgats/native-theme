@@ -50,6 +50,7 @@ const REGENERATE_HOMES: &str =
 /// under the pointer.
 const QUERIED_HOMES: &[&str] = &[
     "button.body(CHECKED).stroke.color",
+    "button.body(CHECKED; variant=Flat).fill",
     "button.body(CHECKED; variant=Flat).stroke.color",
     "button.body(DISABLED).stroke.color",
     "button.body(DISABLED; variant=Primary).stroke.color",
@@ -205,6 +206,11 @@ const UNREAD_HOMES: &[UnreadHome] = &[
     },
     UnreadHome {
         home: "button.label(CHECKED; variant=Flat).color",
+        kind: "no widget",
+        why: FLAT_BUTTON,
+    },
+    UnreadHome {
+        home: "button.body(CHECKED; variant=Flat).fill",
         kind: "no widget",
         why: FLAT_BUTTON,
     },

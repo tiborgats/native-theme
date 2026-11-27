@@ -2517,7 +2517,9 @@ fn native_tab_strip(id: &'static str) -> widgets::TabBar {
 /// [`tab_bar`] under the 0.8.0 theme `r`: a [`native_tab_strip`], inset by
 /// `container_margin` as upstream's bar is (the rule runs its full width),
 /// the page row's tabs scrolling sideways where they do not fit, with the
-/// menu of every page after them, showing `menu_icon`.
+/// menu of every page after them, showing `menu_icon`, tinted at rest in
+/// [`FLAT_ICON_TINT`]'s colour where stated ([`tool_icon_tinted`]), as the
+/// closed side-panel toggle's icon is.
 #[cfg(feature = "widgets")]
 #[allow(clippy::too_many_arguments)]
 fn native_tab_bar(
@@ -2553,7 +2555,13 @@ fn native_tab_bar(
             "icon_size_small",
             &mut bar_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            WidgetState::NONE,
+            &FLAT_ICON_TINT,
+            &mut bar_info,
+        )
     });
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click: TabClick = Rc::new(on_click);

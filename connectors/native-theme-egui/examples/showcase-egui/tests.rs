@@ -1032,6 +1032,67 @@ fn the_flat_buttons_outlines_route_to_the_flat_button() -> Result<(), String> {
     Ok(())
 }
 
+/// The push button's checked fill and label on the side-panel toggle are routed not drawn, naming
+/// the flat button's checked homes `chrome::toggle_checked_in` draws in their place, and that
+/// holds: on every preset in both schemes, each stated for the push button alone (`variant =
+/// "standard"`) in two colours in turn moves none of the open toggle's colours in any state.
+#[test]
+fn the_toggles_push_checked_homes_move_nothing_it_draws() -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    use native_theme_showcase_support::next::patch::home_patch_toml;
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    )];
+    let homes = [
+        (
+            "button.body(CHECKED).fill",
+            "button.body(CHECKED; variant=Flat).fill",
+        ),
+        (
+            "button.label(CHECKED).color",
+            "button.label(CHECKED; variant=Flat).color",
+        ),
+    ];
+    for (home, drawn) in homes {
+        let how = crate::info::listed_how(&manifest, "chrome.status_bar.toggle", home, &seams);
+        assert!(
+            how.starts_with("not drawn") && how.contains(drawn),
+            "{home}: {how}"
+        );
+    }
+    let patched = |r: &native_theme::next::ResolvedTheme, home: &str, colour: &str| {
+        let toml = home_patch_toml(home, colour).ok_or(format!("no patch states {home}"))?;
+        let patch = ThemePatch::from_toml(&toml).map_err(|e| format!("{home}: {e}"))?;
+        let mut r = r.clone();
+        r.apply_patch(&patch);
+        Ok::<_, String>(r)
+    };
+    let mut faults = Vec::new();
+    for &preset in Preset::ALL {
+        for context in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(preset).resolve(&context);
+            for (home, _) in homes {
+                let standard = home.replacen(").", "; variant=Standard).", 1);
+                let one = patched(&r, &standard, "#13579b")?;
+                let other = patched(&r, &standard, "#2468ac")?;
+                for was in [(false, false), (true, false), (false, true)] {
+                    if crate::chrome::toggle_checked_in(Some(&one), was)
+                        != crate::chrome::toggle_checked_in(Some(&other), was)
+                    {
+                        faults.push(format!(
+                            "{preset:?} {context:?} {was:?}: {standard} moves it"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+    Ok(())
+}
+
 /// What the routes of the push button's hovered and pressed fill, label and outline on a flat
 /// button claim, "not drawn" ([`crate::info::FLAT_PUSH_FILL`], [`crate::info::FLAT_PUSH_LABEL`],
 /// [`crate::info::FLAT_PUSH_EDGE`]), holds: `next::flat_button` gives the hovered and active
@@ -12778,7 +12839,7 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         (
             "chrome.page_tabs.menu.icon",
             "button.label(NONE; variant=Flat).color",
-            i::MENU_ICON_COLOUR,
+            i::MENU_ICON_LABEL,
         ),
         (
             "chrome.page_tabs.menu.icon",
@@ -12794,6 +12855,16 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             "chrome.status_bar.toggle.icon",
             "button.label(CHECKED; variant=Flat).color",
             i::TOGGLE_ICON_LABEL,
+        ),
+        (
+            "chrome.status_bar.toggle",
+            "button.body(CHECKED; variant=Flat).fill",
+            i::TOGGLE_OPEN_FILL,
+        ),
+        (
+            "chrome.status_bar.toggle",
+            "button.label(CHECKED; variant=Flat).color",
+            i::TOGGLE_OPEN_LABEL,
         ),
         (
             "basic.icons.edit",
@@ -13033,6 +13104,22 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     ];
     // The routes of every tool button and its icon.
     let tool: &[(&str, &str)] = &[
+        (
+            "button.body(NONE; variant=Flat).padding.top",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.right",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.bottom",
+            i::TOOL_PAD_FLAT,
+        ),
+        (
+            "button.body(NONE; variant=Flat).padding.left",
+            i::TOOL_PAD_FLAT,
+        ),
         ("toolbar.button(NONE).fill", i::TOOL_REST_FILL),
         ("toolbar.button(NONE).corners", i::TOOL_REST_CORNERS),
         ("toolbar.button(NONE).stroke.color", i::TOOL_REST_EDGE),
@@ -17652,6 +17739,113 @@ fn the_toggles_icon_is_loaded_in_the_stated_flat_icon_colour() -> Result<(), Str
         )
     })
     .map_err(|e| e.to_string())
+}
+
+/// The Pages menu's caret, a bundled Material icon, loads in `button.icon(NONE;
+/// variant=Flat).color` where the theme states it (spec §10, rule 0), as the closed side-panel
+/// toggle's icon does (`chrome::toggle_icon_colour`): kde-breeze light states none; with that
+/// home patched to a mark, the caret is painted from the texture its key takes tinted in the
+/// mark, a cache hit of the same key in the same context, so a caret loaded in any other colour
+/// fails.
+#[cfg(feature = "material-icons")]
+#[test]
+fn the_pages_menu_caret_loads_in_the_stated_flat_icon_colour() -> Result<(), String> {
+    use native_theme::icons::IconRole;
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::icons::{IconKey, custom_icon_to_image};
+    const ID: &str = "chrome.page_tabs.menu.icon";
+    // The textures painted inside the caret's place.
+    let painted = |harness: &Harness<'_, App>| -> Vec<egui::TextureId> {
+        let place = place_of(harness, ID);
+        harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.expand(1.0).contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| b.fill_texture_id)
+                }
+                _ => None,
+            })
+            .collect()
+    };
+    // The texture of the caret loaded in `colour` as the page tabs load it (`demo::role_image`
+    // in `demo::loaded_in`), at `icons.sizes.small`, from the chosen set and theme, as egui
+    // paints it: at the pixel size of its square (egui-0.37.0 src/widgets/image.rs,
+    // Image::paint_at).
+    let loaded_in = |harness: &Harness<'_, App>, colour| -> Result<egui::TextureId, String> {
+        let app = harness.state();
+        let r = app.atlas.next_shown(&harness.ctx).ok_or("no 0.8.0 theme")?;
+        let size = r.icons.sizes.small.ok_or("no small icon size")?;
+        let (set, icon_theme) = app.chosen_icons();
+        let role = IconRole::NavDown;
+        let mut key = IconKey::role(role, set).size(size).tint(colour);
+        if let Some(name) = icon_theme.as_deref() {
+            key = key.icon_theme(name);
+        }
+        let image =
+            custom_icon_to_image(&harness.ctx, &role, &key).ok_or("the set has no caret")?;
+        let side = (harness.ctx.pixels_per_point() * size).round() as u32;
+        let hint = egui::SizeHint::Size {
+            width: side,
+            height: side,
+            maintain_aspect_ratio: false,
+        };
+        let source = image.source(&harness.ctx).clone();
+        match source.load(&harness.ctx, egui::TextureOptions::default(), hint) {
+            Ok(egui::load::TexturePoll::Ready { texture }) => Ok(texture.id),
+            Ok(egui::load::TexturePoll::Pending { .. }) => {
+                Err("the caret is still loading".to_owned())
+            }
+            Err(error) => Err(format!("the caret is not loaded: {error}")),
+        }
+    };
+    let settle = |harness: &mut Harness<'static, App>| {
+        harness.state_mut().settings.icon = IconSetChoice::Material;
+        harness.run_steps(SETTLE);
+        harness.remove_cursor();
+        harness.run_steps(3);
+    };
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    settle(&mut harness);
+    let stock = harness
+        .state()
+        .atlas
+        .next_shown(&harness.ctx)
+        .cloned()
+        .ok_or("kde-breeze: no 0.8.0 theme installed")?;
+    assert_eq!(
+        crate::chrome::toggle_icon_colour(Some(&stock), false, (false, false)),
+        None,
+        "kde-breeze light states a flat icon colour at rest, so this test proves nothing"
+    );
+    let before = painted(&harness);
+    let mark = Color::from_srgb8(0x9b, 0x57, 0x13, 0xff);
+    let patch = ThemePatch::new().button(
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(WidgetState::NONE)
+            .icon(IconPatch::new().color(mark)),
+    );
+    let pair = harness.state().atlas.clone().patched(&patch)?;
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt_pair(&ctx, pair);
+    harness.run_steps(4);
+    settle(&mut harness);
+    let marked = loaded_in(&harness, egui::Color32::from_rgb(0x9b, 0x57, 0x13))?;
+    assert_ne!(
+        before,
+        [marked],
+        "the stock caret is painted from the mark's texture, so this test proves nothing"
+    );
+    assert_eq!(
+        painted(&harness),
+        [marked],
+        "the caret is not loaded in the patched button.icon(NONE; variant=Flat).color"
+    );
+    Ok(())
 }
 
 /// The On toggle and the edit switch treat a checked fill egui cannot paint by one rule (spec

@@ -569,12 +569,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.status_bar.toggle",
         &["button.body(CHECKED).fill"],
-        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
+        "not drawn: demo::ghost_checked_variant fills the open toggle with the flat button's button.body(CHECKED; variant=Flat).fill in its place, not the push button's (demo::panel_toggle)",
     ),
     (
         "chrome.status_bar.toggle",
         &["button.label(CHECKED).color"],
-        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
+        "not drawn: demo::ghost_checked_variant letters the open toggle in the flat button's button.label(CHECKED; variant=Flat).color in its place, not the push button's (demo::panel_toggle)",
     ),
     (
         "chrome.toolbar.",
@@ -692,6 +692,8 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         &["button.body(NONE).padding.left"],
         "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
+    ("chrome.toolbar.", TOOL_FLAT_PADDING, TOOL_PADDING_NOT_FLAT),
+    ("basic.icons.", TOOL_FLAT_PADDING, TOOL_PADDING_NOT_FLAT),
     (
         "chrome.toolbar.",
         &["button.body(NONE).stroke.width"],
@@ -848,12 +850,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.page_tabs.menu.icon",
         &["button.label(NONE; variant=Flat).color"],
-        "not drawn: no builder reads the flat button's label at rest; the ChevronDown is an untinted Icon, which takes the Ghost Button's text colour, variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (demo::native_tab_bar; gpui-component/button/button.rs:1239-1244, text_color; native-theme-gpui next/mod.rs, slice_colors)",
+        "not drawn: no builder reads the flat button's label at rest; where no rule states button.icon(NONE; variant=Flat).color, the ChevronDown is untinted and takes the Ghost Button's text colour, variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (demo::native_tab_bar; gpui-component/button/button.rs:1239-1244, text_color; native-theme-gpui next/mod.rs, slice_colors)",
     ),
     (
         "chrome.page_tabs.menu.icon",
         &["button.icon(NONE; variant=Flat).color"],
-        "not drawn: the ChevronDown is an untinted Icon, given no icon colour of the theme's, which takes the Ghost Button's text colour, variants::ghost_button's foreground, ThemeColor secondary_foreground (demo::native_tab_bar; gpui-component/button/button.rs:1239-1244, text_color)",
+        "gpui: the SVG Icon's colour, next::geometry::ghost_button_icon_color at rest, button.icon(NONE; variant=Flat).color where stated; else the Ghost Button's text colour, ThemeColor secondary_foreground; an icon set's image takes no tint (demo::tool_icon_tinted, demo::native_tab_bar; gpui-component 0.10.0 src/icon.rs, into_svg)",
     ),
     (
         "chrome.status_bar.toggle.icon",
@@ -874,6 +876,16 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "chrome.status_bar.toggle",
         &["button.label(NONE; variant=Flat).color"],
         FLAT_GHOST_REST_LABEL,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(CHECKED; variant=Flat).fill"],
+        "gpui: demo::ghost_checked_variant's active, the selected toggle's fill while the side panel is open, button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_active (gpui-component 0.10.0 button/button.rs:1353, active; demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.label(CHECKED; variant=Flat).color"],
+        "gpui: demo::ghost_checked_variant's foreground, the selected toggle's text colour while the side panel is open, button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED; else gpui-component's own selected ghost's, ThemeColor secondary_foreground (demo::panel_toggle); and that same selected ghost's where the checked variant cannot be built (no 0.8.0 theme, or a home it reads stated in a form gpui cannot take, which Widget Info names; demo::checked_toggle)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -3508,6 +3520,18 @@ const FLAT_FOCUS_HOMES: &[&str] = &[
 
 /// Why a flat button's own label at rest is not drawn.
 const FLAT_GHOST_REST_LABEL: &str = "not drawn: no builder reads the flat button's label at rest; a Ghost Button is lettered in variants::ghost_button's foreground, ThemeColor secondary_foreground, which the connector sets from the push button's button.label(NONE).color (native-theme-gpui next/mod.rs, slice_colors)";
+
+/// The flat button's padding sides, which a tool button lists for the
+/// showcases that pad it by them.
+const TOOL_FLAT_PADDING: &[&str] = &[
+    "button.body(NONE; variant=Flat).padding.top",
+    "button.body(NONE; variant=Flat).padding.right",
+    "button.body(NONE; variant=Flat).padding.bottom",
+    "button.body(NONE; variant=Flat).padding.left",
+];
+
+/// Why [`TOOL_FLAT_PADDING`] are not drawn.
+const TOOL_PADDING_NOT_FLAT: &str = "not drawn: the tool button's box is padded by the push button's button.body(NONE).padding sides, where stated, in its place, not the flat variant's (demo::tool_button_box)";
 
 /// Why a flat button's own corners are not drawn.
 const FLAT_TOOL_BOX_CORNERS: &str = "not drawn: the Button is rounded by the push button's corners, button.body(NONE).corners, where stated, else the Theme's radius (demo::tool_button_box)";
