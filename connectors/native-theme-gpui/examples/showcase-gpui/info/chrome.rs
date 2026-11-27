@@ -948,11 +948,13 @@ pub fn panel_toggle(
         info
     };
     // Open, `next::geometry::ghost_button_checked` edges it in the checked
-    // flat pen and takes that width off each stated padding side.
+    // flat pen, closed, `next::geometry::ghost_button_rest` in a transparent
+    // one of the hovered flat pen's width; each takes that width off each
+    // stated padding side.
     let edge = if open {
         super::buttons::Edge::ghost_checked(native)
     } else {
-        None
+        super::buttons::Edge::ghost_rest(native)
     };
     let info = super::buttons::tool_button_size(info, ToolSize::Small, drawn, native, edge);
     info.instance(

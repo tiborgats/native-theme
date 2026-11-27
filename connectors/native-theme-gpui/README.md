@@ -1019,14 +1019,15 @@ state the toolbar button's fills and labels, kde-breeze the flat button's
 hovered Highlight pen) is not drawn; the connector draws nothing of its own in
 its place.
 
-**A toolbar button's icon takes one colour.** gpui-component's `Button` gives
-its icon no colour of its own: an `Icon` is drawn in the colour it is given
-(`src/icon.rs`, `Styled for Icon`), else in the Button's text colour.
-`next::geometry::toolbar_button_icon_color` gives `toolbar.button_icon`'s
-colour for the state a Button is built in, at rest, checked or disabled; an
-`Icon` keeps it under the pointer and pressed, so a hovered or pressed icon
-colour the theme states (the macOS presets state a hovered one) is not
-drawn.
+**A toolbar or flat button's icon takes one colour.** gpui-component's
+`Button` gives its icon no colour of its own: an `Icon` is drawn in the colour
+it is given (`src/icon.rs`, `Styled for Icon`), else in the Button's text
+colour. `next::geometry::toolbar_button_icon_color` gives
+`toolbar.button_icon`'s colour for the state a Button is built in, at rest,
+checked or disabled, and `next::geometry::ghost_button_icon_color`
+`button.icon(<state>; variant=Flat)`'s for a flat Button; an `Icon` keeps it
+under the pointer and pressed, so a hovered or pressed icon colour the theme
+states (the macOS presets state a hovered toolbar one) is not drawn.
 
 **An expander's edge keeps gpui-component's width.** `next::geometry::accordion`
 gives the edge's colour (and a width of 0 where the stroke is stated as none),

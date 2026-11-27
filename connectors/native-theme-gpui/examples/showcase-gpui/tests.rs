@@ -24847,6 +24847,106 @@ fn the_open_toggle_letters_its_icon_in_the_checked_label(cx: &mut TestAppContext
     );
 }
 
+/// The side-panel toggle's icon is tinted in the flat button's icon colour
+/// for the state it is built in, `button.icon(CHECKED; variant=Flat).color`
+/// while the panel is open and `button.icon(NONE; variant=Flat).color` while
+/// it is closed, each where stated, and its info names it: kde-breeze light
+/// states neither, and the toggle's info has no "icon colour" line; patched
+/// to state both, apart, it names each in its state.
+#[gpui::test]
+fn the_toggles_icon_takes_the_stated_flat_icon_colour(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, IconPatch, ThemePatch, WidgetState,
+    };
+    let line = |info: &Option<crate::info::WidgetInfo>| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "icon colour")
+                .map(|n| n.text.clone())
+        })
+    };
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    show(&mut cx, &showcase, Page::Basic);
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "the side panel is not open at start"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE);
+    assert_eq!(
+        line(&info),
+        None,
+        "kde-breeze states no flat icon colour: {info:?}"
+    );
+    let (off, on) = (Color::rgb(0.0, 1.0, 0.0), Color::rgb(1.0, 0.0, 1.0));
+    let rule = |state: WidgetState, colour: Color| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .icon(IconPatch::new().color(colour))
+    };
+    install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new()
+                .button(rule(WidgetState::NONE, off))
+                .button(rule(WidgetState::CHECKED, on)),
+        )
+    });
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    let open_line = line(&settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE));
+    assert!(
+        open_line.as_deref().is_some_and(|l| {
+            l.starts_with("button.icon(CHECKED; variant=Flat).color, a rule stating it for the state #ff00ff, ")
+        }),
+        "the open toggle's info does not name the stated checked icon colour: {open_line:?}"
+    );
+    click(&mut cx, CHROME_SIDE_PANEL_TOGGLE);
+    assert!(
+        !read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "a click on the toggle did not close the side panel"
+    );
+    let closed_line = line(&settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE));
+    assert!(
+        closed_line
+            .as_deref()
+            .is_some_and(|l| l.starts_with("button.icon(NONE; variant=Flat).color #00ff00, ")),
+        "the closed toggle's info does not name the stated rest icon colour: {closed_line:?}"
+    );
+}
+
+/// The closed side-panel toggle's size note takes the transparent border
+/// `next::geometry::ghost_button_rest` gives it, the hovered flat body's
+/// stroke width, off its stated padding, as the open one's takes the checked
+/// flat pen's: under kde-breeze light, which states that hovered stroke, its
+/// "radius and padding" line names `button.body(HOVER; variant=Flat).stroke.width`.
+#[gpui::test]
+fn the_closed_toggles_size_note_takes_the_rest_border_off_its_padding(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(
+        crate::info::buttons::ghost_outline(r.as_ref()).is_some(),
+        "kde-breeze light no longer states the flat button's hovered outline, so this test \
+         proves nothing"
+    );
+    click(&mut cx, CHROME_SIDE_PANEL_TOGGLE);
+    assert!(
+        !read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "a click on the toggle did not close the side panel"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL_TOGGLE);
+    let note = shown_note(info.as_ref(), "radius and padding").unwrap_or_default();
+    assert!(
+        note.contains("button.body(HOVER; variant=Flat).stroke.width")
+            && note.contains("next::geometry::ghost_button_rest"),
+        "the closed toggle's size note does not take ghost_button_rest's border off its \
+         padding: {note:?}"
+    );
+}
+
 /// The open side panel's toggle claims the colours it is drawn in: under
 /// kde-breeze light with the flat button's hovered outline patched to
 /// per-side strokes, which gpui cannot take, `next::variants::ghost_button`

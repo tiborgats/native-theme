@@ -1680,7 +1680,13 @@ pub(crate) fn toolbar_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        tool_icon_tinted(cx, glyph_at(icon, size), false, &mut button_info)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            false,
+            &TOOLBAR_ICON_TINT,
+            &mut button_info,
+        )
     });
     let dispatched = action.boxed_clone();
     let button = next_native_info(
@@ -1794,7 +1800,13 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
             "icon_size_toolbar",
             &mut button_info,
         );
-        tool_icon_tinted(cx, glyph_at(icon, size), false, &mut button_info)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            false,
+            &TOOLBAR_ICON_TINT,
+            &mut button_info,
+        )
     });
     let button = next_native_info(
         refined(
@@ -1939,7 +1951,9 @@ fn checked_toggle(cx: &App) -> (Option<ButtonCustomVariant>, GhostChecked) {
 /// not the toolbar's variant; while selected, checked, built with
 /// [`ghost_checked_variant`] -- dispatching its action,
 /// selected while its panel is open, its icon of the chosen icon theme at
-/// `geometry::icon_size_small` and its tooltip showing the action's key
+/// `geometry::icon_size_small`, tinted in [`FLAT_ICON_TINT`]'s colour for
+/// the state it is built in where stated ([`tool_icon_tinted`]), and its
+/// tooltip showing the action's key
 /// binding. Where the icon theme has no icon for it, it shows its tooltip's
 /// text instead, never another icon theme's icon. The icon is the Button's
 /// child, not its `icon`, for the reason `toolbar_button` gives.
@@ -1978,7 +1992,13 @@ pub(crate) fn panel_toggle(
             "icon_size_small",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            open,
+            &FLAT_ICON_TINT,
+            &mut button_info,
+        )
     });
     let dispatched = action.boxed_clone();
     let base = match checked {
@@ -11204,30 +11224,64 @@ fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
     next_padded(style, sides, None::<Pixels>, None)
 }
 
+/// Where a tool button's icon colour comes from ([`tool_icon_tinted`]): the
+/// 0.8.0 builder that gives it for a state, its name, and the homes it reads
+/// at rest and in `CHECKED`.
+struct IconTint {
+    colour: fn(&native_theme::next::ResolvedTheme, WidgetState) -> Option<Hsla>,
+    builder: &'static str,
+    rest: &'static str,
+    checked: &'static str,
+}
+
+/// A toolbar Button's icon colour, `toolbar.button_icon`'s.
+const TOOLBAR_ICON_TINT: IconTint = IconTint {
+    colour: next::geometry::toolbar_button_icon_color,
+    builder: "next::geometry::toolbar_button_icon_color",
+    rest: "toolbar.button_icon(NONE).color",
+    checked: "toolbar.button_icon(CHECKED).color",
+};
+
+/// A flat Button's icon colour, `button.icon(<state>; variant=Flat)`'s.
+const FLAT_ICON_TINT: IconTint = IconTint {
+    colour: next::geometry::ghost_button_icon_color,
+    builder: "next::geometry::ghost_button_icon_color",
+    rest: "button.icon(NONE; variant=Flat).color",
+    checked: "button.icon(CHECKED; variant=Flat).color",
+};
+
 /// A tool button's icon `glyph`, built at rest or, `checked`, in
-/// `CHECKED`, in the colour `next::geometry::toolbar_button_icon_color`
-/// gives the installed 0.8.0 theme for that state, `toolbar.button_icon`'s;
-/// as it is where that gives none, or before `next::apply` ran: the Button's
-/// text colour then, and an image its own. Its info says so in an "icon
-/// colour" line.
-fn tool_icon_tinted(cx: &App, glyph: Glyph, checked: bool, button_info: &mut WidgetInfo) -> Glyph {
+/// `CHECKED`, in the colour `tint`'s builder gives the installed 0.8.0
+/// theme for that state, [`TOOLBAR_ICON_TINT`]'s `toolbar.button_icon`'s
+/// or [`FLAT_ICON_TINT`]'s `button.icon(<state>; variant=Flat)`'s; as it is
+/// where that gives none, or before `next::apply` ran: the Button's text
+/// colour then, and an image its own. Its info says so in an "icon colour"
+/// line.
+fn tool_icon_tinted(
+    cx: &App,
+    glyph: Glyph,
+    checked: bool,
+    tint: &IconTint,
+    button_info: &mut WidgetInfo,
+) -> Glyph {
     let state = if checked {
         WidgetState::CHECKED
     } else {
         WidgetState::NONE
     };
-    match next_value(cx, |r| next::geometry::toolbar_button_icon_color(r, state)).flatten() {
+    match next_value(cx, |r| (tint.colour)(r, state)).flatten() {
         Some(colour) if !matches!(glyph, Glyph::Raster(..)) => {
             let home = if checked {
-                "toolbar.button_icon(CHECKED).color, a rule stating it for the state"
+                format!("{}, a rule stating it for the state", tint.checked)
             } else {
-                "toolbar.button_icon(NONE).color"
+                tint.rest.to_string()
             };
             *button_info = button_info.clone().instance(
                 "icon colour",
                 format!(
-                    "{home} {}, given the Icon by next::geometry::toolbar_button_icon_color: an Icon takes one colour, so it stays under the pointer and pressed (native-theme-gpui README, Limits)",
-                    as_rgba(colour)
+                    "{home} {}, given the Icon by {}: an Icon takes one colour, so it stays under the pointer and pressed (native-theme-gpui README, Limits)",
+                    as_rgba(colour),
+                    tint.builder
                 ),
             );
             glyph.text_color(colour)
@@ -11438,7 +11492,13 @@ pub(crate) fn icon_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        tool_icon_tinted(cx, glyph_at(icon, size), selected, &mut button_info)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            selected,
+            &TOOLBAR_ICON_TINT,
+            &mut button_info,
+        )
     });
     let button = next_native_info(
         refined(
