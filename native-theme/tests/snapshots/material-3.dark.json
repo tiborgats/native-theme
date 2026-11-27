@@ -363,6 +363,24 @@
           }
         },
         {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "body": {
+            "fill": "#c0b6d0"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "#ccc2dc"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#d0bcff"

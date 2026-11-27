@@ -57,7 +57,10 @@ fn the_default_button_and_the_text_field_fill_to_the_outline_s_inner_edge() {
 
 #[test]
 fn a_primary_button_keeps_the_accent_fill_until_disabled() {
-    for theme in both_schemes() {
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
         let accent_fill = theme
             .button
             .body(ButtonQuery::new(WidgetState::CHECKED))
@@ -90,10 +93,7 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
         let pressed_checked = ButtonQuery::new(WidgetState::PRESSED | WidgetState::CHECKED);
         assert_eq!(
             theme.button.label(pressed_checked).color,
-            theme
-                .button
-                .label(ButtonQuery::new(WidgetState::PRESSED))
-                .color
+            c.accent_text_secondary
         );
     }
 }
@@ -245,6 +245,42 @@ fn a_selected_item_wins_over_the_pointer() {
             theme.segmented_control.segment(hovered),
             theme.segmented_control.segment(selected)
         );
+    }
+}
+
+/// The push button checked is WinUI's ToggleButton checked: hovered the
+/// accent's fill at the secondary opacity, pressed at the tertiary one in no
+/// outline, lettered in the accent's secondary text, not the unchecked
+/// hovered and pressed looks (ToggleButton_themeresources.xaml:12-13, :25,
+/// :37).
+#[test]
+fn a_checked_push_button_hovered_or_pressed_keeps_its_checked_look() {
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
+        let body = |state| theme.button.body(ButtonQuery::new(state));
+        let label = |state| theme.button.label(ButtonQuery::new(state)).color;
+        let (checked, hover, pressed) = (
+            WidgetState::CHECKED,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+        );
+        assert_eq!(
+            body(checked | hover).fill,
+            Paint::Solid(c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY))
+        );
+        assert_eq!(body(checked | hover).stroke, body(checked).stroke);
+        assert_eq!(label(checked | hover), label(checked));
+        let checked_pressed = body(checked | pressed);
+        assert_eq!(
+            checked_pressed.fill,
+            Paint::Solid(c.accent_fill.mul_alpha(ACCENT_FILL_TERTIARY_OPACITY))
+        );
+        assert_eq!(checked_pressed.stroke, Stroke::None);
+        assert_ne!(body(pressed).stroke, Stroke::None);
+        assert_eq!(label(checked | pressed), c.accent_text_secondary);
+        assert_ne!(label(checked | pressed), label(pressed));
     }
 }
 
@@ -763,6 +799,9 @@ fn a_high_contrast_box_hovered_and_pressed_takes_the_system_colours() {
 /// text in it, disabled the button face in the grey text
 /// (Button_themeresources.xaml:78-89 at microsoft-ui-xaml 8463f45); the flat
 /// (subtle) button the same at rest, hovered, pressed and disabled (:66-77);
+/// the push button checked and hovered the button text in it lettered in the
+/// button face, checked and pressed the highlight's text in it lettered in
+/// the highlight (ToggleButton_themeresources.xaml:70-71, :82-83, :94-95);
 /// the toolbar's button hovered and pressed the highlight behind the
 /// highlight's text, checked and hovered or pressed the highlight's text,
 /// checked and disabled the grey text (AppBarButton_themeresources.xaml:41-47,
@@ -828,6 +867,19 @@ fn a_high_contrast_button_takes_the_system_colours() {
             "{query:?}"
         );
     }
+    let checked = WidgetState::CHECKED;
+    let push = |state: WidgetState| {
+        let body = high.button.body(ButtonQuery::new(state));
+        (body.fill, body.stroke)
+    };
+    let push_label = |state: WidgetState| high.button.label(ButtonQuery::new(state)).color;
+    assert_eq!(push(checked | hover), look(button_text, button_text));
+    assert_eq!(push_label(checked | hover), face);
+    assert_eq!(
+        push(checked | pressed),
+        look(highlight_text, highlight_text)
+    );
+    assert_eq!(push_label(checked | pressed), highlight);
     let toolbar = |state: WidgetState| high.toolbar.button(state).fill;
     assert_eq!(toolbar(hover), Paint::Solid(highlight));
     assert_eq!(toolbar(pressed), Paint::Solid(highlight));

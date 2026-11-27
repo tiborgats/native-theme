@@ -759,6 +759,20 @@ const FLAT_CHECKED_HOVER_ALPHA: f32 = 0.13;
 /// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
 const FLAT_CHECKED_PRESSED_ALPHA: f32 = 0.19;
 
+/// The alpha of the window text a hovered checked push button is filled
+/// with: `$button_checked_hover_color`, `color-mix(in srgb, currentColor
+/// 35%, transparent)`, on `&:checked { &:hover` (_buttons.scss:5, :47-48 at
+/// libadwaita 1.10.0; `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at
+/// `78ee0efd`, row GN-1.24).
+const BUTTON_CHECKED_HOVER_ALPHA: f32 = 0.35;
+
+/// The alpha of the window text a pressed checked push button is filled
+/// with: `$button_checked_active_color`, `color-mix(in srgb, currentColor
+/// 40%, transparent)`, on `&:checked { &.keyboard-activating, &:active`
+/// (_buttons.scss:6, :51-53 at libadwaita 1.10.0; `docs/facts/gnome/button.toml`
+/// on `v0.8.0-rc1` at `78ee0efd`, row GN-1.24).
+const BUTTON_CHECKED_PRESSED_ALPHA: f32 = 0.4;
+
 /// The layer over a pressed checked or mixed check, radio or switch:
 /// `RGB(0 0 6 / 20%)` (_checks.scss:59, _switch.scss:46 at libadwaita
 /// 1.10.0), 20 % of 255 being 51 exactly.
@@ -2049,6 +2063,20 @@ fn button(
                     ]
                 }),
             border(roles, BUTTON_BORDER_WIDTH),
+        )
+        // Checked and hovered or pressed, `&:checked`'s own `:hover` and `:active`, the window
+        // text at BUTTON_CHECKED_HOVER_ALPHA and BUTTON_CHECKED_PRESSED_ALPHA, translucent over
+        // what lies behind as libadwaita's `background-color` is (_buttons.scss:44-55 at
+        // libadwaita 1.10.0), after the HOVER and PRESSED rules so that they win.
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(c.row_foreground.mul_alpha(BUTTON_CHECKED_HOVER_ALPHA))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [fill(
+                c.row_foreground.mul_alpha(BUTTON_CHECKED_PRESSED_ALPHA),
+            )],
         )
         .rule(
             primary(),

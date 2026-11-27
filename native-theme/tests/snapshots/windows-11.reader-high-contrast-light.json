@@ -381,6 +381,42 @@
           }
         },
         {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "body": {
+            "fill": "#040404"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "body": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#040404",
+              "align": "outside"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "#060606",
+            "stroke": {
+              "width": 1.0,
+              "color": "#060606",
+              "align": "outside"
+            }
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#050505",
@@ -499,6 +535,24 @@
           ],
           "label": {
             "color": "#050505"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "label": {
+            "color": "#050505"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "label": {
+            "color": "#030303"
           }
         },
         {

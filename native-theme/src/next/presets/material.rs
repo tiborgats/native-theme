@@ -261,6 +261,9 @@ struct SchemeColors {
     disabled_track: Color,
     button_hover: Color,
     button_pressed: Color,
+    /// The selected tonal toggle's hovered fill: `on-secondary` at the hover
+    /// state layer's opacity, 0.08, over `secondary`.
+    button_checked_hover: Color,
     link_pressed: Color,
     link_disabled: Color,
     link_hover_layer: Color,
@@ -459,6 +462,10 @@ const LIGHT: SchemeColors = SchemeColors {
     // `button.active_background`: on-secondary-container at pressed-state-layer-opacity 0.12 over
     // secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
     button_pressed: srgb8(0xd0c6_dfff),
+    // the selected tonal toggle hovered: on-secondary at hover-state-layer-opacity 0.08 over
+    // secondary (_md-comp-button-tonal.scss:63, :79, :95; _md-sys-state.scss:25 at material-web
+    // 2.5.0; `docs/facts/material/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row MAT-B12)
+    button_checked_hover: srgb8(0x6f68_7cff),
     // `link.active_text_color`: 0.7.2 material-3.toml (uncited)
     link_pressed: srgb8(0x4f3d_8aff),
     // `link.disabled_text_color`: 0.7.2 material-3.toml (uncited)
@@ -669,6 +676,10 @@ const DARK: SchemeColors = SchemeColors {
     // `button.active_background`: on-secondary-container at pressed-state-layer-opacity 0.12 over
     // secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
     button_pressed: srgb8(0x5d56_6bff),
+    // the selected tonal toggle hovered: on-secondary at hover-state-layer-opacity 0.08 over
+    // secondary (_md-comp-button-tonal.scss:63, :79, :95; _md-sys-state.scss:25 at material-web
+    // 2.5.0; `docs/facts/material/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row MAT-B12)
+    button_checked_hover: srgb8(0xc0b6_d0ff),
     // `link.active_text_color`: 0.7.2 material-3.toml (uncited)
     link_pressed: srgb8(0xe8de_ffff),
     // `link.disabled_text_color`: 0.7.2 material-3.toml (uncited)
@@ -1511,7 +1522,9 @@ fn lay_palette_over(c: &mut SchemeColors, p: &Palette, explicit_accent: bool) {
 /// the disabled container, the disabled content and the hover opacities;
 /// `surface-container-highest` at the disabled track opacity; the tonal
 /// button's hovered and pressed fills, `on-secondary-container` at the hover
-/// and the pressed opacities composited over `secondary-container`.
+/// and the pressed opacities composited over `secondary-container`, and
+/// checked its hovered fill, `on-secondary` at the hover opacity composited
+/// over `secondary`.
 fn derive_state_layers(c: &mut SchemeColors) {
     c.disabled_container = c.on_surface.mul_alpha(DISABLED_CONTAINER_OPACITY);
     c.disabled_content = c.on_surface.mul_alpha(DISABLED_CONTENT_OPACITY);
@@ -1527,6 +1540,10 @@ fn derive_state_layers(c: &mut SchemeColors) {
         .on_secondary_container
         .mul_alpha(PRESSED_STATE_LAYER_OPACITY)
         .composite_over(c.secondary_container);
+    c.button_checked_hover = c
+        .on_secondary
+        .mul_alpha(HOVER_STATE_LAYER_OPACITY)
+        .composite_over(c.secondary);
 }
 
 /// How a font size becomes logical pixels: the font DPI and the text scale
@@ -1748,7 +1765,8 @@ fn weighted(mut label: TextStyle, weight: u16) -> TextStyle {
 /// with no outline, in the default border colour (0.7.2's
 /// `resolve_border_inheritance`), its pill corners, no shadow, padded, of
 /// least sizes; its hovered and pressed fills (the state layers composited
-/// over the container), checked the secondary colour; the primary variant,
+/// over the container), checked the secondary colour, hovered under its own
+/// state layer and pressed alone; the primary variant,
 /// the filled button, in the accent (0.7.2: `primary_background` is
 /// `defaults.accent_color` where unstated); disabled, the disabled container.
 /// Its label is the secondary container's text at its own weight, checked the
@@ -1797,6 +1815,22 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.button_pressed), PartProp::Stroke(Stroke::None)],
+        )
+        // Checked, the selected tonal toggle, after the HOVER and PRESSED rules so that its own
+        // win. Hovered, on-secondary at the hover state layer's opacity over secondary
+        // (`button_checked_hover`; `docs/facts/material/button.toml` on `v0.8.0-rc1` at
+        // `78ee0efd`, row MAT-B12, `states = ["checked"]`, `state_layer = "hover"`). Pressed,
+        // secondary alone: those facts state no pressed layer for it, `pressed` being in no
+        // `state_layer` set, as the press is Compose's ripple, an effect and not a fill, its
+        // pixels unmeasured (U70; `docs/facts/material/state-models.toml` and `button.toml`,
+        // their headers, on `v0.8.0-rc1` at `78ee0efd`).
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(c.button_checked_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [fill(c.secondary)],
         )
         .rule(primary(), [fill(roles.accent.fill)])
         .rule(

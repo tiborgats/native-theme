@@ -3379,6 +3379,8 @@ fn button(
             ],
             [outline(layout, c.selection_background)],
         )
+        // Pressed, after CHECKED so that a checked button pressed takes the pressed fill: Breeze
+        // tests `down` before `checked` (breezehelper.cpp:693-694, then :695-699 at breeze 6.8.2).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.button_pressed)],
@@ -3436,7 +3438,8 @@ fn button(
             [outline(layout, c.selection_background)],
         )
         // Pressed, Highlight at Blend_Value in a Highlight pen (breezehelper.cpp:679-680,
-        // :710-712), as the toolbar's pressed button.
+        // :710-712), as the toolbar's pressed button; after the checked rules so that a checked
+        // button pressed takes it, as Breeze tests `down` (:679-680) before `checked` (:681-684).
         .rule(
             flat(WidgetState::PRESSED),
             [

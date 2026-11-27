@@ -381,6 +381,25 @@
           }
         },
         {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0, 0, 0.003921569, 0.9)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "#000001cc",
+            "stroke": "none"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#000001",
@@ -479,6 +498,15 @@
           ],
           "label": {
             "color": "#0000009e"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffffb3"
           }
         },
         {
