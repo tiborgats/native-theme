@@ -12126,7 +12126,7 @@ fn push_button_route(id: &str, home: &str) -> Option<String> {
         }
         "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color"
         | "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width"
-            if primary =>
+            if primary || default =>
         {
             "not drawn: iced's button takes no keyboard focus, so it has no focused status to \
              draw an outline in"

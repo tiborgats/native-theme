@@ -12859,6 +12859,16 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         ),
         (
             "basic.buttons.dialog_default",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+            i::DIALOG_DEFAULT_OUTLINE,
+        ),
+        (
+            "basic.buttons.dialog_default",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+            i::DIALOG_DEFAULT_OUTLINE,
+        ),
+        (
+            "basic.buttons.dialog_default",
             "button.body(NONE; variant=Primary).corners",
             i::DIALOG_DEFAULT_CORNERS,
         ),

@@ -1533,6 +1533,16 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         DIALOG_DEFAULT_OUTLINE,
     ),
     (
+        "basic.buttons.dialog_default",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+        DIALOG_DEFAULT_OUTLINE,
+    ),
+    (
         "chrome.status_bar.toggle",
         "button.body(CHECKED).fill",
         "egui: per call, Button::fill, the toggle's fill while the side panel is open, in the \

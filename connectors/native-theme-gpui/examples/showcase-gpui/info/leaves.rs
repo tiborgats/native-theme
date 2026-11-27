@@ -85,6 +85,14 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "basic.buttons.dialog_default",
+        &[
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.color",
+            "button.body(FOCUS_VISIBLE; variant=Primary).stroke.width",
+        ],
+        "not drawn: gpui-component styles a focused Button after the caller's style and gives no hook for it, so the focused default button, a Primary Button or next::variants::default_button's, is bordered in ThemeColor ring where it has a border width, and where it has none in a 1 px line inside it in its text colour at 60 %, with the band round it where the band is on (gpui-component 0.10.0 button/button.rs:936-938, focus_style; styled.rs:250-298, focus_style; native-theme-gpui README, Limits)",
+    ),
+    (
+        "basic.buttons.dialog_default",
         &["button.body(DEFAULT).fill"],
         "gpui: next::geometry::default_button_rest's bg at rest, laid over the Button's own geometry refinement, and next::variants::default_button's hover fill; where unstated the Button is .primary(), ThemeColor primary",
     ),
