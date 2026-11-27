@@ -1081,6 +1081,9 @@ pub(crate) struct ToolbarOutline {
     pub checked_width: Option<f32>,
     pub checked_hover_width: Option<f32>,
     pub checked_pressed_width: Option<f32>,
+    /// A disabled button's stroke and its width, where a rule states it for
+    /// `DISABLED` (`toolbar.button(DISABLED)`); `None` is the outline at rest.
+    pub disabled: Option<StateLine>,
     /// A disabled checked button's stroke and its width, where the theme
     /// states it for `CHECKED` or for `DISABLED` (`toolbar.button(DISABLED |
     /// CHECKED)`); `None` is the outline at rest.
@@ -1150,6 +1153,10 @@ impl ToolbarButtonSource {
             checked_pressed_border_color: line(self.checked_pressed_border_color),
             outline: self.outline.map(|o| ToolbarOutline {
                 rest: o.rest.aligned(align),
+                disabled: o.disabled.map(|s| StateLine {
+                    line: s.line.aligned(align),
+                    ..s
+                }),
                 checked_disabled: o.checked_disabled.map(|s| StateLine {
                     line: s.line.aligned(align),
                     ..s
@@ -1226,6 +1233,7 @@ pub(crate) fn toolbar_button_from(
         });
         let (hover_width, pressed_width, checked_width, checked_hover_width, checked_pressed_width) =
             widths.unwrap_or_default();
+        let disabled_stroke = t.outline.and_then(|o| o.disabled);
         let checked_disabled_stroke = t.outline.and_then(|o| o.checked_disabled);
         // On the 0.8.0 model the toolbar's own labels, an unstated label at
         // rest iced's own neutral class's, and a checked button's under the
@@ -1317,7 +1325,12 @@ pub(crate) fn toolbar_button_from(
                 t.checked_pressed_border_color,
                 checked_pressed_width,
             ),
-            (false, Status::Disabled) => (disabled, disabled_label, None, None),
+            (false, Status::Disabled) => (
+                disabled,
+                disabled_label,
+                disabled_stroke.map(|s| s.line),
+                disabled_stroke.map(|s| s.width),
+            ),
             (true, Status::Disabled) => (
                 checked_disabled,
                 disabled_label,

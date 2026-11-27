@@ -369,6 +369,53 @@ fn a_disabled_checked_toolbar_button_takes_the_disabled_checked_stroke() -> Test
     Ok(())
 }
 
+/// A disabled toolbar button that is off is outlined in
+/// `toolbar.button(DISABLED)`'s stroke, at its width, where a rule states it
+/// for `DISABLED` (spec §2, `from_state`; §10, rule 0), as the checked one
+/// is in `toolbar.button(DISABLED | CHECKED)`'s; where none does it keeps the
+/// outline at rest, its width and corners.
+#[test]
+fn a_disabled_toolbar_button_takes_the_disabled_stroke() -> TestResult {
+    use iced_widget::button::Status;
+    const WIDTH: f32 = 3.0;
+    let patch = ThemePatch::new().toolbar(
+        ToolbarRule::new()
+            .states(WidgetState::DISABLED)
+            .button(PartPatch::new().stroke(Stroke::uniform(WIDTH, LABEL))),
+    );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let border = super::toolbar_button(&r, false)?(&theme, Status::Disabled).border;
+        assert_eq!(
+            (border.width, border.color),
+            (WIDTH, to_color(LABEL)),
+            "{preset:?}"
+        );
+    }
+    let mut stating = Vec::new();
+    for (preset, r) in every_preset() {
+        if super::toolbar_outline(&r)?.disabled.is_some() {
+            if !stating.contains(&preset) {
+                stating.push(preset);
+            }
+            continue;
+        }
+        let theme = to_theme(&r)?;
+        let style = super::toolbar_button(&r, false)?;
+        let [rest, disabled] = [Status::Active, Status::Disabled].map(|s| style(&theme, s).border);
+        assert_eq!(
+            (disabled.width, disabled.radius),
+            (rest.width, rest.radius),
+            "{preset:?}"
+        );
+    }
+    assert!(
+        stating.is_empty(),
+        "presets state the disabled stroke: {stating:?}"
+    );
+    Ok(())
+}
+
 /// A disabled checked toggle is filled in the theme's answer for the state
 /// it is in, `button.body(DISABLED | CHECKED)`'s, not `(DISABLED)`'s (spec
 /// §10, rule 0), as a disabled checked toolbar button is: on a theme whose

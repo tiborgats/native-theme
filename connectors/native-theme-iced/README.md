@@ -895,7 +895,9 @@ rule 0).
   toolbar button is outlined in what the theme states for
   `DISABLED | CHECKED` where it states the stroke for `CHECKED` or for
   `DISABLED` (kde-breeze's, windows-11's and the macOS presets' checked
-  toolbar outlines), else in the outline at rest.
+  toolbar outlines), else in the outline at rest; one that is off, in
+  `toolbar.button(DISABLED)`'s stroke where a rule states it for `DISABLED`
+  (no preset does), else in the outline at rest.
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted
