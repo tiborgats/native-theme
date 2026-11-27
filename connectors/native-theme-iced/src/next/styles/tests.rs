@@ -306,6 +306,69 @@ fn a_disabled_checked_toolbar_button_takes_the_disabled_checked_fill() -> TestRe
     Ok(())
 }
 
+/// A disabled checked toolbar button is outlined in the theme's answer for
+/// `DISABLED | CHECKED`, at its width, where the theme states the stroke for
+/// `CHECKED` or for `DISABLED` by the spec's two queries (spec §2,
+/// `from_state`; §10, rules 0 and 0a): here a rule for both flags, one for
+/// `DISABLED` alone and one for `CHECKED` alone. Of the presets kde-breeze,
+/// windows-11 and the macOS presets state it, by their checked outlines
+/// (`toolbar.button(CHECKED)`'s stroke); on the others it keeps the outline
+/// at rest, as a disabled button that is off.
+#[test]
+fn a_disabled_checked_toolbar_button_takes_the_disabled_checked_stroke() -> TestResult {
+    use iced_widget::button::Status;
+    const WIDTH: f32 = 3.0;
+    for states in [
+        WidgetState::DISABLED | WidgetState::CHECKED,
+        WidgetState::DISABLED,
+        WidgetState::CHECKED,
+    ] {
+        let patch = ThemePatch::new().toolbar(
+            ToolbarRule::new()
+                .states(states)
+                .button(PartPatch::new().stroke(Stroke::uniform(WIDTH, LABEL))),
+        );
+        for (preset, r) in every_preset_with(&patch) {
+            let theme = to_theme(&r)?;
+            let rest = super::toolbar_button(&r, true)?(&theme, Status::Disabled).border;
+            assert_eq!(
+                (rest.width, rest.color),
+                (WIDTH, to_color(LABEL)),
+                "{preset:?} {states:?}"
+            );
+        }
+    }
+    let mut stating = Vec::new();
+    for (preset, r) in every_preset() {
+        if super::toolbar_outline(&r)?.checked_disabled.is_some() {
+            if !stating.contains(&preset) {
+                stating.push(preset);
+            }
+            continue;
+        }
+        let theme = to_theme(&r)?;
+        let [off, on] = [false, true].map(|checked| {
+            super::toolbar_button(&r, checked).map(|s| s(&theme, Status::Disabled).border)
+        });
+        let (off, on) = (off?, on?);
+        assert_eq!(
+            (on.width, on.color, on.radius),
+            (off.width, off.color, off.radius),
+            "{preset:?}"
+        );
+    }
+    assert_eq!(
+        stating,
+        [
+            Preset::KdeBreeze,
+            Preset::Windows11,
+            Preset::MacosMonterey,
+            Preset::MacosTahoe
+        ]
+    );
+    Ok(())
+}
+
 /// A disabled checked toggle is filled in the theme's answer for the state
 /// it is in, `button.body(DISABLED | CHECKED)`'s, not `(DISABLED)`'s (spec
 /// §10, rule 0), as a disabled checked toolbar button is: on a theme whose

@@ -243,7 +243,11 @@ fn state_stroke_width(part: &PartStyle, home: &'static str) -> Mapped<Option<f32
 }
 
 /// [`ToolbarOutline`] of the 0.8.0 model: `toolbar.button(NONE)`'s stroke
-/// and corners, and the width of each state's stroke a rule states.
+/// and corners, the width of each state's stroke a rule states, and a
+/// disabled checked button's stroke, the theme's answer for
+/// `DISABLED | CHECKED` where it states the stroke for `CHECKED` or for
+/// `DISABLED` by the spec's two queries (spec §2, `from_state`), as
+/// [`checked_borders`] reads a checked push button's.
 pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
     let t = &r.toolbar;
     let width = |state: WidgetState, home| state_stroke_width(&t.button(state), home);
@@ -252,6 +256,25 @@ pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
         WidgetState::PRESSED,
         WidgetState::CHECKED,
     );
+    let both = WidgetState::DISABLED | checked;
+    let read = |part: &PartStyle| {
+        Ok(StateLine {
+            line: line_or_none(part, "toolbar.button(DISABLED|CHECKED).stroke.color")?,
+            width: stroke_width(part, "toolbar.button(DISABLED|CHECKED).stroke.width")?,
+        })
+    };
+    let on = |flag: WidgetState| {
+        flagged(
+            &t.button(flag),
+            &t.button(asking(both, flag)),
+            PartStated::STROKE,
+            read,
+        )
+    };
+    let checked_disabled = match on(checked)? {
+        Some(line) => Some(line),
+        None => on(WidgetState::DISABLED)?,
+    };
     Ok(ToolbarOutline {
         rest: part_outline!(t.button(WidgetState::NONE), "toolbar.button(NONE)")?,
         hover_width: width(hover, "toolbar.button(HOVER).stroke.width")?,
@@ -265,6 +288,7 @@ pub(super) fn toolbar_outline(r: &ResolvedTheme) -> Mapped<ToolbarOutline> {
             pressed | hover | checked,
             "toolbar.button(PRESSED|HOVER|CHECKED).stroke.width",
         )?,
+        checked_disabled,
     })
 }
 
@@ -467,7 +491,10 @@ pub fn button_toggle(
 /// `toolbar.button(NONE)`'s stroke and corners, each iced's own neutral
 /// class's where unstated (spec §10, rule 0), and a state's stroke a rule
 /// states drawn at that stroke's width, never the push button's
-/// (`button.body(NONE)`).
+/// (`button.body(NONE)`); a disabled checked one's
+/// `toolbar.button(DISABLED | CHECKED)`'s where the theme states the stroke
+/// for `CHECKED` or for `DISABLED` by the spec's two queries, else the
+/// outline at rest.
 ///
 /// # Errors
 ///

@@ -2041,7 +2041,7 @@ moves = [
 [homes."toolbar.button(CHECKED).stroke.color"]
 leaves = ["toolbar.button_checked_border_color"]
 moves = [
-  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(DISABLED).fill"]
@@ -2052,6 +2052,11 @@ moves = [
 [homes."toolbar.button(DISABLED|CHECKED).fill"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(true, Disabled)"] },
+]
+
+[homes."toolbar.button(DISABLED|CHECKED).stroke.color"]
+moves = [
+  { row = "styles::toolbar_button.border", statuses = ["(true, Disabled)"] },
 ]
 
 [homes."toolbar.button(HOVER).fill"]
@@ -2088,9 +2093,9 @@ moves = [
 
 [homes."toolbar.button(NONE).stroke.color"]
 moves = [
-  { row = "styles::toolbar_button.border", statuses = ["(false, Active)", "(false, Disabled)", "(true, Disabled)"] },
+  { row = "styles::toolbar_button.border", statuses = ["(false, Active)", "(false, Disabled)"] },
   { row = "styles::toolbar_button.border", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark"] },
-  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
 ]
 
 [homes."toolbar.button(PRESSED).fill"]
@@ -2786,7 +2791,7 @@ homes = ["toolbar.button_label(NONE).color"]
 homes = ["button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "toolbar.button(CHECKED).fill", "toolbar.button(DISABLED).fill", "toolbar.button(DISABLED|CHECKED).fill", "toolbar.button(HOVER).fill", "toolbar.button(HOVER|CHECKED).fill", "toolbar.button(NONE).fill", "toolbar.button(PRESSED).fill", "toolbar.button(PRESSED|CHECKED).fill"]
 
 [rows."styles::toolbar_button.border"]
-homes = ["toolbar.button(CHECKED).fill", "toolbar.button(CHECKED).stroke.color", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(HOVER|CHECKED).fill", "toolbar.button(HOVER|CHECKED).stroke.color", "toolbar.button(NONE).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED|CHECKED).stroke.color", "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color"]
+homes = ["toolbar.button(CHECKED).fill", "toolbar.button(CHECKED).stroke.color", "toolbar.button(DISABLED|CHECKED).stroke.color", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(HOVER|CHECKED).fill", "toolbar.button(HOVER|CHECKED).stroke.color", "toolbar.button(NONE).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED|CHECKED).stroke.color", "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color"]
 
 [rows."styles::toolbar_button.text_color"]
 homes = ["button.label(NONE).color", "button.label(NONE; variant=Primary).color", "toolbar.button_label(CHECKED).color", "toolbar.button_label(DISABLED).color", "toolbar.button_label(HOVER).color", "toolbar.button_label(HOVER|CHECKED).color", "toolbar.button_label(NONE).color", "toolbar.button_label(PRESSED).color", "toolbar.button_label(PRESSED|CHECKED).color"]

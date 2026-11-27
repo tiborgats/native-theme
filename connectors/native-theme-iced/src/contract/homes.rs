@@ -106,6 +106,7 @@ const QUERIED_HOMES: &[&str] = &[
     "tab.tab(NONE).stroke.color",
     "toolbar.button(DISABLED).fill",
     "toolbar.button(DISABLED|CHECKED).fill",
+    "toolbar.button(DISABLED|CHECKED).stroke.color",
     "toolbar.button(HOVER|CHECKED).fill",
     "toolbar.button(NONE).fill",
     "toolbar.button(NONE).stroke.color",

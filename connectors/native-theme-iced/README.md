@@ -889,7 +889,11 @@ rule 0).
   corners; iced lays a button out by its padding alone and draws the
   border on its bounds (`iced_widget` 0.14.2 `src/button.rs`, `layout` and
   `draw`), so another width moves no content. A state it states no checked
-  outline for keeps the unchecked button's there.
+  outline for keeps the unchecked button's there. A disabled checked
+  toolbar button is outlined in what the theme states for
+  `DISABLED | CHECKED` where it states the stroke for `CHECKED` or for
+  `DISABLED` (kde-breeze's, windows-11's and the macOS presets' checked
+  toolbar outlines), else in the outline at rest.
 - **A button's icon colour.** iced's button draws its content with
   one `renderer::Style`, its `text_color` (`iced_widget` 0.14.2
   `src/button.rs`, `draw`), and passes it no status. An `svg` is tinted
