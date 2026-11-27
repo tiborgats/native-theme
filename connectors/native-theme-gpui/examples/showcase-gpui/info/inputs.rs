@@ -1058,18 +1058,37 @@ fn switch_label_font_text(font: Option<&SwitchLabelFont>) -> String {
 
 /// Whether a theme-drawn switch, `checked` or not, is hovered in a colour
 /// of its own, as `SwitchLook::next_of` reads it: where a rule states the
-/// hovered track's fill, as the query with that flag alone says
-/// (`switch.track(HOVER).from_state`, spec §2), an unchecked one in
-/// `switch.track(HOVER).fill`, a checked one in
+/// hovered track's fill, as spec §2's two queries say ([`two_queries`]), an
+/// unchecked one in `switch.track(HOVER).fill`, a checked one in
 /// `switch.track(HOVER|CHECKED).fill`, whatever its value.
 #[cfg(feature = "widgets")]
 pub(crate) fn switch_hover_stated(r: &NextTheme, checked: bool) -> bool {
     let hover = r.switch.track(WidgetState::HOVER);
     if checked {
-        hover.from_state.contains(PartStated::FILL)
+        two_queries(
+            WidgetState::HOVER,
+            WidgetState::HOVER | WidgetState::CHECKED,
+        )
+        .into_iter()
+        .any(|query| r.switch.track(query).from_state.contains(PartStated::FILL))
     } else {
         drawn_state_fill(&hover).is_some()
     }
+}
+
+/// Spec §2's two queries of a connector that keeps its own treatment of
+/// `flag` on a part drawn at `at` (`from_state`): the part with `flag` alone,
+/// and at `at` asking `flag`; the theme states a property for `flag` where
+/// either has its bit.
+#[cfg(feature = "widgets")]
+pub(crate) fn two_queries(
+    flag: WidgetState,
+    at: WidgetState,
+) -> [native_theme::next::StyleQuery; 2] {
+    [
+        flag.into(),
+        native_theme::next::StyleQuery::new(at).asking(flag),
+    ]
 }
 
 /// What a theme-drawn checkbox or radio is drawn from: its `look`, where the
@@ -1466,88 +1485,97 @@ fn native_indicator(
     checked: bool,
     disabled: bool,
 ) -> WidgetInfo {
-    let indicator = |state: WidgetState| {
+    let indicator = |state: native_theme::next::StyleQuery| {
         if radio {
             r.radio.indicator(state)
         } else {
             r.checkbox.indicator(state)
         }
     };
+    let off = WidgetState::DISABLED
+        | if checked {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+    // Whether a rule states the indicator's `bit` for `DISABLED` ([`two_queries`]).
+    let ruled = |bit| {
+        two_queries(WidgetState::DISABLED, off)
+            .into_iter()
+            .any(|query| indicator(query).from_state.contains(bit))
+    };
     // A disabled fill a rule states replaces the box's;
     // with none the fill is gpui-component's own disabled one, a checked
     // box's and a radio's the enabled fill at half alpha, an unchecked box's
     // the enabled fill (CheckboxLook::next_of).
-    let stated_disabled = disabled
-        && indicator(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::FILL);
+    let stated_disabled = disabled && ruled(PartStated::FILL);
     let dimmed = disabled && !stated_disabled && (checked || radio);
     let info = info.color(match (radio, stated_disabled, checked) {
         (false, false, true) if dimmed => claim(
             "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
             "checkbox.indicator(CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:330",
+            "native-theme-gpui/widgets/checkbox.rs:331",
         ),
         (true, false, true) if dimmed => claim(
             "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
             "radio.indicator(CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:331",
+            "native-theme-gpui/widgets/checkbox.rs:332",
         ),
         (true, false, false) if dimmed => claim(
             "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
             "radio.indicator(NONE).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:324",
+            "native-theme-gpui/widgets/checkbox.rs:325",
         ),
         (false, true, false) => claim(
             "fill",
             "checkbox.indicator(DISABLED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:272",
+            "native-theme-gpui/widgets/checkbox.rs:276",
         ),
         (false, true, true) => claim(
             "fill",
             "checkbox.indicator(DISABLED|CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:273",
+            "native-theme-gpui/widgets/checkbox.rs:277",
         ),
         (true, true, false) => claim(
             "fill",
             "radio.indicator(DISABLED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:274",
+            "native-theme-gpui/widgets/checkbox.rs:278",
         ),
         (true, true, true) => claim(
             "fill",
             "radio.indicator(DISABLED|CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:275",
+            "native-theme-gpui/widgets/checkbox.rs:279",
         ),
         (false, false, true) => claim(
             "fill",
             "checkbox.indicator(CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:330",
+            "native-theme-gpui/widgets/checkbox.rs:331",
         ),
         (true, false, true) => claim(
             "fill",
             "radio.indicator(CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:331",
+            "native-theme-gpui/widgets/checkbox.rs:332",
         ),
         (false, false, false) => claim(
             "fill",
             "checkbox.indicator(NONE).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:323",
+            "native-theme-gpui/widgets/checkbox.rs:324",
         ),
         (true, false, false) => claim(
             "fill",
             "radio.indicator(NONE).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:324",
+            "native-theme-gpui/widgets/checkbox.rs:325",
         ),
     });
     // An unset hover is the box at rest (CheckboxLook::next_of); the swatch
@@ -1555,43 +1583,43 @@ fn native_indicator(
     // fill.
     // Checked, the fill resolved at HOVER|CHECKED, claimed where it is not the
     // checked fill, the only case the look draws one.
-    let hover_stated = drawn_state_fill(&indicator(WidgetState::HOVER)).is_some();
+    let hover_stated = drawn_state_fill(&indicator(WidgetState::HOVER.into())).is_some();
     let info = info.colors(match (radio, hover_stated || checked) {
         (false, true) if checked => stated_claim(
             "hover, checkbox.indicator(HOVER|CHECKED).fill in place of the fill",
             "checkbox.indicator(HOVER|CHECKED).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:821",
+            "native-theme-gpui/widgets/checkbox.rs:838",
         ),
         (true, true) if checked => stated_claim(
             "hover, radio.indicator(HOVER|CHECKED).fill in place of the fill",
             "radio.indicator(HOVER|CHECKED).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:823",
+            "native-theme-gpui/widgets/checkbox.rs:840",
         ),
         (false, true) => stated_claim(
             "hover, checkbox.indicator(HOVER).fill over the fill",
             "checkbox.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:820",
+            "native-theme-gpui/widgets/checkbox.rs:837",
         ),
         (true, true) => stated_claim(
             "hover, radio.indicator(HOVER).fill over the fill",
             "radio.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:822",
+            "native-theme-gpui/widgets/checkbox.rs:839",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the fill at rest",
             "checkbox.indicator(NONE).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:323",
+            "native-theme-gpui/widgets/checkbox.rs:324",
         ),
         (true, false) => stated_claim(
             "hover, none stated: the fill at rest",
             "radio.indicator(NONE).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:324",
+            "native-theme-gpui/widgets/checkbox.rs:325",
         ),
     });
     let width = Some(f32::from(look.border_width));
@@ -1601,215 +1629,232 @@ fn native_indicator(
             "checkbox.indicator(HOVER).stroke.color",
             look.hover_border,
             width,
-            "native-theme-gpui/widgets/checkbox.rs:288",
+            "native-theme-gpui/widgets/checkbox.rs:289",
         ),
         (false, true) => edge_claim(
             "hovered edge",
             "checkbox.indicator(HOVER|CHECKED).stroke.color",
             look.hover_border,
             width,
-            "native-theme-gpui/widgets/checkbox.rs:289",
+            "native-theme-gpui/widgets/checkbox.rs:290",
         ),
         (true, false) => edge_claim(
             "hovered edge",
             "radio.indicator(HOVER).stroke.color",
             look.hover_border,
             width,
-            "native-theme-gpui/widgets/checkbox.rs:290",
+            "native-theme-gpui/widgets/checkbox.rs:291",
         ),
         (true, true) => edge_claim(
             "hovered edge",
             "radio.indicator(HOVER|CHECKED).stroke.color",
             look.hover_border,
             width,
-            "native-theme-gpui/widgets/checkbox.rs:291",
+            "native-theme-gpui/widgets/checkbox.rs:292",
         ),
     });
     // Disabled, the stroke a rule states for `DISABLED`; with none
     // gpui-component's own disabled border, the enabled one at half alpha
     // (CheckboxLook::next_of).
-    let stroked_disabled = disabled
-        && indicator(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::STROKE);
+    let stroked_disabled = disabled && ruled(PartStated::STROKE);
     let info = info.colors(match (radio, checked, disabled, stroked_disabled) {
         (false, false, _, true) => edge_claim(
             "border",
             "checkbox.indicator(DISABLED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:422",
+            "native-theme-gpui/widgets/checkbox.rs:430",
         ),
         (false, true, _, true) => edge_claim(
             "border",
             "checkbox.indicator(DISABLED|CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:424",
+            "native-theme-gpui/widgets/checkbox.rs:432",
         ),
         (true, false, _, true) => edge_claim(
             "border",
             "radio.indicator(DISABLED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:426",
+            "native-theme-gpui/widgets/checkbox.rs:434",
         ),
         (true, true, _, true) => edge_claim(
             "border",
             "radio.indicator(DISABLED|CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:427",
+            "native-theme-gpui/widgets/checkbox.rs:435",
         ),
         (false, true, true, false) => edge_claim(
             "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
             "checkbox.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:345",
+            "native-theme-gpui/widgets/checkbox.rs:346",
         ),
         (true, true, true, false) => edge_claim(
             "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
             "radio.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:346",
+            "native-theme-gpui/widgets/checkbox.rs:347",
         ),
         (false, false, true, false) => edge_claim(
             "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
             "checkbox.indicator(NONE).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:352",
+            "native-theme-gpui/widgets/checkbox.rs:353",
         ),
         (true, false, true, false) => edge_claim(
             "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
             "radio.indicator(NONE).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:353",
+            "native-theme-gpui/widgets/checkbox.rs:354",
         ),
         (false, true, false, _) => edge_claim(
             "border",
             "checkbox.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:345",
+            "native-theme-gpui/widgets/checkbox.rs:346",
         ),
         (true, true, false, _) => edge_claim(
             "border",
             "radio.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:346",
+            "native-theme-gpui/widgets/checkbox.rs:347",
         ),
         (false, false, false, _) => edge_claim(
             "border",
             "checkbox.indicator(NONE).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:352",
+            "native-theme-gpui/widgets/checkbox.rs:353",
         ),
         (true, false, false, _) => edge_claim(
             "border",
             "radio.indicator(NONE).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:353",
+            "native-theme-gpui/widgets/checkbox.rs:354",
         ),
     });
     // Disabled, the mark a rule states for `DISABLED`; with none,
     // gpui-component's own disabled mark, the enabled one at half alpha
     // (CheckboxLook::next_of).
     let mark_ruled = disabled
-        && if radio {
-            r.radio
-                .dot(WidgetState::DISABLED)
-                .from_state
-                .contains(PartStated::FILL)
-        } else {
-            r.checkbox
-                .checkmark(WidgetState::DISABLED)
-                .from_state
-                .contains(IconStated::COLOR)
-        };
+        && two_queries(
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+        )
+        .into_iter()
+        .any(|query| {
+            if radio {
+                r.radio.dot(query).from_state.contains(PartStated::FILL)
+            } else {
+                r.checkbox
+                    .checkmark(query)
+                    .from_state
+                    .contains(IconStated::COLOR)
+            }
+        });
     let info = info.colors(match (radio, disabled, mark_ruled) {
         (false, true, true) => stated_claim(
             "mark",
             "checkbox.checkmark(DISABLED|CHECKED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:769",
+            "native-theme-gpui/widgets/checkbox.rs:780",
         ),
         (true, true, true) => stated_claim(
             "mark",
             "radio.dot(DISABLED|CHECKED).fill",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:403",
+            "native-theme-gpui/widgets/checkbox.rs:413",
         ),
         (false, true, false) => stated_claim(
             "mark, disabled, none stated: the enabled mark at half alpha, gpui-component's own",
             "checkbox.checkmark(CHECKED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:305",
+            "native-theme-gpui/widgets/checkbox.rs:306",
         ),
         (true, true, false) => stated_claim(
             "mark, disabled, none stated: the enabled mark at half alpha, gpui-component's own",
             "radio.dot(CHECKED).fill",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:300",
+            "native-theme-gpui/widgets/checkbox.rs:301",
         ),
         (false, false, _) => stated_claim(
             "mark",
             "checkbox.checkmark(CHECKED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:305",
+            "native-theme-gpui/widgets/checkbox.rs:306",
         ),
         (true, false, _) => stated_claim(
             "mark",
             "radio.dot(CHECKED).fill",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:300",
+            "native-theme-gpui/widgets/checkbox.rs:301",
         ),
     });
     // Disabled, the label a rule states for `DISABLED`; with none,
     // gpui-component's own muted_foreground (CheckboxLook::next_of).
-    let label_ruled = if radio {
-        r.radio.label(WidgetState::DISABLED)
-    } else {
-        r.checkbox.label(WidgetState::DISABLED)
-    }
-    .from_state
-    .contains(TextStated::COLOR);
-    info.color(match (radio, disabled, label_ruled) {
-        (_, true, false) => claim(
+    let label_ruled = two_queries(WidgetState::DISABLED, off)
+        .into_iter()
+        .any(|query| {
+            if radio {
+                r.radio.label(query)
+            } else {
+                r.checkbox.label(query)
+            }
+            .from_state
+            .contains(TextStated::COLOR)
+        });
+    info.color(match (radio, disabled, label_ruled, checked) {
+        (_, true, false, _) => claim(
             "label, disabled, none stated: gpui-component's own muted_foreground",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:800",
+            "native-theme-gpui/widgets/checkbox.rs:817",
         ),
-        (false, true, true) => claim(
+        (false, true, true, false) => claim(
             "label",
             "checkbox.label(DISABLED).color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:365",
+            "native-theme-gpui/widgets/checkbox.rs:374",
         ),
-        (true, true, true) => claim(
+        (false, true, true, true) => claim(
+            "label",
+            "checkbox.label(DISABLED|CHECKED).color",
+            look.label,
+            "native-theme-gpui/widgets/checkbox.rs:375",
+        ),
+        (true, true, true, false) => claim(
             "label",
             "radio.label(DISABLED).color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:366",
+            "native-theme-gpui/widgets/checkbox.rs:376",
         ),
-        (false, false, _) => claim(
+        (true, true, true, true) => claim(
+            "label",
+            "radio.label(DISABLED|CHECKED).color",
+            look.label,
+            "native-theme-gpui/widgets/checkbox.rs:377",
+        ),
+        (false, false, _, _) => claim(
             "label",
             "checkbox.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:360",
+            "native-theme-gpui/widgets/checkbox.rs:361",
         ),
-        (true, false, _) => claim(
+        (true, false, _, _) => claim(
             "label",
             "radio.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:360",
+            "native-theme-gpui/widgets/checkbox.rs:361",
         ),
     })
 }
@@ -1860,7 +1905,7 @@ pub fn native_radio_column(
         "unselected fill",
         "radio.indicator(NONE).fill",
         unselected.fill,
-        "native-theme-gpui/widgets/checkbox.rs:324",
+        "native-theme-gpui/widgets/checkbox.rs:325",
     ));
     let width = Some(f32::from(unselected.border_width));
     let info = info.colors(edge_claim(
@@ -1868,7 +1913,7 @@ pub fn native_radio_column(
         "radio.indicator(NONE).stroke.color",
         Some(unselected.border),
         width,
-        "native-theme-gpui/widgets/checkbox.rs:353",
+        "native-theme-gpui/widgets/checkbox.rs:354",
     ));
     let info = info.colors(
         if drawn_state_fill(&r.radio.indicator(WidgetState::HOVER)).is_some() {
@@ -1876,14 +1921,14 @@ pub fn native_radio_column(
                 "unselected hover, radio.indicator(HOVER).fill over an unselected fill",
                 "radio.indicator(HOVER).fill",
                 unselected.hover_fill,
-                "native-theme-gpui/widgets/checkbox.rs:822",
+                "native-theme-gpui/widgets/checkbox.rs:839",
             )
         } else {
             stated_claim(
                 "unselected hover, none stated: an unselected fill at rest",
                 "radio.indicator(NONE).fill",
                 unselected.hover_fill,
-                "native-theme-gpui/widgets/checkbox.rs:324",
+                "native-theme-gpui/widgets/checkbox.rs:325",
             )
         },
     );
@@ -1968,47 +2013,51 @@ pub fn native_switch(
     // SwitchLook::next_of); a state no rule states reads as the switch at
     // rest. A disabled track no rule states is gpui-component's own, the
     // enabled track at half alpha.
-    let track_ruled = r
-        .switch
-        .track(WidgetState::DISABLED)
-        .from_state
-        .contains(PartStated::FILL);
+    let off = WidgetState::DISABLED
+        | if checked {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+    let track_ruled = two_queries(WidgetState::DISABLED, off)
+        .into_iter()
+        .any(|query| r.switch.track(query).from_state.contains(PartStated::FILL));
     let info = info.color(match (checked, disabled && !track_ruled, disabled) {
         (false, true, _) => claim(
             "track, disabled, none stated: the enabled track at half alpha, gpui-component's own",
             "switch.track(NONE).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:263",
+            "native-theme-gpui/widgets/switch.rs:262",
         ),
         (true, true, _) => claim(
             "track, disabled, none stated: the enabled track at half alpha, gpui-component's own",
             "switch.track(CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:264",
+            "native-theme-gpui/widgets/switch.rs:263",
         ),
         (false, false, false) => claim(
             "track",
             "switch.track(NONE).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:263",
+            "native-theme-gpui/widgets/switch.rs:262",
         ),
         (true, false, false) => claim(
             "track",
             "switch.track(CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:264",
+            "native-theme-gpui/widgets/switch.rs:263",
         ),
         (false, false, true) => claim(
             "track",
             "switch.track(DISABLED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:265",
+            "native-theme-gpui/widgets/switch.rs:264",
         ),
         (true, false, true) => claim(
             "track",
             "switch.track(DISABLED|CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:266",
+            "native-theme-gpui/widgets/switch.rs:265",
         ),
     });
     // The swatch is the track drawn under the pointer, the layer composited
@@ -2019,7 +2068,7 @@ pub fn native_switch(
             "hover, switch.track(HOVER).fill over the track",
             "switch.track(HOVER).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:247",
+            "native-theme-gpui/widgets/switch.rs:246",
         ),
         (true, true) => stated_claim(
             "hover, switch.track(HOVER|CHECKED).fill over the track",
@@ -2031,13 +2080,13 @@ pub fn native_switch(
             "hover, none stated: the track at rest",
             "switch.track(NONE).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:232",
+            "native-theme-gpui/widgets/switch.rs:233",
         ),
         (true, false) => stated_claim(
             "hover, none stated: the track at rest",
             "switch.track(CHECKED).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:232",
+            "native-theme-gpui/widgets/switch.rs:233",
         ),
     });
     // The track's outline and the thumb's, where the theme states the colour
@@ -2049,28 +2098,28 @@ pub fn native_switch(
             "switch.track(NONE).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:282",
+            "native-theme-gpui/widgets/switch.rs:281",
         ),
         (true, false) => edge_claim(
             "track outline",
             "switch.track(CHECKED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:283",
+            "native-theme-gpui/widgets/switch.rs:282",
         ),
         (false, true) => edge_claim(
             "track outline",
             "switch.track(DISABLED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:284",
+            "native-theme-gpui/widgets/switch.rs:283",
         ),
         (true, true) => edge_claim(
             "track outline",
             "switch.track(DISABLED|CHECKED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:285",
+            "native-theme-gpui/widgets/switch.rs:284",
         ),
     });
     let width = Some(f32::from(look.thumb_border_width));
@@ -2080,7 +2129,7 @@ pub fn native_switch(
             "switch.thumb(CHECKED).stroke.color",
             look.thumb_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:293",
+            "native-theme-gpui/widgets/switch.rs:292",
         )
     } else {
         edge_claim(
@@ -2088,7 +2137,7 @@ pub fn native_switch(
             "switch.thumb(NONE).stroke.color",
             look.thumb_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:292",
+            "native-theme-gpui/widgets/switch.rs:291",
         )
     });
     // While focused the track draws the theme's focus ring; a disabled switch
@@ -2115,25 +2164,25 @@ pub fn native_switch(
             "thumb",
             "switch.thumb(NONE).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:273",
+            "native-theme-gpui/widgets/switch.rs:272",
         ),
         (true, false) => claim(
             "thumb",
             "switch.thumb(CHECKED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:274",
+            "native-theme-gpui/widgets/switch.rs:273",
         ),
         (false, true) => claim(
             "thumb",
             "switch.thumb(DISABLED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:275",
+            "native-theme-gpui/widgets/switch.rs:274",
         ),
         (true, true) => claim(
             "thumb",
             "switch.thumb(DISABLED|CHECKED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:276",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
     });
     // The label at the switch's own home where the theme states its colour,
@@ -2145,37 +2194,37 @@ pub fn native_switch(
             "label",
             "switch.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:437",
+            "native-theme-gpui/widgets/switch.rs:436",
         ),
         Ok(SwitchLabelHome::Checked) => claim(
             "label",
             "switch.label(CHECKED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:438",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
         Ok(SwitchLabelHome::Disabled) => claim(
             "label",
             "switch.label(DISABLED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:439",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
         Ok(SwitchLabelHome::DisabledChecked) => claim(
             "label",
             "switch.label(DISABLED|CHECKED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:440",
+            "native-theme-gpui/widgets/switch.rs:439",
         ),
         Ok(SwitchLabelHome::WindowForegroundMuted) => claim(
             "label",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:487",
+            "native-theme-gpui/widgets/switch.rs:492",
         ),
         _ => claim(
             "label",
             "colors.window.foreground",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:481",
+            "native-theme-gpui/widgets/switch.rs:486",
         ),
     });
     let thumb_home = if checked {

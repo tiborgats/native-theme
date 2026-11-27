@@ -237,37 +237,41 @@ impl CheckboxLook {
             fill as part_fill, hsla, padding_of, radius, stated, stroke_color, stroke_width,
             text_color,
         };
-        use native_theme::next::{IconStated, PartStated, WidgetState};
+        use native_theme::next::{IconStated, PartStated, StyleQuery, WidgetState};
         let at = |checkbox: &'static str, radio_home: &'static str| {
             if radio { radio_home } else { checkbox }
         };
-        let indicator = |state: WidgetState| {
+        let indicator = |state: StyleQuery| {
             if radio {
                 r.radio.indicator(state)
             } else {
                 r.checkbox.indicator(state)
             }
         };
-        let label = |state: WidgetState| {
+        let label = |state: StyleQuery| {
             if radio {
                 r.radio.label(state)
             } else {
                 r.checkbox.label(state)
             }
         };
-        let rest = indicator(WidgetState::NONE);
-        let on = indicator(WidgetState::CHECKED);
+        let rest = indicator(WidgetState::NONE.into());
+        let on = indicator(WidgetState::CHECKED.into());
         let shown = if checked {
             WidgetState::CHECKED
         } else {
             WidgetState::NONE
         };
-        let disabled_fill = if indicator(WidgetState::DISABLED)
-            .from_state
-            .contains(PartStated::FILL)
-        {
+        // Spec §2's two queries: the indicator's `bit` stated for `flag` at
+        // `flag` alone or at the control's state asking `flag`.
+        let ruled = |flag: WidgetState, bit| {
+            [flag.into(), StyleQuery::new(flag | shown).asking(flag)]
+                .into_iter()
+                .any(|query| indicator(query).from_state.contains(bit))
+        };
+        let disabled_fill = if ruled(WidgetState::DISABLED, PartStated::FILL) {
             Some(part_fill(
-                &indicator(WidgetState::DISABLED | shown),
+                &indicator((WidgetState::DISABLED | shown).into()),
                 match (radio, checked) {
                     (false, false) => "checkbox.indicator(DISABLED).fill",
                     (false, true) => "checkbox.indicator(DISABLED|CHECKED).fill",
@@ -278,12 +282,9 @@ impl CheckboxLook {
         } else {
             None
         };
-        let hover_border = if indicator(WidgetState::HOVER)
-            .from_state
-            .contains(PartStated::STROKE)
-        {
+        let hover_border = if ruled(WidgetState::HOVER, PartStated::STROKE) {
             Some(stroke_color(
-                &indicator(WidgetState::HOVER | shown),
+                &indicator((WidgetState::HOVER | shown).into()),
                 match (radio, checked) {
                     (false, false) => "checkbox.indicator(HOVER).stroke.color",
                     (false, true) => "checkbox.indicator(HOVER|CHECKED).stroke.color",
@@ -333,7 +334,7 @@ impl CheckboxLook {
                     )?,
                     disabled_fill,
                     hover: hovered_fill(
-                        &indicator(WidgetState::HOVER | shown),
+                        &indicator((WidgetState::HOVER | shown).into()),
                         &on,
                         radio,
                         checked,
@@ -356,15 +357,25 @@ impl CheckboxLook {
                     hover_border,
                     mark,
                     label: text_color(
-                        &label(WidgetState::NONE),
+                        &label(WidgetState::NONE.into()),
                         at("checkbox.label(NONE).color", "radio.label(NONE).color"),
                     )?,
                     disabled_text: disabled_label(
-                        (r, disabled, &label(WidgetState::DISABLED)),
-                        at(
-                            "checkbox.label(DISABLED).color",
-                            "radio.label(DISABLED).color",
+                        (
+                            r,
+                            disabled,
+                            &label(WidgetState::DISABLED.into()),
+                            &label(
+                                StyleQuery::new(WidgetState::DISABLED | shown)
+                                    .asking(WidgetState::DISABLED),
+                            ),
                         ),
+                        match (radio, checked) {
+                            (false, false) => "checkbox.label(DISABLED).color",
+                            (false, true) => "checkbox.label(DISABLED|CHECKED).color",
+                            (true, false) => "radio.label(DISABLED).color",
+                            (true, true) => "radio.label(DISABLED|CHECKED).color",
+                        },
                     )?,
                     disabled_opacity: if radio {
                         r.radio.disabled_opacity
@@ -394,30 +405,27 @@ impl CheckboxLook {
                     },
                     disabled_mark: if radio {
                         let dot = |state| r.radio.dot(state);
-                        if dot(WidgetState::DISABLED)
-                            .from_state
-                            .contains(PartStated::FILL)
+                        let asked = StyleQuery::new(DISABLED_CHECKED).asking(WidgetState::DISABLED);
+                        if [WidgetState::DISABLED.into(), asked]
+                            .into_iter()
+                            .any(|query| dot(query).from_state.contains(PartStated::FILL))
                         {
-                            part_fill(
-                                &dot(WidgetState::DISABLED | WidgetState::CHECKED),
-                                "radio.dot(DISABLED|CHECKED).fill",
-                            )?
+                            part_fill(&dot(asked), "radio.dot(DISABLED|CHECKED).fill")?
                         } else {
                             mark.opacity(DISABLED_INDICATOR_ALPHA)
                         }
                     } else {
                         checked_disabled_mark(
                             &r.checkbox.checkmark(WidgetState::DISABLED),
-                            &r.checkbox.checkmark(DISABLED_CHECKED),
+                            &r.checkbox.checkmark(
+                                StyleQuery::new(DISABLED_CHECKED).asking(WidgetState::DISABLED),
+                            ),
                         )?
                         .unwrap_or(mark.opacity(DISABLED_INDICATOR_ALPHA))
                     },
-                    disabled_border: if indicator(WidgetState::DISABLED)
-                        .from_state
-                        .contains(PartStated::STROKE)
-                    {
+                    disabled_border: if ruled(WidgetState::DISABLED, PartStated::STROKE) {
                         Some(stroke_color(
-                            &indicator(WidgetState::DISABLED | shown),
+                            &indicator((WidgetState::DISABLED | shown).into()),
                             match (radio, checked) {
                                 (false, false) => "checkbox.indicator(DISABLED).stroke.color",
                                 (false, true) => {
@@ -685,7 +693,7 @@ impl Parts {
                 r.radio.indicator(focus | at)
             } else {
                 r.checkbox
-                    .indicator(focus | mixed_state(r, at, self.indeterminate))
+                    .indicator(mixed_state(r, focus | at, self.indeterminate))
             }
         };
         let homes = if round {
@@ -748,9 +756,9 @@ const CHECK_VIEW_BOX: f32 = 24.;
 /// strokes it at its own two view-box units. Its round caps and joins are
 /// discs as wide as the line on the points.
 /// A checked disabled box's mark, `checked`
-/// (`checkbox.checkmark(DISABLED|CHECKED)`), where a rule states the mark's
-/// colour for `DISABLED` (`disabled`, spec §2, `from_state`); `None` where
-/// none does.
+/// (`checkbox.checkmark(DISABLED|CHECKED)`, asking `DISABLED`), where a rule
+/// states the mark's colour for `DISABLED` by spec §2's two queries (`from_state`):
+/// at `DISABLED` alone (`disabled`) or at `checked`; `None` where none does.
 ///
 /// # Errors
 ///
@@ -761,7 +769,10 @@ pub(super) fn checked_disabled_mark(
     checked: &native_theme::next::IconStyle,
 ) -> Mapped<Option<Hsla>> {
     use native_theme::next::IconStated;
-    if !disabled.from_state.contains(IconStated::COLOR) {
+    if ![disabled, checked]
+        .iter()
+        .any(|mark| mark.from_state.contains(IconStated::COLOR))
+    {
         return Ok(None);
     }
     if !checked.stated.contains(IconStated::COLOR) {
@@ -776,23 +787,29 @@ pub(super) fn checked_disabled_mark(
 const DISABLED_CHECKED: native_theme::next::WidgetState =
     native_theme::next::WidgetState::DISABLED.union(native_theme::next::WidgetState::CHECKED);
 
-/// A disabled check box's or radio's label, `label` the label at `DISABLED`
-/// of the theme `r`, its home `home`: where a rule states its colour for
-/// `DISABLED`, that one; else gpui-component's own disabled label,
+/// A disabled check box's or radio's label, `label` the label of the theme
+/// `r` at the disabled control's state asking `DISABLED`, `alone` the one at
+/// `DISABLED` alone, its home `home`: where a rule states its colour for
+/// `DISABLED` by spec §2's two queries (`from_state`), `label`'s; else
+/// gpui-component's own disabled label,
 /// `muted_foreground` (gpui-component 0.10.0 checkbox.rs:292, :391-393;
 /// radio.rs:268-270), which the connector colours from
 /// `colors.window.foreground_muted` (spec §10, rule 0). An enabled control
 /// (`disabled` false) does not draw it, and gets the label as queried.
 fn disabled_label(
-    (r, disabled, label): (
+    (r, disabled, alone, label): (
         &native_theme::next::ResolvedTheme,
         bool,
+        &native_theme::next::TextStyle,
         &native_theme::next::TextStyle,
     ),
     home: &'static str,
 ) -> Mapped<Hsla> {
     use native_theme::next::TextStated;
-    if label.from_state.contains(TextStated::COLOR) || !disabled {
+    let ruled = [alone, label]
+        .iter()
+        .any(|text| text.from_state.contains(TextStated::COLOR));
+    if ruled || !disabled {
         return crate::next::text_color(label, home);
     }
     crate::next::stated(
@@ -837,28 +854,31 @@ fn hovered_fill(
     Ok(hover.filter(|hover| *hover != rest))
 }
 
-/// The state a check box whose checked and disabled flags are `at` queries
-/// its indicator at for its focus ring: while `mixed`, `INDETERMINATE` in
-/// place of `CHECKED` where a rule for `INDETERMINATE` states the ring, as
-/// [`CheckboxLook::next_mixed`] reads the look; else `at`, the checked box's,
-/// as gpui-component draws a mixed box as a checked one (gpui-component
-/// 0.10.0 checkbox.rs:354-358; spec §10, rule 0).
-fn mixed_state(
+/// The state a check box whose focus, checked and disabled flags are `at`
+/// queries its indicator at for its focus ring: while `mixed`,
+/// `INDETERMINATE` in place of `CHECKED` where a rule states the ring for
+/// `INDETERMINATE` by spec §2's two queries (`from_state`: at `INDETERMINATE`
+/// alone, or at that state asking it), as [`CheckboxLook::next_mixed`]
+/// reads the look; else `at`, the checked box's, as gpui-component draws a
+/// mixed box as a checked one (gpui-component 0.10.0 checkbox.rs:354-358;
+/// spec §10, rule 0).
+pub(super) fn mixed_state(
     r: &native_theme::next::ResolvedTheme,
     at: native_theme::next::WidgetState,
     mixed: bool,
 ) -> native_theme::next::WidgetState {
-    use native_theme::next::{PartStated, WidgetState};
-    let ruled = r
-        .checkbox
-        .indicator(WidgetState::INDETERMINATE)
-        .from_state
-        .contains(PartStated::FOCUS);
-    if mixed && ruled {
-        at.difference(WidgetState::CHECKED) | WidgetState::INDETERMINATE
-    } else {
-        at
-    }
+    use native_theme::next::{PartStated, StyleQuery, WidgetState};
+    const MIXED: WidgetState = WidgetState::INDETERMINATE;
+    let state = at.difference(WidgetState::CHECKED) | MIXED;
+    let ruled = [MIXED.into(), StyleQuery::new(state).asking(MIXED)]
+        .into_iter()
+        .any(|query| {
+            r.checkbox
+                .indicator(query)
+                .from_state
+                .contains(PartStated::FOCUS)
+        });
+    if mixed && ruled { state } else { at }
 }
 
 fn stroked_check(
@@ -1519,29 +1539,43 @@ impl CheckboxLook {
     /// indicator's fill and stroke and its mark's colour each read at
     /// `INDETERMINATE` in place of `CHECKED`, with `DISABLED` and `HOVER` as
     /// the checked box reads them, where a rule states it for
-    /// `INDETERMINATE`; where none does, the checked box's, as
-    /// gpui-component draws an indeterminate box as a checked one
-    /// (gpui-component 0.10.0 checkbox.rs:354-358; spec §10, rule 0).
+    /// `INDETERMINATE` by spec §2's two queries (`from_state`: at
+    /// `INDETERMINATE` alone, or at the state it is read at asking it), and
+    /// each of `DISABLED` and `HOVER` by the same two; where none does, the
+    /// checked box's, as gpui-component draws an indeterminate box as a
+    /// checked one (gpui-component 0.10.0 checkbox.rs:354-358; spec §10,
+    /// rule 0).
     ///
     /// # Errors
     ///
     /// As [`CheckboxLook::next_of`]'s.
     pub fn next_mixed(r: &native_theme::next::ResolvedTheme, disabled: bool) -> Mapped<Self> {
         use crate::next::{Unmapped, fill, hsla, stroke_color};
-        use native_theme::next::{IconStated, IconStyle, PartStated, WidgetState};
+        use native_theme::next::{IconStated, IconStyle, PartStated, StyleQuery, WidgetState};
         const MIXED: WidgetState = WidgetState::INDETERMINATE;
         let off = WidgetState::DISABLED | MIXED;
+        let hover = WidgetState::HOVER | MIXED;
+        let shown = if disabled { off } else { MIXED };
         let c = &r.checkbox;
         let mut look = Self::next_of(r, true, disabled)?;
-        let indicator = |state| c.indicator(state);
-        let mark = |state| c.checkmark(state);
-        let ruled = |bit| indicator(MIXED).from_state.contains(bit);
-        let ruled_off = |bit| indicator(WidgetState::DISABLED).from_state.contains(bit);
+        let indicator = |state: WidgetState| c.indicator(state);
+        let mark = |state: WidgetState| c.checkmark(state);
+        let asked =
+            |flag: WidgetState, at: WidgetState| [flag.into(), StyleQuery::new(at).asking(flag)];
+        // Whether a rule states the indicator's `bit` for `flag` at `at`.
+        let ruled = |flag, at, bit| {
+            asked(flag, at)
+                .into_iter()
+                .any(|query| c.indicator(query).from_state.contains(bit))
+        };
         let dim = |colour: Hsla| colour.opacity(DISABLED_INDICATOR_ALPHA);
         // Disabled, the one a rule states for `DISABLED`; else the enabled one
         // dimmed, as gpui-component dims a disabled checked box's.
-        if ruled(PartStated::FILL) {
-            look.fill = match (disabled, ruled_off(PartStated::FILL)) {
+        if ruled(MIXED, shown, PartStated::FILL) {
+            look.fill = match (
+                disabled,
+                ruled(WidgetState::DISABLED, off, PartStated::FILL),
+            ) {
                 (false, _) => fill(&indicator(MIXED), "checkbox.indicator(INDETERMINATE).fill")?,
                 (true, true) => fill(
                     &indicator(off),
@@ -1552,15 +1586,20 @@ impl CheckboxLook {
                     "checkbox.indicator(INDETERMINATE).fill",
                 )?),
             };
+        }
+        if ruled(MIXED, hover, PartStated::FILL) {
             let hovered = crate::next::state_fill_of(
-                &indicator(WidgetState::HOVER | MIXED),
+                &indicator(hover),
                 "checkbox.indicator(HOVER|INDETERMINATE).fill",
             )?;
             look.hover_fill = hovered.filter(|hover| !disabled && *hover != look.fill);
         }
-        if ruled(PartStated::STROKE) {
+        if ruled(MIXED, shown, PartStated::STROKE) {
             let on = "checkbox.indicator(INDETERMINATE).stroke.color";
-            look.border = match (disabled, ruled_off(PartStated::STROKE)) {
+            look.border = match (
+                disabled,
+                ruled(WidgetState::DISABLED, off, PartStated::STROKE),
+            ) {
                 (false, _) => stroke_color(&indicator(MIXED), on)?,
                 (true, true) => stroke_color(
                     &indicator(off),
@@ -1568,12 +1607,12 @@ impl CheckboxLook {
                 )?,
                 (true, false) => dim(stroke_color(&indicator(MIXED), on)?),
             };
-            let hovered = indicator(WidgetState::HOVER)
-                .from_state
-                .contains(PartStated::STROKE);
+        }
+        if ruled(MIXED, hover, PartStated::STROKE) {
+            let hovered = ruled(WidgetState::HOVER, hover, PartStated::STROKE);
             look.hover_border = if hovered && !disabled {
                 Some(stroke_color(
-                    &indicator(WidgetState::HOVER | MIXED),
+                    &indicator(hover),
                     "checkbox.indicator(HOVER|INDETERMINATE).stroke.color",
                 )?)
             } else {
@@ -1587,11 +1626,14 @@ impl CheckboxLook {
                 Err(Unmapped(home))
             }
         };
-        if mark(MIXED).from_state.contains(IconStated::COLOR) {
+        let mark_ruled = |flag, at| {
+            asked(flag, at)
+                .into_iter()
+                .any(|query| c.checkmark(query).from_state.contains(IconStated::COLOR))
+        };
+        if mark_ruled(MIXED, shown) {
             let on = "checkbox.checkmark(INDETERMINATE).color";
-            let mark_off = mark(WidgetState::DISABLED)
-                .from_state
-                .contains(IconStated::COLOR);
+            let mark_off = mark_ruled(WidgetState::DISABLED, off);
             look.mark = match (disabled, mark_off) {
                 (false, _) => colour(&mark(MIXED), on)?,
                 (true, true) => colour(
