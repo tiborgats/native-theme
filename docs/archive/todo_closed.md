@@ -3117,3 +3117,14 @@ platform (`native-theme/src/watch/`).
       what it then matches and have the reader write it; if it does not,
       the stated value stands. (D6/D7 review, M3, 2026-10-26.)
   *Closed 2026-10-26 in cd32a249 (facts ae57aceb, 8973a684):* the segment follows the accent. OS probe run 40348854007's red-accent pass (`AppleAccentColor` 0) draws it #db373c / #ff575b on macOS 26 (#da373d / #ff565b on 27), where `controlAccentColor` reads #e0383e / #ff5257, as the default #0077f9 / #077dff sits by #007aff: within 7 levels each time, as macOS 26's on switch and slider value fill are, which the presets leave to the accent; no NSColor the probe reads matches it exactly. macos-tahoe states no `active_background`, so it inherits `defaults.accent_color`, which the macOS reader writes from `controlAccentColor`; macOS 14 and 15 keep their neutral #ffffff / #666666 under the red accent, and macos-monterey states it (`docs/platform-facts.md:1636`).
+
+### Closed items from 0.8.0's platform units: what has no source yet (2026-11-23)
+
+- [x] [0.8.x] **adwaita**'s pressed toggle under a palette (M4 RV-P7, 2026-11-27): a pressed toggle of the toggle group
+      (`segmented_control.segment(PRESSED)`) fills with `active_layer`, libadwaita's `$active_color`, the window text
+      at 16 % (`_toggle-group.scss:69-70`, `_colors.scss:269` at libadwaita 1.10.0), held as a fixed 8-bit layer of
+      adwaita's own text (`#00000621` / `#ffffff29`), so a palette's foreground does not recolour it, while the track
+      and the hovered toggle under it follow the palette's foreground since P7. State it as the toolbar's pressed
+      layer is, `layer_of(c.row_foreground, TOOLBAR_BUTTON_PRESSED_ALPHA)` (the same 16 %), with the palette test and
+      the module documentation's list of fixed layers.
+  *Closed 2026-11-27 in d03da5f4a:* the pressed toggle fills with `layer_of(c.row_foreground, TOOLBAR_BUTTON_PRESSED_ALPHA)`, the same 8-bit values unpatched (`#00000621` / `#ffffff29`), and a palette's foreground recolours it; the palette test and the module documentation's list of fixed layers follow.

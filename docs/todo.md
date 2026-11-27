@@ -5387,13 +5387,6 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       §2.1.5, `focus_ring_offset`; `CheckBox_themeresources.xaml:275` at microsoft-ui-xaml 8463f45), not round the
       indicator; with no part for that box the check box and the radio keep the Button's global ring (offset 1),
       drawn round the indicator.
-- [ ] [0.8.x] **adwaita**'s pressed toggle under a palette (M4 RV-P7, 2026-11-27): a pressed toggle of the toggle group
-      (`segmented_control.segment(PRESSED)`) fills with `active_layer`, libadwaita's `$active_color`, the window text
-      at 16 % (`_toggle-group.scss:69-70`, `_colors.scss:269` at libadwaita 1.10.0), held as a fixed 8-bit layer of
-      adwaita's own text (`#00000621` / `#ffffff29`), so a palette's foreground does not recolour it, while the track
-      and the hovered toggle under it follow the palette's foreground since P7. State it as the toolbar's pressed
-      layer is, `layer_of(c.row_foreground, TOOLBAR_BUTTON_PRESSED_ALPHA)` (the same 16 %), with the palette test and
-      the module documentation's list of fixed layers.
 - [ ] [0.8.x] **windows-11**: a checked toolbar button's label has no checked colour (window text on the accent fill);
       under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
       when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
