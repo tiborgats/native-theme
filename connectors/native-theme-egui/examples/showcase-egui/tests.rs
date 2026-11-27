@@ -12715,11 +12715,6 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::DIALOG_DEFAULT_CORNERS,
         ),
         (
-            "chrome.info.copy",
-            "button.body(HOVER).stroke.width",
-            i::FLAT_HOVER_WIDTH,
-        ),
-        (
             "basic.buttons.toggle_on",
             "button.body(HOVER|CHECKED).fill",
             i::TOGGLE_ON_HOVER_FILL,
@@ -12792,6 +12787,34 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
         (
             "button.body(HOVER; variant=Flat).stroke.width",
             i::TOGGLE_HOVER_WIDTH,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.width",
+            i::TOGGLE_PRESSED_WIDTH,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).stroke.color",
+            i::TOGGLE_HOVER_EDGE,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.color",
+            i::TOGGLE_PRESSED_EDGE,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).fill",
+            i::TOGGLE_CLOSED_HOVER_FILL,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).fill",
+            i::TOGGLE_CLOSED_PRESSED_FILL,
+        ),
+        (
+            "button.label(HOVER; variant=Flat).color",
+            i::TOGGLE_CLOSED_HOVER_LABEL,
+        ),
+        (
+            "button.label(PRESSED; variant=Flat).color",
+            i::TOGGLE_CLOSED_PRESSED_LABEL,
         ),
         (
             "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
@@ -12871,6 +12894,46 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             i::TOGGLE_ICON_OPEN,
         ),
     ];
+    // The routes of the other flat buttons, the Pages menu button and Widget Info's Copy.
+    let flat: &[(&str, &str)] = &[
+        ("button.body(HOVER; variant=Flat).fill", i::FLAT_HOVER_FILL),
+        (
+            "button.body(PRESSED; variant=Flat).fill",
+            i::FLAT_PRESSED_FILL,
+        ),
+        (
+            "button.label(HOVER; variant=Flat).color",
+            i::FLAT_HOVER_LABEL,
+        ),
+        (
+            "button.label(PRESSED; variant=Flat).color",
+            i::FLAT_PRESSED_LABEL,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).stroke.color",
+            i::FLAT_HOVER_EDGE,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.color",
+            i::FLAT_PRESSED_EDGE,
+        ),
+        (
+            "button.body(HOVER; variant=Flat).stroke.width",
+            i::FLAT_HOVER_WIDTH,
+        ),
+        (
+            "button.body(PRESSED; variant=Flat).stroke.width",
+            i::FLAT_PRESSED_WIDTH,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+            i::FLAT_FOCUS_PEN,
+        ),
+        (
+            "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+            i::FLAT_FOCUS_PEN,
+        ),
+    ];
     let model_only: Vec<String> = native_theme_showcase_support::elements::model_only_homes()?
         .into_iter()
         .map(|entry| entry.home)
@@ -12886,12 +12949,15 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
             || e.id == "basic.buttons.primary"
             || e.id == "basic.buttons.dialog_default"
             || e.id == "chrome.info.copy"
+            || e.id == "chrome.page_tabs.menu"
     }) {
         let id = element.id.as_str();
         let group = if id.starts_with("chrome.toolbar.") || id.starts_with("basic.icons.") {
             tool
         } else if id.starts_with("chrome.status_bar.toggle") {
             toggle
+        } else if id == "chrome.info.copy" || id == "chrome.page_tabs.menu" {
+            flat
         } else {
             &[]
         };
@@ -12930,6 +12996,10 @@ fn the_model_only_button_homes_name_the_call_that_draws_them() -> Result<(), Str
     // Another element that listed one of their homes would not take their route.
     for (element, routes) in [
         ("chrome.page_tabs.menu", &crate::info::TOGGLE_ROUTES[..]),
+        (
+            "basic.buttons.default",
+            &crate::info::FLAT_BUTTON_ROUTES[..],
+        ),
         (
             "basic.buttons.default",
             &crate::info::TOOL_BUTTON_ROUTES[..],
@@ -14448,31 +14518,43 @@ fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
 /// `HOVER | CHECKED` (`PRESSED | CHECKED`) colours the hovered (pressed) checked icon, as
 /// `home_patch_toml` (`tools/showcase-support`) states that home, and so does a rule for
 /// `HOVER` (`PRESSED`) alone, which that query matches; neither colours it at rest
-/// (`demo::tool_icon_color`).
+/// (`demo::tool_icon_color`). So does the open side-panel toggle's icon, by `button`'s icon
+/// colour (`chrome::toggle_icon_colour`).
 #[test]
 fn a_checked_tool_icon_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
     use crate::demo::tool_icon_color;
     use native_theme::next::{Preset, Theme, ThemeContext, ThemePatch};
+    type Read = fn(&native_theme::next::ResolvedTheme, (bool, bool)) -> Option<egui::Color32>;
     let magenta = Some(egui::Color32::from_rgb(0xff, 0, 0xff));
-    let base = "[[widgets.toolbar.rules]]\nstates = []\nbutton_icon.color = \"#101010\"\n";
+    let sites: [(&str, &str, Read); 2] = [
+        ("toolbar", "button_icon.color", |r, was| {
+            tool_icon_color(Some(r), was, true)
+        }),
+        ("button", "icon.color", |r, was| {
+            crate::chrome::toggle_icon_colour(Some(r), true, was)
+        }),
+    ];
     let mut misses = Vec::new();
-    for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
-        for states in [format!("\"{flag}\", \"checked\""), format!("\"{flag}\"")] {
-            let patch = format!(
-                "{base}[[widgets.toolbar.rules]]\nstates = [{states}]\nbutton_icon.color = \"#ff00ff\"\n"
-            );
-            let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
-            for &preset in Preset::ALL {
-                let r = Theme::preset(preset)
-                    .with_patch(patch.clone())
-                    .resolve(&ThemeContext::light());
-                let got = tool_icon_color(Some(&r), was, true);
-                let at_rest = tool_icon_color(Some(&r), (false, false), true);
-                if got != magenta || at_rest == magenta {
-                    misses.push(format!(
-                        "{preset:?}, a rule for [{states}]: {got:?}, not {magenta:?} \
-                         (at rest {at_rest:?})"
-                    ));
+    for (widget, property, read) in sites {
+        let base = format!("[[widgets.{widget}.rules]]\nstates = []\n{property} = \"#101010\"\n");
+        for (was, flag) in [((true, false), "hover"), ((false, true), "pressed")] {
+            for states in [format!("\"{flag}\", \"checked\""), format!("\"{flag}\"")] {
+                let patch = format!(
+                    "{base}[[widgets.{widget}.rules]]\nstates = [{states}]\n{property} = \"#ff00ff\"\n"
+                );
+                let patch = ThemePatch::from_toml(&patch).map_err(|e| e.to_string())?;
+                for &preset in Preset::ALL {
+                    let r = Theme::preset(preset)
+                        .with_patch(patch.clone())
+                        .resolve(&ThemeContext::light());
+                    let got = read(&r, was);
+                    let at_rest = read(&r, (false, false));
+                    if got != magenta || at_rest == magenta {
+                        misses.push(format!(
+                            "{widget} {preset:?}, a rule for [{states}]: {got:?}, not \
+                             {magenta:?} (at rest {at_rest:?})"
+                        ));
+                    }
                 }
             }
         }
@@ -14528,13 +14610,14 @@ fn checked_site<T: PartialEq + std::fmt::Debug>(
 }
 
 /// The Basic page's toggle and edit switch and the side-panel toggle take a hovered or pressed
-/// checked fill, label colour, outline and icon colour the theme states for `CHECKED` by either
-/// of the two queries ([`checked_site`]): `pages::basic::toggle_on_in`,
-/// `pages::basic::edit_look_at` (`next::toolbar_button_checked`), `chrome::toggle_checked_in`,
-/// `chrome::toggle_checked_pens` and `chrome::toggle_icon_colour`.
+/// checked fill, label colour and outline the theme states for `CHECKED` by either of the two
+/// queries ([`checked_site`]): `pages::basic::toggle_on_in`, `pages::basic::edit_look_at`
+/// (`next::toolbar_button_checked`), `chrome::toggle_checked_in` and
+/// `chrome::toggle_checked_pens`. The icons' colours take the plain query's answer
+/// (`a_checked_tool_icon_takes_a_rule_for_its_state_with_checked`).
 #[test]
 fn a_checked_look_takes_a_rule_for_its_state_with_checked() -> Result<(), String> {
-    use crate::chrome::{toggle_checked_in, toggle_checked_pens, toggle_icon_colour};
+    use crate::chrome::{toggle_checked_in, toggle_checked_pens};
     use crate::pages::basic::{edit_look_at, toggle_on_in};
     use native_theme::next::{ButtonQuery, WidgetState};
     let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
@@ -14577,14 +14660,6 @@ fn a_checked_look_takes_a_rule_for_its_state_with_checked() -> Result<(), String
         colours,
         &some,
         |r, was| toggle_checked_in(Some(r), was).text,
-    )?;
-    checked_site(
-        &mut misses,
-        "side toggle icon",
-        ("button", "icon.color"),
-        colours,
-        &some,
-        |r, was| toggle_icon_colour(Some(r), true, was),
     )?;
     let pen = Some(egui::Stroke::new(2.0, magenta));
     checked_site(

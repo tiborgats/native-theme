@@ -194,11 +194,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.info.copy",
-        &["button.body(HOVER).stroke.width"],
-        "gpui: the Copy box's border width in every state, where a rule states button.body(HOVER).stroke.color, transparent at rest, taken off each stated padding side so the box keeps its size (inspector.rs, CopyEdge)",
-    ),
-    (
-        "chrome.info.copy",
         &["button.body(NONE).corners"],
         "gpui: the Copy box's corner radius (inspector.rs)",
     ),
@@ -334,6 +329,11 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "basic.icons.save",
         &["toolbar.button_label(NONE).color"],
         "not drawn: no builder reads the toolbar's label at rest, and a disabled Button is lettered in its disabled text colour, toolbar.button_label(DISABLED).color where a rule states it, else gpui-component's own (demo::icon_button; gpui-component 0.10.0 button/button.rs:1374-1385, ButtonVariant::disabled)",
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button_label(NONE).color"],
+        "not drawn: no builder of a tool Button reads the toolbar's label at rest; the Button is lettered in its variant's foreground, next::variants::toolbar_button's, the ghost's ThemeColor secondary_foreground, which its untinted Icon takes (demo::icon_button; gpui-component/button/button.rs:1239-1244, text_color)",
     ),
     (
         "basic.icons.save",
@@ -731,6 +731,124 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         &["button.body(NONE).padding.left"],
         "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
+    // --- button: the flat buttons' own states, next::variants::ghost_button ----------
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(HOVER; variant=Flat).fill"],
+        "gpui: the ghost variant's hover while the side panel is closed, ThemeColor secondary_hover, which next::apply sets from button.body(HOVER; variant=Flat).fill where a rule states it for HOVER, else gpui-component's own (native-theme-gpui next/mod.rs, flat_button_states; demo::panel_toggle); while it is open the toggle is selected, and a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, selected)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(PRESSED; variant=Flat).fill"],
+        "gpui: the ghost variant's active while the side panel is closed, ThemeColor secondary_active, which next::apply sets from button.body(PRESSED; variant=Flat).fill where a rule states it for PRESSED, else gpui-component's own (native-theme-gpui next/mod.rs, flat_button_states; demo::panel_toggle); while it is open the toggle is selected, and a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, selected)",
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(HOVER; variant=Flat).fill"],
+        FLAT_GHOST_HOVER_FILL,
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(HOVER; variant=Flat).fill"],
+        FLAT_GHOST_HOVER_FILL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(PRESSED; variant=Flat).fill"],
+        FLAT_GHOST_PRESSED_FILL,
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(PRESSED; variant=Flat).fill"],
+        FLAT_GHOST_PRESSED_FILL,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.label(HOVER; variant=Flat).color"],
+        CUSTOM_NO_HOVER_TEXT,
+    ),
+    (
+        "chrome.info.copy",
+        &["button.label(HOVER; variant=Flat).color"],
+        CUSTOM_NO_HOVER_TEXT,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.label(HOVER; variant=Flat).color"],
+        CUSTOM_NO_HOVER_TEXT,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.label(PRESSED; variant=Flat).color"],
+        PRESSED_KEEPS_TEXT,
+    ),
+    (
+        "chrome.info.copy",
+        &["button.label(PRESSED; variant=Flat).color"],
+        PRESSED_KEEPS_TEXT,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.label(PRESSED; variant=Flat).color"],
+        PRESSED_KEEPS_TEXT,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(HOVER; variant=Flat).stroke.color"],
+        "gpui: next::variants::ghost_button's colour, the border under the pointer and pressed, button.body(HOVER; variant=Flat).stroke.color where a rule states it, laid out by next::geometry::ghost_button_rest and hidden at rest (demo::native_tab_bar)",
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(HOVER; variant=Flat).stroke.color"],
+        "gpui: next::variants::ghost_button's colour, the border under the pointer and pressed, button.body(HOVER; variant=Flat).stroke.color where a rule states it, laid out by next::geometry::ghost_button_rest_own_padding around upstream's own padding and hidden at rest (inspector.rs; support::ghost_variant)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(HOVER; variant=Flat).stroke.color"],
+        "gpui: next::variants::ghost_button's colour, the border under the pointer and pressed while the side panel is closed, button.body(HOVER; variant=Flat).stroke.color where a rule states it, laid out by next::geometry::ghost_button_rest; while it is open the toggle is selected, and a selected Button takes no hover or press style (demo::panel_toggle)",
+    ),
+    (
+        "chrome.page_tabs.menu",
+        FLAT_PRESSED_EDGE_HOMES,
+        FLAT_ONE_BORDER_COLOUR,
+    ),
+    (
+        "chrome.info.copy",
+        FLAT_PRESSED_EDGE_HOMES,
+        FLAT_ONE_BORDER_COLOUR,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        FLAT_PRESSED_EDGE_HOMES,
+        FLAT_ONE_BORDER_COLOUR,
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(HOVER; variant=Flat).stroke.width"],
+        "gpui: next::geometry::ghost_button_rest's border width, the hovered flat body's, where a rule states button.body(HOVER; variant=Flat).stroke.color, transparent at rest and coloured under the pointer and pressed, each stated padding side less it (native-theme-gpui next/builders.rs, ghost_rest_within; demo::native_tab_bar)",
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(HOVER; variant=Flat).stroke.width"],
+        "gpui: next::geometry::ghost_button_rest_own_padding's border width, the hovered flat body's, where a rule states button.body(HOVER; variant=Flat).stroke.color, transparent at rest and coloured under the pointer and pressed, around upstream's own padding (native-theme-gpui next/builders.rs, ghost_rest_within; inspector.rs)",
+    ),
+    (
+        "chrome.page_tabs.menu",
+        &["button.body(PRESSED; variant=Flat).stroke.width"],
+        FLAT_PRESSED_WIDTH,
+    ),
+    (
+        "chrome.info.copy",
+        &["button.body(PRESSED; variant=Flat).stroke.width"],
+        FLAT_PRESSED_WIDTH,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        &["button.body(PRESSED; variant=Flat).stroke.width"],
+        FLAT_PRESSED_WIDTH,
+    ),
+    ("chrome.page_tabs.menu", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
+    ("chrome.info.copy", FLAT_FOCUS_HOMES, FLAT_FOCUS_RING),
     // --- button: a Default Button refined by next::geometry::button ------------------
     (
         "",
@@ -3310,6 +3428,30 @@ const TOOL_STATE_WIDTH: &str = "not drawn: a tool button's border is next::geome
 /// Why a checked button's icon colours under the pointer and pressed, Edit's and the
 /// side-panel toggle's, are not drawn.
 const CHECKED_ICON_STATE_TINT: &str = "not reachable: an Icon takes one colour, the tint of the state its Button is built in, and a selected Button takes no hover or press style (gpui-component 0.10.0 src/icon.rs, Styled for Icon; gpui-component 0.10.0 button/button.rs:733, selected; native-theme-gpui README, Limits)";
+
+/// A flat button's fill under the pointer, the Pages menu button's and the Copy box's.
+const FLAT_GHOST_HOVER_FILL: &str = "gpui: the ghost variant's hover, ThemeColor secondary_hover, which next::apply sets from button.body(HOVER; variant=Flat).fill where a rule states it for HOVER, else gpui-component's own (native-theme-gpui next/mod.rs, flat_button_states)";
+
+/// A flat button's fill pressed, the Pages menu button's and the Copy box's.
+const FLAT_GHOST_PRESSED_FILL: &str = "gpui: the ghost variant's active, ThemeColor secondary_active, which next::apply sets from button.body(PRESSED; variant=Flat).fill where a rule states it for PRESSED, else gpui-component's own (native-theme-gpui next/mod.rs, flat_button_states)";
+
+/// A flat button's pressed outline colour, which a custom variant does not draw.
+const FLAT_PRESSED_EDGE_HOMES: &[&str] = &["button.body(PRESSED; variant=Flat).stroke.color"];
+
+/// Why [`FLAT_PRESSED_EDGE_HOMES`] are not drawn.
+const FLAT_ONE_BORDER_COLOUR: &str = "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER; variant=Flat).stroke.color's, next::variants::ghost_button's colour (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)";
+
+/// Why a flat button's pressed outline width is not drawn.
+const FLAT_PRESSED_WIDTH: &str = "not reachable: a flat button's border is next::geometry::ghost_button_rest's (or ghost_button_rest_own_padding's) in every state, the hovered flat body's width, which next::variants::ghost_button colours under the pointer and pressed (native-theme-gpui next/builders.rs, ghost_rest_within)";
+
+/// A flat button's focused outline.
+const FLAT_FOCUS_HOMES: &[&str] = &[
+    "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+    "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+];
+
+/// Why [`FLAT_FOCUS_HOMES`] are not drawn.
+const FLAT_FOCUS_RING: &str = "not reachable: a focused Button's border is gpui-component's own focus style, ThemeColor ring, not a stroke the theme states for the state (styled.rs, focus_style)";
 
 /// Why a Custom variant's label under the pointer is not drawn.
 const CUSTOM_NO_HOVER_TEXT: &str = "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)";

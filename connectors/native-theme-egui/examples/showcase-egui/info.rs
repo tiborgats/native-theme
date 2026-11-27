@@ -703,18 +703,18 @@ const SEGMENT_DIVIDER: &str = "egui: native-theme-egui-widgets SegmentedControl 
 /// The route of a flat button's hovered outline (the Pages menu button, the Copy box, the
 /// side-panel toggle while closed), which `next::flat_button` lays over the scope's hovered
 /// entry per call, not the atlas's push button row.
-const FLAT_HOVER_EDGE: &str = "egui: per call, the flat button's outline under the pointer, \
+pub(crate) const FLAT_HOVER_EDGE: &str = "egui: per call, the flat button's outline under the pointer, \
      button.body(HOVER; variant=Flat).stroke.color where a rule states it for HOVER, else egui's \
      own treatment of the hover (native-theme-egui next::flat_button; demo::flat)";
 /// The route of a flat button's pressed outline, as [`FLAT_HOVER_EDGE`]: egui draws pressed and
 /// focused alike, in its one `active` entry.
-const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline pressed or focused, \
+pub(crate) const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline pressed or focused, \
      egui's one active entry: button.body(FOCUS_VISIBLE; variant=Flat).stroke.color, else \
      button.body(PRESSED; variant=Flat).stroke.color, where a rule states it for the state, else \
      egui's own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
 /// The route of the side-panel toggle's hovered outline: the flat button's while the panel is
 /// closed ([`FLAT_HOVER_EDGE`]), the checked state's while it is open.
-const TOGGLE_HOVER_EDGE: &str = "egui: per call, the toggle's outline under the pointer: \
+pub(crate) const TOGGLE_HOVER_EDGE: &str = "egui: per call, the toggle's outline under the pointer: \
      closed, the flat button's, button.body(HOVER; variant=Flat).stroke.color where a rule \
      states it for HOVER, else egui's own treatment of the hover (native-theme-egui \
      next::flat_button; demo::flat); open, button.body(CHECKED|HOVER; variant=Flat).stroke \
@@ -723,7 +723,7 @@ const TOGGLE_HOVER_EDGE: &str = "egui: per call, the toggle's outline under the 
      (chrome::toggle_checked_pens)";
 /// The route of the side-panel toggle's pressed outline, as [`TOGGLE_HOVER_EDGE`]: egui draws
 /// pressed and focused alike, in its one `active` entry.
-const TOGGLE_PRESSED_EDGE: &str = "egui: per call, the toggle's outline pressed or focused, \
+pub(crate) const TOGGLE_PRESSED_EDGE: &str = "egui: per call, the toggle's outline pressed or focused, \
      egui's one active entry: closed, the flat button's, button.body(FOCUS_VISIBLE; \
      variant=Flat).stroke.color, else button.body(PRESSED; variant=Flat).stroke.color, where a \
      rule states it for the state, else egui's own treatment of the press (native-theme-egui \
@@ -737,6 +737,79 @@ pub(crate) const FLAT_HOVER_WIDTH: &str = "egui: per call, the flat button's out
      pointer, button.body(HOVER; variant=Flat).stroke.width where a rule states the stroke for \
      HOVER, else egui's own treatment of the hover (native-theme-egui next::flat_button; \
      demo::flat)";
+/// The route of a flat button's outline width pressed or focused, as [`FLAT_PRESSED_EDGE`].
+pub(crate) const FLAT_PRESSED_WIDTH: &str = "egui: per call, the flat button's outline width \
+     pressed or focused, egui's one active entry: button.body(PRESSED; variant=Flat).stroke.width \
+     where a rule states the stroke for PRESSED and none states it for FOCUS_VISIBLE, else egui's \
+     own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+/// The route of a flat button's focused outline, egui's one `active` entry with the pressed one.
+pub(crate) const FLAT_FOCUS_PEN: &str = "egui: per call, the flat button's outline pressed or \
+     focused, egui's one active entry: button.body(FOCUS_VISIBLE; variant=Flat).stroke, its \
+     colour and width, where a rule states it for FOCUS_VISIBLE, else button.body(PRESSED; \
+     variant=Flat).stroke's where one states it, else egui's own treatment of the press \
+     (native-theme-egui next::flat_button; demo::flat)";
+/// The route of a flat button's fill under the pointer.
+pub(crate) const FLAT_HOVER_FILL: &str = "egui: per call, the flat button's fill under the \
+     pointer, visuals.widgets.hovered.weak_bg_fill, button.body(HOVER; variant=Flat).fill where a \
+     rule states it for HOVER, else egui's own treatment of the hover (native-theme-egui \
+     next::flat_button; demo::flat)";
+/// The route of a flat button's fill pressed or focused, egui's one `active` entry.
+pub(crate) const FLAT_PRESSED_FILL: &str = "egui: per call, the flat button's fill pressed or \
+     focused, egui's one active entry, visuals.widgets.active.weak_bg_fill, button.body(PRESSED; \
+     variant=Flat).fill where a rule states it for PRESSED, else egui's own treatment of the \
+     press (native-theme-egui next::flat_button; demo::flat)";
+/// The route of a flat button's label colour under the pointer.
+pub(crate) const FLAT_HOVER_LABEL: &str = "egui: per call, the flat button's label colour under \
+     the pointer, visuals.widgets.hovered.fg_stroke, button.label(HOVER; variant=Flat).color \
+     where a rule states it for HOVER, else egui's own treatment of the hover \
+     (native-theme-egui next::flat_button; demo::flat)";
+/// The route of a flat button's label colour pressed or focused, egui's one `active` entry.
+pub(crate) const FLAT_PRESSED_LABEL: &str = "egui: per call, the flat button's label colour \
+     pressed or focused, egui's one active entry, visuals.widgets.active.fg_stroke, \
+     button.label(PRESSED; variant=Flat).color where a rule states it for PRESSED, else egui's \
+     own treatment of the press (native-theme-egui next::flat_button; demo::flat)";
+
+/// The homes of a flat button's own states, which `next::flat_button` lays over the scope per
+/// call from the installed 0.8.0 theme and no `mapping.toml` row holds, each with its route. Only
+/// the flat buttons ([`FLAT_BUTTONS`]) take them; the side-panel toggle's are
+/// [`TOGGLE_ROUTES`]'.
+pub(crate) const FLAT_BUTTON_ROUTES: [(&str, &str); 10] = [
+    ("button.body(HOVER; variant=Flat).fill", FLAT_HOVER_FILL),
+    ("button.body(PRESSED; variant=Flat).fill", FLAT_PRESSED_FILL),
+    ("button.label(HOVER; variant=Flat).color", FLAT_HOVER_LABEL),
+    (
+        "button.label(PRESSED; variant=Flat).color",
+        FLAT_PRESSED_LABEL,
+    ),
+    (
+        "button.body(HOVER; variant=Flat).stroke.color",
+        FLAT_HOVER_EDGE,
+    ),
+    (
+        "button.body(PRESSED; variant=Flat).stroke.color",
+        FLAT_PRESSED_EDGE,
+    ),
+    (
+        "button.body(HOVER; variant=Flat).stroke.width",
+        FLAT_HOVER_WIDTH,
+    ),
+    (
+        "button.body(PRESSED; variant=Flat).stroke.width",
+        FLAT_PRESSED_WIDTH,
+    ),
+    (
+        "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
+        FLAT_FOCUS_PEN,
+    ),
+    (
+        "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+        FLAT_FOCUS_PEN,
+    ),
+];
+
+/// The flat buttons drawn in `demo::flat` alone, by id, whose elements take
+/// [`FLAT_BUTTON_ROUTES`]: the Pages menu button and Widget Info's Copy.
+const FLAT_BUTTONS: [&str; 2] = ["chrome.page_tabs.menu", "chrome.info.copy"];
 
 /// The tool buttons, by id, whose elements and icons' elements take [`TOOL_BUTTON_ROUTES`].
 const TOOL_BUTTONS: [&str; 8] = [
@@ -889,13 +962,42 @@ pub(crate) const EDIT_ICON_PRESSED_CHECKED: &str = "egui: per call, the colour t
      (demo::tool_icon_color, demo::loaded_in)";
 
 /// The homes of the side-panel toggle's checked outline, fill and label under the pointer and
-/// pressed, its flat outline's hovered width and focused pen, and of its icon's colour, which
-/// the chrome lays over the scope per call from the installed 0.8.0 theme and no `mapping.toml`
-/// row holds, each with its route. Only the toggle and its icon ([`TOGGLE`]) take them.
-pub(crate) const TOGGLE_ROUTES: [(&str, &str); 21] = [
+/// pressed, its flat fill, label and outline under the pointer and pressed and its focused pen,
+/// and of its icon's colour, which the chrome lays over the scope per call from the installed
+/// 0.8.0 theme and no `mapping.toml` row holds, each with its route. Only the toggle and its
+/// icon ([`TOGGLE`]) take them.
+pub(crate) const TOGGLE_ROUTES: [(&str, &str); 28] = [
     (
         "button.body(HOVER; variant=Flat).stroke.width",
         TOGGLE_HOVER_WIDTH,
+    ),
+    (
+        "button.body(PRESSED; variant=Flat).stroke.width",
+        TOGGLE_PRESSED_WIDTH,
+    ),
+    (
+        "button.body(HOVER; variant=Flat).stroke.color",
+        TOGGLE_HOVER_EDGE,
+    ),
+    (
+        "button.body(PRESSED; variant=Flat).stroke.color",
+        TOGGLE_PRESSED_EDGE,
+    ),
+    (
+        "button.body(HOVER; variant=Flat).fill",
+        TOGGLE_CLOSED_HOVER_FILL,
+    ),
+    (
+        "button.body(PRESSED; variant=Flat).fill",
+        TOGGLE_CLOSED_PRESSED_FILL,
+    ),
+    (
+        "button.label(HOVER; variant=Flat).color",
+        TOGGLE_CLOSED_HOVER_LABEL,
+    ),
+    (
+        "button.label(PRESSED; variant=Flat).color",
+        TOGGLE_CLOSED_PRESSED_LABEL,
     ),
     (
         "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color",
@@ -979,6 +1081,44 @@ pub(crate) const TOGGLE_HOVER_WIDTH: &str = "egui: per call, the toggle's outlin
      (native-theme-egui next::flat_button; demo::flat); open, where a rule states \
      button.body(CHECKED; variant=Flat).stroke, or one for CHECKED|HOVER states this one (the \
      query asking CHECKED), the checked pens' (chrome::toggle_checked_pens)";
+/// The route of the toggle's outline width pressed or focused, as [`TOGGLE_HOVER_WIDTH`].
+pub(crate) const TOGGLE_PRESSED_WIDTH: &str = "egui: per call, the toggle's outline width pressed \
+     or focused while the side panel is closed, egui's one active entry, button.body(PRESSED; \
+     variant=Flat).stroke.width where a rule states the stroke for PRESSED and none states it for \
+     FOCUS_VISIBLE, else egui's own treatment of the press (native-theme-egui \
+     next::flat_button; demo::flat); open, where a rule states button.body(CHECKED; \
+     variant=Flat).stroke, or one for CHECKED with the state drawn states it (the query asking \
+     CHECKED), the checked pens' (chrome::toggle_checked_pens)";
+/// The route of the closed toggle's fill under the pointer.
+pub(crate) const TOGGLE_CLOSED_HOVER_FILL: &str = "egui: per call, the toggle's fill under the \
+     pointer while the side panel is closed, visuals.widgets.hovered.weak_bg_fill, \
+     button.body(HOVER; variant=Flat).fill where a rule states it for HOVER, else egui's own \
+     treatment of the hover (native-theme-egui next::flat_button; demo::flat); open, not drawn: \
+     the toggle is egui's selected button, filled in its checked fill of the state \
+     (chrome::toggle_checked_in)";
+/// The route of the closed toggle's fill pressed or focused.
+pub(crate) const TOGGLE_CLOSED_PRESSED_FILL: &str = "egui: per call, the toggle's fill pressed or \
+     focused while the side panel is closed, egui's one active entry, \
+     visuals.widgets.active.weak_bg_fill, button.body(PRESSED; variant=Flat).fill where a rule \
+     states it for PRESSED, else egui's own treatment of the press (native-theme-egui \
+     next::flat_button; demo::flat); open, not drawn: the toggle is egui's selected button, \
+     filled in its checked fill of the state (chrome::toggle_checked_in)";
+/// The route of the closed toggle's label colour under the pointer.
+pub(crate) const TOGGLE_CLOSED_HOVER_LABEL: &str = "egui: per call, the toggle's label colour \
+     under the pointer while the side panel is closed, visuals.widgets.hovered.fg_stroke, \
+     button.label(HOVER; variant=Flat).color where a rule states it for HOVER, else egui's own \
+     treatment of the hover (native-theme-egui next::flat_button; demo::flat); open, not drawn: \
+     the toggle is egui's selected button, lettered in its checked label of the state \
+     (chrome::toggle_checked_in); an icon shown in the label's place keeps the colour it loads \
+     in (chrome::toggle_icon_colour)";
+/// The route of the closed toggle's label colour pressed or focused.
+pub(crate) const TOGGLE_CLOSED_PRESSED_LABEL: &str = "egui: per call, the toggle's label colour \
+     pressed or focused while the side panel is closed, egui's one active entry, \
+     visuals.widgets.active.fg_stroke, button.label(PRESSED; variant=Flat).color where a rule \
+     states it for PRESSED, else egui's own treatment of the press (native-theme-egui \
+     next::flat_button; demo::flat); open, not drawn: the toggle is egui's selected button, \
+     lettered in its checked label of the state (chrome::toggle_checked_in); an icon shown in \
+     the label's place keeps the colour it loads in (chrome::toggle_icon_colour)";
 /// The route of the open toggle's fill under the pointer.
 pub(crate) const TOGGLE_HOVER_FILL: &str = "egui: per call, Button::fill, the toggle's fill under \
      the pointer while the side panel is open, in the state of its previous response, where a \
@@ -1327,11 +1467,6 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "basic.buttons.dialog_default",
         "button.body(PRESSED; variant=Primary).stroke.width",
         DIALOG_DEFAULT_OUTLINE,
-    ),
-    (
-        "chrome.info.copy",
-        "button.body(HOVER).stroke.width",
-        FLAT_HOVER_WIDTH,
     ),
     (
         "chrome.status_bar.toggle",
@@ -1921,7 +2056,8 @@ pub(crate) const SWITCH_LABEL_ROUTES: [(&str, &str); 5] = [
 /// crate's switch where it reads a home of its label ([`SWITCH_LABEL_ROUTES`]), the toolbar
 /// scope or the showcase where it applies a tool button's own ([`TOOL_BUTTON_ROUTES`], on a
 /// tool button or its icon, [`TOOL_BUTTONS`]), the chrome where it lays the side-panel toggle's
-/// own looks or icon colour ([`TOGGLE_ROUTES`], on the toggle or its icon, [`TOGGLE`]), else
+/// own looks or icon colour ([`TOGGLE_ROUTES`], on the toggle or its icon, [`TOGGLE`]), the
+/// flat button's own states on the other flat buttons ([`FLAT_BUTTON_ROUTES`], [`FLAT_BUTTONS`]), else
 /// [`how_line`]'s, from the `mapping.toml` row that holds the home, a tab's label with its
 /// fields [`TAB_LABEL_PER_CALL`] names by their call.
 pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: &[Seam]) -> String {
@@ -1950,6 +2086,11 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .then(|| TOGGLE_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
         .map(|(_, line)| *line);
+    let flat_route = FLAT_BUTTONS
+        .contains(&element)
+        .then(|| FLAT_BUTTON_ROUTES.iter().find(|(h, _)| *h == home))
+        .flatten()
+        .map(|(_, line)| *line);
     PER_CALL_ROUTES
         .iter()
         .find(|(id, h, _)| names(id) && *h == home)
@@ -1958,6 +2099,7 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .or(switch_route)
         .or(tool_route)
         .or(toggle_route)
+        .or(flat_route)
         .map_or_else(
             || {
                 if tab {

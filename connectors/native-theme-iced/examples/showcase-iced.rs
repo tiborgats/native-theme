@@ -9654,6 +9654,7 @@ fn tool_icon_route(
             | "button.label(HOVER).color"
             | "button.label(PRESSED).color"
             | "button.label(CHECKED).color"
+            | "toolbar.button_label(NONE).color"
             | "toolbar.button_label(HOVER).color"
             | "toolbar.button_label(PRESSED).color"
             | "toolbar.button_label(CHECKED).color"
@@ -9926,6 +9927,22 @@ fn ghost_home(home: &str) -> Option<&'static str> {
         "button.label(CHECKED).color" => "button.label(CHECKED;variant=Flat).color",
         "button.body(HOVER).stroke.color" => "button.body(HOVER;variant=Flat).stroke.color",
         "button.body(PRESSED).stroke.color" => "button.body(PRESSED;variant=Flat).stroke.color",
+        _ => return None,
+    })
+}
+
+/// The push button's listed home whose route [`ghost_route`] gives for the
+/// flat variant's own home `home` of a flat button's hovered or pressed
+/// state, which [`ghost_button`] reads for both ([`ghost_home`]): `None` for
+/// any other home.
+fn flat_state_home(home: &str) -> Option<&'static str> {
+    Some(match home {
+        "button.body(HOVER; variant=Flat).fill" => "button.body(HOVER).fill",
+        "button.body(PRESSED; variant=Flat).fill" => "button.body(PRESSED).fill",
+        "button.label(HOVER; variant=Flat).color" => "button.label(HOVER).color",
+        "button.label(PRESSED; variant=Flat).color" => "button.label(PRESSED).color",
+        "button.body(HOVER; variant=Flat).stroke.color" => "button.body(HOVER).stroke.color",
+        "button.body(PRESSED; variant=Flat).stroke.color" => "button.body(PRESSED).stroke.color",
         _ => return None,
     })
 }
@@ -10294,6 +10311,11 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     let r = state.next_shown();
     let tool = tool_button(id) || id == DISABLED_TOOL;
     let flat = flat_element(id);
+    let home = if flat {
+        flat_state_home(home).unwrap_or(home)
+    } else {
+        home
+    };
     let icon = ghost_icon(state, id).filter(|_| flat);
     let os_icon = icon.is_some() && state.chrome_icons.system;
     // The icon of the button an element is, or is the icon of.
@@ -10368,8 +10390,15 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
             "iced_next::styles::toolbar_button: button::Style::border.radius in every status, \
              toolbar.button(NONE).corners, iced's own neutral class's where unstated"
         }
-        "button.body(HOVER).stroke.width" if id == "chrome.info.copy" => {
-            "ghost_button: the Hovered border's width, button.body(HOVER;variant=Flat).stroke's \
+        "button.body(PRESSED; variant=Flat).stroke.width" if flat && selected && checked_edge => {
+            "not drawn: the toggle is open and a rule for CHECKED, alone or with PRESSED, states \
+             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines it pressed by \
+             the theme's answer for button.body(CHECKED|PRESSED;variant=Flat), its width \
+             included (next_edge), which button.body(PRESSED;variant=Flat).stroke.width gives \
+             where its rule follows every rule for CHECKED"
+        }
+        "button.body(PRESSED; variant=Flat).stroke.width" if flat => {
+            "ghost_button: the Pressed border's width, button.body(PRESSED;variant=Flat).stroke's \
              where a rule states it for the state, on the bounds over the padding (next_edge); \
              iced's own flat button's (button::text) where none does"
         }
