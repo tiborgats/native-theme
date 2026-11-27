@@ -5134,6 +5134,13 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
 /// (`iced_next::styles::button_primary`, iced's own `button::primary` where
 /// the connector maps none), a stated checked label laid over; its corners
 /// and padding the unchecked button's in the same status. Where a rule
+/// states the checked fill for `CHECKED` alone (spec §2, `from_state`), the
+/// selected button under the pointer and pressed is filled in the theme's
+/// answer for `CHECKED | HOVER` and `CHECKED | PRESSED`, and where one
+/// states the checked label so, lettered in theirs (spec §10, rule 0:
+/// "what the theme states for the state is laid over"), the rule
+/// `iced_next::styles::button_toggle` draws the plain button by, which the
+/// connector does not export for a flat one. Where a rule
 /// states `button.body(CHECKED;variant=Flat).stroke`, the selected button is
 /// outlined by it at rest, and under the pointer and pressed by the theme's
 /// answer for `CHECKED | HOVER` and `CHECKED | PRESSED` (spec §10, rule 0:
@@ -5165,8 +5172,20 @@ fn ghost_button(
     let pressed = drawn_state_fill(&b.body(flat(WidgetState::PRESSED)));
     let pressed_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED)));
     let disabled_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::DISABLED)));
-    let checked = drawn_state_fill(&b.body(flat(WidgetState::CHECKED)));
+    let checked_part = b.body(flat(WidgetState::CHECKED));
+    let checked = drawn_state_fill(&checked_part);
     let checked_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::CHECKED)));
+    let checked_stroke = checked_part.from_state.contains(PartStated::STROKE);
+    let checked_states =
+        [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED].map(|state| {
+            let part = b.body(flat(WidgetState::CHECKED | state));
+            let text = b.label(flat(WidgetState::CHECKED | state));
+            (
+                checked.map(|fill| drawn_fill(&part).unwrap_or(fill)),
+                checked_label.map(|label| iced_next::text_color_of(&text).unwrap_or(label)),
+                checked_stroke.then_some(part),
+            )
+        });
     let primary = iced_next::styles::button_primary(r).ok();
     let radius = iced_next::radius_of(&b.body(flat(WidgetState::NONE)));
     let edge = |state: WidgetState| {
@@ -5181,14 +5200,6 @@ fn ghost_button(
     };
     let hover_edge = edge(WidgetState::HOVER);
     let pressed_edge = edge(WidgetState::PRESSED);
-    let checked_edges = b
-        .body(flat(WidgetState::CHECKED))
-        .from_state
-        .contains(PartStated::STROKE)
-        .then(|| {
-            [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED]
-                .map(|state| b.body(flat(WidgetState::CHECKED | state)))
-        });
     move |theme, status| {
         let rest = button::text(theme, button::Status::Active);
         let own = button::text(theme, status);
@@ -5220,7 +5231,13 @@ fn ghost_button(
         if !selected || status == button::Status::Disabled {
             return unchecked;
         }
-        let (background, text_color) = match checked {
+        let [at_rest, hovered, pressed] = &checked_states;
+        let (checked, checked_label, checked_part) = match status {
+            button::Status::Hovered => hovered,
+            button::Status::Pressed => pressed,
+            button::Status::Active | button::Status::Disabled => at_rest,
+        };
+        let (background, text_color) = match *checked {
             Some(fill) => (
                 Some(iced::Background::Color(fill)),
                 checked_label.unwrap_or(label.unwrap_or(rest.text_color)),
@@ -5237,19 +5254,13 @@ fn ghost_button(
             Some(iced::Background::Color(fill)) => fill,
             _ => Color::TRANSPARENT,
         };
-        let part = checked_edges
+        let border = checked_part
             .as_ref()
-            .map(|[rest, hovered, pressed]| match status {
-                button::Status::Hovered => hovered,
-                button::Status::Pressed => pressed,
-                button::Status::Active | button::Status::Disabled => rest,
+            .and_then(|part| next_edge(part, under))
+            .map_or(unchecked.border, |edge| iced::Border {
+                radius: unchecked.border.radius,
+                ..edge
             });
-        let border =
-            part.and_then(|part| next_edge(part, under))
-                .map_or(unchecked.border, |edge| iced::Border {
-                    radius: unchecked.border.radius,
-                    ..edge
-                });
         button::Style {
             background,
             text_color,
@@ -9710,8 +9721,10 @@ fn ghost_home(home: &str) -> Option<&'static str> {
 /// pointer and keeps it pressed ([`in_state`]). A selected button is drawn
 /// checked in every status (spec §10, rule 0a): its stated checked fill and
 /// label, the label at rest on a stated checked fill, else the connector's
-/// primary button's fill and label in the same status; no hovered or
-/// pressed colour of the flat button is drawn on it.
+/// primary button's fill and label in the same status; under the pointer and
+/// pressed, a stated checked fill and label are the theme's answers for
+/// `CHECKED | HOVER` and `CHECKED | PRESSED`, which a rule for the hovered or
+/// pressed state alone gives where it follows every rule for `CHECKED`.
 fn ghost_route(
     r: &native_theme::next::ResolvedTheme,
     home: &str,
@@ -9806,9 +9819,16 @@ fn ghost_route(
             }
         },
         "button.body(HOVER).fill" => match (selected, hover) {
+            (true, _) if checked => {
+                "ghost_button: the Hovered fill while selected, the theme's answer for \
+                 button.body(CHECKED|HOVER;variant=Flat).fill (spec §10, rule 0), which is \
+                 button.body(HOVER;variant=Flat).fill where the rule stating it follows every \
+                 rule for CHECKED"
+            }
             (true, _) => {
-                "not drawn: the toggle is selected, and ghost_button draws it checked under the \
-                 pointer (spec §10, rule 0a)"
+                "not drawn: the toggle is selected, no rule states \
+                 button.body(CHECKED;variant=Flat).fill, and ghost_button draws it as the \
+                 connector's primary button under the pointer (spec §10, rule 0a)"
             }
             (false, false) => {
                 "not drawn: button.body(HOVER;variant=Flat).fill is unstated, and iced's own \
@@ -9817,9 +9837,21 @@ fn ghost_route(
             (false, true) => "ghost_button: the Hovered fill, button.body(HOVER;variant=Flat).fill",
         },
         "button.label(HOVER).color" => match (selected, icon) {
-            (true, _) => {
-                "not drawn: the toggle is selected, and ghost_button draws it checked under the \
-                 pointer (spec §10, rule 0a)"
+            (true, false) if checked_label => {
+                "ghost_button: the Hovered text_color while selected, the theme's answer for \
+                 button.label(CHECKED|HOVER;variant=Flat).color (spec §10, rule 0), which is \
+                 button.label(HOVER;variant=Flat).color where the rule stating it follows every \
+                 rule for CHECKED"
+            }
+            (true, true) => {
+                "not drawn: the toggle is selected, and its icon, which shows in place of the \
+                 label, keeps the colours it loads in, in every status"
+            }
+            (true, false) => {
+                "not drawn: the toggle is selected, no rule states \
+                 button.label(CHECKED;variant=Flat).color, and ghost_button letters it under the \
+                 pointer in the label at rest on a stated checked fill, else as the connector's \
+                 primary button under the pointer (spec §10, rule 0a)"
             }
             (false, true) if os_icon => OS_ICON_COLOURS,
             (false, true) => ICON_FOR_LABEL,
@@ -9832,9 +9864,16 @@ fn ghost_route(
             }
         },
         "button.body(PRESSED).fill" => match (selected, pressed) {
+            (true, _) if checked => {
+                "ghost_button: the Pressed fill while selected, the theme's answer for \
+                 button.body(CHECKED|PRESSED;variant=Flat).fill (spec §10, rule 0), which is \
+                 button.body(PRESSED;variant=Flat).fill where the rule stating it follows every \
+                 rule for CHECKED"
+            }
             (true, _) => {
-                "not drawn: the toggle is selected, and ghost_button draws it checked while \
-                 pressed (spec §10, rule 0a)"
+                "not drawn: the toggle is selected, no rule states \
+                 button.body(CHECKED;variant=Flat).fill, and ghost_button draws it as the \
+                 connector's primary button while pressed (spec §10, rule 0a)"
             }
             (false, false) => {
                 "not drawn: button.body(PRESSED;variant=Flat).fill is unstated, and iced's own \
@@ -9846,9 +9885,21 @@ fn ghost_route(
         },
         "button.label(PRESSED).color" => match (selected, icon) {
             (_, true) if os_icon => OS_ICON_COLOURS,
-            (true, _) => {
-                "not drawn: the toggle is selected, and ghost_button draws it checked while \
-                 pressed (spec §10, rule 0a)"
+            (true, false) if checked_label => {
+                "ghost_button: the Pressed text_color while selected, the theme's answer for \
+                 button.label(CHECKED|PRESSED;variant=Flat).color (spec §10, rule 0), which is \
+                 button.label(PRESSED;variant=Flat).color where the rule stating it follows \
+                 every rule for CHECKED"
+            }
+            (true, true) => {
+                "not drawn: the toggle is selected, and its icon, which shows in place of the \
+                 label, keeps the colours it loads in, in every status"
+            }
+            (true, false) => {
+                "not drawn: the toggle is selected, no rule states \
+                 button.label(CHECKED;variant=Flat).color, and ghost_button letters it pressed \
+                 in the label at rest on a stated checked fill, else as the connector's primary \
+                 button while pressed (spec §10, rule 0a)"
             }
             _ if !pressed_label => {
                 "not drawn: button.label(PRESSED;variant=Flat).color is unstated, so \
@@ -9872,7 +9923,8 @@ fn ghost_route(
                  connector maps none; spec §10, rule 0a)"
             }
             (true, true) => {
-                "ghost_button: the fill while selected, in every status, \
+                "ghost_button: the fill while selected, at rest, and under the pointer and \
+                 pressed where no rule for HOVER or PRESSED follows it, \
                  button.body(CHECKED;variant=Flat).fill"
             }
         },
@@ -9892,7 +9944,8 @@ fn ghost_route(
                  button.label(CHECKED;variant=Flat).color"
             }
             (true, false) => {
-                "ghost_button: the label's text_color while selected, in every status, \
+                "ghost_button: the label's text_color while selected, at rest, and under the \
+                 pointer and pressed where no rule for HOVER or PRESSED follows it, \
                  button.label(CHECKED;variant=Flat).color"
             }
         },
@@ -36480,97 +36533,171 @@ mod tests {
     /// lettered in the stated checked label, else in the label at rest;
     /// where no rule states the fill, the connector's primary button's fill
     /// and label in the same status, a stated checked label laid over; never
-    /// the pressed look. Where a rule states
-    /// `button.body(CHECKED;variant=Flat).stroke`, outlined at rest by it,
-    /// under the pointer and pressed by `(CHECKED | HOVER)`'s and
+    /// the pressed look. Where a rule states the checked fill for `CHECKED`
+    /// alone, filled under the pointer and pressed in the theme's answer for
+    /// `(CHECKED | HOVER;variant=Flat)` and `(CHECKED | PRESSED;variant=Flat)`,
+    /// and where one states the checked label so, lettered in theirs. Where a
+    /// rule states `button.body(CHECKED;variant=Flat).stroke`, outlined at
+    /// rest by it, under the pointer and pressed by `(CHECKED | HOVER)`'s and
     /// `(CHECKED | PRESSED)`'s, as iced draws each over the checked fill
     /// ([`next_edge`]); else as the unchecked button in that status; rounded
-    /// as the unchecked one. On every preset of the 0.8.0 model; kde-breeze
-    /// states the checked fill, and the checked stroke (the plain button
-    /// pen, which the closed toggle at rest does not draw).
+    /// as the unchecked one. On every preset of the 0.8.0 model, and on each
+    /// with the checked flat stroke stated by a patch, hovered and pressed in
+    /// colours of the test's own, which the unchecked flat button's hovered
+    /// and pressed strokes are not; kde-breeze states the checked fill, and
+    /// the checked stroke (the plain button pen, which the closed toggle at
+    /// rest does not draw), and a pressed checked fill apart from it
+    /// (`toolbar_button_pressed`), adwaita a hovered and a pressed one
+    /// (`FLAT_CHECKED_HOVER_ALPHA`, `FLAT_CHECKED_PRESSED_ALPHA`).
     #[test]
     fn a_selected_flat_button_is_drawn_checked() -> Result<(), String> {
         let mut failures = Vec::new();
-        let (mut stated, mut primary, mut outlined) = (0, 0, 0);
+        let (mut stated, mut primary, mut outlined, mut patched_strokes) = (0, 0, 0, 0);
+        let (mut breeze_pressed, mut adwaita_hovered, mut adwaita_pressed) = (0, 0, 0);
         for (label, r) in next_combinations() {
-            let theme = native_theme_iced::next::to_theme(&r)
-                .map_err(|error| format!("{label}: no iced theme: {error:?}"))?;
-            let b = &r.button;
-            let checked_stroke = b
-                .body(flat(WidgetState::CHECKED))
-                .from_state
-                .contains(PartStated::STROKE);
-            let checked = drawn_state_fill(&b.body(flat(WidgetState::CHECKED)));
-            let checked_label =
-                iced_next::state_text_color_of(&b.label(flat(WidgetState::CHECKED)));
-            let at_rest = iced_next::text_color_of(&b.label(flat(WidgetState::NONE)));
-            let (on, off) = (ghost_button(&r, true), ghost_button(&r, false));
-            for status in [
-                button::Status::Active,
-                button::Status::Hovered,
-                button::Status::Pressed,
+            let patched = with_home(
+                &r,
+                "button.body(CHECKED; variant=Flat).stroke.color",
+                "#2468ac",
+            )
+            .and_then(|patched| {
+                with_home(
+                    &patched,
+                    "button.body(CHECKED|HOVER; variant=Flat).stroke.color",
+                    "#13579b",
+                )
+            })
+            .and_then(|patched| {
+                with_home(
+                    &patched,
+                    "button.body(CHECKED|PRESSED; variant=Flat).stroke.color",
+                    "#9b5713",
+                )
+            })
+            .ok_or("no patch reaches the checked flat button's stroke")?;
+            for (name, r, is_patched) in [
+                (label.clone(), r, false),
+                (format!("{label}, patched"), patched, true),
             ] {
-                let expected = match checked {
-                    Some(fill) => {
-                        stated += 1;
-                        let rest = button::text(&theme, button::Status::Active).text_color;
-                        (
-                            Some(iced::Background::Color(fill)),
-                            checked_label.unwrap_or(at_rest.unwrap_or(rest)),
-                        )
+                let theme = native_theme_iced::next::to_theme(&r)
+                    .map_err(|error| format!("{name}: no iced theme: {error:?}"))?;
+                let b = &r.button;
+                let checked_stroke = b
+                    .body(flat(WidgetState::CHECKED))
+                    .from_state
+                    .contains(PartStated::STROKE);
+                let checked = drawn_state_fill(&b.body(flat(WidgetState::CHECKED)));
+                let checked_label =
+                    iced_next::state_text_color_of(&b.label(flat(WidgetState::CHECKED)));
+                let at_rest = iced_next::text_color_of(&b.label(flat(WidgetState::NONE)));
+                let (on, off) = (ghost_button(&r, true), ghost_button(&r, false));
+                for status in [
+                    button::Status::Active,
+                    button::Status::Hovered,
+                    button::Status::Pressed,
+                ] {
+                    let state = match status {
+                        button::Status::Hovered => WidgetState::HOVER,
+                        button::Status::Pressed => WidgetState::PRESSED,
+                        button::Status::Active | button::Status::Disabled => WidgetState::NONE,
+                    };
+                    let checked_in = WidgetState::CHECKED | state;
+                    let state_label = checked_label.map(|checked| {
+                        iced_next::text_color_of(&b.label(flat(checked_in))).unwrap_or(checked)
+                    });
+                    let expected = match checked {
+                        Some(fill) => {
+                            stated += 1;
+                            let state_fill = drawn_fill(&b.body(flat(checked_in))).unwrap_or(fill);
+                            if state_fill != fill && !is_patched {
+                                match (label.split('/').next(), status) {
+                                    (Some("kde-breeze"), button::Status::Pressed) => {
+                                        breeze_pressed += 1;
+                                    }
+                                    (Some("adwaita"), button::Status::Hovered) => {
+                                        adwaita_hovered += 1;
+                                    }
+                                    (Some("adwaita"), button::Status::Pressed) => {
+                                        adwaita_pressed += 1;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            let rest = button::text(&theme, button::Status::Active).text_color;
+                            (
+                                Some(iced::Background::Color(state_fill)),
+                                state_label.unwrap_or(at_rest.unwrap_or(rest)),
+                            )
+                        }
+                        None => {
+                            primary += 1;
+                            let shown = match iced_next::styles::button_primary(&r) {
+                                Ok(style) => style(&theme, status),
+                                Err(_) => button::primary(&theme, status),
+                            };
+                            (shown.background, state_label.unwrap_or(shown.text_color))
+                        }
+                    };
+                    let drawn = on(&theme, status);
+                    if (drawn.background, drawn.text_color) != expected {
+                        failures.push(format!(
+                            "{name} {status:?}: drawn {:?} in {:?}, expected {expected:?}",
+                            drawn.background, drawn.text_color
+                        ));
                     }
-                    None => {
-                        primary += 1;
-                        let shown = match iced_next::styles::button_primary(&r) {
-                            Ok(style) => style(&theme, status),
-                            Err(_) => button::primary(&theme, status),
-                        };
-                        (shown.background, checked_label.unwrap_or(shown.text_color))
+                    let unchecked = off(&theme, status).border;
+                    let under = match drawn.background {
+                        Some(iced::Background::Color(fill)) => fill,
+                        _ => Color::TRANSPARENT,
+                    };
+                    let expected = checked_stroke
+                        .then(|| next_edge(&b.body(flat(checked_in)), under))
+                        .flatten()
+                        .unwrap_or(unchecked);
+                    if seen_edge(drawn.border) != seen_edge(expected)
+                        || drawn.border.radius != unchecked.radius
+                    {
+                        failures.push(format!(
+                            "{name} {status:?}: outlined {:?}, expected {expected:?}",
+                            drawn.border
+                        ));
                     }
-                };
-                let drawn = on(&theme, status);
-                if (drawn.background, drawn.text_color) != expected {
-                    failures.push(format!(
-                        "{label} {status:?}: drawn {:?} in {:?}, expected {expected:?}",
-                        drawn.background, drawn.text_color
-                    ));
-                }
-                let unchecked = off(&theme, status).border;
-                let state = match status {
-                    button::Status::Hovered => WidgetState::HOVER,
-                    button::Status::Pressed => WidgetState::PRESSED,
-                    button::Status::Active | button::Status::Disabled => WidgetState::NONE,
-                };
-                let under = match drawn.background {
-                    Some(iced::Background::Color(fill)) => fill,
-                    _ => Color::TRANSPARENT,
-                };
-                let expected = checked_stroke
-                    .then(|| next_edge(&b.body(flat(WidgetState::CHECKED | state)), under))
-                    .flatten()
-                    .unwrap_or(unchecked);
-                if seen_edge(drawn.border) != seen_edge(expected)
-                    || drawn.border.radius != unchecked.radius
-                {
-                    failures.push(format!(
-                        "{label} {status:?}: outlined {:?}, expected {expected:?}",
-                        drawn.border
-                    ));
-                }
-                if label.starts_with("kde-breeze")
-                    && checked_stroke
-                    && status == button::Status::Active
-                    && drawn.border.width > 0.0
-                    && unchecked.width <= 0.0
-                {
-                    outlined += 1;
+                    if is_patched && status != button::Status::Active {
+                        if seen_edge(expected) == seen_edge(unchecked) {
+                            failures.push(format!(
+                                "{name} {status:?}: the patched checked stroke is the \
+                                 unchecked one, so this case proves nothing"
+                            ));
+                        } else {
+                            patched_strokes += 1;
+                        }
+                    }
+                    if label.starts_with("kde-breeze")
+                        && !is_patched
+                        && checked_stroke
+                        && status == button::Status::Active
+                        && drawn.border.width > 0.0
+                        && unchecked.width <= 0.0
+                    {
+                        outlined += 1;
+                    }
                 }
             }
         }
-        if stated == 0 || primary == 0 || outlined == 0 {
+        if stated == 0
+            || primary == 0
+            || outlined == 0
+            || patched_strokes == 0
+            || breeze_pressed == 0
+            || adwaita_hovered == 0
+            || adwaita_pressed == 0
+        {
             failures.push(format!(
                 "every way covered: {stated} stated checked fills, {primary} primary, \
-                 {outlined} kde-breeze open toggles outlined at rest"
+                 {outlined} kde-breeze open toggles outlined at rest, {patched_strokes} \
+                 patched checked strokes apart from the unchecked ones, {breeze_pressed} \
+                 kde-breeze pressed and {adwaita_hovered} hovered and {adwaita_pressed} \
+                 pressed adwaita checked fills apart from the checked one"
             ));
         }
         if failures.is_empty() {
