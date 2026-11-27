@@ -5164,15 +5164,17 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
 /// the connector's primary button's fill and label in the same status
 /// (`iced_next::styles::button_primary`, iced's own `button::primary` where
 /// the connector maps none), a stated checked label laid over; its corners
-/// and padding the unchecked button's in the same status. Where a rule
-/// states the checked fill for `CHECKED` alone (spec §2, `from_state`), the
-/// selected button under the pointer and pressed is filled in the theme's
-/// answer for `CHECKED | HOVER` and `CHECKED | PRESSED`, and where one
-/// states the checked label so, lettered in theirs (spec §10, rule 0:
+/// and padding the unchecked button's in the same status. Where the theme
+/// states the checked fill for `CHECKED` by the spec's two queries (spec §2,
+/// `from_state`: `CHECKED` alone, or the status's own query asking
+/// `CHECKED`, [`flat_checked`]), the selected button under the pointer and
+/// pressed is filled in the theme's answer for `CHECKED | HOVER` and
+/// `CHECKED | PRESSED`, and where it states the checked label so, lettered
+/// in theirs (spec §10, rule 0:
 /// "what the theme states for the state is laid over"), the rule
 /// `iced_next::styles::button_toggle` draws the plain button by, which the
-/// connector does not export for a flat one. Where a rule
-/// states `button.body(CHECKED;variant=Flat).stroke`, the selected button is
+/// connector does not export for a flat one. Where the theme states
+/// `button.body(CHECKED;variant=Flat).stroke` so, the selected button is
 /// outlined by it at rest, and under the pointer and pressed by the theme's
 /// answer for `CHECKED | HOVER` and `CHECKED | PRESSED` (spec §10, rule 0:
 /// "what the theme states for the state is laid over"), each as iced draws
@@ -5209,12 +5211,16 @@ fn ghost_button(
     let checked_stroke = checked_part.from_state.contains(PartStated::STROKE);
     let checked_states =
         [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED].map(|state| {
-            let part = b.body(flat(WidgetState::CHECKED | state));
-            let text = b.label(flat(WidgetState::CHECKED | state));
+            let part = b.body(flat_checked(state));
+            let text = b.label(flat_checked(state));
             (
-                checked.map(|fill| drawn_fill(&part).unwrap_or(fill)),
-                checked_label.map(|label| iced_next::text_color_of(&text).unwrap_or(label)),
-                checked_stroke.then_some(part),
+                (checked.is_some() || part.from_state.contains(PartStated::FILL))
+                    .then(|| drawn_fill(&part).or(checked))
+                    .flatten(),
+                (checked_label.is_some() || text.from_state.contains(TextStated::COLOR))
+                    .then(|| iced_next::text_color_of(&text).or(checked_label))
+                    .flatten(),
+                (checked_stroke || part.from_state.contains(PartStated::STROKE)).then_some(part),
             )
         });
     let primary = iced_next::styles::button_primary(r).ok();
@@ -5318,6 +5324,14 @@ fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
 /// `variant=Flat` button of the 0.8.0 model's homes.
 fn flat(state: WidgetState) -> ButtonQuery {
     ButtonQuery::flat().state(state)
+}
+
+/// The query of a flat button checked in `state`, `CHECKED | state`,
+/// asking `CHECKED` (`StyleQuery::asking`): the second of the spec's two
+/// queries for the checked look [`ghost_button`] keeps its own way of
+/// showing, the first `flat(CHECKED)` (spec §2, `from_state`).
+fn flat_checked(state: WidgetState) -> ButtonQuery {
+    flat(WidgetState::CHECKED | state).asking(WidgetState::CHECKED)
 }
 
 /// The home a drawing site hands the connector's fill readers. A drawing
@@ -9906,6 +9920,19 @@ fn ghost_route(
     let edge = |state: WidgetState| b.body(flat(state)).from_state.contains(PartStated::STROKE);
     let (hover_edge, pressed_edge) = (edge(WidgetState::HOVER), edge(WidgetState::PRESSED));
     let checked_edge = edge(WidgetState::CHECKED);
+    // What the theme states for the checked state in a status by the spec's
+    // two queries ([`flat_checked`]), which the selected toggle takes there.
+    let checked_in = |state: WidgetState| {
+        let (part, text) = (b.body(flat_checked(state)), b.label(flat_checked(state)));
+        (
+            checked || part.from_state.contains(PartStated::FILL),
+            checked_label || text.from_state.contains(TextStated::COLOR),
+            checked_edge || part.from_state.contains(PartStated::STROKE),
+        )
+    };
+    let (hover_checked, hover_checked_label, hover_checked_edge) = checked_in(WidgetState::HOVER);
+    let (pressed_checked, pressed_checked_label, pressed_checked_edge) =
+        checked_in(WidgetState::PRESSED);
     let label_home = matches!(
         home,
         "button.label(NONE).color"
@@ -9991,15 +10018,15 @@ fn ghost_route(
             }
         },
         "button.body(HOVER).fill" => match (selected, hover) {
-            (true, _) if checked => {
+            (true, _) if hover_checked => {
                 "ghost_button: the Hovered fill while selected, the theme's answer for \
                  button.body(CHECKED|HOVER;variant=Flat).fill (spec §10, rule 0), which is \
                  button.body(HOVER;variant=Flat).fill where the rule stating it follows every \
                  rule for CHECKED"
             }
             (true, _) => {
-                "not drawn: the toggle is selected, no rule states \
-                 button.body(CHECKED;variant=Flat).fill, and ghost_button draws it as the \
+                "not drawn: the toggle is selected, no rule for CHECKED, alone or with HOVER, \
+                 states button.body(CHECKED;variant=Flat).fill, and ghost_button draws it as the \
                  connector's primary button under the pointer (spec §10, rule 0a)"
             }
             (false, false) => {
@@ -10009,7 +10036,7 @@ fn ghost_route(
             (false, true) => "ghost_button: the Hovered fill, button.body(HOVER;variant=Flat).fill",
         },
         "button.label(HOVER).color" => match (selected, icon) {
-            (true, false) if checked_label => {
+            (true, false) if hover_checked_label => {
                 "ghost_button: the Hovered text_color while selected, the theme's answer for \
                  button.label(CHECKED|HOVER;variant=Flat).color (spec §10, rule 0), which is \
                  button.label(HOVER;variant=Flat).color where the rule stating it follows every \
@@ -10020,10 +10047,10 @@ fn ghost_route(
                  label, keeps the colours it loads in, in every status"
             }
             (true, false) => {
-                "not drawn: the toggle is selected, no rule states \
-                 button.label(CHECKED;variant=Flat).color, and ghost_button letters it under the \
-                 pointer in the label at rest on a stated checked fill, else as the connector's \
-                 primary button under the pointer (spec §10, rule 0a)"
+                "not drawn: the toggle is selected, no rule for CHECKED, alone or with HOVER, \
+                 states button.label(CHECKED;variant=Flat).color, and ghost_button letters it \
+                 under the pointer in the label at rest on a stated checked fill, else as the \
+                 connector's primary button under the pointer (spec §10, rule 0a)"
             }
             (false, true) if os_icon => OS_ICON_COLOURS,
             (false, true) => ICON_FOR_LABEL,
@@ -10036,15 +10063,15 @@ fn ghost_route(
             }
         },
         "button.body(PRESSED).fill" => match (selected, pressed) {
-            (true, _) if checked => {
+            (true, _) if pressed_checked => {
                 "ghost_button: the Pressed fill while selected, the theme's answer for \
                  button.body(CHECKED|PRESSED;variant=Flat).fill (spec §10, rule 0), which is \
                  button.body(PRESSED;variant=Flat).fill where the rule stating it follows every \
                  rule for CHECKED"
             }
             (true, _) => {
-                "not drawn: the toggle is selected, no rule states \
-                 button.body(CHECKED;variant=Flat).fill, and ghost_button draws it as the \
+                "not drawn: the toggle is selected, no rule for CHECKED, alone or with PRESSED, \
+                 states button.body(CHECKED;variant=Flat).fill, and ghost_button draws it as the \
                  connector's primary button while pressed (spec §10, rule 0a)"
             }
             (false, false) => {
@@ -10057,7 +10084,7 @@ fn ghost_route(
         },
         "button.label(PRESSED).color" => match (selected, icon) {
             (_, true) if os_icon => OS_ICON_COLOURS,
-            (true, false) if checked_label => {
+            (true, false) if pressed_checked_label => {
                 "ghost_button: the Pressed text_color while selected, the theme's answer for \
                  button.label(CHECKED|PRESSED;variant=Flat).color (spec §10, rule 0), which is \
                  button.label(PRESSED;variant=Flat).color where the rule stating it follows \
@@ -10068,10 +10095,10 @@ fn ghost_route(
                  label, keeps the colours it loads in, in every status"
             }
             (true, false) => {
-                "not drawn: the toggle is selected, no rule states \
-                 button.label(CHECKED;variant=Flat).color, and ghost_button letters it pressed \
-                 in the label at rest on a stated checked fill, else as the connector's primary \
-                 button while pressed (spec §10, rule 0a)"
+                "not drawn: the toggle is selected, no rule for CHECKED, alone or with PRESSED, \
+                 states button.label(CHECKED;variant=Flat).color, and ghost_button letters it \
+                 pressed in the label at rest on a stated checked fill, else as the connector's \
+                 primary button while pressed (spec §10, rule 0a)"
             }
             _ if !pressed_label => {
                 "not drawn: button.label(PRESSED;variant=Flat).color is unstated, so \
@@ -10121,15 +10148,17 @@ fn ghost_route(
                  button.label(CHECKED;variant=Flat).color"
             }
         },
-        "button.body(HOVER).stroke.color" if hover_edge && selected && checked_edge => {
+        "button.body(HOVER).stroke.color" if hover_edge && selected && hover_checked_edge => {
             "ghost_button: the open toggle's Hovered border's colour, the theme's answer for \
-             (CHECKED|HOVER;variant=Flat), a rule stating its stroke for CHECKED, which \
+             (CHECKED|HOVER;variant=Flat), a rule for CHECKED, alone or with HOVER, stating its \
+             stroke, which \
              button.body(HOVER;variant=Flat).stroke.color gives where its rule follows every rule \
              for CHECKED, on the bounds over the padding (next_edge)"
         }
-        "button.body(PRESSED).stroke.color" if pressed_edge && selected && checked_edge => {
+        "button.body(PRESSED).stroke.color" if pressed_edge && selected && pressed_checked_edge => {
             "ghost_button: the open toggle's Pressed border's colour, the theme's answer for \
-             (CHECKED|PRESSED;variant=Flat), a rule stating its stroke for CHECKED, which \
+             (CHECKED|PRESSED;variant=Flat), a rule for CHECKED, alone or with PRESSED, stating \
+             its stroke, which \
              button.body(PRESSED;variant=Flat).stroke.color gives where its rule follows every \
              rule for CHECKED, on the bounds over the padding (next_edge)"
         }
@@ -10137,15 +10166,19 @@ fn ghost_route(
             "ghost_button: the Hovered border's colour, button.body(HOVER;variant=Flat).stroke.color, \
              on the bounds over the padding (next_edge)"
         }
-        "button.body(HOVER).stroke.color" if selected && checked_edge => {
+        "button.body(HOVER).stroke.color" if selected && hover_checked_edge => {
             "not drawn: button.body(HOVER;variant=Flat).stroke is unstated, so ghost_button \
              outlines the open toggle under the pointer by the theme's answer for \
-             (CHECKED|HOVER;variant=Flat), the stroke a rule states for CHECKED"
+             (CHECKED|HOVER;variant=Flat), the stroke a rule for CHECKED, alone or with HOVER, \
+             states"
         }
-        "button.body(PRESSED).stroke.color" if !pressed_edge && selected && checked_edge => {
+        "button.body(PRESSED).stroke.color"
+            if !pressed_edge && selected && pressed_checked_edge =>
+        {
             "not drawn: button.body(PRESSED;variant=Flat).stroke is unstated, so ghost_button \
              outlines the open toggle pressed by the theme's answer for \
-             (CHECKED|PRESSED;variant=Flat), the stroke a rule states for CHECKED"
+             (CHECKED|PRESSED;variant=Flat), the stroke a rule for CHECKED, alone or with \
+             PRESSED, states"
         }
         "button.body(HOVER).stroke.color" => {
             "not drawn: button.body(HOVER;variant=Flat).stroke is unstated, so the Hovered \
@@ -10231,13 +10264,32 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
     let own_icon = ghost_icon(state, id.strip_suffix(".icon").unwrap_or(id));
     let selected = id.strip_suffix(".icon").unwrap_or(id) == "chrome.status_bar.toggle"
         && state.side_panel_visible;
-    // What a rule states for the flat button's checked state alone, which
-    // the open toggle's states take ([`ghost_button`]).
+    // What the theme states for the flat button's checked state in the
+    // status of `home` (under the pointer, pressed, else at rest) by the
+    // spec's two queries, `CHECKED` alone or the status's query asking
+    // `CHECKED` ([`flat_checked`]), which the open toggle's states take
+    // ([`ghost_button`]).
+    let status = if home.contains("(HOVER") {
+        WidgetState::HOVER
+    } else if home.contains("(PRESSED") {
+        WidgetState::PRESSED
+    } else {
+        WidgetState::NONE
+    };
     let checked_part = r.button.body(self::flat(WidgetState::CHECKED));
-    let checked_edge = checked_part.from_state.contains(PartStated::STROKE);
-    let checked_fill = drawn_state_fill(&checked_part).is_some();
+    let in_status = r.button.body(flat_checked(status));
+    let checked_edge = checked_part
+        .from_state
+        .union(in_status.from_state)
+        .contains(PartStated::STROKE);
+    let checked_fill = drawn_state_fill(&checked_part).is_some()
+        || in_status.from_state.contains(PartStated::FILL);
     let checked_label =
-        iced_next::state_text_color_of(&r.button.label(self::flat(WidgetState::CHECKED))).is_some();
+        iced_next::state_text_color_of(&r.button.label(self::flat(WidgetState::CHECKED))).is_some()
+            || r.button
+                .label(flat_checked(status))
+                .from_state
+                .contains(TextStated::COLOR);
     // Edit, the edit-mode switch, while it is on.
     let edit_on = id == "basic.icons.edit" && state.basic_edit;
     let checked_tool_edge = r
@@ -10286,9 +10338,10 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
              iced's own flat button's (button::text) where none does"
         }
         "button.body(HOVER; variant=Flat).stroke.width" if flat && selected && checked_edge => {
-            "not drawn: the toggle is open and a rule states button.body(CHECKED;variant=Flat).stroke \
-             for CHECKED, so ghost_button outlines it under the pointer by the theme's answer for \
-             button.body(CHECKED|HOVER;variant=Flat), its width included (next_edge), which \
+            "not drawn: the toggle is open and a rule for CHECKED, alone or with HOVER, states \
+             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines it under the \
+             pointer by the theme's answer for button.body(CHECKED|HOVER;variant=Flat), its \
+             width included (next_edge), which \
              button.body(HOVER;variant=Flat).stroke.width gives where its rule follows every rule \
              for CHECKED"
         }
@@ -10320,9 +10373,10 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         | "button.body(PRESSED|CHECKED; variant=Flat).stroke.width"
             if flat && !checked_edge =>
         {
-            "not drawn: no rule states button.body(CHECKED;variant=Flat).stroke for CHECKED, so \
-             ghost_button outlines the open toggle as the closed one in the same status, by \
-             button.body(HOVER;variant=Flat).stroke and button.body(PRESSED;variant=Flat).stroke"
+            "not drawn: no rule for CHECKED, alone or with the status, states \
+             button.body(CHECKED;variant=Flat).stroke, so ghost_button outlines the open toggle \
+             as the closed one in the same status, by button.body(HOVER;variant=Flat).stroke \
+             and button.body(PRESSED;variant=Flat).stroke"
         }
         "button.body(CHECKED; variant=Flat).stroke.color"
         | "button.body(CHECKED; variant=Flat).stroke.width"
@@ -10337,35 +10391,38 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
             if flat =>
         {
             "ghost_button: the open toggle's Hovered border, the theme's answer for \
-             button.body(CHECKED|HOVER;variant=Flat).stroke.color and its width, a rule stating \
-             button.body(CHECKED;variant=Flat).stroke.color for CHECKED (next_edge)"
+             button.body(CHECKED|HOVER;variant=Flat).stroke.color and its width, a rule for \
+             CHECKED, alone or with HOVER, stating button.body(CHECKED;variant=Flat).stroke.color \
+             (next_edge)"
         }
         "button.body(PRESSED|CHECKED; variant=Flat).stroke.color"
         | "button.body(PRESSED|CHECKED; variant=Flat).stroke.width"
             if flat =>
         {
             "ghost_button: the open toggle's Pressed border, the theme's answer for \
-             button.body(CHECKED|PRESSED;variant=Flat).stroke.color and its width, a rule stating \
-             button.body(CHECKED;variant=Flat).stroke.color for CHECKED (next_edge)"
+             button.body(CHECKED|PRESSED;variant=Flat).stroke.color and its width, a rule for \
+             CHECKED, alone or with PRESSED, stating \
+             button.body(CHECKED;variant=Flat).stroke.color (next_edge)"
         }
         "button.body(HOVER|CHECKED; variant=Flat).fill"
         | "button.body(PRESSED|CHECKED; variant=Flat).fill"
             if flat && !checked_fill =>
         {
-            "not drawn: no rule states button.body(CHECKED;variant=Flat).fill for CHECKED, so \
-             ghost_button fills the open toggle as the connector's primary button in the same \
-             status (iced_next::styles::button_primary, iced's own button::primary where the \
+            "not drawn: no rule for CHECKED, alone or with the status, states \
+             button.body(CHECKED;variant=Flat).fill, so ghost_button fills the open toggle as \
+             the connector's primary button in the same status \
+             (iced_next::styles::button_primary, iced's own button::primary where the \
              connector maps none; spec §10, rule 0a)"
         }
         "button.body(HOVER|CHECKED; variant=Flat).fill" if flat => {
             "ghost_button: the open toggle's Hovered fill, the theme's answer for \
-             button.body(CHECKED|HOVER;variant=Flat).fill, a rule stating \
-             button.body(CHECKED;variant=Flat).fill for CHECKED"
+             button.body(CHECKED|HOVER;variant=Flat).fill, a rule for CHECKED, alone or with \
+             HOVER, stating button.body(CHECKED;variant=Flat).fill"
         }
         "button.body(PRESSED|CHECKED; variant=Flat).fill" if flat => {
             "ghost_button: the open toggle's Pressed fill, the theme's answer for \
-             button.body(CHECKED|PRESSED;variant=Flat).fill, a rule stating \
-             button.body(CHECKED;variant=Flat).fill for CHECKED"
+             button.body(CHECKED|PRESSED;variant=Flat).fill, a rule for CHECKED, alone or with \
+             PRESSED, stating button.body(CHECKED;variant=Flat).fill"
         }
         "button.label(HOVER|CHECKED; variant=Flat).color"
         | "button.label(PRESSED|CHECKED; variant=Flat).color"
@@ -10383,19 +10440,20 @@ fn button_home_route(state: &State, id: &str, home: &str) -> Option<String> {
         | "button.label(PRESSED|CHECKED; variant=Flat).color"
             if flat && !checked_label =>
         {
-            "not drawn: no rule states button.label(CHECKED;variant=Flat).color for CHECKED, so \
-             ghost_button letters the open toggle in the label at rest on a stated checked fill, \
-             else in the connector's primary button's label in the same status (spec §10, rule 0a)"
+            "not drawn: no rule for CHECKED, alone or with the status, states \
+             button.label(CHECKED;variant=Flat).color, so ghost_button letters the open toggle \
+             in the label at rest on a stated checked fill, else in the connector's primary \
+             button's label in the same status (spec §10, rule 0a)"
         }
         "button.label(HOVER|CHECKED; variant=Flat).color" if flat => {
             "ghost_button: the open toggle's Hovered text_color, the theme's answer for \
-             button.label(CHECKED|HOVER;variant=Flat).color, a rule stating \
-             button.label(CHECKED;variant=Flat).color for CHECKED"
+             button.label(CHECKED|HOVER;variant=Flat).color, a rule for CHECKED, alone or with \
+             HOVER, stating button.label(CHECKED;variant=Flat).color"
         }
         "button.label(PRESSED|CHECKED; variant=Flat).color" if flat => {
             "ghost_button: the open toggle's Pressed text_color, the theme's answer for \
-             button.label(CHECKED|PRESSED;variant=Flat).color, a rule stating \
-             button.label(CHECKED;variant=Flat).color for CHECKED"
+             button.label(CHECKED|PRESSED;variant=Flat).color, a rule for CHECKED, alone or with \
+             PRESSED, stating button.label(CHECKED;variant=Flat).color"
         }
         "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.color"
         | "button.body(FOCUS_VISIBLE|CHECKED; variant=Flat).stroke.width"
@@ -12235,7 +12293,8 @@ fn switch_route(home: &str) -> Option<String> {
         }
         "switch.label(DISABLED|CHECKED).color" => {
             "switch_label_colour: the label's colour, switch.label(DISABLED|CHECKED).color \
-             where a rule states switch.label(DISABLED).color, else switch.label(CHECKED).color \
+             where the theme states it for DISABLED, by a rule for DISABLED alone or for \
+             DISABLED with CHECKED, else switch.label(CHECKED).color \
              times switch.disabled_opacity where stated"
         }
         "switch.track(NONE).min_size[0]" => {
@@ -12279,8 +12338,9 @@ fn switch_route(home: &str) -> Option<String> {
         }
         "switch.disabled_opacity" => {
             "styles::toggler: the Disabled colours' alpha times switch.disabled_opacity; \
-             switch_label_colour: the label faded alike where no rule states \
-             switch.label(DISABLED).color"
+             switch_label_colour: the label faded alike where the theme states no \
+             switch.label(DISABLED).color for DISABLED, by a rule for DISABLED or for \
+             DISABLED with the switch's other state"
         }
         _ => return None,
     };
@@ -17003,9 +17063,10 @@ fn switch_query(on: bool, enabled: bool) -> WidgetState {
 }
 
 /// The colour of the label of a switch in `state` on the installed 0.8.0
-/// theme: `switch.label(state).color`. Disabled where no rule states
-/// `switch.label(DISABLED).color` (asked with that flag alone, spec §10
-/// rule 0a), the enabled label's colour faded with the switch by
+/// theme: `switch.label(state).color`. Disabled where the theme states no
+/// `switch.label(DISABLED).color` for `DISABLED` by the spec's two queries
+/// (`switch.label(DISABLED)`, or `switch.label(state)` asking `DISABLED`;
+/// spec §2, `from_state`; §10 rule 0a), the enabled label's colour faded with the switch by
 /// `switch.disabled_opacity` where stated, which iced's toggler, whose
 /// label keeps its colour disabled (iced_widget 0.14.2 `src/toggler.rs`,
 /// `default`: `text_color: None`), does not fade by itself; iced's own text
@@ -17016,6 +17077,10 @@ fn switch_label_colour(r: &native_theme::next::ResolvedTheme, state: WidgetState
     let ruled = s
         .label(WidgetState::DISABLED)
         .from_state
+        .union(
+            s.label(StyleQuery::new(state).asking(WidgetState::DISABLED))
+                .from_state,
+        )
         .contains(TextStated::COLOR);
     if disabled && !ruled {
         let enabled = state.difference(WidgetState::DISABLED);
@@ -17781,22 +17846,33 @@ fn next_switch_label_rows(
     } else {
         "iced's own text colour: switch.label(NONE).color unstated"
     };
-    let disabled = if s
+    let alone = s
         .label(WidgetState::DISABLED)
         .from_state
-        .contains(TextStated::COLOR)
-    {
-        "switch.label(DISABLED).color".to_owned()
-    } else {
-        match s.disabled_opacity {
-            Some(opacity) => format!(
-                "the enabled colour at {opacity} opacity, switch.disabled_opacity: no rule \
-                 states switch.label(DISABLED).color"
-            ),
-            None => "the enabled colour: no rule states switch.label(DISABLED).color, and \
-                     switch.disabled_opacity is unstated"
-                .to_owned(),
-        }
+        .contains(TextStated::COLOR);
+    let checked = s
+        .label(
+            StyleQuery::new(WidgetState::DISABLED | WidgetState::CHECKED)
+                .asking(WidgetState::DISABLED),
+        )
+        .from_state
+        .contains(TextStated::COLOR);
+    let unruled = match s.disabled_opacity {
+        Some(opacity) => format!(
+            "the enabled colour at {opacity} opacity, switch.disabled_opacity: no rule \
+             states switch.label(DISABLED).color"
+        ),
+        None => "the enabled colour: no rule states switch.label(DISABLED).color, and \
+                 switch.disabled_opacity is unstated"
+            .to_owned(),
+    };
+    let disabled = match (alone, checked) {
+        (true, _) => "switch.label(DISABLED).color".to_owned(),
+        (false, true) => format!(
+            "switch.label(DISABLED|CHECKED).color while checked, a rule for DISABLED with \
+             CHECKED stating it; not checked, {unruled}"
+        ),
+        (false, false) => unruled,
     };
     let side = match (s.label_side, toggler) {
         (Some(native_theme::next::LabelSide::Leading), false) => {
@@ -33551,6 +33627,75 @@ mod tests {
         }
     }
 
+    /// A disabled checked switch's label takes a colour the theme states
+    /// for DISABLED by either of the spec's two queries (spec §2,
+    /// `from_state`; [`switch_label_colour`]): on every preset of the 0.8.0
+    /// model, its disabled label rules first stated away (a rule that
+    /// requires no state stating the label at rest, which clears the
+    /// `from_state` bit of `switch.label(DISABLED)`), at a disabled opacity
+    /// of 0.5, (i) a rule for `DISABLED | CHECKED` alone states the label
+    /// of the disabled checked switch, drawn as stated; (ii) a rule for
+    /// `CHECKED` alone states it for no `DISABLED`, so the disabled checked
+    /// label is that colour faded by the opacity
+    /// ([`unruled_disabled_label_ink`]).
+    #[test]
+    fn a_disabled_checked_switch_label_takes_a_two_flag_rule() -> Result<(), String> {
+        use native_theme::next::{SwitchRule, TextPatch, ThemePatch};
+        let patch = |states: &str, colour: &str| {
+            ThemePatch::from_toml(&format!(
+                "[[widgets.switch.rules]]\nstates = [{states}]\nlabel.color = \"{colour}\"\n"
+            ))
+            .map_err(|error| format!("the patch for {states}: {error:?}"))
+        };
+        let both = patch("\"disabled\", \"checked\"", "#13579b")?;
+        let checked = patch("\"checked\"", "#2468ac")?;
+        let state = switch_query(true, false);
+        let mut faults = Vec::new();
+        let mut seen = 0;
+        for (label, mut r) in next_combinations() {
+            let rest = r.switch.label(WidgetState::NONE).color;
+            r.apply_patch(
+                &ThemePatch::new().switch(SwitchRule::new().label(TextPatch::new().color(rest))),
+            );
+            r.switch.disabled_opacity = Some(0.5);
+            if r.switch
+                .label(WidgetState::DISABLED)
+                .from_state
+                .contains(TextStated::COLOR)
+            {
+                faults.push(format!("{label}: the disabled label rule stays patched"));
+                continue;
+            }
+            seen += 1;
+            let mut two = r.clone();
+            two.apply_patch(&both);
+            let ink = switch_label_colour(&two, state);
+            if ink != LabelInk::Stated(Color::from_rgb8(0x13, 0x57, 0x9b)) {
+                faults.push(format!(
+                    "{label}: a DISABLED|CHECKED rule's label drawn {ink:?}, not as stated"
+                ));
+            }
+            let mut one = r;
+            one.apply_patch(&checked);
+            let ink = switch_label_colour(&one, state);
+            let want =
+                unruled_disabled_label_ink(Some(Color::from_rgb8(0x24, 0x68, 0xac)), Some(0.5));
+            if ink != want {
+                faults.push(format!(
+                    "{label}: a CHECKED rule's label, disabled, drawn {ink:?}, not {want:?}"
+                ));
+            }
+        }
+        if seen == 0 {
+            faults.push("no preset combination read".to_owned());
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
     /// The Range page lays itself out on the installed 0.8.0 theme alone
     /// ([`view_range`]): kde-breeze with, on the 0.8.0 theme only, a 13 px
     /// progress bar girth, a 30 px slider handle, a body on a 23 px line, a
@@ -37197,11 +37342,13 @@ mod tests {
     /// lettered in the stated checked label, else in the label at rest;
     /// where no rule states the fill, the connector's primary button's fill
     /// and label in the same status, a stated checked label laid over; never
-    /// the pressed look. Where a rule states the checked fill for `CHECKED`
-    /// alone, filled under the pointer and pressed in the theme's answer for
-    /// `(CHECKED | HOVER;variant=Flat)` and `(CHECKED | PRESSED;variant=Flat)`,
-    /// and where one states the checked label so, lettered in theirs. Where a
-    /// rule states `button.body(CHECKED;variant=Flat).stroke`, outlined at
+    /// the pressed look. Where the theme states the checked fill for
+    /// `CHECKED` by the spec's two queries (`CHECKED` alone, or the status's
+    /// query asking `CHECKED`, [`flat_checked`]), filled under the pointer and
+    /// pressed in the theme's answer for `(CHECKED | HOVER;variant=Flat)` and
+    /// `(CHECKED | PRESSED;variant=Flat)`, and where it states the checked
+    /// label so, lettered in theirs. Where it states
+    /// `button.body(CHECKED;variant=Flat).stroke` so, outlined at
     /// rest by it, under the pointer and pressed by `(CHECKED | HOVER)`'s and
     /// `(CHECKED | PRESSED)`'s, as iced draws each over the checked fill
     /// ([`next_edge`]); else as the unchecked button in that status; rounded
@@ -37266,14 +37413,21 @@ mod tests {
                         button::Status::Active | button::Status::Disabled => WidgetState::NONE,
                     };
                     let checked_in = WidgetState::CHECKED | state;
-                    let state_label = checked_label.map(|checked| {
-                        iced_next::text_color_of(&b.label(flat(checked_in))).unwrap_or(checked)
-                    });
-                    let expected = match checked {
-                        Some(fill) => {
+                    let (asked, asked_label) = (
+                        b.body(flat_checked(state)).from_state,
+                        b.label(flat_checked(state)).from_state,
+                    );
+                    let state_label = (checked_label.is_some()
+                        || asked_label.contains(TextStated::COLOR))
+                    .then(|| iced_next::text_color_of(&b.label(flat(checked_in))).or(checked_label))
+                    .flatten();
+                    let state_fill = (checked.is_some() || asked.contains(PartStated::FILL))
+                        .then(|| drawn_fill(&b.body(flat(checked_in))).or(checked))
+                        .flatten();
+                    let expected = match state_fill {
+                        Some(state_fill) => {
                             stated += 1;
-                            let state_fill = drawn_fill(&b.body(flat(checked_in))).unwrap_or(fill);
-                            if state_fill != fill && !is_patched {
+                            if checked.is_some_and(|fill| state_fill != fill) && !is_patched {
                                 match (label.split('/').next(), status) {
                                     (Some("kde-breeze"), button::Status::Pressed) => {
                                         breeze_pressed += 1;
@@ -37314,7 +37468,7 @@ mod tests {
                         Some(iced::Background::Color(fill)) => fill,
                         _ => Color::TRANSPARENT,
                     };
-                    let expected = checked_stroke
+                    let expected = (checked_stroke || asked.contains(PartStated::STROKE))
                         .then(|| next_edge(&b.body(flat(checked_in)), under))
                         .flatten()
                         .unwrap_or(unchecked);

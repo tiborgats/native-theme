@@ -941,6 +941,56 @@ fn a_disabled_check_box_is_stroked_as_stated_else_iceds_own() -> TestResult {
     Ok(())
 }
 
+/// A disabled checked box's label is the one a rule states for `DISABLED`
+/// by spec §2's two queries (`checkbox.label(DISABLED)`, or
+/// `checkbox.label(DISABLED|CHECKED)` asking `DISABLED`), read at
+/// `DISABLED|CHECKED`; else the disabled box's, read at `DISABLED`. On
+/// every preset with the label first stated with no state, so the query at
+/// `DISABLED` alone lacks its bit: (i) a rule for `DISABLED|CHECKED` alone
+/// letters the checked box and leaves the unchecked one, (ii) a rule for
+/// `CHECKED` alone states nothing for `DISABLED`. The box is not faded here
+/// (no disabled opacity).
+#[test]
+fn a_rule_for_disabled_and_checked_letters_the_disabled_checked_box() -> TestResult {
+    use iced_widget::checkbox::Status;
+    let base = ThemePatch::new().checkbox(CheckboxRule::new().label(TextPatch::new().color(LABEL)));
+    let ruled = |states| {
+        base.clone().checkbox(
+            CheckboxRule::new()
+                .states(states)
+                .label(TextPatch::new().color(DISTINCT)),
+        )
+    };
+    let both = ruled(WidgetState::DISABLED | WidgetState::CHECKED);
+    let checked = ruled(WidgetState::CHECKED);
+    for (patch, case, on) in [
+        (&both, "(i)", to_color(DISTINCT)),
+        (&checked, "(ii)", to_color(LABEL)),
+    ] {
+        for (preset, mut r) in every_preset_with(patch) {
+            assert!(
+                !r.checkbox
+                    .label(WidgetState::DISABLED)
+                    .from_state
+                    .contains(TextStated::COLOR),
+                "{case} {preset:?}: the bit at DISABLED alone stays set"
+            );
+            r.checkbox.disabled_opacity = None;
+            let theme = to_theme(&r)?;
+            let style = super::checkbox(&r)?;
+            for (is_checked, expected) in [(false, to_color(LABEL)), (true, on)] {
+                let label = style(&theme, Status::Disabled { is_checked }).text_color;
+                assert_eq!(
+                    label,
+                    Some(expected),
+                    "{case} {preset:?} checked {is_checked}"
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
 /// A vertical slider's rail is as wide as the vertical track
 /// (`slider.track(NONE; orientation=Vertical).min_size[0]`), a horizontal
 /// one's as tall as the horizontal track (`min_size[1]`), each from its own

@@ -2198,6 +2198,10 @@ pub(crate) struct CheckboxSource {
     /// status (spec §10, rule 0); the 0.7.2 model states each.
     pub label: Option<Color>,
     pub disabled_label: Option<Color>,
+    /// The checked disabled box's label: on the 0.8.0 model the one a rule
+    /// for `DISABLED` states at `DISABLED|CHECKED` by spec §2's two
+    /// queries, else the unchecked disabled box's.
+    pub checked_disabled_label: Option<Color>,
     pub border_width: Option<f32>,
     pub border_radius: Option<f32>,
 }
@@ -2219,6 +2223,7 @@ impl CheckboxSource {
             disabled_mark: None,
             label: Some(to_color(c.font.color)),
             disabled_label: Some(to_color(c.disabled_text_color)),
+            checked_disabled_label: Some(to_color(c.disabled_text_color)),
             border_width: Some(c.border.line_width),
             border_radius: Some(c.border.corner_radius),
         }
@@ -2276,6 +2281,7 @@ pub(crate) fn checkbox_from(
     let disabled_mark = c.disabled_mark;
     let label = c.label;
     let disabled_label = c.disabled_label;
+    let checked_disabled_label = c.checked_disabled_label;
 
     let border_width = c.border_width;
     let border_radius = c.border_radius.map(Radius::new);
@@ -2330,10 +2336,14 @@ pub(crate) fn checkbox_from(
             // `checkbox.disabled_opacity` as one widget over the ground: the
             // border and the mark on the fill.
             Status::Disabled { is_checked } => {
-                let (stated_line, disabled) = if is_checked {
-                    (checked_disabled_border, checked_disabled)
+                let (stated_line, disabled, text) = if is_checked {
+                    (
+                        checked_disabled_border,
+                        checked_disabled,
+                        checked_disabled_label,
+                    )
                 } else {
-                    (disabled_border, disabled)
+                    (disabled_border, disabled, disabled_label)
                 };
                 let (own_fill, own_rest, _) = own(Status::Active { is_checked });
                 let (_, own_disabled, _) = own(status);
@@ -2353,8 +2363,7 @@ pub(crate) fn checkbox_from(
                 (
                     fade(ground, background),
                     fade(fill, border.color),
-                    disabled_label
-                        .map(|label| fade(ground, label))
+                    text.map(|label| fade(ground, label))
                         .or(own_style.text_color),
                     fade(fill, mark),
                     border.width,

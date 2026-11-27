@@ -135,7 +135,8 @@ moves = [
 
 [homes."button.body(HOVER|CHECKED).fill"]
 moves = [
-  { row = "styles::button_toggle.background", statuses = ["(true, Hovered)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Hovered)"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(HOVER|CHECKED; variant=Flat).fill"]
@@ -237,7 +238,8 @@ moves = [
 
 [homes."button.body(PRESSED|CHECKED).fill"]
 moves = [
-  { row = "styles::button_toggle.background", statuses = ["(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Pressed)"] },
+  { row = "styles::button_toggle.border", statuses = ["(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(PRESSED|CHECKED; variant=Flat).fill"]
@@ -312,7 +314,7 @@ moves = [
 
 [homes."button.label(HOVER|CHECKED).color"]
 moves = [
-  { row = "styles::button_toggle.text_color", statuses = ["(true, Hovered)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Hovered)"] },
 ]
 
 [homes."button.label(HOVER|CHECKED; variant=Flat).color"]
@@ -356,7 +358,7 @@ moves = [
 
 [homes."button.label(PRESSED|CHECKED).color"]
 moves = [
-  { row = "styles::button_toggle.text_color", statuses = ["(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Pressed)"] },
 ]
 
 [homes."button.label(PRESSED|CHECKED; variant=Flat).color"]
@@ -388,6 +390,11 @@ moves = [
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["macos-monterey/dark"] },
 ]
 
+[homes."checkbox.checkmark(DISABLED|CHECKED).color"]
+moves = [
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"] },
+]
+
 [homes."checkbox.indicator(CHECKED).fill"]
 leaves = ["checkbox.checked_background"]
 moves = [
@@ -401,7 +408,7 @@ moves = [
 leaves = ["checkbox.border.color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }", "Hovered { is_checked: true }"] },
-  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."checkbox.indicator(DISABLED).fill"]
@@ -426,10 +433,7 @@ moves = [
 
 [homes."checkbox.indicator(DISABLED|CHECKED).stroke.color"]
 moves = [
-  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark"] },
-]
-excepted = [
-  { row = "styles::checkbox.border", preset = "kde-breeze", why = "kde-breeze states a disabled checked box's frame for DISABLED|CHECKED, Breeze's Disabled Highlight (`indicator` in native-theme/src/next/presets/kde.rs, switch_disabled_on_frame), and no stroke for DISABLED alone, so the border reads it only where a rule for DISABLED alone states the stroke (`flagged`, src/next/borders.rs; spec §2, `from_state`): a colour stated at the home does not move it on kde-breeze, the two-flag gap, the spec question SQ1, not a connector fix" },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"] },
 ]
 
 [homes."checkbox.indicator(HOVER).fill"]
@@ -444,6 +448,12 @@ moves = [
 leaves = ["checkbox.hover_border_color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
+]
+
+[homes."checkbox.indicator(HOVER|CHECKED).fill"]
+moves = [
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: true }"] },
+  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."checkbox.indicator(HOVER|CHECKED).stroke.color"]
@@ -471,6 +481,11 @@ moves = [
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }"] },
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
+]
+
+[homes."checkbox.label(DISABLED|CHECKED).color"]
+moves = [
+  { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: true }"] },
 ]
 
 [homes."checkbox.label(NONE).color"]
@@ -665,7 +680,7 @@ moves = [
   { row = "styles::aw::selection_list.background", statuses = ["Focused", "Pressed"] },
   { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
-  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
@@ -1270,10 +1285,16 @@ moves = [
   { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
 ]
 
+[homes."radio.indicator(HOVER|CHECKED).fill"]
+moves = [
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: true }"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+]
+
 [homes."radio.indicator(HOVER|CHECKED).stroke.color"]
 leaves = ["checkbox.hover_border_color"]
 moves = [
-  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["material-3/light", "material-3/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"] },
 ]
 
 [homes."radio.indicator(NONE).fill"]
@@ -1685,7 +1706,7 @@ moves = [
 [homes."switch.thumb(DISABLED|CHECKED).fill"]
 leaves = ["switch.disabled_thumb_color"]
 moves = [
-  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light"] },
+  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: true }"] },
 ]
 
 [homes."switch.thumb(HOVER).fill"]
@@ -1694,10 +1715,9 @@ moves = [
 ]
 
 [homes."switch.thumb(HOVER|CHECKED).fill"]
-named = "UNREAD_HOMES"
-entry = "switch.thumb(HOVER|CHECKED).fill"
-kind = "ruled"
-why = "read only where a rule for the first flag alone states the property (`flagged`, src/next/borders.rs; spec §2, `from_state`), which no platform preset does; a rule for both flags alone stays unseen by that query, the two-flag gap SQ1 settles"
+moves = [
+  { row = "styles::toggler.foreground", statuses = ["Hovered { is_toggled: true }"] },
+]
 
 [homes."switch.thumb(NONE).fill"]
 leaves = ["switch.thumb_background", "switch.unchecked_thumb_background"]
@@ -1747,7 +1767,7 @@ moves = [
 [homes."switch.track(DISABLED|CHECKED).stroke.color"]
 leaves = ["switch.disabled_checked_track_border_color"]
 moves = [
-  { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: true }"] },
 ]
 
 [homes."switch.track(HOVER).fill"]
@@ -1946,7 +1966,7 @@ moves = [
 
 [homes."toolbar.button(HOVER|CHECKED).fill"]
 moves = [
-  { row = "styles::toolbar_button.background", statuses = ["(true, Hovered)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toolbar_button.background", statuses = ["(true, Hovered)"] },
 ]
 
 [homes."toolbar.button(HOVER|CHECKED).stroke.color"]
@@ -1983,7 +2003,7 @@ moves = [
 
 [homes."toolbar.button(PRESSED|CHECKED).fill"]
 moves = [
-  { row = "styles::toolbar_button.background", statuses = ["(true, Pressed)"], except = ["material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toolbar_button.background", statuses = ["(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(PRESSED|CHECKED).stroke.color"]
@@ -2056,7 +2076,7 @@ moves = [
 
 [homes."toolbar.button_label(HOVER|CHECKED).color"]
 moves = [
-  { row = "styles::toolbar_button.text_color", statuses = ["(true, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Hovered)"] },
 ]
 
 [homes."toolbar.button_label(NONE).color"]
@@ -2077,7 +2097,7 @@ moves = [
 
 [homes."toolbar.button_label(PRESSED|CHECKED).color"]
 moves = [
-  { row = "styles::toolbar_button.text_color", statuses = ["(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Pressed)"] },
 ]
 
 [homes."tooltip.panel.fill"]
@@ -2403,7 +2423,7 @@ homes = ["button.label(DISABLED).color", "colors.success.foreground"]
 homes = ["button.body(CHECKED).fill", "button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(HOVER|CHECKED).fill", "button.body(NONE).fill", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill", "button.body(PRESSED|CHECKED).fill"]
 
 [rows."styles::button_toggle.border"]
-homes = ["button.body(CHECKED).fill", "button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(HOVER).stroke.color", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill", "button.body(PRESSED).stroke.color"]
+homes = ["button.body(CHECKED).fill", "button.body(DISABLED).fill", "button.body(HOVER).fill", "button.body(HOVER).stroke.color", "button.body(HOVER|CHECKED).fill", "button.body(NONE).fill", "button.body(NONE).stroke.color", "button.body(NONE; variant=Primary).fill", "button.body(PRESSED).fill", "button.body(PRESSED).stroke.color", "button.body(PRESSED|CHECKED).fill"]
 
 [rows."styles::button_toggle.text_color"]
 homes = ["button.label(CHECKED).color", "button.label(DISABLED).color", "button.label(HOVER).color", "button.label(HOVER|CHECKED).color", "button.label(NONE).color", "button.label(NONE; variant=Primary).color", "button.label(PRESSED).color", "button.label(PRESSED|CHECKED).color"]
@@ -2418,16 +2438,16 @@ homes = ["button.body(DISABLED).fill", "button.body(HOVER).stroke.color", "butto
 homes = ["button.label(DISABLED).color", "colors.warning.foreground"]
 
 [rows."styles::checkbox.background"]
-homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(HOVER).fill", "checkbox.indicator(NONE).fill", "colors.accent.fill", "colors.view.background", "colors.window.background"]
+homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER|CHECKED).fill", "checkbox.indicator(NONE).fill", "colors.accent.fill", "colors.view.background", "colors.window.background"]
 
 [rows."styles::checkbox.border"]
-homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED).stroke.color", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(DISABLED|CHECKED).stroke.color", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(NONE).fill", "checkbox.indicator(NONE).stroke.color", "colors.view.background", "colors.window.background"]
+homes = ["checkbox.indicator(CHECKED).fill", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(DISABLED).fill", "checkbox.indicator(DISABLED).stroke.color", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(DISABLED|CHECKED).stroke.color", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).fill", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(NONE).fill", "checkbox.indicator(NONE).stroke.color", "colors.view.background", "colors.window.background"]
 
 [rows."styles::checkbox.icon_color"]
-homes = ["checkbox.checkmark(CHECKED).color", "checkbox.label(DISABLED).color", "colors.window.background"]
+homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(DISABLED|CHECKED).color", "checkbox.label(DISABLED).color", "colors.window.background"]
 
 [rows."styles::checkbox.text_color"]
-homes = ["checkbox.label(DISABLED).color", "checkbox.label(NONE).color", "colors.window.background"]
+homes = ["checkbox.label(DISABLED).color", "checkbox.label(DISABLED|CHECKED).color", "checkbox.label(NONE).color", "colors.window.background"]
 
 [rows."styles::container_card.background"]
 homes = ["card.container(NONE).fill"]
@@ -2508,10 +2528,10 @@ homes = ["progress_bar.fill(NONE).fill"]
 homes = ["progress_bar.track(NONE).fill", "progress_bar.track(NONE).stroke.color"]
 
 [rows."styles::radio.background"]
-homes = ["colors.accent.fill", "colors.window.background", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER).fill", "radio.indicator(NONE).fill"]
+homes = ["colors.accent.fill", "colors.window.background", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER).fill", "radio.indicator(HOVER|CHECKED).fill", "radio.indicator(NONE).fill"]
 
 [rows."styles::radio.border_color"]
-homes = ["colors.accent.fill", "colors.window.background", "radio.indicator(CHECKED).fill", "radio.indicator(CHECKED).stroke.color", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(NONE).fill", "radio.indicator(NONE).stroke.color"]
+homes = ["colors.accent.fill", "colors.window.background", "radio.indicator(CHECKED).fill", "radio.indicator(CHECKED).stroke.color", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(HOVER|CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(NONE).fill", "radio.indicator(NONE).stroke.color"]
 
 [rows."styles::radio.dot_color"]
 homes = ["radio.dot(CHECKED).fill"]
@@ -2646,7 +2666,7 @@ homes = ["colors.window.background", "switch.track(CHECKED).fill", "switch.track
 homes = ["switch.track(CHECKED).stroke.color", "switch.track(DISABLED).fill", "switch.track(DISABLED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(HOVER).fill", "switch.track(NONE).fill", "switch.track(NONE).stroke.color"]
 
 [rows."styles::toggler.foreground"]
-homes = ["colors.accent.foreground", "colors.view.background", "colors.window.background", "switch.thumb(CHECKED).fill", "switch.thumb(DISABLED).fill", "switch.thumb(DISABLED|CHECKED).fill", "switch.thumb(HOVER).fill", "switch.thumb(NONE).fill"]
+homes = ["colors.accent.foreground", "colors.view.background", "colors.window.background", "switch.thumb(CHECKED).fill", "switch.thumb(DISABLED).fill", "switch.thumb(DISABLED|CHECKED).fill", "switch.thumb(HOVER).fill", "switch.thumb(HOVER|CHECKED).fill", "switch.thumb(NONE).fill"]
 
 [rows."styles::toggler.foreground_border_color"]
 homes = ["switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.color"]
