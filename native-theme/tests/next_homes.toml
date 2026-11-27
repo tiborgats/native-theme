@@ -482,6 +482,10 @@ hand = true
 [[row]]
 key = "button.background_color"
 homes = ["button.body(NONE).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2 states $button_color laid over the window, opaque (#e6e6e7 / #38383c), and its hovered, pressed and checked fills as uncited solids; 0.8.0 states the push button's six fills in one form, libadwaita's own table: the window text at its alpha, translucent over what lies behind as libadwaita's background-color is"
+difference_citation = "adwaita: _buttons.scss:1 ($button_color: color-mix(in srgb, currentColor 10%, transparent)), :28-29 (%button_basic_raised's background-color) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill; docs/platform-facts.md §2.3 (background_color)"
+difference_values = { "adwaita" = { light = "#00000614", dark = "#ffffff1a" } }
 
 [[row]]
 key = "button.primary_background"
@@ -514,10 +518,10 @@ homes = ["button.disabled_opacity"]
 [[row]]
 key = "button.hover_background"
 homes = ["button.body(HOVER).fill"]
-difference_presets = ["macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2's #e0e0e5 / #444446 is uncited (macos-tahoe's 'no macOS 26 source'); 0.8.0 states the rest fill for HOVER: hover draws nothing on a push button (spec §2, from_state)"
-difference_citation = "docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis); every hovered push button differs from its normal capture in 0 pixels (os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, button-pass/probe.toml `…hovered.regular-*.diff_from_normal`)"
-difference_values = { "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" } }
+difference_presets = ["macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2's #e0e0e5 / #444446 is uncited (macos-tahoe's 'no macOS 26 source'); 0.8.0 states the rest fill for HOVER: hover draws nothing on a push button (spec §2, from_state); adwaita: 0.7.2's uncited #d5d5d5 / #464649; 0.8.0 states libadwaita's own table, $button_hover_color, the window text at 15 %, translucent"
+difference_citation = "docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis); every hovered push button differs from its normal capture in 0 pixels (os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, button-pass/probe.toml `…hovered.regular-*.diff_from_normal`); adwaita: _buttons.scss:2 ($button_hover_color: color-mix(in srgb, currentColor 15%, transparent)), :35-36 (&:hover) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill [hover]"
+difference_values = { "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
 
 [[row]]
 key = "button.hover_text_color"
@@ -538,10 +542,10 @@ homes = ["button.label(DISABLED).color"]
 [[row]]
 key = "button.active_background"
 homes = ["button.body(PRESSED).fill"]
-difference_presets = ["macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2's macos-monterey #d6d6db / #4e4e50 is a soft option (uncited), and macos-tahoe leaves it unset (the rest fill); 0.8.0 states the measured pressed fill"
-difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.fill` states [pressed], macos-monterey #f0f0f0ff / #ffffff5c (os-probe run 41006842699, macOS 15), macos-tahoe #0000002a / #ffffff2a (the same run, macOS 26, layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.fill`)"
-difference_values = { "macos-monterey" = { light = "#f0f0f0", dark = "#ffffff5c" }, "macos-tahoe" = { light = "#0000002a", dark = "#ffffff2a" } }
+difference_presets = ["macos-monterey", "macos-tahoe", "adwaita"]
+difference_reason = "0.7.2's macos-monterey #d6d6db / #4e4e50 is a soft option (uncited), and macos-tahoe leaves it unset (the rest fill); 0.8.0 states the measured pressed fill; adwaita: 0.7.2's uncited #c8c8c8 / #2e2e32; 0.8.0 states libadwaita's own table, $button_active_color, the window text at 30 %, translucent"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.fill` states [pressed], macos-monterey #f0f0f0ff / #ffffff5c (os-probe run 41006842699, macOS 15), macos-tahoe #0000002a / #ffffff2a (the same run, macOS 26, layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.fill`); adwaita: _buttons.scss:3 ($button_active_color: color-mix(in srgb, currentColor 30%, transparent)), :39-41 (&.keyboard-activating, &:active) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill [pressed]"
+difference_values = { "macos-monterey" = { light = "#f0f0f0", dark = "#ffffff5c" }, "macos-tahoe" = { light = "#0000002a", dark = "#ffffff2a" }, "adwaita" = { light = "#0000063d", dark = "#ffffff4d" } }
 
 [[row]]
 key = "button.disabled_background"
@@ -550,10 +554,10 @@ homes = ["button.body(DISABLED).fill"]
 [[row]]
 key = "button.checked_background"
 homes = ["button.body(CHECKED).fill"]
-difference_presets = ["macos-tahoe", "ios-13"]
-difference_reason = "0.7.2 leaves it unset (a checked button drawn at rest); 0.8.0 states the measured checked toggle (spec §10, rule 0a: which state looks like which is the theme's to state): on macos-tahoe the default accent mixed with #000000 (light) or #ffffff (dark) by 0.025 in sRGB, on ios-13 UIKit's selected toggle under the default tint"
-difference_citation = "docs/facts/macos/button.toml and docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, the button.body.fill facts for `checked` on `toggle` (os-probe run 41006842699, os-probe-macos-26/tiebreak-derivations.toml, derivation.checked_fill_*; ios-host run 41020880059, ios-host-macos-15/analysis.toml, cells.*.gray.*.selected.fill); docs/platform-facts.md §2.3 (checked_background)"
-difference_values = { "macos-tahoe" = { light = "#0077f9", dark = "#067dff" }, "ios-13" = { light = "#007aff2e", dark = "#0a84ff40" } }
+difference_presets = ["macos-tahoe", "ios-13", "adwaita"]
+difference_reason = "0.7.2 leaves it unset (a checked button drawn at rest); 0.8.0 states the measured checked toggle (spec §10, rule 0a: which state looks like which is the theme's to state): on macos-tahoe the default accent mixed with #000000 (light) or #ffffff (dark) by 0.025 in sRGB, on ios-13 UIKit's selected toggle under the default tint; adwaita: 0.7.2's uncited #c8c8c8 / #2e2e32, its pressed solid; 0.8.0 states libadwaita's own table, $button_checked_color, the window text at 30 %, translucent"
+difference_citation = "docs/facts/macos/button.toml and docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, the button.body.fill facts for `checked` on `toggle` (os-probe run 41006842699, os-probe-macos-26/tiebreak-derivations.toml, derivation.checked_fill_*; ios-host run 41020880059, ios-host-macos-15/analysis.toml, cells.*.gray.*.selected.fill); docs/platform-facts.md §2.3 (checked_background); adwaita: _buttons.scss:4 ($button_checked_color: color-mix(in srgb, currentColor 30%, transparent)), :44-45 (&:checked) at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd, button.body.fill [checked]"
+difference_values = { "macos-tahoe" = { light = "#0077f9", dark = "#067dff" }, "ios-13" = { light = "#007aff2e", dark = "#0a84ff40" }, "adwaita" = { light = "#0000063d", dark = "#ffffff4d" } }
 
 [[row]]
 key = "button.checked_text_color"

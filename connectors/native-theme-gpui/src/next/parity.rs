@@ -634,6 +634,49 @@ const DIFFERENCES: &[Difference] = &[
                  other leaf of the theme is equal",
     },
     Difference {
+        leaf: BUTTON_FILLS,
+        presets: &["adwaita"],
+        reason: "0.7.2 states button.background_color as $button_color laid over the window, \
+                 opaque (#e6e6e7 / #38383c), and button.hover_background and \
+                 active_background as uncited solids; the 0.8.0 adwaita states the push \
+                 button's fills in one form, libadwaita's own table, the window text at \
+                 `$button_color` 10 %, `$button_hover_color` 15 % and `$button_active_color` \
+                 30 %, translucent (_buttons.scss:1-6, :28-55 at libadwaita 1.10.0; \
+                 docs/facts/gnome/button.toml on v0.8.0-rc1 at 78ee0efd; \
+                 native-theme/tests/next_homes.toml, rows button.background_color, \
+                 button.hover_background and button.active_background, listed differences). \
+                 So secondary, button, button_secondary and skeleton are button.body(NONE)'s \
+                 fill, button_hover and button_secondary_hover button.body(HOVER)'s, \
+                 button_active and button_secondary_active button.body(PRESSED)'s, each the \
+                 whole fill of its state (spec §9, step 2), and group_box the rest fill laid \
+                 over its background as the connector lays it \
+                 (crate::colors::group_box_opacity); \
+                 their tokens and their stored config strings; every other leaf of the theme \
+                 is equal",
+    },
+    Difference {
+        leaf: "geometry::button_disabled",
+        presets: &["adwaita"],
+        reason: "the disabled button's refinement fills with button.body(DISABLED)'s fill, \
+                 which the 0.8.0 adwaita states as the rest fill, libadwaita's \
+                 `$button_color`, the window text at 10 %, translucent (_buttons.scss:1, \
+                 :28-29, `&:disabled { filter: Opacity(...) }` at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row button.background_color, a listed \
+                 difference), where 0.7.2's is that fill laid over the window, opaque; \
+                 every other field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::button_checked",
+        presets: &["adwaita"],
+        reason: "the checked button's refinement fills with button.body(CHECKED)'s fill, \
+                 which the 0.8.0 adwaita states from libadwaita's own table, \
+                 `$button_checked_color`, the window text at 30 %, translucent \
+                 (_buttons.scss:4, :44-45 at libadwaita 1.10.0; docs/facts/gnome/button.toml \
+                 on v0.8.0-rc1 at 78ee0efd; native-theme/tests/next_homes.toml, row \
+                 button.checked_background, a listed difference), where 0.7.2 states an \
+                 uncited solid (#c8c8c8 / #2e2e32); its label is equal",
+    },
+    Difference {
         leaf: "variants::ghost_button",
         presets: &["adwaita"],
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
@@ -1270,6 +1313,64 @@ fn slider_thumb_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
     super::fill(&thumb, "slider.thumb(NONE).fill").ok()
 }
 
+/// The leaf of [`DIFFERENCES`]' entry for the push button's fills read at
+/// their homes: the `ThemeColor` slots the connector fills from
+/// `button.body(NONE)`, `(HOVER)` and `(PRESSED)` and the group box's fill
+/// laid from the first, their tokens and their stored config strings, each
+/// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const BUTTON_FILLS: &str = "to_theme: the push button's fills";
+
+/// The push button's fill of `state` as the connector reads it for the
+/// slots of [`BUTTON_FILLS`]: `button.body(NONE)`'s fill at rest, else the
+/// fill a rule states for the state; `None` where it is unstated.
+fn button_fill_of(
+    new: &native_theme::next::ResolvedTheme,
+    state: native_theme::next::WidgetState,
+) -> Option<Hsla> {
+    let body = new.button.body(state);
+    if state == native_theme::next::WidgetState::NONE {
+        super::fill_color(&body)
+    } else {
+        state_fill(&body)
+    }
+}
+
+/// The group box's fill as the connector lays it from the push button's
+/// rest fill over its background, at [`crate::colors::group_box_opacity`].
+fn group_box_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    let bg = super::widget_colors(new).ok()?.bg;
+    let rest = button_fill_of(new, native_theme::next::WidgetState::NONE)?;
+    let opacity = crate::colors::group_box_opacity(new.is_dark());
+    Some(bg.blend(rest.opacity(opacity)))
+}
+
+/// A [`StatedSlot`] of [`BUTTON_FILLS`]: the slot `$slot` read by `$of`,
+/// with `laid` one the connector lays from another slot.
+macro_rules! button_fill_slot {
+    ($slot:ident, $what:literal, $of:expr) => {
+        button_fill_slot!($slot, $what, $of, false)
+    };
+    ($slot:ident, $what:literal, $of:expr, laid) => {
+        button_fill_slot!($slot, $what, $of, true)
+    };
+    ($slot:ident, $what:literal, $of:expr, $laid:literal) => {
+        StatedSlot {
+            leaf: BUTTON_FILLS,
+            laid: $laid,
+            what: $what,
+            of: $of,
+            color: |c| c.$slot,
+            token: |t| t.$slot,
+            config: |c| c.$slot.clone(),
+            copy: |theme, from| {
+                theme.colors.$slot = from.colors.$slot;
+                theme.tokens.$slot = from.tokens.$slot;
+            },
+            copy_config: |config, from| config.$slot = from.$slot.clone(),
+        }
+    };
+}
+
 /// A `ThemeColor` slot whose listed difference is the colour the connector
 /// reads at one home of the preset, or gpui-component's own where that home
 /// is unstated, compared by [`slot_as_old`]: the leaf of
@@ -1286,12 +1387,18 @@ struct StatedSlot {
     copy: fn(&mut GpuiTheme, &GpuiTheme),
     /// Copies the slot's stored config string of the second into the first.
     copy_config: fn(&mut ThemeConfigColors, &ThemeConfigColors),
+    /// Whether the connector lays the slot's colour from another slot of
+    /// the same entry, so that it can round to 0.7.2's in its stored config
+    /// string: the entry then describes it where its colour differs from
+    /// 0.7.2's at all, not only in its hex string.
+    laid: bool,
 }
 
 /// The slots [`DIFFERENCES`] lists as a colour stated at one home.
 const STATED_SLOTS: &[StatedSlot] = &[
     StatedSlot {
         leaf: SCROLLBAR_THUMB,
+        laid: false,
         what: "gpui-component's own scroll bar thumb at rest",
         of: rest_thumb_own_of,
         color: |c| c.scrollbar_thumb,
@@ -1307,6 +1414,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: SCROLLBAR_THUMB_HOVER,
+        laid: false,
         what: "the hovered scroll bar thumb's stated fill",
         of: |new| state_fill(&new.scrollbar.thumb(native_theme::next::WidgetState::HOVER)),
         color: |c| c.scrollbar_thumb_hover,
@@ -1322,6 +1430,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: INPUT_OUTLINE,
+        laid: false,
         what: "the text field's stated outline",
         of: input_outline_of,
         color: |c| c.input,
@@ -1335,6 +1444,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: SLIDER_THUMB,
+        laid: false,
         what: "the slider thumb's stated fill",
         of: slider_thumb_of,
         color: |c| c.slider_thumb,
@@ -1348,6 +1458,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: FLAT_HOVER,
+        laid: false,
         what: "the flat button's stated hovered fill",
         of: |new| flat_fill_of(new, native_theme::next::WidgetState::HOVER),
         color: |c| c.secondary_hover,
@@ -1361,6 +1472,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: FLAT_PRESSED,
+        laid: false,
         what: "the flat button's stated pressed fill",
         of: |new| flat_fill_of(new, native_theme::next::WidgetState::PRESSED),
         color: |c| c.secondary_active,
@@ -1374,6 +1486,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: TAB_FILL,
+        laid: false,
         what: "the unselected tab's stated fill",
         of: |new| super::fill_color(&new.tab.tab(native_theme::next::WidgetState::NONE)),
         color: |c| c.tab,
@@ -1387,6 +1500,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: TAB_ACTIVE,
+        laid: false,
         what: "the selected tab's stated fill",
         of: |new| super::fill_color(&new.tab.tab(native_theme::next::WidgetState::SELECTED)),
         color: |c| c.tab_active,
@@ -1400,6 +1514,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: TAB_ACTIVE_TEXT,
+        laid: false,
         what: "the selected tab's stated label",
         of: |new| super::text_color_of(&new.tab.label(native_theme::next::WidgetState::SELECTED)),
         color: |c| c.tab_active_foreground,
@@ -1415,6 +1530,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: SIDEBAR_FILL,
+        laid: false,
         what: "the sidebar's stated fill",
         of: |new| super::fill_color(&new.sidebar.container(native_theme::next::WidgetState::NONE)),
         color: |c| c.sidebar,
@@ -1428,6 +1544,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     },
     StatedSlot {
         leaf: SIDEBAR_TEXT,
+        laid: false,
         what: "the sidebar's stated text",
         of: |new| {
             super::text_color_of(
@@ -1446,6 +1563,46 @@ const STATED_SLOTS: &[StatedSlot] = &[
             config.sidebar_foreground = from.sidebar_foreground.clone();
         },
     },
+    button_fill_slot!(secondary, "the push button's stated rest fill", |new| {
+        button_fill_of(new, native_theme::next::WidgetState::NONE)
+    }),
+    button_fill_slot!(button, "the push button's stated rest fill", |new| {
+        button_fill_of(new, native_theme::next::WidgetState::NONE)
+    }),
+    button_fill_slot!(
+        button_secondary,
+        "the push button's stated rest fill",
+        |new| button_fill_of(new, native_theme::next::WidgetState::NONE)
+    ),
+    button_fill_slot!(skeleton, "the push button's stated rest fill", |new| {
+        button_fill_of(new, native_theme::next::WidgetState::NONE)
+    }),
+    button_fill_slot!(
+        group_box,
+        "the group box laid from the push button's rest fill",
+        group_box_of,
+        laid
+    ),
+    button_fill_slot!(
+        button_hover,
+        "the push button's stated hovered fill",
+        |new| { button_fill_of(new, native_theme::next::WidgetState::HOVER) }
+    ),
+    button_fill_slot!(
+        button_secondary_hover,
+        "the push button's stated hovered fill",
+        |new| button_fill_of(new, native_theme::next::WidgetState::HOVER)
+    ),
+    button_fill_slot!(
+        button_active,
+        "the push button's stated pressed fill",
+        |new| { button_fill_of(new, native_theme::next::WidgetState::PRESSED) }
+    ),
+    button_fill_slot!(
+        button_secondary_active,
+        "the push button's stated pressed fill",
+        |new| button_fill_of(new, native_theme::next::WidgetState::PRESSED)
+    ),
 ];
 
 /// `theme` with its `slot` as `from`'s, where `theme` holds the colour the
@@ -1454,8 +1611,9 @@ const STATED_SLOTS: &[StatedSlot] = &[
 /// scheme whose `stated` is given; the colours compared by their hex
 /// strings, as an upstream rebuild of the theme from its stored config
 /// (`Theme::change`) round-trips them. `None` where `theme` does not hold
-/// it, or where it is `from`'s, the listed difference then describing
-/// nothing.
+/// it, or where it is `from`'s (a [`StatedSlot::laid`] slot's colour
+/// exactly, any other's by its hex string), the listed difference then
+/// describing nothing.
 fn slot_as_old(
     theme: &GpuiTheme,
     from: &GpuiTheme,
@@ -1466,9 +1624,13 @@ fn slot_as_old(
     let [light, dark] = stated;
     let own = if theme.is_dark() { dark } else { light }?;
     let color = (slot.color)(&theme.colors);
-    if hex(color) != hex(own)
-        || hex((slot.color)(&from.colors)) == hex(own)
-        || (slot.token)(&theme.tokens) != ThemeToken::from(color)
+    let old = (slot.color)(&from.colors);
+    let unchanged = if slot.laid {
+        old == own
+    } else {
+        hex(old) == hex(own)
+    };
+    if hex(color) != hex(own) || unchanged || (slot.token)(&theme.tokens) != ThemeToken::from(color)
     {
         return None;
     }
@@ -1519,6 +1681,23 @@ fn resize_handles_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, H
 /// which no model states a checked toggle, so 0.7.2's pressed pair stands in
 /// and 0.8.0 sets nothing.
 const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries whose
+/// checked fill the 0.8.0 preset states where 0.7.2 states another.
+const RESTATED_BUTTON_FILLS: &[&str] = &["adwaita"];
+
+/// Whether the refinement `n` is `o` filled with `stated`, a colour of its
+/// own: the form of [`DIFFERENCES`]' `geometry::button_disabled` entries and
+/// of their `geometry::button_checked` entries on [`RESTATED_BUTTON_FILLS`].
+fn refills(o: &gpui::StyleRefinement, n: &gpui::StyleRefinement, stated: Option<Hsla>) -> bool {
+    use gpui::Styled as _;
+    let Some(stated) = stated else {
+        return false;
+    };
+    let mut corrected = o.clone();
+    corrected.background = gpui::StyleRefinement::default().bg(stated).background;
+    o.background != corrected.background && corrected == *n
+}
 
 /// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
 /// button the 0.8.0 preset strokes as none.
@@ -2488,9 +2667,41 @@ fn compare_builders(
     }
     builder!(report, old, new, button_label);
     builder!(report, old, new, toggle);
-    builder!(report, old, new, button_disabled);
+    let button_disabled = "geometry::button_disabled";
+    match report.listed(button_disabled) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(button_disabled, super::builders::button_disabled(new)) {
+                report.count(button_disabled);
+                let o = crate::geometry::button_disabled(Native::unscaled(old));
+                let stated =
+                    super::fill_color(&new.button.body(native_theme::next::WidgetState::DISABLED));
+                if !refills(&o, &n, stated) {
+                    report.failures.push(format!(
+                        "{}: {button_disabled}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, button_disabled),
+    }
     let button_checked = "geometry::button_checked";
     match report.listed(button_checked) {
+        Some(listed) if RESTATED_BUTTON_FILLS.contains(&report.preset) => {
+            if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
+                report.count(button_checked);
+                let o = crate::geometry::button_checked(Native::unscaled(old));
+                let stated = state_fill(&new.button.body(native_theme::next::WidgetState::CHECKED));
+                if !refills(&o, &n, stated) {
+                    report.failures.push(format!(
+                        "{}: {button_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
         Some(listed) if PRESSED_STANDS_IN.contains(&report.preset) => {
             if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
                 use native_theme::next::WidgetState;

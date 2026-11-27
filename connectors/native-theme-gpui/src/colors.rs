@@ -747,12 +747,12 @@ fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 
     tc.accordion = c.bg;
 
-    // Group box: lower opacity in dark mode (0.3) to preserve background contrast;
-    // light mode uses 0.4. Diverges from upstream's uniform 0.5.
-    tc.group_box =
-        c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
+    // Group box: the push button's rest fill over `bg` at
+    // [`group_box_opacity`].
+    tc.group_box = c.bg.blend(c.secondary.opacity(group_box_opacity(is_dark)));
 
-    // Description list label: subtle 20% border tint over background.
+    // Description list label: subtle 20% border tint over background (the
+    // border at 0.2 over `bg`).
     tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
 
     // Per-widget resolved slider colors (Issue 20: via ResolvedColors cache)
@@ -1012,6 +1012,13 @@ pub(crate) fn focus_band(width: f32, keyboard_only: bool) -> bool {
 /// plugin turns on and a `Slider`'s thumb ring set their own alpha).
 pub(crate) fn ring_colour(ring: Hsla, band: bool) -> Hsla {
     if band { ring } else { Hsla { a: 1.0, ..ring } }
+}
+
+/// The opacity the group box lays the push button's rest fill over the
+/// window at: lower in dark mode (0.3) to preserve background contrast;
+/// light mode uses 0.4. Diverges from upstream's uniform 0.5.
+pub(crate) fn group_box_opacity(is_dark: bool) -> f32 {
+    if is_dark { 0.3 } else { 0.4 }
 }
 
 #[cfg(test)]

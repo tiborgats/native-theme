@@ -358,6 +358,43 @@ fn a_checked_push_button_hovered_or_pressed_keeps_its_checked_look() {
     }
 }
 
+/// A push button's six fills are libadwaita's table, each the window text at
+/// its `color-mix(in srgb, currentColor N%, transparent)`, translucent:
+/// `$button_color` 10, `$button_hover_color` 15, `$button_active_color` 30,
+/// `$button_checked_color` 30, `$button_checked_hover_color` 35,
+/// `$button_checked_active_color` 40 (_buttons.scss:1-6 at libadwaita 1.10.0),
+/// each stated for its state.
+#[test]
+fn a_push_button_s_fills_are_libadwaita_s_table() {
+    use crate::next::style::PartStated;
+    for (theme, c) in both_schemes()
+        .iter()
+        .zip([constants(Scheme::Light), constants(Scheme::Dark)])
+    {
+        for (state, percent) in [
+            (WidgetState::NONE, 10.0),
+            (WidgetState::HOVER, 15.0),
+            (WidgetState::PRESSED, 30.0),
+            (WidgetState::CHECKED, 30.0),
+            (WidgetState::CHECKED | WidgetState::HOVER, 35.0),
+            (WidgetState::CHECKED | WidgetState::PRESSED, 40.0),
+        ] {
+            let body = theme.button.body(ButtonQuery::new(state));
+            assert_eq!(
+                body.fill,
+                Paint::Solid(c.row_foreground.mul_alpha(percent / 100.0)),
+                "{state:?}"
+            );
+            assert!(body.stated.contains(PartStated::FILL), "{state:?}");
+            assert_eq!(
+                body.from_state.contains(PartStated::FILL),
+                state != WidgetState::NONE,
+                "{state:?}"
+            );
+        }
+    }
+}
+
 /// A disabled check, radio and off switch state their rest fill for
 /// `DISABLED`, the fade alone changing them; checked, each keeps its checked
 /// fill, the accent.
@@ -666,8 +703,9 @@ fn a_palette_states_its_roles() {
 }
 
 /// The widgets the preset draws in a colour a slot replaces take the slot's
-/// colour, the toolbar's and the flat button's layers of the window text
-/// the palette's foreground at libadwaita's alphas; the fills the preset
+/// colour, the push button's fills and the toolbar's and the flat button's
+/// layers of the window text the palette's foreground at libadwaita's
+/// alphas; the fills the preset
 /// states as libadwaita's layers over its own window, the placeholder and
 /// the switch's hover colour keep the preset's.
 #[test]
@@ -775,6 +813,10 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
         let c = constants(scheme);
         assert_eq!(
             solid(&theme.button.body(ButtonQuery::new(none)).fill),
+            Some(p.foreground.mul_alpha(BUTTON_ALPHA))
+        );
+        assert_eq!(
+            solid(&theme.input.field(none).fill),
             Some(c.button_background)
         );
         assert_eq!(theme.input.placeholder(none).color, c.placeholder);

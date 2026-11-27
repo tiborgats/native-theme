@@ -30,13 +30,15 @@
 //! panels; `foreground` is every `*_fg_color` of those surfaces, the window
 //! text the preset letters its widgets in, and the tooltip's text with
 //! `tooltip_bg` (§7: one text colour for the eight surfaces), and with it the
-//! toolbar's and the flat button's hovered, pressed and checked layers of
-//! the window text (`currentColor` at 7, 16 and 10 %); `accent` is
-//! `accent_bg_color`, the accent's fill and the tab's active indicator, from
-//! which the focus ring is derived again through `adw_standalone`; `error`,
-//! `warning` and `success` are `destructive_bg_color`, `warning_bg_color`
-//! and `success_bg_color`. A slot with no libadwaita colour of its name
-//! states its role alone (§7): `foreground_muted`, `border` (the default
+//! push button's fills, the window text at libadwaita's `$button_*_color`
+//! alphas, and the toolbar's and the flat button's hovered, pressed and
+//! checked layers of the window text (`currentColor` at 7, 16 and 10 %);
+//! `accent` is `accent_bg_color`, the accent's fill and the tab's active
+//! indicator, from which the focus ring is derived again through
+//! `adw_standalone`; `error`, `warning` and `success` are
+//! `destructive_bg_color`, `warning_bg_color` and `success_bg_color`. A slot
+//! with no libadwaita colour of its name states its role alone (§7):
+//! `foreground_muted`, `border` (the default
 //! border, and so every outline drawn in it), `divider`, `accent_fg`,
 //! `selection_bg`, `selection_fg`, `link`, `caret` and `info`; the
 //! selection's slots stand over the accent the preset would take them from
@@ -45,9 +47,9 @@
 //! takes from the selection, follow them, as the disabled text follows the
 //! window text. Every other colour keeps the preset's value: the fills the
 //! preset states as libadwaita's translucent layers already laid over its
-//! own window (the buttons', the entries', the hover fills), the
-//! placeholder, the switch's and the slider's colours, the status colours'
-//! text. An explicit accent is libadwaita's accent as the system's accent
+//! own window (the drop-down's, the entries', the toggle group's, the hover
+//! fills), the placeholder, the switch's and the slider's colours, the
+//! status colours' text. An explicit accent is libadwaita's accent as the system's accent
 //! is ([`lay_accent_over`]), the later statement of layer 3: it replaces the
 //! palette's `accent`, `selection_bg`, `info`, and with the accent its text
 //! (`accent_fg`, `selection_fg`), which are then the preset's.
@@ -210,7 +212,6 @@ struct SchemeColors {
     success_foreground: Color,
     button_background: Color,
     button_hover: Color,
-    button_pressed: Color,
     checkbox_background: Color,
     button_active_layer: Color,
     trough_active: Color,
@@ -336,9 +337,6 @@ const LIGHT: SchemeColors = SchemeColors {
     // `defaults.success_text_color`: platform-facts.md (§2.1.4): success_fg_color white
     // (libadwaita 1.10.0 _colors.scss:17)
     success_foreground: srgb8(0xffff_ffff),
-    // `button.background_color`: platform-facts.md §2.3 background_color: a raised button fills
-    // with $button_color, currentColor 10 %, over the window, #e6e6e7 (libadwaita 1.10.0
-    // _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
     // `combo_box.background_color`: platform-facts.md §2.24 background_color: the trigger button's
     // $button_color over the window, #e6e6e7 (libadwaita 1.10.0 _buttons.scss:28-29;
     // _dropdowns.scss:1-12 adds no fill)
@@ -350,13 +348,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // the window fg RGB(0 0 6 / 80%) so 8 % of #000006, laid over the window's #fafafb
     // (libadwaita 1.10.0 _colors.scss:32-33)
     button_background: srgb8(0xe6e6_e7ff),
-    // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
-    // `segmented_control.hover_background`: 0.7.2 adwaita.toml (uncited)
+    // `combo_box.hover_background`, `segmented_control.hover_background`: 0.7.2 adwaita.toml
+    // (uncited)
     button_hover: srgb8(0xd5d5_d5ff),
-    // `button.active_background`: 0.7.2 adwaita.toml (uncited)
-    // `button.checked_background`: platform-facts.md (§2.3): $button_checked_color is the pressed
-    // fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
-    button_pressed: srgb8(0xc8c8_c8ff),
     // `checkbox.unchecked_background`: no disabled_background / disabled_text_color:
     // platform-facts.md (§2.1.6), a disabled check is its enabled self at disabled_opacity
     checkbox_background: srgb8(0xffff_ffff),
@@ -503,9 +497,6 @@ const DARK: SchemeColors = SchemeColors {
     success: srgb8(0x26a2_69ff),
     // `defaults.success_text_color`: 0.7.2 adwaita.toml (uncited)
     success_foreground: srgb8(0xffff_ffff),
-    // `button.background_color`: platform-facts.md §2.3 background_color: a raised button fills
-    // with $button_color, currentColor 10 %, over the window, #38383c (libadwaita 1.10.0
-    // _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
     // `combo_box.background_color`: platform-facts.md §2.24 background_color: the trigger button's
     // $button_color over the window, #38383c (libadwaita 1.10.0 _buttons.scss:28-29;
     // _dropdowns.scss:1-12 adds no fill)
@@ -517,13 +508,9 @@ const DARK: SchemeColors = SchemeColors {
     // the window fg white at 10 %, laid over the window's #222226 (libadwaita 1.10.0
     // _colors.scss:95-96)
     button_background: srgb8(0x3838_3cff),
-    // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
-    // `segmented_control.hover_background`: 0.7.2 adwaita.toml (uncited)
+    // `combo_box.hover_background`, `segmented_control.hover_background`: 0.7.2 adwaita.toml
+    // (uncited)
     button_hover: srgb8(0x4646_49ff),
-    // `button.active_background`: 0.7.2 adwaita.toml (uncited)
-    // `button.checked_background`: platform-facts.md (§2.3): $button_checked_color is the pressed
-    // fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
-    button_pressed: srgb8(0x2e2e_32ff),
     // `checkbox.unchecked_background`: no disabled_background / disabled_text_color:
     // platform-facts.md (§2.1.6), a disabled check is its enabled self at disabled_opacity
     checkbox_background: srgb8(0x3030_34ff),
@@ -758,6 +745,33 @@ const FLAT_CHECKED_HOVER_ALPHA: f32 = 0.13;
 /// (_colors.scss:272;
 /// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
 const FLAT_CHECKED_PRESSED_ALPHA: f32 = 0.19;
+
+/// The alpha of the window text a push button is filled with at rest:
+/// `$button_color`, `color-mix(in srgb, currentColor 10%, transparent)`, on
+/// `%button_basic_raised` (_buttons.scss:1, :28-29 at libadwaita 1.10.0;
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`;
+/// platform-facts.md (§2.3)).
+const BUTTON_ALPHA: f32 = 0.1;
+
+/// The alpha of the window text a hovered push button is filled with:
+/// `$button_hover_color`, `color-mix(in srgb, currentColor 15%,
+/// transparent)`, on `&:hover` (_buttons.scss:2, :35-36 at libadwaita 1.10.0;
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
+const BUTTON_HOVER_ALPHA: f32 = 0.15;
+
+/// The alpha of the window text a pressed push button is filled with:
+/// `$button_active_color`, `color-mix(in srgb, currentColor 30%,
+/// transparent)`, on `&.keyboard-activating, &:active` (_buttons.scss:3,
+/// :39-41 at libadwaita 1.10.0; `docs/facts/gnome/button.toml` on
+/// `v0.8.0-rc1` at `78ee0efd`).
+const BUTTON_PRESSED_ALPHA: f32 = 0.3;
+
+/// The alpha of the window text a checked push button is filled with:
+/// `$button_checked_color`, `color-mix(in srgb, currentColor 30%,
+/// transparent)`, on `&:checked` (_buttons.scss:4, :44-45 at libadwaita
+/// 1.10.0; `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`;
+/// platform-facts.md (§2.3)).
+const BUTTON_CHECKED_ALPHA: f32 = 0.3;
 
 /// The alpha of the window text a hovered checked push button is filled
 /// with: `$button_checked_hover_color`, `color-mix(in srgb, currentColor
@@ -2030,8 +2044,14 @@ fn button(
             shape: None,
         })
     };
+    // The fills of `%button_basic_raised`, libadwaita's one table of them (_buttons.scss:1-6,
+    // :28-55 at libadwaita 1.10.0): the window text at BUTTON_ALPHA, BUTTON_HOVER_ALPHA,
+    // BUTTON_PRESSED_ALPHA and BUTTON_CHECKED_ALPHA, translucent over what lies behind as
+    // libadwaita's `background-color` is, where 0.7.2 stated the rest fill laid over the window
+    // and uncited solids hovered, pressed and checked.
+    let layer = |alpha: f32| fill(c.row_foreground.mul_alpha(alpha));
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
-        .base([fill(c.button_background)])
+        .base([layer(BUTTON_ALPHA)])
         .base(border(roles, BUTTON_BORDER_WIDTH))
         .base([
             corners(layout.corner_radius),
@@ -2043,12 +2063,15 @@ fn button(
         ])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.button_pressed)],
+            [layer(BUTTON_CHECKED_ALPHA)],
         )
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [layer(BUTTON_HOVER_ALPHA)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.button_pressed)],
+            [layer(BUTTON_PRESSED_ALPHA)],
         )
         // Hovered and pressed, the outline as at rest: a raised button's :hover and :active set
         // only its background (_buttons.scss:28-42 at libadwaita 1.10.0), stated for each state
@@ -2065,18 +2088,15 @@ fn button(
             border(roles, BUTTON_BORDER_WIDTH),
         )
         // Checked and hovered or pressed, `&:checked`'s own `:hover` and `:active`, the window
-        // text at BUTTON_CHECKED_HOVER_ALPHA and BUTTON_CHECKED_PRESSED_ALPHA, translucent over
-        // what lies behind as libadwaita's `background-color` is (_buttons.scss:44-55 at
-        // libadwaita 1.10.0), after the HOVER and PRESSED rules so that they win.
+        // text at BUTTON_CHECKED_HOVER_ALPHA and BUTTON_CHECKED_PRESSED_ALPHA (_buttons.scss:44-55
+        // at libadwaita 1.10.0), after the HOVER and PRESSED rules so that they win.
         .rule(
             RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER),
-            [fill(c.row_foreground.mul_alpha(BUTTON_CHECKED_HOVER_ALPHA))],
+            [layer(BUTTON_CHECKED_HOVER_ALPHA)],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
-            [fill(
-                c.row_foreground.mul_alpha(BUTTON_CHECKED_PRESSED_ALPHA),
-            )],
+            [layer(BUTTON_CHECKED_PRESSED_ALPHA)],
         )
         .rule(
             primary(),
